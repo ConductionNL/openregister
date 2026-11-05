@@ -145,6 +145,8 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Organisation extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use AuthorizationRulesTrait;
 
 	/**
 	 * Unique identifier for the organisation
@@ -959,34 +961,6 @@ class Organisation extends Entity implements JsonSerializable {
 	}//end getAuthorization()
 
 	/**
-	 * Set authorization rules for this organisation
-	 *
-	 * @param array|string|null $authorization Authorization rules structure or JSON string
-	 *
-	 * @return static Returns this organisation for method chaining
-	 */
-	public function setAuthorization(array|string|null $authorization): static {
-		// Handle JSON string from database (type safety).
-		if (is_string($authorization) === true) {
-			try {
-				$decoded = json_decode($authorization, true);
-				// Invalid JSON, use default.
-				$authorization = null;
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					$authorization = $decoded;
-				}
-			} catch (\Exception $e) {
-				// If decoding fails, use default.
-				$authorization = null;
-			}
-		}
-
-		$this->authorization = $authorization ?? $this->getDefaultAuthorization();
-		$this->markFieldUpdated(attribute: 'authorization');
-		return $this;
-	}//end setAuthorization()
-
-	/**
 	 * Get parent organisation UUID
 	 *
 	 * @return string|null The parent organisation UUID or null if no parent
@@ -1233,30 +1207,4 @@ class Organisation extends Entity implements JsonSerializable {
 
 		return $this->uuid;
 	}//end __toString()
-
-	/**
-	 * Get created date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get updated date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 }//end class

@@ -1,0 +1,2436 @@
+{
+    "approve: dual approval first step": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "awaiting_second_approval",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "b",
+                                "schema": 7,
+                                "decision": "retain"
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "awaiting_second_approval",
+                "message": "First approval recorded. Awaiting second approval from different archivist."
+            }
+        }
+    },
+    "approve: dual approval string flag": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: exclusion extend throws": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "objectMapper.find": [
+                    "b",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "b"
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend excluded object: cannot extend",
+                    []
+                ]
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "excluded": [
+                        {
+                            "uuid": "b",
+                            "reason": "No reason provided",
+                            "excludedBy": "alice"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "excluded": [
+                            {
+                                "uuid": "b",
+                                "reason": "No reason provided",
+                                "excludedBy": "alice"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 1
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 1
+            }
+        }
+    },
+    "approve: exclusions": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "a",
+                    "object": {
+                        "id": "a"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "c",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "c"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "c",
+                    "object": {
+                        "id": "c"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "gone-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend excluded object: not found: gone-1",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        }
+                    ],
+                    "excluded": [
+                        {
+                            "uuid": "a",
+                            "reason": "still needed",
+                            "excludedBy": "alice"
+                        },
+                        {
+                            "uuid": "c",
+                            "reason": "No reason provided",
+                            "excludedBy": "alice"
+                        },
+                        {
+                            "uuid": "gone-1",
+                            "reason": "missing",
+                            "excludedBy": "alice"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [],
+                        "excluded": [
+                            {
+                                "uuid": "a",
+                                "reason": "still needed",
+                                "excludedBy": "alice"
+                            },
+                            {
+                                "uuid": "c",
+                                "reason": "No reason provided",
+                                "excludedBy": "alice"
+                            },
+                            {
+                                "uuid": "gone-1",
+                                "reason": "missing",
+                                "excludedBy": "alice"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 0,
+                        "excluded": 3
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 0,
+                "excludedCount": 3
+            }
+        }
+    },
+    "approve: exclusions and existing excluded": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "a",
+                    "object": {
+                        "id": "a"
+                    }
+                }
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "excluded": [
+                        {
+                            "uuid": "z"
+                        },
+                        {
+                            "uuid": "a",
+                            "reason": "No reason provided",
+                            "excludedBy": "alice"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "excluded": [
+                            {
+                                "uuid": "z"
+                            },
+                            {
+                                "uuid": "a",
+                                "reason": "No reason provided",
+                                "excludedBy": "alice"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 1,
+                        "excluded": 2
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 1,
+                "excludedCount": 2
+            }
+        }
+    },
+    "approve: exclusions empty": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: exclusions not an array": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: in review after an approval by the same user": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "x"
+                        },
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "x"
+                            },
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: list not found": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "result": {
+            "status": 500,
+            "data": {
+                "error": "not found: list-1"
+            }
+        }
+    },
+    "approve: no session user": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "unknown",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "unknown",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "unknown",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: plain in review": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: schema lookup throws": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: second approval by another archivist": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "awaiting_second_approval",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "x"
+                        },
+                        {
+                            "userId": "bob",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "x"
+                            },
+                            {
+                                "userId": "bob",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "bob",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: second approval by first approver": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            }
+        ],
+        "result": {
+            "status": 403,
+            "data": {
+                "error": "Second approval must be from a different archivist"
+            }
+        }
+    },
+    "approve: second step first approver without uid": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "awaiting_second_approval",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "timestamp": "x"
+                        },
+                        {
+                            "userId": "unknown",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "timestamp": "x"
+                            },
+                            {
+                                "userId": "unknown",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "unknown",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: second step with dual schema": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "awaiting_second_approval",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "x"
+                        },
+                        {
+                            "userId": "bob",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "x"
+                            },
+                            {
+                                "userId": "bob",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "bob",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: second step without earlier approvals": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "awaiting_second_approval",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                "jobList.add": [
+                    "OCA\\OpenRegister\\BackgroundJob\\DestructionExecutionJob",
+                    {
+                        "destructionListUuid": "list-1"
+                    }
+                ]
+            },
+            {
+                "audit.createAuditTrailEntry": [
+                    "list-uuid-1",
+                    "archival.destruction_approved",
+                    {
+                        "approvedBy": "alice",
+                        "objectCount": 2,
+                        "excluded": 0
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "approved",
+                "objectCount": 2,
+                "excludedCount": 0
+            }
+        }
+    },
+    "approve: status draft": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "result": {
+            "status": 409,
+            "data": {
+                "error": "Destruction list is not in reviewable status: draft"
+            }
+        }
+    },
+    "approve: status missing": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "result": {
+            "status": 409,
+            "data": {
+                "error": "Destruction list is not in reviewable status: "
+            }
+        }
+    },
+    "approve: update throws": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "excluded",
+                    []
+                ]
+            },
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "destruction.withholdDecidedEntries": {
+                    "id": "list-uuid-1",
+                    "status": "in_review",
+                    "objects": [
+                        {
+                            "uuid": "a",
+                            "schema": null
+                        },
+                        {
+                            "uuid": "b",
+                            "schema": 7,
+                            "decision": "retain"
+                        },
+                        {
+                            "uuid": "c"
+                        }
+                    ],
+                    "approvals": [
+                        {
+                            "userId": "alice",
+                            "timestamp": "<time>"
+                        }
+                    ]
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "approved",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "<time>"
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 500,
+            "data": {
+                "error": "update failed"
+            }
+        }
+    },
+    "reject: empty reason": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 400,
+            "data": {
+                "error": "Rejection reason is required"
+            }
+        }
+    },
+    "reject: extend throws": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend rejected object: cannot extend",
+                    []
+                ]
+            },
+            {
+                "objectMapper.find": [
+                    "b",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "b"
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend rejected object: cannot extend",
+                    []
+                ]
+            },
+            {
+                "objectMapper.find": [
+                    "c",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "c"
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend rejected object: cannot extend",
+                    []
+                ]
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "rejected",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "b",
+                                "schema": 7,
+                                "decision": "retain"
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "rejectedBy": "alice",
+                        "rejectionReason": "keep",
+                        "rejectedAt": "<time>"
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "rejected",
+                "reason": "keep",
+                "message": "Destruction list rejected. All object deadlines extended."
+            }
+        }
+    },
+    "reject: in review": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "a",
+                    "object": {
+                        "id": "a"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "b",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "b"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "b",
+                    "object": {
+                        "id": "b"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "c",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "c"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "c",
+                    "object": {
+                        "id": "c"
+                    }
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "rejected",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "b",
+                                "schema": 7,
+                                "decision": "retain"
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "rejectedBy": "alice",
+                        "rejectionReason": "keep",
+                        "rejectedAt": "<time>"
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "rejected",
+                "reason": "keep",
+                "message": "Destruction list rejected. All object deadlines extended."
+            }
+        }
+    },
+    "reject: list not found": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "result": {
+            "status": 500,
+            "data": {
+                "error": "not found: list-1"
+            }
+        }
+    },
+    "reject: no reason": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 400,
+            "data": {
+                "error": "Rejection reason is required"
+            }
+        }
+    },
+    "reject: objects extended": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "a",
+                    "object": {
+                        "id": "a"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "gone-2",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "logger.warning": [
+                    "[RetentionController] Failed to extend rejected object: not found: gone-2",
+                    []
+                ]
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "rejected",
+                        "objects": [
+                            {
+                                "uuid": "a"
+                            },
+                            {
+                                "schema": 1
+                            },
+                            {
+                                "uuid": "gone-2"
+                            }
+                        ],
+                        "rejectedBy": "alice",
+                        "rejectionReason": "keep",
+                        "rejectedAt": "<time>"
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "rejected",
+                "reason": "keep",
+                "message": "Destruction list rejected. All object deadlines extended."
+            }
+        }
+    },
+    "reject: second step without user": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            },
+            {
+                "userSession.getUser": []
+            },
+            {
+                "objectMapper.find": [
+                    "a",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "a"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "a",
+                    "object": {
+                        "id": "a"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "b",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "b"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "b",
+                    "object": {
+                        "id": "b"
+                    }
+                }
+            },
+            {
+                "objectMapper.find": [
+                    "c",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "retention.extendArchiveActionDate": "c"
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "c",
+                    "object": {
+                        "id": "c"
+                    }
+                }
+            },
+            {
+                "objectMapper.update": {
+                    "uuid": "list-uuid-1",
+                    "object": {
+                        "id": "list-uuid-1",
+                        "status": "rejected",
+                        "objects": [
+                            {
+                                "uuid": "a",
+                                "schema": null
+                            },
+                            {
+                                "uuid": "b",
+                                "schema": 7,
+                                "decision": "retain"
+                            },
+                            {
+                                "uuid": "c"
+                            }
+                        ],
+                        "approvals": [
+                            {
+                                "userId": "alice",
+                                "timestamp": "x"
+                            }
+                        ],
+                        "rejectedBy": "unknown",
+                        "rejectionReason": "keep",
+                        "rejectedAt": "<time>"
+                    }
+                }
+            }
+        ],
+        "result": {
+            "status": 200,
+            "data": {
+                "status": "rejected",
+                "reason": "keep",
+                "message": "Destruction list rejected. All object deadlines extended."
+            }
+        }
+    },
+    "reject: status approved": {
+        "calls": [
+            {
+                "objectMapper.find": [
+                    "list-1",
+                    null,
+                    null,
+                    false,
+                    false,
+                    false
+                ]
+            },
+            {
+                "request.getParam": [
+                    "reason",
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "status": 409,
+            "data": {
+                "error": "Destruction list is not in reviewable status"
+            }
+        }
+    }
+}

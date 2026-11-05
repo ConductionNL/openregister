@@ -135,26 +135,14 @@ class CospendLinksController extends Controller {
 				$billIdParam = $this->request->getParam('billId');
 				$entryType = (string)$this->request->getParam('entryType', '');
 
-				$registerId = (int)$object->getRegister();
-				$schemaId = (int)$object->getSchema();
+				$target = $this->linkTargetOf(object: $object);
 
 				if (($billIdParam !== null && (int)$billIdParam !== 0) || $entryType === 'bill') {
-					$link = $this->cospendLinkService->linkBill(
-						$object->getUuid(),
-						$registerId,
-						$schemaId,
-						$projectId,
-						(int)$billIdParam
-					);
+					$link = $this->cospendLinkService->linkBill($target, $projectId, (int)$billIdParam);
 					return new JSONResponse($link->jsonSerialize(), 201);
 				}
 
-				$link = $this->cospendLinkService->linkProject(
-					$object->getUuid(),
-					$registerId,
-					$schemaId,
-					$projectId
-				);
+				$link = $this->cospendLinkService->linkProject($target, $projectId);
 
 				return new JSONResponse($link->jsonSerialize(), 201);
 			}
@@ -195,9 +183,7 @@ class CospendLinksController extends Controller {
 				$currency = (string)$this->request->getParam('currency', '');
 
 				$link = $this->cospendLinkService->createAndLinkProject(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$name,
 					$currency
 				);

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectSharingControllerFactory;
 use OCA\OpenRegister\Controller\ObjectSharingController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -182,7 +183,7 @@ class GrantManageSpecialRightTest extends TestCase {
 		$objectService->method('setObject')->willReturnSelf();
 		$objectService->method('getObject')->willReturnCallback(fn () => $this->record);
 
-		$this->controller = new ObjectSharingController(
+		$this->controller = ObjectSharingControllerFactory::create(
 			'openregister',
 			$this->request,
 			$objectService,

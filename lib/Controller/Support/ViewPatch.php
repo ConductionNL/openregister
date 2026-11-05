@@ -25,7 +25,8 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Search\Db\View;
 
 /**
- * One PATCH of a saved view: the route id, the stored view and the request body.
+ * One write of a saved view: the route id, the stored view and the request body,
+ * with what the body declares.
  *
  * @spec openspec/specs/saved-search-views/spec.md
  */
@@ -50,4 +51,90 @@ final class ViewPatch {
 	 * @var array
 	 */
 	public array $data = [];
+
+	/**
+	 * The view query the request body declares.
+	 *
+	 * The frontend still sends `configuration`, of which only the query keys are kept;
+	 * otherwise a `query` array is taken as is.
+	 *
+	 * @return array<string, mixed>|null The query, or null when the body declares none.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function query(): ?array {
+		$config = $this->data['configuration'] ?? null;
+		if (is_array($config) === true) {
+			return [
+				'registers' => $config['registers'] ?? [],
+				'schemas' => $config['schemas'] ?? [],
+				'source' => $config['source'] ?? 'auto',
+				'searchTerms' => $config['searchTerms'] ?? [],
+				'facetFilters' => $config['facetFilters'] ?? [],
+				'enabledFacets' => $config['enabledFacets'] ?? [],
+			];
+		}
+
+		$query = $this->data['query'] ?? null;
+		if (is_array($query) === true) {
+			return $query;
+		}
+
+		return null;
+	}//end query()
+
+
+	/**
+	 * The presentation the request body declares, when it is an array.
+	 *
+	 * @return array<string, mixed>|null The presentation, or null.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function presentation(): ?array {
+		$presentation = $this->data['presentation'] ?? null;
+		if (is_array($presentation) === false) {
+			return null;
+		}
+
+		return $presentation;
+	}//end presentation()
+
+
+	/**
+	 * The share list from the request body, or null when it does not mention sharing.
+	 *
+	 * Read after the controller has checked the shares.
+	 *
+	 * @return array|null
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function shares(): ?array {
+		if (array_key_exists('sharedWith', $this->data) === false || $this->data['sharedWith'] === null) {
+			return null;
+		}
+
+		return $this->data['sharedWith'];
+	}//end shares()
+
+
+	/**
+	 * The error for a create or full update that lacks its name or its query.
+	 *
+	 * @return string|null The error, or null when both are present.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function missingField(): ?string {
+		if (isset($this->data['name']) === false || empty($this->data['name']) === true) {
+			return 'View name is required';
+		}
+
+		if ($this->query() === null) {
+			return 'View query or configuration is required';
+		}
+
+		return null;
+	}//end missingField()
 }//end class

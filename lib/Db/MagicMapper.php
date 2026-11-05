@@ -44,8 +44,10 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierProbe;
@@ -183,6 +185,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
+	use MagicColumnNameTrait;
+
 	/**
 	 * Hard ceiling on a NUMERIC page size, per the objects-crud requirement
 	 * "List page size is bounded by a hard maximum".
@@ -1215,8 +1219,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'registerId' => $register->getId(),
-				'schemaId' => $schema->getId(),
+				...$this->tableIds(register: $register, schema: $schema),
 				'tableName' => $tableName,
 				'objectCount' => count($objects),
 			]
@@ -1272,38 +1275,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @psalm-return list<ObjectEntity>
 	 */
 	public function searchObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): array {
-		// Use fast cached existence check.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			// Check if magic mapping is enabled for this schema.
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled !== true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist, should use generic storage',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				return [];
-			}
-
-			// Create the table since magic mapping is enabled.
+		if ($this->ensureTableWhenMagicEnabled(register: $register, schema: $schema) === false) {
 			$this->logger->debug(
-				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				message: '[MagicMapper] Register+schema table does not exist, should use generic storage',
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
-			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		}//end if
+			return [];
+		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
@@ -1455,38 +1433,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	private function resolveCountTable(Register $register, Schema $schema): ?string {
-		// Use fast cached existence check.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			// Check if magic mapping is enabled for this schema.
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled !== true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				return null;
-			}
-
-			// Create the table since magic mapping is enabled.
+		if ($this->ensureTableWhenMagicEnabled(register: $register, schema: $schema) === false) {
 			$this->logger->debug(
-				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
-			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		}//end if
+			return null;
+		}
 
 		return $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 	}//end resolveCountTable()
@@ -1540,12 +1493,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			if ($isMagicEnabled !== true) {
 				$this->logger->debug(
 					message: '[MagicMapper] Register+schema table does not exist for facets, returning empty',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
+					context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 				);
 				return [];
 			}
@@ -1554,12 +1502,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$msg .= ' but magic mapping enabled, creating table for facets';
 			$this->logger->debug(
 				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
 			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		}//end if
@@ -2095,12 +2038,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$msg .= ' but magic mapping enabled, creating table for cross-search';
 			$this->logger->debug(
 				message: $msg,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 			);
 			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		}//end if
@@ -2789,8 +2727,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
+					...$this->tableIds(register: $register, schema: $schema),
 					'error' => $e->getMessage(),
 				]
 			);
@@ -5416,46 +5353,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end tableExistsForRegisterSchema()
 
 	/**
-	 * Sanitize column name for database compatibility.
-	 *
-	 * Converts camelCase to snake_case for PostgreSQL compatibility while
-	 * maintaining readability. OpenRegister properties are typically camelCase,
-	 * but PostgreSQL lowercases unquoted identifiers, so we explicitly convert
-	 * to snake_case.
-	 *
-	 * Examples:
-	 * - inStock -> in_stock
-	 * - firstName -> first_name
-	 * - isActive -> is_active
-	 *
-	 * @param string $name The property name to sanitize
-	 *
-	 * @return string The sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === false) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		return $name;
-	}//end sanitizeColumnName()
-
-	/**
 	 * Convert snake_case column name back to camelCase property name.
 	 *
 	 * Used when reading data from magic mapper tables to restore the original
@@ -7003,11 +6900,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
 	 *
-	 * @return void
+	 * @return bool False when the table is missing and magic mapping is off.
 	 */
-	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): void {
+	private function ensureTableWhenMagicEnabled(Register $register, Schema $schema): bool {
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === true) {
-			return;
+			return true;
 		}
 
 		$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
@@ -7015,20 +6912,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			schemaSlug: $schema->getSlug()
 		);
 		if ($isMagicEnabled === false) {
-			return;
+			return false;
 		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'registerId' => $register->getId(),
-				'schemaId' => $schema->getId(),
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, ...$this->tableIds(register: $register, schema: $schema)]
 		);
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+		return true;
 	}//end ensureTableWhenMagicEnabled()
+
+	/**
+	 * The register and schema ids of a magic table, as log context.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array{registerId: int|null, schemaId: int|null} The ids.
+	 *
+	 * @spec exclude logging plumbing, not a capability of its own
+	 */
+	private function tableIds(Register $register, Schema $schema): array {
+		return ['registerId' => $register->getId(), 'schemaId' => $schema->getId()];
+	}//end tableIds()
 
 	/**
 	 * The query selecting the rows whose ID, UUID, slug or URI is the identifier, key matches first.
@@ -12250,13 +12157,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				foreach ($schemaGroups as $groupKey => $groupObjects) {
 					[$groupRegisterId, $groupSchemaId] = explode('_', $groupKey);
 
-					$groupResults = $this->ultraFastBulkSaveSingleSchema(
-						insertObjects: $groupObjects,
-						updateObjects: [],
-						register: $this->bulkGroupRegister(register: $register, registerId: $groupRegisterId),
-						schema: $this->bulkGroupSchema(schemaId: $groupSchemaId),
-						needsPreUpdateState: $needsPreUpdateState
-					);
+					$group = new MagicBulkSaveGroup(insertObjects: $groupObjects, needsPreUpdateState: $needsPreUpdateState);
+					$group->register = $this->bulkGroupRegister(register: $register, registerId: $groupRegisterId);
+					$group->schema   = $this->bulkGroupSchema(schemaId: $groupSchemaId);
+					$groupResults    = $this->ultraFastBulkSaveSingleSchema(group: $group);
 
 					$allResults = array_merge($allResults, $groupResults);
 				}
@@ -12265,13 +12169,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}//end if
 		}//end if
 
-		return $this->ultraFastBulkSaveSingleSchema(
-			insertObjects: $insertObjects,
-			updateObjects: $updateObjects,
-			register: $register,
-			schema: $schema,
-			needsPreUpdateState: $needsPreUpdateState
-		);
+		$group = new MagicBulkSaveGroup(insertObjects: $insertObjects, needsPreUpdateState: $needsPreUpdateState);
+		$group->register = $register;
+		$group->schema   = $schema;
+		return $this->ultraFastBulkSaveSingleSchema(group: $group);
 	}//end ultraFastBulkSave()
 
 	/**
@@ -12342,71 +12243,82 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Ultra-fast bulk save for a single schema (internal method).
 	 *
-	 * @param array $insertObjects Objects to insert/upsert
-	 * @param array $updateObjects Objects to update
-	 * @param Register|null $register Register context
-	 * @param Schema|null $schema Schema context
-	 * @param bool $needsPreUpdateState Whether anything downstream will read the
-	 *                                  pre-update rows (audit changeset or update
-	 *                                  event). False narrows the fetch to the uuid.
+	 * A register or schema the group lacks is read from the `@self` of its
+	 * first object.
+	 *
+	 * @param MagicBulkSaveGroup $group The objects and their table context.
+	 *
+	 * @throws Exception When the register or schema cannot be resolved.
 	 *
 	 * @return array Array of complete objects with object_status field
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function ultraFastBulkSaveSingleSchema(
-		array $insertObjects,
-		array $updateObjects,
-		?Register $register,
-		?Schema $schema,
-		bool $needsPreUpdateState = true,
-	): array {
-		if ($register === null || $schema === null) {
-			$firstObject = $insertObjects[0] ?? [];
-			$registerId = $firstObject['@self']['register'] ?? null;
-			$schemaId = $firstObject['@self']['schema'] ?? null;
+	private function ultraFastBulkSaveSingleSchema(MagicBulkSaveGroup $group): array {
+		$self = ($group->insertObjects[0] ?? [])['@self'] ?? [];
+		$group->register ??= $this->findBulkRegister(id: $self['register'] ?? null);
+		$group->schema   ??= $this->findBulkSchema(id: $self['schema'] ?? null);
 
-			if ($registerId !== null && $register === null) {
-				try {
-					$register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to resolve register',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]
-					);
-				}
-			}
-
-			if ($schemaId !== null && $schema === null) {
-				try {
-					$schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to resolve schema',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]
-					);
-				}
-			}
-		}//end if
-
+		$register = $group->register;
+		$schema   = $group->schema;
 		if ($register === null || $schema === null) {
 			throw new Exception('Cannot bulk save without register and schema context');
 		}
 
-		$tableName = 'openregister_table_' . $register->getId() . '_' . $schema->getId();
-
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-		$result = $this->bulkUpsert(
-			objects: $insertObjects,
+		return $this->bulkUpsert(
+			objects: $group->insertObjects,
 			register: $register,
 			schema: $schema,
-			tableName: $tableName,
-			needsPreUpdateState: $needsPreUpdateState
+			tableName: 'openregister_table_' . $register->getId() . '_' . $schema->getId(),
+			needsPreUpdateState: $group->needsPreUpdateState
 		);
-
-		return $result;
 	}//end ultraFastBulkSaveSingleSchema()
+
+	/**
+	 * The register a bulk save names in its first object, or null.
+	 *
+	 * @param mixed $id The register id from `@self`, or null.
+	 *
+	 * @return Register|null The register, or null when absent or not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findBulkRegister(mixed $id): ?Register {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			return $this->registerMapper->find(id: $id, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(message: '[MagicMapper] Failed to resolve register', context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]);
+			return null;
+		}
+	}//end findBulkRegister()
+
+	/**
+	 * The schema a bulk save names in its first object, or null.
+	 *
+	 * @param mixed $id The schema id from `@self`, or null.
+	 *
+	 * @return Schema|null The schema, or null when absent or not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findBulkSchema(mixed $id): ?Schema {
+		if ($id === null) {
+			return null;
+		}
+
+		try {
+			return $this->schemaMapper->find(id: $id, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(message: '[MagicMapper] Failed to resolve schema', context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id]);
+			return null;
+		}
+	}//end findBulkSchema()
 
 	/**
 	 * Delete multiple objects.

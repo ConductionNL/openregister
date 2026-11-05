@@ -84,6 +84,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Application extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
+	use AuthorizationRulesTrait;
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
 
@@ -456,34 +458,6 @@ class Application extends Entity implements JsonSerializable {
 	}//end getAuthorization()
 
 	/**
-	 * Set authorization rules for this application
-	 *
-	 * @param array|string|null $authorization Authorization rules structure or JSON string
-	 *
-	 * @return static Returns this application for method chaining
-	 */
-	public function setAuthorization(array|string|null $authorization): static {
-		// Handle JSON string from database (type safety).
-		if (is_string($authorization) === true) {
-			try {
-				$decoded = json_decode($authorization, true);
-				// Invalid JSON, use default.
-				$authorization = null;
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					$authorization = $decoded;
-				}
-			} catch (\Exception $e) {
-				// If decoding fails, use default.
-				$authorization = null;
-			}
-		}
-
-		$this->authorization = $authorization ?? $this->getDefaultAuthorization();
-		$this->markFieldUpdated(attribute: 'authorization');
-		return $this;
-	}//end setAuthorization()
-
-	/**
 	 * Set the quota allocations from the nested API structure
 	 *
 	 * The API exposes quota as one nested object (see self::getQuotaData())
@@ -722,32 +696,6 @@ class Application extends Entity implements JsonSerializable {
 			'groups' => count($groups ?? []),
 		];
 	}//end getUsageData()
-
-	/**
-	 * Get formatted created date for JSON serialization
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get formatted updated date for JSON serialization
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 
 	/**
 	 * Get managed by configuration data for JSON serialization

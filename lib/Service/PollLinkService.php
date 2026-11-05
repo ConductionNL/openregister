@@ -104,9 +104,7 @@ class PollLinkService {
 	 * Idempotent: a duplicate link raises a 409 Exception (callers
 	 * should surface as HTTP 409 to the UI).
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
+	 * @param LinkTarget $target The object to link to.
 	 * @param int $pollId Polls poll id.
 	 *
 	 * @return PollLink The persisted link row.
@@ -115,13 +113,13 @@ class PollLinkService {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkPoll(string $objectUuid, int $registerId, int $schemaId, int $pollId): PollLink {
+	public function linkPoll(LinkTarget $target, int $pollId): PollLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$existing = $this->pollLinkMapper->findByObjectAndPoll($objectUuid, $pollId);
+		$existing = $this->pollLinkMapper->findByObjectAndPoll($target->objectUuid, $pollId);
 		if ($existing !== null) {
 			throw new Exception('Poll already linked to this object', 409);
 		}
@@ -141,9 +139,6 @@ class PollLinkService {
 		$optionCount = $this->fetchOptionCount(pollId: $pollId);
 
 		$link = new PollLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setPollId($pollId);
 		$link->setPollTitle((string)($pollRow['title'] ?? ''));
 		$link->setPollType((string)($pollRow['type'] ?? ''));
@@ -151,8 +146,7 @@ class PollLinkService {
 		$link->setVoterCount($voterCount);
 		$link->setOptionCount($optionCount);
 		$link->setClosed($closed);
-		$link->setLinkedBy($user->getUID());
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $user->getUID());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end linkPoll()
@@ -324,9 +318,7 @@ class PollLinkService {
 		$pollId = $this->insertPollRecord(draft: $draft);
 
 		$link = $this->buildPollLink(draft: $draft, pollId: $pollId);
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
+		$target->stamp(link: $link, linkedBy: $draft->owner());
 
 		return $this->pollLinkMapper->insert($link);
 	}//end createAndLinkPoll()
@@ -401,8 +393,6 @@ class PollLinkService {
 		$link->setVoterCount(0);
 		$link->setOptionCount(count($draft->options()));
 		$link->setClosed(false);
-		$link->setLinkedBy($draft->owner());
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end buildPollLink()

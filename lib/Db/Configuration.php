@@ -106,6 +106,7 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Configuration extends Entity implements JsonSerializable {
+	use IsoTimestampsTrait;
 	use JsonFieldsTrait;
 
 	/**
@@ -631,30 +632,4 @@ class Configuration extends Entity implements JsonSerializable {
 
 		return null;
 	}//end getLastSyncDateFormatted()
-
-	/**
-	 * Get created date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getCreatedFormatted(): ?string {
-		if ($this->created !== null) {
-			return $this->created->format('c');
-		}
-
-		return null;
-	}//end getCreatedFormatted()
-
-	/**
-	 * Get updated date formatted as ISO 8601 string or null
-	 *
-	 * @return string|null Formatted date or null
-	 */
-	private function getUpdatedFormatted(): ?string {
-		if ($this->updated !== null) {
-			return $this->updated->format('c');
-		}
-
-		return null;
-	}//end getUpdatedFormatted()
 }//end class

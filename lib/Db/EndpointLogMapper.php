@@ -61,6 +61,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<EndpointLog>
  */
 class EndpointLogMapper extends QBMapper {
+	use FindAllNewestFirstTrait;
+
 	/**
 	 * Constructor
 	 *
@@ -75,42 +77,6 @@ class EndpointLogMapper extends QBMapper {
 		// Call parent constructor to initialize base mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_endpoint_logs', entityClass: EndpointLog::class);
 	}//end __construct()
-
-	/**
-	 * Find all endpoint logs
-	 *
-	 * Retrieves all endpoint execution logs with optional pagination.
-	 * Results are ordered by creation date descending (newest first).
-	 *
-	 * @param int|null $limit Maximum number of results to return (null = no limit)
-	 * @param int|null $offset Starting offset for pagination (null = no offset)
-	 *
-	 * @return EndpointLog[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\EndpointLog>
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null): array {
-		// Step 1: Get query builder instance.
-		$qb = $this->db->getQueryBuilder();
-
-		// Step 2: Build SELECT query for all columns.
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC');
-
-		// Step 3: Apply pagination if limit specified.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		// Step 4: Apply offset if specified.
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		// Step 5: Execute query and return entities.
-		return $this->findEntities(query: $qb);
-	}//end findAll()
 
 	/**
 	 * Find logs by endpoint ID

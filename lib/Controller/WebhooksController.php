@@ -1348,10 +1348,6 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	#[NoAdminRequired]
@@ -1364,92 +1360,67 @@ class WebhooksController extends Controller {
 		}
 
 		try {
-			// Get the log entry.
-			$log = $this->webhookLogMapper->find($logId);
-
-			// Only allow retry for failed webhooks.
-			if ($log->getSuccess() === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'Cannot retry a successful webhook delivery',
-					],
-					statusCode: 400
-				);
-			}
-
-			// Call getWebhook(), not getWebhookId(): the log entity's property is
-			// named `webhook`, so the `Id` spelling threw out of Entity::__call
-			// and answered this endpoint with a 500.
-			$webhook = $this->webhookMapper->find($log->getWebhook());
-
-			$payload = $this->retryPayload(log: $log);
-			if (empty($payload) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'No payload available for retry',
-					],
-					statusCode: 400
-				);
-			}
-
-			// Extract original event data from payload if available.
-			$eventName = $log->getEventClass();
-			$originalPayload = $payload['data'] ?? $payload;
-
-			// Retry the webhook delivery.
-			$success = $this->webhookService->deliverWebhook(
-				webhook: $webhook,
-				eventName: $eventName,
-				payload: $originalPayload,
-				attempt: $log->getAttempt() + 1
-			);
-
-			if ($success === true) {
-				return new JSONResponse(
-					data: [
-						'success' => true,
-						'message' => 'Webhook retry delivered successfully',
-					]
-				);
-			}
-
-			return $this->failedDeliveryResponse(webhookId: $webhook->getId(), message: 'Webhook retry delivery failed');
+			return $this->retryLog(logId: $logId);
 		} catch (DoesNotExistException $e) {
 			$this->logger->error(
 				message: '[WebhooksController] Webhook log not found for retry: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'log_id' => $logId,
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'log_id' => $logId, 'trace' => $e->getTraceAsString()]
 			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Webhook log not found',
-				],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Webhook log not found'], statusCode: 404);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[WebhooksController] Error retrying webhook: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'log_id' => $logId,
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'log_id' => $logId, 'trace' => $e->getTraceAsString()]
 			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retry webhook',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to retry webhook'], statusCode: 500);
+		}
 	}//end retry()
+
+	/**
+	 * Retry the delivery a failed log entry records.
+	 *
+	 * The log entity's property is named `webhook`, so its id is read with getWebhook().
+	 *
+	 * @param int $logId Log entry ID
+	 *
+	 * @return JSONResponse The retry result, or 400 for a successful delivery
+	 */
+	private function retryLog(int $logId): JSONResponse {
+		$log = $this->webhookLogMapper->find($logId);
+		if ($log->getSuccess() === true) {
+			return new JSONResponse(data: ['error' => 'Cannot retry a successful webhook delivery'], statusCode: 400);
+		}
+
+		$webhook = $this->webhookMapper->find($log->getWebhook());
+		return $this->redeliver(log: $log, webhook: $webhook);
+	}//end retryLog()
+
+	/**
+	 * Deliver a logged payload again, as the next attempt; the original event data when the payload wraps it.
+	 *
+	 * @param WebhookLog $log     The failed delivery's log entry.
+	 * @param Webhook    $webhook The webhook it was delivered to.
+	 *
+	 * @return JSONResponse The retry result, or 400 when the log holds no payload
+	 */
+	private function redeliver(WebhookLog $log, Webhook $webhook): JSONResponse {
+		$payload = $this->retryPayload(log: $log);
+		if (empty($payload) === true) {
+			return new JSONResponse(data: ['error' => 'No payload available for retry'], statusCode: 400);
+		}
+
+		$success = $this->webhookService->deliverWebhook(
+			webhook: $webhook,
+			eventName: $log->getEventClass(),
+			payload: $payload['data'] ?? $payload,
+			attempt: $log->getAttempt() + 1
+		);
+		if ($success === true) {
+			return new JSONResponse(data: ['success' => true, 'message' => 'Webhook retry delivered successfully']);
+		}
+
+		return $this->failedDeliveryResponse(webhookId: $webhook->getId(), message: 'Webhook retry delivery failed');
+	}//end redeliver()
 
 	/**
 	 * The payload a failed delivery is retried with: the logged request body, else the stored payload.
