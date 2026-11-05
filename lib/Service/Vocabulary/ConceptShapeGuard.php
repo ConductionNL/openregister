@@ -110,41 +110,6 @@ class ConceptShapeGuard {
 	}//end violations()
 
 	/**
-	 * Report which concepts of an import batch fail their scheme's shape.
-	 *
-	 * The importer needs the same answer the write guard gives, per concept,
-	 * without the write: a batch of forty resultaattypen with two missing a
-	 * grondslag must report those two by name and import the other thirty-eight.
-	 *
-	 * @param array<int,array<string,mixed>> $concepts The concepts about to be imported.
-	 * @param string $schemeUri The scheme they belong to.
-	 *
-	 * @return array<string,array<int,string>> The failed field names, keyed by concept uri.
-	 *
-	 * @spec openspec/specs/skos-concept-registers/spec.md
-	 */
-	public function invalidInBatch(array $concepts, string $schemeUri): array {
-		$shape = $this->concepts->conceptShape(schemeUri: $schemeUri);
-		if ($shape === []) {
-			return [];
-		}
-
-		$invalid = [];
-		foreach ($concepts as $concept) {
-			if (is_array($concept) === false) {
-				continue;
-			}
-
-			$failed = $this->lifecycle->validateAgainstShape(concept: $concept, shape: $shape);
-			if ($failed !== []) {
-				$invalid[(string)($concept['uri'] ?? '')] = $failed;
-			}
-		}
-
-		return $invalid;
-	}//end invalidInBatch()
-
-	/**
 	 * The uri of the scheme a submitted concept says it belongs to.
 	 *
 	 * `inScheme` stores the scheme object's uuid, so the uri is read back off

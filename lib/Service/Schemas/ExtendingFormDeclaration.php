@@ -290,47 +290,6 @@ final class ExtendingFormDeclaration {
 	}//end describe()
 
 	/**
-	 * Turn one form submission into a property definition.
-	 *
-	 * The result goes through {@see PropertyValidatorHandler::validateProperty}
-	 * exactly like a hand-written property, which is the whole point: a
-	 * property authored through an app's form is not a second class of
-	 * property with a second set of rules.
-	 *
-	 * @param mixed $annotation The declaration as stored.
-	 * @param array $formValues The values the app's form collected, keyed by its own field names.
-	 *
-	 * @return array<string, mixed> The property definition.
-	 *
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 */
-	public function toProperty(mixed $annotation, array $formValues): array {
-		$property = [];
-		// A form role steers the form and fills no property key.
-		foreach (array_diff_key($this->pairs(annotation: $annotation), self::FORM_ROLES) as $role => $field) {
-			$key = (string)$role;
-			if (array_key_exists($key, self::SOURCE_ALIASES) === true) {
-				$key = self::SOURCE_ALIASES[$key];
-			}
-
-			if (is_string($field) === false || array_key_exists($field, $formValues) === false) {
-				continue;
-			}
-
-			// An alias only fills in for the key it supplies, so an explicit
-			// `description` wins over the `definition` that stands in for it.
-			if (array_key_exists($key, $property) === true) {
-				continue;
-			}
-
-			$property[$key] = $formValues[$field];
-		}
-
-		return $property;
-	}//end toProperty()
-
-	/**
 	 * The role-to-field pairs, whichever spelling the declaration used.
 	 *
 	 * `map` names the vocabulary role on the LEFT and the app's own field on
