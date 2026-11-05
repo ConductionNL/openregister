@@ -67,6 +67,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
+use OCA\OpenRegister\Db\MagicMapper\TableStructureSync;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
@@ -5901,66 +5902,35 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$tableNameQuoted = '"' . $fullTableName . '"';
 		}
 
-		// 1. Add missing columns.
-		$columnsAdded = $this->addMissingColumns(
+		$sync = new TableStructureSync(
 			tableName: $tableName,
 			tableNameQuoted: $tableNameQuoted,
 			currentColumns: $currentColumns,
 			requiredColumns: $requiredColumns,
 			isPostgres: $isPostgres
 		);
+
+		// 1. Add missing columns.
+		$columnsAdded = $this->addMissingColumns(sync: $sync);
 
 		// 2. De-require columns that are now nullable in schema but NOT NULL in table.
-		$columnsDeRequired = $this->deRequireColumns(
-			tableName: $tableName,
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			requiredColumns: $requiredColumns,
-			isPostgres: $isPostgres
-		);
+		$columnsDeRequired = $this->deRequireColumns(sync: $sync);
 
 		// 3. Re-require columns that are NOT NULL in schema but nullable in table.
-		$columnsReRequired = $this->reRequireColumns(
-			tableName: $tableName,
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			requiredColumns: $requiredColumns,
-			isPostgres: $isPostgres
-		);
+		$columnsReRequired = $this->reRequireColumns(sync: $sync);
 
 		// 5. Handle duplicate columns (camelCase versions when snake_case exists).
-		// Build map of snake_case column names from required columns.
-		$snakeCaseColumns = $this->buildSnakeCaseColumnMap(requiredColumns: $requiredColumns);
-
-		$columnsDropped = $this->dropDuplicateCamelCaseColumns(
-			tableName: $tableName,
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			snakeCaseColumns: $snakeCaseColumns,
-			isPostgres: $isPostgres
-		);
+		$sync->snakeCaseColumns = $this->buildSnakeCaseColumnMap(requiredColumns: $requiredColumns);
+		$columnsDropped = $this->dropDuplicateCamelCaseColumns(sync: $sync);
 
 		// 6. Make obsolete columns nullable (columns in table but not in schema).
-		$obsoleteDeRequired = $this->makeObsoleteColumnsNullable(
-			tableName: $tableName,
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			snakeCaseColumns: $snakeCaseColumns,
-			isPostgres: $isPostgres
-		);
-
-		$columnsDeRequired = array_merge($columnsDeRequired, $obsoleteDeRequired);
+		$columnsDeRequired = array_merge($columnsDeRequired, $this->makeObsoleteColumnsNullable(sync: $sync));
 
 		// 7. Migrate object-typed columns from JSONB to JSON to preserve insertion order.
 		// PostgreSQL JSONB normalises key order; for schema properties of `type: object`
 		// (which use object-keyed semantics like openconnector mapping rules) clients
 		// require the order they sent on PUT to round-trip on GET. See issue #1720.
-		$columnsRetyped = $this->migrateJsonbToJsonForOrderedColumns(
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			requiredColumns: $requiredColumns,
-			isPostgres: $isPostgres
-		);
+		$columnsRetyped = $this->migrateJsonbToJsonForOrderedColumns(sync: $sync);
 
 		// 8. Widen number columns narrower than their property now maps to.
 		$columnsRetyped = array_merge(
@@ -6374,38 +6344,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Idempotent: re-running on an already-JSON column issues no SQL.
 	 *
-	 * @param string $tableNameQuoted The quoted full table name.
-	 * @param array $currentColumns Current column definitions from information_schema.
-	 * @param array $requiredColumns Required column definitions from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return string[] Names of columns whose type was migrated.
 	 */
-	private function migrateJsonbToJsonForOrderedColumns(
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $requiredColumns,
-		bool $isPostgres,
-	): array {
+	private function migrateJsonbToJsonForOrderedColumns(TableStructureSync $sync): array {
 		// Only PostgreSQL distinguishes JSONB from JSON. MySQL/MariaDB JSON already
 		// preserves document order; no migration is required there.
-		if ($isPostgres === false) {
+		if ($sync->isPostgres === false) {
 			return [];
 		}
 
 		$columnsRetyped = [];
 
-		foreach ($requiredColumns as $propertyName => $columnDef) {
+		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
 			if (($columnDef['type'] ?? null) !== 'json_ordered') {
 				continue;
 			}
 
 			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-			if (isset($currentColumns[$columnName]) === false) {
+			if (isset($sync->currentColumns[$columnName]) === false) {
 				continue;
 			}
 
-			$currentType = strtolower((string)($currentColumns[$columnName]['type'] ?? ''));
+			$currentType = strtolower((string)($sync->currentColumns[$columnName]['type'] ?? ''));
 			if ($currentType !== 'jsonb') {
 				// Already JSON (or some other type added by an out-of-band migration); skip.
 				continue;
@@ -6417,7 +6379,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			// JSONB → text gives PostgreSQL's normalised key order; that's the same order the
 			// column has held until now, so this migration does not retroactively reorder
 			// existing rows — only NEW writes will preserve client-supplied order.
-			$sql = 'ALTER TABLE ' . $tableNameQuoted;
+			$sql = 'ALTER TABLE ' . $sync->tableNameQuoted;
 			$sql .= ' ALTER COLUMN ' . $colNameQuoted;
 			$sql .= ' TYPE JSON USING ' . $colNameQuoted . '::text::json';
 
@@ -6473,43 +6435,33 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * column name to use is in $columnDef['name'] (snake_case). We must use
 	 * $columnDef['name'] to check for existing columns and create new ones.
 	 *
-	 * @param string $tableName The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array $currentColumns Current column definitions from the database.
-	 * @param array $requiredColumns Required column definitions from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return array List of column names that were added.
 	 */
-	private function addMissingColumns(
-		string $tableName,
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $requiredColumns,
-		bool $isPostgres,
-	): array {
+	private function addMissingColumns(TableStructureSync $sync): array {
 		$columnsAdded = [];
 
-		foreach ($requiredColumns as $propertyName => $columnDef) {
+		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
 			// Get the actual column name (snake_case) from the column definition.
 			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
-			if (isset($currentColumns[$columnName]) === false) {
+			if (isset($sync->currentColumns[$columnName]) === false) {
 				$this->logger->debug(
 					message: '[MagicMapper] Adding new column to schema table',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'tableName' => $tableName,
+						'tableName' => $sync->tableName,
 						'propertyName' => $propertyName,
 						'columnName' => $columnName,
 						'columnType' => $columnDef['type'],
 					]
 				);
 
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
 				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ADD COLUMN ' . $colNameQuoted . ' ' . $colType;
+				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ADD COLUMN ' . $colNameQuoted . ' ' . $colType;
 
 				// This path retrofits a column onto an ALREADY-EXISTING table, which
 				// may already hold rows. `ADD COLUMN ... NOT NULL` without a DEFAULT
@@ -6531,7 +6483,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,
-							'tableName' => $tableName,
+							'tableName' => $sync->tableName,
 							'columnName' => $columnName,
 						]
 					);
@@ -6553,32 +6505,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * De-require columns that are now nullable in the schema but NOT NULL in the table.
 	 *
-	 * @param string $tableName The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array $currentColumns Current column definitions from the database.
-	 * @param array $requiredColumns Required column definitions from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return array List of column names that were made nullable.
 	 */
-	private function deRequireColumns(
-		string $tableName,
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $requiredColumns,
-		bool $isPostgres,
-	): array {
+	private function deRequireColumns(TableStructureSync $sync): array {
 		$columnsDeRequired = [];
 
-		foreach ($requiredColumns as $propertyName => $columnDef) {
+		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
 			// Get the actual column name (snake_case) from the column definition.
 			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
-			if (isset($currentColumns[$columnName]) === false) {
+			if (isset($sync->currentColumns[$columnName]) === false) {
 				continue;
 			}
 
-			$currentCol = $currentColumns[$columnName];
+			$currentCol = $sync->currentColumns[$columnName];
 			$schemaIsNullable = ($columnDef['nullable'] ?? true);
 			$tableIsNullable = ($currentCol['nullable'] ?? true);
 
@@ -6589,18 +6531,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'tableName' => $tableName,
+						'tableName' => $sync->tableName,
 						'columnName' => $columnName,
 					]
 				);
 
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
 
 				// MySQL syntax - need to specify full column definition.
 				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
-				if ($isPostgres === true) {
-					$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
+				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
+				if ($sync->isPostgres === true) {
+					$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
 				}
 
 				try {
@@ -6626,32 +6568,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Re-require columns that are NOT NULL in the schema but nullable in the table.
 	 *
-	 * @param string $tableName The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array $currentColumns Current column definitions from the database.
-	 * @param array $requiredColumns Required column definitions from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return array List of column names that were made NOT NULL.
 	 */
-	private function reRequireColumns(
-		string $tableName,
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $requiredColumns,
-		bool $isPostgres,
-	): array {
+	private function reRequireColumns(TableStructureSync $sync): array {
 		$columnsReRequired = [];
 
-		foreach ($requiredColumns as $propertyName => $columnDef) {
+		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
 			// Get the actual column name (snake_case) from the column definition.
 			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
 
-			if (isset($currentColumns[$columnName]) === false) {
+			if (isset($sync->currentColumns[$columnName]) === false) {
 				continue;
 			}
 
-			$currentCol = $currentColumns[$columnName];
+			$currentCol = $sync->currentColumns[$columnName];
 			$schemaIsNullable = ($columnDef['nullable'] ?? true);
 			$tableIsNullable = ($currentCol['nullable'] ?? true);
 
@@ -6662,18 +6594,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'tableName' => $tableName,
+						'tableName' => $sync->tableName,
 						'columnName' => $columnName,
 					]
 				);
 
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
 
 				// MySQL syntax - need to specify full column definition.
 				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NOT NULL';
-				if ($isPostgres === true) {
-					$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' SET NOT NULL';
+				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NOT NULL';
+				if ($sync->isPostgres === true) {
+					$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' SET NOT NULL';
 				}
 
 				try {
@@ -6716,25 +6648,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Drop duplicate camelCase columns when a snake_case equivalent exists.
 	 *
-	 * @param string $tableName The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array $currentColumns Current column definitions from the database.
-	 * @param array $snakeCaseColumns Map of snake_case column names from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return array List of column names that were dropped.
 	 */
-	private function dropDuplicateCamelCaseColumns(
-		string $tableName,
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $snakeCaseColumns,
-		bool $isPostgres,
-	): array {
+	private function dropDuplicateCamelCaseColumns(TableStructureSync $sync): array {
 		$columnsDropped = [];
 
 		// Find camelCase duplicates in current columns.
-		foreach (array_keys($currentColumns) as $colName) {
+		foreach (array_keys($sync->currentColumns) as $colName) {
 			// Skip metadata columns (start with _).
 			if (str_starts_with($colName, '_') === true) {
 				continue;
@@ -6742,21 +6664,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 			// Check if this looks like a camelCase version of a snake_case column.
 			$snakeVersion = $this->sanitizeColumnName(name: $colName);
-			if ($snakeVersion !== $colName && isset($snakeCaseColumns[$snakeVersion]) === true) {
+			if ($snakeVersion !== $colName && isset($sync->snakeCaseColumns[$snakeVersion]) === true) {
 				// This is a camelCase duplicate - drop it.
 				$this->logger->debug(
 					message: '[MagicMapper] Dropping duplicate camelCase column (snake_case version exists)',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'tableName' => $tableName,
+						'tableName' => $sync->tableName,
 						'camelCaseCol' => $colName,
 						'snakeCaseCol' => $snakeVersion,
 					]
 				);
 
-				$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $isPostgres);
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' DROP COLUMN IF EXISTS ' . $colNameQuoted;
+				$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $sync->isPostgres);
+				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' DROP COLUMN IF EXISTS ' . $colNameQuoted;
 
 				try {
 					$this->db->executeStatement($sql);
@@ -6783,31 +6705,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * This is safer than dropping them — data is preserved.
 	 *
-	 * @param string $tableName The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array $currentColumns Current column definitions from the database.
-	 * @param array $snakeCaseColumns Map of snake_case column names from the schema.
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
 	 *
 	 * @return array List of column names (suffixed with " (obsolete)") that were made nullable.
 	 */
-	private function makeObsoleteColumnsNullable(
-		string $tableName,
-		string $tableNameQuoted,
-		array $currentColumns,
-		array $snakeCaseColumns,
-		bool $isPostgres,
-	): array {
+	private function makeObsoleteColumnsNullable(TableStructureSync $sync): array {
 		$columnsDeRequired = [];
 
-		foreach ($currentColumns as $colName => $colDef) {
+		foreach ($sync->currentColumns as $colName => $colDef) {
 			// Skip metadata columns.
 			if (str_starts_with($colName, '_') === true) {
 				continue;
 			}
 
 			// Skip if column is a schema column (exists in snakeCaseColumns map).
-			if (isset($snakeCaseColumns[$colName]) === true) {
+			if (isset($sync->snakeCaseColumns[$colName]) === true) {
 				continue;
 			}
 
@@ -6822,17 +6734,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'tableName' => $tableName,
+					'tableName' => $sync->tableName,
 					'columnName' => $colName,
 				]
 			);
 
-			$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $isPostgres);
+			$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $sync->isPostgres);
 
 			$colType = $colDef['type'] ?? 'text';
-			$sql = 'ALTER TABLE ' . $tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
-			if ($isPostgres === true) {
-				$sql = 'ALTER TABLE ' . $tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
+			$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
+			if ($sync->isPostgres === true) {
+				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
 			}
 
 			try {
