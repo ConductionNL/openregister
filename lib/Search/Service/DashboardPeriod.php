@@ -22,16 +22,18 @@ namespace OCA\OpenRegister\Search\Service;
 use DateTime;
 
 /**
- * The start and end of a chart; null leaves that side open.
+ * The scope, start and end of a chart; null leaves that side open.
  */
 final class DashboardPeriod {
 	/**
 	 * Constructor.
 	 *
-	 * @param DateTime|null $from Start date.
-	 * @param DateTime|null $till End date.
+	 * @param DashboardScope $scope The register and schema to narrow to.
+	 * @param DateTime|null  $from  Start date.
+	 * @param DateTime|null  $till  End date.
 	 */
 	public function __construct(
+		public readonly DashboardScope $scope,
 		public readonly ?DateTime $from = null,
 		public readonly ?DateTime $till = null,
 	) {

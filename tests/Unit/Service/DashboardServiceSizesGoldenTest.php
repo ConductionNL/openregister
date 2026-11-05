@@ -35,11 +35,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardSizes;
+use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Search\Service\DashboardService
+ * @covers \OCA\OpenRegister\Search\Service\DashboardSizes
+ * @covers \OCA\OpenRegister\Search\Service\RegisterSchemaLookup
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardErrorLog
  * @uses   \OCA\OpenRegister\Search\Service\DashboardScope
  * @uses   \OCA\OpenRegister\Search\Service\RegisterSchemaPair
  * @uses   \OCA\OpenRegister\Search\Service\SizeTally
@@ -71,22 +76,22 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 	public function testSizesAndListingMatchGolden(): void {
 		$actual = [
-			'sizes all'             => $this->runCase(fn (DashboardService $s) => $s->recalculateSizes()),
-			'sizes register'        => $this->runCase(fn (DashboardService $s) => $s->recalculateSizes(2)),
-			'sizes schema'          => $this->runCase(fn (DashboardService $s) => $s->recalculateSizes(null, 11)),
-			'sizes both'            => $this->runCase(fn (DashboardService $s) => $s->recalculateSizes(1, 10)),
-			'sizes pairs fail'      => $this->runCase(fn (DashboardService $s) => $s->recalculateSizes(), true),
-			'log sizes all'         => $this->runCase(fn (DashboardService $s) => $s->recalculateLogSizes()),
-			'log sizes both'        => $this->runCase(fn (DashboardService $s) => $s->recalculateLogSizes(1, 10)),
-			'log sizes register'    => $this->runCase(fn (DashboardService $s) => $s->recalculateLogSizes(1)),
-			'log sizes schema'      => $this->runCase(fn (DashboardService $s) => $s->recalculateLogSizes(null, 10)),
-			'all sizes'             => $this->runCase(fn (DashboardService $s) => $s->recalculateAllSizes(1)),
-			'all sizes fail'        => $this->runCase(fn (DashboardService $s) => $s->recalculateAllSizes(), true),
-			'calculate all'         => $this->runCase(fn (DashboardService $s) => $s->calculate()),
-			'calculate both'        => $this->runCase(fn (DashboardService $s) => $s->calculate(1, 10)),
-			'calculate foreign'     => $this->runCase(fn (DashboardService $s) => $s->calculate(1, 99)),
-			'calculate no register' => $this->runCase(fn (DashboardService $s) => $s->calculate(404)),
-			'calculate no schema'   => $this->runCase(fn (DashboardService $s) => $s->calculate(null, 404)),
+			'sizes all'             => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateSizes()),
+			'sizes register'        => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateSizes(2)),
+			'sizes schema'          => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateSizes(null, 11)),
+			'sizes both'            => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateSizes(1, 10)),
+			'sizes pairs fail'      => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateSizes(), true),
+			'log sizes all'         => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateLogSizes()),
+			'log sizes both'        => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateLogSizes(1, 10)),
+			'log sizes register'    => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateLogSizes(1)),
+			'log sizes schema'      => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateLogSizes(null, 10)),
+			'all sizes'             => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateAllSizes(1)),
+			'all sizes fail'        => $this->runCase(fn (DashboardService $s) => $s->sizes()->recalculateAllSizes(), true),
+			'calculate all'         => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate()),
+			'calculate both'        => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate(1, 10)),
+			'calculate foreign'     => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate(1, 99)),
+			'calculate no register' => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate(404)),
+			'calculate no schema'   => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate(null, 404)),
 			'listing all'           => $this->runCase(fn (DashboardService $s) => $s->getRegistersWithSchemas()),
 			'listing narrowed'      => $this->runCase(fn (DashboardService $s) => $s->getRegistersWithSchemas(1, 11)),
 			'listing error thrown'  => $this->runCase(
@@ -131,7 +136,13 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 		$webhooks = $this->createMock(WebhookLogMapper::class);
 		$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 
-		return new DashboardService($this->objects(), $this->audit(), $webhooks, $this->registers(), $this->schemas(), $this->logger());
+		$objects = $this->objects();
+		$audit = $this->audit();
+		$registers = $this->registers();
+		$logger = $this->logger();
+		$sizes = new DashboardSizes($objects, $audit, new RegisterSchemaLookup($registers, $this->schemas()), $logger);
+
+		return new DashboardService($objects, $audit, $webhooks, $registers, $sizes, $logger);
 	}//end service()
 
 	private function note(string $call, array $args): void {
@@ -250,8 +261,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 	private function logger(): LoggerInterface {
 		$logger = $this->createMock(LoggerInterface::class);
 		$record = function (string $message, array $context = []): void {
-			unset($context['line']);
-			$context['file'] = basename((string)($context['file'] ?? ''));
+			unset($context['line'], $context['file']);
 			$this->log[] = 'log ' . $message . ' ' . json_encode($context);
 		};
 		$logger->method('error')->willReturnCallback($record);

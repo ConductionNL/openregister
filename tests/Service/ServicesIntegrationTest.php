@@ -33,8 +33,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthorizationService;
-use OCA\OpenRegister\Search\Service\ActivityWindow;
-use OCA\OpenRegister\Search\Service\DashboardPeriod;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Service\MappingService;
@@ -782,9 +780,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailChartData(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailActionChartData(
-			new DashboardPeriod(new DateTime('-7 days'), new DateTime('now')),
-			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId())
+		$result = $service->auditReads()->getAuditTrailActionChartData(
+			(new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()))->during(new DateTime('-7 days'), new DateTime('now'))
 		);
 
 		$this->assertArrayHasKey('labels', $result);
@@ -841,7 +838,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailStatistics(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailStatistics(
+		$result = $service->auditReads()->getAuditTrailStatistics(
 			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
@@ -861,7 +858,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceAuditTrailActionDistribution(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getAuditTrailActionDistribution(
+		$result = $service->auditReads()->getAuditTrailActionDistribution(
 			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
 			24
 		);
@@ -877,9 +874,8 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceMostActiveObjects(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->getMostActiveObjects(
-			new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()),
-			new ActivityWindow(5, 24)
+		$result = $service->auditReads()->getMostActiveObjects(
+			(new DashboardScope($this->testRegister->getId(), $this->testSchema->getId()))->mostActive(5, 24)
 		);
 
 		$this->assertArrayHasKey('objects', $result);

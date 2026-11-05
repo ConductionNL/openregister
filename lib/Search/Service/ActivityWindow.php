@@ -20,16 +20,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service;
 
 /**
- * The size and look-back of a most-active-objects read.
+ * The scope, size and look-back of a most-active-objects read.
  */
 final class ActivityWindow {
 	/**
 	 * Constructor.
 	 *
-	 * @param int|null $limit Number of results.
-	 * @param int|null $hours Hours to look back.
+	 * @param DashboardScope $scope The register and schema to narrow to.
+	 * @param int|null       $limit Number of results.
+	 * @param int|null       $hours Hours to look back.
 	 */
 	public function __construct(
+		public readonly DashboardScope $scope,
 		public readonly ?int $limit = 10,
 		public readonly ?int $hours = 24,
 	) {

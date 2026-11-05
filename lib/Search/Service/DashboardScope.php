@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use DateTime;
+
 /**
  * Which register and schema a dashboard read covers; null means all of them.
  */
@@ -78,4 +80,28 @@ final class DashboardScope {
 
 		return $filters;
 	}//end logFilters()
+
+	/**
+	 * This scope over a date range.
+	 *
+	 * @param DateTime|null $from Start date.
+	 * @param DateTime|null $till End date.
+	 *
+	 * @return DashboardPeriod
+	 */
+	public function during(?DateTime $from, ?DateTime $till): DashboardPeriod {
+		return new DashboardPeriod(scope: $this, from: $from, till: $till);
+	}//end during()
+
+	/**
+	 * This scope for a most-active-objects read.
+	 *
+	 * @param int|null $limit Number of results.
+	 * @param int|null $hours Hours to look back.
+	 *
+	 * @return ActivityWindow
+	 */
+	public function mostActive(?int $limit, ?int $hours): ActivityWindow {
+		return new ActivityWindow(scope: $this, limit: $limit, hours: $hours);
+	}//end mostActive()
 }//end class
