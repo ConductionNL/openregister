@@ -24,7 +24,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 		:submitLabel="t('openregister', 'Restore')"
 		submitVariant="primary"
 		stepClass="restore-step"
-		v-bind="reviewState"
+		v-bind="reviewStateOf($data)"
 		@close="closeDialog"
 		@remove="removeObject"
 		@submit="restoreMultiple()">
@@ -70,16 +70,6 @@ export default {
 		 */
 		objectsToRestore() {
 			return this.selectedObjects
-		},
-
-		/**
-		 * The selection and outcome the dialog body shows.
-		 *
-		 * @return {object} The body's state props
-		 * @spec exclude Computed dialog state; UI plumbing.
-		 */
-		reviewState() {
-			return reviewStateOf(this)
 		},
 
 		/**

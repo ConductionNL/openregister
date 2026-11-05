@@ -124,7 +124,10 @@ function withStubs(component) {
  */
 function sharedDialog() {
 	try {
-		return { BulkSelectionDialog: require('./BulkSelectionDialog.vue').default }
+		return {
+			BulkSelectionDialog: require('./BulkSelectionDialog.vue').default,
+			reviewStateOf: require('./bulkSelection.js').reviewStateOf,
+		}
 	} catch {
 		return {}
 	}
