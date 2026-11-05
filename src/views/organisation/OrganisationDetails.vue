@@ -590,6 +590,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/views.scss' as *;
+
 .pageHeaderContainer {
 	display: flex;
 	align-items: center;
@@ -617,15 +619,7 @@ export default {
 	margin-left: 8px;
 }
 
-.defaultBadge {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
-}
-
-.activeBadge {
-	background: var(--color-success);
-	color: white;
-}
+@include default-badge-rules;
 
 .ownerBadge {
 	background: var(--color-primary);

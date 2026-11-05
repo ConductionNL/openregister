@@ -333,64 +333,22 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
+@include view-container-2;
 
 .viewHeader {
 	margin-bottom: 20px;
 }
 
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
+@include view-header-title-rules;
 
 .viewTotalCount {
 	font-weight: 600;
 }
 
-.viewActions {
-	display: flex;
-	gap: 8px;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow: hidden;
-}
+@include view-actions-rules;
 
 .templatesTable {
 	width: 100%;
@@ -422,19 +380,7 @@ export default {
 	font-weight: 500;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
+@include badge-rules;
 
 .column-name {
 	min-width: 200px;
@@ -456,17 +402,5 @@ export default {
 	width: 50px;
 }
 
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	border-top: 1px solid var(--color-border);
-}
-
-.pagination-info {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-}
+@include pagination-rules;
 </style>

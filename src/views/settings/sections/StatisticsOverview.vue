@@ -961,7 +961,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
 .stats-content {
@@ -1096,10 +1098,7 @@ export default {
 	gap: 12px;
 }
 
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
 	.stats-grid {

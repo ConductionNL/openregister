@@ -280,118 +280,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
-
-.main-description {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.toggle-status {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
-
-.impact-description {
-	margin: 0;
-	color: var(--color-text-light);
-	line-height: 1.5;
-}
-
-.status-enabled {
-	color: var(--color-success);
-	font-weight: 500;
-}
-
-.status-disabled {
-	color: var(--color-text-maxcontrast);
-	font-weight: 500;
-}
+@include section-description-full-2-rules;
 
 .option-section {
 	margin: 24px 0;
 }
 
-.option-description {
-	color: var(--color-text-maxcontrast);
-	margin: 8px 0 16px 0;
-	line-height: 1.4;
-}
-
-.option-section h4 {
-	color: var(--color-text-light);
-	margin: 24px 0 16px 0;
-	font-size: 16px;
-}
-
-.groups-table {
-	display: flex;
-	flex-direction: column;
-	gap: 20px;
-	margin-top: 16px;
-}
-
-.groups-row {
-	display: grid;
-	grid-template-columns: 1fr 300px;
-	gap: 20px;
-	align-items: start;
-	padding: 16px;
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-}
-
-.group-label strong {
-	color: var(--color-text-light);
-	font-weight: 500;
-	display: block;
-	margin-bottom: 4px;
-}
-
-.user-type-description {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	margin: 0;
-	line-height: 1.3;
-}
-
-.group-select {
-	display: flex;
-	align-items: center;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
-
-@media (max-width: 768px) {
-	.groups-row {
-		grid-template-columns: 1fr;
-		gap: 12px;
-	}
-
-	.section-header-inline {
-		position: static;
-		flex-direction: column;
-		gap: 12px;
-		align-items: stretch;
-		margin-bottom: 20px;
-	}
-
-	.button-group {
-		justify-content: center;
-	}
-}
+@include option-description-rules;
 </style>

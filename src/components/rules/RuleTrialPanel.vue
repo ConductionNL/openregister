@@ -321,15 +321,14 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleTrial {
 	margin-bottom: 24px;
 }
 
-.lead {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 12px;
-}
+@include lead;
 
 .trialTarget {
 	border: none;

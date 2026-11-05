@@ -1202,7 +1202,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .merge-step {
 	padding: 0;
 }
@@ -1211,17 +1213,7 @@ export default {
 	padding-top: 0 !important;
 }
 
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
-
-.report-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include step-title-rules;
 
 .merge-step h3 {
 	margin-bottom: 16px;
@@ -1232,13 +1224,7 @@ export default {
 	margin-bottom: 20px;
 }
 
-.loading-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 16px;
-	padding: 40px;
-}
+@include loading-container;
 
 .object-list {
 	max-height: 400px;
@@ -1258,11 +1244,7 @@ export default {
 	border-bottom: none;
 }
 
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
+@include object-info-strong;
 
 .object-id {
 	color: var(--color-text-maxcontrast);
@@ -1443,12 +1425,7 @@ export default {
 	margin-top: 16px;
 }
 
-.report-section {
-	margin-bottom: 20px;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
+@include report-section;
 
 .object-info {
 	display: flex;
@@ -1483,15 +1460,7 @@ export default {
 	color: var(--color-error);
 }
 
-.report-section h4 {
-	margin-bottom: 12px;
-	color: var(--color-main-text);
-}
-
-.report-section ul {
-	margin: 0;
-	padding-left: 20px;
-}
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;

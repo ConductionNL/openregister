@@ -85,6 +85,8 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class ContentReport extends Entity implements JsonSerializable {
+	use StatusVocabularyTrait;
+
 	/**
 	 * Filed and waiting for a reviewer.
 	 *
@@ -263,23 +265,6 @@ class ContentReport extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'updated', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Whether the supplied status string is in the review vocabulary.
-	 *
-	 * @param string|null $status Candidate status string.
-	 *
-	 * @return bool True when the status is one this entity recognises.
-	 *
-	 * @spec openspec/specs/enhanced-audit-trail/spec.md
-	 */
-	public static function isValidStatus(?string $status): bool {
-		if ($status === null || $status === '') {
-			return false;
-		}
-
-		return in_array(needle: $status, haystack: self::STATUS_VOCABULARY, strict: true);
-	}//end isValidStatus()
 
 	/**
 	 * Whether the reported content has since been removed.

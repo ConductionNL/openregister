@@ -396,7 +396,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .applicationDetails {
 	margin-top: 1rem;
 }
@@ -421,10 +423,7 @@ export default {
 	min-width: 120px;
 }
 
-.status-active {
-	color: var(--color-success);
-	font-weight: 600;
-}
+@include status-active;
 
 .status-inactive {
 	color: var(--color-text-lighter);

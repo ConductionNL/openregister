@@ -8,6 +8,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SearchLeafScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -326,15 +327,12 @@ class MagicSearchHandlerTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
 		$method->setAccessible(true);
 
-		return $method->invoke(
-			$this->handler,
-			$search,
-			$schema,
-			$query,
-			$this->makeConnection(),
-			$isPostgres,
-			null
-		);
+		$scope = new SearchLeafScope(schema: $schema, isPostgres: $isPostgres);
+		$scope->fuzzyEnabled = (new ReflectionMethod(MagicSearchHandler::class, 'isFuzzySearchEnabled'))
+			->invoke($this->handler, $query['_fuzzy'] ?? null);
+		$scope->connection = $this->makeConnection();
+
+		return $method->invoke($this->handler, $search, $scope);
 	}//end invokeBuildSearchConditionSql()
 
 	public function testBuildSearchConditionSqlQuotesReservedWordOnPostgres(): void {

@@ -47,7 +47,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .rebase-dialog-content {
 	padding: 20px;
 }
@@ -63,10 +65,5 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-}
+@include dialog-actions;
 </style>

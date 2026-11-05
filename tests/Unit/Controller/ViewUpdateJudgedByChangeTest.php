@@ -43,6 +43,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
  * @covers \OCA\OpenRegister\Search\Service\ViewService
  * @covers \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Search\Db\View

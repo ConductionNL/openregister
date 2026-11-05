@@ -283,11 +283,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 1200px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
+@include view-container-3;
 
 .viewHeader h1 {
 	margin-bottom: 4px;
@@ -306,10 +305,5 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
-.pagination {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-top: 12px;
-}
+@include pagination-2;
 </style>

@@ -677,16 +677,7 @@ class FlowMessagingService {
 			return;
 		}
 
-		$this->announcer->announce(
-			recipient: $item->recipient,
-			kind: $item->kind,
-			subject: $item->title,
-			body: $item->body,
-			json: $item->json,
-			context: $send->context,
-			stepName: $send->stepName,
-			actor: $send->actor
-		);
+		$this->announcer->announce(send: $send, item: $item);
 	}//end announceEmail()
 
 	/**

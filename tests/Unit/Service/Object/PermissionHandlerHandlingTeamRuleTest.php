@@ -71,6 +71,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 

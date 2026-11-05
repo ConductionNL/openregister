@@ -1,0 +1,725 @@
+{
+    "Zaak audit-trails": {
+        "get": {
+            "summary": "Get audit logs for a Zaak object",
+            "operationId": "getLogsZaak",
+            "tags": [
+                "Zaak"
+            ],
+            "description": "Retrieve the audit trail for a specific Zaak object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the Zaak object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Audit logs retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/AuditTrail"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Zaak not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "Zaak files": {
+        "get": {
+            "summary": "Get files for a Zaak object",
+            "operationId": "getFilesZaak",
+            "tags": [
+                "Zaak"
+            ],
+            "description": "Retrieve all files associated with a specific Zaak object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the Zaak object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Files retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Zaak not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "post": {
+            "summary": "Upload a file for a Zaak object",
+            "operationId": "uploadFileZaak",
+            "tags": [
+                "Zaak"
+            ],
+            "description": "Upload a new file and associate it with a specific Zaak object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the Zaak object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "file": {
+                                    "type": "string",
+                                    "format": "binary",
+                                    "description": "The file to upload"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "File uploaded successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/File"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Zaak not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "Zaak lock": {
+        "post": {
+            "summary": "Lock a Zaak object",
+            "operationId": "lockZaak",
+            "tags": [
+                "Zaak"
+            ],
+            "description": "Lock a specific Zaak object to prevent concurrent modifications",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the Zaak object to lock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object locked successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Lock"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "Zaak not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is already locked"
+                }
+            }
+        }
+    },
+    "Zaak unlock": {
+        "post": {
+            "summary": "Unlock a Zaak object",
+            "operationId": "unlockZaak",
+            "tags": [
+                "Zaak"
+            ],
+            "description": "Remove the lock from a specific Zaak object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the Zaak object to unlock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object unlocked successfully"
+                },
+                "404": {
+                    "description": "Zaak not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is not locked or locked by another user"
+                }
+            }
+        }
+    },
+    "Zaak other": null,
+    "mijn klant-dossier audit-trails": {
+        "get": {
+            "summary": "Get audit logs for a mijn klant-dossier object",
+            "operationId": "getLogsMijnKlantDossier",
+            "tags": [
+                "mijn klant-dossier"
+            ],
+            "description": "Retrieve the audit trail for a specific mijn klant-dossier object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the mijn klant-dossier object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Audit logs retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/AuditTrail"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "mijn klant-dossier not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "mijn klant-dossier files": {
+        "get": {
+            "summary": "Get files for a mijn klant-dossier object",
+            "operationId": "getFilesMijnKlantDossier",
+            "tags": [
+                "mijn klant-dossier"
+            ],
+            "description": "Retrieve all files associated with a specific mijn klant-dossier object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the mijn klant-dossier object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Files retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "mijn klant-dossier not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "post": {
+            "summary": "Upload a file for a mijn klant-dossier object",
+            "operationId": "uploadFileMijnKlantDossier",
+            "tags": [
+                "mijn klant-dossier"
+            ],
+            "description": "Upload a new file and associate it with a specific mijn klant-dossier object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the mijn klant-dossier object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "file": {
+                                    "type": "string",
+                                    "format": "binary",
+                                    "description": "The file to upload"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "File uploaded successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/File"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "mijn klant-dossier not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "mijn klant-dossier lock": {
+        "post": {
+            "summary": "Lock a mijn klant-dossier object",
+            "operationId": "lockMijnKlantDossier",
+            "tags": [
+                "mijn klant-dossier"
+            ],
+            "description": "Lock a specific mijn klant-dossier object to prevent concurrent modifications",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the mijn klant-dossier object to lock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object locked successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Lock"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "mijn klant-dossier not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is already locked"
+                }
+            }
+        }
+    },
+    "mijn klant-dossier unlock": {
+        "post": {
+            "summary": "Unlock a mijn klant-dossier object",
+            "operationId": "unlockMijnKlantDossier",
+            "tags": [
+                "mijn klant-dossier"
+            ],
+            "description": "Remove the lock from a specific mijn klant-dossier object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the mijn klant-dossier object to unlock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object unlocked successfully"
+                },
+                "404": {
+                    "description": "mijn klant-dossier not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is not locked or locked by another user"
+                }
+            }
+        }
+    },
+    "mijn klant-dossier other": null,
+    " audit-trails": {
+        "get": {
+            "summary": "Get audit logs for a  object",
+            "operationId": "getLogs",
+            "tags": [
+                ""
+            ],
+            "description": "Retrieve the audit trail for a specific  object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the  object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Audit logs retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/AuditTrail"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": " not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    " files": {
+        "get": {
+            "summary": "Get files for a  object",
+            "operationId": "getFiles",
+            "tags": [
+                ""
+            ],
+            "description": "Retrieve all files associated with a specific  object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the  object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Files retrieved successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": " not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "post": {
+            "summary": "Upload a file for a  object",
+            "operationId": "uploadFile",
+            "tags": [
+                ""
+            ],
+            "description": "Upload a new file and associate it with a specific  object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the  object",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "file": {
+                                    "type": "string",
+                                    "format": "binary",
+                                    "description": "The file to upload"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": {
+                    "description": "File uploaded successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/File"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": " not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    " lock": {
+        "post": {
+            "summary": "Lock a  object",
+            "operationId": "lock",
+            "tags": [
+                ""
+            ],
+            "description": "Lock a specific  object to prevent concurrent modifications",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the  object to lock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object locked successfully",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Lock"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": " not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is already locked"
+                }
+            }
+        }
+    },
+    " unlock": {
+        "post": {
+            "summary": "Unlock a  object",
+            "operationId": "unlock",
+            "tags": [
+                ""
+            ],
+            "description": "Remove the lock from a specific  object",
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Unique identifier of the  object to unlock",
+                    "schema": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "Object unlocked successfully"
+                },
+                "404": {
+                    "description": " not found",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Error"
+                            }
+                        }
+                    }
+                },
+                "409": {
+                    "description": "Object is not locked or locked by another user"
+                }
+            }
+        }
+    },
+    " other": null
+}

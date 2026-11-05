@@ -702,22 +702,11 @@ export default {
 }
 </script>
 
-<style scoped>
-/* Section Description */
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
 
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
+/* Section Description */
+@include section-description-full-rules;
 
 .main-description:last-child {
 	margin-bottom: 0;
@@ -955,23 +944,7 @@ export default {
 }
 
 /* Save Message */
-.save-message {
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-	text-align: center;
-	font-weight: 500;
-}
-
-.save-message.success {
-	background: var(--color-success);
-	color: white;
-}
-
-.save-message.error {
-	background: var(--color-error);
-	color: white;
-}
+@include save-message-rules;
 
 @media (max-width: 768px) {
 	.scopes-info {

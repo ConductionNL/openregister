@@ -50,26 +50,12 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/dialogs.scss' as *;
+
 .clear-dialog-content {
 	padding: 20px;
 }
 
-.clear-dialog-content h3 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-}
-
-.clear-dialog-content p {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-}
+@include clear-dialog-content-h3-rules-2;
 </style>

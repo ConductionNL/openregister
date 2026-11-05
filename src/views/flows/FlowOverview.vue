@@ -873,7 +873,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 .flowPage {
 	display: flex;
 	flex-direction: column;
@@ -1095,10 +1097,7 @@ export default {
 	vertical-align: top;
 }
 
-.mono {
-	font-family: var(--font-face-monospace, monospace);
-	font-size: 13px;
-}
+@include mono;
 
 @media (max-width: 600px) {
 	.flowPage {

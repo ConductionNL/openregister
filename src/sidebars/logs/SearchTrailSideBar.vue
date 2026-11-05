@@ -1282,7 +1282,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/sidebars.scss' as *;
+
 .filterSection,
 .statsSection,
 .analyticsSection {
@@ -1306,18 +1308,7 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 0 16px;
-	margin-bottom: 16px;
-}
-
-.filterGroup label {
-	font-size: 0.9em;
-	color: var(--color-text-maxcontrast);
-}
+@include filter-group-rules;
 
 .rangeFilter {
 	display: flex;
@@ -1328,10 +1319,7 @@ export default {
 	flex: 1;
 }
 
-.actionGroup {
-	padding: 0 16px;
-	margin-bottom: 12px;
-}
+@include action-group;
 
 .statusOption.true {
 	color: var(--color-success);

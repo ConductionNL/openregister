@@ -78,6 +78,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
  */
 class UnknownMetadataConditionFailsClosedTest extends TestCase {
 

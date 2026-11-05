@@ -194,18 +194,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
 
-.viewHeader {
-	border-bottom: 1px solid var(--color-border);
-	padding-bottom: 12px;
-}
+@include view-container-rules;
 
 .viewHeaderTitleIndented {
 	margin: 0;
@@ -313,10 +305,7 @@ export default {
 	text-transform: uppercase;
 }
 
-.badge-status-published {
-	background: var(--color-success);
-	color: var(--color-primary-text);
-}
+@include badge-status-published;
 
 @media (prefers-reduced-motion: reduce) {
 	.reportCard {

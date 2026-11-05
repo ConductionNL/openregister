@@ -434,121 +434,36 @@ export default {
 }
 </script>
 
-<style scoped>
-.loading-container {
-	text-align: center;
-	padding: 2rem;
-}
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
 
-.loading-subtitle {
-	color: var(--color-text-lighter);
-	font-size: 0.9rem;
-	margin-top: 0.5rem;
-}
+@include loading-container-2-rules;
 
 .confirmation-container {
 	padding: 1rem 0;
 }
 
-.object-count-section {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 1rem;
-	margin-bottom: 2rem;
-}
+@include object-count-section-rules;
 
-.object-count-section h4 {
-	margin-top: 0;
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
-
-.object-count-centered {
-	display: flex;
-	align-items: baseline;
-	justify-content: center;
-	gap: 0.5rem;
-	font-size: 1.2rem;
-}
-
-.count-value {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary-element);
-}
+@include object-count-centered-rules;
 
 .count-label {
 	color: var(--color-text-lighter);
 }
 
-.loading-count {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	color: var(--color-text-lighter);
-}
-
-.object-breakdown {
-	margin-top: 1rem;
-	padding: 1rem;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
-
-.breakdown-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 0.5rem;
-}
+@include loading-count-rules;
 
 .breakdown-item:last-child {
 	margin-bottom: 0;
 }
 
-.breakdown-label {
-	font-weight: 500;
-	color: var(--color-text);
-}
-
-.breakdown-value {
-	font-weight: 600;
-	padding: 0.25rem 0.5rem;
-	border-radius: var(--border-radius);
-	background: var(--color-background-hover);
-}
-
-.breakdown-value.invalid {
-	color: var(--color-warning);
-	background: var(--color-warning-light);
-}
-
-.breakdown-value.deleted {
-	color: var(--color-error);
-	background: var(--color-error-light);
-}
+@include breakdown-label-rules;
 
 .steps-section {
 	margin-bottom: 2rem;
 }
 
-.steps-section h4 {
-	margin-bottom: 1rem;
-	color: var(--color-text);
-}
-
-.steps-list {
-	margin: 0;
-	padding-left: 1.5rem;
-	color: var(--color-text);
-}
-
-.steps-list li {
-	margin-bottom: 0.5rem;
-	line-height: 1.5;
-}
+@include steps-section-h4-rules;
 
 .results-container {
 	padding: 1rem 0;

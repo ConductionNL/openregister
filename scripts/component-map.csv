@@ -2680,3 +2680,4 @@ Controller/Support/TimelineEntriesControllerServices.php,44,Controller,Notificat
 Controller/Support/TimelineEntriesDomain.php,53,Controller,Notifications,Notifications/Controller/Support/TimelineEntriesDomain.php,0,
 Controller/Support/TimelineEntriesVisibility.php,50,Controller,Notifications,Notifications/Controller/Support/TimelineEntriesVisibility.php,0,
 Service/ScheduledReportRun.php,98,Service,Configuration,Configuration/Service/ScheduledReportRun.php,0,
+BackgroundJob/ScheduledFire.php,132,BackgroundJob,Notifications,Notifications/BackgroundJob/ScheduledFire.php,0,

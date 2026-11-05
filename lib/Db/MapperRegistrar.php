@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -67,7 +68,8 @@ final class MapperRegistrar {
 			userSession: $container->get('OCP\IUserSession'),
 			groupManager: $container->get('OCP\IGroupManager'),
 			appConfig: $container->get('OCP\IAppConfig'),
-			logger: $container->get('Psr\Log\LoggerInterface')
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			objectActions: static fn (): ObjectActionValidator => $container->get(ObjectActionValidator::class)
 		);
 	}//end schemaMapper()
 

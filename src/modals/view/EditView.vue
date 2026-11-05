@@ -463,44 +463,18 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 /* EditView-specific styles matching EditOrganisation */
 .tabContainer {
 	margin-top: 20px;
 }
 
 /* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
+@include tab-container-deep-nav-link-rules;
 
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.groups-select-container {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.groups-label {
-	font-weight: 500;
-	color: var(--color-main-text);
-	font-size: 14px;
-}
-
-.field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-	margin: 0;
-}
+@include groups-select-container-rules;
 
 .group-option,
 .user-option {

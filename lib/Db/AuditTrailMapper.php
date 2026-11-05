@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -189,6 +190,33 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end insertHashChained()
 
 	/**
+	 * Stamp the elevation of the action run in progress onto a row it covers.
+	 *
+	 * Before the INSERT, for the reason the attributions above give: `changed`
+	 * is inside the canonical JSON the sweep seals. Idempotent, so the builder
+	 * and the insert may both apply it.
+	 *
+	 * @param AuditTrail $auditTrail The row.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private function applyElevation(AuditTrail $auditTrail): void {
+		$elevation = ObjectActionElevationScope::attributionFor(
+			schemaId: $auditTrail->getSchema(),
+			verb: (string)$auditTrail->getAction()
+		);
+		if ($elevation === null) {
+			return;
+		}
+
+		$auditTrail->setChanged(array_merge($auditTrail->getChanged(), ['elevation' => $elevation]));
+	}//end applyElevation()
+
+	/**
 	 * Stamp what caused a row onto it, before it is inserted.
 	 *
 	 * - Flow attribution: which run, node and step caused this write.
@@ -196,6 +224,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *   that produced this row.
 	 * - Token: which token, whose, and for which consumer.
 	 * - Organisation context: the organisation code acted for.
+	 * - Elevation: the declared action that elevated the write, who ran it,
+	 *   and that it ran as the system (ADR-099).
 	 *
 	 * The purpose, token and organisation context halves live in
 	 * `resultSummary`, which is inside the canonical JSON, so this MUST run
@@ -213,6 +243,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
 		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+		$this->applyElevation(auditTrail: $auditTrail);
 	}//end applyAttributions()
 
 	/**
