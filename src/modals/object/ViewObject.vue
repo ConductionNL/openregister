@@ -1395,6 +1395,195 @@ function idOf(reference) {
 		: reference
 }
 
+/**
+ * The properties a schema inherits from its allOf parents, later parents
+ * overriding earlier ones.
+ *
+ * @param {Array} allOf The parent references: ids, uuids or objects with an id
+ * @param {Array<object>} schemas The known schemas
+ * @return {object} The inherited properties
+ */
+function inheritedProperties(allOf, schemas) {
+	const inherited = {}
+	for (const ref of allOf) {
+		const parent = schemaById(schemas, typeof ref === 'object' ? ref.id : ref)
+		if (parent?.properties) {
+			Object.assign(inherited, parent.properties)
+		}
+	}
+	return inherited
+}
+
+/**
+ * The schema with an id or uuid, compared loosely so '3' finds 3.
+ *
+ * @param {Array<object>} schemas The known schemas
+ * @param {string|number} id The id or uuid
+ * @return {object|undefined} The schema
+ */
+function schemaById(schemas, id) {
+	return schemas.find(
+		(s) => s.id === id || s.uuid === id || String(s.id) === String(id),
+	)
+}
+
+/**
+ * The form fields of a schema's properties; a property without a definition
+ * is a string.
+ *
+ * @param {object|null} schema The schema
+ * @return {object} The fields
+ */
+function schemaFields(schema) {
+	const fields = {}
+	if (schema && schema.properties) {
+		for (const [key, value] of Object.entries(schema.properties)) {
+			fields[key] = value || { type: 'string' }
+		}
+	}
+	return fields
+}
+
+const NOT_FIELDS = ['@self', 'id']
+
+/**
+ * Add a field for each object property that has none yet, typed by its value.
+ *
+ * @param {object} fields The fields so far; extended in place
+ * @param {object|null} item The object
+ */
+function addObjectFields(fields, item) {
+	for (const [key, value] of Object.entries(item || {})) {
+		if (!NOT_FIELDS.includes(key) && !fields[key]) {
+			fields[key] = {
+				type: valueType(value),
+				title: key,
+				description: `Property: ${key}`,
+			}
+		}
+	}
+}
+
+/**
+ * The JSON schema type a value looks like; anything else is a string.
+ *
+ * @param {*} value The value
+ * @return {string} The type
+ */
+function valueType(value) {
+	if (typeof value === 'boolean' || typeof value === 'number') {
+		return typeof value
+	}
+	if (Array.isArray(value)) {
+		return 'array'
+	}
+	return typeof value === 'object' && value !== null ? 'object' : 'string'
+}
+
+/**
+ * Whether a schema uses composition but has no properties yet, so the list
+ * endpoint returned it un-resolved.
+ *
+ * @param {object|null} schema The schema
+ * @return {boolean} Whether to fetch the resolved schema
+ */
+function isUnresolved(schema) {
+	if (!schema?.id) {
+		return false
+	}
+	const composed = ['allOf', 'oneOf', 'anyOf'].some(
+		(key) => (schema[key]?.length || 0) > 0,
+	)
+	return composed && Object.keys(schema.properties || {}).length === 0
+}
+
+/**
+ * Fetch the resolved schema into the store.
+ *
+ * @param {object} schema The un-resolved schema
+ * @return {Promise<boolean>} Whether the fetch succeeded
+ */
+async function fetchResolvedSchema(schema) {
+	try {
+		await schemaStore.getSchema(schema.id, { setItem: true })
+		return true
+	} catch {
+		return false
+	}
+}
+
+/**
+ * Whether a value is missing or empty.
+ *
+ * @param {*} value The value
+ * @return {boolean} Whether it is blank
+ */
+function isBlank(value) {
+	return value === null || value === undefined || value === ''
+}
+
+/**
+ * The actual type of a value as a schema names it.
+ *
+ * @param {*} value The value
+ * @return {string} The type
+ */
+function actualType(value) {
+	return Array.isArray(value) ? 'array' : typeof value
+}
+
+/**
+ * The checks of a property value, in order; each returns its message or null.
+ */
+const PROPERTY_PROBLEMS = [
+	(c) =>
+		isBlank(c.value) && c.required
+			? `Required property '${c.key}' is missing or empty`
+			: null,
+	(c) =>
+		c.property.type !== actualType(c.value)
+			? `Property '${c.key}' should be ${c.property.type} but is ${actualType(c.value)}`
+			: null,
+	(c) =>
+		c.property.format === 'date-time' && !c.isValidDate(c.value)
+			? `Property '${c.key}' should be a valid date-time format`
+			: null,
+	(c) =>
+		c.property.const && c.value !== c.property.const
+			? `Property '${c.key}' should be '${c.property.const}' but is '${c.value}'`
+			: null,
+]
+
+/**
+ * A value as JSON, or as plain text when it cannot be serialised.
+ *
+ * @param {object} value The value
+ * @return {string} The text
+ */
+function jsonOrString(value) {
+	try {
+		return JSON.stringify(value)
+	} catch {
+		return String(value)
+	}
+}
+
+/**
+ * Whether a click landed on an inline control rather than on the row.
+ *
+ * @param {Element} target The clicked element
+ * @return {boolean} Whether it is a control
+ */
+function isInlineControl(target) {
+	return (
+		target.tagName === 'INPUT'
+		|| target.tagName === 'BUTTON'
+		|| Boolean(target.closest('.value-input-container'))
+	)
+}
+
+const INLINE_TYPES = ['string', 'number', 'integer', 'boolean']
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1609,24 +1798,16 @@ export default {
 		 */
 		currentSchema() {
 			const schema = schemaStore.schemaItem
-			if (!schema) return schema
-			const allOf = schema.allOf || []
-			if (!allOf.length) return schema
+			const allOf = schema?.allOf || []
+			if (!allOf.length) {
+				return schema
+			}
 			// Merge inherited properties from allOf parent schemas so extended schemas
 			// expose the full property set (own + inherited) in the form dialog.
-			const inherited = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inherited, parentSchema.properties)
-				}
-			}
+			const inherited = inheritedProperties(
+				schema.allOf,
+				schemaStore.schemaList,
+			)
 			return {
 				...schema,
 				properties: { ...inherited, ...(schema.properties || {}) },
@@ -1681,43 +1862,9 @@ export default {
 		 * @spec exclude computed display helper merging schema + object fields
 		 */
 		formFields() {
-			// Combine schema properties and object properties
-			const fields = {}
-
-			// First, add all schema properties
-			if (this.currentSchema && this.currentSchema.properties) {
-				for (const [key, value] of Object.entries(
-					this.currentSchema.properties,
-				)) {
-					fields[key] = value || { type: 'string' }
-				}
-			}
-
-			// Then, add any object properties that aren't in the schema
-			if (objectStore.objectItem) {
-				for (const [key, value] of Object.entries(objectStore.objectItem)) {
-					if (key !== '@self' && key !== 'id' && !fields[key]) {
-						// Infer type from the value
-						let type = 'string'
-						if (typeof value === 'boolean') {
-							type = 'boolean'
-						} else if (typeof value === 'number') {
-							type = 'number'
-						} else if (Array.isArray(value)) {
-							type = 'array'
-						} else if (typeof value === 'object' && value !== null) {
-							type = 'object'
-						}
-
-						fields[key] = {
-							type,
-							title: key,
-							description: `Property: ${key}`,
-						}
-					}
-				}
-			}
-
+			// Schema properties first, then object properties the schema lacks.
+			const fields = schemaFields(this.currentSchema)
+			addObjectFields(fields, objectStore.objectItem)
 			return fields
 		},
 
@@ -1801,25 +1948,14 @@ export default {
 				// using composition (allOf/oneOf/anyOf) `properties` is empty until
 				// the detail endpoint merges in the parent's properties. When the
 				// active schema looks un-resolved, refetch via the detail endpoint
-				// and let the watcher fire again with merged properties.
-				if (newSchema?.id) {
-					const usesComposition =
-						(newSchema.allOf?.length || 0) > 0
-						|| (newSchema.oneOf?.length || 0) > 0
-						|| (newSchema.anyOf?.length || 0) > 0
-					const propsCount = Object.keys(newSchema.properties || {}).length
-					if (usesComposition && propsCount === 0) {
-						try {
-							await schemaStore.getSchema(newSchema.id, {
-								setItem: true,
-							})
-							return
-						} catch {
-							// Fall through to use the un-resolved schema if the detail fetch fails
-						}
-					}
+				// and let the watcher fire again with merged properties. If that
+				// fetch fails, the un-resolved schema is used.
+				if (
+					isUnresolved(newSchema)
+					&& (await fetchResolvedSchema(newSchema))
+				) {
+					return
 				}
-
 				if (newSchema && this.isNewObject) {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
@@ -2678,41 +2814,23 @@ export default {
 		 * @spec exclude display helper building property error message
 		 */
 		getPropertyErrorMessage(key, value) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-
-			if (!schemaProperty) {
+			const property = this.currentSchema?.properties?.[key]
+			if (!property) {
 				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
-
-			// Check if required but empty
-			const isRequired =
-				this.currentSchema?.required?.includes(key)
-				|| schemaProperty.required
-			if (
-				(value === null || value === undefined || value === '')
-				&& isRequired
-			) {
-				return `Required property '${key}' is missing or empty`
+			const required =
+				this.currentSchema?.required?.includes(key) || property.required
+			const check = {
+				key,
+				value,
+				property,
+				required,
+				isValidDate: (v) => this.isValidDate(v),
 			}
-
-			// Check type mismatch
-			const expectedType = schemaProperty.type
-			const actualType = Array.isArray(value) ? 'array' : typeof value
-
-			if (expectedType !== actualType) {
-				return `Property '${key}' should be ${expectedType} but is ${actualType}`
+			for (const problem of PROPERTY_PROBLEMS) {
+				const message = problem(check)
+				if (message) return message
 			}
-
-			// Check format constraints
-			if (schemaProperty.format === 'date-time' && !this.isValidDate(value)) {
-				return `Property '${key}' should be a valid date-time format`
-			}
-
-			// Check const constraint
-			if (schemaProperty.const && value !== schemaProperty.const) {
-				return `Property '${key}' should be '${schemaProperty.const}' but is '${value}'`
-			}
-
 			return `Property '${key}' has an invalid value`
 		},
 
@@ -2735,21 +2853,7 @@ export default {
 			if (value === null || value === undefined) {
 				return ''
 			}
-			if (typeof value === 'string') {
-				return value
-			}
-			if (typeof value === 'number' || typeof value === 'boolean') {
-				return String(value)
-			}
-			if (typeof value === 'object') {
-				// For objects and arrays, return JSON string
-				try {
-					return JSON.stringify(value)
-				} catch {
-					return String(value)
-				}
-			}
-			return String(value)
+			return typeof value === 'object' ? jsonOrString(value) : String(value)
 		},
 
 		/**
@@ -2758,52 +2862,51 @@ export default {
 		 * @spec exclude table-row click UI handler for inline edit
 		 */
 		handleRowClick(key, event) {
-			// Don't select if clicking on an input or button
-			if (
-				event.target.tagName === 'INPUT'
-				|| event.target.tagName === 'BUTTON'
-				|| event.target.closest('.value-input-container')
-			) {
+			// Don't select when clicking an input or button, or reselect the selected row.
+			if (isInlineControl(event.target) || this.selectedProperty === key) {
 				return
 			}
-
-			// Don't deselect if already selected
-			if (this.selectedProperty === key) {
-				return
-			}
-
-			// Check if property is editable
 			const value =
 				this.formData[key] !== undefined
 					? this.formData[key]
 					: this.objectProperties.find(([k]) => k === key)?.[1]
 			if (!this.isPropertyEditable(key, value)) {
-				// Show warning for non-editable properties
-				const warning = this.getEditabilityWarning(key, value)
-				if (warning) {
-					showWarning(warning)
-				}
+				this.warnNotEditable(key, value)
 				return
 			}
+			this.editInline(key)
+		},
 
-			// Only allow editing for supported property types (same as EditObject.vue)
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (
-				schemaProperty
-				&& ['string', 'number', 'integer', 'boolean'].includes(
-					schemaProperty.type,
-				)
-			) {
-				this.selectProperty(key)
-			} else if (!schemaProperty) {
-				// Allow editing for properties not in schema (free-form)
-				this.selectProperty(key)
-			} else {
-				// Show info for unsupported types
-				showWarning(
-					`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`,
-				)
+		/**
+		 * Show why a property cannot be edited, when there is a reason.
+		 *
+		 * @param {string} key The property
+		 * @param {*} value Its value
+		 * @spec exclude UI plumbing — editability warning toast
+		 */
+		warnNotEditable(key, value) {
+			const warning = this.getEditabilityWarning(key, value)
+			if (warning) {
+				showWarning(warning)
 			}
+		},
+
+		/**
+		 * Start editing a property inline when its type allows it (same as
+		 * EditObject.vue); free-form properties outside the schema always can.
+		 *
+		 * @param {string} key The property
+		 * @spec exclude UI plumbing — inline edit selection
+		 */
+		editInline(key) {
+			const schemaProperty = this.currentSchema?.properties?.[key]
+			if (!schemaProperty || INLINE_TYPES.includes(schemaProperty.type)) {
+				this.selectProperty(key)
+				return
+			}
+			showWarning(
+				`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`,
+			)
 		},
 
 		/**
