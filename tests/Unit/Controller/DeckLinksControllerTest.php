@@ -32,6 +32,8 @@ use OCA\OpenRegister\Controller\DeckLinksController;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
@@ -222,14 +224,8 @@ class DeckLinksControllerTest extends TestCase {
 		$this->service->expects($this->once())
 			->method('createAndLinkCard')
 			->with(
-				'abc-123',
-				1,
-				2,
-				10,
-				20,
-				'New card',
-				'Body',
-				'2026-06-01T12:00:00+00:00'
+				(new LinkTarget('abc-123', 1))->inSchema(2),
+				(new CardDraft('New card', 20))->onBoard(10)->withDetails('Body', '2026-06-01T12:00:00+00:00')
 			)
 			->willReturn($link);
 

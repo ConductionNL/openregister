@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -57,7 +57,7 @@ class EncryptFieldCommand extends Command {
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapper $magicMapper Magic table resolver.
+	 * @param MagicMapperInterface $magicMapper Magic table resolver.
 	 * @param FieldEncryptionHandler $fieldEncryptionHandler Envelope encrypt/decrypt logic.
 	 * @param IDBConnection $db Database connection for native SELECT/UPDATE.
 	 *
@@ -66,7 +66,7 @@ class EncryptFieldCommand extends Command {
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly FieldEncryptionHandler $fieldEncryptionHandler,
 		private readonly IDBConnection $db,
 	) {

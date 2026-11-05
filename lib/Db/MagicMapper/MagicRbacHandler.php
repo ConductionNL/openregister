@@ -584,15 +584,35 @@ class MagicRbacHandler {
 		string $action = 'read',
 		?string $tableName = null,
 	): void {
-		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
+		$call = new RbacFilterCall(qb: $qb, schema: $schema);
+		$call->action = $action;
+		$call->tableName = $tableName;
 
-		$userGroups = [];
+		$this->applyRbacFilterCall(call: $call);
+	}//end applyRbacFilters()
+
+	/**
+	 * Apply the RBAC filter for one call, see {@see applyRbacFilters()}.
+	 *
+	 * Admins and trusted system callers are not filtered. A schema whose
+	 * authorization cannot be resolved reads nothing.
+	 *
+	 * @param RbacFilterCall $call The query, schema, action and table being filtered.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function applyRbacFilterCall(RbacFilterCall $call): void {
+		$user = $this->userSession->getUser();
+		$call->userId = $user?->getUID();
+
+		$call->userGroups = [];
 		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
+			$call->userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
-		if (in_array('admin', $userGroups, true) === true) {
+		if (in_array('admin', $call->userGroups, true) === true) {
 			return;
 		}
 
@@ -600,27 +620,7 @@ class MagicRbacHandler {
 			return;
 		}
 
-		$call = new RbacFilterCall(qb: $qb, schema: $schema);
-		$call->action = $action;
-		$call->tableName = $tableName;
-		$call->userId = $userId;
-		$call->userGroups = $userGroups;
-
-		try {
-			$call->authorization = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
-			// Fail closed: a schema whose authorization cannot be resolved reads nothing.
-			$this->logger->error(
-				message: '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'action' => $action,
-					'error' => $e->getMessage(),
-				]
-			);
-			$call->denyAll();
+		if ($this->resolveCallAuthorization(call: $call) === false) {
 			return;
 		}
 
@@ -628,16 +628,67 @@ class MagicRbacHandler {
 			return;
 		}
 
+		$this->applyAccessConditions(call: $call);
+	}//end applyRbacFilterCall()
+
+	/**
+	 * Resolve the call's effective authorization onto the call.
+	 *
+	 * Fails closed: when the authorization cannot be resolved the query is
+	 * clamped to no rows.
+	 *
+	 * @param RbacFilterCall $call The call being filtered.
+	 *
+	 * @return bool True when resolved; false when the query was denied.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function resolveCallAuthorization(RbacFilterCall $call): bool {
+		try {
+			$call->authorization = $this->resolveSchemaAuthorization(schema: $call->schema);
+		} catch (AuthorizationUnresolvableException $e) {
+			$this->logger->error(
+				message: '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schemaId' => $call->schema->getId(),
+					'action' => $call->action,
+					'error' => $e->getMessage(),
+				]
+			);
+			$call->denyAll();
+			return false;
+		}
+
+		return true;
+	}//end resolveCallAuthorization()
+
+	/**
+	 * Narrow the query to the rows the caller's owner and access rules admit.
+	 *
+	 * Without authorization the schema is open to every row that is not
+	 * private; with authorization, access is granted when ANY condition
+	 * matches, and denied outright when none applies.
+	 *
+	 * @param RbacFilterCall $call The call being filtered, its authorization resolved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function applyAccessConditions(RbacFilterCall $call): void {
+		$qb = $call->qb;
 		$notPrivate = $qb->createFunction(
 			$this->reachableRowSqlFor(
 				authorization: $call->authorization,
 				columnName: 't._authorization',
 				uuidColumn: 't._uuid',
-				userId: $userId,
-				action: $action,
-				schema: $schema,
+				userId: $call->userId,
+				action: $call->action,
+				schema: $call->schema,
 				columnPrefix: 't.',
-				tableName: $tableName
+				tableName: $call->tableName
 			)
 		);
 
@@ -660,8 +711,8 @@ class MagicRbacHandler {
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'userId' => $userId,
-					'action' => $action,
+					'userId' => $call->userId,
+					'action' => $call->action,
 				]
 			);
 			$call->denyAll();
@@ -670,7 +721,7 @@ class MagicRbacHandler {
 
 		// Access is granted if ANY condition matches.
 		$qb->andWhere($qb->expr()->orX(...$conditions));
-	}//end applyRbacFilters()
+	}//end applyAccessConditions()
 
 	/**
 	 * Apply the schema's deny rules to the query.
