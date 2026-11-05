@@ -341,19 +341,8 @@ class PerformanceHandler {
 			return false;
 		}
 
-		// Standard UUID with dashes (8-4-4-4-12 format).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Prefixed UUID (e.g., "id-uuid" with or without dashes).
-		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-		if (preg_match($pattern, $value) === 1) {
+		// A UUID, with or without dashes or a word prefix.
+		if (preg_match(UuidPattern::ANY, $value) === 1) {
 			return true;
 		}
 
