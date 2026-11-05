@@ -261,18 +261,7 @@ class CospendProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$status = 'unavailable';
-		$message = 'NC Cospend app is not installed';
-		if ($this->isEnabled() === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Cospend app is not installed');
 	}//end health()
 
 	/**
