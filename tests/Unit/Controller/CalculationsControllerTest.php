@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CalculationsControllerFactory;
 use OCA\OpenRegister\Controller\CalculationsController;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -98,7 +99,7 @@ class CalculationsControllerTest extends TestCase {
 			$this->payloadBuilder,
 		);
 
-		return new CalculationsController(
+		return CalculationsControllerFactory::create(
 			'openregister',
 			$request,
 			new OperatorCatalogue(),

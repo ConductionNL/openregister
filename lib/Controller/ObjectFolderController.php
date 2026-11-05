@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
@@ -57,26 +58,52 @@ use Throwable;
  */
 class ObjectFolderController extends Controller {
 	/**
+	 * The object rule for file actions.
+	 *
+	 * @var ObjectFileAccess
+	 */
+	private readonly ObjectFileAccess $objectFileAccess;
+
+	/**
+	 * The folder tree of one object.
+	 *
+	 * @var ObjectFolderBrowser
+	 */
+	private readonly ObjectFolderBrowser $browser;
+
+	/**
+	 * Turns outcomes and failures into responses.
+	 *
+	 * @var ObjectFolderResponder
+	 */
+	private readonly ObjectFolderResponder $responder;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var ObjectFolderControllerServices
+	 */
+	private readonly ObjectFolderControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string              $appName          The app name.
 	 * @param IRequest            $request          The request.
-	 * @param ObjectFileAccess    $objectFileAccess The object rule for file actions.
-	 * @param ObjectFolderBrowser   $browser          The folder tree of one object.
-	 * @param ObjectFolderUploads   $uploads          Stores a batch of uploads.
-	 * @param ObjectFolderResponder $responder        Turns outcomes and failures into responses.
+	 * @param ObjectFolderControllerServices $services The object folder controller services.
 	 * @param FileWriteGuard        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectFileAccess $objectFileAccess,
-		private readonly ObjectFolderBrowser $browser,
-		private readonly ObjectFolderUploads $uploads,
-		private readonly ObjectFolderResponder $responder,
+		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuard $fileWriteGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->objectFileAccess = $services->objectFileAccess;
+		$this->browser = $services->browser;
+		$this->responder = $services->responder;
 	}//end __construct()
 
 	/**
@@ -166,7 +193,7 @@ class ObjectFolderController extends Controller {
 			}
 
 			return $this->responder->uploaded(
-				outcome: $this->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
+				outcome: $this->services->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
 				total: count($uploads)
 			);
 		} catch (Throwable $e) {

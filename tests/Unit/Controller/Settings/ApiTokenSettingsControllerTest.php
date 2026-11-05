@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ApiTokenSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\Http\Client\IClient;
@@ -32,7 +33,7 @@ class ApiTokenSettingsControllerTest extends TestCase {
 		$this->clientService = $this->createMock(IClientService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ApiTokenSettingsController(
+		$this->controller = ApiTokenSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->config,

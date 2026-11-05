@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -169,7 +170,7 @@ class SchemasDestroySafetyTest extends TestCase {
 			}
 		);
 
-		$this->controller = new SchemasController(
+		$this->controller = SchemasControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(IAppConfig::class),

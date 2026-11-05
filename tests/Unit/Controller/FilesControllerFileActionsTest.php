@@ -6,6 +6,7 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FileAuditHandler;
@@ -57,7 +58,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$auditHandler = $this->createMock(FileAuditHandler::class);
 		$this->fileService->method('getAuditHandler')->willReturn($auditHandler);
 
-		$this->controller = new FilesController(
+		$this->controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
@@ -103,7 +104,7 @@ class FilesControllerFileActionsTest extends TestCase {
 
 		// Rebuild the controller with the authenticated user session wired in.
 		// The audit handler is irrelevant on the denied path (never reached).
-		$this->controller = new FilesController(
+		$this->controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
@@ -352,7 +353,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
@@ -400,7 +401,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
@@ -446,7 +447,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($authedUser);
 
-		$controller = new FilesController(
+		$controller = FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,
@@ -783,7 +784,7 @@ class FilesControllerFileActionsTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		return new FilesController(
+		return FilesControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->fileService,

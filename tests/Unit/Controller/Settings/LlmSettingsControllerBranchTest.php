@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -38,7 +39,7 @@ class LlmSettingsControllerBranchTest extends TestCase {
 		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new LlmSettingsController(
+		$this->controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\SchemaImportControllerServices;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -51,26 +52,52 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaImportController extends Controller {
 	/**
+	 * Standards import orchestrator.
+	 *
+	 * @var SchemaImportService
+	 */
+	private readonly SchemaImportService $importService;
+
+	/**
+	 * Schema persistence.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register lookup/association.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Classifies, versions and logs a merged definition change (#4102).
+	 *
+	 * @var ?SchemaVersioningService
+	 */
+	private readonly ?SchemaVersioningService $schemaVersioning;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param SchemaImportService $importService Standards import orchestrator.
-	 * @param SchemaMapperInterface $schemaMapper Schema persistence.
-	 * @param RegisterMapperInterface $registerMapper Register lookup/association.
+	 * @param SchemaImportControllerServices $services The schema import controller services.
 	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a merged definition change (#4102).
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SchemaImportService $importService,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		SchemaImportControllerServices $services,
 		private readonly LoggerInterface $logger,
-		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->importService = $services->importService;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->registerMapper = $services->registerMapper;
+		$this->schemaVersioning = $services->schemaVersioning;
 
 	}//end __construct()
 

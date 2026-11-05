@@ -1802,19 +1802,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			)
 				->from($this->getTableName());
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			// Add exclusions if provided.
 			if (empty($exclude) === false) {
@@ -1933,19 +1921,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->andWhere($qb->expr()->lte('created', $tillParam));
 			}
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -2019,30 +1995,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -2162,19 +2118,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				->from($this->getTableName())
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$result = $qb->executeQuery();
 			$results = $result->fetchAll();
@@ -2227,30 +2171,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('action');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			$results = $qb->executeQuery()->fetchAll();
 
@@ -2305,31 +2229,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				$qb->createFunction('COUNT(*) as count')
 			)
 				->from($this->getTableName())
-				->where(
-					$qb->expr()->gte(
-						'created',
-						$qb->createNamedParameter(
-							(new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				)
+				->where($this->createdWithinHours(qb: $qb, hours: $hours))
 				->groupBy('object')
 				->orderBy('count', 'DESC');
 
-			// Add register filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($registerId !== null) {
-				$registerParam = $qb->createNamedParameter((string)$registerId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('register', $registerParam));
-			}
-
-			// Add schema filter if provided.
-			// Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
-			if ($schemaId !== null) {
-				$schemaParam = $qb->createNamedParameter((string)$schemaId, IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->eq('schema', $schemaParam));
-			}
+			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
 
 			// Apply limit.
 			if ($limit !== null) {
@@ -3672,6 +3576,38 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $reads;
 	}//end findLatestReadsByUser()
+
+	/**
+	 * Narrow a query to the given id per column; a null id adds no condition.
+	 *
+	 * The register and schema columns are VARCHAR(255) holding ids as strings.
+	 *
+	 * @param IQueryBuilder            $qb          The query to narrow.
+	 * @param array<string, int|null> $idsByColumn Column name => id or null.
+	 *
+	 * @return void
+	 */
+	private function filterByIds(IQueryBuilder $qb, array $idsByColumn): void {
+		foreach ($idsByColumn as $column => $id) {
+			if ($id !== null) {
+				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$id, IQueryBuilder::PARAM_STR)));
+			}
+		}
+	}//end filterByIds()
+
+	/**
+	 * The condition that a row was created within the last $hours hours.
+	 *
+	 * @param IQueryBuilder $qb    The query the condition is for.
+	 * @param int|null      $hours The number of hours to look back.
+	 *
+	 * @return string The condition.
+	 */
+	private function createdWithinHours(IQueryBuilder $qb, ?int $hours): string {
+		$since = (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s');
+
+		return $qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_STR));
+	}//end createdWithinHours()
 
 	/**
 	 * Render a stored `created` value as ISO 8601.

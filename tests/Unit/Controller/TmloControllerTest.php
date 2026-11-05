@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TmloControllerFactory;
 use OCA\OpenRegister\Controller\TmloController;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -117,7 +118,7 @@ class TmloControllerTest extends TestCase {
 		$this->exportGate = $this->createMock(ExportGate::class);
 		$this->exportGate->method('refusalFor')->willReturn(null);
 
-		$this->controller = new TmloController(
+		$this->controller = TmloControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->tmloService,
@@ -389,7 +390,7 @@ class TmloControllerTest extends TestCase {
 			)
 		);
 
-		$controller = new TmloController(
+		$controller = TmloControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->tmloService,

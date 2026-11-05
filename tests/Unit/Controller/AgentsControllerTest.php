@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AgentsControllerFactory;
 use OCA\OpenRegister\Controller\AgentsController;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
@@ -34,7 +35,7 @@ class AgentsControllerTest extends TestCase {
 		$this->toolRegistry = $this->createMock(ToolRegistry::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new AgentsController(
+		$this->controller = AgentsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->agentMapper,
@@ -215,7 +216,7 @@ class AgentsControllerTest extends TestCase {
 	}
 
 	public function testDestroyNotAuthenticated(): void {
-		$controller = new AgentsController(
+		$controller = AgentsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->agentMapper,

@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -52,6 +53,7 @@ use Throwable;
  * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
  */
 final class RelatedRowExistsClause {
+	use MagicColumnNameTrait;
 
 	/**
 	 * PostgreSQL. Exercised against a live database.
@@ -411,7 +413,7 @@ final class RelatedRowExistsClause {
 	 */
 	private function fieldExpression(string $engine, string $storage, string $alias, string $field): string {
 		if ($storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $this->columnName(property: $field)));
+			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field)));
 		}
 
 		if ($storage === self::STORAGE_JSON) {
@@ -493,35 +495,6 @@ final class RelatedRowExistsClause {
 			$uuid
 		);
 	}//end joinCondition()
-
-	/**
-	 * The magic-table column a property is stored in.
-	 *
-	 * Applies the rule that names the columns (`MagicMapper::sanitizeColumnName`):
-	 * camelCase to snake_case, lower-cased, any character outside `[a-z0-9_]`
-	 * replaced by an underscore, runs of underscores collapsed, trailing
-	 * underscores removed (`propertyDefinition` is `property_definition`, a name
-	 * already in snake case is unchanged). The earlier one-line conversion
-	 * skipped the replacement and collapse steps, so a property those steps map
-	 * differently was filtered on a column that does not exist, or refused. The
-	 * `col_` prefix for a leading digit is NOT applied, because the rule that
-	 * creates the columns never applies it either (its guard compares
-	 * `preg_match()` to `false`); such a name is refused by quoteIdentifier().
-	 *
-	 * @param string $property The property name.
-	 *
-	 * @return string The column name.
-	 *
-	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
-	 */
-	private function columnName(string $property): string {
-		$name = strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
-		$name = (string)preg_replace('/[^a-z0-9_]/', '_', $name);
-		$name = (string)preg_replace('/_+/', '_', $name);
-
-		// The 64-character cap the read path applies (MySQL's identifier limit).
-		return substr(rtrim($name, '_'), 0, 64);
-	}//end columnName()
 
 	/**
 	 * Quote a column name, refusing anything that is not one.

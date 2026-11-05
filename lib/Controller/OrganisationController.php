@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
@@ -127,48 +128,42 @@ class OrganisationController extends Controller {
 	private ?GrantChangeAuditor $grantAuditor;
 
 	/**
+	 * Measures an organisation's usage
+	 *
+	 * @var OrganisationUsageService
+	 */
+	private readonly OrganisationUsageService $usageService;
+
+	/**
+	 * Records an edit of an organisation's details. Null only in legacy fixtures.
+	 *
+	 * @var ?OrganisationLifecycleAuditor
+	 */
+	private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor;
+
+	/**
 	 * OrganisationController constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param OrganisationServiceInterface $organisationService Organisation service
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param LoggerInterface $logger Logger service
-	 * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
-	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
-	 * @param IUserSession $userSession User session for authorization checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param OrganisationUsageService $usageService Measures an organisation's usage
-	 * @param GrantChangeAuditor|null $grantAuditor Records a change of who holds the special right `grant_manage`. Null only in legacy fixtures.
-	 * @param OrganisationLifecycleAuditor|null $lifecycleAuditor Records an edit of an organisation's details. Null only in legacy fixtures.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
-	 *
-	 * @spec openspec/specs/tenant-lifecycle/spec.md
+	 * @param OrganisationControllerServices $services The organisation controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		OrganisationServiceInterface $organisationService,
-		OrganisationMapperInterface $organisationMapper,
-		LoggerInterface $logger,
-		TenantLifecycleService $tenantLifecycleService,
-		TenantUsageMapper $tenantUsageMapper,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
-		private readonly OrganisationUsageService $usageService,
-		?GrantChangeAuditor $grantAuditor = null,
-		private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor = null,
+		OrganisationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->grantAuditor = $grantAuditor;
-		$this->organisationService = $organisationService;
-		$this->organisationMapper = $organisationMapper;
-		$this->logger = $logger;
-		$this->tenantLifecycleService = $tenantLifecycleService;
-		$this->tenantUsageMapper = $tenantUsageMapper;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->usageService = $services->domain->usageService;
+		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
+		$this->grantAuditor = $services->domain->grantAuditor;
+		$this->organisationService = $services->domain->organisationService;
+		$this->organisationMapper = $services->mappers->organisationMapper;
+		$this->logger = $services->session->logger;
+		$this->tenantLifecycleService = $services->domain->tenantLifecycle;
+		$this->tenantUsageMapper = $services->mappers->tenantUsageMapper;
+		$this->userSession = $services->session->userSession;
+		$this->groupManager = $services->session->groupManager;
 	}//end __construct()
 
 	/**

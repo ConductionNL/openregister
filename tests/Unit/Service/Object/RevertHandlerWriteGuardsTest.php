@@ -50,6 +50,8 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Exception\LockedException
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 final class RevertHandlerWriteGuardsTest extends TestCase {
 
@@ -72,6 +74,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	private ObjectEntity $current;
 
 	private ObjectEntity $reverted;
+
+	private bool $mayUpdate = true;
 
 	/**
 	 * Wire a handler over mocks of the real sibling classes.
@@ -122,7 +126,9 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	 */
 	private function handler(): RevertHandler {
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturn(true);
+		$permissions->method('hasPermission')->willReturnCallback(
+			fn (Schema $schema, string $action, ...$rest): bool => ($this->mayUpdate === true && $action === 'update' && $schema === $this->schema && end($rest) === $this->current)
+		);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
@@ -216,6 +222,56 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
 	}//end testFrozenObjectRefusesRevert()
+
+	/**
+	 * Without update permission on the object the revert is refused before the lock is looked at, and nothing is written.
+	 *
+	 * @return void
+	 */
+	public function testNoUpdatePermissionRefusesRevertBeforeTheLock(): void {
+		$this->mayUpdate = false;
+		$this->current->setLocked(['user' => 'bob', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
+
+		$this->magic->expects($this->never())->method('update');
+		$this->audit->expects($this->never())->method('revertObject');
+
+		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
+		$this->expectExceptionMessage('You do not have permission to revert this object');
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+	}//end testNoUpdatePermissionRefusesRevertBeforeTheLock()
+
+	/**
+	 * An object locked by someone else refuses a revert, names the holder, and is checked before the freeze.
+	 *
+	 * @return void
+	 */
+	public function testALockHeldBySomeoneElseRefusesRevertBeforeTheFreeze(): void {
+		$this->current->setLocked(['user' => 'bob', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
+		$this->current->setFrozen(['by' => 'bob', 'at' => '2026-09-01T00:00:00+00:00']);
+
+		$this->magic->expects($this->never())->method('update');
+		$this->audit->expects($this->never())->method('revertObject');
+
+		$this->expectException(\OCA\OpenRegister\Exception\LockedException::class);
+		$this->expectExceptionMessage('Object is locked by bob');
+
+		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+	}//end testALockHeldBySomeoneElseRefusesRevertBeforeTheFreeze()
+
+	/**
+	 * The caller's own lock does not refuse the revert.
+	 *
+	 * @return void
+	 */
+	public function testTheCallersOwnLockAllowsRevert(): void {
+		$this->current->setLocked(['user' => 'alice', 'expiration' => (new \DateTime('+1 hour'))->format('c')]);
+		$this->validator->method('validateObject')->willReturn($this->valid());
+		$this->magic->expects($this->once())->method('update')
+			->with($this->reverted, $this->register, $this->schema)->willReturnArgument(0);
+
+		$this->assertSame($this->reverted, $this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1'));
+	}//end testTheCallersOwnLockAllowsRevert()
 
 	/**
 	 * Restored data that the current schema no longer allows is refused before it is written.

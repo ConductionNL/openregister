@@ -86,6 +86,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class MagicSearchHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Comparison operators accepted inside a filter's value bag.
@@ -4930,37 +4931,6 @@ class MagicSearchHandler {
 
 		return '`' . $name . '`';
 	}//end quoteIdentifier()
-
-	/**
-	 * Sanitize column name for safe database usage
-	 *
-	 * @param string $name Column name to sanitize
-	 *
-	 * @return string Sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case (must match MagicMapper::sanitizeColumnName).
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === 0) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		// Limit length to 64 characters (MySQL limit).
-		return substr($name, 0, 64);
-	}//end sanitizeColumnName()
 
 	/**
 	 * Convert snake_case column name to camelCase property name

@@ -69,6 +69,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  */
 class FederatedShare extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Public UUID of the share.
@@ -213,24 +215,6 @@ class FederatedShare extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Get the JSON field names on this entity.
-	 *
-	 * @return string[] List of JSON field names.
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Get the local owning organisation UUID.
 	 *
 	 * @return string|null The organisation UUID.
@@ -250,33 +234,6 @@ class FederatedShare extends Entity implements JsonSerializable {
 		$this->organisation = $organisation;
 		$this->markFieldUpdated(attribute: 'organisation');
 	}//end setOrganisation()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array<string, mixed> $object The data array to hydrate from.
-	 *
-	 * @return static This instance for chaining.
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialize the entity to a JSON-ready array.
