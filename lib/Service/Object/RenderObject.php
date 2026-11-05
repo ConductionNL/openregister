@@ -3536,7 +3536,7 @@ class RenderObject {
 		string $registerDefault,
 	): string {
 		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->of(body: $preResolveData, property: $property);
+		return $rule->forProperty(body: $preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
 
 	/**

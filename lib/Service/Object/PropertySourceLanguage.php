@@ -50,9 +50,13 @@ final class PropertySourceLanguage {
 	 *
 	 * @return string BCP-47 language tag.
 	 */
-	public function of(array $body, string $property): string {
+	public function forProperty(array $body, string $property): string {
 		$meta = $body['_translationMeta'] ?? null;
-		$declared = $this->declared(entry: is_array($meta) === true ? ($meta[$property] ?? null) : null)
+		if (is_array($meta) === false) {
+			$meta = [];
+		}
+
+		$declared = $this->declared(entry: $meta[$property] ?? null)
 			?? $this->declared(entry: ($this->schema->getProperties() ?? [])[$property] ?? null);
 		if ($declared !== null) {
 			return $declared;
@@ -63,7 +67,7 @@ final class PropertySourceLanguage {
 		}
 
 		return 'nl';
-	}//end of()
+	}//end forProperty()
 
 	/**
 	 * The non-empty `sourceLanguage` string of a meta entry or property definition.

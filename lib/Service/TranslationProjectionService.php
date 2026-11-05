@@ -345,7 +345,7 @@ class TranslationProjectionService {
 		string $registerDefault,
 	): string {
 		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
-		return $rule->of(body: (array)($object->getObject() ?? []), property: $property);
+		return $rule->forProperty(body: (array)($object->getObject() ?? []), property: $property);
 	}//end resolveSourceLanguage()
 
 	/**
