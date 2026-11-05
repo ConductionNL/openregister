@@ -93,6 +93,8 @@ use Throwable;
  */
 class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 
+	use CountsThroughFindAll;
+
 	/**
 	 * The properties the projection exposes.
 	 *
@@ -225,22 +227,6 @@ class OrganisationObjectSourceProvider implements WritableObjectSourceProvider {
 
 		return $objects;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register             $register The register the schema belongs to.
-	 * @param Schema               $schema   The sourced schema.
-	 * @param array<string, mixed> $query    Query (filters/search).
-	 * @param array<string, mixed> $config   The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/organisations-are-objects/specs/organisation-projection/spec.md#requirement-an-organisation-is-addressable-as-an-object-req-orp-101
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * {@inheritDoc}

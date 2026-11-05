@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\UuidPattern;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -352,19 +353,8 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function looksLikeObjectReference(string $value): bool {
-		// UUID pattern (with dashes).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// UUID pattern (without dashes - 32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
-		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-		if (preg_match($pattern, $value) === 1) {
+		// A UUID, with or without dashes or a word prefix.
+		if (preg_match(UuidPattern::ANY, $value) === 1) {
 			return true;
 		}
 
@@ -397,19 +387,8 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function isReference(string $value): bool {
-		// Check for UUID format (with dashes).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for UUID format (without dashes - 32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
-		$pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
-		if (preg_match($pattern, $value) === 1) {
+		// A UUID, with or without dashes or a word prefix.
+		if (preg_match(UuidPattern::ANY, $value) === 1) {
 			return true;
 		}
 

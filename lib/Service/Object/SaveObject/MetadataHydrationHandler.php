@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
+use OCA\OpenRegister\Service\Object\LanguageKeyedMap;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -353,10 +354,8 @@ class MetadataHydrationHandler {
 	/**
 	 * Whether every key of an array is a BCP 47 language tag.
 	 *
-	 * Kept identical, deliberately, to TranslationHandler's own predicate: the
-	 * two must agree on what a language map IS, or a value one of them resolves
-	 * the other would encode. TranslationHandler cannot simply be injected
-	 * here — it is request-scoped through LanguageService, and this runs on the
+	 * Shares LanguageKeyedMap with TranslationHandler, which cannot be injected
+	 * here: it is request-scoped through LanguageService, and this runs on the
 	 * save path, including from `occ` where there is no request at all.
 	 *
 	 * @param array $value The candidate value.
@@ -366,22 +365,7 @@ class MetadataHydrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isLanguageKeyedObject(array $value): bool {
-		if (empty($value) === true) {
-			return false;
-		}
-
-		foreach (array_keys($value) as $key) {
-			if (is_string($key) === false) {
-				return false;
-			}
-
-			// BCP 47 language tag: 2-3 lowercase letters, optional subtags.
-			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $key) !== 1) {
-				return false;
-			}
-		}
-
-		return true;
+		return (new LanguageKeyedMap(value: $value))->isLanguageKeyed();
 	}//end isLanguageKeyedObject()
 
 	/**

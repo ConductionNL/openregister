@@ -221,4 +221,21 @@ abstract class AbstractIntegrationProvider implements IntegrationProvider {
 			'message' => null,
 		];
 	}//end health()
+
+	/**
+	 * Health descriptor of a provider that needs one Nextcloud app: ok when it
+	 * is available, otherwise unavailable with the given message.
+	 *
+	 * @param bool   $available Whether the backing app is available.
+	 * @param string $missing   The message when it is not.
+	 *
+	 * @return array{status: string, authStatus: string, message: ?string}
+	 */
+	protected function installedHealth(bool $available, string $missing): array {
+		if ($available === true) {
+			return ['status' => 'ok', 'authStatus' => 'configured', 'message' => null];
+		}
+
+		return ['status' => 'unavailable', 'authStatus' => 'configured', 'message' => $missing];
+	}//end installedHealth()
 }//end class

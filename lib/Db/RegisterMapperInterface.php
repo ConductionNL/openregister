@@ -221,16 +221,6 @@ interface RegisterMapperInterface {
 	public function getAllRegisterIdsWithSchema(int $schemaId): array;
 
 	/**
-	 * Check if a register has a schema with a specific title
-	 *
-	 * @param int $registerId The ID of the register
-	 * @param string $schemaTitle The title of the schema to look for
-	 *
-	 * @return Schema|null The schema if found, multi: null otherwise
-	 */
-	public function hasSchemaWithTitle(int $registerId, string $schemaTitle): ?Schema;
-
-	/**
 	 * Get all register ID to slug mappings
 	 *
 	 * @return array<string,string> Array mapping register IDs to their slugs

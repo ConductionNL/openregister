@@ -122,7 +122,6 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 			$this->createMock(IAppConfig::class),
 			$this->connection($case['sql'] ?? []),
 			$container,
-			$this->createMock(IAppManager::class),
 			$this->createMock(SettingsService::class),
 			$logger,
 			$l10n

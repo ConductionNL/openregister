@@ -60,6 +60,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\TalkLink
  * @uses   \OCA\OpenRegister\Db\TimeTrackerLink
  * @uses   \OCA\OpenRegister\Db\XwikiLink
+ * @uses   \OCA\OpenRegister\Db\QueryPage
  */
 class LinkMapperObjectUuidGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

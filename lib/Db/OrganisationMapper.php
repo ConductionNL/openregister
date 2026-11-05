@@ -67,6 +67,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class OrganisationMapper extends QBMapper implements OrganisationMapperInterface {
 
+	use ColumnFiltersTrait;
+
 	/**
 	 * Maximum merge hops followed before the chain is treated as a data defect.
 	 *
@@ -503,19 +505,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			)
 		);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		return $this->findEntities(query: $qb);
 
@@ -549,19 +539,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()

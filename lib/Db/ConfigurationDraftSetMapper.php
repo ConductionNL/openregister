@@ -98,34 +98,6 @@ class ConfigurationDraftSetMapper extends QBMapper {
 	}//end findAllSets()
 
 	/**
-	 * The open set an author already has, when they have one.
-	 *
-	 * @param string $author The author's user id.
-	 *
-	 * @return ConfigurationDraftSet|null The open set, or null.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function findOpenForAuthor(string $author): ?ConfigurationDraftSet {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('created_by', $qb->createNamedParameter($author)))
-			->andWhere(
-				$qb->expr()->eq('state', $qb->createNamedParameter(ConfigurationDraftSet::STATE_OPEN))
-			)
-			->orderBy('id', 'DESC')
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $exception) {
-			return null;
-		}
-
-	}//end findOpenForAuthor()
-
-	/**
 	 * Create a set, assigning a uuid, the open state and timestamps.
 	 *
 	 * @param array<string, mixed> $data The set values.
@@ -172,27 +144,4 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		return $this->update(entity: $set);
 
 	}//end save()
-
-	/**
-	 * Count the sets in one state.
-	 *
-	 * @param string $state The state to count.
-	 *
-	 * @return integer How many sets are in that state.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function countInState(string $state): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*', 'total'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('state', $qb->createNamedParameter($state)));
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		return (int)($row['total'] ?? 0);
-
-	}//end countInState()
 }//end class

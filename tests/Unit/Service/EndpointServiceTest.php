@@ -709,6 +709,27 @@ class EndpointServiceTest extends TestCase {
 		$this->assertSame(200, $result['statusCode']);
 	}
 
+	public function testTestEndpointLogsTheRequestItSent(): void {
+		$endpoint = $this->createEndpoint('view', 'POST', '/api/test', []);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$logged = null;
+		$this->endpointLogMapper->expects($this->once())->method('insert')
+			->willReturnCallback(function ($log) use (&$logged) {
+				$logged = $log;
+				return $log;
+			});
+
+		$this->service->testEndpoint($endpoint, ['q' => 1]);
+
+		$this->assertSame(
+			['method' => 'POST', 'path' => '/api/test', 'data' => ['q' => 1], 'headers' => []],
+			$logged->getRequest()
+		);
+	}
+
 	public function testTestEndpointAllowedWhenNoGroupsDefined(): void {
 		$endpoint = $this->createEndpoint('view', 'GET', '/api/test', []);
 
