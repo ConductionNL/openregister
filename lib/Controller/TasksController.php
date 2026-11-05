@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\TasksControllerServices;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -74,37 +75,55 @@ class TasksController extends Controller {
 	private readonly ObjectOperationsInterface $objectService;
 
 	/**
+	 * The engine inbox the aggregate answers from;
+	 *
+	 * @var ?TaskInboxService
+	 */
+	private readonly ?TaskInboxService $inbox;
+
+	/**
+	 * Names the caller for the aggregate
+	 *
+	 * @var ?IUserSession
+	 */
+	private readonly ?IUserSession $userSession;
+
+	/**
+	 * The one overdue derivation's clock
+	 *
+	 * @var ?TaskTemporalProjection
+	 */
+	private readonly ?TaskTemporalProjection $temporal;
+
+	/**
+	 * Resolves the caller's groups and admin
+	 *
+	 * @var ?IGroupManager
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ObjectCalendarTasksInterface $taskService Task service for VTODO operations
-	 * @param ObjectOperationsInterface $objectService Object service for object validation
-	 * @param TaskInboxService|null $inbox The engine inbox the aggregate answers from;
-	 *                                     without it the aggregate refuses (401), never
-	 *                                     falls back to walking calendars
-	 * @param IUserSession|null $userSession Names the caller for the aggregate
-	 * @param TaskTemporalProjection|null $temporal The one overdue derivation's clock
-	 * @param IGroupManager|null $groupManager Resolves the caller's groups and admin
-	 *                                         status; absent means no groups and not
-	 *                                         admin, which scopes rather than widens
+	 * @param TasksControllerServices $services The tasks controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectCalendarTasksInterface $taskService,
-		ObjectOperationsInterface $objectService,
-		private readonly ?TaskInboxService $inbox = null,
-		private readonly ?IUserSession $userSession = null,
-		private readonly ?TaskTemporalProjection $temporal = null,
-		private readonly ?IGroupManager $groupManager = null,
+		TasksControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->inbox = $services->domain->inbox;
+		$this->userSession = $services->platform->userSession;
+		$this->temporal = $services->domain->temporal;
+		$this->groupManager = $services->platform->groupManager;
 
-		$this->taskService = $taskService;
-		$this->objectService = $objectService;
+		$this->taskService = $services->domain->taskService;
+		$this->objectService = $services->domain->objectService;
 	}//end __construct()
 
 	/**

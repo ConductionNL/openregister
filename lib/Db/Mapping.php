@@ -79,6 +79,8 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.ErrorControlOperator) @ suppression needed for Transliterator which may not be available
  */
 class Mapping extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateBySettersTrait;
 
 	/**
 	 * Unique identifier for the mapping.
@@ -236,24 +238,6 @@ class Mapping extends Entity implements JsonSerializable {
 	}//end getConfigurations()
 
 	/**
-	 * Get array of field names that are JSON type
-	 *
-	 * @return string[] List of field names that are JSON type
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
 	 * Get the slug for the mapping.
 	 * If the slug is not set, generate one from the name.
 	 *
@@ -313,33 +297,6 @@ class Mapping extends Entity implements JsonSerializable {
 			return $prefix . '-' . substr(md5((string)$name), 0, 8);
 		}
 	}//end getSlug()
-
-	/**
-	 * Hydrate the entity from an array of data
-	 *
-	 * @param array $object Array of data to hydrate the entity with
-	 *
-	 * @return static Returns the hydrated entity
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = [];
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialize the entity to JSON format

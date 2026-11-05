@@ -438,6 +438,79 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 	}//end testResolveFailureFallsBackEntirely()
 
 	/**
+	 * The per-object fallback groups targets by register and schema, gives a
+	 * target without register or schema its own group, logs a failed group
+	 * delete and still writes one audit row per target.
+	 *
+	 * @return void
+	 */
+	public function testPerObjectFallbackGroupsByRegisterAndSchema(): void {
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+			->willThrowException(new \RuntimeException('union query failed'));
+		$deletes = [];
+		$this->objectMapper->method('deleteObjects')->willReturnCallback(
+			function (array $uuids, bool $hardDelete) use (&$deletes): array {
+				$deletes[] = [$uuids, $hardDelete];
+				if ($uuids === ['uuid-b']) {
+					throw new \Exception('delete failed');
+				}
+
+				return [];
+			}
+		);
+		$rows = [];
+		$this->auditTrailMapper->method('insert')->willReturnCallback(
+			function (AuditTrail $row) use (&$rows): AuditTrail {
+				$rows[] = [$row->getObjectUuid(), $row->getAction(), $row->getUser(), $row->getSchema(), $row->getRegister(), $row->getChanged()];
+				return $row;
+			}
+		);
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [$message, ($context['uuids'] ?? null), ($context['cascadeSource'] ?? null), ($context['error'] ?? null)];
+			}
+		);
+		$noRegister = ['objectUuid' => 'uuid-b', 'register' => null, 'schema' => '10', 'property' => 'refB'];
+		$analysis = $this->analysisWithCascade(
+			[
+				$this->target('uuid-a', 'refA'),
+				$noRegister,
+				$this->target('uuid-c', 'refC'),
+				$noRegister,
+				['objectUuid' => 'uuid-d', 'register' => '5', 'schema' => '11', 'property' => 'refD'],
+			]
+		);
+
+		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid', null, 'root-slug');
+
+		$this->assertSame([[['uuid-d'], false], [['uuid-b'], false], [['uuid-c', 'uuid-a'], false]], $deletes);
+		$changed = static fn (string $property): array => [
+			'deletedBecause' => 'cascade',
+			'triggerObject' => 'root-uuid',
+			'triggerSchema' => 'root-slug',
+			'property' => $property,
+		];
+		$action = 'referential_integrity.cascade_delete';
+		$this->assertSame(
+			[
+				['uuid-d', $action, 'admin', 11, 5, $changed('refD')],
+				['uuid-b', $action, 'admin', 10, null, $changed('refB')],
+				['uuid-c', $action, 'admin', 10, 5, $changed('refC')],
+				['uuid-a', $action, 'admin', 10, 5, $changed('refA')],
+			],
+			$rows
+		);
+		$this->assertSame(
+			[
+				['[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes', null, null, 'union query failed'],
+				['[ReferentialIntegrity] Batch CASCADE delete failed', ['uuid-b'], 'root-uuid', 'delete failed'],
+			],
+			$warnings
+		);
+	}//end testPerObjectFallbackGroupsByRegisterAndSchema()
+
+	/**
 	 * A throwing batched soft-delete write routes every target through the
 	 * per-object pipeline without throwing.
 	 *

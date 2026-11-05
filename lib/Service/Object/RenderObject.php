@@ -2746,13 +2746,13 @@ class RenderObject {
 		}
 
 		try {
-			return $this->attachLanguageMeta(
-				objectData: $objectData,
-				preResolveData: $preResolveData,
+			$subject = new LanguageMetaSubject(
 				entity: $entity,
 				schema: $schema,
-				register: $register
+				registerDefault: ($register?->getDefaultLanguage() ?? 'nl'),
+				preResolveData: $preResolveData
 			);
+			return $this->attachLanguageMeta(objectData: $objectData, subject: $subject);
 		} catch (\Throwable $e) {
 			$this->logRenderFailure(failure: 'languageMeta attach failed for', entity: $entity, error: $e);
 		}
@@ -3390,79 +3390,21 @@ class RenderObject {
 	}//end shouldAttachLanguageMeta()
 
 	/**
-	 * Attach the `_meta.languageMeta` envelope describing per-property
-	 * language metadata for translatable properties.
+	 * Attach the `_meta.languageMeta` envelope, keeping any existing `_meta` keys.
 	 *
-	 * The envelope is OFF by default; this method is only called when
-	 * `?_translationMeta=true` is on the request.
+	 * Each translatable property gets its served language, source language,
+	 * whether the served language is the source, and the workflow status of
+	 * its translation in the served language.
 	 *
-	 * @param array<string, mixed> $objectData Rendered data (post resolveTranslationsForRender).
-	 * @param array<string, mixed> $preResolveData Raw data (pre resolveTranslationsForRender).
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema $schema The schema for the entity.
-	 * @param Register|null $register The owning register (for default fallback).
+	 * @param array               $objectData The rendered object data
+	 * @param LanguageMetaSubject $subject    The entity, schema, register default and raw data
 	 *
-	 * @return array<string, mixed> Object data with `_meta.languageMeta` attached.
+	 * @return array The object data with the envelope, or unchanged without translatable properties
 	 *
 	 * @spec openspec/specs/i18n-source-of-truth/spec.md
 	 */
-	private function attachLanguageMeta(
-		array $objectData,
-		array $preResolveData,
-		ObjectEntity $entity,
-		Schema $schema,
-		?Register $register,
-	): array {
-		$translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-		if (count($translatableProps) === 0) {
-			return $objectData;
-		}
-
-		$uuid = (string)($entity->getUuid() ?? '');
-		if ($register !== null) {
-			$registerDefault = $register->getDefaultLanguage();
-		} else {
-			$registerDefault = 'nl';
-		}
-
-		$served = $this->languageService->getPreferredLanguage();
-
-		$languageMeta = [];
-		foreach ($translatableProps as $property) {
-			// Determine source language from object body override → schema
-			// property modifier → register default.
-			$sourceLanguage = $this->resolveSourceLanguageForProperty(
-				schema: $schema,
-				preResolveData: $preResolveData,
-				property: $property,
-				registerDefault: $registerDefault
-			);
-
-			// Look up status from the sidecar for the served language.
-			$status = 'source';
-			if ($uuid !== '' && $served !== $sourceLanguage) {
-				$row = null;
-				try {
-					$row = $this->translationMapper->findOne($uuid, $property, $served);
-				} catch (\Throwable $e) {
-					$row = null;
-				}
-
-				if ($row !== null) {
-					$status = (string)($row->getStatus() ?? Translation::STATUS_DRAFT);
-				} else {
-					$status = 'missing';
-				}
-			}
-
-			$languageMeta[$property] = [
-				'served' => $served,
-				'sourceLanguage' => $sourceLanguage,
-				'isSource' => ($served === $sourceLanguage),
-				'status' => $status,
-			];
-		}//end foreach
-
+	private function attachLanguageMeta(array $objectData, LanguageMetaSubject $subject): array {
+		$languageMeta = $this->languageMetaFor(subject: $subject);
 		if (count($languageMeta) === 0) {
 			return $objectData;
 		}
@@ -3476,6 +3418,103 @@ class RenderObject {
 		$objectData['_meta'] = $existingMeta;
 		return $objectData;
 	}//end attachLanguageMeta()
+
+	/**
+	 * The language meta of every translatable property of the subject.
+	 *
+	 * The source language comes from the object body override, then the schema
+	 * property, then the register default ('nl' without a register).
+	 *
+	 * @param LanguageMetaSubject $subject The entity, schema, register default and raw data
+	 *
+	 * @return array<string, array{served: string, sourceLanguage: string, isSource: bool, status: string}>
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function languageMetaFor(LanguageMetaSubject $subject): array {
+		$translatableProps = $this->translationHandler->getTranslatableProperties($subject->schema);
+		if (count($translatableProps) === 0) {
+			return [];
+		}
+
+		$served = $this->languageService->getPreferredLanguage();
+		$languageMeta = [];
+		foreach ($translatableProps as $property) {
+			$sourceLanguage = $this->resolveSourceLanguageForProperty(
+				schema: $subject->schema,
+				preResolveData: $subject->preResolveData,
+				property: $property,
+				registerDefault: $subject->registerDefault
+			);
+			$languageMeta[$property] = $this->languageEntry(served: $served, sourceLanguage: $sourceLanguage);
+		}
+
+		return $this->withSidecarStatus(languageMeta: $languageMeta, uuid: (string) ($subject->entity->getUuid() ?? ''));
+	}//end languageMetaFor()
+
+	/**
+	 * The language meta of one property before its sidecar status is known.
+	 *
+	 * @param string $served         The served language
+	 * @param string $sourceLanguage The property's source language
+	 *
+	 * @return array{served: string, sourceLanguage: string, isSource: bool, status: string}
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function languageEntry(string $served, string $sourceLanguage): array {
+		return ['served' => $served, 'sourceLanguage' => $sourceLanguage, 'isSource' => ($served === $sourceLanguage), 'status' => 'source'];
+	}//end languageEntry()
+
+	/**
+	 * Set the status of every property served in another language than its
+	 * source from the translation sidecar: the row's status (draft when unset),
+	 * or 'missing' when there is no row or it cannot be read.
+	 *
+	 * Without a uuid every status stays 'source'.
+	 *
+	 * @param array  $languageMeta The language meta per property
+	 * @param string $uuid         The object uuid
+	 *
+	 * @return array The language meta with sidecar statuses
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function withSidecarStatus(array $languageMeta, string $uuid): array {
+		foreach ($languageMeta as $property => $entry) {
+			if ($uuid === '' || $entry['isSource'] === true) {
+				continue;
+			}
+
+			try {
+				$row = $this->translationMapper->findOne($uuid, $property, $entry['served']);
+			} catch (\Throwable $e) {
+				$row = null;
+			}
+
+			$languageMeta[$property]['status'] = $this->translationRowStatus(row: $row);
+		}
+
+		return $languageMeta;
+	}//end withSidecarStatus()
+
+	/**
+	 * The workflow status of a sidecar translation row: its status (draft when
+	 * unset), or 'missing' without a row.
+	 *
+	 * @param Translation|null $row The sidecar row
+	 *
+	 * @return string The status
+	 *
+	 * @spec openspec/specs/i18n-source-of-truth/spec.md
+	 */
+	private function translationRowStatus(?Translation $row): string {
+		if ($row === null) {
+			return 'missing';
+		}
+
+		return (string) ($row->getStatus() ?? Translation::STATUS_DRAFT);
+	}//end translationRowStatus()
 
 	/**
 	 * Resolve the source language for a single property from object override

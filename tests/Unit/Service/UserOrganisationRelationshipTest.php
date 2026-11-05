@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -171,7 +172,7 @@ class UserOrganisationRelationshipTest extends TestCase {
 		);
 
 		// Create controller instance with mocked dependencies.
-		$this->organisationController = new OrganisationController(
+		$this->organisationController = OrganisationControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			organisationService: $this->organisationService,

@@ -112,6 +112,8 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class AuditTrail extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Unique identifier for the audit trail entry
@@ -551,55 +553,6 @@ class AuditTrail extends Entity implements JsonSerializable {
 	public function getChanged(): array {
 		return ($this->changed ?? []);
 	}//end getChanged()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity with data from an array
-	 *
-	 * Sets entity properties based on input array values
-	 *
-	 * @param array $object The data array to hydrate from
-	 *
-	 * @return static Returns $this for method chaining
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Convert entity to JSON serializable array
