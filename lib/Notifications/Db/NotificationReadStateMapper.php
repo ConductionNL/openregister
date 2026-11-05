@@ -55,6 +55,8 @@ use OCP\IDBConnection;
 
 /**
  * DB-backed read-state mapper — the only read-state implementation.
+ *
+ * @template-extends QBMapper<NotificationReadStateEntity>
  */
 class NotificationReadStateMapper extends QBMapper {
 	/**
