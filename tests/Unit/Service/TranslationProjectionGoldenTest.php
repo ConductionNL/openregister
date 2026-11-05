@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\TranslationProjectionService
+ * @uses \OCA\OpenRegister\Service\Object\PropertySourceLanguage
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
