@@ -83,7 +83,6 @@ class SettingsControllerTest extends TestCase {
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$this->l10n

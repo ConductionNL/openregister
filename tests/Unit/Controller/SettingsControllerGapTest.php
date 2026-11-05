@@ -49,7 +49,6 @@ class SettingsControllerGapTest extends TestCase {
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$l10n

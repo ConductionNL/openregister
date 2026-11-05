@@ -121,7 +121,7 @@ use RuntimeException;
  *   delegation methods each containing a single try/catch; the overall score exceeds the threshold
  *   purely from method count, not from deep conditional logic in any single method.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller requires DI for
- *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface, IAppManager)
+ *   AppFramework types (IRequest, IAppConfig, IDBConnection, ContainerInterface)
  *   plus SettingsService, LoggerInterface, and IL10N — all are single-call
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
