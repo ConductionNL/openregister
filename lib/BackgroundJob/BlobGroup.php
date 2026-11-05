@@ -54,7 +54,9 @@ final class BlobGroup {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(string $key, public readonly array $rows) {
-		[$this->registerId, $this->schemaId] = explode('_', $key);
+		$parts            = explode('_', $key);
+		$this->registerId = $parts[0];
+		$this->schemaId   = $parts[1];
 	}//end __construct()
 
 	/**
