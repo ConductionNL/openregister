@@ -65,6 +65,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class MagicBulkHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * Maximum packet size buffer percentage (0.1 = 10%, 0.5 = 50%)
@@ -405,36 +406,6 @@ class MagicBulkHandler {
 			// Use default buffer on error.
 		}//end try
 	}//end initializeMaxPacketSize()
-
-	/**
-	 * Sanitize column name for safe database usage
-	 *
-	 * @param string $name Column name to sanitize
-	 *
-	 * @return string Sanitized column name
-	 */
-	private function sanitizeColumnName(string $name): string {
-		// Convert camelCase to snake_case.
-		// Insert underscore before uppercase letters, then lowercase everything.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
-		$name = strtolower($name);
-
-		// Replace any remaining invalid characters with underscore.
-		$name = preg_replace('/[^a-z0-9_]/', '_', $name);
-
-		// Ensure it starts with a letter or underscore.
-		if (preg_match('/^[a-z_]/', $name) === false) {
-			$name = 'col_' . $name;
-		}
-
-		// Remove consecutive underscores.
-		$name = preg_replace('/_+/', '_', $name);
-
-		// Remove trailing underscores.
-		$name = rtrim($name, '_');
-
-		return $name;
-	}//end sanitizeColumnName()
 
 	/**
 	 * Perform bulk upsert operation on dynamic table

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemaImportControllerFactory;
 use OCA\OpenRegister\Controller\SchemaImportController;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -196,7 +197,7 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 			->with($this->callback(static fn (array $e): bool => $e['classification'] === 'compatible' && $e['version'] === '1.1.0'))
 			->willReturn(new SchemaChangelog());
 
-		$controller = new SchemaImportController(
+		$controller = SchemaImportControllerFactory::create(
 			'openregister',
 			$request,
 			$importService,

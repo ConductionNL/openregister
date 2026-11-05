@@ -19,6 +19,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
+use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -618,7 +619,11 @@ class RelationHandler {
 				return $this->emptyPage(query: $query);
 			}
 
-			$relatedObjects = $this->locateRelated(uuids: $uniqueIds);
+			$relatedObjects = $this->locateRelated(
+				uuids: $uniqueIds,
+				admitsFallback: fn (ObjectEntity $candidate): bool => $_multitenancy === false
+					|| $this->withinOrganisationBoundary(candidate: $candidate, _rbac: $_rbac)
+			);
 
 			// The per-table reads apply RBAC at query level, but the fallback rows
 			// were located without it, so every result is filtered here.
@@ -778,20 +783,21 @@ class RelationHandler {
 	 * holds a match is read through the filtered query, and a uuid no table read
 	 * returns falls back to the located row.
 	 *
-	 * @param array<mixed, string> $uuids The related uuids.
+	 * @param array<mixed, string>         $uuids          The related uuids.
+	 * @param Closure(ObjectEntity): bool $admitsFallback Whether a located row may fall back.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	private function locateRelated(array $uuids): array {
+	private function locateRelated(array $uuids, Closure $admitsFallback): array {
 		$located = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uuids));
 		$found = new RelatedObjectSet(wanted: $uuids);
 		foreach ($this->tablesOf(objects: $located) as $table) {
 			$this->readRelatedTable(table: $table, found: $found);
 		}
 
-		return $found->withFallback(located: $located);
+		return $found->withFallback(located: $located, admits: $admitsFallback);
 	}//end locateRelated()
 
 	/**
@@ -853,6 +859,43 @@ class RelationHandler {
 		);
 	}//end outgoingRow()
 
+
+	/**
+	 * Whether a row the cross-table lookup found lies inside the caller's organisation boundary.
+	 *
+	 * That lookup applies no access rule, so the row is read again through the
+	 * single-object read, which applies the same organisation filter as the
+	 * per-table query.
+	 *
+	 * @param ObjectEntity $candidate The row found by the cross-table lookup.
+	 * @param bool         $_rbac     Apply RBAC filters.
+	 *
+	 * @return bool True when the caller's read admits the row.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function withinOrganisationBoundary(ObjectEntity $candidate, bool $_rbac): bool {
+		$pair = $this->registerSchemaPair(registerId: (int)$candidate->getRegister(), schemaId: (int)$candidate->getSchema());
+		if ($pair === null) {
+			return false;
+		}
+
+		try {
+			$this->objectEntityMapper->find(
+				identifier: (string)$candidate->getUuid(),
+				register: $pair['register'],
+				schema: $pair['schema'],
+				_rbac: $_rbac,
+				_multitenancy: true
+			);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		return true;
+	}//end withinOrganisationBoundary()
 
 	/**
 	 * Filter objects by RBAC (schema-level authorization).
