@@ -35,24 +35,9 @@ abstract class AbstractObjectFileEvent extends Event {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function __construct(
-		private readonly string $objectUuid,
-		private readonly int $fileId,
-		private readonly array $data = [],
-	) {
+	public function __construct(private readonly string $objectUuid, private readonly int $fileId, private readonly array $data = []) {
 		parent::__construct();
 	}//end __construct()
-
-	/**
-	 * Get the object UUID.
-	 *
-	 * @return string The object UUID.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObjectUuid(): string {
-		return $this->objectUuid;
-	}//end getObjectUuid()
 
 	/**
 	 * Get the file ID.
@@ -64,6 +49,17 @@ abstract class AbstractObjectFileEvent extends Event {
 	public function getFileId(): int {
 		return $this->fileId;
 	}//end getFileId()
+
+	/**
+	 * Get the object UUID.
+	 *
+	 * @return string The object UUID.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getObjectUuid(): string {
+		return $this->objectUuid;
+	}//end getObjectUuid()
 
 	/**
 	 * Get additional event data.
