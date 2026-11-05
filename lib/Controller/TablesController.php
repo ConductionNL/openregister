@@ -21,9 +21,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\TablesControllerServices;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -56,29 +56,47 @@ class TablesController extends Controller {
 
 
 	/**
+	 * Application config
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $config;
+
+	/**
+	 * Magic mapper for table operations
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Register mapper
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param IAppConfig $config Application config
-	 * @param MagicMapperInterface $magicMapper Magic mapper for table operations
-	 * @param RegisterMapperInterface $registerMapper Register mapper
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
+	 * @param TablesControllerServices $services The tables controller services.
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
-		private readonly IAppConfig $config,
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		SchemaMapperInterface $schemaMapper,
+		TablesControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->config = $services->config;
+		$this->magicMapper = $services->magicMapper;
+		$this->registerMapper = $services->registerMapper;
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $services->registerMapper,
+			schemaMapper: $services->schemaMapper
 		);
 	}//end __construct()
 
