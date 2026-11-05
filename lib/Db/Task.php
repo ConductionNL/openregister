@@ -182,6 +182,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class Task extends Entity implements JsonSerializable, TaskInterface {
+	use HydrateKnownFieldsTrait;
 
 	/**
 	 * The six CMMN plan-item states (ADR-098 D4). Nothing else is persistable.
@@ -820,28 +821,6 @@ class Task extends Entity implements JsonSerializable, TaskInterface {
 	public function isInTerminalState(): bool {
 		return in_array($this->state, self::TERMINAL_STATES, true);
 	}//end isInTerminalState()
-
-	/**
-	 * Hydrate entity from array.
-	 *
-	 * @param array<string, mixed> $object Data to hydrate from.
-	 *
-	 * @return self This task.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
-	 */
-	public function hydrate(array $object): self {
-		foreach ($object as $fieldName => $value) {
-			if (array_key_exists($fieldName, $this->getFieldTypes()) === false || $fieldName === 'id') {
-				continue;
-			}
-
-			$setter = 'set' . ucfirst($fieldName);
-			$this->$setter($value);
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialise for the API.

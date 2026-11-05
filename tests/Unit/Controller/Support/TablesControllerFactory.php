@@ -20,7 +20,6 @@ final class TablesControllerFactory {
 	 *
 	 * @param mixed $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
-	 * @param IAppConfig $config Constructor argument.
 	 * @param MagicMapperInterface $magicMapper Constructor argument.
 	 * @param RegisterMapperInterface $registerMapper Constructor argument.
 	 * @param SchemaMapperInterface $schemaMapper Constructor argument.
@@ -31,7 +30,6 @@ final class TablesControllerFactory {
 	public static function args(
 		mixed $appName,
 		\OCP\IRequest $request,
-		\OCP\IAppConfig $config,
 		\OCA\OpenRegister\Db\MagicMapperInterface $magicMapper,
 		\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper,
 		\OCA\OpenRegister\Db\SchemaMapperInterface $schemaMapper,
@@ -41,7 +39,6 @@ final class TablesControllerFactory {
 			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\TablesControllerServices(
-				config: $config,
 				magicMapper: $magicMapper,
 				registerMapper: $registerMapper,
 				schemaMapper: $schemaMapper,

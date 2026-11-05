@@ -32,6 +32,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamClosure
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRef
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRelease
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamEntries
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowState
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunService

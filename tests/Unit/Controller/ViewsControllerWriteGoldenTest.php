@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
  * as a different recorded uid. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ViewsController
+ * @uses \OCA\OpenRegister\Controller\Support\ViewPatch
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReach
  * @uses \OCA\OpenRegister\Service\View\ViewAlert

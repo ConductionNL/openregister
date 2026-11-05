@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 /**
- * The deleting user, the root object and its schema slug of one cascade delete.
+ * The deleting user, the root object, its schema slug and the organisation of one cascade delete.
  */
 final readonly class CascadeDeleteOrigin {
 
@@ -29,11 +29,29 @@ final readonly class CascadeDeleteOrigin {
 	 * @param string      $userId            The user performing the deletion.
 	 * @param string      $cascadeSource     The uuid of the root object triggering the cascade.
 	 * @param string|null $triggerSchemaSlug The schema slug of the root object, for the audit row.
+	 * @param string|null $organisationId    The active organisation, for the deletion attribution.
 	 */
 	public function __construct(
 		public string $userId,
 		public string $cascadeSource,
 		public ?string $triggerSchemaSlug,
+		public ?string $organisationId = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The cascade context an audit row of a target deleted through the given property carries.
+	 *
+	 * @param array $target The cascade target.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	public function auditContext(array $target): array {
+		return [
+			'triggerObject' => $this->cascadeSource,
+			'triggerSchema' => $this->triggerSchemaSlug,
+			'action_type'   => 'referential_integrity.cascade_delete',
+			'property'      => ($target['property'] ?? null),
+		];
+	}//end auditContext()
 }//end class

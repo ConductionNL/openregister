@@ -24,6 +24,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
@@ -75,19 +76,22 @@ final class RelatedObjectSet {
 	}//end offer()
 
 	/**
-	 * The collected objects, followed by every located row whose uuid no per-table read returned.
+	 * The collected objects, followed by every located row whose uuid no per-table read returned and that `$admits` accepts.
 	 *
-	 * @param ObjectEntity[] $located The rows the cross-table lookup found.
+	 * @param ObjectEntity[]                    $located The rows the cross-table lookup found.
+	 * @param (Closure(ObjectEntity): bool)|null $admits Whether a located row may be kept; null keeps every row.
 	 *
 	 * @return ObjectEntity[]
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function withFallback(array $located): array {
+	public function withFallback(array $located, ?Closure $admits = null): array {
 		$missingUuids = array_diff($this->wanted, $this->foundUuids);
 		$objects = $this->objects;
 		foreach ($located as $candidate) {
-			if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
+			if (in_array($candidate->getUuid(), $missingUuids, true) === true
+				&& ($admits === null || $admits($candidate) === true)
+			) {
 				$objects[] = $candidate;
 			}
 		}
