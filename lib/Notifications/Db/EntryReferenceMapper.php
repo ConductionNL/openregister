@@ -80,26 +80,6 @@ class EntryReferenceMapper extends QBMapper {
 	}//end findForEntry()
 
 	/**
-	 * Every reference pointing AT one object: the other end of the link.
-	 *
-	 * @param string $targetUuid The referenced object.
-	 *
-	 * @return array<int, EntryReference> The rows.
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 */
-	public function findForTarget(string $targetUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('target_uuid', $qb->createNamedParameter($targetUuid)))
-			->orderBy('id', 'ASC');
-
-		return $this->findEntities(query: $qb);
-
-	}//end findForTarget()
-
-	/**
 	 * Drop every reference one entry's text produced.
 	 *
 	 * Called before the references of a rewritten entry are recorded again, so

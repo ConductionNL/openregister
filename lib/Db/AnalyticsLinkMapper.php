@@ -44,23 +44,6 @@ class AnalyticsLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find analytics links by report id.
-	 *
-	 * @param int $reportId The report id.
-	 *
-	 * @return AnalyticsLink[] Array of analytics links.
-	 */
-	public function findByReportId(int $reportId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('report_id', $qb->createNamedParameter($reportId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByReportId()
-
-	/**
 	 * Find a specific analytics link by object UUID and report id.
 	 *
 	 * @param string $objectUuid The object UUID.

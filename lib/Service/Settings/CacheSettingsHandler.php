@@ -57,6 +57,73 @@ use RuntimeException;
 class CacheSettingsHandler {
 
 	/**
+	 * The object cache service block: output field => [stats key, default].
+	 *
+	 * @var array<string, array{0: string, 1: int}>
+	 */
+	private const SERVICE_FIELDS = [
+		'entries' => ['entries', 0],
+		'hits' => ['hits', 0],
+		'requests' => ['requests', 0],
+		'memoryUsage' => ['memoryUsage', 0],
+	];
+
+	/**
+	 * The names cache block: output field => [stats key, default].
+	 *
+	 * @var array<string, array{0: string, 1: int|float}>
+	 */
+	private const NAME_FIELDS = [
+		'cache_size' => ['name_cache_size', 0],
+		'hit_rate' => ['name_hit_rate', 0.0],
+		'hits' => ['name_hits', 0],
+		'misses' => ['name_misses', 0],
+		'warmups' => ['name_warmups', 0],
+	];
+
+	/**
+	 * A cache whose statistics are not stored in the database: counting them would be a performance issue.
+	 *
+	 * @var array<string, int>
+	 */
+	private const UNTRACKED_SERVICE = ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0];
+
+	/**
+	 * The safe defaults reported when the statistics are unavailable.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const UNAVAILABLE_STATS = [
+		'overview' => [
+			'totalCacheSize' => 0,
+			'totalCacheEntries' => 0,
+			'overallHitRate' => 0.0,
+			'averageResponseTime' => 0.0,
+			'cacheEfficiency' => 0.0,
+		],
+		'services' => [
+			'object' => self::UNTRACKED_SERVICE,
+			'schema' => self::UNTRACKED_SERVICE,
+			'facet' => self::UNTRACKED_SERVICE,
+		],
+		'names' => [
+			'cache_size' => 0,
+			'hit_rate' => 0.0,
+			'hits' => 0,
+			'misses' => 0,
+			'warmups' => 0,
+			'enabled' => false,
+		],
+		'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
+		'performance' => [
+			'averageHitTime' => 0,
+			'averageMissTime' => 0,
+			'performanceGain' => 0,
+			'optimalHitRate' => 85.0,
+		],
+	];
+
+	/**
 	 * Cache factory
 	 *
 	 * @var ICacheFactory
@@ -142,99 +209,70 @@ class CacheSettingsHandler {
 	 *
 	 * @return array Cache stats with overview, services, names, distributed, performance, and lastUpdated.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex statistics aggregation requires comprehensive data structure
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-3
 	 */
 	public function getCacheStats(): array {
 		try {
-			// Get basic distributed cache info.
 			$distributedStats = $this->getDistributedCacheStats();
 			$performanceStats = $this->getCachePerformanceMetrics();
 
-			// Get object cache stats (only if CacheHandler provides them)
-			// Use cached stats to avoid expensive operations on every request.
+			// Cached object stats avoid expensive operations on every request.
 			$objectStats = $this->getCachedObjectStats();
 
-			$stats = [
-				'overview' => [
-					'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
-					'totalCacheEntries' => $objectStats['entries'] ?? 0,
-					'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
-					'averageResponseTime' => $performanceStats['averageHitTime'] ?? 0.0,
-					'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
-				],
+			return [
+				'overview' => $this->cacheOverview(objectStats: $objectStats, averageHitTime: $performanceStats['averageHitTime'] ?? 0.0),
 				'services' => [
-					'object' => [
-						'entries' => $objectStats['entries'] ?? 0,
-						'hits' => $objectStats['hits'] ?? 0,
-						'requests' => $objectStats['requests'] ?? 0,
-						'memoryUsage' => $objectStats['memoryUsage'] ?? 0,
-					],
-					'schema' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
-					'facet' => [
-						'entries' => 0,
-						// Not stored in database - would be performance issue.
-						'hits' => 0,
-						'requests' => 0,
-						'memoryUsage' => 0,
-					],
+					'object' => $this->countsOf(stats: $objectStats, fields: self::SERVICE_FIELDS),
+					'schema' => self::UNTRACKED_SERVICE,
+					'facet' => self::UNTRACKED_SERVICE,
 				],
-				'names' => [
-					'cache_size' => $objectStats['name_cache_size'] ?? 0,
-					'hit_rate' => $objectStats['name_hit_rate'] ?? 0.0,
-					'hits' => $objectStats['name_hits'] ?? 0,
-					'misses' => $objectStats['name_misses'] ?? 0,
-					'warmups' => $objectStats['name_warmups'] ?? 0,
-					'enabled' => true,
-				],
+				'names' => $this->countsOf(stats: $objectStats, fields: self::NAME_FIELDS) + ['enabled' => true],
 				'distributed' => $distributedStats,
 				'performance' => $performanceStats,
 				'lastUpdated' => (new DateTime())->format('c'),
 			];
-
-			return $stats;
 		} catch (Exception $e) {
-			// Return safe defaults if cache stats unavailable.
-			return [
-				'overview' => [
-					'totalCacheSize' => 0,
-					'totalCacheEntries' => 0,
-					'overallHitRate' => 0.0,
-					'averageResponseTime' => 0.0,
-					'cacheEfficiency' => 0.0,
-				],
-				'services' => [
-					'object' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'schema' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-					'facet' => ['entries' => 0, 'hits' => 0, 'requests' => 0, 'memoryUsage' => 0],
-				],
-				'names' => [
-					'cache_size' => 0,
-					'hit_rate' => 0.0,
-					'hits' => 0,
-					'misses' => 0,
-					'warmups' => 0,
-					'enabled' => false,
-				],
-				'distributed' => ['type' => 'none', 'backend' => 'Unknown', 'available' => false],
-				'performance' => [
-					'averageHitTime' => 0,
-					'averageMissTime' => 0,
-					'performanceGain' => 0,
-					'optimalHitRate' => 85.0,
-				],
+			return self::UNAVAILABLE_STATS + [
 				'lastUpdated' => (new DateTime())->format('c'),
 				'error' => 'Cache statistics unavailable: ' . $e->getMessage(),
 			];
 		}//end try
 	}//end getCacheStats()
+
+	/**
+	 * The overview block: size, entries and hit rate of the object cache.
+	 *
+	 * @param array<string, mixed> $objectStats    The object cache statistics.
+	 * @param mixed                $averageHitTime The average hit time from the performance metrics.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function cacheOverview(array $objectStats, $averageHitTime): array {
+		return [
+			'totalCacheSize' => $objectStats['memoryUsage'] ?? 0,
+			'totalCacheEntries' => $objectStats['entries'] ?? 0,
+			'overallHitRate' => $this->calculateHitRate(stats: $objectStats),
+			'averageResponseTime' => $averageHitTime,
+			'cacheEfficiency' => $this->calculateHitRate(stats: $objectStats),
+		];
+	}//end cacheOverview()
+
+	/**
+	 * Pick fields from a statistics payload: output field => [stats key, default].
+	 *
+	 * @param array<string, mixed>                          $stats  The statistics.
+	 * @param array<string, array{0: string, 1: int|float}> $fields The fields to pick.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function countsOf(array $stats, array $fields): array {
+		$counts = [];
+		foreach ($fields as $field => [$key, $default]) {
+			$counts[$field] = $stats[$key] ?? $default;
+		}
+
+		return $counts;
+	}//end countsOf()
 
 	/**
 	 * Get cached object statistics to avoid expensive operations on every request

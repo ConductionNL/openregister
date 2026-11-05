@@ -29,7 +29,6 @@ use DateTime;
 use InvalidArgumentException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -186,34 +185,4 @@ class PortalTaskDeliveryMapper extends QBMapper {
 
 		return parent::update(entity: $delivery);
 	}//end markFailed()
-
-	/**
-	 * The delivery rows of several tasks in ONE query, grouped by task uuid.
-	 *
-	 * @param array<int, string> $taskUuids The tasks.
-	 *
-	 * @return array<string, array<int, PortalTaskDelivery>> Rows by task uuid.
-	 *
-	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
-	 */
-	public function findForTasks(array $taskUuids): array {
-		$taskUuids = array_values(array_unique(array_filter(array_map('strval', $taskUuids), static fn (string $uuid): bool => $uuid !== '')));
-		if ($taskUuids === []) {
-			return [];
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->in('task_uuid', $qb->createNamedParameter($taskUuids, IQueryBuilder::PARAM_STR_ARRAY)))
-			->orderBy('requested_at', 'ASC')
-			->addOrderBy('id', 'ASC');
-
-		$grouped = [];
-		foreach ($this->findEntities(query: $qb) as $row) {
-			$grouped[(string)$row->getTaskUuid()][] = $row;
-		}
-
-		return $grouped;
-	}//end findForTasks()
 }//end class

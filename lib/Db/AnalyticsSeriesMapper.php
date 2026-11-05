@@ -26,7 +26,6 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -63,27 +62,4 @@ class AnalyticsSeriesMapper extends QBMapper {
 			return null;
 		}
 	}//end findByKey()
-
-	/**
-	 * Find all series scoped to a register (and optionally a schema).
-	 *
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId Optional schema id filter.
-	 *
-	 * @return AnalyticsSeries[] Matching series.
-	 */
-	public function findByScope(int $registerId, ?int $schemaId = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
-
-		if ($schemaId !== null) {
-			$qb->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-		}
-
-		$qb->orderBy('updated_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByScope()
 }//end class

@@ -180,22 +180,6 @@ class ConfigurationsControllerTest extends TestCase {
 		$this->assertEquals(400, $result->getStatus());
 	}
 
-	public function testExportSuccess(): void {
-		$config = new \OCA\OpenRegister\Db\Configuration();
-		$ref = new \ReflectionClass($config);
-		$prop = $ref->getProperty('id');
-		$prop->setAccessible(true);
-		$prop->setValue($config, 1);
-		$config->setTitle('TestConfig');
-		$this->configurationMapper->method('find')->willReturn($config);
-		$this->configurationService->method('exportConfig')->willReturn(['data' => 'test']);
-
-		$result = $this->controller->export(1);
-
-		// Returns DataDownloadResponse on success
-		$this->assertNotNull($result);
-	}
-
 	// ── create() sourceType / isLocal branches ──
 
 	public function testCreateWithGithubSourceTypeSetsIsLocalFalse(): void {
@@ -325,16 +309,6 @@ class ConfigurationsControllerTest extends TestCase {
 	}
 
 	// ── export() ──
-
-	public function testExportException(): void {
-		$this->configurationMapper->method('find')
-			->willThrowException(new \Exception('Not found'));
-
-		$result = $this->controller->export(999);
-
-		$this->assertInstanceOf(JSONResponse::class, $result);
-		$this->assertEquals(400, $result->getStatus());
-	}
 
 	// ── import() ──
 

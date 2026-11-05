@@ -40,23 +40,6 @@ class BookmarkLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find bookmark links by bookmark id.
-	 *
-	 * @param int $bookmarkId The bookmark id.
-	 *
-	 * @return BookmarkLink[] Array of bookmark links.
-	 */
-	public function findByBookmarkId(int $bookmarkId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByBookmarkId()
-
-	/**
 	 * Find a specific bookmark link by object UUID and bookmark id.
 	 *
 	 * @param string $objectUuid The object UUID.

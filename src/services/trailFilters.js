@@ -52,3 +52,21 @@ export function addPresent(filters, pairs) {
 		}
 	}
 }
+
+/**
+ * The distinct users of a trail list, as picker options.
+ *
+ * @param {Array<object>|undefined} trails The trail entries
+ * @return {Array<{label: string, value: string}>} The options
+ *
+ * @spec exclude Sidebar filter-state to store-filter plumbing; no backend contract.
+ */
+export function trailUserOptions(trails) {
+	if (!trails || !trails.length) {
+		return []
+	}
+	const users = new Set(
+		trails.map((trail) => trail.userName || trail.user).filter(Boolean),
+	)
+	return [...users].map((user) => ({ label: user, value: user }))
+}

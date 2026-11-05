@@ -205,19 +205,6 @@ class SchemaImportService {
 	}//end importGgmUpload()
 
 	/**
-	 * Detect the dialect of a decoded upload document.
-	 *
-	 * @param array<string, mixed> $document The decoded document.
-	 *
-	 * @return string|null The detected dialect, or null when undetectable.
-	 *
-	 * @spec openspec/specs/schema-import/spec.md
-	 */
-	public function detectDialect(array $document): ?string {
-		return $this->detector->detect($document);
-	}//end detectDialect()
-
-	/**
 	 * Resolve the effective dialect for an upload: explicit wins, else detect,
 	 * else fail with 422 listing the supported dialects.
 	 *

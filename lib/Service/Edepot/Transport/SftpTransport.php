@@ -40,6 +40,8 @@ use RuntimeException;
  * @psalm-suppress UnusedClass
  */
 class SftpTransport implements TransportInterface {
+
+	use SipTransportSteps;
 	/**
 	 * Constructor.
 	 *
@@ -68,11 +70,7 @@ class SftpTransport implements TransportInterface {
 		);
 
 		try {
-			$this->validateConfig(config: $config);
-
-			if (file_exists($sipFilePath) === false) {
-				throw new RuntimeException("SIP file not found: {$sipFilePath}");
-			}
+			$this->assertSendable(sipFilePath: $sipFilePath, config: $config);
 
 			$localSize = filesize($sipFilePath);
 			$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
@@ -112,15 +110,7 @@ class SftpTransport implements TransportInterface {
 				'phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.'
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[SftpTransport] SFTP transfer failed',
-				context: ['error' => $e->getMessage()]
-			);
-
-			return new TransportResult(
-				success: false,
-				errorMessage: $e->getMessage()
-			);
+			return $this->failedTransfer(cause: $e, message: '[SftpTransport] SFTP transfer failed');
 		}//end try
 	}//end send()
 
@@ -137,24 +127,31 @@ class SftpTransport implements TransportInterface {
 		try {
 			$this->validateConfig(config: $config);
 
-			if (class_exists('\phpseclib3\Net\SFTP') === false) {
-				$this->logger->warning(
-					message: '[SftpTransport] phpseclib3 not available for connection test'
-				);
-				return false;
-			}
-
-			$sftp = $this->createSftpConnection(config: $config);
-			$sftp->pwd();
-			return true;
+			return $this->pingWithPhpseclib(config: $config);
 		} catch (\Exception $e) {
+			return $this->failedConnectionTest(cause: $e, message: '[SftpTransport] Connection test failed');
+		}
+	}//end testConnection()
+
+	/**
+	 * Open a connection and ask the working directory; false without phpseclib3.
+	 *
+	 * @param array<string, mixed> $config The transport config.
+	 *
+	 * @return bool True when the server answered.
+	 */
+	private function pingWithPhpseclib(array $config): bool {
+		if (class_exists('\phpseclib3\Net\SFTP') === false) {
 			$this->logger->warning(
-				message: '[SftpTransport] Connection test failed',
-				context: ['error' => $e->getMessage()]
+				message: '[SftpTransport] phpseclib3 not available for connection test'
 			);
 			return false;
 		}
-	}//end testConnection()
+
+		$sftp = $this->createSftpConnection(config: $config);
+		$sftp->pwd();
+		return true;
+	}//end pingWithPhpseclib()
 
 	/**
 	 * Get transport name.

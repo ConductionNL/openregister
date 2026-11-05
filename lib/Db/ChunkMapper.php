@@ -213,34 +213,6 @@ class ChunkMapper extends QBMapper {
 	}//end countIndexed()
 
 	/**
-	 * Count unindexed chunks.
-	 *
-	 * Chunks that have been extracted but not yet indexed in the search engine.
-	 *
-	 * @return int Unindexed chunk count
-	 */
-	public function countUnindexed(): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('id'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						false,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countUnindexed()
-
-	/**
 	 * Count vectorized chunks.
 	 *
 	 * Chunks that have been converted to vector embeddings.
@@ -389,44 +361,6 @@ class ChunkMapper extends QBMapper {
 
 		return $count;
 	}//end countFileSourceSummaries()
-
-	/**
-	 * Find unindexed chunks.
-	 *
-	 * Retrieves chunks that need to be indexed.
-	 *
-	 * @param int|null $limit Maximum number of chunks to return
-	 * @param int|null $offset Offset for pagination
-	 *
-	 * @return Chunk[] Array of unindexed chunks
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
-	 */
-	public function findUnindexed(?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'indexed',
-					$qb->createNamedParameter(
-						false,
-						\OCP\DB\QueryBuilder\IQueryBuilder::PARAM_BOOL
-					)
-				)
-			)
-			->orderBy('created_at', 'ASC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findUnindexed()
 
 	/**
 	 * Find unvectorized chunks.

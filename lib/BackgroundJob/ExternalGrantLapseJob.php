@@ -49,18 +49,19 @@ class ExternalGrantLapseJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory               $time     Time factory for TimedJob.
+	 * @param LoggerInterface            $logger   Diagnostics.
 	 * @param SchemaMapperInterface      $schemas  Lists the schemas whose grants are read.
 	 * @param ExternalGrantLapseNotifier $notifier Warns the holders.
-	 * @param LoggerInterface            $logger   Diagnostics.
 	 */
 	public function __construct(
 		ITimeFactory $time,
+		private readonly LoggerInterface $logger,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly ExternalGrantLapseNotifier $notifier,
-		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
+		$this->setTimeSensitivity(sensitivity: self::TIME_INSENSITIVE);
 	}//end __construct()
 
 	/**

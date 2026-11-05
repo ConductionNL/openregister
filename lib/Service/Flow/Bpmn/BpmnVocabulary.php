@@ -168,19 +168,6 @@ final class BpmnVocabulary {
 	];
 
 	/**
-	 * Whether the vocabulary knows how to export a node type directly.
-	 *
-	 * @param string $nodeType The node type.
-	 *
-	 * @return bool True when a row names it.
-	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
-	 */
-	public function exportsDirectly(string $nodeType): bool {
-		return array_key_exists($nodeType, self::EXPORT);
-	}//end exportsDirectly()
-
-	/**
 	 * The BPMN element a node type exports as.
 	 *
 	 * @param string $nodeType The node type.

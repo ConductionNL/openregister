@@ -32,6 +32,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class ConsumerMapper extends QBMapper {
+
+	use ColumnFiltersTrait;
+
 	/**
 	 * ConsumerMapper constructor.
 	 *
@@ -86,19 +89,7 @@ class ConsumerMapper extends QBMapper {
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		foreach ($filters as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(separator: ' OR ', array: $searchConditions) . ')');

@@ -112,25 +112,4 @@ class CalendarDependency {
 
 		return self::INDEPENDENT;
 	}//end verdictFor()
-
-	/**
-	 * Whether a timer is even a candidate, before the resolver is asked.
-	 *
-	 * The narrowing a query can do with an index: a timer naming ANOTHER
-	 * calendar cannot possibly resolve to the changed one, because a named slug
-	 * short-circuits the resolution order. Everything else — the changed slug
-	 * itself, and every timer naming nothing — has to be asked.
-	 *
-	 * @param string|null $timerCalendarSlug The calendar the timer names.
-	 * @param string      $changedSlug       The calendar that changed.
-	 *
-	 * @return bool True when the resolver has to be asked.
-	 *
-	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
-	 */
-	public function isCandidate(?string $timerCalendarSlug, string $changedSlug): bool {
-		$named = trim((string)$timerCalendarSlug);
-
-		return ($named === '' || $named === $changedSlug);
-	}//end isCandidate()
 }//end class

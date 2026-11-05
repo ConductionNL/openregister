@@ -205,19 +205,6 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *       the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->deckLinkService->isDeckAvailable();
-
-		$status = 'unavailable';
-		$message = 'NC Deck app is not installed';
-		if ($available === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->deckLinkService->isDeckAvailable(), missing: 'NC Deck app is not installed');
 	}//end health()
 }//end class
