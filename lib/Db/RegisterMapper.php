@@ -76,6 +76,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RegisterMapper extends QBMapper implements RegisterMapperInterface {
+
+	use ColumnFiltersTrait;
 	use MultiTenancyTrait;
 	use SlugIdLookupTrait;
 
@@ -559,19 +561,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			->setMaxResults($limit)
 			->setFirstResult($offset ?? 0);
 
-		foreach ($filters ?? [] as $filter => $value) {
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($filter));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($filter));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
-		}
+		$this->applyColumnFilters(qb: $qb, filters: $filters);
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
