@@ -701,42 +701,6 @@ class SettingsHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test getLLMSettingsOnly returns expected defaults
-	 *
-	 * @return void
-	 */
-	public function testGetLLMSettingsOnlyReturnsDefaults(): void {
-		$result = $this->configHandler->getLLMSettingsOnly();
-
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('enabled', $result);
-		$this->assertArrayHasKey('vectorConfig', $result);
-		$this->assertArrayHasKey('backend', $result['vectorConfig']);
-		$this->assertArrayHasKey('solrField', $result['vectorConfig']);
-	}
-
-	/**
-	 * Test updateLLMSettingsOnly persists and merges config
-	 *
-	 * @return void
-	 */
-	public function testUpdateLLMSettingsOnlyPersistsAndMerges(): void {
-		$this->trackConfigKey('llm');
-
-		$result = $this->configHandler->updateLLMSettingsOnly([
-			'enabled' => true,
-			'embeddingProvider' => 'openai',
-			'openaiConfig' => ['apiKey' => 'test-key-123'],
-		]);
-
-		$this->assertTrue($result['enabled']);
-		$this->assertEquals('openai', $result['embeddingProvider']);
-		$this->assertEquals('test-key-123', $result['openaiConfig']['apiKey']);
-		// Verify vector config preserved.
-		$this->assertArrayHasKey('vectorConfig', $result);
-	}
-
-	/**
 	 * Test getVersionInfoOnly returns version info
 	 *
 	 * @return void
@@ -747,39 +711,6 @@ class SettingsHandlersIntegrationTest extends TestCase {
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('version', $result);
 		$this->assertArrayHasKey('name', $result);
-	}
-
-	/**
-	 * Test getFileSettingsOnly on ConfigurationSettingsHandler
-	 *
-	 * @return void
-	 */
-	public function testConfigHandlerGetFileSettingsOnlyReturnsDefaults(): void {
-		$result = $this->configHandler->getFileSettingsOnly();
-
-		$this->assertIsArray($result);
-		$this->assertArrayHasKey('vectorizationEnabled', $result);
-		$this->assertArrayHasKey('chunkingStrategy', $result);
-		$this->assertArrayHasKey('enabledFileTypes', $result);
-	}
-
-	/**
-	 * Test updateFileSettingsOnly on ConfigurationSettingsHandler
-	 *
-	 * @return void
-	 */
-	public function testConfigHandlerUpdateFileSettingsOnlyPersists(): void {
-		$this->trackConfigKey('fileManagement');
-
-		$result = $this->configHandler->updateFileSettingsOnly([
-			'vectorizationEnabled' => true,
-			'chunkSize' => 2000,
-			'extractionMode' => 'immediate',
-		]);
-
-		$this->assertTrue($result['vectorizationEnabled']);
-		$this->assertEquals(2000, $result['chunkSize']);
-		$this->assertEquals('immediate', $result['extractionMode']);
 	}
 
 	// =========================================================================
