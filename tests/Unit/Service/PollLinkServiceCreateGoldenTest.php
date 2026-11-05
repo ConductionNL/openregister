@@ -41,6 +41,7 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\PollLinkService
  * @covers \OCA\OpenRegister\Service\PollDraft
  * @uses   \OCA\OpenRegister\Db\PollLink
+ * @uses   \OCA\OpenRegister\Service\LinkTarget
  */
 class PollLinkServiceCreateGoldenTest extends TestCase {
 

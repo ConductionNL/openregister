@@ -66,6 +66,19 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
 
 /**
  * Golden pins for the link services' create/link methods.
+ *
+ * @covers \OCA\OpenRegister\Service\EmailLinkService
+ * @covers \OCA\OpenRegister\Service\ShareLinkService
+ * @covers \OCA\OpenRegister\Service\DeckLinkService
+ * @covers \OCA\OpenRegister\Service\MapLinkService
+ * @covers \OCA\OpenRegister\Service\LinkTarget
+ * @covers \OCA\OpenRegister\Service\EmailMessageRef
+ * @covers \OCA\OpenRegister\Service\ShareDraft
+ * @covers \OCA\OpenRegister\Service\CardDraft
+ * @covers \OCA\OpenRegister\Service\PoiDraft
+ * @uses   \OCA\OpenRegister\Db\EmailLink
+ * @uses   \OCA\OpenRegister\Db\DeckLink
+ * @uses   \OCA\OpenRegister\Db\MapLink
  */
 class LinkServiceCreateGoldenTest extends TestCase {
 
