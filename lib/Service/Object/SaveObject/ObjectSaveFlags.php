@@ -81,6 +81,13 @@ final class ObjectSaveFlags {
 	public bool $unowned = false;
 
 	/**
+	 * Whether the request behind this write tried to name its own audit cause.
+	 *
+	 * @var boolean
+	 */
+	public bool $clientCauseAttempt = false;
+
+	/**
 	 * Whether the caller asks to save through a blocking duplicate match.
 	 *
 	 * @var boolean
