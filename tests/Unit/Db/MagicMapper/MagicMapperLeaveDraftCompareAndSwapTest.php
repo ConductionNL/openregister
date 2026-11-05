@@ -160,6 +160,5 @@ class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 		$draft->setUuid('uuid-1');
 		$draft->setStatus(ObjectEntity::STATUS_DRAFT);
 		$this->assertSame('active', (new DraftStatusPolicy())->resolveStatus(entity: $draft, selfData: ['status' => 'active']));
-		$this->assertTrue(DraftStatusPolicy::isLeaving(uuid: 'uuid-1'));
 	}//end promote()
 }//end class

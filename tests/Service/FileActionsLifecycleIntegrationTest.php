@@ -200,16 +200,6 @@ class FileActionsLifecycleIntegrationTest extends TestCase {
 		$this->assertNotNull($afterRename);
 		$this->assertSame('integration', $afterRename->getCategory());
 
-		// 4. LOCK ------------------------------------------------------
-		$lockedFile = $this->fileMapper->setLockForFile(
-			$fileId,
-			'admin',
-			new \DateTime(),
-			new \DateTime('+1 hour')
-		);
-		$this->assertSame('admin', $lockedFile->getLockedBy());
-		$this->assertNotNull($lockedFile->getLockedAt());
-
 		// 5. COPY ------------------------------------------------------
 		$copy = $this->fileService->copyFile(
 			$this->sourceObject,

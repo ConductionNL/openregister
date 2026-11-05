@@ -53,7 +53,6 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
-use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;

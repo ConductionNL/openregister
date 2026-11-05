@@ -179,7 +179,7 @@ class Version1Date20260809000000Test extends TestCase {
 	 *
 	 * A row names schema_id, facet_type, field_name, facet_config, cache_data,
 	 * created, updated and expires; rows are keyed on (schema_id, field_name)
-	 * and FacetCacheHandler::getCacheStatistics() groups by facet_type.
+	 * and its statistics grouped by facet_type.
 	 *
 	 * @return void
 	 */
@@ -204,7 +204,7 @@ class Version1Date20260809000000Test extends TestCase {
 			$this->assertContains(
 				$column,
 				$this->columns['openregister_schema_facet_cache'],
-				"openregister_schema_facet_cache is missing the '{$column}' column, which FacetCacheHandler writes."
+				"openregister_schema_facet_cache is missing the '{$column}' column."
 			);
 		}
 
@@ -254,8 +254,9 @@ class Version1Date20260809000000Test extends TestCase {
 	public function testMigrationCreatesExactlyTheTablesTheHandlersQuery(): void {
 		$schemaCacheTable = (new \ReflectionClass(\OCA\OpenRegister\Service\Schemas\SchemaCacheHandler::class))
 			->getConstant('CACHE_TABLE');
-		$facetCacheTable = (new \ReflectionClass(\OCA\OpenRegister\Service\Schemas\FacetCacheHandler::class))
-			->getConstant('FACET_CACHE_TABLE');
+		// Nothing reads the facet cache table any more; it stays until a later
+		// migration drops it, so it is named here rather than read off a handler.
+		$facetCacheTable = 'openregister_schema_facet_cache';
 
 		$this->assertIsString($schemaCacheTable);
 		$this->assertIsString($facetCacheTable);
@@ -272,7 +273,7 @@ class Version1Date20260809000000Test extends TestCase {
 		$this->assertSame(
 			$expected,
 			$created,
-			'The migration must create exactly the tables SchemaCacheHandler and FacetCacheHandler query. '
+			'The migration must create exactly the schema cache table SchemaCacheHandler queries and the facet cache table. '
 			. 'If this fails, one side was renamed and the cache is silently dead again.'
 		);
 	}//end testMigrationCreatesExactlyTheTablesTheHandlersQuery()
