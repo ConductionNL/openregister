@@ -2387,34 +2387,20 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return new JSONResponse(
-				data: ['error' => 'Geo filtering primitives not configured'],
-				statusCode: 501
-			);
+			return new JSONResponse(data: ['error' => 'Geo filtering primitives not configured'], statusCode: 501);
 		}
 
-		$body = $this->request->getParams();
 		try {
-			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $body);
+			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $this->request->getParams());
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
 		// Reuse the standard listing path, then post-filter.
-		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
-		$payload = (array)$listing->getData();
-		$rows = ($payload['results'] ?? []);
-		if (is_array($rows) === false) {
-			return $listing;
-		}
-
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$payload['results'] = $filtered;
-		if (isset($payload['total']) === true) {
-			$payload['total'] = count($filtered);
-		}
-
-		return new JSONResponse(data: $payload);
+		return $this->geoFilteredListing(
+			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
+			filters: $filters
+		);
 	}//end geoSearch()
 
 	/**
@@ -2451,19 +2437,11 @@ class ObjectsController extends Controller {
 
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
-		$fields = $this->parseFieldsParam(params: $params);
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			fields: $fields,
+			geoProperty: $this->geoPropertyParam(params: $params),
+			fields: $this->parseFieldsParam(params: $params),
 			includeArea: true
 		);
 
@@ -2504,24 +2482,10 @@ class ObjectsController extends Controller {
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
 
-		$maxFeatures = null;
-		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
-		if ($rawMax !== null && is_numeric($rawMax) === true) {
-			$maxFeatures = (int)$rawMax;
-		}
-
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
-
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			maxFeatures: $maxFeatures
+			geoProperty: $this->geoPropertyParam(params: $params),
+			maxFeatures: $this->wfsMaxFeatures(params: $params)
 		);
 
 		return new JSONResponse(data: $response);
@@ -2557,27 +2521,107 @@ class ObjectsController extends Controller {
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->geo->pdokGeocoder->geocodeFree(
-				query: (string)$query,
-				maxItems: 5,
-				bagOnly: $bagOnly
-			);
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, maxItems: 5, bagOnly: $bagOnly);
 			return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
 		}
 
+		return $this->reverseGeocodeResponse(params: $params, available: $available);
+	}//end geocode()
+
+	/**
+	 * The address at the `lon` and `lat` of a geocode request.
+	 *
+	 * @param array $params    The request params.
+	 * @param bool  $available Whether the geocoder is available.
+	 *
+	 * @return JSONResponse The address, or a 422 without coordinates.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function reverseGeocodeResponse(array $params, bool $available): JSONResponse {
 		$lon = ($params['lon'] ?? null);
 		$lat = ($params['lat'] ?? null);
-		if (is_numeric($lon) === true && is_numeric($lat) === true) {
-			$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
-			return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+		if (is_numeric($lon) === false || is_numeric($lat) === false) {
+			return new JSONResponse(data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='], statusCode: 422);
 		}
 
-		return new JSONResponse(
-			data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
-			statusCode: 422
-		);
+		$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
+		return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+	}//end reverseGeocodeResponse()
 
-	}//end geocode()
+	/**
+	 * A listing response with its rows run through geo filters.
+	 *
+	 * @param JSONResponse $listing The listing.
+	 * @param array        $filters The parsed filters.
+	 *
+	 * @return JSONResponse The filtered listing, or the listing when its results are not an array.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoFilteredListing(JSONResponse $listing, array $filters): JSONResponse {
+		$payload = (array)$listing->getData();
+		$payload['results'] = ($payload['results'] ?? []);
+		if (is_array($payload['results']) === false) {
+			return $listing;
+		}
+
+		return new JSONResponse(data: $this->withGeoFilteredRows(result: $payload, filters: $filters));
+	}//end geoFilteredListing()
+
+	/**
+	 * A result with its rows run through geo filters, its total following when it has one.
+	 *
+	 * @param array $result  The result, with an array of rows.
+	 * @param array $filters The parsed filters.
+	 *
+	 * @return array The result.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function withGeoFilteredRows(array $result, array $filters): array {
+		$result['results'] = $this->geo->geoFilterApplier->applyAll(rows: $result['results'], filters: $filters);
+		if (isset($result['total']) === true) {
+			$result['total'] = count($result['results']);
+		}
+
+		return $result;
+	}//end withGeoFilteredRows()
+
+	/**
+	 * The `geo.property` request param.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The property, or null when not given.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoPropertyParam(array $params): ?string {
+		if (isset($params['geo.property']) === false) {
+			return null;
+		}
+
+		return (string)$params['geo.property'];
+	}//end geoPropertyParam()
+
+	/**
+	 * The feature cap of a WFS request: `count`, or else `maxFeatures`.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return int|null The cap, or null when none is given or it is not numeric.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function wfsMaxFeatures(array $params): ?int {
+		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+		if (is_numeric($rawMax) === true) {
+			return (int)$rawMax;
+		}
+
+		return null;
+	}//end wfsMaxFeatures()
 
 	/**
 	 * Fetch the RBAC-scoped listing rows for a register/schema.
@@ -2647,24 +2691,11 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function applyGeoQueryFilters(array $params, array $result): array {
-		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return $result;
-		}
-
 		// NC's IRequest parses `geo.bbox` etc. as a nested array
 		// (`geo: {bbox: ...}`). Re-flatten back to the dotted form the
 		// parser expects, so callers using either notation work.
 		$flatParams = $this->flattenGeoParams(params: $params);
-
-		$hasGeoParam = false;
-		foreach (['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'] as $key) {
-			if (isset($flatParams[$key]) === true) {
-				$hasGeoParam = true;
-				break;
-			}
-		}
-
-		if ($hasGeoParam === false) {
+		if ($this->asksForGeoFilter(flatParams: $flatParams) === false) {
 			return $result;
 		}
 
@@ -2674,27 +2705,33 @@ class ObjectsController extends Controller {
 			// Malformed input: surface a 422-shape envelope inside the
 			// existing result body so consumers see the validation error
 			// without crashing the whole listing path.
-			return [
-				'error' => 'geo filter parse error: ' . $e->getMessage(),
-				'results' => [],
-				'total' => 0,
-			];
+			return ['error' => 'geo filter parse error: ' . $e->getMessage(), 'results' => [], 'total' => 0];
 		}
 
-		if ($filters === [] || isset($result['results']) === false || is_array($result['results']) === false) {
+		if ($filters === [] || is_array($result['results'] ?? null) === false) {
 			return $result;
 		}
 
-		$rows = $result['results'];
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$result['results'] = $filtered;
-		// Update `total` to reflect the post-filter count when present.
-		if (isset($result['total']) === true) {
-			$result['total'] = count($filtered);
+		return $this->withGeoFilteredRows(result: $result, filters: $filters);
+	}//end applyGeoQueryFilters()
+
+	/**
+	 * Whether geo filtering is configured and the request names a geo param.
+	 *
+	 * @param array $flatParams The params, `geo.*` keys flattened.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function asksForGeoFilter(array $flatParams): bool {
+		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
+			return false;
 		}
 
-		return $result;
-	}//end applyGeoQueryFilters()
+		$named = array_filter(['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'], fn (string $key): bool => isset($flatParams[$key]));
+		return $named !== [];
+	}//end asksForGeoFilter()
 
 	/**
 	 * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
