@@ -74,8 +74,18 @@ export function schemaSelect(register, schemas) {
 	const inRegister = schemas.filter((schema) =>
 		register.schemas.some((registerSchema) => registerSchema.id === schema.id),
 	)
+	return schemaPicker(inRegister)
+}
+
+/**
+ * A schema picker over the given schemas.
+ *
+ * @param {Array<object>} schemas The schemas to offer
+ * @return {object} The NcSelect bag
+ */
+export function schemaPicker(schemas) {
 	return scopeSelect(
-		inRegister.map((schema) => scopeOption(schema, 'schema')),
+		schemas.map((schema) => scopeOption(schema, 'schema')),
 		'schema',
 	)
 }
