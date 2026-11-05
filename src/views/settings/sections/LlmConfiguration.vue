@@ -457,6 +457,15 @@ const FILE_COUNTS = {
 }
 
 /**
+ * Chat stats fields and the response keys they come from.
+ */
+const CHAT_COUNTS = {
+	totalAgents: 'total_agents',
+	totalConversations: 'total_conversations',
+	totalMessages: 'total_messages',
+}
+
+/**
  * Object stats fields and the response keys they come from.
  */
 const OBJECT_COUNTS = {
@@ -796,18 +805,12 @@ export default {
 		 */
 		async loadChatStats() {
 			try {
-				// TODO: Implement API endpoint to get chat stats
-				// For now, use placeholder or existing API
 				const response = await this.settingsStore.getChatStats()
 				if (response) {
-					this.chatStats.totalAgents = response.total_agents || 0
-					this.chatStats.totalConversations =
-						response.total_conversations || 0
-					this.chatStats.totalMessages = response.total_messages || 0
+					Object.assign(this.chatStats, countsOf(response, CHAT_COUNTS))
 				}
 			} catch (error) {
 				console.error('Failed to load chat stats:', error)
-				// Don't throw error, just use zeros
 			}
 		},
 
@@ -826,13 +829,24 @@ export default {
 				await this.loadDatabaseInfo()
 				showSuccess(this.t('openregister', 'Database information refreshed'))
 			} catch (error) {
-				console.error('Failed to refresh database info:', error)
-				showError(
-					this.t('openregister', 'Failed to refresh database information'),
-				)
+				this.databaseRefreshFailed(error)
 			} finally {
 				this.refreshingDatabase = false
 			}
+		},
+
+		/**
+		 * Report a failed database refresh.
+		 *
+		 * @param {Error} error The failure
+		 * @spec exclude UI plumbing — reports a failed database refresh
+		 * @return {void}
+		 */
+		databaseRefreshFailed(error) {
+			console.error('Failed to refresh database info:', error)
+			showError(
+				this.t('openregister', 'Failed to refresh database information'),
+			)
 		},
 
 		/**
@@ -981,24 +995,44 @@ export default {
 		async loadVectorStats() {
 			if (!this.llmSettings.enabled) return
 
-			this.loadingStats = true
-			this.llmError = false
-			this.llmErrorMessage = ''
-
+			this.beginVectorStatsLoad()
 			try {
 				const response = await this.settingsStore.getVectorStats()
 				if (response) {
 					this.applyVectorStats(response)
 				}
 			} catch (error) {
-				console.error('Failed to load vector stats:', error)
-				this.llmError = true
-				this.llmErrorMessage =
-					error.message || 'Failed to connect to LLM service'
-				this.llmConnectionStatus = 'Disconnected'
+				this.vectorStatsFailed(error)
 			} finally {
 				this.loadingStats = false
 			}
+		},
+
+		/**
+		 * Mark the vector stats as loading and clear the last LLM error.
+		 *
+		 * @spec exclude UI plumbing — resets the vector stats state
+		 * @return {void}
+		 */
+		beginVectorStatsLoad() {
+			this.loadingStats = true
+			this.llmError = false
+			this.llmErrorMessage = ''
+		},
+
+		/**
+		 * Show the LLM service as unreachable after a failed stats request.
+		 *
+		 * @param {Error} error The failure
+		 * @spec exclude UI plumbing — reports failed vector stats
+		 * @return {void}
+		 */
+		vectorStatsFailed(error) {
+			console.error('Failed to load vector stats:', error)
+			this.llmError = true
+			this.llmErrorMessage =
+				error.message || 'Failed to connect to LLM service'
+			this.llmConnectionStatus = 'Disconnected'
 		},
 
 		/**
@@ -1015,6 +1049,17 @@ export default {
 				? 'Connected'
 				: 'Disconnected'
 			assignVectorCounts(this.vectorStats, stats)
+			this.applyFileAndObjectCounts(response)
+		},
+
+		/**
+		 * Show the file and object counts a vector stats response carries.
+		 *
+		 * @param {object} response The vector stats response
+		 * @spec exclude UI plumbing — maps vector stats for display
+		 * @return {void}
+		 */
+		applyFileAndObjectCounts(response) {
 			if (response.files) {
 				Object.assign(this.fileStats, countsOf(response.files, FILE_COUNTS))
 			}
@@ -1055,47 +1100,6 @@ export default {
 		 */
 		showVectorizeFilesDialog() {
 			this.showFileVectorizationModal = true
-		},
-
-		/**
-		 * Vectorize all files
-		 *
-		 * @spec exclude UI plumbing — starts a background vectorize job via API
-		 * @return {Promise<void>}
-		 */
-		async vectorizeAllFiles() {
-			this.vectorizing = true
-
-			try {
-				// Start background job
-				await axios.post(
-					generateUrl('/apps/openregister/api/files/vectorize/batch'),
-					{
-						batchSize: 25,
-					},
-				)
-
-				showSuccess(
-					this.t(
-						'openregister',
-						'File vectorization started. Check the statistics section for progress.',
-					),
-				)
-				await this.loadAllStats()
-			} catch (error) {
-				console.error('Failed to start file vectorization:', error)
-				showError(
-					this.t(
-						'openregister',
-						'Failed to start vectorization: {error}',
-						{
-							error: error.response?.data?.error || error.message,
-						},
-					),
-				)
-			} finally {
-				this.vectorizing = false
-			}
 		},
 	},
 }
