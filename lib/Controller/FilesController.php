@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
-use Closure;
 use Exception;
 use OCA\OpenRegister\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Controller\Support\FilesControllerServices;
@@ -2010,9 +2009,19 @@ class FilesController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$transfer = new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId);
-		// ADR-005 / gate-7: object-level RBAC on the source object.
-		$guard = fn (): ?ObjectEntity => $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
-		return $this->transferFile(transfer: $transfer, sourceGuard: $guard);
+		$this->setObjectContext(register: $register, schema: $schema);
+
+		try {
+			// ADR-005 / gate-7: object-level RBAC on the source object.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
+			return $this->transferFile(transfer: $transfer);
+		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $transfer->failureStatus(e: $e));
+		}//end try
 	}//end copy()
 
 	/**
@@ -2035,35 +2044,12 @@ class FilesController extends Controller {
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function move(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		$transfer = (new FileTransfer(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id), fileId: $fileId))->asMove();
-		// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
-		$verb = ObjectFileAccess::DELETE_FILES;
-		$guard = fn (): ?ObjectEntity => $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: $verb, fileId: $fileId);
-		return $this->transferFile(transfer: $transfer, sourceGuard: $guard);
-	}//end move()
-
-	/**
-	 * Copy or move a file to another object, after the access checks on both objects.
-	 *
-	 * @param FileTransfer $transfer    The copy or move.
-	 * @param Closure      $sourceGuard The access check on the source object; throws when the caller may not.
-	 *
-	 * @return JSONResponse The transferred file, or the refusal.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	private function transferFile(FileTransfer $transfer, Closure $sourceGuard): JSONResponse {
-		$route = $transfer->route;
-		$this->setObjectContext(register: $route->register, schema: $route->schema);
+		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$sourceGuard();
-			$refusal = $this->resolveTransferSource(transfer: $transfer) ?? $this->resolveTransferTarget(transfer: $transfer);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			$file = $this->runTransfer(transfer: $transfer);
-			return new JSONResponse(data: $this->fileService->formatFile($file), statusCode: $transfer->successStatus());
+			// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
+			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
 		} catch (ObjectStateWriteException $e) {
@@ -2071,6 +2057,25 @@ class FilesController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $transfer->failureStatus(e: $e));
 		}//end try
+	}//end move()
+
+	/**
+	 * Copy or move a file to another object, once the caller may access the source; checks the target itself.
+	 *
+	 * @param FileTransfer $transfer The copy or move.
+	 *
+	 * @return JSONResponse The transferred file, or the refusal.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function transferFile(FileTransfer $transfer): JSONResponse {
+		$refusal = $this->resolveTransferSource(transfer: $transfer) ?? $this->resolveTransferTarget(transfer: $transfer);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$file = $this->runTransfer(transfer: $transfer);
+		return new JSONResponse(data: $this->fileService->formatFile($file), statusCode: $transfer->successStatus());
 	}//end transferFile()
 
 	/**
