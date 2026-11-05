@@ -692,7 +692,7 @@ class ServicesIntegrationTest extends TestCase {
 		$this->createTestObject();
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateSizes(
+		$result = $service->sizes()->recalculateSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -710,7 +710,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceRecalculateLogSizes(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateLogSizes(
+		$result = $service->sizes()->recalculateLogSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -727,7 +727,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceRecalculateAllSizes(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->recalculateAllSizes(
+		$result = $service->sizes()->recalculateAllSizes(
 			$this->testRegister->getId(),
 			$this->testSchema->getId()
 		);
@@ -745,7 +745,7 @@ class ServicesIntegrationTest extends TestCase {
 	public function testDashboardServiceCalculate(): void {
 		$service = \OC::$server->get(DashboardService::class);
 
-		$result = $service->calculate($this->testRegister->getId());
+		$result = $service->sizes()->calculate($this->testRegister->getId());
 
 		$this->assertArrayHasKey('status', $result);
 		$this->assertEquals('success', $result['status']);
@@ -766,7 +766,7 @@ class ServicesIntegrationTest extends TestCase {
 		$service = \OC::$server->get(DashboardService::class);
 
 		// Use register filter to avoid scanning all objects in the system.
-		$result = $service->recalculateSizes($this->testRegister->getId());
+		$result = $service->sizes()->recalculateSizes($this->testRegister->getId());
 
 		$this->assertArrayHasKey('processed', $result);
 		$this->assertArrayHasKey('failed', $result);
