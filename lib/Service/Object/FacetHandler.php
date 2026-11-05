@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -69,6 +70,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FacetHandler {
+	use MagicColumnNameTrait;
 
 	/**
 	 * The metadata fields a facet can be built on, with their index field and type.
@@ -733,7 +735,7 @@ class FacetHandler {
 			'title' => $title,
 			'description' => $description,
 			'data_type' => $this->inferDataType(facetData: $facetData),
-			'index_field' => $this->sanitizeFieldName(field: $afterFieldName),
+			'index_field' => $this->sanitizeColumnName(name: $afterFieldName),
 			'index_type' => 'string',
 			'enabled' => true,
 		];
@@ -805,7 +807,7 @@ class FacetHandler {
 			'title' => $title,
 			'description' => $description,
 			'data_type' => $this->inferDataType(facetData: $facetData),
-			'index_field' => $this->sanitizeFieldName(field: $field),
+			'index_field' => $this->sanitizeColumnName(name: $field),
 			'index_type' => 'string',
 			'enabled' => true,
 		];
@@ -901,23 +903,6 @@ class FacetHandler {
 		$spaced = preg_replace('/([a-z])([A-Z])/', '$1 $2', $field);
 		return ucfirst($spaced);
 	}//end formatFieldTitle()
-
-	/**
-	 * Sanitize a field name for use as an index field.
-	 *
-	 * @param string $field The field name.
-	 *
-	 * @return string The sanitized field name.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md
-	 */
-	private function sanitizeFieldName(string $field): string {
-		// Convert camelCase to snake_case.
-		$name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $field);
-		$name = strtolower($name);
-		// Remove any non-alphanumeric characters except underscore.
-		return preg_replace('/[^a-z0-9_]/', '_', $name);
-	}//end sanitizeFieldName()
 
 	/**
 	 * Infer the data type from facet data.
