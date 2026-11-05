@@ -38,6 +38,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
  * @uses   \OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class SaveObjectsChunkGuardsGoldenTest extends TestCase {
 

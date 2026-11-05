@@ -34,6 +34,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Object\FacetHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 
