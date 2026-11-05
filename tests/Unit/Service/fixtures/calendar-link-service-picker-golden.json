@@ -316,6 +316,65 @@
             "object 2 j.ics"
         ]
     },
+    "events cutoff at a start": {
+        "result": [
+            {
+                "uid": "ev-b",
+                "uri": "b.ics",
+                "summary": "",
+                "dtstart": "2026-05-01T09:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a",
+                "uri": "a.ics",
+                "summary": "Late",
+                "dtstart": "2026-07-01T10:00:00+00:00",
+                "dtend": "2026-07-01T11:00:00+00:00",
+                "location": "HQ",
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a-copy",
+                "uri": "j.ics",
+                "summary": "Mentions ev-a",
+                "dtstart": "2026-08-01T10:00:00+00:00",
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-c",
+                "uri": "c.ics",
+                "summary": "No start",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "calendarId": 2,
+                "calendarUri": "work"
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice",
+            "objects 2",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 2 c.ics",
+            "object 2 d.ics",
+            "object 2 e.ics",
+            "warning Failed to parse calendar event for picker: {\"uri\":\"e.ics\"}",
+            "object 2 f.ics",
+            "object 2 g.ics",
+            "object 2 h.ics",
+            "object 2 i.ics",
+            "object 2 j.ics"
+        ]
+    },
     "link no user": {
         "thrown": "Exception: No user logged in",
         "calls": []

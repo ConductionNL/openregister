@@ -89,6 +89,7 @@ class CalendarLinkServicePickerGoldenTest extends TestCase {
 			'events limit two' => ['events', ['alice', 'obj', 2, null]],
 			'events zero limit' => ['events', ['alice', 'work', 0, null]],
 			'events after cutoff' => ['events', ['alice', 'work', 100, '2026-05-15T00:00:00Z']],
+			'events cutoff at a start' => ['events', ['alice', 'work', 100, '2026-05-01T09:00:00Z']],
 			'link no user' => ['link', [null, 'work', 'ev-a']],
 			'link unknown calendar' => ['link', ['alice', 'nope', 'ev-a']],
 			'link found' => ['link', ['alice', 'work', 'ev-a']],
