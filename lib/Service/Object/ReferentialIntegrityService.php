@@ -1807,9 +1807,7 @@ class ReferentialIntegrityService {
 		if (empty($fallbackTargets) === false) {
 			$this->applyPerObjectCascadeDelete(
 				cascadeTargets: $fallbackTargets,
-				userId: $userId,
-				cascadeSource: $cascadeSource,
-				triggerSchemaSlug: $triggerSchemaSlug
+				origin: new CascadeDeleteOrigin(userId: $userId, cascadeSource: $cascadeSource, triggerSchemaSlug: $triggerSchemaSlug)
 			);
 		}
 	}//end applyBatchCascadeDelete()
@@ -1980,91 +1978,98 @@ class ReferentialIntegrityService {
 	/**
 	 * Apply CASCADE deletes per object, grouped by register+schema (legacy fallback).
 	 *
-	 * Preserved verbatim as the fallback pipeline for targets the batched path
-	 * cannot handle: groups cascade targets by their register+schema pair and
-	 * calls MagicMapper::deleteObjects() in bulk (which re-resolves each uuid
-	 * individually). Falls back to individual deletion for targets without
-	 * register info. Each target gets its own single-row audit insert with the
-	 * legacy changed-shape.
+	 * The fallback pipeline for targets the batched path cannot handle: each
+	 * group goes to MagicMapper::deleteObjects() in bulk (which re-resolves
+	 * each uuid individually), and each target gets its own single-row audit
+	 * insert with the legacy changed-shape.
 	 *
-	 * @param array $cascadeTargets The cascade targets needing per-object handling.
-	 * @param string $userId The user performing the deletion.
-	 * @param string $cascadeSource The UUID of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
+	 * @param array               $cascadeTargets The cascade targets needing per-object handling.
+	 * @param CascadeDeleteOrigin $origin         The deleting user and the root object.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applyPerObjectCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
+		foreach ($this->groupCascadeTargets(cascadeTargets: $cascadeTargets) as $targets) {
+			$this->deleteCascadeGroup(targets: $targets, origin: $origin);
+			foreach ($targets as $target) {
+				$this->logCascadeDelete(target: $target, origin: $origin);
+			}
+		}
+	}//end applyPerObjectCascadeDelete()
+
+	/**
+	 * Group cascade targets by register+schema, in order of first appearance.
+	 *
+	 * A target without register or schema gets its own group keyed by its
+	 * uuid, so a repeated one is deleted and audited once.
+	 *
+	 * @param array $cascadeTargets The cascade targets.
+	 *
+	 * @return array<string, list<array>> The targets per group.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function applyPerObjectCascadeDelete(
-		array $cascadeTargets,
-		string $userId,
-		string $cascadeSource,
-		?string $triggerSchemaSlug,
-	): void {
-		// Group targets by register+schema for batch deletion.
+	private function groupCascadeTargets(array $cascadeTargets): array {
 		$groups = [];
 		foreach ($cascadeTargets as $target) {
-			$registerId = $target['register'] ?? null;
-			$schemaId = $target['schema'] ?? null;
-
-			if ($registerId === null || $schemaId === null) {
-				// Fallback: targets without register info get their own single-item group.
-				$groups['fallback_' . $target['objectUuid']] = [
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-					'targets' => [$target],
-				];
+			if (($target['register'] ?? null) === null || ($target['schema'] ?? null) === null) {
+				$groups['fallback_' . $target['objectUuid']] = [$target];
 				continue;
 			}
 
-			$groupKey = $registerId . '::' . $schemaId;
-			$groups[$groupKey]['registerId'] = $registerId;
-			$groups[$groupKey]['schemaId'] = $schemaId;
-			$groups[$groupKey]['targets'][] = $target;
+			$groups[$target['register'] . '::' . $target['schema']][] = $target;
 		}
 
-		// Process each group with batch delete.
-		foreach ($groups as $group) {
-			$uuids = array_map(
-				static fn (array $t): string => $t['objectUuid'],
-				$group['targets']
+		return $groups;
+	}//end groupCascadeTargets()
+
+	/**
+	 * Soft-delete one group of cascade targets; a failure is logged, not thrown.
+	 *
+	 * @param list<array>         $targets The targets of one group.
+	 * @param CascadeDeleteOrigin $origin  The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deleteCascadeGroup(array $targets, CascadeDeleteOrigin $origin): void {
+		$uuids = array_map(static fn (array $t): string => $t['objectUuid'], $targets);
+		try {
+			$this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] Batch CASCADE delete failed',
+				context: ['uuids' => $uuids, 'cascadeSource' => $origin->cascadeSource, 'error' => $e->getMessage()]
 			);
+		}
+	}//end deleteCascadeGroup()
 
-			try {
-				$this->objectEntityMapper->deleteObjects(
-					uuids: $uuids,
-					hardDelete: false
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[ReferentialIntegrity] Batch CASCADE delete failed',
-					context: [
-						'uuids' => $uuids,
-						'cascadeSource' => $cascadeSource,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-
-			// Log each target individually for audit trail.
-			foreach ($group['targets'] as $target) {
-				$this->logIntegrityAction(
-					action: 'referential_integrity.cascade_delete',
-					objectUuid: $target['objectUuid'],
-					schemaId: $target['schema'] ?? null,
-					registerId: $target['register'] ?? null,
-					changed: [
-						'deletedBecause' => 'cascade',
-						'triggerObject' => $cascadeSource,
-						'triggerSchema' => $triggerSchemaSlug,
-						'property' => $target['property'],
-					],
-					userId: $userId
-				);
-			}
-		}//end foreach
-	}//end applyPerObjectCascadeDelete()
+	/**
+	 * Write the legacy single-row audit entry of one cascade-deleted target.
+	 *
+	 * @param array               $target The cascade target.
+	 * @param CascadeDeleteOrigin $origin The deleting user and the root object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function logCascadeDelete(array $target, CascadeDeleteOrigin $origin): void {
+		$this->logIntegrityAction(
+			action: 'referential_integrity.cascade_delete',
+			objectUuid: $target['objectUuid'],
+			schemaId: $target['schema'] ?? null,
+			registerId: $target['register'] ?? null,
+			changed: [
+				'deletedBecause' => 'cascade',
+				'triggerObject' => $origin->cascadeSource,
+				'triggerSchema' => $origin->triggerSchemaSlug,
+				'property' => $target['property'],
+			],
+			userId: $origin->userId
+		);
+	}//end logCascadeDelete()
 }//end class

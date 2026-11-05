@@ -38,6 +38,9 @@ use OCP\IDBConnection;
  *   subtly wrong and nothing says so.
  */
 class ContactLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
+	use CountLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -75,23 +78,6 @@ class ContactLinkMapper extends QBMapper {
 	}//end find()
 
 	/**
-	 * Find contact links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return ContactLink[] Array of contact links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
 	 * Find contact links by contact UID.
 	 *
 	 * @param string $contactUid The contact UID from the vCard.
@@ -107,41 +93,6 @@ class ContactLinkMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByContactUid()
-
-	/**
-	 * Count contact links for an object.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Count of links.
-	 */
-	public function countByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*)'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByObjectUuid()
-
-	/**
-	 * Delete all contact links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Find the single link for an (objectUuid, contactUid) pair.

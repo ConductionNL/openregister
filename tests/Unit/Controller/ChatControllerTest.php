@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
@@ -55,7 +56,7 @@ class ChatControllerTest extends TestCase {
 			return $text;
 		});
 
-		$this->controller = new ChatController(
+		$this->controller = ChatControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->chatService,

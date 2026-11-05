@@ -140,6 +140,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	use MultiTenancyTrait;
+	use SlugIdLookupTrait;
 
 	/**
 	 * Maximum number of expressions allowed in a single SQL IN() list.
@@ -3440,98 +3441,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return $counts;
 	}//end getRegisterCountPerSchema()
-
-	/**
-	 * Get all schema ID to slug mappings
-	 *
-	 * @return array<string,string> Array mapping schema IDs to their slugs
-	 */
-	public function getIdToSlugMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['id']] = $row['slug'];
-		}
-
-		return $mappings;
-	}//end getIdToSlugMap()
-
-	/**
-	 * Get all schema slug to ID mappings
-	 *
-	 * @return array<string,string> Array mapping schema slugs to their IDs
-	 */
-	public function getSlugToIdMap(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName());
-
-		$result = $qb->executeQuery();
-		$mappings = [];
-		while (($row = $result->fetch()) !== false) {
-			$mappings[$row['slug']] = $row['id'];
-		}
-
-		return $mappings;
-	}//end getSlugToIdMap()
-
-	/**
-	 * Resolve a bounded set of schema slugs to their primary-key ids.
-	 *
-	 * Deliberately NOT `getSlugToIdMap()`: that materialises every schema row
-	 * on the instance (1931 on the reference instance) to answer a question
-	 * about a handful of slugs. Filtered event subscription runs this on the
-	 * object write path, so it must be bounded by the caller's declaration
-	 * rather than by the size of the instance.
-	 *
-	 * A slug is not unique across apps — the same `decision` slug can exist in
-	 * two registers — so each slug maps to a LIST of ids and the caller narrows
-	 * further (typically by register). Matching is case-insensitive, mirroring
-	 * {@see find()}; keys come back lower-cased.
-	 *
-	 * @param array<int,string> $slugs Schema slugs to resolve.
-	 *
-	 * @return array<string,array<int,string>> Lower-cased slug => matching ids.
-	 *                                         Empty when $slugs is empty.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function findIdsBySlugs(array $slugs): array {
-		if ($slugs === []) {
-			return [];
-		}
-
-		$lowered = array_values(array_unique(array_map('strtolower', $slugs)));
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'slug')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->in(
-					$qb->func()->lower('slug'),
-					$qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-
-		$result = $qb->executeQuery();
-		$map = array_fill_keys($lowered, []);
-		while (($row = $result->fetch()) !== false) {
-			$key = strtolower((string)$row['slug']);
-			if (isset($map[$key]) === false) {
-				$map[$key] = [];
-			}
-
-			$map[$key][] = (string)$row['id'];
-		}
-
-		$result->closeCursor();
-
-		return $map;
-	}//end findIdsBySlugs()
 
 	/**
 	 * Find schemas that have properties referencing the given schema

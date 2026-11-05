@@ -101,6 +101,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class Register extends Entity implements JsonSerializable, RegisterInterface {
+	use JsonFieldsTrait;
 
 	/**
 	 * Unique identifier for the register
@@ -458,26 +459,6 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 
 		return true;
 	}//end addSchemaId()
-
-	/**
-	 * Get JSON fields from the entity
-	 *
-	 * Returns all fields that are of type 'json'
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
 
 	/**
 	 * Hydrate the entity with data from an array

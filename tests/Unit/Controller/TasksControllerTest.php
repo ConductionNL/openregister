@@ -7,6 +7,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TasksControllerFactory;
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
@@ -60,7 +61,7 @@ class TasksControllerTest extends TestCase {
 		$this->taskService = $this->createMock(TaskService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new TasksController(
+		$this->controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,
@@ -293,7 +294,7 @@ class TasksControllerTest extends TestCase {
 				}
 			);
 
-		$controller = new TasksController(
+		$controller = TasksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->taskService,

@@ -61,6 +61,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\TaskEventsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
@@ -96,15 +97,39 @@ class TaskEventsController extends Controller {
 	private const NOT_FOUND = ['error' => 'No such task'];
 
 	/**
+	 * Resolves a task by uuid.
+	 *
+	 * @var TaskManagerInterface
+	 */
+	private readonly TaskManagerInterface $tasks;
+
+	/**
+	 * Read-visibility decisions.
+	 *
+	 * @var TaskAuthorizationService
+	 */
+	private readonly TaskAuthorizationService $authorization;
+
+	/**
+	 * The link-table layer, uuid-anchored.
+	 *
+	 * @var CalendarLinkService
+	 */
+	private readonly CalendarLinkService $links;
+
+	/**
+	 * The VEVENT layer, for the legacy
+	 *
+	 * @var ObjectCalendarEventsInterface
+	 */
+	private readonly ObjectCalendarEventsInterface $events;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param TaskManagerInterface $tasks Resolves a task by uuid.
-	 * @param TaskAuthorizationService $authorization Read-visibility decisions.
-	 * @param CalendarLinkService $links The link-table layer, uuid-anchored.
-	 * @param ObjectCalendarEventsInterface $events The VEVENT layer, for the legacy
-	 *                                     X-OPENREGISTER-* strip on destroy.
+	 * @param TaskEventsControllerServices $services The task events controller services.
 	 * @param IUserSession $userSession Names the acting identity.
 	 *
 	 * @return void
@@ -112,13 +137,14 @@ class TaskEventsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TaskManagerInterface $tasks,
-		private readonly TaskAuthorizationService $authorization,
-		private readonly CalendarLinkService $links,
-		private readonly ObjectCalendarEventsInterface $events,
+		TaskEventsControllerServices $services,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->tasks = $services->tasks;
+		$this->authorization = $services->authorization;
+		$this->links = $services->links;
+		$this->events = $services->events;
 
 	}//end __construct()
 

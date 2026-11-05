@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -45,6 +46,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @covers \OCA\OpenRegister\Service\WebhookService
  * @uses \OCA\OpenRegister\Db\Mapping
  * @uses \OCA\OpenRegister\Db\Webhook
@@ -72,7 +76,7 @@ class WebhookMappingPreviewTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(WebhookMapper::class),

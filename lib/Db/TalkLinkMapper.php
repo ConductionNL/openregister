@@ -27,6 +27,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<TalkLink>
  */
 class TalkLinkMapper extends QBMapper {
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -35,23 +37,6 @@ class TalkLinkMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(db: $db, tableName: 'openregister_talk_links', entityClass: TalkLink::class);
 	}//end __construct()
-
-	/**
-	 * Find talk links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return TalkLink[] Array of talk links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find talk links by room token (reverse lookup — which objects is
@@ -92,21 +77,6 @@ class TalkLinkMapper extends QBMapper {
 			return null;
 		}
 	}//end findByObjectAndRoom()
-
-	/**
-	 * Delete all talk links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a talk link by object UUID + room token (Tier-2 unlink

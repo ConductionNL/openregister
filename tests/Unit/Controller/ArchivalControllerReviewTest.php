@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -81,7 +82,7 @@ class ArchivalControllerReviewTest extends TestCase {
 			->getMock();
 		$this->nominations = $this->createMock(ArchivalNominationService::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = ArchivalControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(DestructionService::class),

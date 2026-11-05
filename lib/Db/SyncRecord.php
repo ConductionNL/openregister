@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SyncRecord extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Unique identifier for the sync record.
@@ -171,51 +173,6 @@ class SyncRecord extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'updated', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * Get JSON field names.
-	 *
-	 * @return string[] List of JSON field names
-	 *
-	 * @psalm-return list<string>
-	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * @param array $object The data array
-	 *
-	 * @return static
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialize to a JSON-friendly array.

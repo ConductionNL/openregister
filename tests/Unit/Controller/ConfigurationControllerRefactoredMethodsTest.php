@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -87,7 +88,7 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Create ConfigurationController instance.
-		$this->configurationController = new ConfigurationController(
+		$this->configurationController = ConfigurationControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			configurationMapper: $this->configurationMapper,

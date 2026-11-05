@@ -2367,11 +2367,11 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method tests via reflection — getCommonFileExtensions
+	// Extension lists — COMMON_FILE_EXTENSIONS
 	// =========================================================================
 
 	public function testGetCommonFileExtensionsContainsExpectedTypes(): void {
-		$result = $this->invokePrivateMethod('getCommonFileExtensions', []);
+		$result = (new \ReflectionClassConstant(FilePropertyHandler::class, 'COMMON_FILE_EXTENSIONS'))->getValue();
 
 		$this->assertContains('pdf', $result);
 		$this->assertContains('jpg', $result);
@@ -2384,11 +2384,11 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// Private method tests via reflection — getDangerousExecutableExtensions
+	// Extension lists — DANGEROUS_EXECUTABLE_EXTENSIONS
 	// =========================================================================
 
 	public function testGetDangerousExecutableExtensionsContainsExpected(): void {
-		$result = $this->invokePrivateMethod('getDangerousExecutableExtensions', []);
+		$result = (new \ReflectionClassConstant(FilePropertyHandler::class, 'DANGEROUS_EXECUTABLE_EXTENSIONS'))->getValue();
 
 		$this->assertContains('exe', $result);
 		$this->assertContains('bat', $result);

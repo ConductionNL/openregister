@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OC\DB\Exceptions\DbalException;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
@@ -54,6 +55,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\OrganisationMapper
  * @covers \OCA\OpenRegister\Service\OrganisationService
  * @covers \OCA\OpenRegister\Controller\OrganisationController
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationMappers
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationDomain
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationAuditing
+ * @uses \OCA\OpenRegister\Controller\Support\OrganisationControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @covers \OCA\OpenRegister\Exception\OrganisationSlugConflictException
  * @covers \OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
@@ -414,7 +420,7 @@ class OrganisationSlugConflictTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturnCallback(fn (): array => $this->body);
 
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			appName: 'openregister',
 			request: $request,
 			organisationService: $this->service(),
