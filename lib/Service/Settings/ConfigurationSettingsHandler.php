@@ -54,6 +54,7 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex configuration validation and transformation logic
  */
 class ConfigurationSettingsHandler {
+	use SettingsSectionDefaults;
 
 	/**
 	 * The JSON settings sections and the default of every key in them.
@@ -77,7 +78,7 @@ class ConfigurationSettingsHandler {
 			'publishedObjectsBypassMultiTenancy' => false,
 			'adminOverride' => true,
 		],
-		'retention' => SettingsSection::RETENTION_DEFAULTS,
+		'retention' => self::RETENTION_PERIOD_DEFAULTS,
 		'organisation' => [
 			'default_organisation' => null,
 			'auto_create_default_organisation' => true,
@@ -330,7 +331,7 @@ class ConfigurationSettingsHandler {
 			return self::SECTION_DEFAULTS[$key];
 		}
 
-		return SettingsSection::overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: json_decode($stored, true));
+		return $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: json_decode($stored, true));
 	}//end storedSection()
 
 	/**
@@ -342,7 +343,7 @@ class ConfigurationSettingsHandler {
 	 * @return array<string, mixed> The stored section.
 	 */
 	private function storeSection(string $key, $values): array {
-		$section = SettingsSection::overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
+		$section = $this->overDefaults(defaults: self::SECTION_DEFAULTS[$key], values: $values);
 		$this->appConfig->setValueString($this->appName, $key, json_encode($section));
 
 		return $section;

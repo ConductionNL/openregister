@@ -1,7 +1,7 @@
 <?php
 
 /**
- * A settings section read or written over its defaults.
+ * Reading and writing a settings section over its defaults.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
@@ -22,10 +22,8 @@ namespace OCA\OpenRegister\Service\Settings;
 /**
  * Fills a settings section from submitted or stored values, key by key, and holds
  * the defaults that more than one settings handler shares.
- *
- * @spec exclude pure helper of the settings handlers, covered by their goldens
  */
-final class SettingsSection {
+trait SettingsSectionDefaults {
 
 	/**
 	 * The audit and search trail retention defaults, shared by the full settings and the retention section.
@@ -36,7 +34,7 @@ final class SettingsSection {
 	 *
 	 * @var array<string, int|bool>
 	 */
-	public const RETENTION_DEFAULTS = [
+	private const RETENTION_PERIOD_DEFAULTS = [
 		'objectArchiveRetention' => 31536000000,
 		'objectDeleteRetention' => 63072000000,
 		'searchTrailRetention' => 2592000000,
@@ -58,7 +56,7 @@ final class SettingsSection {
 	 *
 	 * @spec exclude pure helper of the settings handlers, covered by their goldens
 	 */
-	public static function overDefaults(array $defaults, $values): array {
+	private function overDefaults(array $defaults, $values): array {
 		if (is_array($values) === false) {
 			$values = [];
 		}
@@ -70,4 +68,4 @@ final class SettingsSection {
 
 		return $section;
 	}//end overDefaults()
-}//end class
+}//end trait

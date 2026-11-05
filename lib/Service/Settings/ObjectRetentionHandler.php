@@ -41,6 +41,7 @@ use RuntimeException;
  * @link https://www.OpenRegister.nl
  */
 class ObjectRetentionHandler {
+	use SettingsSectionDefaults;
 
 	/**
 	 * The object management settings returned when none are stored, and the default of every key on update.
@@ -69,7 +70,7 @@ class ObjectRetentionHandler {
 	 *
 	 * @var array<string, mixed>
 	 */
-	private const RETENTION_DEFAULTS = SettingsSection::RETENTION_DEFAULTS + ['searchTrailRecordingMode' => '_search'];
+	private const RETENTION_DEFAULTS = self::RETENTION_PERIOD_DEFAULTS + ['searchTrailRecordingMode' => '_search'];
 
 	/**
 	 * The archival settings returned when none are stored, and the default of every key on update.
@@ -143,7 +144,7 @@ class ObjectRetentionHandler {
 			}
 
 			$objectData = $this->withViewKeys(objectData: json_decode($objectConfig, true));
-			return SettingsSection::overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
+			return $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to get Object Management settings: ' . $e->getMessage());
 		}//end try
@@ -187,7 +188,7 @@ class ObjectRetentionHandler {
 	public function updateObjectSettingsOnly(array $objectData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['objectManagement']);
 		try {
-			$objectConfig = SettingsSection::overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
+			$objectConfig = $this->overDefaults(defaults: self::OBJECT_DEFAULTS, values: $objectData);
 			$this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['objectManagement']);
 			return $objectConfig;
@@ -220,7 +221,7 @@ class ObjectRetentionHandler {
 				return self::RETENTION_DEFAULTS;
 			}
 
-			$retention = SettingsSection::overDefaults(defaults: self::RETENTION_DEFAULTS, values: json_decode($retentionConfig, true));
+			$retention = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: json_decode($retentionConfig, true));
 			$retention['auditTrailsEnabled'] = $this->convertToBoolean(value: $retention['auditTrailsEnabled']);
 			$retention['searchTrailsEnabled'] = $this->convertToBoolean(value: $retention['searchTrailsEnabled']);
 			$retention['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retention['searchTrailRecordingMode']);
@@ -252,7 +253,7 @@ class ObjectRetentionHandler {
 	public function updateRetentionSettingsOnly(array $retentionData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['retention']);
 		try {
-			$retentionConfig = SettingsSection::overDefaults(defaults: self::RETENTION_DEFAULTS, values: $retentionData);
+			$retentionConfig = $this->overDefaults(defaults: self::RETENTION_DEFAULTS, values: $retentionData);
 			$retentionConfig['searchTrailRecordingMode'] = $this->normaliseRecordingMode(value: $retentionConfig['searchTrailRecordingMode']);
 
 			$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
@@ -279,7 +280,7 @@ class ObjectRetentionHandler {
 				return self::ARCHIVAL_DEFAULTS;
 			}
 
-			return SettingsSection::overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: json_decode($archivalConfig, true));
+			return $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: json_decode($archivalConfig, true));
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve archival settings: ' . $e->getMessage());
 		}//end try
@@ -299,7 +300,7 @@ class ObjectRetentionHandler {
 	public function updateArchivalSettingsOnly(array $archivalData): array {
 		$beforeChange = $this->changeRecorder?->snapshot(keys: ['archival']);
 		try {
-			$archivalConfig = SettingsSection::overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: $archivalData);
+			$archivalConfig = $this->overDefaults(defaults: self::ARCHIVAL_DEFAULTS, values: $archivalData);
 			$this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
 			$this->recordSettingsChange(before: $beforeChange, keys: ['archival']);
 			return $archivalConfig;

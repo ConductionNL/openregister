@@ -29,7 +29,7 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Settings\ObjectRetentionHandler
- * @uses   \OCA\OpenRegister\Service\Settings\SettingsSection
+ * @uses   \OCA\OpenRegister\Service\Settings\SettingsSectionDefaults
  */
 class ObjectRetentionHandlerGoldenTest extends TestCase {
 

@@ -33,7 +33,7 @@ use Throwable;
  * @covers \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator
- * @uses   \OCA\OpenRegister\Service\Settings\SettingsSection
+ * @uses   \OCA\OpenRegister\Service\Settings\SettingsSectionDefaults
  */
 class LlmAndFileSettingsGoldenTest extends TestCase {
 

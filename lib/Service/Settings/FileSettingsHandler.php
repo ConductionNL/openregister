@@ -47,6 +47,7 @@ use RuntimeException;
  * @link https://www.OpenRegister.nl
  */
 class FileSettingsHandler {
+	use SettingsSectionDefaults;
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -259,7 +260,7 @@ class FileSettingsHandler {
 	 * @return array<string, mixed>
 	 */
 	private function submittedFileSettings(array $fileData): array {
-		$fileConfig = SettingsSection::overDefaults(defaults: self::FILE_DEFAULTS, values: $fileData);
+		$fileConfig = $this->overDefaults(defaults: self::FILE_DEFAULTS, values: $fileData);
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
