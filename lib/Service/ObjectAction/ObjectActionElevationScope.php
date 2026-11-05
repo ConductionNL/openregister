@@ -140,6 +140,6 @@ final class ObjectActionElevationScope {
 			return false;
 		}
 
-		return ($registerId === null || (string)$registerId === '' || $entry['register'] === (string)$registerId);
+		return ($registerId !== null && $entry['register'] === (string)$registerId);
 	}//end matches()
 }//end class

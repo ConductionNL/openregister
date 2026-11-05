@@ -150,6 +150,22 @@ class PermissionHandler {
 	private array $permissionCache = [];
 
 	/**
+	 * Cache keys whose refusal came from an explicit deny or an unresolvable block.
+	 *
+	 * Such a refusal is final: a declared action's elevation never turns it into a grant.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $finalRefusals = [];
+
+	/**
+	 * Whether the last evaluatePermission() refused through an explicit deny or an unresolvable block.
+	 *
+	 * @var bool
+	 */
+	private bool $lastRefusalFinal = false;
+
+	/**
 	 * The person-source reader for department matrices, built on first use.
 	 *
 	 * @var DepartmentMatrixPersonValues|null
@@ -429,6 +445,8 @@ class PermissionHandler {
 	 * @param string|null $objectOwner Optional object owner for ownership check.
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
 	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
+	 * @param string|null $register The register written to, for a check that names no object (a create, a delete by id).
+	 *                              Only a declared action's elevation reads it.
 	 *
 	 * @return bool True if user has permission, false otherwise
 	 *
@@ -447,6 +465,7 @@ class PermissionHandler {
 		?string $objectOwner = null,
 		bool $_rbac = true,
 		?ObjectEntity $object = null,
+		?string $register = null,
 	): bool {
 		// If RBAC is disabled, always return true (bypass all permission checks).
 		if ($_rbac === false) {
@@ -489,8 +508,13 @@ class PermissionHandler {
 			object: $object,
 			schema: $schema
 		);
+		$target = ['register' => ($object?->getRegister() ?? $register), 'action' => $action];
 		if ($cacheKey !== null && array_key_exists($cacheKey, $this->permissionCache) === true) {
-			return $this->elevated(verdict: $this->permissionCache[$cacheKey], schema: $schema, action: $action, object: $object);
+			if (isset($this->finalRefusals[$cacheKey]) === true) {
+				return false;
+			}
+
+			return $this->elevated(verdict: $this->permissionCache[$cacheKey], schema: $schema, target: $target);
 		}
 
 		$verdict = $this->evaluatePermission(
@@ -501,8 +525,12 @@ class PermissionHandler {
 			object: $object
 		);
 
+		$final = $this->lastRefusalFinal;
 		if ($cacheKey !== null) {
 			$this->permissionCache[$cacheKey] = $verdict;
+			if ($final === true) {
+				$this->finalRefusals[$cacheKey] = true;
+			}
 		}
 
 		// Telemetry, after the verdict is final and for BOTH outcomes. A
@@ -520,19 +548,23 @@ class PermissionHandler {
 			object: $object
 		);
 
-		return $this->elevated(verdict: $verdict, schema: $schema, action: $action, object: $object);
+		if ($final === true) {
+			return false;
+		}
+
+		return $this->elevated(verdict: $verdict, schema: $schema, target: $target);
 	}//end hasPermission()
 
 	/**
 	 * The verdict, or true when a declared action's open elevation lists this write.
 	 *
 	 * Asked only after the person's own rights refused, and never cached: the
-	 * elevation belongs to one action run, not to the person.
+	 * elevation belongs to one action run, not to the person. A write that names
+	 * no register is never elevated, because an entry is scoped to one register.
 	 *
-	 * @param bool              $verdict The person's own verdict.
-	 * @param Schema            $schema  The schema written to.
-	 * @param string            $action  The verb.
-	 * @param ObjectEntity|null $object  The object written, when the check names one.
+	 * @param bool                                       $verdict The person's own verdict.
+	 * @param Schema                                     $schema  The schema written to.
+	 * @param array{register: string|null, action: string} $target  The register written to and the verb.
 	 *
 	 * @return bool The verdict after elevation.
 	 *
@@ -540,12 +572,12 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
-	private function elevated(bool $verdict, Schema $schema, string $action, ?ObjectEntity $object): bool {
-		if ($verdict === true) {
-			return true;
+	private function elevated(bool $verdict, Schema $schema, array $target): bool {
+		if ($verdict === true || $target['register'] === null || $target['register'] === '') {
+			return $verdict;
 		}
 
-		return ObjectActionElevationScope::allows(schemaId: $schema->getId(), registerId: $object?->getRegister(), verb: $action);
+		return ObjectActionElevationScope::allows(schemaId: $schema->getId(), registerId: $target['register'], verb: $target['action']);
 	}//end elevated()
 
 	/**
@@ -814,9 +846,26 @@ class PermissionHandler {
 		if ($this->resolveCheckAuthorization(check: $check) === false
 			|| $this->deniedByRule(check: $check) === true
 		) {
+			$this->lastRefusalFinal = true;
 			return false;
 		}
 
+		$verdict = $this->grantVerdict(check: $check);
+		$this->lastRefusalFinal = false;
+
+		return $verdict;
+	}//end evaluatePermission()
+
+	/**
+	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
+	 *
+	 * @param PermissionCheck $check The check, its authorization resolved.
+	 *
+	 * @return bool True if the user has permission.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	private function grantVerdict(PermissionCheck $check): bool {
 		$verdict = ($this->scopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
@@ -830,7 +879,7 @@ class PermissionHandler {
 		$this->addDerivedGroups(check: $check);
 
 		return ($this->customVerbVerdict(check: $check) ?? $this->grantedByRules(check: $check));
-	}//end evaluatePermission()
+	}//end grantVerdict()
 
 	/**
 	 * Resolve the effective authorization block onto the check; false when it cannot be resolved.
@@ -1865,6 +1914,7 @@ class PermissionHandler {
 	 */
 	public function clearPermissionCache(): void {
 		$this->permissionCache = [];
+		$this->finalRefusals = [];
 	}//end clearPermissionCache()
 
 	/**
@@ -1899,6 +1949,7 @@ class PermissionHandler {
 	 * @param string|null $objectOwner Object owner ID.
 	 * @param bool $_rbac Whether to enforce RBAC checks.
 	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
+	 * @param string|null $register The register written to, for a check that names no object.
 	 *
 	 * @return void
 	 *
@@ -1915,6 +1966,7 @@ class PermissionHandler {
 		?string $objectOwner = null,
 		bool $_rbac = true,
 		?ObjectEntity $object = null,
+		?string $register = null,
 	): void {
 		if ($this->hasPermission(
 			schema: $schema,
@@ -1922,7 +1974,8 @@ class PermissionHandler {
 			userId: $userId,
 			objectOwner: $objectOwner,
 			_rbac: $_rbac,
-			object: $object
+			object: $object,
+			register: $register
 		) === false
 		) {
 			$user = $this->userSession->getUser();

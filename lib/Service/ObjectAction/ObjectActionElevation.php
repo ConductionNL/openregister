@@ -48,6 +48,13 @@ final class ObjectActionElevation {
 	public const VERBS = ['create', 'update', 'delete'];
 
 	/**
+	 * Groups that admit everyone or every signed-in user, so never a grant for an elevated action.
+	 *
+	 * @var list<string>
+	 */
+	private const BROADCAST_GROUPS = ['public', 'authenticated', ''];
+
+	/**
 	 * Refusals about one action's `elevate`.
 	 *
 	 * @param string                    $key           The action key.
@@ -91,7 +98,12 @@ final class ObjectActionElevation {
 	 * @return list<string> The refusals.
 	 */
 	private static function grantRefusals(string $key, ?array $authorization): array {
-		if ($authorization === null || empty($authorization[$key] ?? null) === false) {
+		if ($authorization === null) {
+			return [];
+		}
+
+		$rules = (array)($authorization[$key] ?? []);
+		if ($rules !== [] && self::grantsEveryone(rules: $rules) === false) {
 			return [];
 		}
 
@@ -103,6 +115,30 @@ final class ObjectActionElevation {
 			),
 		];
 	}//end grantRefusals()
+
+	/**
+	 * Whether a rule list grants a broadcast group: everyone (`public`), every signed-in user (`authenticated`), or the empty group.
+	 *
+	 * @param array<mixed> $rules The rules granting the action.
+	 *
+	 * @return bool True when one rule names a broadcast group.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
+	 */
+	private static function grantsEveryone(array $rules): bool {
+		foreach ($rules as $rule) {
+			$group = $rule;
+			if (is_array($rule) === true) {
+				$group = ($rule['group'] ?? null);
+			}
+
+			if (is_string($group) === true && in_array(trim($group), self::BROADCAST_GROUPS, true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end grantsEveryone()
 
 	/**
 	 * The `elevate` entries of a declaration, normalised.

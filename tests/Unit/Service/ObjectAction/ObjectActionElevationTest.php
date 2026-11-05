@@ -27,6 +27,9 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
+use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -36,6 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use ReflectionMethod;
 use RuntimeException;
 
@@ -61,7 +65,7 @@ class ObjectActionElevationTest extends TestCase {
 	 *
 	 * @return PermissionHandler
 	 */
-	private function handler(): PermissionHandler {
+	private function handler(bool $enforceDeny = false): PermissionHandler {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('anna');
 		$session = $this->createMock(IUserSession::class);
@@ -72,6 +76,7 @@ class ObjectActionElevationTest extends TestCase {
 		$groups->method('getUserGroupIds')->willReturn(['behandelaars']);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(false);
+		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_ENFORCING);
 
 		return new PermissionHandler(
 			$session,
@@ -83,7 +88,11 @@ class ObjectActionElevationTest extends TestCase {
 			$appConfig,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(ContainerInterface::class),
-			$this->createMock(IEventDispatcher::class)
+			$this->createMock(IEventDispatcher::class),
+			null,
+			null,
+			new DenyResolver(new DenyEntryMatcher()),
+			new DenyEnforcementMode($appConfig, new NullLogger())
 		);
 	}//end handler()
 
@@ -104,7 +113,7 @@ class ObjectActionElevationTest extends TestCase {
 			'publish',
 			'anna',
 			$this->entries(),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna')
+			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '4')
 		);
 
 		$this->assertTrue($granted);
@@ -138,6 +147,104 @@ class ObjectActionElevationTest extends TestCase {
 		$this->assertFalse($otherRegister, 'a register the entry does not list was elevated');
 	}//end testAnUnlistedWriteIsNotElevated()
 
+	public function testACreateThatNamesNoRegisterIsNotElevated(): void {
+		$handler = $this->handler();
+
+		$granted = ObjectActionElevationScope::run(
+			'publish',
+			'anna',
+			$this->entries(),
+			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna')
+		);
+
+		$this->assertFalse($granted, 'an elevation for register 4 opened a create that names no register');
+	}//end testACreateThatNamesNoRegisterIsNotElevated()
+
+	public function testACreateInAnotherRegisterIsNotElevated(): void {
+		$handler = $this->handler();
+
+		$granted = ObjectActionElevationScope::run(
+			'publish',
+			'anna',
+			$this->entries(),
+			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '5')
+		);
+
+		$this->assertFalse($granted, 'an elevation for register 4 opened a create in register 5');
+	}//end testACreateInAnotherRegisterIsNotElevated()
+
+	public function testAnExplicitDenyStaysDenied(): void {
+		$handler = $this->handler();
+		$schema = $this->schema();
+		$schema->setAuthorization(['create' => ['redactie'], 'deny' => ['create' => ['behandelaars']]]);
+
+		$granted = ObjectActionElevationScope::run(
+			'publish',
+			'anna',
+			$this->entries(),
+			fn (): bool => $handler->hasPermission(schema: $schema, action: 'create', userId: 'anna', register: '4')
+		);
+
+		$this->assertFalse($granted, 'an elevation overrode an explicit deny');
+	}//end testAnExplicitDenyStaysDenied()
+
+	/**
+	 * Grants that admit everyone, or every signed-in user.
+	 *
+	 * @return array<string, array{0: list<mixed>}>
+	 */
+	public static function broadcastGrants(): array {
+		return [
+			'public' => [['public']],
+			'authenticated' => [['authenticated']],
+			'empty group' => [['']],
+			'public as a rule' => [[['group' => 'public']]],
+			'authenticated beside a group' => [['redactie', 'authenticated']],
+		];
+	}//end broadcastGrants()
+
+	/**
+	 * @dataProvider broadcastGrants
+	 *
+	 * @param list<mixed> $grant The rules granting the action.
+	 */
+	public function testAnElevatedActionGrantedToEveryoneIsRefusedAtSave(array $grant): void {
+		$refusals = ObjectActionDefinition::refusals(
+			[
+				'x-openregister-action' => [
+					'publish' => [
+						'name' => 'Publish',
+						'description' => 'Publish it.',
+						'steps' => [['type' => 'openregister.set-fields']],
+						'elevate' => [['register' => 'pub', 'schema' => 'publication', 'verbs' => ['create']]],
+					],
+				],
+			],
+			['publish' => $grant]
+		);
+
+		$this->assertCount(1, $refusals);
+		$this->assertStringContainsString('open to everyone', $refusals[0]);
+	}//end testAnElevatedActionGrantedToEveryoneIsRefusedAtSave()
+
+	public function testAnElevatedActionGrantedToAGroupIsAccepted(): void {
+		$refusals = ObjectActionDefinition::refusals(
+			[
+				'x-openregister-action' => [
+					'publish' => [
+						'name' => 'Publish',
+						'description' => 'Publish it.',
+						'steps' => [['type' => 'openregister.set-fields']],
+						'elevate' => [['register' => 'pub', 'schema' => 'publication', 'verbs' => ['create']]],
+					],
+				],
+			],
+			['publish' => [['group' => 'redactie']]]
+		);
+
+		$this->assertSame([], $refusals);
+	}//end testAnElevatedActionGrantedToAGroupIsAccepted()
+
 	public function testTheElevationEndsWithTheRunEvenWhenItThrows(): void {
 		try {
 			ObjectActionElevationScope::run('publish', 'anna', $this->entries(), static fn () => throw new RuntimeException('step failed'));
@@ -166,7 +273,7 @@ class ObjectActionElevationTest extends TestCase {
 			'anna',
 			$this->entries(),
 			function () use ($mapper, $apply, $elevated, $ordinary): void {
-				ObjectActionElevationScope::allows(schemaId: 9, registerId: null, verb: 'create');
+				ObjectActionElevationScope::allows(schemaId: 9, registerId: '4', verb: 'create');
 				$apply->invoke($mapper, $elevated);
 				$apply->invoke($mapper, $ordinary);
 			}
