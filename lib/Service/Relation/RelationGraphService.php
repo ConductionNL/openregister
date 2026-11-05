@@ -429,80 +429,137 @@ class RelationGraphService {
 	 */
 	private function edgesFrom(array $uuids, string $language): array {
 		$edges = [];
-
-		// Source one: the `$ref` relations already recorded on each object.
 		foreach ($uuids as $uuid) {
-			$object = $this->loadObject(uuid: $uuid);
-			if ($object === null) {
-				continue;
-			}
-
-			$schema = $this->schemaOf(schemaId: $object->getSchema());
-			foreach (($object->getRelations() ?? []) as $path => $value) {
-				foreach ($this->targetsOf(value: $value) as $target) {
-					if (is_string($path) === false || $target === $uuid) {
-						continue;
-					}
-
-					$descriptor = $this->relationTypes->descriptorFor(
-						schema: $schema,
-						property: $path,
-						language: $language
-					);
-					$row = $this->relationTypes->row(
-						descriptor: $descriptor,
-						direction: RelationTypeResolver::DIRECTION_OUTGOING,
-						path: $path
-					);
-
-					$edges[] = [
-						'from' => $uuid,
-						'to' => $target,
-						'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
-						'label' => ($row['displayLabel'] ?? null),
-						'inverseLabel' => ($row['inverseLabel'] ?? null),
-						'type' => ($row['type'] ?? null),
-						'property' => ($row['property'] ?? null),
-						'origin' => 'property',
-						'kind' => ObjectRelation::KIND_OBJECT,
-					];
-				}
-			}
-		}//end foreach
+			$edges = array_merge($edges, $this->propertyEdges(uuid: $uuid, language: $language));
+		}
 
 		// Source two: the stored rows for the links no property can hold. One
 		// query for the whole level, not one per node.
 		foreach ($this->relationMapper->findTouching(uuids: $uuids) as $stored) {
-			$source = (string)$stored->getSourceUuid();
-			$outgoing = in_array($source, $uuids, true);
-			$direction = RelationTypeResolver::DIRECTION_INCOMING;
-			if ($outgoing === true) {
-				$direction = RelationTypeResolver::DIRECTION_OUTGOING;
-			}
-
-			$target = (string)($stored->getTargetUuid() ?? '');
-			$other = $target;
-			if ($target === '') {
-				$other = (string)$stored->getTargetUrl();
-			}
-
-			$edges[] = [
-				'from' => $source,
-				'to' => $other,
-				'direction' => $direction,
-				'label' => ($stored->getLabel() ?? $stored->getRelationType()),
-				'inverseLabel' => $stored->getInverseLabel(),
-				'type' => $stored->getRelationType(),
-				'property' => null,
-				'origin' => $stored->getOrigin(),
-				'kind' => $stored->getKind(),
-				'targetUrl' => $stored->getTargetUrl(),
-				'targetTitle' => $stored->getTargetTitle(),
-			];
-		}//end foreach
+			$edges[] = self::storedEdge(stored: $stored, uuids: $uuids);
+		}
 
 		return $edges;
 	}//end edgesFrom()
+
+	/**
+	 * The edges of the `$ref` relations already recorded on one object.
+	 *
+	 * @param string $uuid     The object's uuid.
+	 * @param string $language The language labels are read in.
+	 *
+	 * @return array<int, array<string, mixed>> The outgoing property edges; none when the object cannot be loaded.
+	 */
+	private function propertyEdges(string $uuid, string $language): array {
+		$object = $this->loadObject(uuid: $uuid);
+		if ($object === null) {
+			return [];
+		}
+
+		$schema = $this->schemaOf(schemaId: $object->getSchema());
+		$edges  = [];
+		foreach ($this->linksOf(relations: ($object->getRelations() ?? []), uuid: $uuid) as [$path, $target]) {
+			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
+			$row        = $this->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
+			$edges[]    = ['from' => $uuid, 'to' => $target] + self::outgoingDetails(row: $row);
+		}
+
+		return $edges;
+	}//end propertyEdges()
+
+	/**
+	 * The relation path and target of each link an object records, without links to itself.
+	 *
+	 * @param array  $relations The object's recorded relations, by path.
+	 * @param string $uuid      The object's uuid.
+	 *
+	 * @return array<int, array{0: string, 1: string}> Each link as its path and target uuid.
+	 */
+	private function linksOf(array $relations, string $uuid): array {
+		$links = [];
+		foreach ($relations as $path => $value) {
+			foreach ($this->targetsOf(value: $value) as $target) {
+				if (is_string($path) === true && $target !== $uuid) {
+					$links[] = [$path, $target];
+				}
+			}
+		}
+
+		return $links;
+	}//end linksOf()
+
+	/**
+	 * The direction, label, type and kind fields of an outgoing property edge.
+	 *
+	 * @param array<string, mixed> $row The relation type row of the edge's path.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function outgoingDetails(array $row): array {
+		return [
+			'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
+			'label' => ($row['displayLabel'] ?? null),
+			'inverseLabel' => ($row['inverseLabel'] ?? null),
+			'type' => ($row['type'] ?? null),
+			'property' => ($row['property'] ?? null),
+			'origin' => 'property',
+			'kind' => ObjectRelation::KIND_OBJECT,
+		];
+	}//end outgoingDetails()
+
+	/**
+	 * One edge from a stored relation row, outgoing when its source is on this level.
+	 *
+	 * @param ObjectRelation     $stored The stored row.
+	 * @param array<int, string> $uuids  The uuids of this level.
+	 *
+	 * @return array<string, mixed> The edge.
+	 */
+	private static function storedEdge(ObjectRelation $stored, array $uuids): array {
+		$source    = (string)$stored->getSourceUuid();
+		$direction = RelationTypeResolver::DIRECTION_INCOMING;
+		if (in_array($source, $uuids, true) === true) {
+			$direction = RelationTypeResolver::DIRECTION_OUTGOING;
+		}
+
+		return ['from' => $source, 'to' => self::storedTarget(stored: $stored), 'direction' => $direction] + self::storedDetails(stored: $stored);
+	}//end storedEdge()
+
+	/**
+	 * The other end of a stored row: its target uuid, or its address when it has none.
+	 *
+	 * @param ObjectRelation $stored The stored row.
+	 *
+	 * @return string
+	 */
+	private static function storedTarget(ObjectRelation $stored): string {
+		$target = (string)($stored->getTargetUuid() ?? '');
+		if ($target === '') {
+			return (string)$stored->getTargetUrl();
+		}
+
+		return $target;
+	}//end storedTarget()
+
+	/**
+	 * The label, type, origin and target fields of an edge from a stored row.
+	 *
+	 * @param ObjectRelation $stored The stored row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function storedDetails(ObjectRelation $stored): array {
+		return [
+			'label' => ($stored->getLabel() ?? $stored->getRelationType()),
+			'inverseLabel' => $stored->getInverseLabel(),
+			'type' => $stored->getRelationType(),
+			'property' => null,
+			'origin' => $stored->getOrigin(),
+			'kind' => $stored->getKind(),
+			'targetUrl' => $stored->getTargetUrl(),
+			'targetTitle' => $stored->getTargetTitle(),
+		];
+	}//end storedDetails()
 
 	/**
 	 * The uuids a stored relation value holds.
