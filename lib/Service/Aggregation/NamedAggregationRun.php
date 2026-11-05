@@ -137,9 +137,9 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function metric(): string {
+	public function getMetric(): string {
 		return (string) ($this->spec['metric'] ?? $this->spec['select'] ?? '');
-	}//end metric()
+	}//end getMetric()
 
 
 	/**
@@ -149,14 +149,14 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function metrics(): ?array {
+	public function getMetrics(): ?array {
 		$metrics = ($this->spec['metrics'] ?? null);
 		if (is_array($metrics) === true && $metrics !== []) {
 			return $metrics;
 		}
 
 		return null;
-	}//end metrics()
+	}//end getMetrics()
 
 
 	/**
@@ -166,9 +166,9 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function field(): mixed {
+	public function getField(): mixed {
 		return ($this->spec['field'] ?? null);
-	}//end field()
+	}//end getField()
 
 
 	/**
@@ -178,14 +178,14 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function stringField(): ?string {
-		$field = $this->field();
+	public function getStringField(): ?string {
+		$field = $this->getField();
 		if (is_string($field) === true) {
 			return $field;
 		}
 
 		return null;
-	}//end stringField()
+	}//end getStringField()
 
 
 	/**
@@ -195,13 +195,13 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function fieldNames(): array {
-		if ($this->field() === null) {
+	public function getFieldNames(): array {
+		if ($this->getField() === null) {
 			return [];
 		}
 
-		return [(string) $this->field()];
-	}//end fieldNames()
+		return [(string) $this->getField()];
+	}//end getFieldNames()
 
 
 	/**
@@ -211,9 +211,9 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function groupBy(): mixed {
+	public function getGroupBy(): mixed {
 		return ($this->spec['groupBy'] ?? null);
-	}//end groupBy()
+	}//end getGroupBy()
 
 
 	/**
@@ -223,14 +223,14 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function groupByArg(): ?array {
-		$groupBy = $this->groupBy();
+	public function getGroupByArg(): ?array {
+		$groupBy = $this->getGroupBy();
 		if (is_array($groupBy) === true) {
 			return $groupBy;
 		}
 
 		return null;
-	}//end groupByArg()
+	}//end getGroupByArg()
 
 
 	/**
@@ -240,9 +240,9 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function join(): mixed {
+	public function getJoin(): mixed {
 		return ($this->spec['join'] ?? null);
-	}//end join()
+	}//end getJoin()
 
 
 	/**
@@ -252,14 +252,14 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function joinArg(): ?array {
-		$join = $this->join();
+	public function getJoinArg(): ?array {
+		$join = $this->getJoin();
 		if (is_array($join) === true) {
 			return $join;
 		}
 
 		return null;
-	}//end joinArg()
+	}//end getJoinArg()
 
 
 	/**
@@ -269,9 +269,9 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function declaredFilter(): array {
+	public function getDeclaredFilter(): array {
 		return (array) ($this->spec['filter'] ?? $this->spec['where'] ?? []);
-	}//end declaredFilter()
+	}//end getDeclaredFilter()
 
 
 	/**
@@ -281,14 +281,14 @@ final class NamedAggregationRun {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
-	public function fromSchema(): ?string {
+	public function getFromSchema(): ?string {
 		$from = ($this->spec['from'] ?? null);
 		if (is_string($from) === true && $from !== '') {
 			return $from;
 		}
 
 		return null;
-	}//end fromSchema()
+	}//end getFromSchema()
 
 
 	/**
@@ -303,8 +303,8 @@ final class NamedAggregationRun {
 	public function envelope(string $backend): array {
 		return [
 			'name'      => $this->name,
-			'metric'    => $this->metric(),
-			'field'     => $this->stringField(),
+			'metric'    => $this->getMetric(),
+			'field'     => $this->getStringField(),
 			'backend'   => $backend,
 			'truncated' => $this->truncated,
 		];

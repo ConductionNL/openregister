@@ -271,7 +271,7 @@ class AggregationRunner {
 		$run->bypassRbac = $bypassRbac;
 		$run->extraFilter = $extraFilter;
 		$run->spec = $this->authorisedSpec(run: $run);
-		if ($run->fromSchema() !== null) {
+		if ($run->getFromSchema() !== null) {
 			return $this->runNamedCrossSchema(run: $run, parentRow: $parentRow);
 		}
 
@@ -383,9 +383,9 @@ class AggregationRunner {
 	 */
 	private function guardTouchedFields(NamedAggregationRun $run): void {
 		$touched = array_merge(
-			$run->fieldNames(),
-			$this->groupByFields(groupBy: $run->groupBy()),
-			$this->metricFields(metrics: $run->metrics())
+			$run->getFieldNames(),
+			$this->groupByFields(groupBy: $run->getGroupBy()),
+			$this->metricFields(metrics: $run->getMetrics())
 		);
 		$this->assertNoExplicitValues(schema: $run->schema, fields: $touched);
 		$this->assertNoExplicitFilter(schema: $run->schema, filter: $run->extraFilter);
@@ -407,7 +407,7 @@ class AggregationRunner {
 	 * @return void
 	 */
 	private function resolveRunFilter(NamedAggregationRun $run): void {
-		$declared = $this->placeholders->resolveArray($run->declaredFilter());
+		$declared = $this->placeholders->resolveArray($run->getDeclaredFilter());
 		$run->filter = $this->mergeNarrowingFilter(declared: $declared, extra: $run->extraFilter, name: $run->name);
 		$run->appliedExtraFilter = array_diff_key($run->filter, $declared);
 	}//end resolveRunFilter()
@@ -426,12 +426,12 @@ class AggregationRunner {
 	private function namedCacheKey(NamedAggregationRun $run): array {
 		$activeOrg = $this->organisationService->getActiveOrganisation();
 		return [
-			'metric' => $run->metric(),
-			'metrics' => $run->metrics(),
-			'field' => $run->field(),
+			'metric' => $run->getMetric(),
+			'metrics' => $run->getMetrics(),
+			'field' => $run->getField(),
 			'filter' => $run->filter,
-			'groupBy' => $run->groupBy(),
-			'join' => $run->join(),
+			'groupBy' => $run->getGroupBy(),
+			'join' => $run->getJoin(),
 			'userId' => $run->userId,
 			'org' => $activeOrg?->getUuid(),
 		];
@@ -493,7 +493,7 @@ class AggregationRunner {
 			envelope: $envelope,
 			schema: $run->schema,
 			register: $run->register,
-			groupBy: $run->groupByArg()
+			groupBy: $run->getGroupByArg()
 		);
 	}//end projectNamedGroupKeys()
 
@@ -512,7 +512,7 @@ class AggregationRunner {
 			return null;
 		}
 
-		$run->groupFields = $this->resolveGroupFields(groupBy: $run->groupBy());
+		$run->groupFields = $this->resolveGroupFields(groupBy: $run->getGroupBy());
 		$result = $this->applyNamedJoin(run: $run, envelope: $run->envelope(backend: 'postgres') + $native);
 		return $this->storeNamedResult(run: $run, result: $result);
 	}//end nativeNamedResult()
@@ -528,11 +528,11 @@ class AggregationRunner {
 		return $this->tryNativeAggregation(
 			register: $run->register,
 			schema: $run->schema,
-			metric: $run->metric(),
-			field: $run->stringField(),
+			metric: $run->getMetric(),
+			field: $run->getStringField(),
 			filter: $run->filter,
-			groupBy: $run->groupByArg(),
-			metrics: $run->metrics(),
+			groupBy: $run->getGroupByArg(),
+			metrics: $run->getMetrics(),
 			rowRbac: $run->bypassRbac === false
 		);
 	}//end tryNamedNative()
@@ -548,7 +548,7 @@ class AggregationRunner {
 	private function applyNamedJoin(NamedAggregationRun $run, array $envelope): array {
 		return $this->applyJoin(
 			envelope: $envelope,
-			join: $run->joinArg(),
+			join: $run->getJoinArg(),
 			groupFields: $run->groupFields,
 			bypassRbac: $run->bypassRbac,
 			extraFilter: $run->appliedExtraFilter
@@ -570,8 +570,8 @@ class AggregationRunner {
 		$result = $run->envelope(backend: 'php-fallback');
 		[$rows, $run->groupFields, $run->joinConsumed] = $this->projectJoinedGroupFields(
 			rows: $rows,
-			groupFields: $this->resolveGroupFields(groupBy: $run->groupBy()),
-			join: $run->joinArg(),
+			groupFields: $this->resolveGroupFields(groupBy: $run->getGroupBy()),
+			join: $run->getJoinArg(),
 			bypassRbac: $run->bypassRbac
 		);
 		$result += $this->namedFigures(run: $run, rows: $rows);
@@ -614,9 +614,9 @@ class AggregationRunner {
 	 * @return array<string, mixed>
 	 */
 	private function namedFigures(NamedAggregationRun $run, array $rows): array {
-		$metrics = $run->metrics();
+		$metrics = $run->getMetrics();
 		if (count($run->groupFields) > 0) {
-			$groups = $this->computeGrouped(rows: $rows, metric: $run->metric(), field: $run->field(), groupFields: $run->groupFields, metrics: $metrics);
+			$groups = $this->computeGrouped(rows: $rows, metric: $run->getMetric(), field: $run->getField(), groupFields: $run->groupFields, metrics: $metrics);
 			return ['groups' => $groups];
 		}
 
@@ -624,7 +624,7 @@ class AggregationRunner {
 			return ['values' => $this->computeMetrics(rows: $rows, metrics: $metrics)];
 		}
 
-		return ['value' => $this->computeMetric(rows: $rows, metric: $run->metric(), field: $run->field())];
+		return ['value' => $this->computeMetric(rows: $rows, metric: $run->getMetric(), field: $run->getField())];
 	}//end namedFigures()
 
 	/**
@@ -644,7 +644,7 @@ class AggregationRunner {
 		}
 
 		$result['join'] = [
-			'through' => (string)($run->joinArg()['through'] ?? ''),
+			'through' => (string)($run->getJoinArg()['through'] ?? ''),
 			'consumedForGrouping' => true,
 		];
 		return $result;
