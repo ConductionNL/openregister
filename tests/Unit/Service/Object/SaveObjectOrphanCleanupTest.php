@@ -62,6 +62,7 @@ use ReflectionClass;
  * the real one does, and the test reads which rows were soft-deleted.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\Object\OrphanDeletionGuard
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Dto\DeletionAnalysis

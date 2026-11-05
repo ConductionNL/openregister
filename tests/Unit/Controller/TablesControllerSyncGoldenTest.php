@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\TablesController
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Controller\Support\TablesControllerServices
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Exception\SchemaNotInRegisterException

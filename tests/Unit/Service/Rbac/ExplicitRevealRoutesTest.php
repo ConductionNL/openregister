@@ -41,6 +41,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\ExportService
  * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkReader

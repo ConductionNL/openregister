@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -5514,7 +5515,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function isUuidFormat(string $value): bool
     {
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+        return UuidFormat::isCanonical(value: $value);
     }//end isUuidFormat()
 
     /**

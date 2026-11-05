@@ -36,6 +36,7 @@ use ReflectionClass;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture, then run again without it.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema

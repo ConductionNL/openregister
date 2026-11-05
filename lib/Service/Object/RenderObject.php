@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
@@ -458,7 +459,7 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function isUuidLike(string $value): bool {
-		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+		return UuidFormat::isCanonical(value: $value);
 	}//end isUuidLike()
 
 	/**
@@ -518,8 +519,7 @@ class RenderObject {
 		$result = [];
 		foreach ($this->objectsCache as $key => $object) {
 			// Only include entries keyed by UUID (skip numeric IDs).
-			$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-			if (is_string($key) === true && preg_match($uuidPattern, $key) === 1) {
+			if (is_string($key) === true && UuidFormat::isCanonical(value: $key) === true) {
 				if ($object instanceof ObjectEntity) {
 					$result[$key] = $object->jsonSerialize();
 				} elseif (is_array($object) === true) {
