@@ -28,6 +28,7 @@ use OCP\IDBConnection;
  * Class PhotoLinkMapper
  *
  * @template-extends QBMapper<PhotoLink>
+ * @method list<PhotoLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class PhotoLinkMapper extends QBMapper {
 
