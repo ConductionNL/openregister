@@ -1826,16 +1826,7 @@ class SaveObjects {
 			$object['@self'] = $selfData;
 		}
 
-		// METADATA HYDRATION: Create temporary entity for metadata extraction.
-		$tempEntity = new ObjectEntity();
-		$tempEntity->setObject($object);
-
-		// CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
-		if (isset($object['@self']) === true && is_array($object['@self']) === true) {
-			$tempEntity->hydrate($object['@self']);
-		}
-
-		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
 
 		// Extract hydrated metadata back to object's @self data AND top level (for bulk SQL).
 		$selfData = $object['@self'] ?? [];
@@ -2079,6 +2070,21 @@ class SaveObjects {
 	 * @return array The @self data with the hydrated metadata
 	 */
 	private function hydrateBulkMetadata(array $object, Schema $schema): array {
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
+
+		return $this->applyHydratedMetadata(selfData: $object['@self'], object: $object, tempEntity: $tempEntity);
+	}//end hydrateBulkMetadata()
+
+	/**
+	 * A temporary entity holding one bulk object, its @self data and the
+	 * metadata the schema derives from it.
+	 *
+	 * @param array  $object The raw object data
+	 * @param Schema $schema The schema for metadata hydration
+	 *
+	 * @return ObjectEntity The hydrated temporary entity
+	 */
+	private function hydratedBulkEntity(array $object, Schema $schema): ObjectEntity {
 		$tempEntity = new ObjectEntity();
 		$tempEntity->setObject($object);
 		if (isset($object['@self']) === true && is_array($object['@self']) === true) {
@@ -2087,8 +2093,8 @@ class SaveObjects {
 
 		$this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
 
-		return $this->applyHydratedMetadata(selfData: $object['@self'], object: $object, tempEntity: $tempEntity);
-	}//end hydrateBulkMetadata()
+		return $tempEntity;
+	}//end hydratedBulkEntity()
 
 	/**
 	 * Debug-log the structure of one bulk object.
