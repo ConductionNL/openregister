@@ -151,7 +151,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'esra.demir', actual: $link->getCreatedBy());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getLabel());
 		$this->assertSame(expected: 'read', actual: $link->getCapabilities());
-		$this->assertSame(expected: '2036-10-10 23:59', actual: $link->getExpiresAt()?->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2036-10-10 23:59', actual: $this->local(moment: $link->getExpiresAt()));
 		$this->assertSame(expected: $this->caseId(), actual: $link->getSubjectId());
 		$this->assertSame(expected: ['esra.demir'], actual: $this->guardSaw, message: 'the mint guard decided for Esra');
 		$this->assertNull(actual: $this->activeUser, message: 'nobody is left signed in');
@@ -206,7 +206,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$new = array_values($this->links)[0];
 		$this->assertNotSame(expected: $old->getId(), actual: $new->getId());
 		$this->assertNull(actual: $new->getRevokedAt());
-		$this->assertSame(expected: '2036-10-15 23:59', actual: $new->getExpiresAt()?->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2036-10-15 23:59', actual: $this->local(moment: $new->getExpiresAt()));
 		$this->assertSame(expected: $new->getId(), actual: $this->record->read(set: 'demo')['accessLinks']['alpha/link-sanne']['id']);
 	}//end testARefreshMintsTheLinkAgainFromTheRefreshDay()
 
@@ -294,6 +294,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 				['key' => 'extra-field', 'data' => $link + ['password' => 'x']],
 				['key' => 'no-expiry', 'data' => array_diff_key($link, ['expiresAt' => true])],
 				['key' => 'expired', 'data' => ['expiresAt' => '{{date:-1}}'] + $link],
+				['key' => 'expired-late-yesterday', 'data' => ['expiresAt' => '{{datetime:-1 23:30}}'] + $link],
+				['key' => 'ends-early-on-the-day', 'data' => ['expiresAt' => '{{datetime:0 00:30}}'] + $link],
 				['key' => 'bad-capability', 'data' => ['capabilities' => ['delete']] + $link],
 				['key' => 'stranger', 'data' => ['createdBy' => 'admin'] + $link],
 				['key' => 'not-ours', 'data' => ['object' => '0a0b0c0d-0000-4000-8000-000000000000'] + $link],
@@ -312,6 +314,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 			'access link "extra-field": field "password"',
 			'access link "no-expiry": an access link needs an expiry',
 			'access link "expired": expiresAt',
+			'access link "expired-late-yesterday": expiresAt',
 			'access link "bad-capability": capability "delete"',
 			'access link "stranger": createdBy',
 			'access link "not-ours": object',
@@ -323,6 +326,8 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		] as $expected) {
 			$this->assertStringContainsString(needle: 'demo.json: '.$expected, haystack: $refusals);
 		}
+
+		$this->assertStringNotContainsString(needle: 'ends-early-on-the-day', haystack: $refusals, message: 'the install day is a local day');
 	}//end testTheCheckRefusesEveryBadRow()
 
 	/**
@@ -347,7 +352,7 @@ class ExampleSetAccessLinksAndGrantsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: IShare::TYPE_GROUP, actual: $share['shareType']);
 		$this->assertSame(expected: 'demo-staff', actual: $share['sharedWith']);
 		$this->assertSame(expected: '2026-10-27', actual: $share['expiration']->format('Y-m-d'));
-		$this->assertSame(expected: '2026-09-17 10:00', actual: $share['shareTime']->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-09-17 10:00', actual: $this->local(moment: $share['shareTime']));
 		$this->assertSame(expected: ['esra.demir'], actual: $this->sharedAs);
 		$this->assertNull(actual: $this->activeUser);
 		$first = array_keys($this->shares)[0];

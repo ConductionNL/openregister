@@ -5,7 +5,7 @@
  *
  * Replaces `{{...}}` in declared values. The forms:
  * - `{{cast:key.path}}` a field of a cast person, organisation or group;
- * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
+ * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day (a moment as its UTC instant);
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
  * - `{{file:key.n}}` the Nextcloud file id of the n-th file (from 0) an object declared earlier in the same
  *   fragment carries, so a record can name a file the set adds;
@@ -53,6 +53,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateInterval;
 use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Fills placeholders in declared values.
@@ -450,7 +451,9 @@ class ExampleSetValues {
 	 * @param string $rest  The number of days, and for a moment the time as HH:MM.
 	 * @param mixed  $today The install day.
 	 *
-	 * @return string|null `2026-10-05` or `2026-10-05T09:12:00+02:00`; null when malformed.
+	 * @return string|null `2026-10-05`, or for a moment its UTC instant, `2026-10-05T07:12:00+00:00` for 09:12 in
+	 *                     Amsterdam; null when malformed. A database datetime column keeps the wall time and drops
+	 *                     the offset, and Nextcloud reads it back as UTC, so a moment in any other offset would move.
 	 */
 	private function moment(string $kind, string $rest, mixed $today): ?string {
 		$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))?$/';
@@ -471,6 +474,6 @@ class ExampleSetValues {
 			return $day->format('Y-m-d');
 		}
 
-		return $day->setTime((int) $parts[3], (int) $parts[4])->format('c');
+		return $day->setTime((int) $parts[3], (int) $parts[4])->setTimezone(new DateTimeZone('UTC'))->format('c');
 	}//end moment()
 }//end class
