@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 use Exception;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -149,7 +151,10 @@ class DeckProviderTest extends TestCase {
 		$linkService
 			->expects($this->once())
 			->method('createAndLinkCard')
-			->with('obj-uuid', 10, 20, 1, 2, 'Hello', 'desc', '2026-12-31')
+			->with(
+				(new LinkTarget('obj-uuid', 10))->inSchema(20),
+				(new CardDraft('Hello', 2))->onBoard(1)->withDetails('desc', '2026-12-31')
+			)
 			->willReturn($this->buildDeckLink(99));
 
 		$provider = new DeckProvider($linkService, $this->buildAppManager(), $this->buildL10n());

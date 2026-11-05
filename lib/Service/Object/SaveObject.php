@@ -625,7 +625,7 @@ class SaveObject implements SaveObjectInterface {
 			return null;
 		}
 
-		if ($service instanceof \OCA\OpenRegister\Service\RetentionService) {
+		if ($service instanceof \OCA\OpenRegister\Service\RetentionServiceInterface) {
 			return $service;
 		}
 

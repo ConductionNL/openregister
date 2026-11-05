@@ -74,6 +74,11 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	];
 
 	/**
+	 * What `{{flow:self}}` and `{{flow:self.uuid}}` fill to inside a flow, until the flow's uuid replaces it.
+	 */
+	private const OWN_UUID = '{{flow:self.uuid}}';
+
+	/**
 	 * The run fields a fragment may set.
 	 */
 	public const RUN_FIELDS = ExampleSetFlowRuns::FIELDS;
@@ -111,6 +116,21 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	public function noun(): string {
 		return 'flow';
 	}//end noun()
+
+	/**
+	 * A flow's own declaration may quote its own uuid (`{{flow:self.uuid}}`), which only exists once it is written.
+	 *
+	 * @param array<string, mixed> $context The context placeholders draw on.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	protected function fillContext(array $context): array {
+		$context['flows'] = (['self' => ['uuid' => self::OWN_UUID]] + (array) ($context['flows'] ?? []));
+
+		return $context;
+	}//end fillContext()
 
 	/**
 	 * Why a filled flow cannot be written, or ''.
@@ -337,6 +357,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 */
 	private function declare(Flow $flow, array $data): bool {
 		$before = $this->declared(flow: $flow);
+		$data   = $this->withOwnUuid(value: $data, uuid: (string) $flow->getUuid());
 		$flow->setName((string) $data['name']);
 		$flow->setDescription(($data['description'] ?? null));
 		$flow->setTrigger(($data['trigger'] ?? null));
@@ -352,6 +373,26 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 
 		return $this->declared(flow: $flow) !== $before;
 	}//end declare()
+
+	/**
+	 * A filled value with the flow's own uuid where it quoted itself.
+	 *
+	 * @param mixed  $value The filled value.
+	 * @param string $uuid  The flow's uuid.
+	 *
+	 * @return mixed
+	 */
+	private function withOwnUuid(mixed $value, string $uuid): mixed {
+		if (is_array($value) === true) {
+			return array_map(fn (mixed $item): mixed => $this->withOwnUuid(value: $item, uuid: $uuid), $value);
+		}
+
+		if (is_string($value) === true) {
+			return str_replace(self::OWN_UUID, $uuid, $value);
+		}
+
+		return $value;
+	}//end withOwnUuid()
 
 	/**
 	 * The declarable fields of a flow, as one comparable string.

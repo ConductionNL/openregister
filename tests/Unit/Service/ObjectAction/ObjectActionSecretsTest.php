@@ -29,6 +29,9 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunCommit
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamClosure
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRef
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamRelease
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\FlowState
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunService

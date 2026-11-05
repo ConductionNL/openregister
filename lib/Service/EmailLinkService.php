@@ -162,32 +162,17 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 * harvested from Mail's tables at link-time so the list path can
 	 * render without a join.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (nullable in storage).
-	 * @param int $mailAccountId Mail account id.
-	 * @param string $messageId Mail message id (numeric string).
-	 * @param string $messageUid Mail message UID (IMAP UID, opaque).
+	 * @param LinkTarget      $target  The object to link to.
+	 * @param EmailMessageRef $message The Mail message (account, id, optional uid).
 	 *
 	 * @return EmailLink The persisted link row.
 	 *
 	 * @throws Exception On missing user (401), Mail unavailable (503),
 	 *                   or message-not-found (404).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
-	 *     clauses for the four required preconditions (user, Mail
-	 *     available, message exists, upsert idempotency).
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkEmail(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $mailAccountId,
-		string $messageId,
-		string $messageUid,
-	): EmailLink {
+	public function linkEmail(LinkTarget $target, EmailMessageRef $message): EmailLink {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);
@@ -197,23 +182,17 @@ class EmailLinkService implements EmailLinkReaderInterface {
 			throw new Exception('NC Mail app is not installed', 503);
 		}
 
-		$messageIdInt = (int)$messageId;
-		if ($messageIdInt <= 0) {
+		if ($message->messageNumber() <= 0) {
 			throw new Exception('Invalid mail message id', 400);
-		}
-
-		$uidForMatch = null;
-		if ($messageUid !== '') {
-			$uidForMatch = $messageUid;
 		}
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
 		$existing = $this->mapper->findByObjectAccountMessageUid(
-			objectUuid: $objectUuid,
-			mailAccountId: $mailAccountId,
-			mailMessageId: $messageIdInt,
-			mailMessageUid: $uidForMatch
+			objectUuid: $target->objectUuid,
+			mailAccountId: $message->mailAccountId,
+			mailMessageId: $message->messageNumber(),
+			mailMessageUid: $message->uidForMatch()
 		);
 		if ($existing !== null) {
 			return $existing;
@@ -221,83 +200,69 @@ class EmailLinkService implements EmailLinkReaderInterface {
 
 		// Harvest the metadata at link-time so the list path is one
 		// SELECT against the link table.
-		$message = $this->fetchMessageRow(
-			mailAccountId: $mailAccountId,
-			mailMessageId: $messageIdInt
+		$row = $this->fetchMessageRow(
+			mailAccountId: $message->mailAccountId,
+			mailMessageId: $message->messageNumber()
 		);
-		if ($message === null) {
+		if ($row === null) {
 			throw new Exception('Mail message not found', 404);
 		}
 
-		$link = $this->buildNewLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			mailAccountId: $mailAccountId,
-			messageIdInt: $messageIdInt,
-			uidForMatch: $uidForMatch,
-			message: $message,
-			userId: $user->getUID()
-		);
+		$link = $this->buildNewLink(target: $target, message: $message);
+		$this->applyHarvest(link: $link, row: $row);
+		$link->setLinkedBy($user->getUID());
+		$link->setLinkedAt(new DateTime());
 
 		return $this->mapper->insert($link);
 	}//end linkEmail()
 
 	/**
-	 * Build a new EmailLink entity from link parameters and harvested message metadata.
+	 * Build a new EmailLink entity for the target and message.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id (0 = none).
-	 * @param int $mailAccountId Mail account id.
-	 * @param int $messageIdInt Mail message id.
-	 * @param string|null $uidForMatch Explicit UID or null to fall back from message row.
-	 * @param array<string,mixed> $message Harvested message metadata row.
-	 * @param string $userId Linking user's NC uid.
+	 * @param LinkTarget      $target  The object to link to.
+	 * @param EmailMessageRef $message The Mail message.
 	 *
 	 * @return EmailLink Unsaved link entity.
 	 */
-	private function buildNewLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $mailAccountId,
-		int $messageIdInt,
-		?string $uidForMatch,
-		array $message,
-		string $userId,
-	): EmailLink {
+	private function buildNewLink(LinkTarget $target, EmailMessageRef $message): EmailLink {
 		$link = new EmailLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		if ($schemaId > 0) {
-			$link->setSchemaId($schemaId);
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		if ($target->schemaId() > 0) {
+			$link->setSchemaId($target->schemaId());
 		}
 
-		$link->setMailAccountId($mailAccountId);
-		$link->setMailMessageId($messageIdInt);
-		$effectiveUid = $message['uid'];
-		if ($uidForMatch !== null || $message['uid'] === '') {
-			$effectiveUid = $uidForMatch;
+		$link->setMailAccountId($message->mailAccountId);
+		$link->setMailMessageId($message->messageNumber());
+		$link->setMailMessageUid($message->uidForMatch());
+
+		return $link;
+	}//end buildNewLink()
+
+	/**
+	 * Copy the harvested message metadata onto the link; the row's uid is used when none was given.
+	 *
+	 * @param EmailLink           $link The unsaved link.
+	 * @param array<string,mixed> $row  Harvested message metadata row.
+	 *
+	 * @return void
+	 */
+	private function applyHarvest(EmailLink $link, array $row): void {
+		if ($link->getMailMessageUid() === null && $row['uid'] !== '') {
+			$link->setMailMessageUid($row['uid']);
 		}
 
-		$link->setMailMessageUid($effectiveUid);
-		$link->setSubject($message['subject']);
-		$link->setSender($message['sender']);
+		$link->setSubject($row['subject']);
+		$link->setSender($row['sender']);
 
-		if ($message['date'] !== null) {
+		if ($row['date'] !== null) {
 			try {
-				$link->setMailDate(new DateTime($message['date']));
+				$link->setMailDate(new DateTime($row['date']));
 			} catch (Throwable $e) {
 				// Leave date null when the mail date string is unparseable.
 			}
 		}
-
-		$link->setLinkedBy($userId);
-		$link->setLinkedAt(new DateTime());
-
-		return $link;
-	}//end buildNewLink()
+	}//end applyHarvest()
 
 	/**
 	 * Unlink a Mail message from an OR object.

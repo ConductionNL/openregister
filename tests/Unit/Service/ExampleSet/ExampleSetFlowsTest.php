@@ -350,6 +350,58 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	}//end testAFlowThatDoesNotSayItIsOnStaysOff()
 
 	/**
+	 * A flow's own steps may quote its uuid, as `{{flow:self}}` or `{{flow:self.uuid}}`: the written flow carries it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	public function testAFlowQuotesItsOwnUuid(): void {
+		$nodes    = self::flow()['nodes'];
+		$nodes[1] = [
+			'id'     => 'status',
+			'type'   => 'dossiq.openCase',
+			'config' => ['handoffSource' => 'planned-series:{{flow:self.uuid}}', 'series' => '{{flow:self}}'],
+		];
+		$this->app(app: 'alpha', fragment: ['flows' => [['key' => 'reeks', 'data' => self::flow(extra: ['nodes' => $nodes])]]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$flow = array_values($this->flows)[0];
+		$uuid = (string) $flow->getUuid();
+		$this->assertSame(expected: ['handoffSource' => 'planned-series:'.$uuid, 'series' => $uuid], actual: $flow->getNodes()[1]['config']);
+
+		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today());
+		$refreshed = $this->flows[$uuid]->getNodes()[1]['config']['handoffSource'];
+		$this->assertSame(expected: 'planned-series:'.$uuid, actual: $refreshed, message: 'a refresh keeps it');
+		$this->assertSame(expected: [$uuid], actual: $this->publishedFlows, message: 'the refresh found nothing changed');
+	}//end testAFlowQuotesItsOwnUuid()
+
+	/**
+	 * Outside a flow, `{{flow:self}}` names no flow, so the row is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
+	 */
+	public function testSelfOutsideAFlowIsRefused(): void {
+		$this->store->offer(register: 'cases', schema: 'caseType');
+		$this->app(app: 'alpha', fragment: [
+			'objects' => [['key' => 'woo', 'register' => 'cases', 'schema' => 'caseType', 'data' => ['title' => 'Woo-verzoek']]],
+			'flows'   => [['key' => 'zienswijze', 'data' => self::flow()]],
+			'changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'caseType', 'object' => 'woo', 'set' => ['startableFlows' => ['{{flow:self}}']]]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve {{flow:self}}', haystack: $refusals[0]);
+	}//end testSelfOutsideAFlowIsRefused()
+
+	/**
 	 * The faulty flows and a part of their refusal.
 	 *
 	 * @return array<string, array{0: array<string, mixed>, 1: string}>
