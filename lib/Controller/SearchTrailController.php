@@ -103,10 +103,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @return array Request parameters including pagination and filters
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Request parameter extraction requires many conditional checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec exclude Private helper: parses pagination/filter/date params; the search-trail analytics API is owned by
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3.
 	 */
@@ -114,33 +110,10 @@ class SearchTrailController extends Controller {
 		// Get request parameters for filtering and pagination.
 		$params = $this->request->getParams();
 
-		// Extract pagination parameters (prioritize underscore-prefixed versions).
-		$limit = 20;
-		if (($params['_limit'] ?? null) !== null) {
-			$limit = (int)$params['_limit'];
-		}
-
-		if (($params['limit'] ?? null) !== null) {
-			$limit = (int)$params['limit'];
-		}
-
-		$offset = null;
-		if (($params['_offset'] ?? null) !== null) {
-			$offset = (int)$params['_offset'];
-		}
-
-		if (($params['offset'] ?? null) !== null) {
-			$offset = (int)$params['offset'];
-		}
-
-		$page = null;
-		if (($params['_page'] ?? null) !== null) {
-			$page = (int)$params['_page'];
-		}
-
-		if (($params['page'] ?? null) !== null) {
-			$page = (int)$params['page'];
-		}
+		// Extract pagination parameters (the plain name wins over the underscore-prefixed one).
+		$limit = $this->intParam(params: $params, name: 'limit') ?? 20;
+		$offset = $this->intParam(params: $params, name: 'offset');
+		$page = $this->intParam(params: $params, name: 'page');
 
 		// If we have a page but no offset, calculate the offset.
 		if ($page !== null && $offset === null) {
@@ -159,27 +132,34 @@ class SearchTrailController extends Controller {
 			$sort[$sortField] = $sortOrder;
 		}
 
-		// Extract date filters.
-		$from = null;
-		$to = null;
-		if (($params['from'] ?? null) !== null) {
-			try {
-				$from = new DateTime($params['from']);
-			} catch (\Exception $e) {
-				// Invalid date format, ignore.
-			}
-		}
-
-		if (($params['to'] ?? null) !== null) {
-			try {
-				$to = new DateTime($params['to']);
-			} catch (\Exception $e) {
-				// Invalid date format, ignore.
-			}
-		}
+		// Extract date filters; an invalid date is ignored.
+		$from = $this->dateParam(params: $params, name: 'from');
+		$to = $this->dateParam(params: $params, name: 'to');
 
 		// Filter out special parameters and system fields.
-		$filters = array_filter(
+		$filters = $this->filterParams(params: $params);
+
+		return [
+			'limit' => $limit,
+			'offset' => $offset,
+			'page' => $page,
+			'filters' => $filters,
+			'sort' => $sort,
+			'search' => $search,
+			'from' => $from,
+			'to' => $to,
+		];
+	}//end extractRequestParameters()
+
+	/**
+	 * The request parameters that are filters, without pagination, search, sort, date and system fields.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed> The filter parameters.
+	 */
+	private function filterParams(array $params): array {
+		return array_filter(
 			$params,
 			function ($key) {
 				return !in_array(
@@ -206,18 +186,47 @@ class SearchTrailController extends Controller {
 			},
 			ARRAY_FILTER_USE_KEY
 		);
+	}//end filterParams()
 
-		return [
-			'limit' => $limit,
-			'offset' => $offset,
-			'page' => $page,
-			'filters' => $filters,
-			'sort' => $sort,
-			'search' => $search,
-			'from' => $from,
-			'to' => $to,
-		];
-	}//end extractRequestParameters()
+	/**
+	 * Read an integer request parameter, preferring the plain name over its underscore-prefixed form.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $name   The parameter name without underscore.
+	 *
+	 * @return int|null The value, or null when neither form is set.
+	 */
+	private function intParam(array $params, string $name): ?int {
+		if (($params[$name] ?? null) !== null) {
+			return (int)$params[$name];
+		}
+
+		if (($params['_' . $name] ?? null) !== null) {
+			return (int)$params['_' . $name];
+		}
+
+		return null;
+	}//end intParam()
+
+	/**
+	 * Read a date request parameter.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 * @param string               $name   The parameter name.
+	 *
+	 * @return DateTime|null The date, or null when it is not set or not a valid date.
+	 */
+	private function dateParam(array $params, string $name): ?DateTime {
+		if (($params[$name] ?? null) === null) {
+			return null;
+		}
+
+		try {
+			return new DateTime($params[$name]);
+		} catch (\Exception $e) {
+			return null;
+		}
+	}//end dateParam()
 
 	/**
 	 * Private helper method to handle pagination of results.

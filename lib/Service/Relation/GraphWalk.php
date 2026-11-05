@@ -65,6 +65,48 @@ final class GraphWalk {
 	public array $next = [];
 
 	/**
+	 * The root UUID.
+	 *
+	 * @var string
+	 */
+	public string $root = '';
+
+	/**
+	 * The UUIDs the current level walks out from.
+	 *
+	 * @var array
+	 */
+	public array $frontier = [];
+
+	/**
+	 * The language edge labels are read in.
+	 *
+	 * @var string
+	 */
+	public string $language = 'nl';
+
+	/**
+	 * The administered maximum depth.
+	 *
+	 * @var integer
+	 */
+	public int $maxDepth = 1;
+
+	/**
+	 * The depth the caller asked for, at least one.
+	 *
+	 * @var integer
+	 */
+	public int $requestedDepth = 1;
+
+	/**
+	 * The depth walked: the requested depth, capped at the maximum.
+	 *
+	 * @var integer
+	 */
+	public int $depth = 1;
+
+	/**
 	 * The administered node cap.
 	 *
 	 * @var integer

@@ -32,6 +32,7 @@ use Psr\Log\NullLogger;
  * look it up past the read filters. So the cascade hands it the nested object without them.
  *
  * @covers \OCA\OpenRegister\Service\Object\CascadingHandler
+ * @uses   \OCA\OpenRegister\Service\Object\CascadeTarget
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  */
