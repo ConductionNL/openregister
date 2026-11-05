@@ -44,9 +44,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ObjectSharingControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
@@ -62,26 +61,44 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectSharingController extends Controller {
 	/**
+	 * Resolves an object through the RBAC boundary.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * Performs the owner-checked writes.
+	 *
+	 * @var ObjectSharingService
+	 */
+	private readonly ObjectSharingService $sharing;
+
+	/**
+	 * The controller's injected services.
+	 *
+	 * @var ObjectSharingControllerServices
+	 */
+	private readonly ObjectSharingControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
-	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param RegisterMapperInterface $registerMapper Resolves the register entity.
-	 * @param SchemaMapperInterface $schemaMapper Resolves the schema entity.
-	 * @param ObjectSharingService $sharing Performs the owner-checked writes.
+	 * @param ObjectSharingControllerServices $services The object sharing controller services.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectSharingService $sharing,
+		ObjectSharingControllerServices $services,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->services = $services;
+		$this->objectService = $services->objectService;
+		$this->sharing = $services->sharing;
 	}//end __construct()
 
 	/**
@@ -136,8 +153,8 @@ class ObjectSharingController extends Controller {
 
 		try {
 			$block = $this->sharing->setScope(
-				register: $this->registerMapper->find($this->objectService->getRegister()),
-				schema: $this->schemaMapper->find($this->objectService->getSchema()),
+				register: $this->services->registerMapper->find($this->objectService->getRegister()),
+				schema: $this->services->schemaMapper->find($this->objectService->getSchema()),
 				object: $object,
 				scope: $scope
 			);

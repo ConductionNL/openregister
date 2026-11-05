@@ -91,7 +91,7 @@ class MagicBulkHandlerPreUpdateStateTest extends TestCase {
 			'handler executeUpsertChunk' => [MagicBulkHandler::class, 'executeUpsertChunk', 3],
 			'mapper bulkUpsert' => [\OCA\OpenRegister\Db\MagicMapper::class, 'bulkUpsert', 4],
 			'mapper ultraFastBulkSave' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSave', 4],
-			'mapper ultraFastBulkSaveSingleSchema' => [\OCA\OpenRegister\Db\MagicMapper::class, 'ultraFastBulkSaveSingleSchema', 4],
+			'bulk save group' => [\OCA\OpenRegister\Db\MagicMapper\MagicBulkSaveGroup::class, '__construct', 1],
 			'saveObjects persistChunk' => [\OCA\OpenRegister\Service\Object\SaveObjects::class, 'persistChunk', 3],
 		];
 	}

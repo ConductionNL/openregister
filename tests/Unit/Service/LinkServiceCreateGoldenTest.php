@@ -79,6 +79,7 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
  * @uses   \OCA\OpenRegister\Db\EmailLink
  * @uses   \OCA\OpenRegister\Db\DeckLink
  * @uses   \OCA\OpenRegister\Db\MapLink
+ * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
  */
 class LinkServiceCreateGoldenTest extends TestCase {
