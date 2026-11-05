@@ -76,6 +76,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Search\SearchTermParser
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {

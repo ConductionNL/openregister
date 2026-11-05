@@ -38,6 +38,7 @@ use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SearchLeafScope;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -124,15 +125,10 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildSearchConditionSql');
 		$method->setAccessible(true);
 
-		return (string)$method->invoke(
-			$this->handler,
-			$search,
-			$this->makeSchema(properties: $properties),
-			[],
-			$this->makeConnection(),
-			true,
-			null
-		);
+		$scope = new SearchLeafScope(schema: $this->makeSchema(properties: $properties), isPostgres: true);
+		$scope->connection = $this->makeConnection();
+
+		return (string)$method->invoke($this->handler, $search, $scope);
 	}//end unionSql()
 
 	/**
