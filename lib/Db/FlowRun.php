@@ -433,6 +433,39 @@ class FlowRun extends Entity implements JsonSerializable {
 	}//end isTerminal()
 
 	/**
+	 * Whether this run's unresolved subject should fall back to its payload
+	 * snapshot instead of being treated as a resolution failure.
+	 *
+	 * Restricted to the `object.deleted` trigger: it is the one lifecycle
+	 * event whose subject can never be re-resolved by design, since the
+	 * object is already gone by the time any run reaches it. Every other
+	 * trigger's unresolved subject is a genuine resolution failure — a
+	 * sub-flow fan-out child queued against an object that is deleted before
+	 * the queued run executes, for instance, must still fail rather than
+	 * silently continue on stale data. {@see
+	 * \OCA\OpenRegister\Service\Flow\FlowRunAdvancer} and {@see
+	 * \OCA\OpenRegister\Service\Flow\FlowTriggerService} both gate their
+	 * fallback on this one predicate so the two cannot drift.
+	 *
+	 * Checks for the `payload` key's presence rather than a non-empty value:
+	 * once scoped to `object.deleted`, a key that is merely present but
+	 * technically empty is still a deliberate snapshot from
+	 * {@see \OCA\OpenRegister\Listener\FlowTriggerListener}, not an absent one.
+	 *
+	 * @return boolean True when this run's trigger is `object.deleted` and its
+	 *                  context carries a payload snapshot.
+	 *
+	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+	 */
+	public function hasDeletedSubjectSnapshot(): bool {
+		if ($this->trigger !== 'object.deleted') {
+			return false;
+		}
+
+		return array_key_exists('payload', (array)($this->context ?? []));
+	}//end hasDeletedSubjectSnapshot()
+
+	/**
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The run as plain data.

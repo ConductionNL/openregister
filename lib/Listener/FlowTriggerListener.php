@@ -168,12 +168,27 @@ class FlowTriggerListener implements IEventListener {
 	 * A state change is the one lifecycle event that is *about* a change rather
 	 * than a moment: which action ran and the places it moved between are what a
 	 * flow wired to "an object changes state" needs to branch on, so they are
-	 * put on the run context where the flow's conditions can read them. Every
-	 * other lifecycle event adds nothing beyond its subject.
+	 * put on the run context where the flow's conditions can read them.
+	 *
+	 * A deletion is the one lifecycle event whose SUBJECT CANNOT BE RE-RESOLVED.
+	 * Every run — inline or queued — re-reads its subject by uuid before any
+	 * node executes ({@see \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::advance()}),
+	 * and a deleted object is, by definition, never there to find: the delete
+	 * already happened by the time ANY run reaches it, so a flow wired to
+	 * `object.deleted` failed with "Subject ... no longer exists" on every
+	 * firing, unconditionally — not a bug in the flow, a gap in what the trigger
+	 * handed the run. The object's last-known state travels under `payload`
+	 * instead, the same slot a subjectless trigger (a file, a user) already
+	 * seeds its first item from, so the advancer's existing fallback picks it up
+	 * with no new mechanism.
+	 *
+	 * Every other lifecycle event adds nothing beyond its subject — the object
+	 * still exists, so a flow that needs more than its uuid already has a
+	 * resolvable subject to read it from.
 	 *
 	 * @param Event $event The dispatched event.
 	 *
-	 * @return array<string, string> The extra context, empty for most events.
+	 * @return array<string, mixed> The extra context, empty for most events.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -193,6 +208,10 @@ class FlowTriggerListener implements IEventListener {
 				// applicant" is right for one and wrong for the other.
 				'automatic' => $automatic,
 			];
+		}
+
+		if ($event instanceof ObjectDeletedEvent) {
+			return ['payload' => $event->getObject()->jsonSerialize()];
 		}
 
 		return [];
