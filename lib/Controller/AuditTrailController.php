@@ -671,7 +671,7 @@ class AuditTrailController extends Controller {
 	 *
 	 * @return JSONResponse HTTP 409 `ambiguous-identifier`.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	private function ambiguousIdentifier(string $id): JSONResponse {
 		return new JSONResponse(

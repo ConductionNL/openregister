@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * (design D11); instead a run that changes at least one slug writes one
  * audit-trail entry with the old to new slugs. A second run changes nothing.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
 class ObjectSlugBackfillService {
 
@@ -104,7 +104,7 @@ class ObjectSlugBackfillService {
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
 	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
 	 */

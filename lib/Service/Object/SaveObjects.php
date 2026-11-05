@@ -274,7 +274,7 @@ class SaveObjects {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function applyObjectSlugs(
 		array &$objects,
@@ -350,7 +350,7 @@ class SaveObjects {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function decideSlugGroup(
 		array &$objects,
