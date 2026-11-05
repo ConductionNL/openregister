@@ -111,15 +111,38 @@ trait PayloadTokenReading {
 		// the top-level field. This makes the lookup parameterisable by the
 		// saving object exactly as the schema author expects.
 		if ($parts[0] === '@self' && count($parts) === 2) {
-			$field = $parts[1];
-			$self = ($payload['@self'] ?? []);
-			if (is_array($self) === true && array_key_exists($field, $self) === true) {
-				return $self[$field];
-			}
-
-			return ($payload[$field] ?? null);
+			return $this->selfField(payload: $payload, field: $parts[1]);
 		}
 
+		return $this->walkPath(payload: $payload, parts: $parts);
+	}//end readPath()
+
+	/**
+	 * A `@self.<field>` value: the system field when `@self` has it, else the top-level data field.
+	 *
+	 * @param array<string, mixed> $payload Object data.
+	 * @param string               $field   The field name.
+	 *
+	 * @return mixed The value, or null when neither has it.
+	 */
+	private function selfField(array $payload, string $field): mixed {
+		$self = ($payload['@self'] ?? []);
+		if (is_array($self) === true && array_key_exists($field, $self) === true) {
+			return $self[$field];
+		}
+
+		return ($payload[$field] ?? null);
+	}//end selfField()
+
+	/**
+	 * Walk the payload key by key.
+	 *
+	 * @param array<string, mixed> $payload Object data.
+	 * @param array<int, string>   $parts   The keys, outermost first.
+	 *
+	 * @return mixed The value, or null when a key is missing.
+	 */
+	private function walkPath(array $payload, array $parts): mixed {
 		$current = $payload;
 		foreach ($parts as $part) {
 			if (is_array($current) === false || array_key_exists($part, $current) === false) {
@@ -130,5 +153,5 @@ trait PayloadTokenReading {
 		}
 
 		return $current;
-	}//end readPath()
+	}//end walkPath()
 }//end trait
