@@ -46,6 +46,9 @@ use Throwable;
  */
 class ContactsObjectSourceProvider implements ObjectSourceProvider {
 
+	use CountsThroughFindAll;
+	use InstalledAppCheck;
+
 	/**
 	 * NC app id whose install-state gates this provider.
 	 *
@@ -86,24 +89,6 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 	public function getId(): string {
 		return 'contacts-source';
 	}//end getId()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * Gated on the Contacts app: when it is not installed the bound schema
-	 * degrades to an empty list rather than erroring.
-	 *
-	 * @return bool True when the Contacts app is installed.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function isEnabled(): bool {
-		try {
-			return $this->appManager->isInstalled(self::REQUIRED_APP);
-		} catch (Throwable $e) {
-			return false;
-		}
-	}//end isEnabled()
 
 	/**
 	 * {@inheritDoc}
@@ -164,22 +149,6 @@ class ContactsObjectSourceProvider implements ObjectSourceProvider {
 
 		return $objects;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Read the contacts visible to the acting user, failing closed to an empty list.
