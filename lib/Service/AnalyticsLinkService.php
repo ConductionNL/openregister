@@ -215,13 +215,12 @@ class AnalyticsLinkService {
 		}
 
 		$link = $this->buildLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			reportId: $reportId,
-			info: $info,
-			uid: $uid,
+			info: $info
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->analyticsLinkMapper->insert($link);
 	}//end linkReport()
@@ -295,9 +294,6 @@ class AnalyticsLinkService {
 		$info = $this->fetchReportInfo(reportId: $reportId);
 
 		$link = $this->buildLink(
-			objectUuid: $objectUuid,
-			registerId: $registerId,
-			schemaId: $schemaId,
 			reportId: $reportId,
 			info: ($info ?? [
 				'title' => $name,
@@ -305,9 +301,11 @@ class AnalyticsLinkService {
 				'subheader' => null,
 				'createdAt' => new DateTime(),
 				'modifiedAt' => new DateTime(),
-			]),
-			uid: $uid,
+			])
 		);
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->analyticsLinkMapper->insert($link);
 	}//end createAndLinkReport()
@@ -412,37 +410,22 @@ class AnalyticsLinkService {
 	/**
 	 * Build an AnalyticsLink entity from cached report info.
 	 *
-	 * @param string $objectUuid Parent OR object uuid.
-	 * @param int $registerId OR register id.
-	 * @param int $schemaId OR schema id.
 	 * @param int $reportId NC Analytics report id.
 	 * @param array<string,mixed> $info Normalised report info.
-	 * @param string $uid Owning user id.
 	 *
 	 * @return AnalyticsLink
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 */
 	private function buildLink(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
 		int $reportId,
 		array $info,
-		string $uid,
 	): AnalyticsLink {
 		$link = new AnalyticsLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setReportId($reportId);
 		$link->setReportTitle((string)($info['title'] ?? ''));
 		$link->setReportType($info['type']);
 		$link->setSubheader($info['subheader']);
 		$link->setCreatedAt($info['createdAt']);
 		$link->setModifiedAt($info['modifiedAt']);
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
 
 		return $link;
 	}//end buildLink()
