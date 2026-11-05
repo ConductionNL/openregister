@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -106,7 +107,7 @@ class FileTextControllerManualEntityTest extends TestCase {
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(originalClassName: TextExtractionService::class),
