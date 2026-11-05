@@ -133,6 +133,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @param FlowStreamMapper|null $streamMapper Stream rows; with the two below, enables the stream walk.
 	 * @param FlowPlaceClaims|null $claims The claim protocol.
 	 * @param FlowRunCommit|null $commit The locked delta commit path.
+	 * @param FlowHopAudit|null $hopAudit Audits each hop recorded by the step history.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected collaborators, appended so
 	 * the three test suites that construct this service positionally keep their slots.
@@ -152,6 +153,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		private readonly ?FlowStreamMapper $streamMapper = null,
 		private readonly ?FlowPlaceClaims $claims = null,
 		private readonly ?FlowRunCommit $commit = null,
+		private readonly ?FlowHopAudit $hopAudit = null,
 	) {
 		// Built here rather than injected, deliberately: this service's
 		// constructor is called explicitly by three test suites, and inserting or
@@ -174,7 +176,7 @@ class FlowRunService implements FlowRunServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	private function stepHistory(): FlowStepHistory {
-		return new FlowStepHistory(steps: $this->steps, logger: $this->logger);
+		return new FlowStepHistory(steps: $this->steps, logger: $this->logger, hopAudit: $this->hopAudit);
 	}//end stepHistory()
 
 	/**

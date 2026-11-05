@@ -53,6 +53,14 @@ use Throwable;
  */
 class AuditFlowAttribution extends QBMapper {
 	/**
+	 * The action of a per-hop audit row. A hop row carries the run's attribution
+	 * but records that the hop ran, not that it wrote anything.
+	 *
+	 * @var string
+	 */
+	public const ACTION_HOP = 'flow.hop';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection      $db        The database.
@@ -104,7 +112,8 @@ class AuditFlowAttribution extends QBMapper {
 	}//end apply()
 
 	/**
-	 * Every audit row attributed to one flow run, oldest first.
+	 * Every write attributed to one flow run, oldest first. Hop rows are left
+	 * out: a run with auditing on must report the same writes as one without.
 	 *
 	 * Ordered by id rather than by `flow_step` so a run that visited the same
 	 * node twice — a loop — reads in the order the writes actually happened
@@ -122,6 +131,7 @@ class AuditFlowAttribution extends QBMapper {
 		$qb->select('*')
 			->from('openregister_audit_trails')
 			->where($qb->expr()->eq('flow_run', $qb->createNamedParameter($runUuid)))
+			->andWhere($qb->expr()->neq('action', $qb->createNamedParameter(self::ACTION_HOP)))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 

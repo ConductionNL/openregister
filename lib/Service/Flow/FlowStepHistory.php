@@ -60,10 +60,12 @@ class FlowStepHistory {
 	 *                                       Null where history is not being recorded at
 	 *                                       all, in which case numbering starts at zero.
 	 * @param LoggerInterface|null   $logger Records a failed read.
+	 * @param FlowHopAudit|null      $hopAudit Audits each hop recorded here.
 	 */
 	public function __construct(
 		private readonly ?FlowRunStepMapper $steps = null,
 		private readonly ?LoggerInterface $logger = null,
+		private readonly ?FlowHopAudit $hopAudit = null,
 	) {
 	}//end __construct()
 
@@ -192,6 +194,8 @@ class FlowStepHistory {
 					context: ['file' => __FILE__, 'line' => __LINE__]
 				);
 			}
+
+			$this->hopAudit?->record(run: $run, step: $step);
 
 			$sequence++;
 		}//end foreach

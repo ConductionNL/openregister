@@ -102,16 +102,16 @@ class FlowEngineOversightTest extends TestCase {
 	}//end testAConsentingCheckLetsTheRunComplete()
 
 	/**
-	 * A per-flow opt-out is honoured: the gate is not consulted at all.
+	 * The gate has no opt-out, and a run's context comes from the caller.
 	 */
-	public function testAFlowThatOptsOutIsNotGated(): void {
+	public function testAnOptOutInTheContextDoesNotOpenTheGate(): void {
 		$registry = new FlowOversightRegistry(new \Psr\Log\NullLogger());
 		$registry->register($this->check('test.kill', 'The kill switch is set.'));
 
 		$result = $this->runGated($registry, ['oversight' => false]);
 
-		$this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
-	}//end testAFlowThatOptsOutIsNotGated()
+		$this->assertSame(FlowEngine::STATUS_STOPPED, $result['status']);
+	}//end testAnOptOutInTheContextDoesNotOpenTheGate()
 
 	/**
 	 * No registry CONSENTS, exactly as an empty one does — the two are the same
