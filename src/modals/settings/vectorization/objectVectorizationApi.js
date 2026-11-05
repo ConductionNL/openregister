@@ -62,3 +62,13 @@ export function vectorizeObjects(batch) {
 		batch,
 	)
 }
+
+/**
+ * Store the object vectorization settings.
+ *
+ * @param {object} config The settings
+ * @return {Promise<object>} The response
+ */
+export function writeVectorizeSettings(config) {
+	return axios.patch(generateUrl(SETTINGS_URL), config)
+}
