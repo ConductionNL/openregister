@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * Pins what the dashboard reads return and log, success and failure, against a recorded golden.
  *
  * @covers \OCA\OpenRegister\Search\Service\DashboardService
+ * @uses   \OCA\OpenRegister\Db\Register
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class DashboardServiceReadsGoldenTest extends TestCase {
 
