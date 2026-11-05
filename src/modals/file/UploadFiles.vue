@@ -718,100 +718,119 @@ export default {
 		 * @param {File|null} specificFile
 		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
 		 */
-		async addAttachments(specificFile = null) {
-			if (!this.registerId || !this.schemaId || !this.objectId) {
+		async addAttachments(specificFile) {
+			if (!this.hasObjectContext()) {
 				this.error = 'Missing object context'
 				return
 			}
 			this.loading = true
 			this.error = null
-
 			try {
-				let filesToUpload = []
-
-				// only get the specific file if it is passed
-				if (specificFile) {
-					filesToUpload = [specificFile]
-				} else {
-					// filter out successful and pending files
-					filesToUpload = this.filesComputed.filter(
-						(file) =>
-							file.status !== 'uploaded'
-							&& file.status !== 'uploading',
-					)
-
-					// filter out files too large
-					filesToUpload = filesToUpload.filter(
-						(file) => !this.getTooBigFiles(file.size),
-					)
-				}
-
-				if (filesToUpload.length === 0) {
-					this.loading = false
-					return
-				}
-
-				// Build and register the type
-				const type = `${this.registerId}-${this.schemaId}`
-				if (!objectStore.objectTypes?.includes(type)) {
-					objectStore.registerObjectType(
-						type,
-						this.schemaId,
-						this.registerId,
-					)
-				}
-
-				// file calls
-				const calls = await Promise.all(
-					filesToUpload.map(async (file) => {
-						file.status = 'uploading'
-
-						try {
-							const formData = new FormData()
-							formData.append('files[]', file)
-							if (Array.isArray(file.tags)) {
-								file.tags.forEach((tag) =>
-									formData.append('tags[]', tag),
-								)
-							}
-							if (this.share) {
-								formData.append('share', '1')
-							}
-
-							const responseJson = await objectStore.uploadFiles(
-								type,
-								this.objectId,
-								formData,
-							)
-
-							file.status = 'uploaded'
-
-							return [true, responseJson]
-						} catch (error) {
-							file.status = 'failed'
-							return [false, error]
-						}
-					}),
-				)
-
-				this.getAllTags()
-
-				// Refresh files for the object
-				await objectStore.fetchFiles(type, this.objectId)
-
-				const failed = calls.filter((result) => result[0] === false)
-
-				if (failed.length > 0) {
-					this.error = failed[0][1].message
-				} else {
-					this.success = true
-				}
+				const filesToUpload = specificFile
+					? [specificFile]
+					: this.uploadableFiles()
+				await this.uploadAll(filesToUpload)
 			} catch (err) {
 				// This block generally catches unexpected errors.
 				this.error = err.response?.data?.error ?? err
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Whether the modal knows the register, schema and object to upload to.
+		 *
+		 * @return {boolean} Whether all three are set
+		 * @spec exclude UI state guard for the upload action
+		 */
+		hasObjectContext() {
+			return Boolean(this.registerId && this.schemaId && this.objectId)
+		},
+
+		/**
+		 * The queued files that are not uploaded or uploading yet and not too big.
+		 *
+		 * @return {Array<File>} The files
+		 * @spec exclude UI state helper selecting the files to upload
+		 */
+		uploadableFiles() {
+			return this.filesComputed
+				.filter(
+					(file) =>
+						file.status !== 'uploaded' && file.status !== 'uploading',
+				)
+				.filter((file) => !this.getTooBigFiles(file.size))
+		},
+
+		/**
+		 * Upload files to the object, refresh its files and record the outcome.
+		 *
+		 * @param {Array<File>} files The files
+		 * @spec exclude Uploads attachments via objectStore; modal orchestration plumbing.
+		 */
+		async uploadAll(files) {
+			if (files.length === 0) {
+				return
+			}
+			const type = `${this.registerId}-${this.schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, this.schemaId, this.registerId)
+			}
+			const calls = await Promise.all(
+				files.map((file) => this.uploadOne(type, file)),
+			)
+			this.getAllTags()
+			await objectStore.fetchFiles(type, this.objectId)
+			const failed = calls.filter((result) => result[0] === false)
+			if (failed.length > 0) {
+				this.error = failed[0][1].message
+			} else {
+				this.success = true
+			}
+		},
+
+		/**
+		 * Upload one file and track its status on the file.
+		 *
+		 * @param {string} type The register-schema object type
+		 * @param {File} file The file
+		 * @return {Promise<Array>} [true, response] or [false, error]
+		 * @spec exclude Uploads one attachment via objectStore; modal orchestration plumbing.
+		 */
+		async uploadOne(type, file) {
+			file.status = 'uploading'
+			try {
+				const responseJson = await objectStore.uploadFiles(
+					type,
+					this.objectId,
+					this.uploadForm(file),
+				)
+				file.status = 'uploaded'
+				return [true, responseJson]
+			} catch (error) {
+				file.status = 'failed'
+				return [false, error]
+			}
+		},
+
+		/**
+		 * The form data that uploads one file with its tags.
+		 *
+		 * @param {File} file The file
+		 * @return {FormData} The form data
+		 * @spec exclude UI plumbing building the upload form data
+		 */
+		uploadForm(file) {
+			const formData = new FormData()
+			formData.append('files[]', file)
+			if (Array.isArray(file.tags)) {
+				file.tags.forEach((tag) => formData.append('tags[]', tag))
+			}
+			if (this.share) {
+				formData.append('share', '1')
+			}
+			return formData
 		},
 	},
 }
