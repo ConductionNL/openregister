@@ -787,18 +787,23 @@ class ContactService {
 	 * proceeds regardless so orphan rows are recoverable through this
 	 * path rather than only via direct DB DELETE.
 	 *
-	 * @param int $linkId The link ID.
+	 * @param int         $linkId     The link ID.
+	 * @param string|null $objectUuid When given, the object the link must belong to.
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If the link row itself isn't found (404).
+	 * @throws Exception If the link row isn't found, or belongs to another object (404).
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function unlinkContact(int $linkId): void {
+	public function unlinkContact(int $linkId, ?string $objectUuid = null): void {
 		try {
 			$link = $this->contactLinkMapper->find($linkId);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+			throw new Exception('Contact link not found', 404);
+		}
+
+		if ($objectUuid !== null && $link->getObjectUuid() !== $objectUuid) {
 			throw new Exception('Contact link not found', 404);
 		}
 
