@@ -45,6 +45,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<WebhookLog>
  */
 class WebhookLogMapper extends QBMapper {
+	use FindAllNewestFirstTrait;
+
 	/**
 	 * Constructor for WebhookLogMapper
 	 *
@@ -105,34 +107,6 @@ class WebhookLogMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findByWebhook()
-
-	/**
-	 * Find all webhook logs
-	 *
-	 * @param int|null $limit Limit results
-	 * @param int|null $offset Offset results
-	 *
-	 * @return WebhookLog[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
-	 */
-	public function findAll(?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('created', 'DESC');
-
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
 
 	/**
 	 * Find failed logs that need retry

@@ -12,7 +12,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -26,7 +25,6 @@ use Psr\Log\LoggerInterface;
 class TablesControllerTest extends TestCase {
 	private TablesController $controller;
 	private IRequest&MockObject $request;
-	private IAppConfig&MockObject $config;
 	private MagicMapper&MockObject $magicMapper;
 	private RegisterMapper&MockObject $registerMapper;
 	private SchemaMapper&MockObject $schemaMapper;
@@ -36,7 +34,6 @@ class TablesControllerTest extends TestCase {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
-		$this->config = $this->createMock(IAppConfig::class);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -45,7 +42,6 @@ class TablesControllerTest extends TestCase {
 		$this->controller = TablesControllerFactory::create(
 			'openregister',
 			$this->request,
-			$this->config,
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,

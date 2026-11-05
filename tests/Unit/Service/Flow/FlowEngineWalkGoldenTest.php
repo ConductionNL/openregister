@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowFiring;
 use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowOversightRegistry;
@@ -45,6 +46,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunMarkingStore;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\FlowStop;
+use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskMootness;
@@ -133,6 +135,8 @@ class GoldenWalkLogger extends AbstractLogger {
  * @covers \OCA\OpenRegister\Service\Flow\FlowHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowWalkHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowWalkPass
+ * @uses \OCA\OpenRegister\Service\Flow\FlowFiring
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 
@@ -569,7 +573,10 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			return $answer;
 		});
 		$walk->method('commitFiring')->willReturnCallback(
-			function (string $id, string $transition, array $froms, array $taken, array $placeItems, array $claimed, array $logEntry, bool $enabledAfter, string $streamStatus = 'running', ?string $streamError = null) use (&$streams, &$exhausted, &$firings, $trace): FlowFiringResult {
+			function (FlowFiring $firing) use (&$streams, &$exhausted, &$firings, $trace): FlowFiringResult {
+				[$id, $transition, $froms, $taken] = [$firing->streamId, $firing->transition, $firing->froms, $firing->taken];
+				[$placeItems, $claimed, $logEntry, $enabledAfter] = [$firing->getPlaceItems(), $firing->getClaimedPlaces(), $firing->getLogEntry(), $firing->isEnabledAfter()];
+				[$streamStatus, $streamError] = [$firing->getStreamStatus(), $firing->getStreamError()];
 				$trace(['commitFiring', $id, $transition, $froms, $taken, array_map('count', $placeItems), $claimed, $this->normalise(value: $logEntry), $enabledAfter, $streamStatus, $streamError]);
 				$firings++;
 				$this->run->setFirings($firings);
@@ -600,12 +607,14 @@ class FlowEngineWalkGoldenTest extends TestCase {
 				return new FlowFiringResult(marking: $marking, placeItems: $placeItems, streams: [], firings: $firings);
 			}
 		);
-		$walk->method('park')->willReturnCallback(function (string $id, ?DateTime $resumeAt, string $reason, array $claimed, bool $enabled) use (&$parked, $trace): void {
+		$walk->method('park')->willReturnCallback(function (FlowStreamHalt $halt, ?DateTime $resumeAt) use (&$parked, $trace): void {
+			[$id, $reason, $claimed, $enabled] = [$halt->streamId, $halt->reason(), $halt->claimed, $halt->enabled];
 			$trace(['park', $id, $resumeAt?->format(DATE_ATOM), $reason, $claimed, $enabled]);
 			$parked[$id] = true;
 			$this->run->setResumeAt($resumeAt);
 		});
-		$walk->method('endStream')->willReturnCallback(function (string $id, string $status, ?string $error, array $claimed, bool $enabled) use (&$streams, $trace): void {
+		$walk->method('endStream')->willReturnCallback(function (FlowStreamHalt $halt, string $status) use (&$streams, $trace): void {
+			[$id, $error, $claimed, $enabled] = [$halt->streamId, $halt->reason(), $halt->claimed, $halt->enabled];
 			$trace(['endStream', $id, $status, $error, $claimed, $enabled]);
 			unset($streams[$id]);
 		});

@@ -26,13 +26,24 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\AnalyticsLink;
+use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\CollectiveLink;
+use OCA\OpenRegister\Db\CospendLink;
+use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Db\PhotoLink;
+use OCA\OpenRegister\Db\PollLink;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\XwikiLink;
 
 /**
  * The object (uuid, register, schema) a link row points at.
+ *
+ * @psalm-type LinkRow = (AnalyticsLink|BookmarkLink|CollectiveLink|CospendLink|DeckLink|MapLink
+ *     |OpenProjectLink|PhotoLink|PollLink|TimeTrackerLink|XwikiLink)
+ * @phpstan-type LinkRow (AnalyticsLink|BookmarkLink|CollectiveLink|CospendLink|DeckLink|MapLink
+ *     |OpenProjectLink|PhotoLink|PollLink|TimeTrackerLink|XwikiLink)
  */
 final class LinkTarget {
 
@@ -86,14 +97,17 @@ final class LinkTarget {
 	/**
 	 * Set the target object, the linking user and the link time on a link row.
 	 *
-	 * @param AnalyticsLink|CollectiveLink|OpenProjectLink|TimeTrackerLink|XwikiLink $link     The unsaved link row.
+	 * @param LinkRow $link The link row.
 	 * @param string $linkedBy The linking user's uid.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function stamp(AnalyticsLink|CollectiveLink|OpenProjectLink|TimeTrackerLink|XwikiLink $link, string $linkedBy): void {
+	public function stamp(
+		AnalyticsLink|BookmarkLink|CollectiveLink|CospendLink|DeckLink|MapLink|OpenProjectLink|PhotoLink|PollLink|TimeTrackerLink|XwikiLink $link,
+		string $linkedBy
+	): void {
 		$link->setObjectUuid($this->objectUuid);
 		$link->setRegisterId($this->registerId);
 		$link->setSchemaId($this->schemaId);

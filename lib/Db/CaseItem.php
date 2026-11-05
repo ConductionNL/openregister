@@ -131,6 +131,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CaseItem extends Entity implements JsonSerializable {
+	use HydrateKnownFieldsTrait;
 
 	/**
 	 * The six CMMN plan-item states: the task's states, declared once on
@@ -559,28 +560,6 @@ class CaseItem extends Entity implements JsonSerializable {
 			&& $this->state !== self::STATE_AVAILABLE
 			&& $this->state !== self::STATE_DISABLED;
 	}//end isEntered()
-
-	/**
-	 * Hydrate entity from array.
-	 *
-	 * @param array<string, mixed> $object Data to hydrate from.
-	 *
-	 * @return self This item.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
-	 */
-	public function hydrate(array $object): self {
-		foreach ($object as $fieldName => $value) {
-			if (array_key_exists($fieldName, $this->getFieldTypes()) === false || $fieldName === 'id') {
-				continue;
-			}
-
-			$setter = 'set' . ucfirst($fieldName);
-			$this->$setter($value);
-		}
-
-		return $this;
-	}//end hydrate()
 
 	/**
 	 * Serialise for the API.
