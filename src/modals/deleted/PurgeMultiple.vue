@@ -4,7 +4,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<BulkSelectionDialog
 		v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'"
 		:name="
 			n(
@@ -15,131 +15,45 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				{ count: objectsToDelete.length },
 			)
 		"
-		size="normal"
-		:canClose="false">
-		<!-- Object Selection Review -->
-		<div v-if="success === null" class="delete-step">
-			<h3 class="step-title">
-				{{ t('openregister', 'Confirm Permanent Object Deletion') }}
-			</h3>
-
-			<NcNoteCard type="warning">
-				{{
-					t(
-						'openregister',
-						"Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.",
-					)
-				}}
-			</NcNoteCard>
-
-			<div class="selected-objects-container">
-				<h4>
-					{{
-						t('openregister', 'Selected Objects ({count})', {
-							count: objectsToDelete.length,
-						})
-					}}
-				</h4>
-
-				<div v-if="objectsToDelete.length" class="selected-objects-list">
-					<div
-						v-for="obj in objectsToDelete"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{ getObjectTitle(obj) }}</strong>
-							<p class="object-id">
-								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove {title}', {
-									title: getObjectTitle(obj),
-								})
-							"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent
-					v-else
-					:name="t('openregister', 'No objects selected')">
-					<template #description>
-						{{
-							t(
-								'openregister',
-								'No objects are currently selected for permanent deletion.',
-							)
-						}}
-					</template>
-				</NcEmptyContent>
-			</div>
-		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || objectsToDelete.length === 0"
-				variant="error"
-				@click="permanentlyDeleteMultiple()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Purge') }}
-			</NcButton>
+		:heading="t('openregister', 'Confirm Permanent Object Deletion')"
+		:note="reviewNote"
+		noteType="warning"
+		:emptyText="
+			t(
+				'openregister',
+				'No objects are currently selected for permanent deletion.',
+			)
+		"
+		:submitLabel="t('openregister', 'Purge')"
+		submitVariant="error"
+		stepClass="delete-step"
+		v-bind="reviewStateOf($data)"
+		@close="closeDialog"
+		@remove="removeObject"
+		@submit="permanentlyDeleteMultiple()">
+		<template #submitIcon>
+			<TrashCanOutline :size="20" />
 		</template>
-	</NcDialog>
+	</BulkSelectionDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import BulkSelectionDialog from './BulkSelectionDialog.vue'
 import eventBus from '../../eventBus.js'
+import {
+	closeBulkDialog,
+	dropFromSelection,
+	objectTitle,
+	reviewStateOf,
+	takeSelection,
+} from './bulkSelection.js'
 
 export default {
 	name: 'PurgeMultiple',
 	components: {
-		NcDialog,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
+		BulkSelectionDialog,
 		TrashCanOutline,
-		Cancel,
-		Close,
 	},
 
 	data() {
@@ -159,6 +73,19 @@ export default {
 		 */
 		objectsToDelete() {
 			return this.selectedObjects
+		},
+
+		/**
+		 * The note above the selection.
+		 *
+		 * @return {string} The note
+		 * @spec exclude Computed dialog text; UI plumbing.
+		 */
+		reviewNote() {
+			return t(
+				'openregister',
+				"Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone.",
+			)
 		},
 	},
 
@@ -185,11 +112,7 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeSelection() {
-			const data = deletedStore.selectedForBulkAction || []
-			this.selectedObjects.splice(0, this.selectedObjects.length, ...data)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
+			takeSelection(this)
 		},
 
 		/**
@@ -200,12 +123,7 @@ export default {
 		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
+			dropFromSelection(this, objectId)
 		},
 
 		/**
@@ -215,13 +133,7 @@ export default {
 		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
 		closeDialog() {
-			navigationStore.setDialog(false)
-			deletedStore.clearSelectedForBulkAction()
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.successMessage = ''
-			this.loading = false
-			this.error = false
+			closeBulkDialog(this)
 		},
 
 		/**
@@ -297,38 +209,8 @@ export default {
 		 * @return {string} The object title
 		 */
 		getObjectTitle(object) {
-			return (
-				object?.title
-				|| object?.fileName
-				|| object?.name
-				|| object?.object?.title
-				|| object?.object?.name
-				|| object?.id
-				|| 'Unknown'
-			)
+			return objectTitle(object)
 		},
 	},
 }
 </script>
-
-<style scoped lang="scss">
-@use '../../styles/modals.scss' as *;
-
-.delete-step {
-	padding: 0;
-}
-
-@include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
-</style>

@@ -370,7 +370,6 @@ class FlowService {
 		// uneditable.
 		if ($this->graphSignature(flow: $flow) !== $graphBefore) {
 			(new FlowLifecycleGuard(
-				$this->runs,
 				$this->container->get(FlowNodePreflight::class),
 				$this->logger
 			))->refuseEditUnlessDraft(
