@@ -47,6 +47,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schema\SchemaRevalidationService
+ * @uses   \OCA\OpenRegister\Db\SchemaRun
+ * @uses   \OCA\OpenRegister\Db\SchemaRunEntry
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class SchemaRevalidationServiceTest extends TestCase {
 
