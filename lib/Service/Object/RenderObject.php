@@ -3535,32 +3535,8 @@ class RenderObject {
 		string $property,
 		string $registerDefault,
 	): string {
-		$meta = $preResolveData['_translationMeta'] ?? null;
-		if (is_array($meta) === true
-			&& isset($meta[$property]) === true
-			&& is_array($meta[$property]) === true
-			&& isset($meta[$property]['sourceLanguage']) === true
-			&& is_string($meta[$property]['sourceLanguage']) === true
-			&& $meta[$property]['sourceLanguage'] !== ''
-		) {
-			return (string)$meta[$property]['sourceLanguage'];
-		}
-
-		$properties = $schema->getProperties() ?? [];
-		$definition = $properties[$property] ?? null;
-		if (is_array($definition) === true
-			&& isset($definition['sourceLanguage']) === true
-			&& is_string($definition['sourceLanguage']) === true
-			&& $definition['sourceLanguage'] !== ''
-		) {
-			return (string)$definition['sourceLanguage'];
-		}
-
-		if ($registerDefault !== '') {
-			return $registerDefault;
-		}
-
-		return 'nl';
+		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
+		return $rule->of(body: $preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
 
 	/**
