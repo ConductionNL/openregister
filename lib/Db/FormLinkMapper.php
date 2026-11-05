@@ -24,9 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -60,45 +59,41 @@ class FormLinkMapper extends QBMapper {
 	 * @return FormLink|null
 	 */
 	public function findFormLink(string $objectUuid, int $formId): ?FormLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->isNull('submission_id'));
+		$key = (new LinkColumn(name: 'form_id', value: $formId))
+			->also(column: new LinkColumn(name: 'submission_id', value: null));
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
-
+		return $this->asFormLink(link: $this->findObjectLink(objectUuid: $objectUuid, key: $key));
 	}//end findFormLink()
 
 	/**
 	 * Find a submission-level link for a (object, form, submission) tuple.
 	 *
-	 * @param string $objectUuid The OR object UUID.
-	 * @param integer $formId The NC Forms form id.
-	 * @param integer $submissionId The NC Forms submission id.
+	 * @param string            $objectUuid The OR object UUID.
+	 * @param FormSubmissionRef $submission The form and submission ids.
 	 *
 	 * @return FormLink|null
 	 */
-	public function findSubmissionLink(string $objectUuid, int $formId, int $submissionId): ?FormLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('form_id', $qb->createNamedParameter($formId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('submission_id', $qb->createNamedParameter($submissionId, IQueryBuilder::PARAM_INT)));
+	public function findSubmissionLink(string $objectUuid, FormSubmissionRef $submission): ?FormLink {
+		$key = (new LinkColumn(name: 'form_id', value: $submission->formId))
+			->also(column: new LinkColumn(name: 'submission_id', value: $submission->submissionId));
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		return $this->asFormLink(link: $this->findObjectLink(objectUuid: $objectUuid, key: $key));
+	}//end findSubmissionLink()
+
+	/**
+	 * A found link as a form link, or null.
+	 *
+	 * @param Entity|null $link The found link.
+	 *
+	 * @return FormLink|null The form link.
+	 */
+	private function asFormLink(?Entity $link): ?FormLink {
+		if ($link instanceof FormLink) {
+			return $link;
 		}
 
-	}//end findSubmissionLink()
+		return null;
+	}//end asFormLink()
 
 	/**
 	 * Delete every link row (form-level + submission-level) for a
