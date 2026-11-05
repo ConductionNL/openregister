@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Service\FormLinkService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -65,9 +65,9 @@ class FormLinksController extends Controller {
 	 * Object service — used to resolve register/schema/id into an
 	 * entity so we get the canonical UUID + register id for the link.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Localisation.
@@ -89,7 +89,7 @@ class FormLinksController extends Controller {
 	 * @param string $appName App name.
 	 * @param IRequest $request HTTP request.
 	 * @param FormLinkService $formLinkService Form-link service.
-	 * @param ObjectService $objectService Object service.
+	 * @param ObjectOperationsInterface $objectService Object service.
 	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -99,7 +99,7 @@ class FormLinksController extends Controller {
 		string $appName,
 		IRequest $request,
 		FormLinkService $formLinkService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		IL10N $l10n,
 		LoggerInterface $logger,
 	) {

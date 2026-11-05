@@ -59,6 +59,7 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskChecklist
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
@@ -203,7 +204,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'claim', actual: $claim->getAction());
 		$this->assertSame(expected: 'esra.demir', actual: $claim->getActor());
 		$this->assertSame(expected: (int) $task->getId(), actual: $claim->getTaskId());
-		$this->assertSame(expected: '2026-10-12 09:05', actual: $claim->getCreated()->format('Y-m-d H:i'));
+		$this->assertSame(expected: '2026-10-12 09:05', actual: $this->local(moment: $claim->getCreated()));
 
 		$again = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue(condition: $again['ok'], message: (string) json_encode($again));

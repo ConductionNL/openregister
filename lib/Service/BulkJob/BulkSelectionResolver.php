@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -57,11 +57,11 @@ class BulkSelectionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object read path.
+	 * @param ObjectOperationsInterface $objectService The object read path.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

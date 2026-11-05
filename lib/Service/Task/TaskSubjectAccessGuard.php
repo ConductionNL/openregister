@@ -48,7 +48,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -62,7 +62,7 @@ class TaskSubjectAccessGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService|null $objects The canonical object read path, the
+	 * @param ObjectOperationsInterface|null $objects The canonical object read path, the
 	 *                                    one authority on who may read an
 	 *                                    object. Nullable so the service
 	 *                                    stays constructible without a
@@ -77,7 +77,7 @@ class TaskSubjectAccessGuard {
 	 *                                     authority denies.
 	 */
 	public function __construct(
-		private readonly ?ObjectService $objects = null,
+		private readonly ?ObjectOperationsInterface $objects = null,
 		private readonly ?LoggerInterface $logger = null,
 	) {
 
