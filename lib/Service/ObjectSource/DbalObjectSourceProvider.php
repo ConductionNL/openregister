@@ -888,7 +888,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 */
 	private function applyFilters(DbalStatement $statement, array $query, array $filterable): void {
 		$filters = ($query['filters'] ?? []);
-		foreach ((is_array($filters) === true ? $filters : []) as $column => $value) {
+		if (is_array($filters) === false) {
+			$filters = [];
+		}
+
+		foreach ($filters as $column => $value) {
 			if (is_string($column) === false || in_array($column, $filterable, true) === false) {
 				continue;
 			}
