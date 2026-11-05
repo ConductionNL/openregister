@@ -48,6 +48,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\FileCopiedEvent
+ * @uses \OCA\OpenRegister\Event\AbstractObjectFileEvent
  * @uses \OCA\OpenRegister\Event\FileMovedEvent
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Exception\ObjectFileAccessDeniedException

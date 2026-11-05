@@ -53,6 +53,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractReferenceValidationEvent
  * @uses \OCA\OpenRegister\Event\ReferenceValidatedEvent
  * @uses \OCA\OpenRegister\Event\ReferenceValidationFailedEvent
  * @uses \OCA\OpenRegister\Exception\CircularReferenceException
