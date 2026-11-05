@@ -96,6 +96,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 	private function schemaWith(array $authorization): Schema {
 		$schema = new Schema();
 		$schema->setId(2201);
+		$schema->setProperties(['learnerId' => ['type' => 'string']]);
 		$schema->setAuthorization($authorization);
 
 		return $schema;
@@ -125,7 +126,7 @@ class MagicRbacRowPredicateTest extends TestCase {
 		);
 
 		$this->assertNotNull($predicate);
-		$this->assertStringContainsString("learner_id = 'learner-a'", $predicate);
+		$this->assertStringContainsString("`learner_id` = 'learner-a'", $predicate);
 	}//end testTheAuthenticatedSelfRuleNarrowsToTheCallersRows()
 
 	/**

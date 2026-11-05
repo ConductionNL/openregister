@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCP\App\IAppManager;
@@ -85,9 +85,9 @@ class ConfigurationSettingsHandler {
 	/**
 	 * Organisation mapper
 	 *
-	 * @var OrganisationMapper
+	 * @var OrganisationMapperInterface
 	 */
-	private OrganisationMapper $organisationMapper;
+	private OrganisationMapperInterface $organisationMapper;
 
 	/**
 	 * Logger
@@ -109,7 +109,7 @@ class ConfigurationSettingsHandler {
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param IGroupManager $groupManager Group manager.
 	 * @param IUserManager $userManager User manager.
-	 * @param OrganisationMapper $organisationMapper Organisation mapper.
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IAppManager $appManager App manager, read for the app's own version info.
 	 * @param string $appName Application name.
@@ -122,7 +122,7 @@ class ConfigurationSettingsHandler {
 		IAppConfig $appConfig,
 		IGroupManager $groupManager,
 		IUserManager $userManager,
-		OrganisationMapper $organisationMapper,
+		OrganisationMapperInterface $organisationMapper,
 		LoggerInterface $logger,
 		private readonly IAppManager $appManager,
 		string $appName = 'openregister',

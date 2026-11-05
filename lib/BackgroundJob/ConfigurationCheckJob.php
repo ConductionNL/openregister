@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -52,9 +52,9 @@ class ConfigurationCheckJob extends TimedJob {
 	/**
 	 * Configuration service instance.
 	 *
-	 * @var ConfigurationService The configuration service instance.
+	 * @var ConfigurationServiceInterface The configuration service instance.
 	 */
-	private ConfigurationService $configurationService;
+	private ConfigurationServiceInterface $configurationService;
 
 	/**
 	 * Notification service instance.
@@ -82,7 +82,7 @@ class ConfigurationCheckJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for job scheduling
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper
-	 * @param ConfigurationService $configurationService Configuration service
+	 * @param ConfigurationServiceInterface $configurationService Configuration service
 	 * @param NotificationService $notificationService Notification service
 	 * @param IAppConfig $appConfig App configuration
 	 * @param LoggerInterface $logger Logger
@@ -92,7 +92,7 @@ class ConfigurationCheckJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		ConfigurationMapper $configurationMapper,
-		ConfigurationService $configurationService,
+		ConfigurationServiceInterface $configurationService,
 		NotificationService $notificationService,
 		IAppConfig $appConfig,
 		LoggerInterface $logger,

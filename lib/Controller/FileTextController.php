@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
+use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
+use OCA\OpenRegister\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\ManualEntityResult;
@@ -34,7 +36,9 @@ use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\Files\Node;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -57,35 +61,93 @@ use Throwable;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FileTextController extends Controller {
+	use RequiresJsonBodyTrait;
+
+	/**
+	 * Text extraction service
+	 *
+	 * @var TextExtractionService
+	 */
+	private readonly TextExtractionService $textExtractor;
+
+	/**
+	 * File service for file operations
+	 *
+	 * @var FileService
+	 */
+	private readonly FileService $fileService;
+
+	/**
+	 * Entity relation mapper
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Orchestrator for the manual-entity write path
+	 *
+	 * @var ManualEntityService
+	 */
+	private readonly ManualEntityService $manualEntityService;
+
+	/**
+	 * Session user accessor (for the manual-entity endpoint)
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Root folder for per-user file access checks
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Group manager for admin checks
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The object read rule for an object's file.
+	 *
+	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 */
+	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+
 	/**
 	 * Constructor
 	 *
 	 * @param string $appName App name
 	 * @param IRequest $request Request object
-	 * @param TextExtractionService $textExtractor Text extraction service
-	 * @param FileService $fileService File service for file operations
-	 * @param EntityRelationMapper $entityRelationMapper Entity relation mapper
-	 * @param LoggerInterface $logger Logger
-	 * @param ManualEntityService $manualEntityService Orchestrator for the manual-entity write path
-	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
-	 * @param IGroupManager $groupManager Group manager for admin checks
-	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
+	 * @param FileTextControllerServices $services The file text controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TextExtractionService $textExtractor,
-		private readonly FileService $fileService,
-		private readonly EntityRelationMapper $entityRelationMapper,
-		private readonly LoggerInterface $logger,
-		private readonly ManualEntityService $manualEntityService,
-		private readonly IUserSession $userSession,
-		private readonly IRootFolder $rootFolder,
-		private readonly IGroupManager $groupManager,
-		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		FileTextControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->textExtractor = $services->domain->textExtractor;
+		$this->fileService = $services->domain->fileService;
+		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
+		$this->logger = $services->session->logger;
+		$this->manualEntityService = $services->domain->manualEntityService;
+		$this->userSession = $services->session->userSession;
+		$this->rootFolder = $services->platform->rootFolder;
+		$this->groupManager = $services->session->groupManager;
+		$this->fileReadScope = $services->domain->fileReadScope;
 	}//end __construct()
 
 	/**
@@ -396,265 +458,265 @@ class FileTextController extends Controller {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
 			);
 
-			// Get the file node.
 			$fileNode = $this->fileService->getFileById($fileId);
-			if ($fileNode === null) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'message' => 'File not found',
-					],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
+			$refusal  = $this->anonymizeRefusal(fileNode: $fileNode);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
-			// Check if the file is already anonymized.
-			$fileName = $fileNode->getName();
-			if (strpos($fileName, '_anonymized') !== false) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'message' => 'File is already anonymized',
-					],
+			$entities = $this->anonymizationEntities(fileId: $fileId);
+			if ($entities === []) {
+				return $this->anonymizeFailure(
+					message: 'No entities detected in this file. Run text extraction first.',
 					statusCode: Http::STATUS_BAD_REQUEST
 				);
 			}
 
-			// Get detected entities for this file, excluding those the operator
-			// has flagged with skip_anonymization=true. Per the
-			// `entity-relation-grondslagen` change, the anonymise pass MUST NOT
-			// redact rows that carry an operator skip decision.
-			$entityData = $this->entityRelationMapper->findEntitiesForAnonymization($fileId);
-
-			if (empty($entityData) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'message' => 'No entities detected in this file. Run text extraction first.',
-					],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			// Build entities array in the format expected by anonymizeDocument.
-			// Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
-			$entities = [];
-			$processedValues = [];
-			// Track unique values to avoid duplicates.
-			foreach ($entityData as $entity) {
-				$value = $entity['entity_value'];
-
-				// Skip if we've already processed this value.
-				if (isset($processedValues[$value]) === true) {
-					continue;
-				}
-
-				$processedValues[$value] = true;
-				$entities[] = [
-					'text' => $value,
-					'entityType' => $entity['entity_type'],
-					'key' => substr(md5($value . $entity['entity_type']), 0, 8),
-				];
-			}
-
-			$this->logger->debug(
-				message: '[FileTextController] Found entities to anonymize',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'entity_count' => count($entities),
-				]
-			);
-
-			// Perform anonymization. `anonymizeDocument` is the canonical
-			// caller of `EntityRelationMapper::markAsAnonymized` per the
-			// `entity-relation-grondslagen` Requirement on canonical
-			// marking ownership: marking the source's relation rows is the
-			// responsibility of the redaction path itself (which exists on
-			// every entry point — HTTP, DI, event listeners), not the
-			// controller (which is bypassed by the non-HTTP paths). A
-			// controller-side mark would conflict with the DocumentProcessingHandler's
-			// mark on this same fileId (second UPDATE overwrites
-			// `anonymized_value`), so this controller MUST NOT call
-			// `markAsAnonymized` directly.
-			// Placeholder-numbering scope (anonymisation-placeholder-id-scope):
-			// optional request-body params. `scope` defaults to 'document'
-			// (counter restarts per run); `scope=dossier` makes the number
-			// consistent across the dossier folder's files. `dossierKey` is the
-			// stable folder id; when omitted under scope=dossier the handler
-			// falls back to the file's parent folder (forgiving default — no
-			// HTTP 400). Any value other than 'dossier' normalises to
-			// per-document so existing callers are unaffected.
-			$scopeParam = (string)$this->request->getParam('scope', 'document');
-			$scope = 'document';
-			if ($scopeParam === 'dossier') {
-				$scope = 'dossier';
-			}
-
-			$fileKeyParam = $this->request->getParam('dossierKey', null);
-			$fileKey = null;
-			if ($fileKeyParam !== null && $fileKeyParam !== '') {
-				$fileKey = (string)$fileKeyParam;
-			}
-
-			// PDF-only tag-preserving-redaction option (REQ-ORTPR-004): tri-state,
-			// absent/empty MUST resolve to null (auto — preserve iff the input is
-			// a tagged PDF); the request param is otherwise cast via
-			// FILTER_VALIDATE_BOOLEAN so "false"/"0" resolve to explicit false.
-			$preserveOptionParam = $this->request->getParam('preserveStructure', null);
-			$preserveStructure = null;
-			if ($preserveOptionParam !== null && $preserveOptionParam !== '') {
-				$preserveStructure = filter_var($preserveOptionParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-			}
-
+			// The anonymizeDocument call marks the relation rows itself, so this controller MUST NOT
+			// call markAsAnonymized (a second UPDATE would overwrite anonymized_value).
 			$anonymizedFile = $this->fileService->anonymizeDocument(
 				node: $fileNode,
 				entities: $entities,
-				scope: $scope,
-				fileKey: $fileKey,
-				preserveStructure: $preserveStructure
+				scope: $this->requestedPlaceholderScope(),
+				fileKey: $this->requestedDossierKey(),
+				preserveStructure: $this->requestedPreserveStructure()
 			);
 
-			// Best-effort policy: the file is produced even when some entity
-			// text could not be removed. Surface the residuals so the operator
-			// can iterate (manual entities, skip unselected occurrences). Logs
-			// stay PII-free (ADR-005); the residual TEXT is carried only in
-			// this authenticated response for the review UI (deliberate,
-			// product-owner-approved deviation from the no-PII-in-responses rule).
 			$residualEntities = $this->fileService->getLastResidualEntities();
-			$isComplete = (count($residualEntities) === 0);
+			$isComplete       = (count($residualEntities) === 0);
+			$responseData     = ['success' => true, 'complete' => $isComplete, 'message' => $this->anonymizedMessage(isComplete: $isComplete)]
+				+ $this->anonymizedFileIds(fileId: $fileId, anonymizedFile: $anonymizedFile)
+				+ ['entities_replaced' => count($entities), 'residual_count' => count($residualEntities), 'residual_entities' => $residualEntities];
 
-			// Tag-preserving-redaction result block (REQ-ORTPR-003): PDF
-			// inputs only — null for DOCX/ODT/text (no PDF structure tree).
-			$structureResult = $this->fileService->getLastStructurePreservation();
-
-			$logSuffix = ' with residual entities';
-			$messageResult = 'File anonymized, but some entities could not be fully removed — review the output'
-				. ' and refine the entities (manual entities, skip unselected occurrences).';
-			if ($isComplete === true) {
-				$logSuffix = ' successfully';
-				$messageResult = 'File anonymized successfully';
-			}
-
-			$this->logger->info(
-				message: '[FileTextController] File anonymized' . $logSuffix,
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'original_file_id' => $fileId,
-					'anonymized_file_id' => $anonymizedFile->getId(),
-					'anonymized_path' => $anonymizedFile->getPath(),
-					'entities_replaced' => count($entities),
-					'complete' => $isComplete,
-					// PII-free: count only, never the residual text.
-					'residual_count' => count($residualEntities),
-				]
-			);
-
-			$responseData = [
-				'success' => true,
-				'complete' => $isComplete,
-				'message' => $messageResult,
-				'original_file_id' => $fileId,
-				'anonymized_file_id' => $anonymizedFile->getId(),
-				'anonymized_path' => $anonymizedFile->getPath(),
-				'entities_replaced' => count($entities),
-				'residual_count' => count($residualEntities),
-				'residual_entities' => $residualEntities,
-			];
-
-			// Omit the block entirely for non-PDF redactions (REQ-ORTPR-003) —
-			// the accessor already returns null on the DOCX/ODT/text branches.
-			if ($structureResult !== null) {
-				$responseData['structurePreservation'] = $structureResult->jsonSerialize();
-			}
-
-			return new JSONResponse(data: $responseData);
+			return $this->anonymizedFileResponse(responseData: $responseData);
 		} catch (PdfAnonymisationException $e) {
-			// Map the structured PDF-anonymisation reason to an HTTP status
-			// per the `pdf-anonymisation` spec (REQ:filter-coverage +
-			// REQ:validation-gate + REQ:image-only-defer):
-			//
-			// - encrypted_pdf       → 422 (caller-correctable)
-			// - text_layer_missing → 422 (caller MUST route to OCR via
-			// the `ocr-document-scanning`
-			// capability — the controller
-			// surfaces a structured body so
-			// the caller can dispatch; v1
-			// does not auto-redirect)
-			// - validation_failed  → 500 (pipeline integrity failure;
-			// fail-closed for the strict
-			// entity-anonymisation flow)
-			// - internal_error     → 500 (unexpected pipeline failure)
-			//
-			// Per ADR-005 the response body MUST NOT echo the
-			// operator-supplied entity text — the exception's diagnostic
-			// surface is PII-free by construction (counts + structural
-			// counters only) and is the only thing we forward.
-			$reason = $e->getReason();
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			switch ($reason) {
-				case PdfAnonymisationException::REASON_ENCRYPTED_PDF:
-				case PdfAnonymisationException::REASON_TEXT_LAYER_MISSING:
-					$statusCode = Http::STATUS_UNPROCESSABLE_ENTITY;
-					break;
-				case PdfAnonymisationException::REASON_VALIDATION_FAILED:
-				case PdfAnonymisationException::REASON_INTERNAL_ERROR:
-				default:
-					$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-					break;
-			}
-
-			// PII-redacted error log: NEVER include the operator-supplied
-			// entity text (ADR-005). The PdfAnonymisationException
-			// diagnostic surface is constructed to be PII-free; carry
-			// only that + the structured reason + the file id.
-			$this->logger->error(
-				message: '[FileTextController] PDF anonymisation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'reason' => $reason,
-					'diagnostic' => $e->getDiagnostic(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'pdf_anonymisation_failed',
-					'reason' => $reason,
-					'details' => $e->getDiagnostic(),
-				],
-				statusCode: $statusCode
-			);
+			return $this->pdfAnonymisationFailure(exception: $e, fileId: $fileId);
 		} catch (\Exception $e) {
-			// PII-redacted error log: never echo operator-supplied entity
-			// text or the substitution map in error responses or logs
-			// (ADR-005). The exception message + file id are the only
-			// thing safe to surface — the audit trail (ADR-022) keeps
-			// entity values.
+			// PII-redacted (ADR-005): only the exception message and the file id are surfaced.
 			$this->logger->error(
 				message: '[FileTextController] Failed to anonymize file',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'file_id' => $fileId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId, 'error' => $e->getMessage()]
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Failed to anonymize file: ' . $e->getMessage(),
-				],
+			return $this->anonymizeFailure(
+				message: 'Failed to anonymize file: ' . $e->getMessage(),
 				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 			);
 		}//end try
 	}//end anonymizeFile()
+
+	/**
+	 * The response that refuses an anonymisation before it starts, if any.
+	 *
+	 * @param File|null $fileNode The file to anonymise, null when it was not found.
+	 *
+	 * @return JSONResponse|null 404 for a missing file, 400 for an anonymised copy, null to proceed.
+	 */
+	private function anonymizeRefusal(?File $fileNode): ?JSONResponse {
+		if ($fileNode === null) {
+			return $this->anonymizeFailure(message: 'File not found', statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		if (strpos($fileNode->getName(), '_anonymized') !== false) {
+			return $this->anonymizeFailure(message: 'File is already anonymized', statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		return null;
+	}//end anonymizeRefusal()
+
+	/**
+	 * A failed anonymisation response.
+	 *
+	 * @param string $message    The message for the caller.
+	 * @param int    $statusCode The HTTP status.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function anonymizeFailure(string $message, int $statusCode): JSONResponse {
+		return new JSONResponse(data: ['success' => false, 'message' => $message], statusCode: $statusCode);
+	}//end anonymizeFailure()
+
+	/**
+	 * The detected entities of a file, one per distinct value, in the shape anonymizeDocument expects.
+	 *
+	 * Rows the operator flagged with skip_anonymization=true are excluded by the mapper.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return array<int, array{text: string, entityType: string, key: string}> The entities.
+	 */
+	private function anonymizationEntities(int $fileId): array {
+		$entities        = [];
+		$processedValues = [];
+		foreach ($this->entityRelationMapper->findEntitiesForAnonymization($fileId) as $entity) {
+			$value = $entity['entity_value'];
+			if (isset($processedValues[$value]) === true) {
+				continue;
+			}
+
+			$processedValues[$value] = true;
+			$entities[] = [
+				'text'       => $value,
+				'entityType' => $entity['entity_type'],
+				'key'        => substr(md5($value . $entity['entity_type']), 0, 8),
+			];
+		}
+
+		if ($entities !== []) {
+			$this->logger->debug(
+				message: '[FileTextController] Found entities to anonymize',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId, 'entity_count' => count($entities)]
+			);
+		}
+
+		return $entities;
+	}//end anonymizationEntities()
+
+	/**
+	 * The placeholder-numbering scope from the request: 'dossier', or 'document' for anything else.
+	 *
+	 * @return string The scope.
+	 */
+	private function requestedPlaceholderScope(): string {
+		if ((string)$this->request->getParam('scope', 'document') === 'dossier') {
+			return 'dossier';
+		}
+
+		return 'document';
+	}//end requestedPlaceholderScope()
+
+	/**
+	 * The stable dossier folder key from the request, null when absent or empty.
+	 *
+	 * @return string|null The key.
+	 */
+	private function requestedDossierKey(): ?string {
+		$fileKeyParam = $this->request->getParam('dossierKey', null);
+		if ($fileKeyParam === null || $fileKeyParam === '') {
+			return null;
+		}
+
+		return (string)$fileKeyParam;
+	}//end requestedDossierKey()
+
+	/**
+	 * The PDF-only preserveStructure option (REQ-ORTPR-004): null (auto) when absent or empty.
+	 *
+	 * @return bool|null The option.
+	 */
+	private function requestedPreserveStructure(): ?bool {
+		$preserveOptionParam = $this->request->getParam('preserveStructure', null);
+		if ($preserveOptionParam === null || $preserveOptionParam === '') {
+			return null;
+		}
+
+		return filter_var($preserveOptionParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	}//end requestedPreserveStructure()
+
+	/**
+	 * The result message of an anonymisation.
+	 *
+	 * @param bool $isComplete Whether every entity was removed.
+	 *
+	 * @return string The message.
+	 */
+	private function anonymizedMessage(bool $isComplete): string {
+		if ($isComplete === true) {
+			return 'File anonymized successfully';
+		}
+
+		return 'File anonymized, but some entities could not be fully removed — review the output'
+			. ' and refine the entities (manual entities, skip unselected occurrences).';
+	}//end anonymizedMessage()
+
+	/**
+	 * The ids and path of an original file and its anonymised copy.
+	 *
+	 * @param int  $fileId         The original file id.
+	 * @param Node $anonymizedFile The anonymised copy.
+	 *
+	 * @return array{original_file_id: int, anonymized_file_id: mixed, anonymized_path: string} The ids.
+	 */
+	private function anonymizedFileIds(int $fileId, Node $anonymizedFile): array {
+		return [
+			'original_file_id'   => $fileId,
+			'anonymized_file_id' => $anonymizedFile->getId(),
+			'anonymized_path'    => $anonymizedFile->getPath(),
+		];
+	}//end anonymizedFileIds()
+
+	/**
+	 * Log a finished anonymisation and build its response.
+	 *
+	 * Best-effort policy: the file is produced even when some entity text could not be removed,
+	 * and the residual TEXT is carried only in this authenticated response (the log holds the count).
+	 * The structurePreservation block is present for PDF inputs only (REQ-ORTPR-003).
+	 *
+	 * @param array<string, mixed> $responseData The response body.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function anonymizedFileResponse(array $responseData): JSONResponse {
+		$logSuffix = ' with residual entities';
+		if ($responseData['complete'] === true) {
+			$logSuffix = ' successfully';
+		}
+
+		$context = ['file' => __FILE__, 'line' => __LINE__];
+		foreach (['original_file_id', 'anonymized_file_id', 'anonymized_path', 'entities_replaced', 'complete', 'residual_count'] as $key) {
+			$context[$key] = $responseData[$key];
+		}
+
+		$this->logger->info(
+			message: '[FileTextController] File anonymized' . $logSuffix,
+			context: $context
+		);
+
+		$structureResult = $this->fileService->getLastStructurePreservation();
+		if ($structureResult !== null) {
+			$responseData['structurePreservation'] = $structureResult->jsonSerialize();
+		}
+
+		return new JSONResponse(data: $responseData);
+	}//end anonymizedFileResponse()
+
+	/**
+	 * Map a PDF anonymisation failure to its response (pdf-anonymisation spec).
+	 *
+	 * The reasons encrypted_pdf and text_layer_missing are caller-correctable (422); validation_failed,
+	 * internal_error and anything else are pipeline failures (500). The exception's diagnostic
+	 * surface is PII-free by construction and is the only detail forwarded (ADR-005).
+	 *
+	 * @param PdfAnonymisationException $exception The failure.
+	 * @param int                       $fileId    The file id.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function pdfAnonymisationFailure(PdfAnonymisationException $exception, int $fileId): JSONResponse {
+		$reason     = $exception->getReason();
+		$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
+		if ($reason === PdfAnonymisationException::REASON_ENCRYPTED_PDF
+			|| $reason === PdfAnonymisationException::REASON_TEXT_LAYER_MISSING
+		) {
+			$statusCode = Http::STATUS_UNPROCESSABLE_ENTITY;
+		}
+
+		$this->logger->error(
+			message: '[FileTextController] PDF anonymisation failed',
+			context: [
+				'file'       => __FILE__,
+				'line'       => __LINE__,
+				'file_id'    => $fileId,
+				'reason'     => $reason,
+				'diagnostic' => $exception->getDiagnostic(),
+			]
+		);
+
+		return new JSONResponse(
+			data: ['success' => false, 'error' => 'pdf_anonymisation_failed', 'reason' => $reason, 'details' => $exception->getDiagnostic()],
+			statusCode: $statusCode
+		);
+	}//end pdfAnonymisationFailure()
 
 	/**
 	 * Add an operator-supplied manual entity to a file.
@@ -684,90 +746,52 @@ class FileTextController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function addManualEntity(int $fileId): JSONResponse {
-		// Content-type guard. The endpoint accepts JSON only; reject
-		// other media types with 415 so callers don't accidentally
-		// trip the body-parser heuristics.
-		$contentType = (string)$this->request->getHeader('Content-Type');
-		$mediaType = strtolower(trim(explode(';', $contentType, 2)[0]));
-		if ($mediaType !== 'application/json' && $mediaType !== '') {
-			return new JSONResponse(
-				data: [
-					'error' => 'unsupported_media_type',
-					'reason' => 'POST /api/files/{fileId}/manual-entities requires Content-Type: application/json',
-				],
-				statusCode: Http::STATUS_UNSUPPORTED_MEDIA_TYPE
-			);
+		$refusal = $this->refuseNonJsonBody(route: 'POST /api/files/{fileId}/manual-entities');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$user = $this->userSession->getUser();
 		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'unauthenticated'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$body = $this->request->getParams();
-		unset($body['fileId'], $body['_route']);
+		$input = $this->manualEntityInput();
+		if ($input['value'] === '' || $input['type'] === '') {
+			$field = 'type';
+			if ($input['value'] === '') {
+				$field = 'value';
+			}
 
-		$value = '';
-		if (isset($body['value']) === true) {
-			$value = (string)$body['value'];
-		}
-
-		$type = '';
-		if (isset($body['type']) === true) {
-			$type = (string)$body['type'];
-		}
-
-		$wholeWord = true;
-		if (isset($body['wholeWord']) === true) {
-			$wholeWord = (bool)$body['wholeWord'];
-		}
-
-		$caseSensitive = true;
-		if (isset($body['caseSensitive']) === true) {
-			$caseSensitive = (bool)$body['caseSensitive'];
-		}
-
-		if ($value === '') {
-			return new JSONResponse(
-				data: ['error' => 'invalid_request', 'field' => 'value'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		if ($type === '') {
-			return new JSONResponse(
-				data: ['error' => 'invalid_request', 'field' => 'type'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return new JSONResponse(data: ['error' => 'invalid_request', 'field' => $field], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
 		// ADR-005 PII rule: log the request shape WITHOUT the value.
 		$this->logger->info(
 			message: '[FileTextController] addManualEntity request',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'type' => $type,
-				'wholeWord' => $wholeWord,
-				'caseSensitive' => $caseSensitive,
-				'valueLength' => strlen($value),
-				'actor' => $user->getUID(),
+				'file'          => __FILE__,
+				'line'          => __LINE__,
+				'fileId'        => $fileId,
+				'type'          => $input['type'],
+				'wholeWord'     => $input['wholeWord'],
+				'caseSensitive' => $input['caseSensitive'],
+				'valueLength'   => strlen($input['value']),
+				'actor'         => $user->getUID(),
 			]
 		);
 
 		try {
 			$result = $this->manualEntityService->addManualEntity(
 				fileId: $fileId,
-				value: $value,
-				type: $type,
-				wholeWord: $wholeWord,
-				caseSensitive: $caseSensitive,
+				value: $input['value'],
+				type: $input['type'],
+				wholeWord: $input['wholeWord'],
+				caseSensitive: $input['caseSensitive'],
 				actor: $user
 			);
 		} catch (ManualEntityException $e) {
@@ -775,21 +799,37 @@ class FileTextController extends Controller {
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FileTextController] addManualEntity unexpected failure',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'error' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'error' => $e->getMessage()]
 			);
-			return new JSONResponse(
-				data: ['error' => 'internal_error'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return new JSONResponse(data: ['error' => 'internal_error'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
 		}//end try
 
 		return $this->formatManualEntityResponse(result: $result);
 	}//end addManualEntity()
+
+
+	/**
+	 * The manual entity fields of the request body, with their defaults.
+	 *
+	 * @return array{value: string, type: string, wholeWord: bool, caseSensitive: bool} The fields.
+	 */
+	private function manualEntityInput(): array {
+		$body  = $this->request->getParams();
+		$input = ['value' => '', 'type' => '', 'wholeWord' => true, 'caseSensitive' => true];
+		foreach (['value', 'type'] as $key) {
+			if (isset($body[$key]) === true) {
+				$input[$key] = (string)$body[$key];
+			}
+		}
+
+		foreach (['wholeWord', 'caseSensitive'] as $key) {
+			if (isset($body[$key]) === true) {
+				$input[$key] = (bool)$body[$key];
+			}
+		}
+
+		return $input;
+	}//end manualEntityInput()
 
 	/**
 	 * Translate a `ManualEntityException` to the matching HTTP response.

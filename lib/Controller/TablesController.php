@@ -21,9 +21,9 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -61,18 +61,18 @@ class TablesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
 	 * @param IAppConfig $config Application config
-	 * @param MagicMapper $magicMapper Magic mapper for table operations
-	 * @param RegisterMapper $registerMapper Register mapper
-	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param MagicMapperInterface $magicMapper Magic mapper for table operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		private readonly IAppConfig $config,
-		private readonly MagicMapper $magicMapper,
-		private readonly RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
+		private readonly MagicMapperInterface $magicMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -32,6 +32,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditSink;
+use OCA\OpenRegister\Service\Audit\OrganisationContextAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
@@ -71,8 +72,20 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
+ *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
  */
-class AuditTrailMapper extends QBMapper {
+class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
+
+	/**
+	 * The only slug backfill mode: fill slugs that are missing (a set slug is never rewritten).
+	 */
+	public const SLUG_BACKFILL_MODE = 'fill';
 
 	/**
 	 * Request-scoped import-job tag.
@@ -166,20 +179,7 @@ class AuditTrailMapper extends QBMapper {
 		// It must happen before the row is INSERTED, not merely before it is
 		// sealed: the sweep seals whatever is in the row, so a field added
 		// after insert would be outside the hash it is later given.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// The purpose the caller declared for the read that produced this row.
-		// Applied here as well as in buildAuditTrail() for the same reason the
-		// flow attribution is, and before the INSERT for the same reason again:
-		// the sealed half of it lives in `resultSummary`, which is inside the
-		// canonical JSON.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Which token, whose, and for which consumer. Applied here as well as
-		// in buildAuditTrail() for the same reason the two above are, and
-		// before the INSERT for the same reason again: the sealed half lives in
-		// `resultSummary`, which is inside the canonical JSON.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		$this->applyAttributions(auditTrail: $auditTrail);
 
 		$inserted = $this->insert(entity: $auditTrail);
 
@@ -187,6 +187,33 @@ class AuditTrailMapper extends QBMapper {
 
 		return $inserted;
 	}//end insertHashChained()
+
+	/**
+	 * Stamp what caused a row onto it, before it is inserted.
+	 *
+	 * - Flow attribution: which run, node and step caused this write.
+	 * - Purpose (doelbinding): the purpose the caller declared for the read
+	 *   that produced this row.
+	 * - Token: which token, whose, and for which consumer.
+	 * - Organisation context: the organisation code acted for.
+	 *
+	 * The purpose, token and organisation context halves live in
+	 * `resultSummary`, which is inside the canonical JSON, so this MUST run
+	 * before the row is inserted. Re-applying to a row already stamped is
+	 * idempotent: it reads the same ambient frames and writes the same values.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/act-for-an-organisation/specs/rbac-scopes/spec.md
+	 */
+	private function applyAttributions(AuditTrail $auditTrail): void {
+		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
+		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
+		(new OrganisationContextAttribution())->apply(auditTrail: $auditTrail);
+	}//end applyAttributions()
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -437,6 +464,44 @@ class AuditTrailMapper extends QBMapper {
 	}//end find()
 
 	/**
+	 * The columns findAll() filters and sorts on. A key outside this list is dropped.
+	 *
+	 * @var string[]
+	 */
+	public const QUERY_COLUMNS = [
+		'id',
+		'uuid',
+		'schema',
+		'register',
+		'object',
+		'object_uuid',
+		'action',
+		'changed',
+		'user',
+		'user_name',
+		'session',
+		'request',
+		'ip_address',
+		'version',
+		'created',
+		// Flow attribution. Absent from this allowlist a filter is
+		// not rejected — it is silently DROPPED by the `continue`
+		// in findAll(), so `?flow_run=<uuid>` would return the whole
+		// unfiltered audit trail with a 200 and read as a run that
+		// had touched everything on the instance.
+		'flow_run',
+		'flow_node',
+		'flow_step',
+		// The cause and its run. Absent from this allowlist a
+		// filter is not rejected, it is silently DROPPED by the
+		// `continue` in findAll() — so `?cause=import` would answer the
+		// WHOLE unfiltered trail with a 200 and read as a load
+		// that had touched everything on the instance.
+		'cause',
+		'cause_run',
+	];
+
+	/**
 	 * Find all audit trails with filters and sorting
 	 *
 	 * @param int|null $limit The limit of the results
@@ -449,9 +514,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function findAll(
 		?int $limit = null,
@@ -465,52 +528,53 @@ class AuditTrailMapper extends QBMapper {
 		$qb->select('*')
 			->from('openregister_audit_trails');
 
-		// Filter out system variables (starting with _).
+		$this->applyFindFilters(qb: $qb, filters: $filters ?? []);
+
+		// Add search on changed field if search term provided.
+		if ($search !== null && $search !== '') {
+			$qb->andWhere(
+				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
+			);
+		}
+
+		$this->applyFindSort(qb: $qb, sort: $sort ?? []);
+
+		// Apply pagination.
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findAll()
+
+	/**
+	 * Apply the filters of findAll(): system variables (starting with _) and
+	 * columns outside QUERY_COLUMNS are ignored.
+	 *
+	 * @param IQueryBuilder $qb      The query being built.
+	 * @param array         $filters The filters, keyed by column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyFindFilters(IQueryBuilder $qb, array $filters): void {
 		$filters = array_filter(
-			$filters ?? [],
+			$filters,
 			function ($key) {
 				return !str_starts_with($key, '_');
 			},
 			ARRAY_FILTER_USE_KEY
 		);
 
-		// Apply filters.
 		foreach ($filters as $field => $value) {
-			// Ensure the field is a valid column name.
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Flow attribution. Absent from this allowlist a filter is
-					// not rejected — it is silently DROPPED by the `continue`
-					// below, so `?flow_run=<uuid>` would return the whole
-					// unfiltered audit trail with a 200 and read as a run that
-					// had touched everything on the instance.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -521,80 +585,63 @@ class AuditTrailMapper extends QBMapper {
 				continue;
 			}
 
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull($field));
-				continue;
-			}
+			$qb->andWhere($this->scalarFilterExpression(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value)));
+		}
+	}//end applyFindFilters()
 
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull($field));
-				continue;
-			}
-
-			// Handle comma-separated values (e.g., action=create,update).
-			// Cast to string to handle integer filter values.
-			$valueStr = (string)$value;
-
-			// An action prefix (`action=portaliq.*`) lists every action an app
-			// writes under its own name, such as portaliq's proof records.
-			if ($field === 'action' && str_ends_with($valueStr, '.*') === true) {
-				$prefix = substr($valueStr, 0, -1);
-				$qb->andWhere(
-					$qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'))
-				);
-				continue;
-			}
-
-			if (strpos($valueStr, ',') !== false) {
-				$values = array_map('trim', explode(',', $valueStr));
-				$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
-				continue;
-			}
-
-			$qb->andWhere($qb->expr()->eq($field, $qb->createNamedParameter($value)));
-		}//end foreach
-
-		// Add search on changed field if search term provided.
-		if ($search !== null && $search !== '') {
-			$qb->andWhere(
-				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
-			);
+	/**
+	 * The predicate for one scalar filter: a NULL check, an `action` prefix
+	 * (`action=portaliq.*` lists every action an app writes under its own
+	 * name), a comma-separated list (`action=create,update`), or equality.
+	 *
+	 * @param IQueryBuilder        $qb   The query being built.
+	 * @param AuditTrailFilterTerm $term The column and its value.
+	 *
+	 * @return string The predicate.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function scalarFilterExpression(IQueryBuilder $qb, AuditTrailFilterTerm $term): string {
+		$field = $term->field;
+		if ($term->value === 'IS NOT NULL') {
+			return $qb->expr()->isNotNull($field);
 		}
 
-		// Add sorting.
-		foreach ($sort ?? [] as $field => $direction) {
-			// Ensure the field is a valid column name.
+		if ($term->value === 'IS NULL') {
+			return $qb->expr()->isNull($field);
+		}
+
+		// Cast to string to handle integer filter values.
+		$valueStr = (string)$term->value;
+		if ($field === 'action' && str_ends_with($valueStr, '.*') === true) {
+			$prefix = substr($valueStr, 0, -1);
+			return $qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'));
+		}
+
+		if (strpos($valueStr, ',') !== false) {
+			$values = array_map('trim', explode(',', $valueStr));
+			return $qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY));
+		}
+
+		return $qb->expr()->eq($field, $qb->createNamedParameter($term->value));
+	}//end scalarFilterExpression()
+
+	/**
+	 * Apply the sort of findAll(): columns outside QUERY_COLUMNS are ignored,
+	 * and a direction other than DESC (any case) sorts ascending.
+	 *
+	 * @param IQueryBuilder $qb   The query being built.
+	 * @param array         $sort Direction keyed by column.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function applyFindSort(IQueryBuilder $qb, array $sort): void {
+		foreach ($sort as $field => $direction) {
 			if (in_array(
 				$field,
-				[
-					'id',
-					'uuid',
-					'schema',
-					'register',
-					'object',
-					'object_uuid',
-					'action',
-					'changed',
-					'user',
-					'user_name',
-					'session',
-					'request',
-					'ip_address',
-					'version',
-					'created',
-					// Sortable for the same reason they are filterable: a run's
-					// writes are read in step order.
-					'flow_run',
-					'flow_node',
-					'flow_step',
-					// The cause and its run. Absent from this allowlist a
-					// filter is not rejected, it is silently DROPPED by the
-					// `continue` below — so `?cause=import` would answer the
-					// WHOLE unfiltered trail with a 200 and read as a load
-					// that had touched everything on the instance.
-					'cause',
-					'cause_run',
-				]
+				self::QUERY_COLUMNS
 			) === false
 			) {
 				continue;
@@ -613,19 +660,8 @@ class AuditTrailMapper extends QBMapper {
 			}
 
 			$qb->addOrderBy($field, $order);
-		}//end foreach
-
-		// Apply pagination.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
 		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
-
-		return $this->findEntities(query: $qb);
-	}//end findAll()
+	}//end applyFindSort()
 
 	/**
 	 * Apply a filter whose value is a list: `field[notIn]=a,b` leaves out the
@@ -866,10 +902,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return AuditTrail The populated (unpersisted) audit trail entity
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -879,110 +912,175 @@ class AuditTrailMapper extends QBMapper {
 		?string $action = null,
 		?array $cascadeContext = null,
 	): AuditTrail {
-		// Infer the action from which entities are present — but ONLY when the
-		// caller did not name one.
-		//
-		// These two rules used to fire on `$action === 'update'`, which is both
-		// the default AND a legitimate explicit value, so a caller who KNEW the
-		// write was an update could not say so: `old: null, action: 'update'`
-		// was rewritten to `create` before it reached the row. That is not
-		// hypothetical — it is why MagicMapper taking its UPDATE branch on a
-		// service-labelled create still produced a `create` entry (#2217), and
-		// it is the reason a fix passing an explicit action would have looked
-		// applied while changing nothing.
-		//
-		// The inference is unchanged for every caller that omits `action`; only
-		// an explicitly-named one now survives.
-		$inferring = ($action === null);
-		if ($inferring === true) {
+		$pair = ['old' => $old, 'new' => $new];
+		[$action, $objectEntity] = $this->resolveAuditAction(pair: $pair, action: $action);
+
+		$changed = $this->diffForAudit(pair: $pair, action: $action);
+		$changed = $this->foldCascadeContext(changed: $changed, cascadeContext: $cascadeContext);
+		// The markers are added before the row is built and sealed: the hash
+		// chain covers whatever is in the row.
+		$changed = $this->markTransitionOrigin(changed: $changed, objectEntity: $objectEntity);
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setObject($objectEntity->getId());
+		$auditTrail->setObjectUuid($objectEntity->getUuid());
+		$auditTrail->setAction($action);
+		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
+
+		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
+		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
+
+		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
+		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
+		$auditTrail->setSize(max($serializedSize, 14));
+
+		// Expiry follows the RETENTION OF THE OBJECT the row describes, not a
+		// flat window (or#2265). `null` means retain indefinitely, which is the
+		// resolver's outcome for an object with no retention policy, under legal
+		// hold, or nominated `bewaren` / `nog_niet_bepaald`. Set BEFORE the row
+		// is sealed: `expires` is part of the canonical JSON the hash covers.
+		// See AuditRetentionResolver.
+		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $objectEntity);
+
+		return $auditTrail;
+	}//end buildAuditTrail()
+
+	/**
+	 * The action to record and the entity the row describes.
+	 *
+	 * A NULL action is inferred from which entities are present: no `new` is a
+	 * delete, no `old` is a create, otherwise an update. A named action is used
+	 * verbatim, so an explicit 'update' with no old state stays an update (#2217).
+	 * Deletes and referential-integrity actions describe the old entity.
+	 *
+	 * @param array{old: ObjectEntity|null, new: ObjectEntity|null} $pair   The old and new states.
+	 * @param string|null                                           $action The named action, if any.
+	 *
+	 * @return array{0: string, 1: ObjectEntity|null} The action and the entity it describes.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function resolveAuditAction(array $pair, ?string $action): array {
+		$objectEntity = $pair['new'];
+		if ($action === null) {
 			$action = 'update';
+			if ($pair['new'] === null) {
+				$action = 'delete';
+			} else if ($pair['old'] === null) {
+				$action = 'create';
+			}
 		}
 
-		// Determine the action based on the presence of old and new objects.
-		$objectEntity = $new;
-		if ($inferring === true && $new === null) {
-			$action = 'delete';
-			$objectEntity = $old;
+		if ($action === 'delete' || str_starts_with($action, 'referential_integrity.') === true) {
+			$objectEntity = $pair['old'];
 		}
 
-		if ($inferring === true && $old === null && $new !== null) {
-			$action = 'create';
-			$objectEntity = $new;
+		return [$action, $objectEntity];
+	}//end resolveAuditAction()
+
+	/**
+	 * The per-field changes between the old and new state.
+	 *
+	 * Delete, read and referential-integrity actions record no diff: their new
+	 * state is legitimately absent. Only an update records removed fields.
+	 *
+	 * @param array{old: ObjectEntity|null, new: ObjectEntity|null} $pair   The old and new states.
+	 * @param string                                                $action The resolved action.
+	 *
+	 * @return array<string, array{old: mixed, new: mixed}> The changed fields.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function diffForAudit(array $pair, string $action): array {
+		if ($action === 'delete' || $action === 'read' || str_starts_with($action, 'referential_integrity.') === true) {
+			return [];
 		}
 
-		if ($action === 'delete' || str_starts_with((string)$action, 'referential_integrity.') === true) {
-			$objectEntity = $old;
-		}
+		$oldArray = ($pair['old']?->jsonSerialize() ?? []);
+		$newArray = ($pair['new']?->jsonSerialize() ?? []);
 
-		// Initialize an array to store changed fields.
 		$changed = [];
-		// Treat delete-ish actions (including referential_integrity.*_delete /
-		// set_null / set_default / restrict_blocked) as "no new state" — $new
-		// is legitimately null here and the per-field diff below would blow up.
-		$isDeleteAction = (
-			$action === 'delete'
-			|| $action === 'read'
-			|| str_starts_with($action, 'referential_integrity.') === true
-		);
-		if ($isDeleteAction === false) {
-			$oldArray = [];
-			if ($old !== null) {
-				$oldArray = $old->jsonSerialize();
+		foreach ($newArray as $key => $value) {
+			if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
+				$changed[$key] = ['old' => ($oldArray[$key] ?? null), 'new' => $value];
 			}
-
-			$newArray = [];
-			if ($new !== null) {
-				$newArray = $new->jsonSerialize();
-			}
-
-			// Compare old and new values to detect changes.
-			foreach ($newArray as $key => $value) {
-				if ((isset($oldArray[$key]) === false) || ($oldArray[$key] !== $value)) {
-					$changed[$key] = [
-						'old' => ($oldArray[$key] ?? null),
-						'new' => $value,
-					];
-				}
-			}
-
-			// For updates, check for removed fields.
-			if ($action === 'update') {
-				foreach ($oldArray as $key => $value) {
-					if (isset($newArray[$key]) === false) {
-						$changed[$key] = [
-							'old' => $value,
-							'new' => null,
-						];
-					}
-				}
-			}
-		}//end if
-
-		// Fold referential-integrity cascade context into the change set so it is
-		// part of the initial INSERT. Key shape matches the (removed) post-insert
-		// UPDATE that DeleteObject used to issue per cascade-tagged delete.
-		if ($cascadeContext !== null) {
-			$changed['triggeredBy'] = 'referential_integrity';
-			$changed['cascadeContext'] = [
-				'triggerObject' => $cascadeContext['triggerObject'] ?? null,
-				'triggerSchema' => $cascadeContext['triggerSchema'] ?? null,
-				'action_type' => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
-				'property' => $cascadeContext['property'] ?? null,
-			];
 		}
 
-		// Mark a row an automatic lifecycle transition produced, so an auditor
-		// can tell a move a user asked for from a move a rule made on that
-		// user's save. Applied HERE, before the row is built and sealed, for
-		// the reason AuditFlowAttribution is applied at the same point: the
-		// hash chain covers whatever is in the row, so a field added after the
-		// insert would sit outside the hash it is later given. The row is still
-		// attributed to the acting user, because that is who the move acted as.
-		// Read off the request-scoped pass through the container rather than an
-		// injected dependency: this mapper is constructed in contexts where the
-		// lifecycle services are not wired, and an audit row must never fail to
-		// be built because of that. A resolution failure means "no automatic move
-		// in flight", which is the pre-existing behaviour.
+		if ($action === 'update') {
+			$changed = array_merge($changed, $this->removedFields(oldArray: $oldArray, newArray: $newArray));
+		}
+
+		return $changed;
+	}//end diffForAudit()
+
+	/**
+	 * The fields the old state set and the new state no longer does, as changes to null.
+	 *
+	 * @param array $oldArray The serialised old state.
+	 * @param array $newArray The serialised new state.
+	 *
+	 * @return array<string, array{old: mixed, new: null}> The removed fields.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function removedFields(array $oldArray, array $newArray): array {
+		$removed = [];
+		foreach ($oldArray as $key => $value) {
+			if (isset($newArray[$key]) === false) {
+				$removed[$key] = ['old' => $value, 'new' => null];
+			}
+		}
+
+		return $removed;
+	}//end removedFields()
+
+	/**
+	 * Fold a referential-integrity cascade context into the change set.
+	 *
+	 * It is part of the initial INSERT, in the key shape the post-insert UPDATE
+	 * DeleteObject used to issue per cascade-tagged delete.
+	 *
+	 * @param array      $changed        The changed fields.
+	 * @param array|null $cascadeContext The cascade context, if any.
+	 *
+	 * @return array The changed fields with the cascade context.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function foldCascadeContext(array $changed, ?array $cascadeContext): array {
+		if ($cascadeContext === null) {
+			return $changed;
+		}
+
+		$changed['triggeredBy'] = 'referential_integrity';
+		$changed['cascadeContext'] = [
+			'triggerObject' => $cascadeContext['triggerObject'] ?? null,
+			'triggerSchema' => $cascadeContext['triggerSchema'] ?? null,
+			'action_type' => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
+			'property' => $cascadeContext['property'] ?? null,
+		];
+		return $changed;
+	}//end foldCascadeContext()
+
+	/**
+	 * Mark a row an automatic lifecycle transition, or a transition run as the system, produced.
+	 *
+	 * An auditor can then tell a move a user asked for from one a rule made on
+	 * that user's save, and see which app approved skipping OpenRegister's own
+	 * read and update checks. The row's user stays the acting user. Both are read
+	 * through the container: this mapper is built in contexts where the
+	 * lifecycle services are not wired, and a resolution failure means "nothing
+	 * in flight".
+	 *
+	 * @param array        $changed      The changed fields.
+	 * @param ObjectEntity $objectEntity The entity the row describes.
+	 *
+	 * @return array The changed fields with any markers.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function markTransitionOrigin(array $changed, ObjectEntity $objectEntity): array {
 		$automaticAction = null;
 		try {
 			$automaticAction = $this->container
@@ -996,29 +1094,29 @@ class AuditTrailMapper extends QBMapper {
 			$changed['automaticTransition'] = $automaticAction;
 		}
 
-		// Mark a row a transition run AS THE SYSTEM produced, naming the app
-		// that approved the caller itself (TransitionEngine::transitionAsSystem).
-		// The row's user stays the real caller; this says OpenRegister's own
-		// read and update checks were skipped and who took that decision.
-		// Applied before the row is built and sealed, for the hash-chain reason
-		// above, and read through the container for the same fail-soft reason.
 		$systemApp = $this->transitionSystemApp(uuid: (string)$objectEntity->getUuid());
 		if ($systemApp !== null) {
 			$changed['transitionAsSystem'] = ['app' => $systemApp];
 		}
 
-		// Get the current user.
+		return $changed;
+	}//end markTransitionOrigin()
+
+	/**
+	 * Stamp who made the change, from where, and on which object version.
+	 *
+	 * The version is the one this change produced, which makes "revert to
+	 * version X" answerable from the trail rather than by counting rows.
+	 *
+	 * @param AuditTrail   $auditTrail   The row being built.
+	 * @param ObjectEntity $objectEntity The entity the row describes.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function stampActorAndObject(AuditTrail $auditTrail, ObjectEntity $objectEntity): void {
 		$user = $this->userSession->getUser();
-
-		// Create and populate a new AuditTrail object.
-		$auditTrail = new AuditTrail();
-		$auditTrail->setUuid((string)Uuid::v4());
-		// $auditTrail->setObject($objectEntity->getId()); @todo change migration!!
-		$auditTrail->setObject($objectEntity->getId());
-		$auditTrail->setObjectUuid($objectEntity->getUuid());
-		$auditTrail->setAction($action);
-		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
-
 		$auditTrail->setUser('System');
 		$auditTrail->setUserName('System');
 		if ($user !== null) {
@@ -1032,90 +1130,46 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setCreated(new DateTime());
 		$auditTrail->setRegister($objectEntity->getRegister());
 		$auditTrail->setSchema($objectEntity->getSchema());
-
-		// The object version this change produced. `oc_openregister_audit_trails`
-		// has carried a `version` column and AuditTrail a `version` property
-		// since the table was created, and nothing ever wrote either — because
-		// nothing wrote the object's version either. Now that ObjectVersionHandler
-		// maintains it, the audit row can say which version each entry left
-		// behind, which is what makes "revert to version X" answerable from the
-		// trail rather than by counting rows.
 		$auditTrail->setVersion($objectEntity->getVersion());
+	}//end stampActorAndObject()
 
-		// AVG / GDPR Art 30 trigger contract — resolve the
-		// processing-activity reference and tag the audit row. Resolution
-		// order is action-override > schema-default > register-default;
-		// see openspec/changes/avg-verwerkingsregister/design.md.
+	/**
+	 * Stamp why the write happened and what it ran under.
+	 *
+	 * Applied in the shared builder, not in the two insert methods:
+	 * `insertAuditTrails()` builds its rows here too, and stamping only the
+	 * single inserts would leave every bulk write unattributed. Covers the AVG
+	 * processing activity (action override > schema > register), the import job
+	 * (entity override > request scope), the write cause from the ambient acting
+	 * context (never from the request), and the flow, purpose and token
+	 * attributions.
+	 *
+	 * @param AuditTrail   $auditTrail   The row being built.
+	 * @param ObjectEntity $objectEntity The entity the row describes.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause holds the ambient acting context
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function stampAttributions(AuditTrail $auditTrail, ObjectEntity $objectEntity): void {
 		$processingActivityId = $this->resolveProcessingActivityId(objectEntity: $objectEntity);
 		if ($processingActivityId !== null) {
 			$auditTrail->setProcessingActivityId($processingActivityId);
 		}
 
-		// Import-job tag — stamped by `ImportService` on every object it
-		// creates so the rollback contract can find them by audit row.
-		// Resolution order: entity-level override > request-scoped scope.
-		// Single-object writes use the entity field; bulk saves go through
-		// the request scope so we don't have to thread the UUID through
-		// `saveObjects` and the SaveObjects handler.
 		$importJobId = ($objectEntity->getImportJobId() ?? $this->requestImportJobId);
 		if ($importJobId !== null) {
 			$auditTrail->setImportJobId($importJobId);
 		}
 
-		// 🔴 WHY THIS WRITE HAPPENED, from the closed vocabulary, derived from
-		// the ambient acting context and NEVER from the request. Stamped here
-		// in the shared builder for the same reason the flow attribution is:
-		// `insertAuditTrails()` builds its rows through this method, and
-		// stamping only the inserts would leave every bulk write uncaused —
-		// which is precisely the write a filter on cause exists to find.
 		$frame = \OCA\OpenRegister\Service\WriteCause::current();
 		$auditTrail->setCause($frame['cause']);
 		$auditTrail->setCauseRun($frame['run']);
 
-		// Flow attribution — which run, node and step caused this write.
-		// Applied HERE, in the shared builder, and not in the two insert
-		// methods: `insertAuditTrails()` (the batched path) builds its rows
-		// through this same method, and stamping the inserts instead would have
-		// left every bulk write in a flow silently unattributed.
-		(new AuditFlowAttribution($this->db, $this->container))->apply(auditTrail: $auditTrail);
-
-		// Doelbinding attribution, applied in the shared builder for the same
-		// reason the flow attribution is: `insertAuditTrails()` builds its rows
-		// here, and stamping only the inserts would leave every bulk write
-		// silently unattributed to the purpose it ran under.
-		(new PurposeAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Token attribution, applied in the shared builder for the same reason
-		// the two above are: `insertAuditTrails()` builds its rows here, so
-		// stamping only the inserts would leave every bulk write by a koppeling
-		// unable to say which koppeling made it.
-		(new TokenAttribution(container: $this->container))->apply(auditTrail: $auditTrail);
-
-		// Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
-		$serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
-		$auditTrail->setSize(max($serializedSize, 14));
-
-		// Expiry follows the RETENTION OF THE OBJECT the row describes, not a
-		// flat window (or#2265). The unconditional `+30 days` that stood here
-		// destroyed the evidence of a retention decision long before the
-		// decision expired: on the procest case register 311 of 330
-		// soft-deleted cases had lost their delete audit row, and all 258,240
-		// rows carrying an expiry carried exactly a 30-day one.
-		//
-		// `null` means retain indefinitely — clearLogs() has always filtered on
-		// `expires IS NOT NULL` — and is the resolver's outcome for an object
-		// with no retention policy, under legal hold, or nominated `bewaren` /
-		// `nog_niet_bepaald`. The 30-day constant survives inside the resolver
-		// as a FLOOR rather than a ceiling. See AuditRetentionResolver.
-		//
-		// The resolved source token is stamped into `retentionPeriod` so a
-		// future purge is explainable from the row itself. Both fields are set
-		// BEFORE the row is sealed: `expires` is part of the canonical JSON the
-		// hash covers, so writing it after sealing would invalidate the hash.
-		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $objectEntity);
-
-		return $auditTrail;
-	}//end buildAuditTrail()
+		$this->applyAttributions(auditTrail: $auditTrail);
+	}//end stampAttributions()
 
 	/**
 	 * The app a transition on this object currently runs as the system for, if any.
@@ -1508,10 +1562,10 @@ class AuditTrailMapper extends QBMapper {
 
 		try {
 			/*
-			 * @var SchemaMapper $schemaMapper
+			 * @var SchemaMapperInterface $schemaMapper
 			 */
 
-			$schemaMapper = $this->container->get(SchemaMapper::class);
+			$schemaMapper = $this->container->get(SchemaMapperInterface::class);
 			$schema = $schemaMapper->find(
 				$schemaId,
 				_rbac: false,
@@ -1550,10 +1604,10 @@ class AuditTrailMapper extends QBMapper {
 
 		try {
 			/*
-			 * @var RegisterMapper $registerMapper
+			 * @var RegisterMapperInterface $registerMapper
 			 */
 
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$register = $registerMapper->find(
 				$registerId,
 				_rbac: false,
@@ -1678,7 +1732,7 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Revert an object to a previous state
 	 *
-	 * @param string|int $identifier Object ID, UUID, or URI
+	 * @param ObjectEntity|string|int $identifier The object itself, or its ID, UUID or URI to look it up by
 	 * @param DateTime|string|null $until DateTime or AuditTrail ID to revert to
 	 * @param bool $overwriteVersion Whether to overwrite the version or increment it
 	 *
@@ -1690,9 +1744,12 @@ class AuditTrailMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Controls version handling strategy on revert
 	 */
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity {
-		// Get the current object (lazy-resolved to avoid circular DI).
-		$objectMapper = $this->container->get(MagicMapper::class);
-		$object = $objectMapper->find($identifier);
+		// A caller that already checked the object passes it, so it is not looked up again.
+		$object = $identifier;
+		if ($object instanceof ObjectEntity === false) {
+			// Lazy-resolved to avoid circular DI.
+			$object = $this->container->get(MagicMapperInterface::class)->find($identifier);
+		}
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(
@@ -3471,6 +3528,94 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
+
+	/**
+	 * Create one immutable, hash-chained audit record for a slug backfill run.
+	 *
+	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
+	 * per-object audit row. This single entry per run keeps the change
+	 * reconstructable: it lists the objects whose slug changed with the old and
+	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
+	 * {@see createExportEntry()}.
+	 *
+	 * The run mode is always `fill`: a set slug is never rewritten.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
+	 * @param array<string, mixed> $summary The run's counters.
+	 * @param int|null $register Register id.
+	 * @param int|null $schema Schema id.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 */
+	public function createSlugBackfillEntry(
+		array $changes,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$userId = 'system';
+		$userName = 'System';
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('slug.backfill.' . self::SLUG_BACKFILL_MODE);
+		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
+		$auditTrail->setChanged([]);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary($this->slugBackfillResultSummary(mode: self::SLUG_BACKFILL_MODE, changes: $changes, summary: $summary));
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createSlugBackfillEntry()
+
+	/**
+	 * What a slug backfill entry stores: the counters and a bounded change list.
+	 *
+	 * The entry is hash-chained and cannot be edited afterwards, and the slugs
+	 * come from the schema's `objectSlugField`, which can be a name. So only the
+	 * first {@see SLUG_BACKFILL_MAX_CHANGES} changes are kept, each reduced to
+	 * uuid, old and new slug, next to the total count; the caller logs the full
+	 * list.
+	 *
+	 * @param string $mode    The run mode, `fill`.
+	 * @param array  $changes Every slug the run wrote.
+	 * @param array  $summary The run's counters.
+	 *
+	 * @return array<string, mixed> The result summary of the entry.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function slugBackfillResultSummary(string $mode, array $changes, array $summary): array {
+		$total = count($changes);
+		$listed = [];
+		foreach (array_slice($changes, 0, self::SLUG_BACKFILL_MAX_CHANGES) as $change) {
+			$listed[] = ['uuid' => ($change['uuid'] ?? null), 'old' => ($change['old'] ?? null), 'new' => ($change['new'] ?? null)];
+		}
+
+		$truncated = ($total > self::SLUG_BACKFILL_MAX_CHANGES);
+		$result = ['mode' => $mode, 'summary' => $summary, 'changes' => $listed, 'changesTotal' => $total, 'truncated' => $truncated];
+		if ($truncated === true) {
+			$result['note'] = sprintf(
+				'Only the first %d of %d changes are listed here; the full list is in the Nextcloud log (lines starting "[ObjectSlug] Slug backfill changes").',
+				self::SLUG_BACKFILL_MAX_CHANGES,
+				$total
+			);
+		}
+
+		return $result;
+	}//end slugBackfillResultSummary()
 
 	/**
 	 * The objects one user read most recently, newest first.

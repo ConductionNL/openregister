@@ -53,6 +53,8 @@ class AuditTrailMapperBulkTest extends TestCase {
 
 	private AuditTrailMapper $mapper;
 
+	private ?\OCA\OpenRegister\Service\Audit\TokenContext $tokenContext = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -68,6 +70,10 @@ class AuditTrailMapperBulkTest extends TestCase {
 			function (string $id) {
 				if ($id === AuditHashService::class) {
 					return $this->hashService;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Audit\TokenContext::class && $this->tokenContext !== null) {
+					return $this->tokenContext;
 				}
 
 				throw new \RuntimeException('not registered: ' . $id);
@@ -125,6 +131,34 @@ class AuditTrailMapperBulkTest extends TestCase {
 	// -------------------------------------------------------------------------
 	// buildAuditTrail()
 	// -------------------------------------------------------------------------
+
+	public function testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation(): void {
+		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+		);
+
+		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
+		$this->assertSame('System', $trail->getUser());
+	}//end testBuildAuditTrailInsideAnOrganisationContextNamesTheOrganisation()
+
+	public function testBuildAuditTrailKeepsTheTokenBesideTheOrganisationContext(): void {
+		$this->tokenContext = new \OCA\OpenRegister\Service\Audit\TokenContext(
+			resolver: $this->createMock(\OCA\OpenRegister\Service\Audit\TokenResolver::class)
+		);
+		$this->tokenContext->claim(
+			identity: new \OCA\OpenRegister\Service\Audit\TokenIdentity(mechanism: 'bearer', reference: 'tok-1', consumerName: 'portal')
+		);
+
+		$trail = \OCA\OpenRegister\Service\OrganisationContext::run(
+			'org-a',
+			fn (): AuditTrail => $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete')
+		);
+
+		$this->assertSame('portal', $trail->getConsumer());
+		$this->assertSame('tok-1', ($trail->getResultSummary() ?? [])['token']['reference'] ?? null);
+		$this->assertSame('org-a', ($trail->getResultSummary() ?? [])['organisationContext'] ?? null);
+	}//end testBuildAuditTrailKeepsTheTokenBesideTheOrganisationContext()
 
 	public function testBuildAuditTrailForDeleteProducesEmptyChangeSet(): void {
 		$trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-1'), new: null, action: 'delete');

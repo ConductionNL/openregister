@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
 use OCA\OpenRegister\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
@@ -106,7 +107,7 @@ class FileTextControllerManualEntityTest extends TestCase {
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(originalClassName: TextExtractionService::class),
@@ -168,6 +169,23 @@ class FileTextControllerManualEntityTest extends TestCase {
 		$this->assertSame(expected: 'unsupported_media_type', actual: $response->getData()['error']);
 
 	}//end testWrongContentTypeReturns415()
+
+	/**
+	 * The wholeWord and caseSensitive flags of the body reach the service, defaulting to true.
+	 *
+	 * @return void
+	 */
+	public function testMatchFlagsReachTheService(): void {
+		$this->setupRequest(body: ['value' => 'Jan', 'type' => 'PERSON', 'wholeWord' => false, 'caseSensitive' => 0]);
+		$this->setupAuthenticatedUser();
+
+		$this->manualEntityService->expects($this->once())
+			->method('addManualEntity')
+			->with(42, 'Jan', 'PERSON', false, false, $this->anything())
+			->willThrowException(new \RuntimeException('stop'));
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller->addManualEntity(fileId: 42)->getStatus());
+	}//end testMatchFlagsReachTheService()
 
 	/**
 	 * No session user → 401.

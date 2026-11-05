@@ -44,8 +44,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -83,15 +83,15 @@ class MoveObject {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper      $objects  The object store.
-	 * @param ValidateObject   $validator Validation against a schema.
-	 * @param AuditTrailMapper $audit    The audit trail.
+	 * @param MagicMapperInterface      $objects  The object store.
+	 * @param ValidateObjectInterface   $validator Validation against a schema.
+	 * @param AuditTrailMapperInterface $audit    The audit trail.
 	 * @param LoggerInterface  $logger   The logger.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objects,
-		private readonly ValidateObject $validator,
-		private readonly AuditTrailMapper $audit,
+		private readonly MagicMapperInterface $objects,
+		private readonly ValidateObjectInterface $validator,
+		private readonly AuditTrailMapperInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -228,6 +228,7 @@ class MoveObject {
 	private function writeAtTarget(ObjectMove $move): ?string {
 		$object = $move->object;
 		try {
+			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
 			$object->setRegister((string)$move->target->register->getId());
 			$object->setSchema((string)$move->target->schema->getId());
 			$this->objects->updateObjectEntity(
@@ -239,8 +240,7 @@ class MoveObject {
 			// Put the entity back the way it was in memory, so a caller that
 			// keeps using it is not holding an object that claims to live
 			// somewhere it does not.
-			$object->setRegister((string)$move->source->register->getId());
-			$object->setSchema((string)$move->source->schema->getId());
+			$this->putBack(object: $object, register: $move->source->register, schema: $move->source->schema, slug: ($sourceSlug ?? $object->getSlug()));
 
 			return $e->getMessage();
 		}//end try
@@ -285,6 +285,41 @@ class MoveObject {
 
 		return true;
 	}//end removeFromSource()
+
+	/**
+	 * Give the object the slug it may hold in the target (#4037).
+	 *
+	 * The slug was decided in the source; the target may already have a live
+	 * holder of it, so it is checked there as a save would.
+	 *
+	 * @param ObjectEntity $object         The object being moved.
+	 * @param Register     $targetRegister Where it is going.
+	 * @param Schema       $targetSchema   Where it is going.
+	 *
+	 * @return string|null The slug it had in the source.
+	 */
+	private function assignTargetSlug(ObjectEntity $object, Register $targetRegister, Schema $targetSchema): ?string {
+		$sourceSlug = $object->getSlug();
+		$object->setSlug($this->objects->slugForMove(entity: $object, register: $targetRegister, schema: $targetSchema));
+
+		return $sourceSlug;
+	}//end assignTargetSlug()
+
+	/**
+	 * Put an object whose move failed back at its source address, in memory.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param Register     $register Its source register.
+	 * @param Schema       $schema   Its source schema.
+	 * @param string|null  $slug     Its source slug.
+	 *
+	 * @return void
+	 */
+	private function putBack(ObjectEntity $object, Register $register, Schema $schema, ?string $slug): void {
+		$object->setRegister((string)$register->getId());
+		$object->setSchema((string)$schema->getId());
+		$object->setSlug($slug);
+	}//end putBack()
 
 	/**
 	 * One validation error, as a sentence naming the property where it can.

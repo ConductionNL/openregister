@@ -2909,7 +2909,7 @@
         "Complete: {outcome}": "Completa: {outcome}",
         "Could not load the task": "Impossibile caricare l'attività",
         "The task refused that action": "L'attività ha rifiutato l'azione",
-        "Store": "Store",
+        "Marketplace": "Store",
         "Install registers, schemas and flows that other organisations have published.": "Installa registri, schemi e flussi pubblicati da altre organizzazioni.",
         "No such run": "Nessuna esecuzione trovata",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "L'esecuzione non esiste o non puoi vederla. Eliminando un flusso si eliminano le sue esecuzioni.",

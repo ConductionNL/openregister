@@ -74,7 +74,7 @@ class TaskVtodoWriteBackGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The authorized lifecycle: the ONLY thing that mutates a task.
+	 * @param TaskServiceInterface $tasks The authorized lifecycle: the ONLY thing that mutates a task.
 	 * @param TaskMapper $mapper Resolves the task the VTODO names.
 	 * @param TaskAuditMapper $audits Records denials the lifecycle did not already record.
 	 * @param TaskCalendarProjector $projector Renders the engine's truth back over a refused edit.
@@ -85,7 +85,7 @@ class TaskVtodoWriteBackGate {
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
+		private readonly TaskServiceInterface $tasks,
 		private readonly TaskMapper $mapper,
 		private readonly TaskAuditMapper $audits,
 		private readonly TaskCalendarProjector $projector,

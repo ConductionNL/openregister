@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Service\WebhookRequestOptions;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
@@ -206,6 +207,20 @@ class WebhookServiceTest extends TestCase {
 	}//end createTestMapping()
 
 	/**
+	 * The X-Webhook-Signature header a delivery with this payload and secret carries.
+	 *
+	 * @param array  $payload Payload to sign.
+	 * @param string $secret  Secret key.
+	 *
+	 * @return string
+	 */
+	private function signatureFor(array $payload, string $secret): string {
+		$webhook = new Webhook();
+		$webhook->setSecret($secret);
+		return (new WebhookRequestOptions(webhook: $webhook))->headers(payload: $payload)['X-Webhook-Signature'];
+	}//end signatureFor()
+
+	/**
 	 * Invoke a private method on the service via reflection.
 	 *
 	 * @param string $methodName Method to invoke.
@@ -218,6 +233,21 @@ class WebhookServiceTest extends TestCase {
 		$method->setAccessible(true);
 		return $method->invokeArgs($this->service, $args);
 	}//end invokePrivateMethod()
+
+	/**
+	 * Invoke a private method of the service's delivery recorder.
+	 *
+	 * @param string $methodName The method name
+	 * @param array  $args       Named arguments
+	 *
+	 * @return mixed
+	 */
+	private function invokeRecorderMethod(string $methodName, array $args): mixed {
+		$recorder = $this->invokePrivateMethod(methodName: 'deliveryRecorder', args: []);
+		$method = new \ReflectionMethod(objectOrMethod: $recorder, method: $methodName);
+		$method->setAccessible(true);
+		return $method->invokeArgs($recorder, $args);
+	}//end invokeRecorderMethod()
 
 	// ─── buildPayload tests ──────────────────────────────────────────
 
@@ -814,13 +844,13 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('exponential');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
 		$this->assertSame(120, $delay); // 2^1 * 60
 
-		$delay2 = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay2 = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 3,
 		]);
@@ -831,7 +861,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('linear');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 2,
 		]);
@@ -842,7 +872,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('fixed');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 5,
 		]);
@@ -853,7 +883,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('unknown_policy');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -867,7 +897,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook->setRetryPolicy('fixed');
 
 		$before = new \DateTime();
-		$result = $this->invokePrivateMethod('calculateNextRetryTime', [
+		$result = $this->invokeRecorderMethod('calculateNextRetryTime', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -934,10 +964,7 @@ class WebhookServiceTest extends TestCase {
 		$payload = ['key' => 'value'];
 		$secret = 'my-secret';
 
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => $secret,
-		]);
+		$result = $this->signatureFor(payload: $payload, secret: $secret);
 
 		$expected = hash_hmac('sha256', json_encode($payload), $secret);
 		$this->assertSame($expected, $result);
@@ -946,14 +973,8 @@ class WebhookServiceTest extends TestCase {
 	public function testGenerateSignatureDifferentSecretsProduceDifferentResults(): void {
 		$payload = ['key' => 'value'];
 
-		$sig1 = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret1',
-		]);
-		$sig2 = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret2',
-		]);
+		$sig1 = $this->signatureFor(payload: $payload, secret: 'secret1');
+		$sig2 = $this->signatureFor(payload: $payload, secret: 'secret2');
 
 		$this->assertNotSame($sig1, $sig2);
 	}
@@ -1503,10 +1524,9 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
-		$this->invokePrivateMethod('scheduleRetry', [
+		$this->invokeRecorderMethod('scheduleRetry', [
 			'webhook' => $webhook,
 			'eventName' => 'SomeEvent',
-			'_payload' => ['data' => 'test'],
 			'attempt' => 2,
 		]);
 	}//end testScheduleRetryLogsInfo()
@@ -1967,7 +1987,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('exponential');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 0,
 		]);
@@ -1984,7 +2004,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook = $this->createTestWebhook();
 		$webhook->setRetryPolicy('linear');
 
-		$delay = $this->invokePrivateMethod('calculateRetryDelay', [
+		$delay = $this->invokeRecorderMethod('calculateRetryDelay', [
 			'webhook' => $webhook,
 			'attempt' => 1,
 		]);
@@ -2004,7 +2024,7 @@ class WebhookServiceTest extends TestCase {
 		$webhook->setRetryPolicy('exponential');
 
 		$before = new \DateTime();
-		$result = $this->invokePrivateMethod('calculateNextRetryTime', [
+		$result = $this->invokeRecorderMethod('calculateNextRetryTime', [
 			'webhook' => $webhook,
 			'attempt' => 2,
 		]);
@@ -2024,10 +2044,7 @@ class WebhookServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testGenerateSignatureWithEmptyPayload(): void {
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => [],
-			'secret' => 'secret',
-		]);
+		$result = $this->signatureFor(payload: [], secret: 'secret');
 
 		$expected = hash_hmac('sha256', json_encode([]), 'secret');
 		$this->assertSame($expected, $result);
@@ -2040,10 +2057,7 @@ class WebhookServiceTest extends TestCase {
 	 */
 	public function testGenerateSignatureWithNestedPayload(): void {
 		$payload = ['a' => ['b' => 'c'], 'd' => [1, 2, 3]];
-		$result = $this->invokePrivateMethod('generateSignature', [
-			'payload' => $payload,
-			'secret' => 'secret',
-		]);
+		$result = $this->signatureFor(payload: $payload, secret: 'secret');
 
 		$expected = hash_hmac('sha256', json_encode($payload), 'secret');
 		$this->assertSame($expected, $result);

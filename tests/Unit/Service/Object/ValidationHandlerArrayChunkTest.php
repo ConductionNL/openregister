@@ -27,6 +27,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ValidationChunk
+ * @uses \OCA\OpenRegister\Service\Object\ValidationRun
  */
 class ValidationHandlerArrayChunkTest extends TestCase {
 

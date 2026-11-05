@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\IUserManager;
@@ -61,7 +61,7 @@ abstract class ActorForwardedJob extends QueuedJob {
 	 * @param ITimeFactory $time Time factory for the parent job class.
 	 * @param IUserSession $userSession Session to impersonate on / restore.
 	 * @param IUserManager $userManager Resolver for the captured user id.
-	 * @param OrganisationService $organisation Active-organisation resolver (drift detection).
+	 * @param OrganisationServiceInterface $organisation Active-organisation resolver (drift detection).
 	 * @param LoggerInterface $logger PSR logger (shared with subclasses).
 	 *
 	 * @return void
@@ -70,7 +70,7 @@ abstract class ActorForwardedJob extends QueuedJob {
 		ITimeFactory $time,
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
-		private readonly OrganisationService $organisation,
+		private readonly OrganisationServiceInterface $organisation,
 		protected readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

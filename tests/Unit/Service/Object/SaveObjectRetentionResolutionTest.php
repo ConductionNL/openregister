@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -50,7 +51,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Regression guard for the 2026-09-08 memory blow-up.
@@ -113,7 +114,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 			$this->logger,
 			$this->createMock(TmloService::class),
 			$this->createMock(FolderManagementHandler::class),
-			new ArrayLoader(),
+			$this->createMock(PermissionHandler::class),
 			container: $container,
 		);
 	}//end buildHandler()
@@ -170,7 +171,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->expects($this->once())
 			->method('get')
-			->with(RetentionService::class)
+			->with(RetentionServiceInterface::class)
 			->willReturn($retention);
 
 		$this->assertSame($retention, $this->resolve($this->buildHandler($container)));
@@ -226,7 +227,7 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 			});
 
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(RetentionService::class)->willReturn($retention);
+		$container->method('get')->with(RetentionServiceInterface::class)->willReturn($retention);
 
 		$handler = $this->buildHandler($container);
 
@@ -240,10 +241,18 @@ class SaveObjectRetentionResolutionTest extends TestCase {
 
 		$method = new ReflectionMethod(SaveObject::class, 'handleObjectCreation');
 		$method->setAccessible(true);
-		$result = $method->invokeArgs(
-			$handler,
-			[1, 1, $register, $schema, ['name' => 'Test'], [], 'test-uuid-123', null, false, false, false]
-		);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->registerId = 1;
+		$call->schemaId = 1;
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'Test'];
+		$call->uuid = 'test-uuid-123';
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$call->flags->multitenancy = false;
+		$result = $method->invokeArgs($handler, [$call]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 		$this->assertSame('archived-by-test', $result->getDescription());

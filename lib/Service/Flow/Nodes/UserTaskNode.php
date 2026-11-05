@@ -66,7 +66,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
@@ -361,7 +361,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		// heartbeat is what recovered it. Recorded on the task's audit,
 		// attributed to its completer, BEFORE the outcome is applied below:
 		// the applying is identical on both paths, which is the contract.
-		if (array_key_exists(FlowRunService::SIGNAL_CONTEXT_KEY, $context) === false) {
+		if (array_key_exists(FlowRunServiceInterface::SIGNAL_CONTEXT_KEY, $context) === false) {
 			$this->bridge->recordHeartbeatRecovery(task: $task);
 		}
 
@@ -518,7 +518,6 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 		$this->timers->arm(config: $timerConfig, actor: $this->actingIdentity(context: $context));
 
 	}//end armDeadline()
-
 
 	/**
 	 * Write the outcome bag onto every item, under the configured key.

@@ -136,6 +136,16 @@ class ValidateObjectSchemaPreparationGoldenTest extends TestCase {
 			'translatable'                   => [['type' => 'object', 'required' => ['title'], 'properties' => ['title' => ['type' => 'string', 'translatable' => true, 'maxLength' => 9], 'body' => ['type' => 'string', 'translatable' => true], 'note' => ['type' => 'string', 'translatable' => 'yes']]], 'item'],
 			'nested nullable'                => [['type' => 'object', 'properties' => ['o' => ['type' => 'object', 'properties' => ['p' => ['type' => 'string', 'nullable' => true], 'q' => ['type' => 'string']]], 'l' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => ['c' => ['type' => 'integer', 'nullable' => true]]]]]], 'item'],
 			'metadata stripped'              => [['type' => 'object', 'objectConfiguration' => ['a' => 1], 'inversedBy' => 'x', 'properties' => ['m' => ['type' => 'string', 'cascadeDelete' => true, 'mappedBy' => 'y', 'fetch' => 'lazy']]], 'item'],
+			'computed twice in required'     => [['type' => 'object', 'required' => ['a', 'c', 'a'], 'properties' => ['a' => ['type' => 'string', 'computed' => 'x'], 'c' => ['type' => 'string']]], 'item'],
+			'computed non-object neighbour'  => [['type' => 'object', 'required' => ['f', 'a'], 'properties' => ['f' => ['type' => 'string'], 'a' => ['type' => 'string', 'calculation' => 'x'], 'g' => ['type' => 'string', 'computed' => null]]], 'item'],
+			'required as numeric names'      => [['type' => 'object', 'required' => [0], 'properties' => ['0' => ['type' => 'string'], 'x' => ['type' => 'string']]], 'item'],
+			'required not a list, no props'  => [['type' => 'object', 'required' => 'a'], 'item'],
+			'null type string'               => [['type' => 'object', 'properties' => ['n' => ['type' => 'null'], 'e' => ['enum' => ['a']], 'm' => ['enum' => [null], 'type' => ['string']]]], 'item'],
+			'translatable enum, false marker' => [['type' => 'object', 'properties' => ['t' => ['translatable' => false], 'u' => ['translatable' => true, 'enum' => ['a']]]], 'item'],
+			'translatable required order'    => [['type' => 'object', 'required' => ['b'], 'properties' => ['a' => ['type' => 'string'], 'b' => ['type' => 'integer', 'translatable' => true], 'c' => ['type' => 'boolean']]], 'item'],
+			'entity without slug'            => [['type' => 'object', 'properties' => ['a' => ['type' => 'string']]], '(no slug)'],
+			'properties not an object'       => [['type' => 'object', 'properties' => 'x'], 'item'],
+			'computed numeric name'          => [['type' => 'object', 'required' => [true, '1'], 'properties' => ['1' => ['type' => 'string', 'computed' => 'x'], 'b' => ['type' => 'string']]], 'item'],
 			'properties as list'             => [['type' => 'object', 'properties' => [['type' => 'string'], ['type' => 'string', 'computed' => 'x']]], 'item'],
 		];
 	}//end preparationScenarios()
@@ -214,7 +224,9 @@ class ValidateObjectSchemaPreparationGoldenTest extends TestCase {
 		$entity = null;
 		if ($slug !== null) {
 			$entity = new Schema();
-			$entity->setSlug($slug);
+			if ($slug !== '(no slug)') {
+				$entity->setSlug($slug);
+			}
 		}
 
 		$method = new ReflectionMethod(ValidateObject::class, 'prepareSchemaForValidation');

@@ -78,9 +78,10 @@ class PdfAnonymisationException extends \Exception {
 	public const REASON_TEXT_LAYER_MISSING = 'text_layer_missing';
 
 	/**
-	 * Post-replacement validation gate detected residual entity text in
-	 * the output PDF. The output is discarded; the gate fails closed.
-	 * Controller maps to HTTP 500 with a structured diagnostic body.
+	 * The post-replacement check could not run in a strict run because the
+	 * output PDF could not be re-read, so no file was written. Residual
+	 * entity text alone does not raise it (best-effort policy). Controller
+	 * maps to HTTP 500 with a structured diagnostic body.
 	 *
 	 * @var string
 	 */

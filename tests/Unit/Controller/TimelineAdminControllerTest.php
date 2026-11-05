@@ -75,10 +75,7 @@ class TimelineAdminControllerTest extends TestCase {
 			$this->kinds,
 			$this->references,
 			$this->blocks,
-			$this->userSession,
-			$this->groupManager,
-			$this->createMock(LoggerInterface::class)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)));
 	}
 
 	private function signIn(bool $isAdmin): void {

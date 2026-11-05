@@ -28,14 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
-use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
@@ -84,6 +82,13 @@ class WebhookService {
 	 * @var OutboundAddressGuard|null
 	 */
 	private ?OutboundAddressGuard $addressGuard = null;
+
+	/**
+	 * Records delivery outcomes; built on first use from this service's collaborators.
+	 *
+	 * @var WebhookDeliveryRecorder|null
+	 */
+	private ?WebhookDeliveryRecorder $deliveryRecorder = null;
 
 	/**
 	 * Logger
@@ -172,17 +177,6 @@ class WebhookService {
 		$this->interceptionCache = $interceptionCache;
 		$this->initializeHttpClient();
 	}//end __construct()
-
-	/**
-	 * Maximum response body size accepted from a webhook target, in bytes (1 MB).
-	 *
-	 * Larger bodies are truncated before being persisted in the webhook log to
-	 * prevent log-storage exhaustion when a misconfigured endpoint returns a
-	 * huge response.
-	 *
-	 * @var integer
-	 */
-	private const MAX_RESPONSE_BODY_BYTES = 1048576;
 
 	/**
 	 * Maximum response body length kept in structured log context, in bytes (1 KB).
@@ -557,19 +551,31 @@ class WebhookService {
 	}//end previewResponseBody()
 
 	/**
-	 * Cap a response body to MAX_RESPONSE_BODY_BYTES for persistent storage.
+	 * Cap a response body to the stored size for persistent storage.
 	 *
 	 * @param string $body Raw response body.
 	 *
 	 * @return string Body limited to the response-body cap.
 	 */
 	private function capResponseBody(string $body): string {
-		if (strlen($body) <= self::MAX_RESPONSE_BODY_BYTES) {
-			return $body;
-		}
-
-		return substr($body, 0, self::MAX_RESPONSE_BODY_BYTES) . '... [truncated]';
+		return $this->deliveryRecorder()->capResponseBody(body: $body);
 	}//end capResponseBody()
+
+	/**
+	 * The recorder of delivery outcomes, built on first use.
+	 *
+	 * @return WebhookDeliveryRecorder
+	 */
+	private function deliveryRecorder(): WebhookDeliveryRecorder {
+		$this->deliveryRecorder ??= new WebhookDeliveryRecorder(
+			logger: $this->logger,
+			webhookMapper: $this->webhookMapper,
+			webhookLogMapper: $this->webhookLogMapper,
+			previewBody: $this->previewResponseBody(...)
+		);
+
+		return $this->deliveryRecorder;
+	}//end deliveryRecorder()
 
 	/**
 	 * Dispatch event to all matching webhooks
@@ -580,38 +586,12 @@ class WebhookService {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function dispatchEvent(Event $_event, string $eventName, array $payload): void {
-		try {
-			// Find all webhooks matching this event.
-			$webhooks = $this->webhookMapper->findForEvent($eventName);
-		} catch (\Exception $e) {
-			// If table doesn't exist yet (migrations haven't run), silently skip webhook delivery.
-			$this->logger->debug(
-				message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventName,
-					'error' => $e->getMessage(),
-				]
-			);
-			return;
-		}
-
-		if (empty($webhooks) === true) {
-			$this->logger->debug(
-				message: '[WebhookService] No webhooks configured for event',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'event' => $eventName,
-				]
-			);
+		$webhooks = $this->webhooksForEvent(eventName: $eventName);
+		if ($webhooks === []) {
 			return;
 		}
 
@@ -663,6 +643,36 @@ class WebhookService {
 	}//end dispatchEvent()
 
 	/**
+	 * The webhooks subscribed to an event; none (logged) when there are none or the webhook
+	 * table does not exist yet because migrations have not run.
+	 *
+	 * @param string $eventName Event class name.
+	 *
+	 * @return array The webhooks.
+	 */
+	private function webhooksForEvent(string $eventName): array {
+		try {
+			$webhooks = $this->webhookMapper->findForEvent($eventName);
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $eventName, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		if (empty($webhooks) === true) {
+			$this->logger->debug(
+				message: '[WebhookService] No webhooks configured for event',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => $eventName]
+			);
+			return [];
+		}
+
+		return $webhooks;
+	}//end webhooksForEvent()
+
+	/**
 	 * Deliver webhook to target URL
 	 *
 	 * @param Webhook $webhook Webhook configuration
@@ -676,11 +686,6 @@ class WebhookService {
 	 *
 	 * @return bool Success status
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex delivery with retry and error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
-	 * Fallback for connection errors without response
-	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function deliverWebhook(
@@ -690,226 +695,51 @@ class WebhookService {
 		int $attempt = 1,
 		?int $timeoutCapSeconds = null,
 	): bool {
-		if ($webhook->getEnabled() === false) {
+		$skipReason = $this->deliverySkipReason(webhook: $webhook, payload: $payload);
+		if ($skipReason !== null) {
 			$this->logger->debug(
-				message: '[WebhookService] Webhook is disabled, skipping delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-				]
+				message: $skipReason,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'webhook_id' => $webhook->getId(), 'event' => $eventName]
 			);
 			return false;
 		}
 
-		// Apply filters if configured.
-		if ($this->passesFilters(webhook: $webhook, payload: $payload) === false) {
-			$this->logger->debug(
-				message: '[WebhookService] Webhook filters did not match, skipping delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-				]
-			);
-			return false;
-		}
-
-		$webhookPayload = $this->buildPayload(
-			webhook: $webhook,
-			eventName: $eventName,
-			payload: $payload,
-			attempt: $attempt
-		);
-
-		// Create webhook log entry.
-		$webhookLog = new WebhookLog();
-		$webhookLog->setWebhook($webhook->getId());
+		$webhookPayload = $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: $attempt);
+		$recorder = $this->deliveryRecorder();
+		$webhookLog = $recorder->startDeliveryLog(webhook: $webhook, webhookPayload: $webhookPayload);
 		$webhookLog->setEventClass($eventName);
-		$webhookLog->setPayloadArray($webhookPayload);
-		$webhookLog->setUrl($webhook->getUrl());
-		$webhookLog->setMethod($webhook->getMethod());
 		$webhookLog->setAttempt($attempt);
+		$delivery = new WebhookDeliveryAttempt(webhook: $webhook, log: $webhookLog);
 
 		try {
-			$response = $this->sendRequest(
-				webhook: $webhook,
-				payload: $webhookPayload,
-				timeoutCapSeconds: $timeoutCapSeconds
-			);
-
-			// BUG-SVC-1: http_errors is disabled on the Guzzle client, so a 4xx/5xx
-			// response does NOT throw — it lands here. Treat any non-2xx status as a
-			// delivery failure (log it, record failed statistics, schedule a retry)
-			// instead of silently recording it as a successful delivery.
-			$statusCode = (int)$response['status_code'];
-			if ($statusCode < 200 || $statusCode >= 300) {
-				$webhookLog->setSuccess(false);
-				$webhookLog->setStatusCode($statusCode);
-				$webhookLog->setResponseBody($this->capResponseBody(body: (string)$response['body']));
-				$webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: ' . $statusCode);
-				$webhookLog->setRequestBody(json_encode($webhookPayload));
-
-				$this->logger->error(
-					message: '[WebhookService] Webhook delivery failed with non-2xx status',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'webhook_id' => $webhook->getId(),
-						'webhook_name' => $webhook->getName(),
-						'event' => $eventName,
-						'status_code' => $statusCode,
-						'attempt' => $attempt,
-						'max_retries' => $webhook->getMaxRetries(),
-					]
-				);
-
-				$this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
-
-				// Schedule retry if within retry limit.
-				if ($attempt < $webhook->getMaxRetries()) {
-					$nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
-					$webhookLog->setNextRetryAt($nextRetryAt);
-					$this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
-				}
-
-				$this->webhookLogMapper->insert($webhookLog);
-
-				return false;
-			}//end if
-
-			// Log success.
-			$webhookLog->setSuccess(true);
-			$webhookLog->setStatusCode($response['status_code']);
-			$webhookLog->setResponseBody($response['body']);
-
-			$this->logger->info(
-				message: '[WebhookService] Webhook delivered successfully',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'webhook_name' => $webhook->getName(),
-					'event' => $eventName,
-					'status_code' => $response['status_code'],
-					'attempt' => $attempt,
-				]
-			);
-
-			$this->webhookMapper->updateStatistics(webhook: $webhook, success: true);
-			$this->webhookLogMapper->insert($webhookLog);
-
-			return true;
+			$response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload, timeoutCapSeconds: $timeoutCapSeconds);
+			return $recorder->recordResponse(delivery: $delivery, response: $response);
 		} catch (RequestException $e) {
-			// Build detailed error message from Guzzle exception.
-			$errorMessage = $e->getMessage();
-			$errorDetails = [];
-
-			// Get status code from exception if available.
-			if ($e->hasResponse() !== true) {
-				// Connection error or timeout.
-				$errorDetails['connection_error'] = true;
-				if ($e->getCode() !== 0) {
-					$errorDetails['error_code'] = $e->getCode();
-				}
-			}
-
-			if ($e->hasResponse() === true) {
-				$response = $e->getResponse();
-				$statusCode = $response->getStatusCode();
-				$webhookLog->setStatusCode($statusCode);
-				$errorDetails['status_code'] = $statusCode;
-
-				try {
-					$responseBody = (string)$response->getBody();
-					// Cap the body before persisting it in the webhook log so
-					// a hostile endpoint can't bloat log storage. The version
-					// we echo into structured logs is shorter still and is
-					// redacted when the target is an internal/private IP — see
-					// previewResponseBody().
-					$webhookLog->setResponseBody($this->capResponseBody(body: $responseBody));
-					$errorDetails['response_body'] = $this->previewResponseBody(
-						body: $responseBody,
-						url: $webhook->getUrl()
-					);
-
-					// Try to parse JSON response for better error message.
-					$jsonResponse = json_decode($responseBody, true);
-					if ($jsonResponse !== null && (($jsonResponse['message'] ?? null) !== null)) {
-						$errorMessage .= ': ' . $jsonResponse['message'];
-					} elseif ($jsonResponse !== null && (($jsonResponse['error'] ?? null) !== null)) {
-						$errorMessage .= ': ' . $jsonResponse['error'];
-					}
-				} catch (\Exception $bodyException) {
-					// Ignore body reading errors.
-				}//end try
-			}//end if
-
-			// Add request details to error message.
-			$errorDetails['request_url'] = $webhook->getUrl();
-			$errorDetails['request_method'] = $webhook->getMethod();
-			$errorDetails['timeout'] = $webhook->getTimeout();
-
-			// Store request body as JSON for retry purposes (only on failure).
-			$webhookLog->setRequestBody(json_encode($webhookPayload));
-
-			// Log failure with detailed context.
-			$webhookLog->setSuccess(false);
-			$webhookLog->setErrorMessage($errorMessage);
-
-			$this->logger->error(
-				message: '[WebhookService] Webhook delivery failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'webhook_name' => $webhook->getName(),
-					'event' => $eventName,
-					'error' => $errorMessage,
-					'error_details' => $errorDetails,
-					'attempt' => $attempt,
-					'max_retries' => $webhook->getMaxRetries(),
-					'exception_class' => get_class($e),
-					'exception_code' => $e->getCode(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			$this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
-
-			// Schedule retry if within retry limit.
-			if ($attempt < $webhook->getMaxRetries()) {
-				$nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
-				$webhookLog->setNextRetryAt($nextRetryAt);
-				$this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
-			}
-
-			// Save log entry.
-			$this->webhookLogMapper->insert($webhookLog);
-
-			return false;
+			return $recorder->recordRequestFailure(delivery: $delivery, exception: $e);
 		} catch (\Exception $e) {
-			// Log unexpected errors.
-			$webhookLog->setSuccess(false);
-			$webhookLog->setErrorMessage($e->getMessage());
-			$this->webhookLogMapper->insert($webhookLog);
-
-			$this->logger->error(
-				message: '[WebhookService] Unexpected error during webhook delivery',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'webhook_id' => $webhook->getId(),
-					'event' => $eventName,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return false;
-		}//end try
+			return $recorder->recordUnexpectedFailure(delivery: $delivery, exception: $e);
+		}
 	}//end deliverWebhook()
+
+	/**
+	 * Why a delivery is skipped: the webhook is disabled or its filters do not match.
+	 *
+	 * @param Webhook $webhook Webhook configuration
+	 * @param array   $payload Event payload
+	 *
+	 * @return string|null The log message for the skip, or null when the delivery goes ahead
+	 */
+	private function deliverySkipReason(Webhook $webhook, array $payload): ?string {
+		if ($webhook->getEnabled() === false) {
+			return '[WebhookService] Webhook is disabled, skipping delivery';
+		}
+
+		if ($this->passesFilters(webhook: $webhook, payload: $payload) === false) {
+			return '[WebhookService] Webhook filters did not match, skipping delivery';
+		}
+
+		return null;
+	}//end deliverySkipReason()
 
 	/**
 	 * Check if payload passes webhook filters
@@ -1197,58 +1027,13 @@ class WebhookService {
 		// in $options below, which honours the same per-hook flag.
 		$this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
-		$headers = array_merge(
-			[
-				'Content-Type' => 'application/json',
-				'User-Agent' => 'OpenRegister-Webhooks/1.0',
-			],
-			$webhook->getHeadersArray()
-		);
-
-		// Add signature if secret is configured.
-		if ($webhook->getSecret() !== null) {
-			$signature = $this->generateSignature(payload: $payload, secret: $webhook->getSecret());
-			$headers['X-Webhook-Signature'] = $signature;
-		}
-
-		$options = [
-			'headers' => $headers,
-			'timeout' => $webhook->getTimeout(),
-		];
-
-		// Hard-cap connect + total timeout for request-blocking deliveries
-		// (interception). The cap never RAISES a webhook's own shorter timeout,
-		// but a non-positive per-webhook timeout (Guzzle: 0 = wait forever)
-		// must not escape the cap either.
-		if ($timeoutCapSeconds !== null) {
-			$webhookTimeout = (int)$webhook->getTimeout();
-			$options['timeout'] = $timeoutCapSeconds;
-			if ($webhookTimeout > 0 && $webhookTimeout < $timeoutCapSeconds) {
-				$options['timeout'] = $webhookTimeout;
+		$request = new WebhookRequestOptions(webhook: $webhook, timeoutCapSeconds: $timeoutCapSeconds);
+		$options = ['headers' => $request->headers(payload: $payload)] + $request->timeouts();
+		$options['allow_redirects'] = $request->redirects(
+			assertSafe: function (string $uri) use ($allowPrivate): void {
+				$this->assertSafeWebhookUri(uri: $uri, allowPrivate: $allowPrivate);
 			}
-
-			$options['connect_timeout'] = $timeoutCapSeconds;
-		}
-
-		// Override the shared client's redirect guard per-request so the
-		// on_redirect callback can see this hook's allowPrivate flag. Mirrors
-		// the client default (max/strict/protocols) from initializeHttpClient();
-		// the only difference is the flag-aware re-validation. The shared client
-		// default keeps allowPrivate = false as the safe fallback.
-		$options['allow_redirects'] = [
-			'max' => 5,
-			'strict' => true,
-			'referer' => false,
-			'protocols' => ['http', 'https'],
-			'track_redirects' => true,
-			'on_redirect' => function (
-				RequestInterface $request,
-				ResponseInterface $response,
-				\Psr\Http\Message\UriInterface $uri,
-			) use ($allowPrivate): void {
-				$this->assertSafeWebhookUri(uri: (string)$uri, allowPrivate: $allowPrivate);
-			},
-		];
+		);
 
 		// For GET requests, use query parameters; for others, send JSON body.
 		$payloadKey = 'json';
@@ -1271,98 +1056,6 @@ class WebhookService {
 			'body' => $this->capResponseBody(body: (string)$response->getBody()),
 		];
 	}//end sendRequest()
-
-	/**
-	 * Generate HMAC signature for payload
-	 *
-	 * @param array $payload Payload to sign
-	 * @param string $secret Secret key
-	 *
-	 * @return string
-	 */
-	private function generateSignature(array $payload, string $secret): string {
-		return hash_hmac('sha256', json_encode($payload), $secret);
-	}//end generateSignature()
-
-	/**
-	 * Schedule retry for failed webhook delivery
-	 *
-	 * The retry is handled by the WebhookRetryJob cron job which runs every 5 minutes
-	 * and checks for failed webhook logs with next_retry_at timestamps that have passed.
-	 * The retry delay is stored in the webhook log's next_retry_at field using
-	 * exponential backoff based on the webhook's retry policy.
-	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param string $eventName Event name
-	 * @param array $_payload Payload data (unused but required for retry tracking)
-	 * @param int $attempt Next attempt number
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-testing-must-support-dry-run-delivery
-	 */
-	private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void {
-		$delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
-
-		$this->logger->info(
-			message: '[WebhookService] Scheduling webhook retry',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'webhook_id' => $webhook->getId(),
-				'webhook_name' => $webhook->getName(),
-				'event' => $eventName,
-				'attempt' => $attempt,
-				'delay' => $delay,
-			]
-		);
-
-		// Note: Retry is handled by WebhookRetryJob cron job.
-		// The next_retry_at timestamp is already set in the webhook log entry.
-		// No need to schedule a job here - the cron job will pick it up.
-	}//end scheduleRetry()
-
-	/**
-	 * Calculate next retry timestamp
-	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param int $attempt Current attempt number
-	 *
-	 * @return DateTime Next retry timestamp
-	 */
-	private function calculateNextRetryTime(Webhook $webhook, int $attempt): DateTime {
-		$delay = $this->calculateRetryDelay(webhook: $webhook, attempt: $attempt);
-		$nextRetry = new DateTime();
-		$nextRetry->modify('+' . $delay . ' seconds');
-
-		return $nextRetry;
-	}//end calculateNextRetryTime()
-
-	/**
-	 * Calculate retry delay based on retry policy
-	 *
-	 * @param Webhook $webhook Webhook configuration
-	 * @param int $attempt Attempt number
-	 *
-	 * @return int Delay in seconds
-	 *
-	 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-testing-must-support-dry-run-delivery
-	 */
-	private function calculateRetryDelay(Webhook $webhook, int $attempt): int {
-		switch ($webhook->getRetryPolicy()) {
-			case 'exponential':
-				// Exponential backoff: 2^attempt minutes.
-				return pow(2, $attempt) * 60;
-			case 'linear':
-				// Linear backoff: attempt * 5 minutes.
-				return $attempt * 300;
-			case 'fixed':
-				// Fixed delay: 5 minutes.
-				return 300;
-			default:
-				return 300;
-		}//end switch
-	}//end calculateRetryDelay()
 
 	/**
 	 * Intercept request and send to webhooks

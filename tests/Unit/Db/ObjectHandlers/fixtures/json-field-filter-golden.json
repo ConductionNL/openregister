@@ -1,0 +1,92 @@
+{
+    "is not null": [
+        "#1 param :p1 = $.address.city, 2",
+        "#1 expr.isNotNull(JSON_EXTRACT(`object`, :p1))",
+        "#1 andWhere(isNotNull(JSON_EXTRACT(`object`, :p1)))"
+    ],
+    "is null": [
+        "#1 param :p1 = $.name, 2",
+        "#1 expr.isNull(JSON_EXTRACT(`object`, :p1))",
+        "#1 andWhere(isNull(JSON_EXTRACT(`object`, :p1)))"
+    ],
+    "single string": [
+        "#1 expr.orX()",
+        "#1 param :p1 = $.address.city, 2",
+        "#1 param :p2 = den haag, 2",
+        "#1 expr.eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1))), :p2, NULL)",
+        "#1 param :p3 = $.address.city, 2",
+        "#1 param :p4 = \"den haag\", 2",
+        "#1 param :p5 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p3)), :p4), :p5, NULL)",
+        "#1 andWhere(orX()+[eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1))), :p2, NULL), eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p3)), :p4), :p5, NULL)])"
+    ],
+    "single int": [
+        "#1 expr.orX()",
+        "#1 param :p1 = $.age, 2",
+        "#1 param :p2 = 42, 2",
+        "#1 expr.eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL)",
+        "#1 param :p3 = $.age, 2",
+        "#1 param :p4 = 42, 2",
+        "#1 param :p5 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)",
+        "#1 andWhere(orX()+[eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL), eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)])"
+    ],
+    "single bool": [
+        "#1 expr.orX()",
+        "#1 param :p1 = $.active, 2",
+        "#1 param :p2 = true, 2",
+        "#1 expr.eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL)",
+        "#1 param :p3 = $.active, 2",
+        "#1 param :p4 = true, 2",
+        "#1 param :p5 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)",
+        "#1 andWhere(orX()+[eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL), eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)])"
+    ],
+    "single null": [
+        "#1 expr.orX()",
+        "#1 param :p1 = $.gone, 2",
+        "#1 param :p2 = NULL, 2",
+        "#1 expr.eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL)",
+        "#1 param :p3 = $.gone, 2",
+        "#1 param :p4 = null, 2",
+        "#1 param :p5 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)",
+        "#1 andWhere(orX()+[eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1)), :p2, NULL), eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p3), :p4), :p5, NULL)])"
+    ],
+    "list of mixed": [
+        "#1 expr.orX()",
+        "#1 param :p1 = $.tags, 2",
+        "#1 param :p2 = alpha, 2",
+        "#1 expr.eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1))), :p2, NULL)",
+        "#1 param :p3 = $.tags, 2",
+        "#1 param :p4 = \"alpha\", 2",
+        "#1 param :p5 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p3)), :p4), :p5, NULL)",
+        "#1 param :p6 = $.tags, 2",
+        "#1 param :p7 = 7, 2",
+        "#1 expr.eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p6)), :p7, NULL)",
+        "#1 param :p8 = $.tags, 2",
+        "#1 param :p9 = 7, 2",
+        "#1 param :p10 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p8), :p9), :p10, NULL)",
+        "#1 param :p11 = $.tags, 2",
+        "#1 param :p12 = false, 2",
+        "#1 expr.eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p11)), :p12, NULL)",
+        "#1 param :p13 = $.tags, 2",
+        "#1 param :p14 = false, 2",
+        "#1 param :p15 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p13), :p14), :p15, NULL)",
+        "#1 param :p16 = $.tags, 2",
+        "#1 param :p17 = beta, 2",
+        "#1 expr.eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p16))), :p17, NULL)",
+        "#1 param :p18 = $.tags, 2",
+        "#1 param :p19 = \"beta\", 2",
+        "#1 param :p20 = 1, 2",
+        "#1 expr.eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p18)), :p19), :p20, NULL)",
+        "#1 andWhere(orX()+[eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p1))), :p2, NULL), eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p3)), :p4), :p5, NULL), eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p6)), :p7, NULL), eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p8), :p9), :p10, NULL), eq(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p11)), :p12, NULL), eq(JSON_CONTAINS(JSON_EXTRACT(`object`, :p13), :p14), :p15, NULL), eq(LOWER(JSON_UNQUOTE(JSON_EXTRACT(`object`, :p16))), :p17, NULL), eq(JSON_CONTAINS(LOWER(JSON_EXTRACT(`object`, :p18)), :p19), :p20, NULL)])"
+    ],
+    "empty list": [
+        "#1 expr.orX()",
+        "#1 andWhere(orX())"
+    ]
+}

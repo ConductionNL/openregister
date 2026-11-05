@@ -72,10 +72,10 @@ class MetadataHandler {
 	 *
 	 * `generateSlugFromValue()` + `createSlugHelper()` were removed: they had
 	 * no callers, and were a byte-identical copy of the same pair on
-	 * `DataManipulationHandler` (also removed). Object slugs are produced by
-	 * `SaveObject\MetadataHydrationHandler::generateSlug(array $data, Schema
-	 * $schema)` — schema-aware, so it reads the schema's configured slug
-	 * source rather than slugifying an arbitrary string.
+	 * `DataManipulationHandler` (also removed). Object slugs are decided by
+	 * `SaveObject\ObjectSlugHandler` (#4037) — schema-aware, unique per
+	 * register and schema, frozen once set — rather than by slugifying an
+	 * arbitrary string.
 	 */
 
 }//end class

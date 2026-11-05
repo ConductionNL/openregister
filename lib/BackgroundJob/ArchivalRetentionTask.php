@@ -55,15 +55,15 @@ use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\RetentionService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -96,37 +96,37 @@ class ArchivalRetentionTask extends TimedJob {
 	/**
 	 * Register repository used to enumerate active registers.
 	 *
-	 * @var RegisterMapper
+	 * @var RegisterMapperInterface
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Schema repository used to enumerate annotated schemas.
 	 *
-	 * @var SchemaMapper
+	 * @var SchemaMapperInterface
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Magic-table resolver used to map registers/schemas to physical tables.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Object service used to perform the sweep deletes.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Retention service, asked whether a row is under an active legal hold.
 	 *
-	 * @var RetentionService
+	 * @var RetentionServiceInterface
 	 */
-	private readonly RetentionService $retentionService;
+	private readonly RetentionServiceInterface $retentionService;
 
 	/**
 	 * App container the notification collaborators are resolved from.
@@ -158,22 +158,22 @@ class ArchivalRetentionTask extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory for TimedJob scheduling.
 	 * @param IDBConnection $db Database connection for native SQL row scan.
-	 * @param RegisterMapper $registerMapper Register repository.
-	 * @param SchemaMapper $schemaMapper Schema repository.
-	 * @param MagicMapper $magicMapper Magic-table resolver.
-	 * @param ObjectService $objectService Service used to perform the sweep deletes.
-	 * @param RetentionService $retentionService Answers whether a row is under an active legal hold.
+	 * @param RegisterMapperInterface $registerMapper Register repository.
+	 * @param SchemaMapperInterface $schemaMapper Schema repository.
+	 * @param MagicMapperInterface $magicMapper Magic-table resolver.
+	 * @param ObjectOperationsInterface $objectService Service used to perform the sweep deletes.
+	 * @param RetentionServiceInterface $retentionService Answers whether a row is under an active legal hold.
 	 * @param ContainerInterface $container App container the notification collaborators come from.
 	 * @param LoggerInterface $logger Logger for per-schema summaries.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		IDBConnection $db,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		MagicMapper $magicMapper,
-		ObjectService $objectService,
-		RetentionService $retentionService,
+		RegisterMapperInterface $registerMapper,
+		SchemaMapperInterface $schemaMapper,
+		MagicMapperInterface $magicMapper,
+		ObjectOperationsInterface $objectService,
+		RetentionServiceInterface $retentionService,
 		ContainerInterface $container,
 		LoggerInterface $logger,
 	) {
@@ -334,7 +334,7 @@ class ArchivalRetentionTask extends TimedJob {
 			return;
 		}
 
-		$tableName = MagicMapper::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
+		$tableName = MagicMapperInterface::TABLE_PREFIX . ((string)$register->getId()) . '_' . ((string)$schema->getId());
 
 		$scanned = 0;
 		$expired = 0;

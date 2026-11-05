@@ -33,11 +33,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\ShareLinkService;
+use OCA\OpenRegister\Service\ShareDraft;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -48,13 +50,15 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class ShareLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param ShareLinkService $shareLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 *
 	 * @return void
 	 */
@@ -62,7 +66,7 @@ class ShareLinksController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ShareLinkService $shareLinkService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -82,20 +86,10 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->shareLinkService->getLinkedShares($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getLinkedShares($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -117,63 +111,52 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$fileId = (int)$this->request->getParam('fileId', 0);
+				if ($fileId === 0) {
+					return new JSONResponse(['error' => 'fileId is required'], 400);
+				}
+
+				$shareType = (int)$this->request->getParam('shareType', -1);
+				$permissions = (int)$this->request->getParam('permissions', 1);
+				$shareWith = $this->request->getParam('shareWith');
+				$password = $this->request->getParam('password');
+				$expiration = $this->request->getParam('expiration');
+
+				$shareWithStr = null;
+				if ($shareWith !== null) {
+					$shareWithStr = (string)$shareWith;
+				}
+
+				$passwordStr = null;
+				if ($password !== null) {
+					$passwordStr = (string)$password;
+				}
+
+				$expirationStr = null;
+				if ($expiration !== null) {
+					$expirationStr = (string)$expiration;
+				}
+
+				$share = $this->shareLinkService->createShare(
+					objectUuid: $object->getUuid(),
+					draft: (new ShareDraft(fileId: $fileId, shareType: $shareType))
+						->withRecipient(shareWith: $shareWithStr, permissions: $permissions)
+						->withProtection(password: $passwordStr, expiration: $expirationStr)
+				);
+
+				return new JSONResponse(
+					[
+						'shareId' => (string)$share->getId(),
+						'shareType' => (int)$share->getShareType(),
+						'token' => (string)($share->getToken() ?? ''),
+					],
+					201
+				);
 			}
-
-			$fileId = (int)$this->request->getParam('fileId', 0);
-			if ($fileId === 0) {
-				return new JSONResponse(['error' => 'fileId is required'], 400);
-			}
-
-			$shareType = (int)$this->request->getParam('shareType', -1);
-			$permissions = (int)$this->request->getParam('permissions', 1);
-			$shareWith = $this->request->getParam('shareWith');
-			$password = $this->request->getParam('password');
-			$expiration = $this->request->getParam('expiration');
-
-			$shareWithStr = null;
-			if ($shareWith !== null) {
-				$shareWithStr = (string)$shareWith;
-			}
-
-			$passwordStr = null;
-			if ($password !== null) {
-				$passwordStr = (string)$password;
-			}
-
-			$expirationStr = null;
-			if ($expiration !== null) {
-				$expirationStr = (string)$expiration;
-			}
-
-			$share = $this->shareLinkService->createShare(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$fileId,
-				$shareType,
-				$shareWithStr,
-				$permissions,
-				$passwordStr,
-				$expirationStr
-			);
-
-			return new JSONResponse(
-				[
-					'shareId' => (string)$share->getId(),
-					'shareType' => (int)$share->getShareType(),
-					'token' => (string)($share->getToken() ?? ''),
-				],
-				201
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end create()
 
 	/**
@@ -192,20 +175,14 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $shareId): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($shareId): JSONResponse {
+				$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->shareLinkService->revokeShare($object->getUuid(), $shareId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -223,43 +200,11 @@ class ShareLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function files(string $register, string $schema, string $id): JSONResponse {
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->shareLinkService->getShareableFiles($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->shareLinkService->getShareableFiles($object->getUuid()))
+		);
 	}//end files()
-
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -271,7 +216,7 @@ class ShareLinksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 401, 403, 404, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);

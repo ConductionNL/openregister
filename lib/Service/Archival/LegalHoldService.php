@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserSession;
@@ -50,16 +50,16 @@ class LegalHoldService {
 	/**
 	 * Object entity mapper.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private MagicMapper $objectMapper;
+	private MagicMapperInterface $objectMapper;
 
 	/**
 	 * Audit trail mapper for logging hold operations.
 	 *
-	 * @var AuditTrailMapper
+	 * @var AuditTrailMapperInterface
 	 */
-	private AuditTrailMapper $auditTrailMapper;
+	private AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * User session for identifying who placed the hold.
@@ -85,16 +85,16 @@ class LegalHoldService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object entity data mapper.
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logging.
+	 * @param MagicMapperInterface $objectMapper Object entity data mapper.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging.
 	 * @param IUserSession $userSession User session service.
 	 * @param IJobList $jobList Background job list for bulk operations.
 	 * @param LoggerInterface $logger Logger for error and info messages.
 	 * @param RetentionRowScanner|null $scanner Walks every table a retention decision can live in, for the list of held records.
 	 */
 	public function __construct(
-		MagicMapper $objectMapper,
-		AuditTrailMapper $auditTrailMapper,
+		MagicMapperInterface $objectMapper,
+		AuditTrailMapperInterface $auditTrailMapper,
 		IUserSession $userSession,
 		IJobList $jobList,
 		LoggerInterface $logger,

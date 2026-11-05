@@ -55,6 +55,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class RelatedRowPrefixedDatabaseTest extends TestCase {
 

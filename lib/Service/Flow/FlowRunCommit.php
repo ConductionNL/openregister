@@ -40,11 +40,12 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunStep;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSecrets;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -75,7 +76,7 @@ class FlowRunCommit {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The connection whose transaction is the critical section.
-	 * @param FlowRunMapper $runs The run rows (locked for update).
+	 * @param FlowRunMapperInterface $runs The run rows (locked for update).
 	 * @param FlowStreamMapper $streams The stream rows.
 	 * @param FlowClaimMapper $claims The claim rows.
 	 * @param FlowRunStepMapper $steps The step rows.
@@ -83,7 +84,7 @@ class FlowRunCommit {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowStreamMapper $streams,
 		private readonly FlowClaimMapper $claims,
 		private readonly FlowRunStepMapper $steps,
@@ -183,7 +184,7 @@ class FlowRunCommit {
 
 			// The run row: marking, place items, firings + 1, derived status.
 			$locked->setMarking($marking);
-			$locked->setPlaceItems($placeItems);
+			$locked->setPlaceItems($this->storedPlaceItems(run: $locked, placeItems: $placeItems));
 			$locked->setFirings(((int)($locked->getFirings() ?? 0) + 1));
 			$locked->setUpdated($now);
 
@@ -214,121 +215,45 @@ class FlowRunCommit {
 	}//end commitFiring()
 
 	/**
-	 * Park one stream: suspended with its wake time, claims released, run
-	 * status re-derived. The marking is untouched — the stream resumes ON the
-	 * transition that suspended it.
+	 * Stop one stream and re-derive the run's status. A parked stream is
+	 * suspended with its wake time and resumes ON the transition that
+	 * suspended it, so the marking is untouched; an ended stream takes its
+	 * terminal status (failed, stopped, dead-lettered). Either way the pass
+	 * releases the stream's claims.
 	 *
 	 * @param FlowRun $run The run (refreshed in place).
-	 * @param string $streamId The stream that raised the suspension.
-	 * @param DateTime|null $resumeAt Its wake time; null while waiting on a signal.
-	 * @param string $reason Why it parked.
-	 * @param array<int, string> $claimedPlaces The claims to release.
-	 * @param string $owner The pass token.
-	 * @param bool $enabled Whether any transition is enabled after this park.
-	 * @param string $path The stream's ordinal path, to mint its row when none exists yet.
-	 * @param string|null $parent The stream's parent id, for the same minting.
-	 * @param string|null $place The place holding the stream's token, for the same minting.
+	 * @param FlowStreamClosure $closure The stream, its new status, wake time,
+	 *                                   reason and what the pass releases.
 	 *
 	 * @return array<int, FlowStream> The streams now live.
 	 *
 	 * @throws Throwable Rolls back and rethrows on any failure.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The stream's descriptor rides along so the row can be minted in the same lock.
 	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function park(
-		FlowRun $run,
-		string $streamId,
-		?DateTime $resumeAt,
-		string $reason,
-		array $claimedPlaces,
-		string $owner,
-		bool $enabled,
-		string $path = FlowStream::ROOT_PATH,
-		?string $parent = null,
-		?string $place = null,
-	): array {
-		$uuid = (string)$run->getUuid();
-		$now = new DateTime();
-
-		$this->db->beginTransaction();
-		try {
-			$locked = $this->runs->lockByUuid(uuid: $uuid);
-			$stream = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: $streamId)
-				?? $this->mintStream(runUuid: $uuid, streamId: $streamId, path: $path, parent: $parent, place: $place, now: $now);
-			$stream->setStatus(FlowRun::STATUS_SUSPENDED);
-			$stream->setResumeAt($resumeAt);
-			$stream->setError($reason);
-			$stream->setUpdated($now);
-			$this->streams->update($stream);
-
-			$this->claims->release(runUuid: $uuid, places: $claimedPlaces);
-			$live = $this->streams->findByRun(runUuid: $uuid);
-			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $enabled, owner: $owner);
-			$locked->setUpdated($now);
-			$this->runs->update($locked);
-			$this->db->commit();
-		} catch (Throwable $e) {
-			$this->db->rollBack();
-			throw $e;
-		}//end try
-
-		$this->refresh(run: $run, from: $locked);
-
-		return $live;
-	}//end park()
-
-	/**
-	 * End a stream terminally (failed, stopped, dead-lettered) and re-derive.
-	 *
-	 * @param FlowRun $run The run (refreshed in place).
-	 * @param string $streamId The stream.
-	 * @param string $status One of FlowRun::TERMINAL.
-	 * @param string|null $error The reason, when any.
-	 * @param array<int, string> $claimedPlaces The claims to release.
-	 * @param string $owner The pass token.
-	 * @param bool $enabled Whether any transition is enabled afterwards.
-	 * @param string $path The stream's ordinal path, to mint its row when none exists yet.
-	 * @param string|null $parent The stream's parent id, for the same minting.
-	 * @param string|null $place The place holding the stream's token, for the same minting.
-	 *
-	 * @return array<int, FlowStream> The streams now live.
-	 *
-	 * @throws Throwable Rolls back and rethrows on any failure.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The stream's descriptor rides along so the row can be minted in the same lock.
-	 *
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
-	public function endStream(
-		FlowRun $run,
-		string $streamId,
-		string $status,
-		?string $error,
-		array $claimedPlaces,
-		string $owner,
-		bool $enabled,
-		string $path = FlowStream::ROOT_PATH,
-		?string $parent = null,
-		?string $place = null,
-	): array {
+	public function closeStream(FlowRun $run, FlowStreamClosure $closure): array {
 		$uuid = (string)$run->getUuid();
 		$now = new DateTime();
+		$ref = $closure->stream;
 
 		$this->db->beginTransaction();
 		try {
 			$locked = $this->runs->lockByUuid(uuid: $uuid);
-			$stream = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: $streamId)
-				?? $this->mintStream(runUuid: $uuid, streamId: $streamId, path: $path, parent: $parent, place: $place, now: $now);
-			$stream->setStatus($status);
-			$stream->setError($error);
+			$stream = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: $ref->streamId)
+				?? $this->mintStream(runUuid: $uuid, streamId: $ref->streamId, path: $ref->path, parent: $ref->parent, place: $ref->place, now: $now);
+			$stream->setStatus($closure->status);
+			if ($closure->parks() === true) {
+				$stream->setResumeAt($closure->resumeAt());
+			}
+
+			$stream->setError($closure->error());
 			$stream->setUpdated($now);
 			$this->streams->update($stream);
 
-			$this->claims->release(runUuid: $uuid, places: $claimedPlaces);
+			$this->claims->release(runUuid: $uuid, places: $closure->release->claimedPlaces);
 			$live = $this->streams->findByRun(runUuid: $uuid);
-			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $enabled, owner: $owner);
+			$this->applyDerivedStatus(run: $locked, streams: $live, enabled: $closure->release->enabled, owner: $closure->release->owner);
 			$locked->setUpdated($now);
 			$this->runs->update($locked);
 			$this->db->commit();
@@ -340,7 +265,7 @@ class FlowRunCommit {
 		$this->refresh(run: $run, from: $locked);
 
 		return $live;
-	}//end endStream()
+	}//end closeStream()
 
 	/**
 	 * The pass's last word on a run: release everything this pass still
@@ -687,6 +612,34 @@ class FlowRunCommit {
 		);
 		$this->steps->insert($step);
 	}//end insertStep()
+
+	/**
+	 * The per-place items as stored: a writeOnly action input held under the
+	 * run's inputsRef is redacted at `json.inputs.<name>` and wherever a string
+	 * equals it whole (a copy; four or more characters), so a resume reads the
+	 * subject, timestamps and counters it stored. The walk
+	 * carries on with the values this request still holds.
+	 *
+	 * @param FlowRun              $run        The locked run row.
+	 * @param array<string, mixed> $placeItems The per-place items.
+	 *
+	 * @return array<string, mixed> The items to store.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionSecrets is the request-scoped secret holder.
+	 */
+	private function storedPlaceItems(FlowRun $run, array $placeItems): array {
+		$ref = (($run->getContext() ?? [])[ObjectActionSecrets::CONTEXT_KEY] ?? null);
+
+		foreach ($placeItems as $place => $items) {
+			if (is_array($items) === true) {
+				$items = ObjectActionSecrets::redactItems(items: $items, ref: $ref);
+				// A whole-string copy a later step made, e.g. `json.code`.
+				$placeItems[$place] = ObjectActionSecrets::redactCopies(data: $items, ref: $ref);
+			}
+		}
+
+		return $placeItems;
+	}//end storedPlaceItems()
 
 	/**
 	 * Copy the committed row's values onto the caller's entity and reset its

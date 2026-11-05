@@ -284,7 +284,7 @@ export default {
 	watch: {
 		fileId: {
 			/**
-			 * @param newVal
+			 * @param {number} newVal
 			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
 			 */
 			handler(newVal) {

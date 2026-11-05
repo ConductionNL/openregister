@@ -36,7 +36,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -47,15 +48,28 @@ use OCP\IUserSession;
 
 class NotificationGroupPreferencesController extends Controller {
 	/**
+	 * The group manager.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request Request.
 	 * @param NotificationPreferencesInterface $preferenceService The three-layer preference resolver.
-	 * @param SchemaMapper $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
-	 * @param IGroupManager $groupManager Group resolver, and the authority on who is a Nextcloud administrator.
+	 * @param SchemaMapperInterface $schemaMapper Mapper used to enumerate the notifications a group may hold defaults for.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param ISubAdmin $subAdmin The authority on who administers one particular group.
-	 * @param IUserSession $userSession Current-user session.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One dependency per authority the endpoint consults.
 	 */
@@ -63,12 +77,14 @@ class NotificationGroupPreferencesController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly NotificationPreferencesInterface $preferenceService,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly IGroupManager $groupManager,
+		private readonly SchemaMapperInterface $schemaMapper,
+		ControllerSession $session,
 		private readonly ISubAdmin $subAdmin,
-		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+
+		$this->groupManager = $session->groupManager;
+		$this->userSession = $session->userSession;
 	}//end __construct()
 
 	/**

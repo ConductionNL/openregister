@@ -48,10 +48,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ProcessingLogService;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -103,14 +103,14 @@ class ReadHistoryService {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper   $auditTrails The audit trail, which holds the read rows.
-	 * @param SettingsService    $settings    Reads `retention.auditTrailsEnabled`.
+	 * @param AuditTrailMapperInterface   $auditTrails The audit trail, which holds the read rows.
+	 * @param SettingsServiceInterface    $settings    Reads `retention.auditTrailsEnabled`.
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrails,
-		private readonly SettingsService $settings,
+		private readonly AuditTrailMapperInterface $auditTrails,
+		private readonly SettingsServiceInterface $settings,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {

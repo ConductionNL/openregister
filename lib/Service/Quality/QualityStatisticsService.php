@@ -20,7 +20,7 @@
  * {@see \OCA\OpenRegister\Service\ObjectService::findAll()} /
  * {@see \OCA\OpenRegister\Service\ObjectService::count()} with RBAC and
  * multitenancy scoping on, mirroring
- * {@see \OCA\OpenRegister\Service\Quality\DuplicateDetectionService::loadCandidates()}
+ * {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::loadCandidates()}
  * (ADR-022, ADR-045).
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,12 +46,13 @@ namespace OCA\OpenRegister\Service\Quality;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 
 /**
  * Computes read-time quality statistics and serves the lowest-quality listing.
@@ -109,9 +110,9 @@ class QualityStatisticsService {
 	/**
 	 * Wire collaborators.
 	 *
-	 * @param ObjectService $objectService Object query path (RBAC + tenant scoped).
-	 * @param SchemaMapper $schemaMapper Schema lookup for the quality annotation.
-	 * @param RegisterMapper $registerMapper Register lookup — the boundary the schema resolves inside.
+	 * @param ObjectOperationsInterface $objectService Object query path (RBAC + tenant scoped).
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the quality annotation.
+	 * @param RegisterMapperInterface $registerMapper Register lookup — the boundary the schema resolves inside.
 	 * @param QualityScorer $scorer Reused for status() bucketing — never reimplemented.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -120,9 +121,9 @@ class QualityStatisticsService {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-1
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
+		private readonly ObjectOperationsInterface $objectService,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
 		private readonly QualityScorer $scorer,
 		private readonly LoggerInterface $logger,
 	) {

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
@@ -50,6 +50,23 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\Mcp\McpResourcesService
+ * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Audit\HistoryEntryRedactor
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealChangeMask
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -131,6 +148,19 @@ class ExplicitRevealTest extends TestCase {
 		$this->assertSame(self::MASK, ExplicitReveal::mask(value: self::BSN));
 		$this->assertSame('', ExplicitReveal::mask(value: ''));
 	}//end testTheMaskKeepsTheLastFour()
+
+	/**
+	 * A short value (a PIN, a house number) shows none of its characters:
+	 * its last four would be the whole value, or most of it.
+	 *
+	 * @return void
+	 */
+	public function testTheMaskOfAShortValueShowsNoCharacter(): void {
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '1234'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345'));
+		$this->assertSame(expected: '*****', actual: ExplicitReveal::mask(value: '12345678'));
+		$this->assertSame(expected: '*****6789', actual: ExplicitReveal::mask(value: '123456789'));
+	}//end testTheMaskOfAShortValueShowsNoCharacter()
 
 	/**
 	 * A read without a grant gets the mask and records nothing, admins included.

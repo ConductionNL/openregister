@@ -51,6 +51,13 @@ final class BulkSafeguardRun {
 	public bool $rbac = true;
 
 	/**
+	 * Whether writes keep to the caller's organisations; always true for a caller who is not an administrator.
+	 *
+	 * @var bool
+	 */
+	public bool $multitenancy = true;
+
+	/**
 	 * Whether rows are validated against their schema.
 	 *
 	 * @var bool
@@ -93,6 +100,13 @@ final class BulkSafeguardRun {
 	public ?Schema $rowSchema = null;
 
 	/**
+	 * The current row's register, when it resolves.
+	 *
+	 * @var Register|null
+	 */
+	public ?Register $rowRegister = null;
+
+	/**
 	 * The current row's uuid, when it names one.
 	 *
 	 * @var mixed
@@ -112,6 +126,16 @@ final class BulkSafeguardRun {
 	 * @var ObjectEntity|null
 	 */
 	public ?ObjectEntity $rowExisting = null;
+
+	/**
+	 * The soft-deleted stored object the current row's uuid names.
+	 *
+	 * The writer upserts on the uuid whether or not the stored row is deleted,
+	 * so such a row is written onto even though the row counts as a create.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	public ?ObjectEntity $rowDeleted = null;
 
 	/**
 	 * Start a pass for a caller.

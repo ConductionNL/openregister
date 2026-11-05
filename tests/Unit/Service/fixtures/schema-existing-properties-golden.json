@@ -1,0 +1,1212 @@
+{
+    "all at once": [
+        {
+            "property_name": "zeroMax",
+            "confidence": "low",
+            "usage_percentage": 49,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 1000,
+                    "description": "Objects have max length of 700 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 700,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "smallMax",
+            "confidence": "medium",
+            "usage_percentage": 79,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "max_length_too_small"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": 5,
+                    "recommended": 12,
+                    "description": "Schema maxLength (5) is smaller than observed max (12)"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "fmt",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_format"
+            ],
+            "suggestions": [
+                {
+                    "type": "format",
+                    "field": "format",
+                    "current": "none",
+                    "recommended": "uri",
+                    "description": "Objects appear to have 'uri' format pattern"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": "uri",
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "pat",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_pattern"
+            ],
+            "suggestions": [
+                {
+                    "type": "pattern",
+                    "field": "pattern",
+                    "current": "none",
+                    "recommended": "upper",
+                    "description": "Strings follow 'upper' pattern"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": "",
+            "string_patterns": [
+                "upper",
+                "digits"
+            ],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "stringButNumbers",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'string', recommended type is 'integer'",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": "integer",
+                    "description": "Analysis suggests type 'integer' but schema defines 'string'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "numMinFalse",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "numTight",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "number",
+            "current_type": "number",
+            "improvement_status": "existing",
+            "issues": [
+                "minimum_too_high",
+                "maximum_too_low"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": 5,
+                    "recommended": 1,
+                    "description": "Schema minimum (5) is higher than observed min (1)"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": 6,
+                    "recommended": 9,
+                    "description": "Schema maximum (6) is lower than observed max (9)"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "numUnset",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": -3,
+                    "description": "Observed range starts at -3"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": -3,
+                "max": 9
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "numAsString",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'integer', recommended type is 'string'",
+                "missing_max_length",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "integer",
+                    "recommended": "string",
+                    "description": "Analysis suggests type 'string' but schema defines 'integer'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 2,
+                    "description": "Observed range starts at 2"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 8,
+                    "description": "Observed range ends at 8"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": null,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 2,
+                "max": 8
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "nullable",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Property contains null values but is marked as required"
+            ],
+            "suggestions": [
+                {
+                    "type": "behavior",
+                    "field": "required",
+                    "current": "true",
+                    "recommended": "false",
+                    "description": "Some objects have null values for this property"
+                },
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Consider making this property nullable since data contains null values"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "stringNumWithLength",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'string', recommended type is 'integer'",
+                "missing_max_length",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": "integer",
+                    "description": "Analysis suggests type 'integer' but schema defines 'string'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 10,
+                    "description": "Objects have max length of 5 characters"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": 5,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        },
+        {
+            "property_name": "noMax",
+            "confidence": "medium",
+            "usage_percentage": 50,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "untyped",
+            "confidence": "high",
+            "usage_percentage": 95,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "undefined",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": null,
+                    "recommended": "string",
+                    "description": "Consider adding type 'string' based on analysis"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        },
+        {
+            "property_name": "wrongType",
+            "confidence": "high",
+            "usage_percentage": 80,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'integer', recommended type is 'string'",
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "integer",
+                    "recommended": "string",
+                    "description": "Analysis suggests type 'string' but schema defines 'integer'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": [
+                "string",
+                "integer"
+            ]
+        }
+    ],
+    "nothing in common": [],
+    "untyped": [
+        {
+            "property_name": "untyped",
+            "confidence": "high",
+            "usage_percentage": 95,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "undefined",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": null,
+                    "recommended": "string",
+                    "description": "Consider adding type 'string' based on analysis"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "wrongType": [
+        {
+            "property_name": "wrongType",
+            "confidence": "high",
+            "usage_percentage": 80,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'integer', recommended type is 'string'",
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "integer",
+                    "recommended": "string",
+                    "description": "Analysis suggests type 'string' but schema defines 'integer'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": [
+                "string",
+                "integer"
+            ]
+        }
+    ],
+    "noMax": [
+        {
+            "property_name": "noMax",
+            "confidence": "medium",
+            "usage_percentage": 50,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "zeroMax": [
+        {
+            "property_name": "zeroMax",
+            "confidence": "low",
+            "usage_percentage": 49,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_max_length"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 1000,
+                    "description": "Objects have max length of 700 characters"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 700,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "smallMax": [
+        {
+            "property_name": "smallMax",
+            "confidence": "medium",
+            "usage_percentage": 79,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "max_length_too_small"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": 5,
+                    "recommended": 12,
+                    "description": "Schema maxLength (5) is smaller than observed max (12)"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "bigMax": [],
+    "fmt": [
+        {
+            "property_name": "fmt",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_format"
+            ],
+            "suggestions": [
+                {
+                    "type": "format",
+                    "field": "format",
+                    "current": "none",
+                    "recommended": "uri",
+                    "description": "Objects appear to have 'uri' format pattern"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": "uri",
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "pat": [
+        {
+            "property_name": "pat",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_pattern"
+            ],
+            "suggestions": [
+                {
+                    "type": "pattern",
+                    "field": "pattern",
+                    "current": "none",
+                    "recommended": "upper",
+                    "description": "Strings follow 'upper' pattern"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": "",
+            "string_patterns": [
+                "upper",
+                "digits"
+            ],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "stringButNumbers": [
+        {
+            "property_name": "stringButNumbers",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'string', recommended type is 'integer'",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": "integer",
+                    "description": "Analysis suggests type 'integer' but schema defines 'string'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        }
+    ],
+    "numMinFalse": [
+        {
+            "property_name": "numMinFalse",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        }
+    ],
+    "numMinFalseFlat": [],
+    "numTight": [
+        {
+            "property_name": "numTight",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "number",
+            "current_type": "number",
+            "improvement_status": "existing",
+            "issues": [
+                "minimum_too_high",
+                "maximum_too_low"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": 5,
+                    "recommended": 1,
+                    "description": "Schema minimum (5) is higher than observed min (1)"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": 6,
+                    "recommended": 9,
+                    "description": "Schema maximum (6) is lower than observed max (9)"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        }
+    ],
+    "numLoose": [],
+    "numUnset": [
+        {
+            "property_name": "numUnset",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": -3,
+                    "description": "Observed range starts at -3"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": null,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": -3,
+                "max": 9
+            },
+            "type_variations": null
+        }
+    ],
+    "numNoRange": [],
+    "numAsString": [
+        {
+            "property_name": "numAsString",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "integer",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'integer', recommended type is 'string'",
+                "missing_max_length",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "integer",
+                    "recommended": "string",
+                    "description": "Analysis suggests type 'string' but schema defines 'integer'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 24,
+                    "description": "Objects have max length of 12 characters"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 2,
+                    "description": "Observed range starts at 2"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 8,
+                    "description": "Observed range ends at 8"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": null,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 2,
+                "max": 8
+            },
+            "type_variations": null
+        }
+    ],
+    "nullable": [
+        {
+            "property_name": "nullable",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "string",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Property contains null values but is marked as required"
+            ],
+            "suggestions": [
+                {
+                    "type": "behavior",
+                    "field": "required",
+                    "current": "true",
+                    "recommended": "false",
+                    "description": "Some objects have null values for this property"
+                },
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": [
+                        "string",
+                        "null"
+                    ],
+                    "description": "Consider making this property nullable since data contains null values"
+                }
+            ],
+            "examples": [
+                "a1",
+                "b22",
+                "c333"
+            ],
+            "max_length": 12,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": null,
+            "type_variations": null
+        }
+    ],
+    "enumish": [],
+    "clean": [],
+    "numEqual": [],
+    "maxEqual": [],
+    "emptyFormat": [],
+    "stringNumWithLength": [
+        {
+            "property_name": "stringNumWithLength",
+            "confidence": "medium",
+            "usage_percentage": 60,
+            "usage_count": 6,
+            "recommended_type": "integer",
+            "current_type": "string",
+            "improvement_status": "existing",
+            "issues": [
+                "Type mismatch: current type is 'string', recommended type is 'integer'",
+                "missing_max_length",
+                "missing_minimum",
+                "missing_maximum"
+            ],
+            "suggestions": [
+                {
+                    "type": "type",
+                    "field": "type",
+                    "current": "string",
+                    "recommended": "integer",
+                    "description": "Analysis suggests type 'integer' but schema defines 'string'"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maxLength",
+                    "current": "unlimited",
+                    "recommended": 10,
+                    "description": "Objects have max length of 5 characters"
+                },
+                {
+                    "type": "constraint",
+                    "field": "minimum",
+                    "current": "unlimited",
+                    "recommended": 1,
+                    "description": "Observed range starts at 1"
+                },
+                {
+                    "type": "constraint",
+                    "field": "maximum",
+                    "current": "unlimited",
+                    "recommended": 9,
+                    "description": "Observed range ends at 9"
+                }
+            ],
+            "examples": [
+                1,
+                2,
+                3
+            ],
+            "max_length": 5,
+            "min_length": 3,
+            "detected_format": null,
+            "string_patterns": [],
+            "numeric_range": {
+                "min": 1,
+                "max": 9
+            },
+            "type_variations": null
+        }
+    ]
+}

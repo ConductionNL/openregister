@@ -49,7 +49,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Delegation;
 
 use DateTime;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -73,13 +73,13 @@ class DelegationService {
 	 *
 	 * @param DelegationResolver $resolver      Decides whether the delegation is permitted.
 	 * @param IUserManager       $userManager   Resolves a uid to an account.
-	 * @param ObjectService      $objectService Owns the identity-switch primitive.
+	 * @param ObjectOperationsInterface      $objectService Owns the identity-switch primitive.
 	 * @param LoggerInterface    $logger        Records every delegation, taken or refused.
 	 */
 	public function __construct(
 		private readonly DelegationResolver $resolver,
 		private readonly IUserManager $userManager,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

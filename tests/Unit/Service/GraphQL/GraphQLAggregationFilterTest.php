@@ -32,13 +32,12 @@ declare(strict_types=1);
 
 namespace Unit\Service\GraphQL;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -104,7 +103,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 			$permissionHandler,
 			$this->createMock(PropertyRbacHandler::class),
 			$this->createMock(RelationHandler::class),
-			$this->createMock(AuditTrailMapper::class),
 			$registerMapper,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(TranslationHandler::class),

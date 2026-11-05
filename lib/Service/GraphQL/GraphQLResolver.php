@@ -29,21 +29,21 @@ use GraphQL\Deferred;
 use GraphQL\Error\Error;
 use InvalidArgumentException;
 use RuntimeException;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -87,12 +87,11 @@ class GraphQLResolver {
 	 * Constructor.
 	 *
 	 * @param GetObject $getObject Object finder
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param PermissionHandler $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param RelationHandler $relationHandler Relation handler
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
-	 * @param RegisterMapper $registerMapper Register mapper
+	 * @param RegisterMapperInterface $registerMapper Register mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
 	 * @param AggregationRunner $aggregationRunner Ad-hoc aggregation dispatcher.
@@ -102,12 +101,11 @@ class GraphQLResolver {
 	 */
 	public function __construct(
 		private readonly GetObject $getObject,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly RelationHandler $relationHandler,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly RegisterMapper $registerMapper,
+		private readonly RegisterMapperInterface $registerMapper,
 		private readonly LoggerInterface $logger,
 		private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly AggregationRunner $aggregationRunner,
@@ -147,12 +145,8 @@ class GraphQLResolver {
 				$schema
 			);
 
-			$data = $this->objectToArray(object: $object);
-
 			// Apply property-level RBAC filtering.
-			$data = $this->filterProperties(schema: $schema, data: $data);
-
-			return $data;
+			return $this->filterProperties(schema: $schema, item: $object);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			$schemaTitle = $schema->getTitle();
 			if ($schemaTitle === null || $schemaTitle === '') {
@@ -229,12 +223,8 @@ class GraphQLResolver {
 		// Convert results to arrays and apply property-level RBAC.
 		$filteredResults = [];
 		foreach ($results as $item) {
-			if ($item instanceof \OCA\OpenRegister\Db\ObjectEntity) {
-				$item = $this->objectToArray(object: $item);
-			}
-
-			if (is_array(value: $item) === true) {
-				$filteredResults[] = $this->filterProperties(schema: $schema, data: $item);
+			if ($item instanceof ObjectEntity === true || is_array(value: $item) === true) {
+				$filteredResults[] = $this->filterProperties(schema: $schema, item: $item);
 			}
 		}
 
@@ -574,30 +564,30 @@ class GraphQLResolver {
 
 		$id = $args['id'];
 		$input = $args['input'];
-
-		// Check property-level write RBAC.
-		$unauthorizedProps = $this->propertyRbac->getUnauthorizedProperties(
-			$schema,
-			[],
-			$input,
-			false
-		);
-
-		if (empty($unauthorizedProps) === false) {
-			throw new Error(
-				'Not authorized to write fields: ' . implode(separator: ', ', array: $unauthorizedProps),
-				null,
-				null,
-				[],
-				null,
-				null,
-				['code' => 'FIELD_FORBIDDEN']
-			);
-		}
-
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
+			// Check property-level write RBAC against the stored record.
+			$stored = $this->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
+			$unauthorizedProps = $this->propertyRbac->getUnauthorizedProperties(
+				$schema,
+				$stored->getMatchEnvelope(),
+				$input,
+				false
+			);
+
+			if (empty($unauthorizedProps) === false) {
+				throw new Error(
+					'Not authorized to write fields: ' . implode(separator: ', ', array: $unauthorizedProps),
+					null,
+					null,
+					[],
+					null,
+					null,
+					['code' => 'FIELD_FORBIDDEN']
+				);
+			}
+
 			$object = $this->objectService->saveObject(
 				$input,
 				[],
@@ -691,31 +681,6 @@ class GraphQLResolver {
 	}//end resolveRelation()
 
 	/**
-	 * Resolve the _auditTrail field for an object.
-	 *
-	 * @param string $objectUuid The object UUID
-	 * @param int $last Number of entries to return
-	 *
-	 * @return array<array<string, mixed>> The audit trail entries
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
-	 */
-	public function resolveAuditTrail(string $objectUuid, int $last = 10): array {
-		$entries = $this->auditTrailMapper->findAll(
-			$last,
-			0,
-			['object_uuid' => $objectUuid],
-			['created' => 'DESC']
-		);
-
-		return array_map(
-			fn ($entry) => $entry->jsonSerialize(),
-			$entries
-		);
-
-	}//end resolveAuditTrail()
-
-	/**
 	 * Resolve the _usedBy field for an object.
 	 *
 	 * @param string $objectUuid The object UUID
@@ -788,14 +753,25 @@ class GraphQLResolver {
 	/**
 	 * Apply property-level RBAC filtering to an object.
 	 *
-	 * @param Schema $schema The schema
-	 * @param array<string, mixed> $data The object data
+	 * A record is filtered with the rules reading its own metadata; a row that is
+	 * already an array is filtered as it is.
+	 *
+	 * @param Schema                             $schema The schema
+	 * @param ObjectEntity|array<string, mixed> $item   The record, or a row
 	 *
 	 * @return array<string, mixed> The filtered data
 	 */
-	private function filterProperties(Schema $schema, array $data): array {
+	private function filterProperties(Schema $schema, ObjectEntity|array $item): array {
 		// Apply property-level RBAC first (drops fields the caller can't read).
-		$data = $this->propertyRbac->filterReadableProperties($schema, $data);
+		$readable = fn (array $probe): array => $this->propertyRbac->filterReadableProperties($schema, $probe);
+		$data = $item;
+		if ($item instanceof ObjectEntity === true) {
+			$data = $item->filterAsRecord(data: $this->objectToArray(object: $item), filter: $readable);
+		}
+
+		if (is_array($item) === true) {
+			$data = $readable($item);
+		}
 
 		// Explicit-reveal values are shown only through the logged single-object reveal.
 		$data = ExplicitReveal::maskAll(schema: $schema, object: $data);

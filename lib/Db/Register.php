@@ -495,7 +495,14 @@ class Register extends Entity implements JsonSerializable, RegisterInterface {
 			$object['metadata'] = [];
 		}
 
-		foreach ($object as $key => $value) {
+		// The setter call resolves `Organisation` to setOrganisation() too, and every
+		// check on a register body reads the exact key, so only exact names are stored.
+		$exactKeys = array_filter(
+			$object,
+			fn (int|string $key): bool => is_string($key) === true && property_exists($this, $key) === true,
+			ARRAY_FILTER_USE_KEY
+		);
+		foreach ($exactKeys as $key => $value) {
 			if (in_array($key, $jsonFields) === true && $value === []) {
 				$value = null;
 			}

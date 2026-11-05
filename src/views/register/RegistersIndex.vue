@@ -340,6 +340,61 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 
+/**
+ * How the names cache changed in size, in words.
+ *
+ * @param {number} oldSize Entries before the warmup
+ * @param {number} newSize Entries after the warmup
+ * @return {string} The translated sentence
+ */
+function cacheChangeText(oldSize, newSize) {
+	if (newSize > oldSize) {
+		return t('openregister', 'Cache grew from {old} to {new} entries.', {
+			old: oldSize,
+			new: newSize,
+		})
+	}
+	if (newSize < oldSize) {
+		return t('openregister', 'Cache shrunk from {old} to {new} entries.', {
+			old: oldSize,
+			new: newSize,
+		})
+	}
+	return t('openregister', 'Cache stayed the same at {size} entries.', {
+		size: newSize,
+	})
+}
+
+/**
+ * The toast for a successful warmup, from the endpoint's answer.
+ *
+ * @param {object} data The warmup response body
+ * @return {string} The translated message
+ */
+function warmupSuccessText(data) {
+	const oldSize = data.old_cache?.distributed_name_cache_size || 0
+	const newSize = data.new_cache?.distributed_name_cache_size || 0
+	return t(
+		'openregister',
+		'Names cache warmed up successfully: {count} names loaded in {time}. {cache}',
+		{
+			count: data.loaded_names || 0,
+			time: data.execution_time || '0ms',
+			cache: cacheChangeText(oldSize, newSize),
+		},
+	)
+}
+
+/**
+ * The reason a request failed: the server's message, else the error's own.
+ *
+ * @param {object} error The axios error
+ * @return {string} The reason
+ */
+function failureText(error) {
+	return error.response?.data?.message || error.message || 'Unknown error'
+}
+
 export default {
 	name: 'RegistersIndex',
 	components: {
@@ -580,7 +635,7 @@ export default {
 		},
 
 		/**
-		 * @param page
+		 * @param {number} page
 		 * @spec exclude list-view pagination page-change handler
 		 */
 		onPageChanged(page) {
@@ -588,7 +643,7 @@ export default {
 		},
 
 		/**
-		 * @param pageSize
+		 * @param {number} pageSize
 		 * @spec exclude list-view pagination page-size-change handler
 		 */
 		onPageSizeChanged(pageSize) {
@@ -596,7 +651,7 @@ export default {
 		},
 
 		/**
-		 * @param ids
+		 * @param {Array<string|number>} ids
 		 * @spec exclude list-view row-selection state setter
 		 */
 		onSelect(ids) {
@@ -604,7 +659,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row CSS-class helper based on managing-configuration state
 		 */
 		getRowClass(register) {
@@ -615,7 +670,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view lookup helper; finds the configuration managing a register
 		 */
 		getManagingConfiguration(register) {
@@ -629,7 +684,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view display predicate; whether a register is externally managed
 		 */
 		isManagedByExternalConfig(register) {
@@ -643,7 +698,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view display predicate; whether a register is locally managed
 		 */
 		isManagedByLocalConfig(register) {
@@ -657,7 +712,7 @@ export default {
 		},
 
 		/**
-		 * @param schemas
+		 * @param {Array<object|string|number>} schemas
 		 * @spec exclude list-view form-control mapping helper; resolves schema ids to select options
 		 */
 		getSchemaSelectValue(schemas) {
@@ -673,7 +728,7 @@ export default {
 		},
 
 		/**
-		 * @param formData
+		 * @param {object} formData
 		 * @spec exclude list-view form-submit wiring; delegates to registerStore.saveRegister (registers-management contract)
 		 */
 		async onSaveRegister(formData) {
@@ -691,7 +746,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; router-navigates to the register detail page
 		 */
 		viewRegisterDetails(register) {
@@ -700,7 +755,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; fetches and downloads the register OAS as JSON (oas-validation contract)
 		 */
 		async downloadOas(register) {
@@ -725,7 +780,7 @@ export default {
 		},
 
 		/**
-		 * @param register
+		 * @param {object} register
 		 * @spec exclude list-view row-action; opens the register OAS in the Redoc viewer (oas-validation contract)
 		 */
 		viewOasDoc(register) {
@@ -775,63 +830,15 @@ export default {
 				)
 
 				if (response.data && response.data.success) {
-					const loadedCount = response.data.loaded_names || 0
-					const executionTime = response.data.execution_time || '0ms'
-					const oldCacheSize =
-						response.data.old_cache?.distributed_name_cache_size || 0
-					const newCacheSize =
-						response.data.new_cache?.distributed_name_cache_size || 0
-
-					let cacheMessage = ''
-					if (newCacheSize > oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache grew from {old} to {new} entries.',
-							{
-								old: oldCacheSize,
-								new: newCacheSize,
-							},
-						)
-					} else if (newCacheSize < oldCacheSize) {
-						cacheMessage = t(
-							'openregister',
-							'Cache shrunk from {old} to {new} entries.',
-							{
-								old: oldCacheSize,
-								new: newCacheSize,
-							},
-						)
-					} else {
-						cacheMessage = t(
-							'openregister',
-							'Cache stayed the same at {size} entries.',
-							{
-								size: newCacheSize,
-							},
-						)
-					}
-
-					showSuccess(
-						t(
-							'openregister',
-							'Names cache warmed up successfully: {count} names loaded in {time}. {cache}',
-							{
-								count: loadedCount,
-								time: executionTime,
-								cache: cacheMessage,
-							},
-						),
-					)
+					showSuccess(warmupSuccessText(response.data))
 				} else {
 					showSuccess(t('openregister', 'Names cache warmup completed'))
 				}
 			} catch (error) {
 				console.error('Error warming up names cache:', error)
-				const errorMessage =
-					error.response?.data?.message || error.message || 'Unknown error'
 				showError(
 					t('openregister', 'Failed to warmup names cache: {error}', {
-						error: errorMessage,
+						error: failureText(error),
 					}),
 				)
 			}

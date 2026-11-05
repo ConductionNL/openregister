@@ -79,7 +79,7 @@ export default {
 				generateUrl('/apps/openregister/api/user/me'),
 			)
 			this.canChangePassword = data?.backendCapabilities?.password ?? true
-		} catch (e) {
+		} catch {
 			// Default to showing the form.
 		}
 	},

@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -54,14 +54,14 @@ class TenantPurgeJob extends TimedJob {
 	 * Constructor
 	 *
 	 * @param ITimeFactory $time Time factory
-	 * @param OrganisationMapper $organisationMapper Organisation mapper
+	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
 	 * @param IAppConfig $appConfig App config
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly OrganisationMapper $organisationMapper,
+		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly TenantUsageMapper $tenantUsageMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

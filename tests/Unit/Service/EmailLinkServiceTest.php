@@ -29,6 +29,8 @@ use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -99,7 +101,7 @@ class EmailLinkServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
-		$this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 	}
 
 	public function testLinkEmailThrowsWhenMailDisabled(): void {
@@ -108,7 +110,7 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
-		$this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 	}
 
 	public function testLinkEmailReturnsExistingRowWhenAlreadyLinked(): void {
@@ -130,7 +132,7 @@ class EmailLinkServiceTest extends TestCase {
 		// insert() must NOT be called.
 		$this->mapper->expects($this->never())->method('insert');
 
-		$result = $this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$result = $this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 		$this->assertSame($existing, $result);
 	}
 
@@ -140,7 +142,7 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$this->service->linkEmail('uuid', 1, 1, 42, '0', '');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '0'))->withUid(''));
 	}
 
 	public function testUnlinkEmailThrowsWhenNotFound(): void {

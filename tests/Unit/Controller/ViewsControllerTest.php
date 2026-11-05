@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ViewsController;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
-use OCA\OpenRegister\Service\ViewPresentationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Service\ViewPresentationService;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -71,8 +71,8 @@ class ViewsControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 	}
 
-	private function createViewEntity(): \OCA\OpenRegister\Db\View {
-		$view = new \OCA\OpenRegister\Db\View();
+	private function createViewEntity(): \OCA\OpenRegister\Search\Db\View {
+		$view = new \OCA\OpenRegister\Search\Db\View();
 		$ref = new \ReflectionClass($view);
 		$prop = $ref->getProperty('id');
 		$prop->setAccessible(true);
@@ -297,7 +297,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -326,7 +326,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);
@@ -355,7 +355,7 @@ class ViewsControllerTest extends TestCase {
 
 		$views = [];
 		for ($i = 0; $i < 5; $i++) {
-			$v = new \OCA\OpenRegister\Db\View();
+			$v = new \OCA\OpenRegister\Search\Db\View();
 			$ref = new \ReflectionClass($v);
 			$prop = $ref->getProperty('id');
 			$prop->setAccessible(true);

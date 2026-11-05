@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Calculation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use PHPUnit\Framework\MockObject\MockObject;

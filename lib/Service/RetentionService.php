@@ -40,12 +40,12 @@ use DateInterval;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
@@ -73,7 +73,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
-class RetentionService {
+class RetentionService implements RetentionServiceInterface {
 
 	/**
 	 * Why a destruction rule refused an object (destructionRefusal()).
@@ -113,10 +113,10 @@ class RetentionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object mapper for queries
-	 * @param SchemaMapper $schemaMapper Schema mapper for lookups
-	 * @param RegisterMapper $registerMapper Register mapper for lookups
-	 * @param AuditTrailMapper $auditMapper Audit trail mapper
+	 * @param MagicMapperInterface $objectMapper Object mapper for queries
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
+	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
+	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
 	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
 	 * @param IAppConfig $appConfig App configuration
 	 * @param IUserSession $userSession Current user session
@@ -131,10 +131,10 @@ class RetentionService {
 	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,

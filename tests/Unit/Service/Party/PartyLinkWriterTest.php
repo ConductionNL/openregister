@@ -27,6 +27,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Party\PartyLinkWriter
+ * @uses \OCA\OpenRegister\Db\ContactLink
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Party\PartyDefinition
  */
 class PartyLinkWriterTest extends TestCase {
 

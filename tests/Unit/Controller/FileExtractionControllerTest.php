@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
 use OCA\OpenRegister\Controller\FileExtractionController;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -66,7 +67,7 @@ class FileExtractionControllerTest extends TestCase {
 		IGroupManager $groupManager,
 		IRootFolder $rootFolder,
 	): FileExtractionController {
-		return new FileExtractionController(
+		return FileExtractionControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->textExtractor,
@@ -244,6 +245,30 @@ class FileExtractionControllerTest extends TestCase {
 		$this->assertEquals(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
+	}
+
+	public function testIndexTreatsAnEmptySearchAsNone(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['limit', 50, 50],
+				['offset', 0, 0],
+				['search', null, ''],
+				['status', null, null],
+				['riskLevel', null, null],
+				['sort', 'extractedAt', 'extractedAt'],
+				['order', 'DESC', 'DESC'],
+			]);
+
+		$this->chunkMapper->expects($this->once())
+			->method('getFileSourceSummaries')
+			->with(50, 0, $this->identicalTo(null), 'extractedAt', 'DESC')
+			->willReturn([]);
+		$this->chunkMapper->expects($this->once())
+			->method('countFileSourceSummaries')
+			->with($this->identicalTo(null))
+			->willReturn(0);
+
+		$this->assertEquals(200, $this->controller->index()->getStatus());
 	}
 
 	public function testIndexWithSearchTerm(): void {

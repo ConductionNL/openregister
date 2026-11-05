@@ -21,7 +21,7 @@ use DOMDocument;
 use DOMXPath;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
-use OCA\OpenRegister\Service\Reporting\HtmlReportWriter;
+use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
 

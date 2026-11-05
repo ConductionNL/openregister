@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Vectorization\Handlers\VectorStorageHandler;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -185,7 +185,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	private function runBackfill(LoggerInterface $logger, IAppConfig $appConfig): array {
-		$storageHandler = $this->container->get(VectorStorageHandler::class);
+		$storageHandler = $this->container->get(VectorStorageHandlerInterface::class);
 		try {
 			return $this->runWarmupBackfill(
 				storageHandler: $storageHandler,
@@ -212,7 +212,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 * or nothing remaining) the cursor resets to 0 so future NULL rows — e.g.
 	 * after an embedding-dimension change — are swept again.
 	 *
-	 * @param VectorStorageHandler $storageHandler Vector storage handler
+	 * @param VectorStorageHandlerInterface $storageHandler Vector storage handler
 	 * @param IAppConfig $appConfig App config (cursor storage)
 	 *
 	 * @return array{converted: int, failed: int, last_id: int, remaining: int}
@@ -220,7 +220,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	private function runWarmupBackfill(
-		VectorStorageHandler $storageHandler,
+		VectorStorageHandlerInterface $storageHandler,
 		IAppConfig $appConfig,
 	): array {
 		$cursor = (int)$appConfig->getValueString(

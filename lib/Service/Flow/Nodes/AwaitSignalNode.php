@@ -59,7 +59,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
@@ -337,7 +337,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function decisionFrom(array $context): ?array {
-		$signal = ($context[FlowRunService::SIGNAL_CONTEXT_KEY] ?? null);
+		$signal = ($context[FlowRunServiceInterface::SIGNAL_CONTEXT_KEY] ?? null);
 		if (is_array($signal) === false) {
 			return null;
 		}

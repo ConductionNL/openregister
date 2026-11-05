@@ -761,6 +761,51 @@ const LINKED_ENTITY_SELECTIONS = [
 	},
 ]
 
+/**
+ * Whether a store list is missing or empty.
+ *
+ * @param {Array|null} list The list
+ * @return {boolean} True when there is nothing in it
+ */
+function isEmptyList(list) {
+	return !list || list.length === 0
+}
+
+/**
+ * A blank configuration with the defaults a new one starts from.
+ *
+ * @return {object} The configuration
+ */
+function newConfiguration() {
+	return {
+		title: '',
+		description: null,
+		type: 'default',
+		app: '',
+		version: '1.0.0', // Default semantic version
+		application: '',
+		owner: '',
+		organisation: null,
+		registers: [],
+		schemas: [],
+		objects: [],
+		sources: [],
+		agents: [],
+		views: [],
+		// Management tab defaults
+		sourceType: 'local',
+		isLocal: true, // New configurations are local by default
+		sourceUrl: null,
+		localVersion: '1.0.0',
+		remoteVersion: null,
+		autoUpdate: false,
+		notificationGroups: [],
+		githubRepo: null,
+		githubBranch: 'main',
+		githubPath: null,
+	}
+}
+
 export default {
 	name: 'EditConfiguration',
 	components: {
@@ -905,16 +950,10 @@ export default {
 	async created() {
 		// Organisations and applications are now hot-loaded at app startup
 		// Only refresh if somehow they're empty (shouldn't happen in normal flow)
-		if (
-			!organisationStore.organisationList
-			|| organisationStore.organisationList.length === 0
-		) {
+		if (isEmptyList(organisationStore.organisationList)) {
 			organisationStore.refreshOrganisationList()
 		}
-		if (
-			!applicationStore.applicationList
-			|| applicationStore.applicationList.length === 0
-		) {
+		if (isEmptyList(applicationStore.applicationList)) {
 			applicationStore.refreshApplicationList()
 		}
 
@@ -928,44 +967,8 @@ export default {
 
 		// Initialize configurationItem if it doesn't exist
 		if (!configurationStore.configurationItem) {
-			configurationStore.configurationItem = {
-				title: '',
-				description: null,
-				type: 'default',
-				app: '',
-				version: '1.0.0', // Default semantic version
-				application: '',
-				owner: '',
-				organisation: null,
-				registers: [],
-				schemas: [],
-				objects: [],
-				sources: [],
-				agents: [],
-				views: [],
-				// Management tab defaults
-				sourceType: 'local',
-				isLocal: true, // New configurations are local by default
-				sourceUrl: null,
-				localVersion: '1.0.0',
-				remoteVersion: null,
-				autoUpdate: false,
-				notificationGroups: [],
-				githubRepo: null,
-				githubBranch: 'main',
-				githubPath: null,
-			}
-			this.selectedRegisters = []
-			this.selectedSchemas = []
-			this.selectedObjects = []
-			this.selectedSources = []
-			this.selectedAgents = []
-			this.selectedViews = []
-			this.selectedApplication = null
-			this.selectedType = this.typeOptions[0] // 'default'
-			// Management tab defaults
-			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
-			this.selectedNotificationGroups = []
+			configurationStore.configurationItem = newConfiguration()
+			this.resetSelections()
 		} else {
 			// Load existing selections
 			this.loadExistingSelections()
@@ -974,7 +977,7 @@ export default {
 
 	methods: {
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		updateTitle(value) {
@@ -985,7 +988,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateDescription(value) {
@@ -996,7 +999,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateVersion(value) {
@@ -1007,7 +1010,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateType(value) {
@@ -1021,7 +1024,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApp(value) {
@@ -1032,7 +1035,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApplication(value) {
@@ -1047,7 +1050,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
 		 */
 		updateRegisters(value) {
@@ -1062,7 +1065,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
 		 */
 		updateSchemas(value) {
@@ -1077,7 +1080,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
 		 */
 		updateObjects(value) {
@@ -1092,7 +1095,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
 		 */
 		updateSources(value) {
@@ -1107,7 +1110,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
 		 */
 		updateAgents(value) {
@@ -1122,7 +1125,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
 		 */
 		updateViews(value) {
@@ -1137,7 +1140,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
 		 */
 		updateManagedApplications(value) {
@@ -1153,7 +1156,7 @@ export default {
 
 		// Management tab update methods
 		/**
-		 * @param value
+		 * @param {object|null} value
 		 * @spec exclude Reactive form-field setter binding source-type select to configurationItem; UI plumbing.
 		 */
 		updateSourceType(value) {
@@ -1167,7 +1170,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateSourceUrl(value) {
@@ -1178,7 +1181,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateLocalVersion(value) {
@@ -1189,7 +1192,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {boolean} value
 		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
 		 */
 		updateAutoUpdate(value) {
@@ -1200,7 +1203,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {Array<object>} value
 		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
 		 */
 		updateNotificationGroups(value) {
@@ -1214,7 +1217,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubRepo(value) {
@@ -1225,7 +1228,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubBranch(value) {
@@ -1236,7 +1239,7 @@ export default {
 		},
 
 		/**
-		 * @param value
+		 * @param {string} value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubPath(value) {
@@ -1244,6 +1247,26 @@ export default {
 				configurationStore.configurationItem = {}
 			}
 			configurationStore.configurationItem.githubPath = value
+		},
+
+		/**
+		 * Empty every selection for a new configuration.
+		 *
+		 * @spec exclude Resets local select-model refs when the modal opens on a new configuration; modal init plumbing.
+		 * @return {void}
+		 */
+		resetSelections() {
+			this.selectedRegisters = []
+			this.selectedSchemas = []
+			this.selectedObjects = []
+			this.selectedSources = []
+			this.selectedAgents = []
+			this.selectedViews = []
+			this.selectedApplication = null
+			this.selectedType = this.typeOptions[0] // 'default'
+			// Management tab defaults
+			this.selectedSourceType = this.sourceTypeOptions[0] // 'local'
+			this.selectedNotificationGroups = []
 		},
 
 		/**
@@ -1322,7 +1345,7 @@ export default {
 
 		// Search methods with debouncing
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchRegisters(query) {
@@ -1353,7 +1376,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSchemas(query) {
@@ -1382,7 +1405,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
 		 */
 		searchObjects(query) {
@@ -1430,7 +1453,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSources(query) {
@@ -1459,7 +1482,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchAgents(query) {
@@ -1488,7 +1511,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchViews(query) {
@@ -1517,7 +1540,7 @@ export default {
 		},
 
 		/**
-		 * @param query
+		 * @param {string} query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchApplications(query) {

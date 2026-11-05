@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * The schemas whose destruction date reads a date off another record.
@@ -44,11 +44,11 @@ class DependantRetentionIndex {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper                $schemaMapper Reads the schemas
+	 * @param SchemaMapperInterface                $schemaMapper Reads the schemas
 	 * @param ArchiveActionDateCalculator $calculator   Knows which methods follow a relation
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ArchiveActionDateCalculator $calculator,
 	) {
 	}//end __construct()

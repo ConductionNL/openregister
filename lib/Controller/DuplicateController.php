@@ -5,7 +5,7 @@
  *
  * HTTP entry point for the read-only MDM duplicate-candidate surface.
  * {@see index()} delegates entirely to
- * {@see \OCA\OpenRegister\Service\Quality\DuplicateDetectionService::findDuplicates()}
+ * {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::findDuplicates()}
  * — no dedup logic lives here, and the endpoint performs no merge or write of
  * any kind. Candidate pairs are RBAC- and tenant-scoped because
  * `DuplicateDetectionService` reads via `ObjectService::findAll`.
@@ -31,17 +31,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Quality\DismissedPairStore;
-use OCA\OpenRegister\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
+use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionServiceInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 
@@ -51,20 +50,18 @@ class DuplicateController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param DuplicateDetectionService $duplicates Duplicate-candidate detection service.
+	 * @param DuplicateDetectionServiceInterface $duplicates Duplicate-candidate detection service.
 	 * @param DismissedPairStore $dismissals Pairs a person has already ruled out.
-	 * @param ObjectService $objectService Object read path, to fingerprint a pair being dismissed.
-	 * @param IUserSession $userSession Current session, to name the reviewer.
-	 * @param IGroupManager $groupManager Group membership, to evaluate the declared `dismissGroups`.
+	 * @param ObjectOperationsInterface $objectService Object read path, to fingerprint a pair being dismissed.
+	 * @param ControllerSession $session Session, group manager and logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DuplicateDetectionService $duplicates,
+		private readonly DuplicateDetectionServiceInterface $duplicates,
 		private readonly DismissedPairStore $dismissals,
-		private readonly ObjectService $objectService,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly ObjectOperationsInterface $objectService,
+		private readonly ControllerSession $session,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -302,7 +299,7 @@ class DuplicateController extends Controller {
 			schemaSlug: $schema,
 			fingerprint: $fingerprint,
 			reason: $reason,
-			dismissedBy: ((string)($this->userSession->getUser()?->getUID() ?? ''))
+			dismissedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 
 		return new JSONResponse($row);
@@ -344,7 +341,7 @@ class DuplicateController extends Controller {
 			second: $objectB,
 			registerSlug: $register,
 			schemaSlug: $schema,
-			reversedBy: ((string)($this->userSession->getUser()?->getUID() ?? ''))
+			reversedBy: ((string)($this->session->userSession->getUser()?->getUID() ?? ''))
 		);
 
 		if ($row === null) {
@@ -376,7 +373,7 @@ class DuplicateController extends Controller {
 			return false;
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->session->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -386,7 +383,7 @@ class DuplicateController extends Controller {
 				continue;
 			}
 
-			if ($this->groupManager->isInGroup($user->getUID(), $group) === true) {
+			if ($this->session->groupManager->isInGroup($user->getUID(), $group) === true) {
 				return true;
 			}
 		}

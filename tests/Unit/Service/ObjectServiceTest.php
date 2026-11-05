@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -2483,6 +2483,7 @@ class ObjectServiceTest extends TestCase {
 		$publicSchema->setId(3);
 		$publicSchema->setAuthorization(['read' => ['public']]);
 		$this->setProperty('currentSchema', $publicSchema);
+		$this->objectEntityMapper->method('publicReadLiftsOrganisationFilter')->willReturn(true);
 
 		// The effective multitenancy passed to queryHandler should be false.
 		$this->queryHandler->expects($this->once())

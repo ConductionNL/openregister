@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261028180000</version>
+    <version>2.1.35-unstable.20261103220000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -176,7 +176,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
+		<job>OCA\OpenRegister\Search\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TaskScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
@@ -222,10 +222,14 @@ Vrij en open source onder de EUPL-licentie.
 				post-migration only. On a fresh install there are no old rows,
 				and the step is idempotent either way.
 			-->
+			<!-- Before reconciliation, so a moved job's old row is re-added under
+			     its new name rather than left beside a second, reconciled row. -->
+			<step>OCA\OpenRegister\Repair\RepointMovedBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RemoveRetiredCronJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<step>OCA\OpenRegister\Repair\MarkImplicitCrossOrganisationReadRules</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -493,6 +497,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning
@@ -502,11 +507,17 @@ Vrij en open source onder de EUPL-licentie.
 		     rollback tool, deliberately NOT a repair step. -->
 		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
+		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
 		<!-- Read-only report: which RBAC groups this instance declares, and whether
 		     anyone belongs to them. Provisioning guarantees a declared group EXISTS;
 		     it never adds members, so an unpopulated group still denies every
 		     caller. This is how that state becomes visible. -->
 		<command>OCA\OpenRegister\Command\DeclaredGroupsCommand</command>
+		<!-- Read-only report: stored rules conditioned on record metadata no record
+		     carries (such as _published). Saving such a rule is refused; this lists
+		     the ones stored before that. -->
+		<command>OCA\OpenRegister\Command\UnknownMetadataConditionsCommand</command>
 		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
 		     the per-register uniqueness fix is preventive only, so pre-existing
 		     shared rows still need splitting. Reports only unless applied. -->
@@ -520,7 +531,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\PruneRetiredSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\RelinkRegisterSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
-		<command>OCA\OpenRegister\Command\SearchIndexCommand</command>
+		<command>OCA\OpenRegister\Search\Command\SearchIndexCommand</command>
 		<!-- The sanctioned administrative purge. Every HTTP delete route refuses an
 		     archival record; this is the one path that can still destroy one, and it
 		     needs shell access plus an explicit force flag. -->

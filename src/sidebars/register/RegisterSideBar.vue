@@ -334,7 +334,7 @@ export default {
 			},
 
 			/**
-			 * @param value
+			 * @param {string} value
 			 * @spec exclude Tab-switch state mutator; proxies the active tab to the register store, no domain behavior.
 			 */
 			set(value) {

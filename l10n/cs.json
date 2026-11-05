@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Dokončit: {outcome}",
         "Could not load the task": "Úkol se nepodařilo načíst",
         "The task refused that action": "Úkol tuto akci odmítl",
-        "Store": "Obchod",
+        "Marketplace": "Obchod",
         "Install registers, schemas and flows that other organisations have published.": "Nainstalujte registry, schémata a toky zveřejněné jinými organizacemi.",
         "No such run": "Žádný takový běh",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Běh neexistuje, nebo ho nesmíte vidět. Smazáním toku se smažou i jeho běhy.",

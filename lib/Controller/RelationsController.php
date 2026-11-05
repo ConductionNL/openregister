@@ -22,16 +22,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Container\ContainerInterface;
@@ -47,6 +50,23 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor requires all service dependencies
  */
 class RelationsController extends Controller {
+
+	/**
+	 * The six built-in relation types, in response order. Each entry names the
+	 * injected service property, its app-availability guard method (or null),
+	 * the per-object lookup method, and whether the result is wrapped as
+	 * `{results, total}` (`counted`) or returned as the service shapes it.
+	 *
+	 * @var array<string,array{service:string,available:?string,method:string,counted:bool}>
+	 */
+	private const CORE_RELATIONS = [
+		'notes'    => ['service' => 'noteService', 'available' => null, 'method' => 'getNotesForObject', 'counted' => true],
+		'tasks'    => ['service' => 'taskService', 'available' => null, 'method' => 'getTasksForObject', 'counted' => true],
+		'emails'   => ['service' => 'emailService', 'available' => 'isMailAvailable', 'method' => 'getEmailsForObject', 'counted' => false],
+		'events'   => ['service' => 'calendarEventService', 'available' => null, 'method' => 'getEventsForObject', 'counted' => true],
+		'contacts' => ['service' => 'contactService', 'available' => null, 'method' => 'getContactsForObject', 'counted' => false],
+		'deck'     => ['service' => 'deckCardService', 'available' => 'isDeckAvailable', 'method' => 'getCardsForObject', 'counted' => false],
+	];
 
 	/**
 	 * Pluggable leaf integrations aggregated into `/relations` beyond the core
@@ -128,9 +148,9 @@ class RelationsController extends Controller {
 	/**
 	 * Object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Note service.
@@ -193,15 +213,7 @@ class RelationsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param ObjectService $objectService Object service
-	 * @param NoteService $noteService Note service
-	 * @param ObjectCalendarTasksInterface $taskService Task service
-	 * @param EmailService $emailService Email service
-	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service
-	 * @param ContactService $contactService Contact service
-	 * @param DeckCardService $deckCardService Deck card service
-	 * @param LoggerInterface $logger PSR-3 logger
-	 * @param ContainerInterface $container App container the leaf link services are resolved from
+	 * @param RelationsControllerServices $services The relations controller services.
 	 *
 	 * @return void
 	 *
@@ -210,27 +222,19 @@ class RelationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectService $objectService,
-		NoteService $noteService,
-		ObjectCalendarTasksInterface $taskService,
-		EmailService $emailService,
-		ObjectCalendarEventsInterface $calendarEventService,
-		ContactService $contactService,
-		DeckCardService $deckCardService,
-		LoggerInterface $logger,
-		ContainerInterface $container,
+		RelationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->objectService = $objectService;
-		$this->noteService = $noteService;
-		$this->taskService = $taskService;
-		$this->emailService = $emailService;
-		$this->calendarEventService = $calendarEventService;
-		$this->contactService = $contactService;
-		$this->deckCardService = $deckCardService;
-		$this->logger = $logger;
-		$this->container = $container;
+		$this->objectService = $services->records->objectService;
+		$this->noteService = $services->records->noteService;
+		$this->taskService = $services->records->taskService;
+		$this->emailService = $services->records->emailService;
+		$this->calendarEventService = $services->collaboration->calendarEventService;
+		$this->contactService = $services->collaboration->contactService;
+		$this->deckCardService = $services->collaboration->deckCardService;
+		$this->logger = $services->platform->logger;
+		$this->container = $services->platform->container;
 	}//end __construct()
 
 	/**
@@ -243,12 +247,15 @@ class RelationsController extends Controller {
 	 * @param string $schema The schema slug
 	 * @param string $id The object ID
 	 *
-	 * @return JSONResponse
+	 * @return JSONResponse 200 with the relations, 404 when the object does not exist,
+	 *                      409 when the identifier is a slug two objects of this register
+	 *                      and schema hold (#4037).
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		try {
@@ -275,6 +282,15 @@ class RelationsController extends Controller {
 			return new JSONResponse($relations);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
+		} catch (MultipleObjectsReturnedException $e) {
+			// Same body as ObjectsController: neither object is returned and the uuids stay in the log.
+			return new JSONResponse(
+				data: [
+					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+					'error' => 'ambiguous-identifier',
+				],
+				statusCode: Http::STATUS_CONFLICT
+			);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
@@ -297,138 +313,27 @@ class RelationsController extends Controller {
 	 *               lookups fail, the result also carries an `_errors` map
 	 *               keyed by type with `{message, exception}` entries.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-2
 	 */
 	private function gatherRelations(string $objectUuid, ?array $typesFilter): array {
 		$relations = [];
-		$errors = [];
-
-		// Notes.
-		if ($typesFilter === null || in_array('notes', $typesFilter) === true) {
-			try {
-				$notes = $this->noteService->getNotesForObject($objectUuid);
-				$relations['notes'] = ['results' => $notes, 'total' => count($notes)];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'notes', objectUuid: $objectUuid, exception: $e);
-				$errors['notes'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Tasks.
-		if ($typesFilter === null || in_array('tasks', $typesFilter) === true) {
-			try {
-				$tasks = $this->taskService->getTasksForObject($objectUuid);
-				$relations['tasks'] = ['results' => $tasks, 'total' => count($tasks)];
-			} catch (NoVtodoCalendarException $e) {
-				// A user who never opened Calendar or Tasks has no VTODO
-				// calendar, so has no tasks on this object either. That is a
-				// normal state, not a failure: logging it as an error wrote a
-				// level-3 line for every card such a user opened (#4165).
-				// TasksController::index() answers the same way.
-				$relations['tasks'] = ['results' => [], 'total' => 0];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'tasks', objectUuid: $objectUuid, exception: $e);
-				$errors['tasks'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Emails (only if Mail app is available).
-		if (($typesFilter === null || in_array('emails', $typesFilter) === true)
-			&& $this->emailService->isMailAvailable() === true
-		) {
-			try {
-				$relations['emails'] = $this->emailService->getEmailsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'emails', objectUuid: $objectUuid, exception: $e);
-				$errors['emails'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Calendar events.
-		if ($typesFilter === null || in_array('events', $typesFilter) === true) {
-			try {
-				$events = $this->calendarEventService->getEventsForObject($objectUuid);
-				$relations['events'] = ['results' => $events, 'total' => count($events)];
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'events', objectUuid: $objectUuid, exception: $e);
-				$errors['events'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Contacts.
-		if ($typesFilter === null || in_array('contacts', $typesFilter) === true) {
-			try {
-				$relations['contacts'] = $this->contactService->getContactsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'contacts', objectUuid: $objectUuid, exception: $e);
-				$errors['contacts'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Deck cards (only if Deck app is available).
-		if (($typesFilter === null || in_array('deck', $typesFilter) === true)
-			&& $this->deckCardService->isDeckAvailable() === true
-		) {
-			try {
-				$relations['deck'] = $this->deckCardService->getCardsForObject($objectUuid);
-			} catch (Exception $e) {
-				$this->logRelationFailure(type: 'deck', objectUuid: $objectUuid, exception: $e);
-				$errors['deck'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}
-		}
-
-		// Additional pluggable leaf integrations. Each owning app's link service
-		// is resolved lazily through the server container and guarded by its own
-		// availability check, so a missing/disabled app is silently skipped and
-		// never breaks the core relations response. Records arrive as plain
-		// arrays (url-stamped by the service where the app exposes a canonical
-		// deep-link route). See ADR-022 — apps consume OR leaf abstractions.
-		foreach (self::LEAF_INTEGRATIONS as $key => $spec) {
+		$errors    = [];
+		$lookups   = array_merge(array_keys(self::CORE_RELATIONS), array_keys(self::LEAF_INTEGRATIONS));
+		foreach ($lookups as $key) {
 			if ($typesFilter !== null && in_array($key, $typesFilter) === false) {
 				continue;
 			}
 
-			// Resolving the owning app's service is NOT part of the lookup, and
-			// failing to resolve it is not an error to report. An app that is
-			// absent or disabled makes the container throw, and folding that
-			// into $errors put an `_errors` key on a response where every
-			// requested lookup actually succeeded — the opposite of the
-			// "silently skipped, never breaks the core response" contract above,
-			// and visible to every consumer that walks the envelope's top-level
-			// keys. Only a failure of an AVAILABLE service's own call is an
-			// error worth surfacing.
-			try {
-				$service = $this->container->get($spec['class']);
-			} catch (\Throwable $e) {
-				continue;
+			$outcome = $this->relationOutcome(key: $key, objectUuid: $objectUuid);
+
+			if (array_key_exists('relation', $outcome) === true) {
+				$relations[$key] = $outcome['relation'];
 			}
 
-			// The container does not always THROW when it cannot supply a
-			// service — it can hand back null. Calling the availability probe on
-			// that produced "Call to a member function isXAvailable() on null"
-			// for every leaf, which then landed in $errors.
-			if (is_object($service) === false) {
-				continue;
+			if (isset($outcome['error']) === true) {
+				$errors[$key] = $outcome['error'];
 			}
-
-			try {
-				if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
-					continue;
-				}
-
-				$items = $service->{$spec['method']}($objectUuid);
-				$relations[$key] = ['results' => $items, 'total' => count($items)];
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
-					['type' => $key, 'uuid' => $objectUuid, 'error' => $e->getMessage()]
-				);
-				$errors[$key] = ['message' => $e->getMessage(), 'exception' => get_class($e)];
-			}//end try
-		}//end foreach
+		}
 
 		if (empty($errors) === false) {
 			$relations['_errors'] = $errors;
@@ -436,6 +341,104 @@ class RelationsController extends Controller {
 
 		return $relations;
 	}//end gatherRelations()
+
+	/**
+	 * Look up one relation type of an object, built in or leaf integration.
+	 *
+	 * @param string $key        The relation type.
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function relationOutcome(string $key, string $objectUuid): array {
+		if (isset(self::CORE_RELATIONS[$key]) === true) {
+			return $this->coreRelation(key: $key, objectUuid: $objectUuid);
+		}
+
+		return $this->leafRelation(key: $key, objectUuid: $objectUuid);
+	}//end relationOutcome()
+
+	/**
+	 * Look up one built-in relation type of an object.
+	 *
+	 * The Mail and Deck types are skipped when their app is not available. A user who
+	 * never opened Calendar or Tasks has no VTODO calendar, so has no tasks on this
+	 * object either: that is a normal state, not a failure (#4165), as in
+	 * TasksController::index().
+	 *
+	 * @param string $key        The relation type, a key of CORE_RELATIONS.
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return array{relation?: mixed, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function coreRelation(string $key, string $objectUuid): array {
+		$spec    = self::CORE_RELATIONS[$key];
+		$service = $this->{$spec['service']};
+		if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
+			return [];
+		}
+
+		try {
+			$items = $service->{$spec['method']}($objectUuid);
+			if ($spec['counted'] === true) {
+				$items = ['results' => $items, 'total' => count($items)];
+			}
+
+			return ['relation' => $items];
+		} catch (NoVtodoCalendarException $e) {
+			if ($key === 'tasks') {
+				return ['relation' => ['results' => [], 'total' => 0]];
+			}
+
+			$this->logRelationFailure(type: $key, objectUuid: $objectUuid, exception: $e);
+			return ['error' => ['message' => $e->getMessage(), 'exception' => get_class($e)]];
+		} catch (Exception $e) {
+			$this->logRelationFailure(type: $key, objectUuid: $objectUuid, exception: $e);
+			return ['error' => ['message' => $e->getMessage(), 'exception' => get_class($e)]];
+		}//end try
+	}//end coreRelation()
+
+	/**
+	 * Look up one pluggable leaf integration of an object (ADR-022).
+	 *
+	 * The owning app's link service is resolved lazily through the server container.
+	 * Resolving it is NOT part of the lookup: an app that is absent or disabled makes
+	 * the container throw or hand back null, and the type is then silently skipped, so
+	 * no `_errors` key appears on a response whose requested lookups all succeeded. Only
+	 * a failure of an AVAILABLE service's own call is an error worth surfacing.
+	 *
+	 * @param string $key        The relation type, a key of LEAF_INTEGRATIONS.
+	 * @param string $objectUuid The object UUID.
+	 *
+	 * @return array{relation?: array, error?: array{message: string, exception: string}} The outcome, empty when skipped.
+	 */
+	private function leafRelation(string $key, string $objectUuid): array {
+		$spec = self::LEAF_INTEGRATIONS[$key];
+		try {
+			$service = $this->container->get($spec['class']);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		if (is_object($service) === false) {
+			return [];
+		}
+
+		try {
+			if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
+				return [];
+			}
+
+			$items = $service->{$spec['method']}($objectUuid);
+			return ['relation' => ['results' => $items, 'total' => count($items)]];
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',
+				['type' => $key, 'uuid' => $objectUuid, 'error' => $e->getMessage()]
+			);
+			return ['error' => ['message' => $e->getMessage(), 'exception' => get_class($e)]];
+		}//end try
+	}//end leafRelation()
 
 	/**
 	 * Map of relation group keys (as returned by gatherRelations) to the

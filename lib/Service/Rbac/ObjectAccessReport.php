@@ -28,12 +28,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
  * Assembles an object's access set and its history.
@@ -57,17 +57,17 @@ class ObjectAccessReport {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper            $registerMapper   Register lookup.
-	 * @param SchemaMapper              $schemaMapper     Schema lookup.
-	 * @param AuditTrailMapper          $auditTrailMapper The trail the history is read from.
+	 * @param RegisterMapperInterface            $registerMapper   Register lookup.
+	 * @param SchemaMapperInterface              $schemaMapper     Schema lookup.
+	 * @param AuditTrailMapperInterface          $auditTrailMapper The trail the history is read from.
 	 * @param ObjectPermissionsResolver $holders          Reads the access set out of the rules.
 	 * @param ObjectAccessHistory       $history          Reconstructs the set at a past moment.
 	 * @param DenyEnforcementMode       $enforcement      The staging switch.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly ObjectPermissionsResolver $holders,
 		private readonly ObjectAccessHistory $history,
 		private readonly DenyEnforcementMode $enforcement,

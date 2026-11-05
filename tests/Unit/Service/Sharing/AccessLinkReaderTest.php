@@ -332,4 +332,25 @@ class AccessLinkReaderTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * The property rules read the record's own metadata, and the data keeps its own `@self`.
+	 *
+	 * @return void
+	 */
+	public function testThePropertyRulesReadTheRecordsOwnMetadata(): void {
+		$this->objects->method('find')->willReturn($this->object(['onderwerp' => 'Bezwaar', '@self' => ['organisation' => 'elders']]));
+		$this->timeline->method('forObject')->willReturn([]);
+		$seen = null;
+		$this->properties->method('filterReadableProperties')->willReturnCallback(
+			static function (Schema $schema, array $object) use (&$seen): array {
+				$seen = $object;
+				return $object;
+			}
+		);
+
+		$this->reader->read(link: $this->link());
+
+		$this->assertSame('gemeente', $seen['@self']['organisation'] ?? null);
+	}//end testThePropertyRulesReadTheRecordsOwnMetadata()
 }

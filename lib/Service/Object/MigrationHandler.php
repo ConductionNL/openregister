@@ -20,10 +20,12 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -42,15 +44,17 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One collaborator per migration step, plus the slug re-check (#4037).
  */
 class MigrationHandler {
 	/**
 	 * Constructor for MigrationHandler.
 	 *
-	 * @param MagicMapper $objectMapper Mapper for object entities.
-	 * @param SchemaMapper $schemaMapper Mapper for schema entities.
-	 * @param RegisterMapper $registerMapper Mapper for register entities.
-	 * @param SaveObject $saveHandler Handler for saving objects.
+	 * @param MagicMapperInterface $objectMapper Mapper for object entities.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
+	 * @param RegisterMapperInterface $registerMapper Mapper for register entities.
+	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -58,10 +62,10 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SaveObject $saveHandler,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SaveObjectInterface $saveHandler,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
 		private readonly LoggerInterface $logger,
@@ -115,7 +119,8 @@ class MigrationHandler {
 		foreach ($sourceObjects as $sourceObject) {
 			$remainingObjectIds = array_filter(
 				$remainingObjectIds,
-				fn ($id) => $id !== $sourceObject->getUuid() && $id !== $sourceObject->getId()
+				// Compare as strings: ids arrive from the request as strings, getId() is an int.
+				fn ($id) => (string) $id !== $sourceObject->getUuid() && (string) $id !== (string) $sourceObject->getId()
 			);
 			$this->migrateOne(sourceObject: $sourceObject, run: $run);
 		}
@@ -188,6 +193,7 @@ class MigrationHandler {
 			$sourceObject->setRegister($run->target->registerEntity->getId());
 			$sourceObject->setSchema($run->target->schemaEntity->getId());
 			$sourceObject->setObject($mappedData);
+			$this->keepSlugFreeAtTarget(sourceObject: $sourceObject, run: $run);
 			$savedObject = $this->objectMapper->update($sourceObject);
 
 			$objectDetail['success'] = true;
@@ -202,10 +208,30 @@ class MigrationHandler {
 	}//end migrateOne()
 
 	/**
+	 * Re-check the slug an object carries against the target's live holders (#4037).
+	 *
+	 * The slug was decided in the source; the target may already have a live holder of it.
+	 *
+	 * @param ObjectEntity $sourceObject The object, already pointing at the target.
+	 * @param MigrationRun $run          The migration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	private function keepSlugFreeAtTarget(ObjectEntity $sourceObject, MigrationRun $run): void {
+		$register = $run->target->registerEntity;
+		$schema = $run->target->schemaEntity;
+		if ($register instanceof Register && $schema instanceof Schema) {
+			$sourceObject->setSlug($this->objectMapper->slugForMove(entity: $sourceObject, register: $register, schema: $schema));
+		}
+	}//end keepSlugFreeAtTarget()
+
+	/**
 	 * Refuse an object that does not live in the requested source register and schema.
 	 *
-	 * The stored register and schema are compared, as integers, with the values as
-	 * requested, so a source named by slug never matches.
+	 * The stored register and schema are compared with the ids of the loaded source
+	 * entities, so a source named by slug matches too.
 	 *
 	 * @param ObjectEntity $sourceObject The object as loaded.
 	 * @param MigrationRun $run          The migration.
@@ -220,7 +246,9 @@ class MigrationHandler {
 		$source = $run->source;
 		$actualRegister = $sourceObject->getRegister();
 		$actualSchema = $sourceObject->getSchema();
-		if ((int)$actualRegister === (int)$source->register && (int)$actualSchema === (int)$source->schema) {
+		if ((int)$actualRegister === (int)$source->registerEntity->getId()
+			&& (int)$actualSchema === (int)$source->schemaEntity->getId()
+		) {
 			return;
 		}
 

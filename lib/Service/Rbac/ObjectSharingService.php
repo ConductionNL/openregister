@@ -115,14 +115,7 @@ class ObjectSharingService {
 	 *
 	 * @var array<string, int>
 	 */
-	private const LISTABLE_TYPES = [
-		'user' => IShare::TYPE_USER,
-		'group' => IShare::TYPE_GROUP,
-		'remote' => IShare::TYPE_REMOTE,
-		'remote_group' => IShare::TYPE_REMOTE_GROUP,
-		'link' => IShare::TYPE_LINK,
-		'email' => IShare::TYPE_EMAIL,
-	];
+	private const LISTABLE_TYPES = ObjectShareReader::LISTABLE_TYPES;
 
 	/**
 	 * Constructor.
@@ -139,6 +132,8 @@ class ObjectSharingService {
 	 * @param GrantManageGuard $grantManage Who may manage a record's grants: the owner, an administrator,
 	 *                                      or a holder of the special right `grant_manage`.
 	 * @param GrantChangeAuditor|null $auditor Writes an audit-trail entry for every grant and revoke. Null only in legacy fixtures.
+	 * @param ObjectShareReader|null $shareReader Reads the shares on the object folder. Null only in legacy fixtures.
+	 * @param ShareTimeWriter|null $shareTimes Dates a new share in the past. Null only in legacy fixtures.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named in the
 	 *                                                 class docblock, and the guard is the tenth.
@@ -155,8 +150,19 @@ class ObjectSharingService {
 		private readonly InheritedGrantLister $inheritedGrants,
 		private readonly GrantManageGuard $grantManage,
 		private readonly ?GrantChangeAuditor $auditor = null,
+		private readonly ?ObjectShareReader $shareReader = null,
+		private readonly ?ShareTimeWriter $shareTimes = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The guard-free reader of the shares on an object folder.
+	 *
+	 * @return ObjectShareReader The injected reader, or one over this service's own share surface.
+	 */
+	private function shareReader(): ObjectShareReader {
+		return ($this->shareReader ?? new ObjectShareReader($this->folders, $this->shareManager, $this->logger));
+	}//end shareReader()
 
 	/**
 	 * Set one object's scope, as its owner or an administrator.
@@ -220,53 +226,38 @@ class ObjectSharingService {
 	public function listGrants(ObjectEntity $object): array {
 		$this->requireMayManageGrants(object: $object);
 
-		$folder = $this->resolveFolder(object: $object);
-		if ($folder === null) {
-			return [];
-		}
-
 		// `getSharesBy()` returns shares CREATED BY the uid it is given, so
 		// listing as the caller alone would show an administrator nothing on
 		// somebody else's object — the grants were made by the owner. Ask for
 		// both, deduplicated by share id.
-		$sharers = array_values(
-			array_unique(
-				array_filter([$object->getOwner(), $this->callerUid()])
-			)
+		$shares = $this->shareReader()->sharesOn(
+			object: $object,
+			sharers: [(string)$object->getOwner(), (string)$this->callerUid()]
 		);
 
 		$grants = [];
-		foreach ($sharers as $sharer) {
-			foreach (self::LISTABLE_TYPES as $label => $shareType) {
-				try {
-					$shares = $this->shareManager->getSharesBy($sharer, $shareType, $folder, false, -1);
-				} catch (Throwable $e) {
-					continue;
-				}
-
-				foreach ($shares as $share) {
-					// The provider-prefixed form (`ocinternal:7`) is what
-					// getShareById() accepts; getId() is the bare number and does
-					// NOT round-trip. Returning the wrong one made revoke fail
-					// with "No such grant".
-					$grants[$share->getFullId()] = [
-						'id' => $share->getFullId(),
-						'type' => $label,
-						'sharedWith' => $share->getSharedWith(),
-						'permissions' => $share->getPermissions(),
-						'expiration' => $share->getExpirationDate()?->format('c'),
-						// Ledger row 13.41: an access review can only be
-						// FINISHED when every grant is either explained or
-						// explicitly local. The provenance answers the first
-						// half; this answers the second, beside it and in the
-						// same row rather than in a second call nobody makes.
-						'inherited' => false,
-						'inheritable' => $this->grantResolver->isInheritable(
-							(string)$object->getUuid()
-						),
-					];
-				}//end foreach
-			}//end foreach
+		foreach ($shares as $fullId => $found) {
+			$share = $found['share'];
+			// The provider-prefixed form (`ocinternal:7`) is what
+			// getShareById() accepts; getId() is the bare number and does
+			// NOT round-trip. Returning the wrong one made revoke fail
+			// with "No such grant".
+			$grants[$fullId] = [
+				'id' => $fullId,
+				'type' => $found['type'],
+				'sharedWith' => $share->getSharedWith(),
+				'permissions' => $share->getPermissions(),
+				'expiration' => $share->getExpirationDate()?->format('c'),
+				// Ledger row 13.41: an access review can only be
+				// FINISHED when every grant is either explained or
+				// explicitly local. The provenance answers the first
+				// half; this answers the second, beside it and in the
+				// same row rather than in a second call nobody makes.
+				'inherited' => false,
+				'inheritable' => $this->grantResolver->isInheritable(
+					(string)$object->getUuid()
+				),
+			];
 		}//end foreach
 
 		return array_merge(
@@ -289,6 +280,9 @@ class ObjectSharingService {
 	 *                        attribute bag. Core's bitmask has no room for a verb it does
 	 *                        not define, so ADR-010 puts them here rather than widening
 	 *                        the RBAC vocabulary.
+	 * @param DateTime|null $expiresAt When the grant ends; null for no end.
+	 * @param DateTime|null $sharedAt The share time to record; null for now. Core stamps a new
+	 *                                share with the current time, so it is written after creation.
 	 *
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
@@ -296,6 +290,7 @@ class ObjectSharingService {
 	 * @return array<string, mixed> The created grant.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
 	public function grant(
 		ObjectEntity $object,
@@ -303,6 +298,8 @@ class ObjectSharingService {
 		string $shareWith,
 		int $permissions = 1,
 		array $verbs = [],
+		?DateTime $expiresAt = null,
+		?DateTime $sharedAt = null,
 	): array {
 		$admittedAs = $this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
 
@@ -334,8 +331,15 @@ class ObjectSharingService {
 		$share->setPermissions($this->withoutReshare(permissions: $permissions));
 
 		$this->applyVerbs(share: $share, verbs: $verbs);
+		if ($expiresAt !== null) {
+			$share->setExpirationDate($expiresAt);
+		}
 
 		$created = $this->shareManager->createShare($share);
+		if ($sharedAt !== null && $this->shareTimes !== null) {
+			$this->shareTimes->stamp(shareId: (int)$created->getId(), moment: $sharedAt);
+			$created->setShareTime($sharedAt);
+		}
 
 		// The caller may re-decide access within this same request.
 		$this->grantResolver->forget();
@@ -352,7 +356,12 @@ class ObjectSharingService {
 		// to be able to answer, whoever the caller was admitted as.
 		$this->auditor?->recordGrant(object: $object, grant: $grant, admittedAs: $admittedAs);
 
-		return $grant;
+		// The created share's identity, so a caller that keeps the grant can later tell it from another share.
+		return $grant + [
+			'nodeId' => (int)$created->getNodeId(),
+			'sharedBy' => (string)$created->getSharedBy(),
+			'shareType' => (int)$created->getShareType(),
+		];
 	}//end grant()
 
 	/**

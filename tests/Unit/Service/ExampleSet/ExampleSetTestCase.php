@@ -23,10 +23,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
@@ -34,7 +36,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards;
@@ -57,6 +59,7 @@ use OCA\OpenRegister\Service\Timeline\TimelineKindService;
 use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkStore;
 use OCA\OpenRegister\Db\TalkLink;
 use OCA\OpenRegister\Db\TalkLinkMapper;
@@ -65,6 +68,8 @@ use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -81,9 +86,13 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\TaskAudit;
+use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
@@ -93,12 +102,13 @@ use OCP\Comments\NotFoundException as CommentNotFoundException;
 use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
@@ -196,6 +206,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, string> The uuids of the flows published, in order. */
 	protected array $publishedFlows = [];
 
+	/** @var array<int, array{uuid: string, enabled: bool, published: bool}> Each flow update, as it was saved. */
+	protected array $flowUpdates = [];
+
 	/** @var array<string, array<int, array<string, mixed>>> The Deck rows written, by kind (boards, stacks, labels, cards), keyed by id. */
 	protected array $deck = ['boards' => [], 'stacks' => [], 'labels' => [], 'cards' => []];
 
@@ -223,6 +236,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, EmailLink> The email links, by id. */
 	protected array $emailLinks = [];
 
+	/** @var array<string, object> Services a test adds to the container, by id. */
+	protected array $services = [];
+
 	/** @var array<int, string> The timeline kinds the fake knows. */
 	protected array $timelineKinds = ['statuswijziging', 'contactmoment'];
 
@@ -249,6 +265,9 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	/** @var array<string, FlowRun> The stored flow runs, by uuid. */
 	protected array $flowRuns = [];
+
+	/** @var array<int, TaskAudit> The task audit entries the set appended, in order. */
+	protected array $taskAudits = [];
 
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
@@ -280,11 +299,11 @@ abstract class ExampleSetTestCase extends TestCase {
 		$container       = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
 			FileService::class        => $this->fileService(),
-			OrganisationMapper::class => $this->organisationMapper(),
-			TaskService::class        => $this->taskService(),
+			OrganisationMapperInterface::class => $this->organisationMapper(),
+			TaskServiceInterface::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
-			ViewMapper::class         => $this->viewMapper(),
+			ViewMapperInterface::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
@@ -294,12 +313,13 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowMapper::class         => $this->flowMapper(),
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
-			FlowRunMapper::class      => $this->flowRunMapper(),
+			FlowRunMapperInterface::class      => $this->flowRunMapper(),
+			TaskAuditMapper::class    => $this->taskAuditMapper(),
 			ExampleSetDeckStore::class => $this->deckStore(),
 			ExampleSetCollectivesStore::class => $this->collectivesStore(),
 			ExampleSetTalkStore::class => $this->talkStore(),
 			TalkLinkMapper::class     => $this->talkLinkMapper(),
-			AuditTrailMapper::class   => $this->auditTrailMapper(),
+			AuditTrailMapperInterface::class => $this->auditTrailMapper(),
 			TimelineEntryMapper::class => $this->timelineEntryMapper(),
 			TimelineKindService::class => $this->timelineKindService(),
 			DeckLinkMapper::class     => $this->deckLinkMapper(),
@@ -309,7 +329,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			CasePlanService::class    => $this->casePlans(),
 			CaseItemMapper::class     => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
-			OrganisationService::class => $this->organisationService(),
+			OrganisationServiceInterface::class => $this->organisationService(),
+			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -384,7 +405,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -415,7 +438,9 @@ abstract class ExampleSetTestCase extends TestCase {
 				talkConversations: new ExampleSetTalkConversations(container: $container),
 				auditEntries: new ExampleSetAuditEntries(container: $container),
 				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container)
+				emailLinks: new ExampleSetEmailLinks(container: $container),
+				accessLinks: new ExampleSetAccessLinks(container: $container),
+				grants: new ExampleSetGrants(container: $container)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -476,7 +501,7 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	private function taskService(): TaskService {
 		$service = $this->createMock(TaskService::class);
-		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+		$service->method('import')->willReturnCallback(function (array $data, ?string $actor, ?callable $blocker = null, ?\DateTime $at = null): Task {
 			foreach ($this->engineTasks as $held) {
 				if ($held->getTaskKey() === (string) $data['key']) {
 					// The task key is unique in the engine (or_tasks_key_uniq).
@@ -484,14 +509,17 @@ abstract class ExampleSetTestCase extends TestCase {
 				}
 			}
 
-			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
+			$this->taskImports[] = ['data' => $data, 'actor' => $actor, 'at' => $at];
 			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
 			$task  = new Task();
 			$task->setUuid('task-'.count($this->taskImports));
+			$task->setId(count($this->taskImports));
 			$task->setTaskKey((string) $data['key']);
 			$task->setTitle((string) $data['title']);
 			$task->setObjectUuid((string) $data['objectUuid']);
 			$task->setAssignee(isset($data['assignee']) === true ? (string) $data['assignee'] : null);
+			$task->setRunUuid(isset($data['runUuid']) === true ? (string) $data['runUuid'] : null);
+			$task->setNodeId(isset($data['nodeId']) === true ? (string) $data['nodeId'] : null);
 			$task->setState($state);
 			$task->setIsTerminal(TaskState::isTerminal(state: $state));
 			$this->engineTasks[(string) $task->getUuid()] = $task;
@@ -593,6 +621,15 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function flowMapper(): FlowMapper {
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('update')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flowUpdates[] = [
+				'uuid'      => (string) $flow->getUuid(),
+				'enabled'   => (bool) $flow->getEnabled(),
+				'published' => in_array((string) $flow->getUuid(), $this->publishedFlows, true),
+			];
 			$this->flows[(string) $flow->getUuid()] = $flow;
 			return $flow;
 		});
@@ -1060,6 +1097,28 @@ abstract class ExampleSetTestCase extends TestCase {
 			$this->flowRuns[(string) $run->getUuid()] = $run;
 			return $run;
 		});
+		$mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid): FlowRun => ($this->flowRuns[$uuid] ?? throw new DoesNotExistException('no run '.$uuid))
+		);
+		$mapper->method('update')->willReturnCallback(function (FlowRun $run): FlowRun {
+			$this->flowRuns[(string) $run->getUuid()] = $run;
+			return $run;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A task audit mapper that appends to $taskAudits.
+	 *
+	 * @return TaskAuditMapper
+	 */
+	private function taskAuditMapper(): TaskAuditMapper {
+		$mapper = $this->createMock(TaskAuditMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (TaskAudit $entry): TaskAudit {
+			$this->taskAudits[] = $entry;
+			return $entry;
+		});
 
 		return $mapper;
 	}
@@ -1222,6 +1281,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
+			$object->setOwner($this->store->owners[$uuid] ?? null);
 			return $object;
 		});
 
@@ -1249,6 +1309,21 @@ abstract class ExampleSetTestCase extends TestCase {
 		);
 
 		return $links;
+	}
+
+	/**
+	 * A stored moment as the set's local wall time, `Y-m-d H:i` in Amsterdam.
+	 *
+	 * @param \DateTimeInterface|null $moment The moment.
+	 *
+	 * @return string|null
+	 */
+	protected function local(?\DateTimeInterface $moment): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		return DateTimeImmutable::createFromInterface($moment)->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i');
 	}
 
 	/**

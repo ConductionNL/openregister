@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -74,12 +74,12 @@ class AppImportJobRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param AuditTrailMapper $auditTrailMapper Holds the request-scoped stamp and counts stamped rows.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Holds the request-scoped stamp and counts stamped rows.
 	 * @param IAppConfig       $appConfig        OpenRegister's app config, where the job lists live.
 	 * @param LoggerInterface  $logger           Server-side diagnostics.
 	 */
 	public function __construct(
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

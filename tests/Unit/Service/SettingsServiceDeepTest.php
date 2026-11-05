@@ -534,63 +534,6 @@ class SettingsServiceDeepTest extends TestCase {
 	}//end testMassValidateObjectsBatchSizeTooLarge()
 
 	// =========================================================================
-	// createBatchJobs (private)
-	// =========================================================================
-
-	/**
-	 * Test createBatchJobs creates correct batches
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobs(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 250, 100);
-
-		$this->assertCount(3, $result);
-
-		$this->assertEquals(1, $result[0]['batchNumber']);
-		$this->assertEquals(0, $result[0]['offset']);
-		$this->assertEquals(100, $result[0]['limit']);
-
-		$this->assertEquals(2, $result[1]['batchNumber']);
-		$this->assertEquals(100, $result[1]['offset']);
-		$this->assertEquals(100, $result[1]['limit']);
-
-		$this->assertEquals(3, $result[2]['batchNumber']);
-		$this->assertEquals(200, $result[2]['offset']);
-		$this->assertEquals(50, $result[2]['limit']);
-
-	}//end testCreateBatchJobs()
-
-	/**
-	 * Test createBatchJobs with zero objects
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobsZero(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 0, 100);
-		$this->assertCount(0, $result);
-
-	}//end testCreateBatchJobsZero()
-
-	/**
-	 * Test createBatchJobs with exact batch size
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobsExact(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 100, 100);
-		$this->assertCount(1, $result);
-		$this->assertEquals(100, $result[0]['limit']);
-
-	}//end testCreateBatchJobsExact()
-
-	// =========================================================================
 	// Handler delegation methods
 	// =========================================================================
 
