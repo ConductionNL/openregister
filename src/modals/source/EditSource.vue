@@ -183,6 +183,59 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import DatabaseCheckOutline from 'vue-material-design-icons/DatabaseCheckOutline.vue'
 import DatabaseImportOutline from 'vue-material-design-icons/DatabaseImportOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
+import { freshState } from '../../services/initialState.js'
+
+/**
+ * The state every instance of this component starts from.
+ */
+const INITIAL_STATE = {
+	sourceItem: {
+		title: '',
+		description: '',
+		databaseUrl: '',
+	},
+
+	connection: {
+		host: '',
+		port: '',
+		dbname: '',
+		user: '',
+		credential: '',
+		path: '',
+		writable: false,
+	},
+
+	typeOptions: {
+		clearable: false,
+		options: [
+			{ label: 'Internal', id: 'internal' },
+			{ label: 'MongoDB', id: 'mongodb' },
+			{ label: 'Database (virtual register)', id: 'database' },
+		],
+
+		value: { label: 'Internal', id: 'internal' },
+	},
+
+	driverOptions: {
+		clearable: false,
+		options: [
+			{ label: 'MySQL / MariaDB', id: 'pdo_mysql' },
+			{ label: 'PostgreSQL', id: 'pdo_pgsql' },
+			{ label: 'SQLite', id: 'pdo_sqlite' },
+		],
+
+		value: { label: 'MySQL / MariaDB', id: 'pdo_mysql' },
+	},
+
+	success: false,
+	loading: false,
+	actionLoading: false,
+	actionMessage: '',
+	actionMessageType: 'success',
+	error: false,
+	hasUpdated: false,
+	closeModalTimeout: null,
+}
 
 export default {
 	name: 'EditSource',
@@ -204,54 +257,7 @@ export default {
 	},
 
 	data() {
-		return {
-			sourceItem: {
-				title: '',
-				description: '',
-				databaseUrl: '',
-			},
-
-			connection: {
-				host: '',
-				port: '',
-				dbname: '',
-				user: '',
-				credential: '',
-				path: '',
-				writable: false,
-			},
-
-			typeOptions: {
-				clearable: false,
-				options: [
-					{ label: 'Internal', id: 'internal' },
-					{ label: 'MongoDB', id: 'mongodb' },
-					{ label: 'Database (virtual register)', id: 'database' },
-				],
-
-				value: { label: 'Internal', id: 'internal' },
-			},
-
-			driverOptions: {
-				clearable: false,
-				options: [
-					{ label: 'MySQL / MariaDB', id: 'pdo_mysql' },
-					{ label: 'PostgreSQL', id: 'pdo_pgsql' },
-					{ label: 'SQLite', id: 'pdo_sqlite' },
-				],
-
-				value: { label: 'MySQL / MariaDB', id: 'pdo_mysql' },
-			},
-
-			success: false,
-			loading: false,
-			actionLoading: false,
-			actionMessage: '',
-			actionMessageType: 'success',
-			error: false,
-			hasUpdated: false,
-			closeModalTimeout: null,
-		}
+		return freshState(INITIAL_STATE)
 	},
 
 	computed: {
