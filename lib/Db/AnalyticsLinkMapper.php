@@ -28,6 +28,7 @@ use OCP\IDBConnection;
  * Class AnalyticsLinkMapper
  *
  * @template-extends QBMapper<AnalyticsLink>
+ * @method list<AnalyticsLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class AnalyticsLinkMapper extends QBMapper {
 

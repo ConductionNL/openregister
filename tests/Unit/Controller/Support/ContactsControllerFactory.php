@@ -27,6 +27,7 @@ final class ContactsControllerFactory {
 	 * @param IL10N $l10n Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param PersonLinkService $personLinks Constructor argument.
+	 * @param PermissionHandler $permissions Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,6 +41,7 @@ final class ContactsControllerFactory {
 		\OCP\IL10N $l10n,
 		\Psr\Log\LoggerInterface $logger,
 		\OCA\OpenRegister\Service\PersonLinkService $personLinks,
+		\OCA\OpenRegister\Service\Object\PermissionHandler $permissions,
 	): array {
 		return [
 			$appName,
@@ -55,6 +57,7 @@ final class ContactsControllerFactory {
 					personLinks: $personLinks,
 					l10n: $l10n,
 					logger: $logger,
+					permissions: $permissions,
 				),
 			),
 		];

@@ -248,8 +248,6 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 * Store the flow for the shipping app, switched off, then publish it
 	 * unless the fragment says not to, and switch it on when it says so.
 	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
-	 *
 	 * @param string               $app  The app that ships the fragment; the flow is that app's.
 	 * @param string               $key  The flow's key in the fragment (unused).
 	 * @param array<string, mixed> $data The filled fields.
@@ -258,6 +256,7 @@ class ExampleSetFlows extends ExampleSetEngineRows {
 	 *         The record entry (the flow's uuid, and its keyed runs), or why the write failed.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-flows
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-name-its-application-and-be-switched-on
 	 */
 	public function write(string $app, string $key, array $data): array {
 		try {

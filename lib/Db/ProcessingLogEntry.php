@@ -61,12 +61,20 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSubjectIdValue(?string $subjectIdValue)
  * @method int|null getObjectCount()
  * @method void setObjectCount(?int $objectCount)
+ * @method array|null getObjectUuids()
+ * @method void setObjectUuids(?array $objectUuids)
+ * @method array|null getSubjectIds()
+ * @method void setSubjectIds(?array $subjectIds)
+ * @method array|null getQueryParams()
+ * @method void setQueryParams(?array $queryParams)
  * @method bool|null getConfidential()
  * @method void setConfidential(?bool $confidential)
  * @method string|null getOrganisationId()
  * @method void setOrganisationId(?string $organisationId)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One field per column of the append-only processing-log row.
  */
 class ProcessingLogEntry extends Entity implements JsonSerializable {
 
@@ -148,6 +156,27 @@ class ProcessingLogEntry extends Entity implements JsonSerializable {
 	protected ?int $objectCount = 1;
 
 	/**
+	 * Uuids of the objects a list/search entry covers, when it covers 100 or fewer.
+	 *
+	 * @var array<int, string>|null
+	 */
+	protected ?array $objectUuids = null;
+
+	/**
+	 * Subject identifiers (`{type, value}`) of a list/search entry of 100 or fewer objects.
+	 *
+	 * @var array<int, array{type: string, value: string}>|null
+	 */
+	protected ?array $subjectIds = null;
+
+	/**
+	 * Query parameters of a list/search entry.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	protected ?array $queryParams = null;
+
+	/**
 	 * Denormalised confidentiality marker from the activity (FG-gating).
 	 *
 	 * @var boolean|null
@@ -183,6 +212,9 @@ class ProcessingLogEntry extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'subjectIdType', type: 'string');
 		$this->addType(fieldName: 'subjectIdValue', type: 'string');
 		$this->addType(fieldName: 'objectCount', type: 'integer');
+		$this->addType(fieldName: 'objectUuids', type: 'json');
+		$this->addType(fieldName: 'subjectIds', type: 'json');
+		$this->addType(fieldName: 'queryParams', type: 'json');
 		$this->addType(fieldName: 'confidential', type: 'boolean');
 		$this->addType(fieldName: 'organisationId', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
@@ -208,6 +240,9 @@ class ProcessingLogEntry extends Entity implements JsonSerializable {
 			'subjectIdType' => $this->subjectIdType,
 			'subjectIdValue' => $this->subjectIdValue,
 			'objectCount' => $this->objectCount,
+			'objectUuids' => $this->objectUuids,
+			'subjectIds' => $this->subjectIds,
+			'queryParams' => $this->queryParams,
 			'confidential' => $this->confidential,
 			'organisationId' => $this->organisationId,
 			'created' => $this->created?->format('c'),
