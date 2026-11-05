@@ -185,21 +185,6 @@ class ViewsController extends Controller {
 	}//end refuseInvalidShares()
 
 	/**
-	 * The validated share list from a request body, or null when it does not mention sharing.
-	 *
-	 * @param array $data The request body, already checked by refuseInvalidShares().
-	 *
-	 * @return array|null
-	 */
-	private function sharesFrom(array $data): ?array {
-		if (array_key_exists('sharedWith', $data) === false || $data['sharedWith'] === null) {
-			return null;
-		}
-
-		return $data['sharedWith'];
-	}//end sharesFrom()
-
-	/**
 	 * The answer to a refused save: the alert's own status naming its field, 400 otherwise.
 	 *
 	 * @param InvalidArgumentException $e The refusal.
@@ -276,69 +261,6 @@ class ViewsController extends Controller {
 	}//end refuseForbiddenViewFields()
 
 	/**
-	 * A 400 response with one error message.
-	 *
-	 * @param string $error The error message.
-	 *
-	 * @return JSONResponse A 400 response.
-	 */
-	private function badRequest(string $error): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'error' => $error,
-			],
-			statusCode: 400
-		);
-	}//end badRequest()
-
-	/**
-	 * The view query a request body declares.
-	 *
-	 * The frontend still sends `configuration`, of which only the query keys are kept;
-	 * otherwise a `query` array is taken as is.
-	 *
-	 * @param array<string, mixed> $data The request body.
-	 *
-	 * @return array<string, mixed>|null The query, or null when the body declares none.
-	 */
-	private function viewQueryFrom(array $data): ?array {
-		$config = $data['configuration'] ?? null;
-		if (is_array($config) === true) {
-			return [
-				'registers' => $config['registers'] ?? [],
-				'schemas' => $config['schemas'] ?? [],
-				'source' => $config['source'] ?? 'auto',
-				'searchTerms' => $config['searchTerms'] ?? [],
-				'facetFilters' => $config['facetFilters'] ?? [],
-				'enabledFacets' => $config['enabledFacets'] ?? [],
-			];
-		}
-
-		$query = $data['query'] ?? null;
-		if (is_array($query) === true) {
-			return $query;
-		}
-
-		return null;
-	}//end viewQueryFrom()
-
-	/**
-	 * The presentation a request body declares, when it is an array.
-	 *
-	 * @param array<string, mixed> $data The request body.
-	 *
-	 * @return array<string, mixed>|null The presentation, or null.
-	 */
-	private function presentationFrom(array $data): ?array {
-		$presentation = $data['presentation'] ?? null;
-		if (is_array($presentation) === false) {
-			return null;
-		}
-
-		return $presentation;
-	}//end presentationFrom()
-
-	/**
 	 * Get all views for the current user
 	 *
 	 * This method retrieves all saved views that belong to the current user,
@@ -359,12 +281,7 @@ class ViewsController extends Controller {
 			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
-				return new JSONResponse(
-					[
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
+				return $this->unauthenticated();
 			}
 
 			$params = $this->request->getParams();
@@ -449,12 +366,7 @@ class ViewsController extends Controller {
 			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
+				return $this->unauthenticated();
 			}
 
 			$view = $this->requireOwnedView(id: $id, userId: $userId);
@@ -500,80 +412,78 @@ class ViewsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with created view or error
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
 	 */
 	public function create(): JSONResponse {
 		try {
-			$userId = $this->viewers->currentUid();
-
-			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			if (isset($data['name']) === false || empty($data['name']) === true) {
-				return $this->badRequest(error: 'View name is required');
-			}
-
-			$query = $this->viewQueryFrom(data: $data);
-			if ($query === null) {
-				return $this->badRequest(error: 'View query or configuration is required');
-			}
-
-			$presentation = $this->presentationFrom(data: $data);
-
-			$shareRefusal = $this->refuseInvalidShares(data: $data);
-			if ($shareRefusal !== null) {
-				return $shareRefusal;
-			}
-
-			$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
-			$view = $this->viewService->create(
-				name: $data['name'],
-				description: $data['description'] ?? '',
-				owner: $userId,
-				isPublic: $data['isPublic'] ?? false,
-				isDefault: $data['isDefault'] ?? false,
-				query: $query,
-				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data),
-				alert: ViewAlert::declaredIn(body: $data)
-			);
-
-			return new JSONResponse(
-				data: [
-					'view' => $view->jsonSerialize(),
-				],
-				statusCode: 201
-			);
+			return $this->createView();
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error creating view',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
 			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to create view',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to create view', 'message' => $e->getMessage()], statusCode: 500);
+		}
 	}//end create()
+
+	/**
+	 * Create a view owned by the caller, after the body checks.
+	 *
+	 * @return JSONResponse The created view, or the refusal.
+	 */
+	private function createView(): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$write       = new ViewPatch();
+		$write->data = $this->request->getParams();
+		return $this->refuseInvalidWrite(write: $write) ?? $this->saveNew(userId: $userId, write: $write);
+	}//end createView()
+
+	/**
+	 * Save a new view for its owner, once the owner may name its recipients.
+	 *
+	 * @param string    $userId The owner.
+	 * @param ViewPatch $write  The request body.
+	 *
+	 * @return JSONResponse The created view (201).
+	 */
+	private function saveNew(string $userId, ViewPatch $write): JSONResponse {
+		$data = $write->data;
+		$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
+		$view = $this->viewService->create(
+			name: $data['name'],
+			description: $data['description'] ?? '',
+			owner: $userId,
+			isPublic: $data['isPublic'] ?? false,
+			isDefault: $data['isDefault'] ?? false,
+			query: $write->query(),
+			presentation: $write->presentation(),
+			sharedWith: $write->shares(),
+			alert: ViewAlert::declaredIn(body: $data)
+		);
+		return new JSONResponse(data: ['view' => $view->jsonSerialize()], statusCode: 201);
+	}//end saveNew()
+
+	/**
+	 * Refuse a create or full update without a name, without a query, or with invalid shares.
+	 *
+	 * @param ViewPatch $write The request body.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the body may be saved.
+	 */
+	private function refuseInvalidWrite(ViewPatch $write): ?JSONResponse {
+		$missing = $write->missingField();
+		if ($missing !== null) {
+			return new JSONResponse(data: ['error' => $missing], statusCode: 400);
+		}
+
+		return $this->refuseInvalidShares(data: $write->data);
+	}//end refuseInvalidWrite()
 
 	/**
 	 * Update an existing view
@@ -586,103 +496,82 @@ class ViewsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with updated view or error
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-8
 	 */
 	public function update(string $id): JSONResponse {
 		try {
-			$userId = $this->viewers->currentUid();
-
-			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			// 🔴 THE FIELD GUARD RUNS HERE, and it did not before. It was
-			// written, unit-tested and never called, which reads to the next
-			// person who greps as a check and is identical to having none.
-			// Until it was wired, `ViewService::update()`'s own access test
-			// admitted the OWNER or ANY caller on a view whose `isPublic` is
-			// true, so any authenticated account could rename someone else's
-			// shared view, rewrite its query, or un-publish it. The owner and
-			// an administrator are unaffected: `mayAdminister()` answers true
-			// for both and the guard returns null.
-			$stored = $this->requireReachableView(id: $id, userId: $userId);
-			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data, savedAs: ($data + ['isPublic' => false]));
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			if (isset($data['name']) === false || empty($data['name']) === true) {
-				return $this->badRequest(error: 'View name is required');
-			}
-
-			$query = $this->viewQueryFrom(data: $data);
-			if ($query === null) {
-				return $this->badRequest(error: 'View query or configuration is required');
-			}
-
-			$presentation = $this->presentationFrom(data: $data);
-
-			$shareRefusal = $this->refuseInvalidShares(data: $data);
-			if ($shareRefusal !== null) {
-				return $shareRefusal;
-			}
-
-			$view = $this->viewService->update(
-				id: $id,
-				name: $data['name'],
-				description: $data['description'] ?? '',
-				// A write member saves the OWNER's view (default-view bookkeeping too).
-				owner: $stored->getOwner(),
-				isPublic: $data['isPublic'] ?? false,
-				isDefault: $data['isDefault'] ?? false,
-				query: $query,
-				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data),
-				alert: ViewAlert::declaredIn(body: $data)
-			);
-
-			return new JSONResponse(
-				data: [
-					'view' => $view->jsonSerialize(),
-				]
-			);
+			return $this->updateView(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'View not found',
-				],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
 		} catch (InvalidArgumentException $e) {
 			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error updating view',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'exception' => $e->getMessage()]
 			);
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to update view',
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to update view', 'message' => $e->getMessage()], statusCode: 500);
+		}
 	}//end update()
+
+	/**
+	 * Replace a view the caller reaches, after the field guard and the body checks.
+	 *
+	 * The field guard runs before anything is saved: without it any caller reaching a
+	 * public view could rename it, rewrite its query or un-publish it. The owner and an
+	 * administrator pass it.
+	 *
+	 * @param string $id View ID.
+	 *
+	 * @return JSONResponse The updated view, or the refusal.
+	 */
+	private function updateView(string $id): JSONResponse {
+		$userId = $this->viewers->currentUid();
+		if (empty($userId) === true) {
+			return $this->unauthenticated();
+		}
+
+		$update       = new ViewPatch();
+		$update->id   = $id;
+		$update->data = $this->request->getParams();
+		$update->view = $this->requireReachableView(id: $id, userId: $userId);
+		$savedAs      = ($update->data + ['isPublic' => false]);
+		$refusal      = $this->refuseForbiddenViewFields(view: $update->view, userId: $userId, data: $update->data, savedAs: $savedAs);
+		return $refusal ?? $this->refuseInvalidWrite(write: $update) ?? $this->saveUpdate(update: $update);
+	}//end updateView()
+
+	/**
+	 * Save a full update; a write member saves the owner's view.
+	 *
+	 * @param ViewPatch $update The route id, stored view and request body.
+	 *
+	 * @return JSONResponse The updated view.
+	 */
+	private function saveUpdate(ViewPatch $update): JSONResponse {
+		$data = $update->data;
+		$view = $this->viewService->update(
+			id: $update->id,
+			name: $data['name'],
+			description: $data['description'] ?? '',
+			owner: $update->view->getOwner(),
+			isPublic: $data['isPublic'] ?? false,
+			isDefault: $data['isDefault'] ?? false,
+			query: $update->query(),
+			presentation: $update->presentation(),
+			sharedWith: $update->shares(),
+			alert: ViewAlert::declaredIn(body: $data)
+		);
+		return new JSONResponse(data: ['view' => $view->jsonSerialize()]);
+	}//end saveUpdate()
+
+	/**
+	 * The 401 answer for a request without a session user.
+	 *
+	 * @return JSONResponse The 401 response.
+	 */
+	private function unauthenticated(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+	}//end unauthenticated()
 
 	/**
 	 * Patch view details (partial update)
@@ -724,7 +613,7 @@ class ViewsController extends Controller {
 	private function patchView(string $id): JSONResponse {
 		$userId = $this->viewers->currentUid();
 		if (empty($userId) === true) {
-			return new JSONResponse(data: ['error' => 'User not authenticated'], statusCode: 401);
+			return $this->unauthenticated();
 		}
 
 		$patch       = new ViewPatch();
@@ -749,8 +638,8 @@ class ViewsController extends Controller {
 	private function savePatch(ViewPatch $patch): JSONResponse {
 		$view         = $patch->view;
 		$data         = $patch->data;
-		$query        = $this->viewQueryFrom(data: $data) ?? ($view->getQuery() ?? []);
-		$presentation = $this->presentationFrom(data: $data) ?? $view->getPresentation();
+		$query        = $patch->query() ?? ($view->getQuery() ?? []);
+		$presentation = $patch->presentation() ?? $view->getPresentation();
 		$shareRefusal = $this->refuseInvalidShares(data: $data);
 		if ($shareRefusal !== null) {
 			return $shareRefusal;
@@ -766,7 +655,7 @@ class ViewsController extends Controller {
 			query: $query,
 			favoredBy: $data['favoredBy'] ?? $view->getFavoredBy(),
 			presentation: $presentation,
-			sharedWith: $this->sharesFrom(data: $data),
+			sharedWith: $patch->shares(),
 			alert: ViewAlert::declaredIn(body: $data)
 		);
 		return new JSONResponse(data: ['view' => $updatedView->jsonSerialize()]);
@@ -806,12 +695,7 @@ class ViewsController extends Controller {
 			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
+				return $this->unauthenticated();
 			}
 
 			// The service refuses everybody who neither owns the view nor administers the instance.
@@ -875,12 +759,7 @@ class ViewsController extends Controller {
 			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
+				return $this->unauthenticated();
 			}
 
 			$view = $this->requireOwnedView(id: $id, userId: $userId);
@@ -937,12 +816,7 @@ class ViewsController extends Controller {
 			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
+				return $this->unauthenticated();
 			}
 
 			$params = $this->request->getParams();
