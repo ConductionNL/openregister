@@ -149,6 +149,77 @@
             "#1 executeQuery()"
         ]
     },
+    "agent findAll order / none": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / null": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / fields": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(name, ASC)",
+            "#1 addOrderBy(created, DESC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / list shaped": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(0, ASC)",
+            "#1 addOrderBy(x, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / paged": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 addOrderBy(name, DESC)",
+            "#1 setMaxResults(5)",
+            "#1 setFirstResult(10)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "agent findAll order / limit only": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_agents, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 setMaxResults(3)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
     "flow run / older than, all flows": {
         "result": [
             "a",

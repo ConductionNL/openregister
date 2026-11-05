@@ -38,6 +38,7 @@ use ReflectionNamedType;
 /**
  * @covers \OCA\OpenRegister\Db\AgentMapper
  * @covers \OCA\OpenRegister\Db\FlowRunMapper
+ * @uses   \OCA\OpenRegister\Db\QueryPage
  */
 class AgentAndFlowRunMapperGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -54,6 +55,17 @@ class AgentAndFlowRunMapperGoldenTest extends TestCase {
 			'scalar and route and null' => ['name' => 'x', '_route' => 'r', 'owner' => null, 'id' => 4],
 		];
 	}//end agentFilters()
+
+	private static function agentOrders(): array {
+		return [
+			'none' => ['order' => []],
+			'null' => ['order' => null],
+			'fields' => ['order' => ['name' => 'asc', 'created' => 'DESC']],
+			'list shaped' => ['order' => ['name', 'x' => 7]],
+			'paged' => ['limit' => 5, 'offset' => 10, 'order' => ['name' => 'desc']],
+			'limit only' => ['limit' => 3],
+		];
+	}//end agentOrders()
 
 	private static function runDeletions(): array {
 		$cutoff = new DateTime('2026-01-02 03:04:05');
@@ -74,6 +86,10 @@ class AgentAndFlowRunMapperGoldenTest extends TestCase {
 		foreach (self::agentFilters() as $name => $filters) {
 			$actual["agent findAll / {$name}"] = $this->agent(method: 'findAll', args: ['filters' => $filters], rows: [[]]);
 			$actual["agent count / {$name}"] = $this->agent(method: 'count', args: ['filters' => $filters], rows: [[['COUNT(*)' => 3]]]);
+		}
+
+		foreach (self::agentOrders() as $name => $args) {
+			$actual["agent findAll order / {$name}"] = $this->agent(method: 'findAll', args: $args, rows: [[]]);
 		}
 
 		foreach (self::runDeletions() as $name => [$method, $args, $rows]) {

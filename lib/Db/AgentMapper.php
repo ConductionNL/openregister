@@ -318,8 +318,6 @@ class AgentMapper extends QBMapper {
 	 * @throws \Exception If user doesn't have read permission
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Agent>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function findAll(?int $limit = null, ?int $offset = null, ?array $filters = [], ?array $order = []): array {
 		// Verify RBAC permission to read.
@@ -335,28 +333,8 @@ class AgentMapper extends QBMapper {
 
 		$this->applyAgentFilters(qb: $qb, filters: $filters);
 
-		// Apply ordering.
-		if (empty($order) === false) {
-			foreach ($order as $field => $direction) {
-				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
-				// an int key (a list-shaped sort) or a non-string direction is a
-				// TypeError there, so both are normalised here.
-				$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
-			}
-		}
-
-		if (empty($order) === true) {
-			$qb->orderBy('created', 'DESC');
-		}
-
-		// Apply pagination.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		$this->applyAgentOrder(qb: $qb, order: $order);
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		// Apply organisation filter, allowing NULL organisation for legacy/global agents.
 		$this->applyOrganisationFilter(
@@ -367,6 +345,29 @@ class AgentMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * Order an agent read by the given fields, or newest first when none are given.
+	 *
+	 * NC 35 types addOrderBy() as (string|..., string|SortDirection|null): an
+	 * int key (a list-shaped sort) or a non-string direction is a TypeError
+	 * there, so both are normalised here.
+	 *
+	 * @param IQueryBuilder $qb    The builder to order.
+	 * @param array|null    $order Field to direction.
+	 *
+	 * @return void
+	 */
+	private function applyAgentOrder(IQueryBuilder $qb, ?array $order): void {
+		if (empty($order) === true) {
+			$qb->orderBy('created', 'DESC');
+			return;
+		}
+
+		foreach ($order as $field => $direction) {
+			$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
+		}
+	}//end applyAgentOrder()
 
 	/**
 	 * Insert a new agent
