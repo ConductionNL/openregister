@@ -42,6 +42,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DestructionExecutionJob
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\BackgroundJob\DestructionListRun
  */
 class DestructionExecutionJobGoldenTest extends TestCase
