@@ -17,6 +17,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
+use OCA\OpenRegister\Service\Flow\FlowFiring;
+use OCA\OpenRegister\Service\Flow\FlowFiringResult;
 use OCA\OpenRegister\Service\Flow\FlowPlaceClaims;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowStreamHalt;
@@ -92,18 +94,39 @@ class FlowStreamWalkWorkRemainsTest extends TestCase {
 		$this->assertSame(['c', 'a', 'c'], [$walk->nextStream(), $walk->nextStream(), $walk->nextStream()]);
 	}
 
+	public function testAPlacelessStreamMakesNoPlaceLive(): void {
+		$walk = $this->walk(only: null, third: 'c', extra: $this->row('d', '0001.0004', null));
+		$this->assertFalse($walk->workRemains(transitions: [new Transition('none', [''], ['out'])]));
+	}
+
+	public function testACommitMakesExhaustedStreamsVisitableAgain(): void {
+		$walk = $this->walk(only: null, third: 'c');
+		$walk->exhaust(id: 'a');
+		$walk->exhaust(id: 'b');
+		$walk->exhaust(id: 'c');
+		$this->assertNull($walk->nextStream());
+
+		$walk->commitFiring(firing: (new FlowFiring(streamId: 'c', transition: 'T', froms: ['c'], taken: ['c']))->withLogEntry(logEntry: [], enabledAfter: true));
+		$this->assertSame('a', $walk->nextStream());
+	}
+
 	/**
 	 * A walk over streams `a` on `wait`, `b` on `work` and a third stream on
 	 * the place of its own name.
 	 */
-	private function walk(?string $only, string $third = '7'): FlowStreamWalk {
+	private function walk(?string $only, string $third = '7', ?FlowStream $extra = null): FlowStreamWalk {
 		$run = new FlowRun();
 		$run->setUuid('run-1');
 		$rows = [$this->row('a', '0001.0001', 'wait'), $this->row('b', '0001.0002', 'work'), $this->row($third, '0001.0003', $third)];
+		if ($extra !== null) {
+			$rows[] = $extra;
+		}
+
 		$mapper = $this->createMock(FlowStreamMapper::class);
 		$mapper->method('findByRun')->willReturn($rows);
 		$commit = $this->createMock(FlowRunCommit::class);
 		$commit->method('closeStream')->willReturn([]);
+		$commit->method('commitFiring')->willReturn(new FlowFiringResult(marking: [], placeItems: [], streams: $rows, firings: 1));
 
 		$walk = new FlowStreamWalk(
 			run: $run,
