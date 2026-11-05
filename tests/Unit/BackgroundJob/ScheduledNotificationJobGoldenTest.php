@@ -41,6 +41,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator
  * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterParser
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\BackgroundJob\ScheduledFire
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\NotificationDedupeState
  */
