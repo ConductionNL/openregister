@@ -53,11 +53,11 @@ namespace OCA\OpenRegister\Service\Gdpr;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DsarService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -97,8 +97,8 @@ class DataSubjectRequestService {
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db GdprEntity + entity_relations join.
-	 * @param MagicMapper $objectMapper Object loader (RBAC/tenant scoped reads).
-	 * @param ObjectService $objectService Audited write path (saveObject → audit trail).
+	 * @param MagicMapperInterface $objectMapper Object loader (RBAC/tenant scoped reads).
+	 * @param ObjectOperationsInterface $objectService Audited write path (saveObject → audit trail).
 	 * @param RetentionServiceInterface $retentionService Legal-hold + immutability guard.
 	 * @param DsarService $dsarService Reused only for the configured DSAR activity uuid.
 	 * @param DataSubjectDeadline $deadline EU art-12 deadline maths.
@@ -108,8 +108,8 @@ class DataSubjectRequestService {
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
-		private readonly MagicMapper $objectMapper,
-		private readonly ObjectService $objectService,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly RetentionServiceInterface $retentionService,
 		private readonly DsarService $dsarService,
 		private readonly DataSubjectDeadline $deadline,

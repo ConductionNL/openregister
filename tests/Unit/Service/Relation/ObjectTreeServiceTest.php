@@ -343,6 +343,26 @@ class ObjectTreeServiceTest extends TestCase {
 	}//end testTheDeclaredDepthCapsTheRequest()
 
 	/**
+	 * A depth below one is raised to one, and the answer keeps its documented key order.
+	 *
+	 * @return void
+	 */
+	public function testADepthBelowOneWalksOneLevel(): void {
+		$chain = ['l0' => null, 'l1' => 'l0', 'l2' => 'l1'];
+		$tree = $this->service(parentOf: $chain)->tree(root: $this->organisation(uuid: 'l0', parent: null), depth: 0);
+
+		$this->assertSame(1, $tree['depth']);
+		$this->assertSame(0, $tree['requestedDepth']);
+		$this->assertSame(4, $tree['maxDepth']);
+		$this->assertSame(4, $tree['maxDepth']);
+		$this->assertSame(['l0' => 0, 'l1' => 1], self::levels(tree: $tree));
+		$this->assertSame(
+			['root', 'register', 'schema', 'parentProperty', 'direction', 'depth', 'requestedDepth', 'maxDepth', 'nodes', 'truncated', 'truncatedBy'],
+			array_keys($tree)
+		);
+	}//end testADepthBelowOneWalksOneLevel()
+
+	/**
 	 * The node cap stops the walk and says so.
 	 *
 	 * @return void

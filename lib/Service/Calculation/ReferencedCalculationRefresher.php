@@ -36,14 +36,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -87,7 +87,7 @@ class ReferencedCalculationRefresher {
 	 *
 	 * @param RegisterMapperInterface     $registers The registers.
 	 * @param SchemaMapperInterface       $schemas   The schemas.
-	 * @param MagicMapper        $rows      Finds the referring objects.
+	 * @param MagicMapperInterface        $rows      Finds the referring objects.
 	 * @param ContainerInterface $container Hands out the object service on first use.
 	 * @param LoggerInterface    $logger    The logger.
 	 * @param SchemaTypeConverter $types    Restores the stored form of `type: string` values the read decoded.
@@ -95,7 +95,7 @@ class ReferencedCalculationRefresher {
 	public function __construct(
 		private readonly RegisterMapperInterface $registers,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly MagicMapper $rows,
+		private readonly MagicMapperInterface $rows,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
@@ -322,7 +322,7 @@ class ReferencedCalculationRefresher {
 			);
 		}
 
-		$service = $this->container->get(ObjectService::class);
+		$service = $this->container->get(ObjectOperationsInterface::class);
 		$saved   = 0;
 		foreach ($rows as $row) {
 			try {

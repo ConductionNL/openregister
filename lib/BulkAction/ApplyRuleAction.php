@@ -31,7 +31,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleInventoryService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -71,7 +71,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object write path.
+	 * @param ObjectOperationsInterface $objectService The object write path.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the rule is declared on.
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
 	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
@@ -80,7 +80,7 @@ class ApplyRuleAction implements BulkActionInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RuleInventoryService $inventory,
 		private readonly CalculationEvaluatorInterface $evaluator,

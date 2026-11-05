@@ -25,7 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Log\LoggerInterface;
@@ -68,14 +69,14 @@ final class MassValidationRun {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper          $objectMapper Mapper that counts and reads the objects.
+	 * @param MagicMapperInterface          $objectMapper Mapper that counts and reads the objects.
 	 * @param AppSettingsInterface $settings     Settings service, for formatting byte counts.
 	 * @param LoggerInterface      $logger       Logger.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AppSettingsInterface $settings,
 		private readonly LoggerInterface $logger,
 	) {
@@ -213,11 +214,11 @@ final class MassValidationRun {
 	 * Run the batch jobs in the configured mode.
 	 *
 	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectService|null $objectService The service that re-saves objects.
+	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
 	 *
 	 * @return void
 	 */
-	private function processJobs(array $batchJobs, ?ObjectService $objectService): void {
+	private function processJobs(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
 		if ($this->config['mode'] === 'parallel') {
 			$this->processJobsParallel(batchJobs: $batchJobs, objectService: $objectService);
 			return;
@@ -230,11 +231,11 @@ final class MassValidationRun {
 	 * Run the batch jobs one after the other, logging progress per batch.
 	 *
 	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectService|null $objectService The service that re-saves objects.
+	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
 	 *
 	 * @return void
 	 */
-	private function processJobsSerial(array $batchJobs, ?ObjectService $objectService): void {
+	private function processJobsSerial(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
 		foreach ($batchJobs as $job) {
 			$batch = $this->saveBatch(job: $job, objectService: $objectService);
 			$this->addBatch(batch: $batch);
@@ -279,11 +280,11 @@ final class MassValidationRun {
 	 * Run the batch jobs in chunks of PARALLEL_BATCHES, logging progress per chunk.
 	 *
 	 * @param array              $batchJobs     The batch jobs.
-	 * @param ObjectService|null $objectService The service that re-saves objects.
+	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
 	 *
 	 * @return void
 	 */
-	private function processJobsParallel(array $batchJobs, ?ObjectService $objectService): void {
+	private function processJobsParallel(array $batchJobs, ?ObjectOperationsInterface $objectService): void {
 		$batchChunks = array_chunk($batchJobs, self::PARALLEL_BATCHES);
 
 		foreach ($batchChunks as $chunkIndex => $chunk) {
@@ -327,12 +328,12 @@ final class MassValidationRun {
 	/**
 	 * Re-save one batch in parallel mode, which requires the object service up front.
 	 *
-	 * @param ObjectService $objectService The service that re-saves objects.
+	 * @param ObjectOperationsInterface $objectService The service that re-saves objects.
 	 * @param array         $job           The batch job.
 	 *
 	 * @return array The batch counts, errors and duration.
 	 */
-	private function saveParallelBatch(ObjectService $objectService, array $job): array {
+	private function saveParallelBatch(ObjectOperationsInterface $objectService, array $job): array {
 		return $this->saveBatch(job: $job, objectService: $objectService);
 	}//end saveParallelBatch()
 
@@ -342,11 +343,11 @@ final class MassValidationRun {
 	 * Without collect_errors the batch stops at its first failure. Serial runs log each failure.
 	 *
 	 * @param array              $job           The batch job.
-	 * @param ObjectService|null $objectService The service that re-saves objects.
+	 * @param ObjectOperationsInterface|null $objectService The service that re-saves objects.
 	 *
 	 * @return array{processed: int, successful: int, failed: int, errors: list<array>, duration: float}
 	 */
-	private function saveBatch(array $job, ?ObjectService $objectService): array {
+	private function saveBatch(array $job, ?ObjectOperationsInterface $objectService): array {
 		$batchStartTime = microtime(true);
 		$objects = $this->objectMapper->findAll(limit: $job['limit'], offset: $job['offset']);
 

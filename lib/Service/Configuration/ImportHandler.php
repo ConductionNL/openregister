@@ -37,7 +37,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
@@ -144,23 +144,23 @@ class ImportHandler {
 	/**
 	 * Object mapper instance for handling object operations.
 	 *
-	 * @var MagicMapper The object mapper instance.
+	 * @var MagicMapperInterface The object mapper instance.
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Magic mapper instance for handling magic table operations.
 	 *
-	 * @var MagicMapper|null The magic mapper instance (optional, set via setter).
+	 * @var MagicMapperInterface|null The magic mapper instance (optional, set via setter).
 	 */
-	private ?MagicMapper $magicMapper = null;
+	private ?MagicMapperInterface $magicMapper = null;
 
 	/**
 	 * MagicMapper for routing objects to correct magic table.
 	 *
-	 * @var MagicMapper|null The object mapper instance (optional, set via setObjectMapper).
+	 * @var MagicMapperInterface|null The object mapper instance (optional, set via setObjectMapper).
 	 */
-	private ?MagicMapper $routingMapper = null;
+	private ?MagicMapperInterface $routingMapper = null;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -207,9 +207,9 @@ class ImportHandler {
 	/**
 	 * Object service for object CRUD operations.
 	 *
-	 * @var ObjectService|null The object service instance.
+	 * @var ObjectOperationsInterface|null The object service instance.
 	 */
-	private ?ObjectService $objectService = null;
+	private ?ObjectOperationsInterface $objectService = null;
 
 	/**
 	 * Map of registers indexed by slug during import.
@@ -366,7 +366,7 @@ class ImportHandler {
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param MagicMapper $objectEntityMapper The object entity mapper.
+	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
 	 * @param Client $client The HTTP client for URL fetching.
@@ -374,7 +374,7 @@ class ImportHandler {
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
 	 * @param UploadHandler $uploadHandler The upload handler.
-	 * @param ObjectService $objectService The object service.
+	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
 	 *        guard that keeps local changes to an app-shipped schema.
@@ -386,7 +386,7 @@ class ImportHandler {
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
 		RegisterMapperInterface $registerMapper,
-		MagicMapper $objectEntityMapper,
+		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
 		Client $client,
@@ -394,7 +394,7 @@ class ImportHandler {
 		LoggerInterface $logger,
 		string $appDataPath,
 		UploadHandler $uploadHandler,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
@@ -420,13 +420,13 @@ class ImportHandler {
 	 * This method allows setting the ObjectService after construction
 	 * to avoid circular dependency issues.
 	 *
-	 * @param ObjectService $objectService The object service instance.
+	 * @param ObjectOperationsInterface $objectService The object service instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setObjectService(ObjectService $objectService): void {
+	public function setObjectService(ObjectOperationsInterface $objectService): void {
 		$this->objectService = $objectService;
 	}//end setObjectService()
 
@@ -477,7 +477,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function setSlugHandler(?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler): void {
 		$this->slugHandler = $slugHandler;
@@ -733,13 +733,13 @@ class ImportHandler {
 	 * This method allows setting the MagicMapper after construction for
 	 * pre-creating magic mapper tables before seed data import.
 	 *
-	 * @param MagicMapper $magicMapper The magic mapper instance.
+	 * @param MagicMapperInterface $magicMapper The magic mapper instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setMagicMapper(MagicMapper $magicMapper): void {
+	public function setMagicMapper(MagicMapperInterface $magicMapper): void {
 		$this->magicMapper = $magicMapper;
 	}//end setMagicMapper()
 
@@ -749,13 +749,13 @@ class ImportHandler {
 	 * This method allows setting the MagicMapper after construction for
 	 * routing seed data objects to the correct magic table.
 	 *
-	 * @param MagicMapper $objectMapper The object mapper instance.
+	 * @param MagicMapperInterface $objectMapper The object mapper instance.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
 	 */
-	public function setObjectMapper(MagicMapper $objectMapper): void {
+	public function setObjectMapper(MagicMapperInterface $objectMapper): void {
 		$this->routingMapper = $objectMapper;
 	}//end setObjectMapper()
 

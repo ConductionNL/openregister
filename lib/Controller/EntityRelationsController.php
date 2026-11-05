@@ -44,7 +44,7 @@ use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -77,7 +77,7 @@ class EntityRelationsController extends Controller {
 	 * @param IUserSession $userSession Session user accessor.
 	 * @param IRootFolder $rootFolder Nextcloud root folder (for file lookups).
 	 * @param PermissionHandler $permissionHandler RBAC verdict for object-bound relations.
-	 * @param MagicMapper $magicMapper ObjectEntity loader (for object-bound authz).
+	 * @param MagicMapperInterface $magicMapper ObjectEntity loader (for object-bound authz).
 	 * @param SchemaMapperInterface $schemaMapper Schema loader (for hasPermission inputs).
 	 * @param RegisterMapperInterface $registerMapper Register loader (for object lookup disambiguation).
 	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
@@ -92,7 +92,7 @@ class EntityRelationsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IRootFolder $rootFolder,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EmailLinkMapper $emailLinkMapper,

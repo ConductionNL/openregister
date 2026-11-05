@@ -50,7 +50,7 @@ use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -70,7 +70,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param IRequest $request Current request.
 	 * @param IntegrationRegistry $registry Integration registry.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ObjectService $objectService OpenRegister object service (RBAC boundary).
+	 * @param ObjectOperationsInterface $objectService OpenRegister object service (RBAC boundary).
 	 * @param SchemaMapperInterface $schemaMapper Schema loader (external-source detection).
 	 * @param TimelineVisibilityService $visibility Internal/public filter for the timeline leaves.
 	 *
@@ -81,7 +81,7 @@ class ObjectIntegrationsController extends Controller {
 		IRequest $request,
 		private IntegrationRegistry $registry,
 		private LoggerInterface $logger,
-		private ObjectService $objectService,
+		private ObjectOperationsInterface $objectService,
 		private SchemaMapperInterface $schemaMapper,
 		private TimelineVisibilityService $visibility,
 	) {

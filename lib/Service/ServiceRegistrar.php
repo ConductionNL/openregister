@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -32,6 +33,7 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
 use OCA\OpenRegister\Service\SchemaImport\DialectDetector;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -359,9 +361,9 @@ final class ServiceRegistrar {
 	 *
 	 * @param ContainerInterface $container The container.
 	 *
-	 * @return CacheHandler
+	 * @return CacheHandlerInterface
 	 */
-	private static function buildCacheHandler(ContainerInterface $container): CacheHandler {
+	private static function buildCacheHandler(ContainerInterface $container): CacheHandlerInterface {
 			return new CacheHandler(
 				organisationMapper: $container->get(OrganisationMapperInterface::class),
 				logger: $container->get('Psr\Log\LoggerInterface'),

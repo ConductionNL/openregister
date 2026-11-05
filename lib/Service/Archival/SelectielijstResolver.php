@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -63,14 +63,14 @@ class SelectielijstResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper            $objectMapper    Reads the stored rows.
+	 * @param MagicMapperInterface            $objectMapper    Reads the stored rows.
 	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
 	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
 	 * @param ObjectRetentionHandler $settingsHandler Names the register, the schema and the version in use.
 	 * @param LoggerInterface        $logger          Reports a lookup that found nothing applicable.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,

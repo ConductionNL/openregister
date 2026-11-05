@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
@@ -44,7 +45,7 @@ use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
@@ -97,9 +98,9 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Object service instance
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Default chunk size for processing
@@ -161,25 +162,25 @@ class ImportService implements ObjectImporterInterface {
 	 * Constructor for the ImportService
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
-	 * @param ObjectService $objectService The object service
+	 * @param ObjectOperationsInterface $objectService The object service
 	 * @param LoggerInterface $logger The logger interface
 	 * @param IGroupManager $groupManager The group manager
 	 * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper
 	 * @param MappingEngine $mappingEngine Migration-pack mapping engine
-	 * @param ValidateObject $validateObjectHandler Schema validator, used for genuinely
+	 * @param ValidateObjectInterface $validateObjectHandler Schema validator, used for genuinely
 	 *                                              side-effect-free dry-run imports
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution
 	 */
 	public function __construct(
 		SchemaMapperInterface $schemaMapper,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		LoggerInterface $logger,
 		IGroupManager $groupManager,
 		\OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly MappingEngine $mappingEngine,
-		private readonly ValidateObject $validateObjectHandler,
+		private readonly ValidateObjectInterface $validateObjectHandler,
 		private readonly ContainerInterface $container,
 	) {
 		$this->schemaMapper = $schemaMapper;

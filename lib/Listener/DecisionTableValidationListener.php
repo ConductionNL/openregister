@@ -32,7 +32,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -63,13 +63,13 @@ class DecisionTableValidationListener implements IEventListener {
 	 *
 	 * @param SchemaMapperInterface           $schemas   Tells a decision-table row from any other.
 	 * @param DecisionTableValidator $validator The validator the inline step uses.
-	 * @param ObjectService          $objects   Finds a table already carrying the key.
+	 * @param ObjectOperationsInterface          $objects   Finds a table already carrying the key.
 	 * @param RegisterMapperInterface         $registers Tells the decision-tables register from another app's.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
 		private readonly DecisionTableValidator $validator,
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()

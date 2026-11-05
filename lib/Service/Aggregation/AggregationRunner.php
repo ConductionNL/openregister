@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Aggregation;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -150,7 +150,7 @@ class AggregationRunner {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper Magic-table mapper used for the PHP fallback path.
+	 * @param MagicMapperInterface $magicMapper Magic-table mapper used for the PHP fallback path.
 	 * @param RegisterMapperInterface $registerMapper Register loader.
 	 * @param SchemaMapperInterface $schemaMapper Schema loader.
 	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
@@ -179,7 +179,7 @@ class AggregationRunner {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly PlaceholderResolver $placeholders,

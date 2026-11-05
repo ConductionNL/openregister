@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\ConfigurationDeploymentMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationValueMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -45,7 +45,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -139,7 +139,7 @@ final class ConfigurationServiceRegistrar {
 				$exportHandler = new ConfigurationExportHandler(
 					schemaMapper: $container->get(SchemaMapperInterface::class),
 					registerMapper: $container->get(RegisterMapperInterface::class),
-					objectEntityMapper: $container->get(MagicMapper::class),
+					objectEntityMapper: $container->get(MagicMapperInterface::class),
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					mappingMapper: $container->get(MappingMapper::class),
 					logger: $container->get('Psr\Log\LoggerInterface')
@@ -164,7 +164,7 @@ final class ConfigurationServiceRegistrar {
 					appConfig: $container->get('OCP\IAppConfig'),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					client: new Client(),
-					objectService: $container->get(ObjectService::class),
+					objectService: $container->get(ObjectOperationsInterface::class),
 					githubHandler: $container->get(GitHubHandler::class),
 					gitlabHandler: $container->get(GitLabHandler::class),
 					cacheHandler: $container->get(ConfigurationCacheHandler::class),
@@ -236,7 +236,7 @@ final class ConfigurationServiceRegistrar {
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapperInterface::class),
 			registerMapper: $container->get(RegisterMapperInterface::class),
-			objectEntityMapper: $container->get(MagicMapper::class),
+			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
 			client: new Client(),
@@ -244,7 +244,7 @@ final class ConfigurationServiceRegistrar {
 			logger: $logger,
 			appDataPath: $appDataPath,
 			uploadHandler: $container->get(ConfigurationUploadHandler::class),
-			objectService: $container->get(ObjectService::class),
+			objectService: $container->get(ObjectOperationsInterface::class),
 			shippedGuard: $shippedGuard,
 			importJobRecorder: $importJobRecorder,
 			schemaInstaller: $schemaInstaller
@@ -252,8 +252,8 @@ final class ConfigurationServiceRegistrar {
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
 		// data import, and for routing seed data to the correct magic table.
-		$importHandler->setMagicMapper($container->get(MagicMapper::class));
-		$importHandler->setObjectMapper($container->get(MagicMapper::class));
+		$importHandler->setMagicMapper($container->get(MagicMapperInterface::class));
+		$importHandler->setObjectMapper($container->get(MagicMapperInterface::class));
 
 		self::attachOptionalImportServices(
 			importHandler: $importHandler,

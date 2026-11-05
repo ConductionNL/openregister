@@ -351,6 +351,10 @@ class SettingsController extends Controller {
 	 * actually ran. `occ openregister:tables:search-index status` prints the
 	 * same report.
 	 *
+	 * It also says how many rows the tables in scope hold (`rowsInTables`) and
+	 * how many per schema slug (`indexed`); a count that cannot be made is left
+	 * out rather than answered too low.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse The index inventory and the last rebuild report.
@@ -358,6 +362,7 @@ class SettingsController extends Controller {
 	 * @psalm-return JSONResponse<200|500, array, array<never, never>>
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-the-search-index-status-names-how-many-rows-it-covers
 	 */
 	public function getSearchIndexStatus(): JSONResponse {
 		try {
@@ -376,7 +381,7 @@ class SettingsController extends Controller {
 					'tableCount' => count($tables),
 					'indexCount' => $indexCount,
 					'lastRun' => $maintenance->lastRun(),
-				]
+				] + $maintenance->rowCounts()
 			);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
@@ -898,7 +903,7 @@ class SettingsController extends Controller {
 	public function debugTypeFiltering(): JSONResponse {
 		try {
 			// Get services.
-			$objectService = $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
+			$objectService = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 
 			// Set register and schema context. The register slug is RESOLVED,
 			// not written: stackiq's repair step renames it from
@@ -947,12 +952,12 @@ class SettingsController extends Controller {
 	 *
 	 * The unfiltered search also returns each organisation's object data.
 	 *
-	 * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service, set to the organisation schema.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService The object service, set to the organisation schema.
 	 * @param list<string>  $types         The types to filter on; empty for no filter.
 	 *
 	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
 	 */
-	private function organisationsOfType(\OCA\OpenRegister\Service\ObjectService $objectService, array $types): array {
+	private function organisationsOfType(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService, array $types): array {
 		$query = [
 			'_limit' => 10,
 			'_page' => 1,

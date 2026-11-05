@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
@@ -110,9 +110,9 @@ class FilesController extends Controller {
 	 *
 	 * Used to validate object existence and permissions.
 	 *
-	 * @var ObjectService Object service instance
+	 * @var ObjectOperationsInterface Object service instance
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Constructor
@@ -123,7 +123,7 @@ class FilesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param FileService $fileService File service for file operations
-	 * @param ObjectService $objectService Object service for object validation
+	 * @param ObjectOperationsInterface $objectService Object service for object validation
 	 * @param IRootFolder $rootFolder Root folder for file access
 	 * @param IUserManager $userManager User manager for user lookups
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
@@ -148,7 +148,7 @@ class FilesController extends Controller {
 		string $appName,
 		IRequest $request,
 		FileService $fileService,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserManager $userManager,
 		private readonly IEventDispatcher $eventDispatcher,
@@ -679,7 +679,7 @@ class FilesController extends Controller {
 	 *
 	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */

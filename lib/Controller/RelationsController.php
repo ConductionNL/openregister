@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -147,9 +147,9 @@ class RelationsController extends Controller {
 	/**
 	 * Object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Note service.
@@ -212,7 +212,7 @@ class RelationsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
-	 * @param ObjectService $objectService Object service
+	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param NoteService $noteService Note service
 	 * @param ObjectCalendarTasksInterface $taskService Task service
 	 * @param EmailService $emailService Email service
@@ -229,7 +229,7 @@ class RelationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ObjectService $objectService,
+		ObjectOperationsInterface $objectService,
 		NoteService $noteService,
 		ObjectCalendarTasksInterface $taskService,
 		EmailService $emailService,
@@ -270,7 +270,7 @@ class RelationsController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		try {

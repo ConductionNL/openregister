@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * The write side of the slug backfill.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
 class ObjectSlugBackfillWriter {
 
@@ -49,13 +49,13 @@ class ObjectSlugBackfillWriter {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper              $magicMapper Writes the slug column.
+	 * @param MagicMapperInterface              $magicMapper Writes the slug column.
 	 * @param IDBConnection            $db          Wraps each chunk in a transaction.
 	 * @param ObjectSlugBackfillLedger $ledger      Audits the run and evicts the cache.
 	 * @param LoggerInterface          $logger      Receives the skipped-row warnings.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly IDBConnection $db,
 		private readonly ObjectSlugBackfillLedger $ledger,
 		private readonly LoggerInterface $logger,
@@ -81,7 +81,7 @@ class ObjectSlugBackfillWriter {
 	 * @throws SlugBackfillWriteException When a write fails (that chunk is rolled back first; the
 	 *                                     earlier chunks are audited and evicted before it is thrown).
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function write(array $plan, Register $register, Schema $schema, array $summary): int {
 		$tally = ['applied' => [], 'skipped' => 0];

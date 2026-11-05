@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dmn;
 
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 use UnexpectedValueException;
 
@@ -64,12 +64,12 @@ class DecisionTableStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService          $objects   Reads the register.
+	 * @param ObjectOperationsInterface          $objects   Reads the register.
 	 * @param DecisionTableValidator $validator Refuses a stored table the evaluator cannot execute.
 	 * @param DecisionTableEvaluator $engine    Evaluates a resolved table.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
+		private readonly ObjectOperationsInterface $objects,
 		private readonly DecisionTableValidator $validator,
 		private readonly DecisionTableEvaluator $engine,
 	) {

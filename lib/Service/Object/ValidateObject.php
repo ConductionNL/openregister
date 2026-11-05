@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -80,7 +80,7 @@ use stdClass;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class ValidateObject {
+class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Default validation error message.
 	 *
@@ -383,7 +383,7 @@ class ValidateObject {
 	 * Constructor for ValidateObject
 	 *
 	 * @param IAppConfig $config Configuration service.
-	 * @param MagicMapper $objectMapper Object mapper.
+	 * @param MagicMapperInterface $objectMapper Object mapper.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -394,7 +394,7 @@ class ValidateObject {
 	 */
 	public function __construct(
 		private IAppConfig $config,
-		private MagicMapper $objectMapper,
+		private MagicMapperInterface $objectMapper,
 		private SchemaMapperInterface $schemaMapper,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
@@ -503,76 +503,22 @@ class ValidateObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaProperty(object $propertySchema, array $visited = []): object {
-		// Handle $ref references.
-		if (($propertySchema->{'$ref'} ?? null) !== null) {
-			$reference = $propertySchema->{'$ref'};
-
-			// Handle both string and object formats for $ref.
-			if (is_object($reference) === true && (($reference->id ?? null) !== null)) {
-				$reference = $reference->id;
-			} elseif (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
-				$reference = $reference['id'];
+		$schemaSlug = $this->componentSchemaSlug(propertySchema: $propertySchema);
+		if ($schemaSlug !== null) {
+			// Prevent infinite loops.
+			if (in_array($schemaSlug, $visited) === true) {
+				return $propertySchema;
 			}
 
-			// Check if this is a schema reference we should resolve.
-			if (is_string($reference) === true && str_contains($reference, '#/components/schemas/') === true) {
-				// Remove query parameters if present.
-				$cleanReference = $this->removeQueryParameters(reference: $reference);
-				$schemaSlug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-
-				// Prevent infinite loops.
-				if (in_array($schemaSlug, $visited) === true) {
-					return $propertySchema;
-				}
-
-				// Try to resolve the schema.
-				$referencedSchema = $this->findSchemaBySlug(slug: $schemaSlug);
-				if ($referencedSchema !== null) {
-					// Get the referenced schema object and recursively process it.
-					$refSchemaObj = $referencedSchema->getSchemaObject($this->urlGenerator);
-
-					$newVisited = array_merge($visited, [$schemaSlug]);
-					$resolvedSchema = $this->preprocessSchemaReferences(
-						schemaObject: $refSchemaObj,
-						visited: $newVisited
-					);
-
-					// For object properties, we need to handle both nested objects and UUID references.
-					if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
-						// Create a union type that allows both the full object and a UUID string.
-						$unionSchema = new stdClass();
-						$unionSchema->oneOf = [
-							$resolvedSchema,
-							// Full object.
-							(object)[
-								// UUID string.
-								'type' => 'string',
-								'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-							],
-						];
-
-						// Copy any other properties from the original schema.
-						foreach ($propertySchema as $key => $value) {
-							if ($key !== '$ref' && $key !== 'type') {
-								$unionSchema->$key = $value;
-							}
-						}
-
-						return $unionSchema;
-					}//end if
-
-					// For non-object properties, just return the resolved schema.
-					// But preserve any additional properties from the original.
-					foreach ($propertySchema as $key => $value) {
-						if ($key !== '$ref') {
-							$resolvedSchema->$key = $value;
-						}
-					}
-
-					return $resolvedSchema;
-				}//end if
-			}//end if
-		}//end if
+			$referencedSchema = $this->findSchemaBySlug(slug: $schemaSlug);
+			if ($referencedSchema !== null) {
+				$resolvedSchema = $this->preprocessSchemaReferences(
+					schemaObject: $referencedSchema->getSchemaObject($this->urlGenerator),
+					visited: array_merge($visited, [$schemaSlug])
+				);
+				return self::mergeResolvedReference(propertySchema: $propertySchema, resolvedSchema: $resolvedSchema);
+			}
+		}
 
 		// Handle array items with $ref.
 		if (($propertySchema->items ?? null) !== null && (($propertySchema->items->{'$ref'} ?? null) !== null) === true) {
@@ -591,6 +537,75 @@ class ValidateObject {
 
 		return $propertySchema;
 	}//end resolveSchemaProperty()
+
+	/**
+	 * The slug of the `#/components/schemas/` schema a property's `$ref` points at.
+	 *
+	 * The `$ref` may be a string, or an object or array carrying an `id`; query parameters are dropped.
+	 *
+	 * @param object $propertySchema The property schema.
+	 *
+	 * @return string|null The schema slug, or null when the property has no such reference.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function componentSchemaSlug(object $propertySchema): ?string {
+		$reference = ($propertySchema->{'$ref'} ?? null);
+		if (is_object($reference) === true && (($reference->id ?? null) !== null)) {
+			$reference = $reference->id;
+		} elseif (is_array($reference) === true && (($reference['id'] ?? null) !== null)) {
+			$reference = $reference['id'];
+		}
+
+		if (is_string($reference) === false || str_contains($reference, '#/components/schemas/') === false) {
+			return null;
+		}
+
+		$cleanReference = $this->removeQueryParameters(reference: $reference);
+		return substr($cleanReference, strrpos($cleanReference, '/') + 1);
+	}//end componentSchemaSlug()
+
+	/**
+	 * A property schema with its `$ref` replaced by the resolved schema.
+	 *
+	 * An object property accepts the full object or a UUID string; its other keywords except `type`
+	 * stay. Any other property becomes the resolved schema carrying its other keywords.
+	 *
+	 * @param object $propertySchema The property schema.
+	 * @param object $resolvedSchema The resolved referenced schema.
+	 *
+	 * @return object The merged schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function mergeResolvedReference(object $propertySchema, object $resolvedSchema): object {
+		if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
+			$unionSchema = new stdClass();
+			$unionSchema->oneOf = [
+				$resolvedSchema,
+				(object)[
+					'type' => 'string',
+					'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+				],
+			];
+
+			foreach ($propertySchema as $key => $value) {
+				if ($key !== '$ref' && $key !== 'type') {
+					$unionSchema->$key = $value;
+				}
+			}
+
+			return $unionSchema;
+		}
+
+		foreach ($propertySchema as $key => $value) {
+			if ($key !== '$ref') {
+				$resolvedSchema->$key = $value;
+			}
+		}
+
+		return $resolvedSchema;
+	}//end mergeResolvedReference()
 
 	/**
 	 * Transforms OpenRegister-specific object configurations before validation.
@@ -1587,73 +1602,31 @@ class ValidateObject {
 			return $itemsSchema;
 		}
 
-		// Check if this has objectConfiguration to determine handling.
-		// Handle both array and object formats for objectConfiguration.
-		$config = $itemsSchema->objectConfiguration ?? null;
-		$handling = null;
-		if (is_array($config) === true && isset($config['handling']) === true) {
-			$handling = $config['handling'];
-		} elseif (is_object($config) === true && isset($config->handling) === true) {
-			$handling = $config->handling;
-		}
+		$handling = self::objectConfigurationHandling(itemsSchema: $itemsSchema);
+		$hasRef = (($itemsSchema->{'$ref'} ?? null) !== null);
 
 		// Relation markers are the only signal that these items describe a reference to
 		// another object rather than an inline value object: explicit objectConfiguration
 		// handling, or a $ref pointing at another schema.
-		$hasRelationMarkers = ($config !== null && $handling !== null) || (($itemsSchema->{'$ref'} ?? null) !== null);
-
 		// Inline value-object arrays (e.g. [{register, label}]) declare their own properties
 		// and carry no relation markers at all. They are not references to other objects, so
 		// they must be left untouched - replacing their properties with a bare {id} stub while
 		// an authored `additionalProperties: false` survives the clean would reject every one
 		// of the schema's own sub-properties. See or#290.
-		if ($hasRelationMarkers === false && isset($itemsSchema->properties) === true) {
+		if ($handling === null && $hasRef === false && isset($itemsSchema->properties) === true) {
 			return $itemsSchema;
 		}
 
-		// Determine whether to use UUID strings or simple object structure.
 		// UUID strings: related-object handling, $ref references, or unknown handling types.
 		// Simple object: nested-object handling or no configuration and no $ref.
-		$useUuidStrings = false;
-		if ($config !== null && $handling !== null) {
+		$useUuidStrings = $hasRef;
+		if ($handling !== null) {
 			$useUuidStrings = ($handling !== 'nested-object');
-		} elseif (($itemsSchema->{'$ref'} ?? null) !== null) {
-			$useUuidStrings = true;
 		}
 
 		if ($useUuidStrings === true) {
-			// Transform to accept both UUID strings and objects with id field.
-			// Remove all object-specific properties.
-			unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
-
-			// UUID pattern for string validation.
-			$uuidPattern = self::UUID_REFERENCE_PATTERN;
-
-			// Accept either a UUID string or an object with an id field.
-			// This allows flexibility in how related objects are submitted.
-			unset($itemsSchema->type);
-			$itemsSchema->oneOf = [
-				(object)[
-					'type' => 'string',
-					'pattern' => $uuidPattern,
-					'description' => 'UUID reference to a related object',
-				],
-				(object)[
-					'type' => 'object',
-					'description' => 'Object with id field referencing a related object',
-					'properties' => (object)[
-						'id' => (object)[
-							'type' => 'string',
-							'pattern' => $uuidPattern,
-						],
-					],
-					'required' => ['id'],
-					'additionalProperties' => true,
-				],
-			];
-			$itemsSchema->description = 'UUID reference or object with id field';
-			return $itemsSchema;
-		}//end if
+			return self::asRelationReferenceItems(itemsSchema: $itemsSchema);
+		}
 
 		// Transform to a simple object structure for nested objects.
 		// Remove $ref to prevent circular references.
@@ -1673,6 +1646,71 @@ class ValidateObject {
 
 		return $itemsSchema;
 	}//end transformArrayItemsForValidation()
+
+	/**
+	 * Turn array items into a reference to a related object: a UUID string or an object with an `id`.
+	 *
+	 * @param object $itemsSchema The array items schema.
+	 *
+	 * @return object The transformed items schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function asRelationReferenceItems(object $itemsSchema): object {
+		// Transform to accept both UUID strings and objects with id field.
+		// Remove all object-specific properties.
+		unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+
+		// UUID pattern for string validation.
+		$uuidPattern = self::UUID_REFERENCE_PATTERN;
+
+		// Accept either a UUID string or an object with an id field.
+		// This allows flexibility in how related objects are submitted.
+		unset($itemsSchema->type);
+		$itemsSchema->oneOf = [
+			(object)[
+				'type' => 'string',
+				'pattern' => $uuidPattern,
+				'description' => 'UUID reference to a related object',
+			],
+			(object)[
+				'type' => 'object',
+				'description' => 'Object with id field referencing a related object',
+				'properties' => (object)[
+					'id' => (object)[
+						'type' => 'string',
+						'pattern' => $uuidPattern,
+					],
+				],
+				'required' => ['id'],
+				'additionalProperties' => true,
+			],
+		];
+		$itemsSchema->description = 'UUID reference or object with id field';
+		return $itemsSchema;
+	}//end asRelationReferenceItems()
+
+	/**
+	 * The `handling` of an items schema's objectConfiguration, given as an array or an object.
+	 *
+	 * @param object $itemsSchema The array items schema.
+	 *
+	 * @return mixed The handling, or null when none is configured.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function objectConfigurationHandling(object $itemsSchema): mixed {
+		$config = $itemsSchema->objectConfiguration ?? null;
+		if (is_array($config) === true && isset($config['handling']) === true) {
+			return $config['handling'];
+		}
+
+		if (is_object($config) === true && isset($config->handling) === true) {
+			return $config->handling;
+		}
+
+		return null;
+	}//end objectConfigurationHandling()
 
 	/**
 	 * Checks if a property schema is a self-reference to the given schema slug.

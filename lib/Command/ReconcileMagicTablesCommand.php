@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -59,11 +59,11 @@ class ReconcileMagicTablesCommand extends Command {
 	 * Constructor.
 	 *
 	 * @param RegisterMapperInterface $registerMapper Register lookups.
-	 * @param MagicMapper $magicMapper Magic-table sync + introspection.
+	 * @param MagicMapperInterface $magicMapper Magic-table sync + introspection.
 	 */
 	public function __construct(
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 	) {
 		parent::__construct();
 
@@ -351,7 +351,7 @@ class ReconcileMagicTablesCommand extends Command {
 			return true;
 		}
 
-		if (preg_match('/^'.preg_quote(MagicMapper::TABLE_PREFIX, '/').'(\d+)_\d+$/', $tableName, $matches) !== 1) {
+		if (preg_match('/^'.preg_quote(MagicMapperInterface::TABLE_PREFIX, '/').'(\d+)_\d+$/', $tableName, $matches) !== 1) {
 			return false;
 		}
 
