@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUser;
@@ -49,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @group requires-app-timemanager
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class TimeTrackerLinkServiceTest extends TestCase {
 
@@ -169,7 +171,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
+		$this->service->createAndLinkClient((new LinkTarget('abc-123', 1))->inSchema(2), 'Acme');
 	}//end testCreateAndLinkClientThrowsWhenNoUser()
 
 	public function testCreateAndLinkClientThrowsOnEmptyName(): void {
@@ -178,7 +180,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkClient('abc-123', 1, 2, '   ');
+		$this->service->createAndLinkClient((new LinkTarget('abc-123', 1))->inSchema(2), '   ');
 	}//end testCreateAndLinkClientThrowsOnEmptyName()
 
 	public function testCreateAndLinkClientThrowsWhenTimeManagerUnavailable(): void {
@@ -188,7 +190,7 @@ class TimeTrackerLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkClient('abc-123', 1, 2, 'Acme');
+		$this->service->createAndLinkClient((new LinkTarget('abc-123', 1))->inSchema(2), 'Acme');
 	}//end testCreateAndLinkClientThrowsWhenTimeManagerUnavailable()
 
 	public function testUnlinkThrowsWhenNoUser(): void {
