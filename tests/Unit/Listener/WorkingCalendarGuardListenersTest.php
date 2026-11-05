@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectDeletingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent

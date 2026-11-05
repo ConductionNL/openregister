@@ -29,6 +29,7 @@
 
 <script>
 import VectorizationSwitchField from './VectorizationSwitchField.vue'
+import { modelProxy } from './modelProxy.js'
 
 /**
  * The batch size and auto-retry settings of automatic vectorization.
@@ -48,41 +49,8 @@ export default {
 	emits: ['update:batchSize', 'update:autoRetry'],
 
 	computed: {
-		size: {
-			/**
-			 * @spec exclude Two-way binding of the batch size.
-			 * @return {number|string} The batch size
-			 */
-			get() {
-				return this.batchSize
-			},
-
-			/**
-			 * @param {number|string} value The batch size
-			 * @spec exclude Two-way binding of the batch size.
-			 */
-			set(value) {
-				this.$emit('update:batchSize', value)
-			},
-		},
-
-		retry: {
-			/**
-			 * @spec exclude Two-way binding of the auto-retry switch.
-			 * @return {boolean} Whether failed runs are retried
-			 */
-			get() {
-				return this.autoRetry
-			},
-
-			/**
-			 * @param {boolean} value Whether failed runs are retried
-			 * @spec exclude Two-way binding of the auto-retry switch.
-			 */
-			set(value) {
-				this.$emit('update:autoRetry', value)
-			},
-		},
+		size: modelProxy('batchSize'),
+		retry: modelProxy('autoRetry'),
 	},
 }
 </script>

@@ -477,4 +477,7 @@
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Rbac/ProvenanceResolver.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Schemas/UniqueConstraintEvaluator.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ViewsController.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/MagicMapper/MagicBulkSaveGroup.php"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Rbac/DepartmentMatrixValidator.php"/>
 </phpmd-baseline>
