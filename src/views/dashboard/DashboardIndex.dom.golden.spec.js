@@ -105,7 +105,8 @@ function mockStub(name) {
 }
 
 /**
- * The markup without scoped-style ids and comment nodes.
+ * The markup without scoped-style ids, comment nodes and the line break an
+ * empty v-if leaves after a span.
  *
  * @param {string} html The markup
  * @return {string} The markup
@@ -114,6 +115,7 @@ function normalised(html) {
 	return html
 		.replace(/ data-v-[a-f0-9]+(="")?/g, '')
 		.replace(/<!--[\s\S]*?-->/g, '')
+		.replace(/<\/span>\s+<\/div>/g, '</span></div>')
 		.split('\n')
 		.filter((line) => line.trim() !== '')
 		.join('\n')

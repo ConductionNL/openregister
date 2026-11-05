@@ -308,8 +308,7 @@ exports[`DashboardIndex markup renders no events on a bounded range without a se
           <div class="kpi-icon">
             <x-cubeoutline size="24"></x-cubeoutline>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
         </div>
       </slot-widget-count-objects>
       <slot-widget-count-registers>
@@ -333,8 +332,7 @@ exports[`DashboardIndex markup renders no events on a bounded range without a se
           <div class="kpi-icon">
             <x-magnify size="24"></x-magnify>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
           <div class="kpi-chip">
             <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
               <slot-icon><span class="kpi-chip-label">Last 7 days</span></slot-icon>
@@ -428,8 +426,7 @@ exports[`DashboardIndex markup renders the empty dashboard 1`] = `
           <div class="kpi-icon">
             <x-cubeoutline size="24"></x-cubeoutline>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
         </div>
       </slot-widget-count-objects>
       <slot-widget-count-registers>
@@ -453,8 +450,7 @@ exports[`DashboardIndex markup renders the empty dashboard 1`] = `
           <div class="kpi-icon">
             <x-magnify size="24"></x-magnify>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
           <div class="kpi-chip">
             <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
               <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
@@ -548,8 +544,7 @@ exports[`DashboardIndex markup renders the loading dashboard 1`] = `
           <div class="kpi-icon">
             <x-cubeoutline size="24"></x-cubeoutline>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
         </div>
       </slot-widget-count-objects>
       <slot-widget-count-registers>
@@ -573,8 +568,7 @@ exports[`DashboardIndex markup renders the loading dashboard 1`] = `
           <div class="kpi-icon">
             <x-magnify size="24"></x-magnify>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
           <div class="kpi-chip">
             <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
               <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
@@ -668,8 +662,7 @@ exports[`DashboardIndex markup renders the refresh button while refreshing 1`] =
           <div class="kpi-icon">
             <x-cubeoutline size="24"></x-cubeoutline>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
         </div>
       </slot-widget-count-objects>
       <slot-widget-count-registers>
@@ -693,8 +686,7 @@ exports[`DashboardIndex markup renders the refresh button while refreshing 1`] =
           <div class="kpi-icon">
             <x-magnify size="24"></x-magnify>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
           <div class="kpi-chip">
             <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
               <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
@@ -1115,8 +1107,7 @@ exports[`DashboardIndex range picker marks the active preset in both menus after
           <div class="kpi-icon">
             <x-cubeoutline size="24"></x-cubeoutline>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
         </div>
       </slot-widget-count-objects>
       <slot-widget-count-registers>
@@ -1140,8 +1131,7 @@ exports[`DashboardIndex range picker marks the active preset in both menus after
           <div class="kpi-icon">
             <x-magnify size="24"></x-magnify>
           </div>
-          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span>
-          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
           <div class="kpi-chip">
             <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
               <slot-icon><span class="kpi-chip-label">Last 30 days</span></slot-icon>
