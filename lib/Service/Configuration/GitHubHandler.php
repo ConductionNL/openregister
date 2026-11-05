@@ -1490,64 +1490,24 @@ class GitHubHandler implements GitHubClientInterface {
 		// requests at a lower rate limit (60/hr unauth vs 5000/hr authenticated).
 		// Supersedes the original D23 (add-features-roadmap-menu) decision to gate
 		// reads on a configured PAT.
-		$token = $this->appConfig->getValueString('openregister', 'github_api_token', '');
+		$query = (new GitHubIssueQuery(owner: $owner, repo: $repo))
+			->filteredBy(state: $state, sort: $sort)
+			->pagedBy(perPage: $perPage)
+			->withLabels(labels: $labels)
+			->withToken(token: $this->appConfig->getValueString('openregister', 'github_api_token', ''));
+		$labels = $query->labels();
 
-		$effectiveLabels = [];
-		if (is_array($labels) === true) {
-			$effectiveLabels = array_values(array_filter($labels, static fn ($l) => $l !== ''));
-		}//end if
-
-		$labelCount = count($effectiveLabels);
-
-		if ($labelCount >= 2) {
-			// OR semantics: one request per label, merge deduped by issue number, re-sort, truncate.
-			$merged = [];
-			foreach ($effectiveLabels as $label) {
-				$page = $this->fetchIssuesPage(
-					owner: $owner,
-					repo: $repo,
-					state: $state,
-					sort: $sort,
-					perPage: $perPage,
-					label: $label,
-					token: $token
-				);
-				foreach ($page as $item) {
-					$number = (int)($item['number'] ?? 0);
-					if ($number > 0 && isset($merged[$number]) === false) {
-						$merged[$number] = $item;
-					}
-				}
+		if (count($labels) >= 2) {
+			// OR semantics: one request per label, merged by the query.
+			$pages = [];
+			foreach ($labels as $label) {
+				$pages[] = $this->fetchIssuesPage(query: $query, label: $label);
 			}
 
-			$items = array_values($merged);
-			usort(
-				$items,
-				static function (array $a, array $b): int {
-					$aCount = (int)($a['reactions']['total_count'] ?? 0);
-					$bCount = (int)($b['reactions']['total_count'] ?? 0);
-					return $bCount <=> $aCount;
-				}
-			);
-			$items = array_slice($items, 0, $perPage);
-			return ['items' => $items];
-		}//end if
+			return ['items' => $query->merge(pages: $pages)];
+		}
 
-		$singleLabel = null;
-		if ($labelCount === 1) {
-			$singleLabel = $effectiveLabels[0];
-		}//end if
-
-		$items = $this->fetchIssuesPage(
-			owner: $owner,
-			repo: $repo,
-			state: $state,
-			sort: $sort,
-			perPage: $perPage,
-			label: $singleLabel,
-			token: $token
-		);
-		return ['items' => $items];
+		return ['items' => $this->fetchIssuesPage(query: $query, label: ($labels[0] ?? null))];
 	}//end listIssues()
 
 	/**
@@ -1856,13 +1816,8 @@ class GitHubHandler implements GitHubClientInterface {
 	 * and `labels[].{name,color}` survive. GitHub returns pull requests in the issues endpoint
 	 * with a `pull_request` field — those are filtered out.
 	 *
-	 * @param string $owner Validated owner
-	 * @param string $repo Validated repo
-	 * @param string $state Issue state
-	 * @param string $sort Sort key
-	 * @param int $perPage Page size
+	 * @param GitHubIssueQuery $query The listing
 	 * @param string|null $label Single label filter or null
-	 * @param string $token App-level PAT (verified non-empty by caller)
 	 *
 	 * @return array<int, array> Sanitized issue items
 	 *
@@ -1871,42 +1826,8 @@ class GitHubHandler implements GitHubClientInterface {
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-1
 	 * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-10
 	 */
-	private function fetchIssuesPage(
-		string $owner,
-		string $repo,
-		string $state,
-		string $sort,
-		int $perPage,
-		?string $label,
-		string $token,
-	): array {
-		$query = [
-			'state' => $state,
-			'sort' => $sort,
-			'direction' => 'desc',
-			'per_page' => $perPage,
-		];
-		if ($label !== null && $label !== '') {
-			$query['labels'] = $label;
-		}
-
-		$url = self::API_BASE . '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/issues';
-		$headers = [
-			'Accept' => 'application/vnd.github+json',
-			'X-GitHub-Api-Version' => '2022-11-28',
-		];
-		if ($token !== '') {
-			$headers['Authorization'] = 'Bearer ' . $token;
-		}
-
-		$response = $this->client->request(
-			'GET',
-			$url,
-			[
-				'query' => $query,
-				'headers' => $headers,
-			]
-		);
+	private function fetchIssuesPage(GitHubIssueQuery $query, ?string $label): array {
+		$response = $this->client->request('GET', $query->url(apiBase: self::API_BASE), $query->requestOptions(label: $label));
 
 		$raw = json_decode((string)$response->getBody(), true);
 		$items = [];
