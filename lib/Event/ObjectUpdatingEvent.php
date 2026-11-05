@@ -36,20 +36,6 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface {
 	use WriteVetoState;
 
 	/**
-	 * The updated object entity state
-	 *
-	 * @var ObjectEntity The object entity after update
-	 */
-	private ObjectEntity $newObject;
-
-	/**
-	 * The previous object entity state
-	 *
-	 * @var ObjectEntity|null The object entity before update (null if not available)
-	 */
-	private ?ObjectEntity $oldObject;
-
-	/**
 	 * Constructor for ObjectUpdatingEvent
 	 *
 	 * @param ObjectEntity $newObject The object entity after update
@@ -57,22 +43,9 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface {
 	 *
 	 * @return void
 	 */
-	public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject = null) {
+	public function __construct(private readonly ObjectEntity $newObject, private readonly ?ObjectEntity $oldObject = null) {
 		parent::__construct();
-		$this->newObject = $newObject;
-		$this->oldObject = $oldObject;
 	}//end __construct()
-
-	/**
-	 * Get the updated object entity
-	 *
-	 * @return ObjectEntity The object entity after update
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getNewObject(): ObjectEntity {
-		return $this->newObject;
-	}//end getNewObject()
 
 	/**
 	 * Get the original object entity
@@ -84,4 +57,15 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface {
 	public function getOldObject(): ?ObjectEntity {
 		return $this->oldObject;
 	}//end getOldObject()
+
+	/**
+	 * Get the updated object entity
+	 *
+	 * @return ObjectEntity The object entity after update
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+	 */
+	public function getNewObject(): ObjectEntity {
+		return $this->newObject;
+	}//end getNewObject()
 }//end class

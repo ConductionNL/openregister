@@ -23,45 +23,10 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\EventDispatcher\Event;
-use Psr\EventDispatcher\StoppableEventInterface;
-
 /**
  * Event dispatched when an object is being deleted.
  *
  * Implements StoppableEventInterface so hooks can reject deletion.
  */
-class ObjectDeletingEvent extends Event implements StoppableEventInterface {
-	use WriteVetoState;
-
-	/**
-	 * The object entity being deleted
-	 *
-	 * @var ObjectEntity The object entity that is being deleted
-	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Constructor for ObjectDeletingEvent
-	 *
-	 * @param ObjectEntity $object The object entity that is being deleted
-	 *
-	 * @return void
-	 */
-	public function __construct(ObjectEntity $object) {
-		parent::__construct();
-		$this->object = $object;
-	}//end __construct()
-
-	/**
-	 * Get the object entity being deleted
-	 *
-	 * @return ObjectEntity The object entity that is being deleted
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObject(): ObjectEntity {
-		return $this->object;
-	}//end getObject()
+class ObjectDeletingEvent extends AbstractPreWriteObjectEvent {
 }//end class

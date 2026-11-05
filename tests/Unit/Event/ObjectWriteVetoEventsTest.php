@@ -33,6 +33,7 @@ use Psr\EventDispatcher\StoppableEventInterface;
 /**
  * Each pre-write event starts unvetoed, and keeps a stop, the errors and the modified data a listener sets.
  *
+ * @uses   \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @covers \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @covers \OCA\OpenRegister\Event\ObjectDeletingEvent
  * @covers \OCA\OpenRegister\Event\ObjectUpdatingEvent
