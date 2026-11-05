@@ -148,11 +148,6 @@
       <code><![CDATA[$col]]></code>
     </StringIncrement>
   </file>
-  <file src="lib/Service/File/Pdf/PdfTextReplacer.php">
-    <AssignmentToVoid>
-      <code><![CDATA[$residualEntities]]></code>
-    </AssignmentToVoid>
-  </file>
   <file src="lib/Service/GraphQL/GraphQLResolver.php">
     <InvalidPropertyAssignmentValue>
       <code><![CDATA[$this->relationCache]]></code>
@@ -191,27 +186,11 @@
       <code><![CDATA[$config]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/OrganisationService.php">
-    <InvalidThrow>
-      <code><![CDATA[throw $e;]]></code>
-      <code><![CDATA[throw $e;]]></code>
-    </InvalidThrow>
-    <UndefinedClass>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[\OC\DB\Exceptions\DbalException]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/RegisterResolverService.php">
     <UnusedParam>
       <code><![CDATA[$organisationUuid]]></code>
       <code><![CDATA[$organisationUuid]]></code>
       <code><![CDATA[$organisationUuid]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/Service/Schema/SchemaDiffService.php">
-    <UnusedParam>
-      <code><![CDATA[$hasOtherChange]]></code>
     </UnusedParam>
   </file>
   <file src="lib/Service/TaskService.php">

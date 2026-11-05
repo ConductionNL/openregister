@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCP\AppFramework\Controller;
@@ -52,7 +52,7 @@ class FlowRunMigrationController extends Controller {
 	 *
 	 * @param string                       $appName     The app id.
 	 * @param IRequest                     $request     The request.
-	 * @param FlowRunMapper                $mapper      The run store.
+	 * @param FlowRunMapperInterface                $mapper      The run store.
 	 * @param IUserSession                 $userSession Who is asking.
 	 * @param FlowRunnableGuard            $guard       Whether the caller may run this flow at all.
 	 * @param FlowRunMigrationService|null $migrations  Moves runs onto another version. Nullable and
@@ -63,7 +63,7 @@ class FlowRunMigrationController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FlowRunMapper $mapper,
+		private readonly FlowRunMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly FlowRunnableGuard $guard,
 		private readonly ?FlowRunMigrationService $migrations = null,

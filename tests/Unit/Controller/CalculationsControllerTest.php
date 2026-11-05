@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
 use OCP\IUserSession;

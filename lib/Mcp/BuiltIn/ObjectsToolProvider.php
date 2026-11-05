@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -53,10 +53,10 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param ObjectService $objectService Object service facade
+	 * @param ObjectOperationsInterface $objectService Object service facade
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 	}//end __construct()
 
@@ -70,53 +70,60 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	}//end getAppId()
 
 	/**
+	 * The tool definitions.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'objects',
+			'description' => 'Manage objects (data records stored in a register under a schema)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					'action' => [
+						'type' => 'string',
+						'enum' => ['list', 'get', 'create', 'update', 'delete'],
+						'description' => 'The CRUD action to perform',
+					],
+					'register' => [
+						'type' => 'integer',
+						'description' => 'Register ID (required for all object actions)',
+					],
+					'schema' => [
+						'type' => 'integer',
+						'description' => 'Schema ID (required for all object actions)',
+					],
+					'id' => [
+						'type' => 'string',
+						'description' => 'Object UUID (required for get, update, delete)',
+					],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Object data fields (for create and update)',
+					],
+					'limit' => [
+						'type' => 'integer',
+						'description' => 'Maximum number of results (for list)',
+					],
+					'offset' => [
+						'type' => 'integer',
+						'description' => 'Number of results to skip (for list)',
+					],
+				],
+				'required' => ['action', 'register', 'schema'],
+			],
+		],
+	];
+
+	/**
 	 * Returns tool descriptors.
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
 	 */
 	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'objects',
-				'description' => 'Manage objects (data records stored in a register under a schema)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'register' => [
-							'type' => 'integer',
-							'description' => 'Register ID (required for all object actions)',
-						],
-						'schema' => [
-							'type' => 'integer',
-							'description' => 'Schema ID (required for all object actions)',
-						],
-						'id' => [
-							'type' => 'string',
-							'description' => 'Object UUID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Object data fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
-					],
-					'required' => ['action', 'register', 'schema'],
-				],
-			],
-		];
+		return self::TOOLS;
 	}//end getTools()
 
 	/**
@@ -219,13 +226,20 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id and data
 	 *
 	 * @return array<string, mixed> Serialized updated object
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function updateObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		// Read in the caller's scope first: the save then checks and writes that
+		// object, in its own register and schema, by its uuid.
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		$object = $this->objectService->saveObject(
 			object: $arguments['data'],
-			uuid: $arguments['id']
+			register: $existing->getRegister(),
+			schema: $existing->getSchema(),
+			uuid: ($existing->getUuid() ?? (string)$arguments['id'])
 		);
 		return $object->jsonSerialize();
 	}//end updateObject()

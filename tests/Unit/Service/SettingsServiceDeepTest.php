@@ -62,7 +62,7 @@ class SettingsServiceDeepTest extends TestCase {
 
 	private MockObject|IAppContainer $container;
 
-	private MockObject|SearchBackendHandler $searchBackendHandler;
+	private SearchBackendHandler $searchBackendHandler;
 
 	private MockObject|LlmSettingsHandler $llmSettingsHandler;
 
@@ -97,7 +97,7 @@ class SettingsServiceDeepTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 		$objectCacheService = $this->createMock(CacheHandler::class);
 
-		$this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+		$this->searchBackendHandler = new SearchBackendHandler();
 		$this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
 		$this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
 		$this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
@@ -302,42 +302,6 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->assertCount(1, $result['available']);
 
 	}//end testGetSearchBackendConfigReturnsDatabase()
-
-	// =========================================================================
-	// updateSearchBackendConfig
-	// =========================================================================
-
-	/**
-	 * Test updateSearchBackendConfig with active key
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendConfigWithActiveKey(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('elasticsearch')
-			->willReturn(['active' => 'elasticsearch']);
-
-		$result = $this->service->updateSearchBackendConfig(['active' => 'elasticsearch']);
-		$this->assertEquals('elasticsearch', $result['active']);
-
-	}//end testUpdateSearchBackendConfigWithActiveKey()
-
-	/**
-	 * Test updateSearchBackendConfig with backend key
-	 *
-	 * @return void
-	 */
-	public function testUpdateSearchBackendConfigWithBackendKey(): void {
-		$this->searchBackendHandler->expects($this->once())
-			->method('updateSearchBackendConfig')
-			->with('database')
-			->willReturn(['active' => 'database']);
-
-		$result = $this->service->updateSearchBackendConfig(['backend' => 'database']);
-		$this->assertEquals('database', $result['active']);
-
-	}//end testUpdateSearchBackendConfigWithBackendKey()
 
 	// =========================================================================
 	// getDatabaseInfo
@@ -568,63 +532,6 @@ class SettingsServiceDeepTest extends TestCase {
 		$this->service->massValidateObjects(0, 10000, 'serial');
 
 	}//end testMassValidateObjectsBatchSizeTooLarge()
-
-	// =========================================================================
-	// createBatchJobs (private)
-	// =========================================================================
-
-	/**
-	 * Test createBatchJobs creates correct batches
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobs(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 250, 100);
-
-		$this->assertCount(3, $result);
-
-		$this->assertEquals(1, $result[0]['batchNumber']);
-		$this->assertEquals(0, $result[0]['offset']);
-		$this->assertEquals(100, $result[0]['limit']);
-
-		$this->assertEquals(2, $result[1]['batchNumber']);
-		$this->assertEquals(100, $result[1]['offset']);
-		$this->assertEquals(100, $result[1]['limit']);
-
-		$this->assertEquals(3, $result[2]['batchNumber']);
-		$this->assertEquals(200, $result[2]['offset']);
-		$this->assertEquals(50, $result[2]['limit']);
-
-	}//end testCreateBatchJobs()
-
-	/**
-	 * Test createBatchJobs with zero objects
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobsZero(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 0, 100);
-		$this->assertCount(0, $result);
-
-	}//end testCreateBatchJobsZero()
-
-	/**
-	 * Test createBatchJobs with exact batch size
-	 *
-	 * @return void
-	 */
-	public function testCreateBatchJobsExact(): void {
-		$method = new \ReflectionMethod(SettingsService::class, 'createBatchJobs');
-
-		$result = $method->invoke($this->service, 100, 100);
-		$this->assertCount(1, $result);
-		$this->assertEquals(100, $result[0]['limit']);
-
-	}//end testCreateBatchJobsExact()
 
 	// =========================================================================
 	// Handler delegation methods

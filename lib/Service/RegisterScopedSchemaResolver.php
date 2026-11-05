@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use Throwable;
@@ -82,14 +82,14 @@ class RegisterScopedSchemaResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registerMapper Resolves the register ref (id, uuid, or slug).
-	 * @param SchemaMapper   $schemaMapper   Resolves the schema ref within the register's carried ids.
+	 * @param RegisterMapperInterface $registerMapper Resolves the register ref (id, uuid, or slug).
+	 * @param SchemaMapperInterface   $schemaMapper   Resolves the schema ref within the register's carried ids.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 

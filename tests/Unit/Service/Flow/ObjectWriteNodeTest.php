@@ -316,6 +316,37 @@ class ObjectWriteNodeTest extends TestCase {
 
 	// ── Create, attribution and output shape (REQ-OWN-002/003/007) ──────
 
+	/**
+	 * A create under `onConflict: fail` asks the save to refuse an identifier
+	 * that is already taken; by default a create may overwrite.
+	 *
+	 * @return void
+	 */
+	public function testACreateAsksTheSaveToRefuseATakenIdentifierOnlyUnderOnConflictFail(): void {
+		$position = null;
+		foreach ((new \ReflectionMethod(ObjectService::class, 'saveObject'))->getParameters() as $parameter) {
+			if ($parameter->getName() === 'failIfExists') {
+				$position = $parameter->getPosition();
+			}
+		}
+
+		$this->assertNotNull($position, 'saveObject() takes failIfExists');
+		$flags = [];
+		$this->objects->method('saveObject')->willReturnCallback(
+			function () use (&$flags, $position): ObjectEntity {
+				$flags[] = (func_get_args()[$position] ?? null);
+				return $this->entity('uuid-' . count($flags), []);
+			}
+		);
+
+		$this->node->execute($this->items([['name' => 'a']]), $this->config(['onConflict' => 'fail', 'fields' => ['title' => '{{name}}']]), $this->registerContext);
+		$this->node->execute($this->items([['name' => 'b']]), $this->config(['fields' => ['title' => '{{name}}']]), $this->registerContext);
+
+		$this->assertSame([true, false], $flags);
+
+	}//end testACreateAsksTheSaveToRefuseATakenIdentifierOnlyUnderOnConflictFail()
+
+
 	public function testEachItemProducesOneAttributedCreate(): void {
 		$seen = [];
 		$this->objects->method('saveObject')->willReturnCallback(

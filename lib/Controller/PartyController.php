@@ -27,10 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -53,28 +54,66 @@ use OCP\IRequest;
 class PartyController extends Controller {
 
 	/**
+	 * Object service, to resolve the object a party sits on.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objects;
+
+	/**
+	 * The parties on an object.
+	 *
+	 * @var PartyRoleService
+	 */
+	private readonly PartyRoleService $roles;
+
+	/**
+	 * The party records.
+	 *
+	 * @var PartyService
+	 */
+	private readonly PartyService $parties;
+
+	/**
+	 * The declared effects.
+	 *
+	 * @var PartyIndicatorGuard
+	 */
+	private readonly PartyIndicatorGuard $indicators;
+
+	/**
+	 * The capped party query.
+	 *
+	 * @var PartySearchService
+	 */
+	private readonly PartySearchService $search;
+
+	/**
+	 * The object-level permission check a party write asks.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ObjectService $objects Object service, to resolve the object a party sits on.
-	 * @param PartyRoleService $roles The parties on an object.
-	 * @param PartyService $parties The party records.
-	 * @param PartyIndicatorGuard $indicators The declared effects.
-	 * @param PartySearchService $search The capped party query.
-	 * @param PermissionHandler $permissions The object-level permission check a party write asks.
+	 * @param PartyControllerServices $services The party controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectService $objects,
-		private readonly PartyRoleService $roles,
-		private readonly PartyService $parties,
-		private readonly PartyIndicatorGuard $indicators,
-		private readonly PartySearchService $search,
-		private readonly PermissionHandler $permissions,
+		PartyControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->objects = $services->domain->objects;
+		$this->roles = $services->domain->roles;
+		$this->parties = $services->domain->parties;
+		$this->indicators = $services->domain->indicators;
+		$this->search = $services->search->search;
+		$this->permissions = $services->search->permissions;
 	}//end __construct()
 
 	/**

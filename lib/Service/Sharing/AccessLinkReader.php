@@ -47,8 +47,8 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Service\TimelineVisibilityService;
@@ -103,8 +103,8 @@ class AccessLinkReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objects The object read path.
-	 * @param SchemaMapper $schemas Resolves the schema whose rules apply.
+	 * @param ObjectOperationsInterface $objects The object read path.
+	 * @param SchemaMapperInterface $schemas Resolves the schema whose rules apply.
 	 * @param PropertyRbacHandler $properties Strips write-only and unreadable properties.
 	 * @param PublicTimeline $timeline Reads and projects the public half of the timeline.
 	 * @param AccessLinkSubject $subjects Reads which object a subject names.
@@ -112,8 +112,8 @@ class AccessLinkReader {
 	 * @param FileRestrictionStore|null $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
 	 */
 	public function __construct(
-		private readonly ObjectService $objects,
-		private readonly SchemaMapper $schemas,
+		private readonly ObjectOperationsInterface $objects,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly PropertyRbacHandler $properties,
 		private readonly PublicTimeline $timeline,
 		private readonly AccessLinkSubject $subjects,
@@ -370,8 +370,13 @@ class AccessLinkReader {
 			return [];
 		}
 
+		$readable = $object->filterAsRecord(
+			data: $data,
+			filter: fn (array $probe): array => $this->properties->filterReadableProperties(schema: $schema, object: $probe)
+		);
+
 		// A link never reveals an explicit-reveal value: it reads masked.
-		return ExplicitReveal::maskAll(schema: $schema, object: $this->properties->filterReadableProperties(schema: $schema, object: $data));
+		return ExplicitReveal::maskAll(schema: $schema, object: $readable);
 	}//end filteredProperties()
 
 	/**

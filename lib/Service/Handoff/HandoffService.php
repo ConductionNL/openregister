@@ -42,19 +42,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -110,11 +110,11 @@ class HandoffService {
 	/**
 	 * Wire the engine against the shipped OR capabilities it composes.
 	 *
-	 * @param ObjectService $objectService RBAC-enforcing object read/write path.
+	 * @param ObjectOperationsInterface $objectService RBAC-enforcing object read/write path.
 	 * @param SemanticTypeResolver $semanticTypeResolver Kind URI → installed schema resolution.
-	 * @param SchemaMapper $schemaMapper Source-schema loading.
-	 * @param MagicMapper $objectMapper Raw entity access for provenance relation writes.
-	 * @param AuditTrailMapper $auditTrailMapper Immutable audit rows.
+	 * @param SchemaMapperInterface $schemaMapper Source-schema loading.
+	 * @param MagicMapperInterface $objectMapper Raw entity access for provenance relation writes.
+	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable audit rows.
 	 * @param PermissionHandler $permissionHandler RBAC pre-checks (typed 403 before any write).
 	 * @param HandoffMappingEvaluator $mappingEvaluator The five-expression mapping evaluator.
 	 * @param HandoffQueueEntryMapper $queueMapper Durable queue-mode storage.
@@ -126,11 +126,11 @@ class HandoffService {
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SemanticTypeResolver $semanticTypeResolver,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
-		private readonly AuditTrailMapper $auditTrailMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly PermissionHandler $permissionHandler,
 		private readonly HandoffMappingEvaluator $mappingEvaluator,
 		private readonly HandoffQueueEntryMapper $queueMapper,

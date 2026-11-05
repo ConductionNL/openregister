@@ -37,12 +37,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCP\IConfig;
 
 /**
  * Lists, renders and edits the templates for platform-raised events.
  */
-class NotificationTemplateRegistry {
+class NotificationTemplateRegistry implements NotificationTemplatesInterface {
 	/**
 	 * App id used for the config namespace.
 	 */

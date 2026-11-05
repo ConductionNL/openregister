@@ -669,4 +669,146 @@ class RetentionServiceTest extends TestCase {
 		$this->assertTrue($result['immutable']);
 		$this->assertEquals(['archivist-1'], $result['approvedBy']);
 	}//end testGenerateDestructionCertificate()
+
+	/**
+	 * A client schema dating its records from `relationshipEndedAt`.
+	 *
+	 * @return Schema&MockObject The schema.
+	 */
+	private function clientSchema(): Schema {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'ander_datumkenmerk',
+			'sourceDateProperty' => 'relationshipEndedAt',
+			'defaultNominatie' => 'vernietigen',
+			'defaultBewaartermijn' => 'P2Y',
+		]);
+
+		return $schema;
+	}//end clientSchema()
+
+	/**
+	 * A client created without an end date, as applyArchivalMetadata leaves it.
+	 *
+	 * @param array<string, mixed> $data The client's data.
+	 * @param string|null $date The stored destruction date.
+	 *
+	 * @return ObjectEntity The client.
+	 */
+	private function client(array $data, ?string $date = null): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setId(42);
+		$object->setUuid('c1c1c1c1-0000-0000-0000-000000000001');
+		$object->setObject($data);
+		$retention = [
+			'archiefnominatie' => 'vernietigen',
+			'archiefstatus' => 'active',
+			'bewaartermijn' => 'P2Y',
+		];
+		if ($date !== null) {
+			$retention['archiefactiedatum'] = $date;
+		}
+
+		$object->setRetention($retention);
+
+		return $object;
+	}//end client()
+
+	/**
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testADateSetAfterCreationSetsTheDestructionDate(): void {
+		$object = $this->client(data: ['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']);
+
+		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['name' => 'Bakkerij Jansen']);
+
+		$this->assertSame('2028-10-01', $result->getRetention()['archiefactiedatum']);
+	}//end testADateSetAfterCreationSetsTheDestructionDate()
+
+	/**
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testACorrectedDateMovesTheDestructionDate(): void {
+		$object = $this->client(data: ['relationshipEndedAt' => '2026-11-15'], date: '2028-10-01');
+		$this->auditMapper->expects($this->never())->method('createAuditTrailEntry');
+
+		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']);
+
+		$this->assertSame('2028-11-15', $result->getRetention()['archiefactiedatum']);
+	}//end testACorrectedDateMovesTheDestructionDate()
+
+	/**
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testAClearedDateClearsTheDestructionDateWithAnAuditEntry(): void {
+		$object = $this->client(data: ['relationshipEndedAt' => null], date: '2028-10-01');
+		$this->auditMapper->expects($this->once())
+			->method('createAuditTrailEntry')
+			->with(
+				$object,
+				'archival.destruction_date_removed',
+				$this->callback(static fn (array $context): bool => $context['archiefactiedatum'] === ['old' => '2028-10-01', 'new' => null])
+			);
+
+		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), ['relationshipEndedAt' => '2026-10-01']);
+
+		$this->assertArrayNotHasKey('archiefactiedatum', $result->getRetention());
+	}//end testAClearedDateClearsTheDestructionDateWithAnAuditEntry()
+
+	/**
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testAnUnrelatedEditLeavesTheDestructionDateAlone(): void {
+		$object = $this->client(data: ['name' => 'Bakker Jansen', 'relationshipEndedAt' => '2026-10-01'], date: '1999-01-01');
+
+		$result = $this->service->recalculateArchiveActionDate(
+			$object,
+			$this->clientSchema(),
+			['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']
+		);
+
+		$this->assertSame('1999-01-01', $result->getRetention()['archiefactiedatum']);
+	}//end testAnUnrelatedEditLeavesTheDestructionDateAlone()
+
+	/**
+	 * A record without a nomination gets nomination and date together once
+	 * its first source date appears, from the schema's defaultNominatie.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testTheFirstDateFillsTheNominationFromTheDefault(): void {
+		$object = new ObjectEntity();
+		$object->setObject(['relationshipEndedAt' => '2026-10-01']);
+		$object->setRetention([]);
+
+		$result = $this->service->recalculateArchiveActionDate($object, $this->clientSchema(), []);
+
+		$retention = $result->getRetention();
+		$this->assertSame('vernietigen', $retention['archiefnominatie']);
+		$this->assertSame('2028-10-01', $retention['archiefactiedatum']);
+	}//end testTheFirstDateFillsTheNominationFromTheDefault()
+
+	/**
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testAChangedSourceRelationRecalculatesFromTheNewRelatedRecord(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getArchive')->willReturn([
+			'enabled' => true,
+			'afleidingswijze' => 'gerelateerde_zaak',
+			'sourceRelation' => 'client',
+			'sourceRelationProperty' => 'relationshipEndedAt',
+		]);
+
+		$newClient = new ObjectEntity();
+		$newClient->setObject(['relationshipEndedAt' => '2027-03-01']);
+		$this->objectMapper->method('find')->with('client-b')->willReturn($newClient);
+
+		$contact = $this->client(data: ['client' => 'client-b'], date: '2028-10-01');
+
+		$result = $this->service->recalculateArchiveActionDate($contact, $schema, ['client' => 'client-a']);
+
+		$this->assertSame('2029-03-01', $result->getRetention()['archiefactiedatum']);
+	}//end testAChangedSourceRelationRecalculatesFromTheNewRelatedRecord()
 }//end class

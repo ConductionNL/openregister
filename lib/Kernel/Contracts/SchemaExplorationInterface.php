@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Reads the properties a schema's stored objects actually carry, and writes chosen ones back to the schema. Implemented by SchemaService.
@@ -59,7 +58,7 @@ interface SchemaExplorationInterface {
 	 *
 	 * @throws \Exception If schema update fails
 	 *
-	 * @return Schema Updated schema entity
+	 * @return SchemaInterface Updated schema entity
 	 */
-	public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): Schema;
+	public function updateSchemaFromExploration(int $schemaId, array $propertyUpdates): SchemaInterface;
 }//end interface

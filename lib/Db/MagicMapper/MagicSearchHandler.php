@@ -55,10 +55,11 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
@@ -97,6 +98,24 @@ class MagicSearchHandler {
 	 * @var string[]
 	 */
 	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
+
+	/**
+	 * Metadata columns a search may order by under their own name.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SORTABLE_METADATA_COLUMNS = [
+		'_created',
+		'_updated',
+		'_name',
+		'_description',
+		'_summary',
+		'_uuid',
+		'_register',
+		'_schema',
+		'_owner',
+		'_organisation',
+	];
 
 	/**
 	 * The metadata columns a row sets on its entity, in the order they are set, with how
@@ -463,12 +482,10 @@ class MagicSearchHandler {
 		// indexes for ORDER BY … LIMIT instead of sorting the full result set.
 		$this->applyResultOrder(
 			qb: $queryBuilder,
-			order: $order,
-			schema: $schema,
-			searchTerm: $searchTerm,
-			recentViews: ($query['_recentViews'] ?? null),
-			dateTimeColumns: $dateTimeColumns,
-			sortLanguages: $this->sortLanguageChain(register: $register)
+			sort: new SortRequest(
+				order: $order, schema: $schema, searchTerm: $searchTerm, recentViews: ($query['_recentViews'] ?? null),
+				dateTimeColumns: $dateTimeColumns, sortLanguages: $this->sortLanguageChain(register: $register)
+			)
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -1307,6 +1324,15 @@ class MagicSearchHandler {
 					multitenancyExplicit: $multitenancyExplicit
 				)
 			);
+			$crossBranch = null;
+			if ($multitenancyExplicit === false && $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === true) {
+				$crossBranch = $this->rbacHandler->getCrossOrganisationBranchSql(schema: $schema);
+			}
+
+			if ($orgCondition !== null && $crossBranch !== null) {
+				$orgCondition = '(' . $orgCondition . ' OR ' . $crossBranch . ')';
+			}
+
 			if ($orgCondition !== null) {
 				$conditions[] = $orgCondition;
 			}
@@ -1366,6 +1392,7 @@ class MagicSearchHandler {
 	 * @return bool True when the organisation filter must be emitted.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function multitenancyApplies(
 		Schema $schema,
@@ -1373,6 +1400,11 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 	): bool {
+		// Code acting for an organisation always reads inside it.
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === false) {
 			return false;
 		}
@@ -1409,6 +1441,21 @@ class MagicSearchHandler {
 		// it and let RBAC handle access control.
 		return $multitenancyExplicit;
 	}//end multitenancyApplies()
+
+	/**
+	 * Whether the organisation boundary of a default read carries a branch for
+	 * the rows the caller's conditional `crossOrganisation` rules admit, which a
+	 * renderer of its own (the aggregation fast path) cannot express.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the boundary has a cross-organisation branch.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryHasCrossOrganisationBranch(Schema $schema): bool {
+		return $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema);
+	}//end organisationBoundaryHasCrossOrganisationBranch()
 
 	/**
 	 * Whether a default read (no `_multi` asked for) waives the organisation
@@ -1518,14 +1565,9 @@ class MagicSearchHandler {
 		IDBConnection $connection,
 		bool $withOrgless = false,
 	): ?string {
-		$scope = $this->organizationHandler->resolveOrganizationScope(
-			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-			registerId: $registerId,
-			schemaId: $schema->getId()
+		$scope = $this->organisationScopeFor(
+			table: ['registerId' => $registerId, 'schemaId' => $schema->getId(), 'withOrgless' => $withOrgless]
 		);
-		if ($withOrgless === true) {
-			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
-		}
 
 		$column = '_organisation';
 
@@ -2735,28 +2777,40 @@ class MagicSearchHandler {
 	/**
 	 * Resolve the multitenancy flag based on public schema access and explicit request
 	 *
-	 * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
-	 * multitenancy with _multi=true. This allows public data to be visible across orgs
-	 * while still giving users the option to filter by their own organisation.
+	 * A schema with a `public` read rule bypasses multitenancy for an anonymous
+	 * caller and an admin, UNLESS the caller explicitly requests multitenancy with
+	 * _multi=true. A signed-in caller keeps it: they read other organisations'
+	 * rows only through rules marked `crossOrganisation: true`.
 	 *
 	 * @param bool $_multitenancy Current multitenancy flag
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
 	 * @param Schema $schema Schema to check for public access
 	 *
 	 * @return bool Resolved multitenancy flag
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-when-inheritfrompublic-is-false-authenticated-users-must-not-qualify-for-public-rules
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	private function resolveMultitenancyFlag(
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		Schema $schema,
 	): bool {
+		if (OrganisationContext::isActive() === true) {
+			return true;
+		}
+
 		if ($_multitenancy === true) {
 			$schemaAuth = $schema->getAuthorization();
 			$readGroups = $schemaAuth['read'] ?? [];
 			$hasPublic = $this->hasPublicReadAccess(readRules: $readGroups);
 
-			// Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
-			if ($hasPublic === true && $multitenancyExplicit === false) {
+			// Public schemas bypass multitenancy for anonymous callers and admins
+			// UNLESS the caller explicitly set _multi=true.
+			if ($hasPublic === true
+				&& $multitenancyExplicit === false
+				&& $this->rbacHandler->publicReadLiftsOrganisationFilter(schema: $schema) === true
+			) {
 				return false;
 			}
 		}
@@ -2792,6 +2846,76 @@ class MagicSearchHandler {
 
 		return null;
 	}//end registerIdFromQuery()
+
+	/**
+	 * Add the organisation boundary, widened by a cross-organisation branch when there is one.
+	 *
+	 * @param IQueryBuilder $qb          The query builder.
+	 * @param array         $table       The table: `registerId`, `schemaId` and `withOrgless`.
+	 * @param mixed         $crossBranch The rows of the caller's conditional `crossOrganisation` rules, or null.
+	 *
+	 * @return void
+	 */
+	private function applyOrganisationBoundary(IQueryBuilder $qb, array $table, mixed $crossBranch): void {
+		if ($crossBranch === null) {
+			$this->organizationHandler->applyOrganizationFilter(
+				qb: $qb,
+				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+				registerId: $table['registerId'],
+				schemaId: $table['schemaId'],
+				withOrgless: $table['withOrgless']
+			);
+			return;
+		}
+
+		(new OrganisationScopeCondition())->apply(
+			qb: $qb,
+			scope: $this->organisationScopeFor(table: $table),
+			orAlso: $crossBranch
+		);
+	}//end applyOrganisationBoundary()
+
+	/**
+	 * The organisation scope of one table, widened by the org-less rows when asked.
+	 *
+	 * @param array $table The table: `registerId`, `schemaId` and `withOrgless`.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 */
+	private function organisationScopeFor(array $table): array {
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $table['registerId'],
+			schemaId: $table['schemaId']
+		);
+		if ($table['withOrgless'] === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeFor()
+
+	/**
+	 * The rows the caller's conditional `crossOrganisation` rules admit, to OR
+	 * into the organisation filter, or null when the filter takes no such branch.
+	 *
+	 * @param IQueryBuilder $qb                   The query builder.
+	 * @param Schema        $schema               The schema being read.
+	 * @param bool          $multitenancyExplicit Whether the caller asked for the strict filter.
+	 *
+	 * @return mixed The branch, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the request posture, mirrored.
+	 */
+	private function crossOrganisationBranch(IQueryBuilder $qb, Schema $schema, bool $multitenancyExplicit): mixed {
+		if ($multitenancyExplicit === true || $this->rbacHandler->hasCrossOrganisationBranch(schema: $schema) === false) {
+			return null;
+		}
+
+		return $this->rbacHandler->getCrossOrganisationBranch(qb: $qb, schema: $schema);
+	}//end crossOrganisationBranch()
 
 	/**
 	 * Apply access control filters (multitenancy and RBAC) to the query
@@ -2844,16 +2968,18 @@ class MagicSearchHandler {
 			// (REQ-SLE-001). Each magic table is exactly one such pair, so
 			// the widening reaches this table and nothing else the holder
 			// owns. A pair that cannot be resolved widens by nothing.
-			$this->organizationHandler->applyOrganizationFilter(
+			$this->applyOrganisationBoundary(
 				qb: $qb,
-				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
-				registerId: $registerId,
-				schemaId: $schema->getId(),
-				withOrgless: $this->organisationlessRowsAdmitted(
-					schema: $schema,
-					_rbac: $_rbac,
-					multitenancyExplicit: $multitenancyExplicit
-				)
+				table: [
+					'registerId'  => $registerId,
+					'schemaId'    => $schema->getId(),
+					'withOrgless' => $this->organisationlessRowsAdmitted(
+						schema: $schema,
+						_rbac: $_rbac,
+						multitenancyExplicit: $multitenancyExplicit
+					),
+				],
+				crossBranch: $this->crossOrganisationBranch(qb: $qb, schema: $schema, multitenancyExplicit: $multitenancyExplicit)
 			);
 		}
 
@@ -3660,41 +3786,21 @@ class MagicSearchHandler {
 	 * because that method is already at its complexity budget, and because the
 	 * priority is the interesting part and belongs in one place.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param array<int|string, mixed> $order The caller's requested order.
-	 * @param Schema|null $schema The schema being searched.
-	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
+	 * @param IQueryBuilder $qb   Query builder to modify.
+	 * @param SortRequest   $sort The requested order and what ordering it needs.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
-	private function applyResultOrder(
-		IQueryBuilder $qb,
-		array $order,
-		?Schema $schema,
-		?string $searchTerm,
-		mixed $recentViews,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = []
-	): void {
-		if (empty($order) === false) {
-			$this->applySorting(
-				qb: $qb,
-				order: $order,
-				schema: $schema,
-				searchTerm: $searchTerm,
-				dateTimeColumns: $dateTimeColumns,
-				sortLanguages: $sortLanguages
-			);
+	private function applyResultOrder(IQueryBuilder $qb, SortRequest $sort): void {
+		if (empty($sort->order) === false) {
+			$this->applySorting(qb: $qb, sort: $sort);
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $sort->recentViews) === true) {
 			return;
 		}
 
@@ -4091,47 +4197,32 @@ class MagicSearchHandler {
 	/**
 	 * Apply sorting to the query
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param array $order Sort order configuration
-	 * @param Schema $schema Schema for column mapping
-	 * @param string|null $searchTerm Search term for relevance sorting (optional)
-	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
-	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by, first wins
+	 * @param IQueryBuilder $qb   Query builder to modify
+	 * @param SortRequest   $sort The requested order, its schema, search term, date columns and language chain
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
-	private function applySorting(
-		IQueryBuilder $qb,
-		array $order,
-		Schema $schema,
-		?string $searchTerm = null,
-		?array $dateTimeColumns = null,
-		array $sortLanguages = [],
-	): void {
-		$properties = $schema->getProperties();
+	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		$properties = $sort->schema->getProperties();
 
-		foreach ($order as $field => $direction) {
+		foreach ($sort->order as $field => $direction) {
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';
 			}
 
-			// Special handling for relevance sorting (requires pg_trgm extension and a search term).
-			// This uses PostgreSQL's similarity() function for fuzzy relevance scoring.
+			// Relevance sorting needs a search term and the pg_trgm extension;
+			// without them the field is skipped, as ordering by relevance
+			// without a search makes no sense.
 			if ($field === '_relevance') {
-				if ($searchTerm !== null && $this->hasPgTrgmExtension() === true) {
-					// Use named parameter for safety and proper escaping.
-					$paramName = $qb->createNamedParameter($searchTerm);
-					// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
-					$similarityExpr = "similarity(t._name::text, {$paramName})";
-					$qb->addOrderBy($qb->createFunction($similarityExpr), $direction);
+				$relevance = $this->relevanceSortExpression(qb: $qb, sort: $sort);
+				if ($relevance !== null) {
+					$qb->addOrderBy($relevance, $direction);
 				}
 
-				// Skip _relevance if conditions aren't met (no search term or no pg_trgm).
-				// Silently ignore to avoid errors - relevance ordering without search makes no sense.
 				continue;
 			}
 
@@ -4140,23 +4231,7 @@ class MagicSearchHandler {
 				// @self.lastUserActivity → t._last_user_activity).
 				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
-			} elseif (in_array(
-				$field,
-				[
-					'_created',
-					'_updated',
-					'_name',
-					'_description',
-					'_summary',
-					'_uuid',
-					'_register',
-					'_schema',
-					'_owner',
-					'_organisation',
-				],
-				true
-			) === true
-			) {
+			} elseif (in_array($field, self::SORTABLE_METADATA_COLUMNS, true) === true) {
 				// Direct metadata column reference (e.g., _created → t._created).
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
@@ -4168,33 +4243,49 @@ class MagicSearchHandler {
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
 				// Lower-cased, like every text order (see buildPropertySortExpression()).
-				$columnName = $this->sanitizeColumnName(name: $field);
+				$column = $qb->getColumnName($this->sanitizeColumnName(name: $field), 't');
 				$qb->addOrderBy(
 					$qb->createFunction(
 						$this->lowerSql(
-							expression: $this->buildTranslatableSortSql(
-								column: $qb->getColumnName($columnName, 't'),
-								languages: $sortLanguages
-							)
+							expression: $this->buildTranslatableSortSql(column: $column, languages: $sort->sortLanguages)
 						)
 					),
 					$direction
 				);
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
-				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$this->buildPropertySortExpression(
 						qb: $qb,
-						columnName: $columnName,
+						columnName: $this->sanitizeColumnName(name: $field),
 						propertyConfig: $properties[$field],
-						dateTimeColumns: $dateTimeColumns
+						dateTimeColumns: $sort->dateTimeColumns
 					),
 					$direction
 				);
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * The relevance order of a search: similarity of the name to the search term.
+	 *
+	 * @param IQueryBuilder $qb   Query builder the expression binds its parameter on.
+	 * @param SortRequest   $sort The requested order, carrying the search term.
+	 *
+	 * @return IQueryFunction|null The expression, or null without a search term or pg_trgm.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-multi-field-sorting-with-metadata-and-relevance-support
+	 */
+	private function relevanceSortExpression(IQueryBuilder $qb, SortRequest $sort): ?IQueryFunction {
+		if ($sort->searchTerm === null || $this->hasPgTrgmExtension() === false) {
+			return null;
+		}
+
+		// Nextcloud's QueryBuilder.addOrderBy() accepts expressions through createFunction().
+		$paramName = $qb->createNamedParameter($sort->searchTerm);
+		return $qb->createFunction("similarity(t._name::text, {$paramName})");
+	}//end relevanceSortExpression()
 
 	/**
 	 * The languages a translatable property sorts by, in the order rendering

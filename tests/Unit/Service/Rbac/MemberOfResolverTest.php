@@ -447,7 +447,7 @@ class MemberOfResolverTest extends TestCase {
 	private function containerGiving(MagicMapper $objects): ContainerInterface {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+			static fn (string $id): mixed => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class) ? $objects : null
 		);
 		return $container;
 	}//end containerGiving()
@@ -482,7 +482,7 @@ class MemberOfResolverTest extends TestCase {
 		foreach ((new \ReflectionClass(MemberOfResolver::class))->getConstructor()->getParameters() as $parameter) {
 			$type = $parameter->getType();
 			$this->assertFalse(
-				$type instanceof \ReflectionNamedType && is_a($type->getName(), MagicMapper::class, true),
+				$type instanceof \ReflectionNamedType && is_a($type->getName(), \OCA\OpenRegister\Db\MagicMapperInterface::class, true),
 				'MemberOfResolver must resolve MagicMapper lazily: ' . $parameter->getName()
 			);
 		}

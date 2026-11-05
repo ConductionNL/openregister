@@ -31,18 +31,19 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -201,6 +202,10 @@ class PermissionHandler {
 		'readFiles',
 		'addFiles',
 		'deleteFiles',
+		// The grants list of an object, canonical on this path for the same
+		// reason. It never resolves default-open: AccessReviewGate only asks
+		// when the cascaded block writes it.
+		'readGrants',
 	];
 
 	/**
@@ -293,8 +298,8 @@ class PermissionHandler {
 	 * @param IUserSession $userSession User session for getting current user.
 	 * @param IUserManager $userManager User manager for getting user objects.
 	 * @param IGroupManager $groupManager Group manager for checking user groups.
-	 * @param SchemaMapper $schemaMapper Mapper for schema operations.
-	 * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
+	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity operations.
 	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
 	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
 	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
@@ -321,8 +326,8 @@ class PermissionHandler {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly ConditionMatcher $conditionMatcher,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
@@ -1531,7 +1536,9 @@ class PermissionHandler {
 	 * The clause is evaluated through the shared {@see ConditionMatcher}, the
 	 * same evaluator the grants beside it use (ADR-011). A fourth match
 	 * evaluator here would be a second reading of the same grammar, and the two
-	 * would only meet when a denial failed to bite.
+	 * would only meet when a denial failed to bite. A clause on metadata no
+	 * record carries can never match, so it selects every row: the deny fails
+	 * closed rather than never firing.
 	 *
 	 * @param DenyResolver $resolver      The deny-grammar reader.
 	 * @param array|null   $authorization The cascaded block.
@@ -1559,11 +1566,7 @@ class PermissionHandler {
 			return null;
 		}
 
-		$envelope = ($object->getObject() ?? []);
-		$organisation = $object->getOrganisation();
-		if ($organisation !== null) {
-			$envelope['@self'] = ((($envelope['@self'] ?? []) + ['organisation' => $organisation]));
-		}
+		$envelope = $object->getMatchEnvelope();
 
 		foreach ($conditional as $denial) {
 			$rule = $denial['rule'];
@@ -1571,17 +1574,26 @@ class PermissionHandler {
 				continue;
 			}
 
-			if ($this->conditionMatcher->objectMatchesConditions(
-				object: $envelope,
-				match: $rule['match']
-			) === true
-			) {
+			if ($this->denialSelects(match: $rule['match'], envelope: $envelope) === true) {
 				return $denial;
 			}
 		}
 
 		return null;
 	}//end firstMatchingConditionalDenial()
+
+	/**
+	 * Whether a denial's clause selects the row: it matches, or it names metadata no record carries.
+	 *
+	 * @param array<string, mixed> $match    The clause.
+	 * @param array<mixed>         $envelope The row as a rule reads it.
+	 *
+	 * @return bool True when the denial applies.
+	 */
+	private function denialSelects(array $match, array $envelope): bool {
+		return $this->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
+			|| $this->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === true;
+	}//end denialSelects()
 
 	/**
 	 * Decide a private object, or decline to decide.
@@ -1947,6 +1959,7 @@ class PermissionHandler {
 		}
 
 		$activeOrganisation = $this->getActiveOrganisationForContext();
+		$checkOrganisation = $this->organisationCheckApplies(multitenancy: $_multitenancy, activeOrganisation: $activeOrganisation);
 
 		// An administrator reads every draft, so is not kept from one here
 		// (the same check hasPermission() and the read predicate make).
@@ -2021,14 +2034,9 @@ class PermissionHandler {
 				}//end if
 			}//end if
 
-			// Check multi-organization permissions if enabled.
-			if ($_multitenancy === true && $activeOrganisation !== null) {
-				$objectOrganisation = $object->getOrganisation();
-
-				if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-					// Skip this object - different organization.
-					continue;
-				}
+			// Skip an object of a different organisation.
+			if ($checkOrganisation === true && $this->belongsToOtherOrganisation(object: $object, activeOrganisation: $activeOrganisation) === true) {
+				continue;
 			}
 
 			if ($objectUuid !== null) {
@@ -2040,6 +2048,42 @@ class PermissionHandler {
 		// contains a null and is already a list, so both were no-ops.
 		return $filteredUuids;
 	}//end filterUuidsForPermissions()
+
+	/**
+	 * Whether the bulk filter compares each object's organisation.
+	 *
+	 * Inside an organisation context it always does, and an unknown
+	 * organisation then keeps only objects without one.
+	 *
+	 * @param bool        $multitenancy       The caller's multitenancy flag.
+	 * @param string|null $activeOrganisation The caller's organisation, if any.
+	 *
+	 * @return bool True when objects of other organisations are dropped.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the caller's posture, passed through.
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
+	 */
+	private function organisationCheckApplies(bool $multitenancy, ?string $activeOrganisation): bool {
+		if (OrganisationContext::multitenancy(requested: $multitenancy) === false) {
+			return false;
+		}
+
+		return $activeOrganisation !== null || OrganisationContext::isActive() === true;
+	}//end organisationCheckApplies()
+
+	/**
+	 * Whether an object carries an organisation other than the caller's.
+	 *
+	 * @param ObjectEntity $object             The object.
+	 * @param string|null  $activeOrganisation The caller's organisation, if any.
+	 *
+	 * @return bool True when the object belongs to another organisation.
+	 */
+	private function belongsToOtherOrganisation(ObjectEntity $object, ?string $activeOrganisation): bool {
+		$objectOrganisation = $object->getOrganisation();
+
+		return $objectOrganisation !== null && $objectOrganisation !== $activeOrganisation;
+	}//end belongsToOtherOrganisation()
 
 	/**
 	 * Get the active organisation UUID for the current context
@@ -2259,14 +2303,11 @@ class PermissionHandler {
 				// (and any other _-prefixed @self field) by stripping the underscore and looking
 				// up @self[<stripped>].
 				//
-				// Precedence: the `+` array union keeps any existing `@self.organisation` already
-				// present in $objectData, and only falls back to the separately-passed
-				// $objectOrganisation when @self has no `organisation` key. This matches the
-				// pre-unification behaviour where the object's own @self was authoritative and
-				// the explicit parameter was the fallback source.
+				// Precedence: the record's own organisation ($objectOrganisation) wins over an
+				// `@self.organisation` inside $objectData, which a request body can carry.
 				$envelope = ($objectData ?? []);
 				if ($objectOrganisation !== null) {
-					$envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+					$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 				}
 
 				if ($this->conditionMatcher->objectMatchesConditions(
@@ -2370,7 +2411,7 @@ class PermissionHandler {
 		// same envelope construction as the group path so _organisation resolves.
 		$envelope = ($objectData ?? []);
 		if ($objectOrganisation !== null) {
-			$envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+			$envelope['@self'] = array_replace(($envelope['@self'] ?? []), ['organisation' => $objectOrganisation]);
 		}
 
 		return $this->conditionMatcher->objectMatchesConditions(
@@ -2781,6 +2822,31 @@ class PermissionHandler {
 	}//end resolveAuthorization()
 
 	/**
+	 * The authorization block as DECLARED in the cascade (schema or register,
+	 * then the object's own block), before the department matrix is compiled,
+	 * expiries applied or a token narrows it.
+	 *
+	 * For a question about which rules a schema has opted into, not about what
+	 * they grant now: a matrix row past its `until`, or provider rows that did
+	 * not arrive, compile to nothing, and a regime decided from the compiled
+	 * block would fall away with them.
+	 *
+	 * @param Schema            $schema The schema.
+	 * @param ObjectEntity|null $object The object, whose own block layers on top.
+	 *
+	 * @return array<string, mixed>|null The declared block, or null when none is configured.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/file-actions/spec.md
+	 */
+	public function resolveDeclaredAuthorization(Schema $schema, ?ObjectEntity $object = null): ?array {
+		return self::stripMcpScope(
+			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
+		);
+	}//end resolveDeclaredAuthorization()
+
+	/**
 	 * Intersect the resolved block with the grant of the token in force.
 	 *
 	 * Applied HERE, at the end of the one step every path takes, for the same
@@ -2861,7 +2927,7 @@ class PermissionHandler {
 
 		try {
 			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
-			$compiler = new DepartmentMatrixCompiler();
+			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
 
 			$userId = $this->userSession->getUser()?->getUID();
 			$userGroups = [];
@@ -2910,7 +2976,7 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function matrixRowsFromApps(): MatrixRowsFromApps {
+	public function matrixRowsFromApps(): MatrixRowsFromApps {
 		$this->matrixRowsFromApps ??= new MatrixRowsFromApps(
 			dispatcher: $this->eventDispatcher,
 			validator: new DepartmentMatrixValidator(),
@@ -2930,7 +2996,7 @@ class PermissionHandler {
 	private function personValues(): DepartmentMatrixPersonValues {
 		$this->personValues ??= new DepartmentMatrixPersonValues(
 			schemas: $this->schemaMapper,
-			registers: $this->container->get(RegisterMapper::class),
+			registers: $this->container->get(RegisterMapperInterface::class),
 			objects: $this->objectEntityMapper,
 			logger: $this->logger
 		);
@@ -3421,7 +3487,7 @@ class PermissionHandler {
 
 		$registerIds = [];
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$registerIds = $registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -3526,7 +3592,7 @@ class PermissionHandler {
 	 */
 	private function getRegisterForSchema(Schema $schema): ?Register {
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			$registerId = $registerMapper->getFirstRegisterWithSchema($schema->getId());
 			if ($registerId === null) {
 				return null;
@@ -3584,7 +3650,7 @@ class PermissionHandler {
 		}
 
 		try {
-			$registerMapper = $this->container->get(RegisterMapper::class);
+			$registerMapper = $this->container->get(RegisterMapperInterface::class);
 			// Multitenancy/RBAC scoping DISABLED: this loads the register purely to
 			// read its authorization + configuration policy for a security decision.
 			// Org-scoping this lookup would make a legitimate register unresolvable

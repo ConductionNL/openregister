@@ -116,15 +116,41 @@ Publishing SHALL sign the canonical (key-sorted, provenance-excluded) bundle wit
 the instance's Ed25519 key, minted and stored once, attaching an
 `{alg, publicKey, signature}` provenance block. Installing SHALL verify it: a
 tampered signature SHALL always be refused; an unsigned or untrusted-key bundle
-SHALL be refused once the organisation populates a trusted-keys allowlist (empty =
-not yet enforced). The instance SHALL expose its public key so other
-organisations can add it to their trust list.
+SHALL be refused when the organisation has a trusted-keys allowlist. With an empty
+allowlist nothing can vouch for a bundle, because anyone can sign with a key of
+their own, so every bundle SHALL be refused until an administrator adds a trusted
+key or sets `allowUnverifiedBundles`. The instance SHALL expose its public key so
+other organisations can add it to their trust list.
+
+A caller who is not an administrator SHALL NOT install a bundle whose schemas hold
+a `crossOrganisation: true` rule. The install writes as the system, so this SHALL
+be judged against the person who asked for it.
 
 #### Scenario: A tampered bundle is refused
 
 - **GIVEN** a published, signed bundle whose contents are altered after signing
 - **WHEN** a user installs it
 - **THEN** the install is refused for a bad signature
+
+#### Scenario: Nothing vouches for a bundle
+
+- **GIVEN** an organisation with an empty trusted-keys allowlist and no `allowUnverifiedBundles`
+- **WHEN** an unsigned bundle, or one signed by any key, is installed
+- **THEN** the install is refused with 403
+- @e2e exclude {service unit test}
+
+#### Scenario: An administrator allows unverified bundles
+
+- **GIVEN** the same organisation, where an administrator set `allowUnverifiedBundles` to `true`
+- **WHEN** an unsigned bundle is installed
+- **THEN** the install goes ahead
+
+#### Scenario: A bundle lets a rule cross organisations
+
+- **GIVEN** a caller who may install but is not an administrator
+- **WHEN** the bundle's schema holds a rule with `crossOrganisation: true`, as an array or as JSON text
+- **THEN** the install is refused with 403 and nothing is written
+- @e2e exclude {guard unit test}
 
 #### Scenario: Signing enforcement pins publishers
 

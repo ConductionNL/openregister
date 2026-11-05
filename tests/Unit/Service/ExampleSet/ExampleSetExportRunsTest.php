@@ -29,6 +29,7 @@ use Psr\Container\ContainerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Db\ExportRun
  */
 class ExampleSetExportRunsTest extends TestCase {
 	/** @var array<string, string> The files in pieter's folder, by path. */

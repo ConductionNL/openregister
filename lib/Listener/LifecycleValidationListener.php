@@ -28,8 +28,11 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Lifecycle\GuardResult;
+use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
+use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
@@ -77,7 +80,7 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
 	 * @param IUserSession $userSession Current user session.
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
@@ -92,7 +95,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LifecycleGuardRegistry $guardRegistry,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
@@ -283,24 +286,70 @@ class LifecycleValidationListener implements IEventListener {
 			return;
 		}
 
-		$requires = ($spec['requires'] ?? null);
-		if (is_string($requires) === true && $requires !== '') {
-			$userId = ($this->userSession->getUser()?->getUID() ?? '');
-			$guard = $this->guardRegistry->resolve($requires);
-			$result = $guard->check($newData, $action, $userId);
-			if ($result->isAllowed() === false) {
-				$this->reject(
-					event: $event,
-					error: [
-						'code' => 'lifecycle-guard-denied',
-						'field' => $field,
-						'action' => $action,
-						'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
-					]
-				);
-			}
+		$guardRefusal = $this->guardRefusal(
+			spec: $spec,
+			transition: ['field' => $field, 'action' => (string)$action, 'object' => $newData, 'stored' => $oldObject]
+		);
+		if ($guardRefusal !== null) {
+			$this->reject(event: $event, error: $guardRefusal);
 		}
 	}//end handle()
+
+	/**
+	 * The refusal of the transition's `requires` guard, or null when it allows or there is none.
+	 *
+	 * @param array<string, mixed> $spec       The matched transition.
+	 * @param array<string, mixed> $transition `field`, `action`, the incoming `object` data and the `stored` entity.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
+	 */
+	private function guardRefusal(array $spec, array $transition): ?array {
+		$requires = ($spec['requires'] ?? null);
+		if (is_string($requires) === false || $requires === '') {
+			return null;
+		}
+
+		$result = $this->runGuard(
+			requires: $requires,
+			context: new LifecycleGuardContext(
+				object: $transition['object'],
+				stored: $transition['stored'],
+				action: $transition['action'],
+				userId: ($this->userSession->getUser()?->getUID() ?? '')
+			)
+		);
+		if ($result->isAllowed() === true) {
+			return null;
+		}
+
+		return [
+			'code' => 'lifecycle-guard-denied',
+			'field' => $transition['field'],
+			'action' => $transition['action'],
+			'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
+		];
+	}//end guardRefusal()
+
+	/**
+	 * Run a transition's guard: with the stored object when it asks for it, else on the incoming data.
+	 *
+	 * @param string                $requires The guard's tag.
+	 * @param LifecycleGuardContext $context  The incoming data, the stored object, the action and the caller.
+	 *
+	 * @return GuardResult
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
+	 */
+	private function runGuard(string $requires, LifecycleGuardContext $context): GuardResult {
+		$guard = $this->guardRegistry->resolve($requires);
+		if ($guard instanceof LifecycleTransitionGuardInterface) {
+			return $guard->checkTransition(context: $context);
+		}
+
+		return $guard->check($context->object, $context->action, $context->userId);
+	}//end runGuard()
 
 	/**
 	 * Record what a transition's condition decided, and on which operand.

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCP\IConfig;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -45,7 +46,7 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class CalendarEventService {
+class CalendarEventService implements ObjectCalendarEventsInterface {
 
 	/**
 	 * NC app id used for IConfig user-value persistence.
@@ -761,16 +762,68 @@ class CalendarEventService {
 
 		$linkData = $this->extractOpenRegisterProperties(vevent: $vevent);
 
-		$dtstart = null;
-		if (isset($vevent->DTSTART) === true) {
-			$dtstart = $vevent->DTSTART->getDateTime()->format('c');
+		$status = $this->veventText(vevent: $vevent, property: 'STATUS');
+		if ($status !== null) {
+			$status = strtolower($status);
 		}
 
-		$dtend = null;
-		if (isset($vevent->DTEND) === true) {
-			$dtend = $vevent->DTEND->getDateTime()->format('c');
+		return [
+			'id' => $uri,
+			'uid' => $this->veventText(vevent: $vevent, property: 'UID'),
+			'calendarId' => $calendarId,
+			'summary' => $this->veventText(vevent: $vevent, property: 'SUMMARY') ?? '',
+			'dtstart' => $this->veventDate(vevent: $vevent, property: 'DTSTART'),
+			'dtend' => $this->veventDate(vevent: $vevent, property: 'DTEND'),
+			'location' => $this->veventText(vevent: $vevent, property: 'LOCATION'),
+			'description' => $this->veventText(vevent: $vevent, property: 'DESCRIPTION') ?? '',
+			'attendees' => $this->veventAttendees(vevent: $vevent),
+			'status' => $status,
+			'objectUuid' => $linkData['objectUuid'],
+			'registerId' => $linkData['registerId'],
+			'schemaId' => $linkData['schemaId'],
+		];
+	}//end veventToArray()
+
+	/**
+	 * The text of a VEVENT property, or null when the event does not have it.
+	 *
+	 * @param mixed  $vevent   The VEVENT component.
+	 * @param string $property The property name.
+	 *
+	 * @return string|null The text.
+	 */
+	private function veventText(mixed $vevent, string $property): ?string {
+		if (isset($vevent->$property) === false) {
+			return null;
 		}
 
+		return (string)$vevent->$property;
+	}//end veventText()
+
+	/**
+	 * A VEVENT date-time property as an ISO 8601 string, or null when the event does not have it.
+	 *
+	 * @param mixed  $vevent   The VEVENT component.
+	 * @param string $property The property name, DTSTART or DTEND.
+	 *
+	 * @return string|null The date-time.
+	 */
+	private function veventDate(mixed $vevent, string $property): ?string {
+		if (isset($vevent->$property) === false) {
+			return null;
+		}
+
+		return $vevent->$property->getDateTime()->format('c');
+	}//end veventDate()
+
+	/**
+	 * The attendee addresses of a VEVENT, without the mailto: prefix.
+	 *
+	 * @param mixed $vevent The VEVENT component.
+	 *
+	 * @return list<string> The addresses.
+	 */
+	private function veventAttendees(mixed $vevent): array {
 		$attendees = [];
 		if (isset($vevent->ATTENDEE) === true) {
 			foreach ($vevent->ATTENDEE as $attendee) {
@@ -778,47 +831,8 @@ class CalendarEventService {
 			}
 		}
 
-		$uid = null;
-		if (isset($vevent->UID) === true) {
-			$uid = (string)$vevent->UID;
-		}
-
-		$summary = '';
-		if (isset($vevent->SUMMARY) === true) {
-			$summary = (string)$vevent->SUMMARY;
-		}
-
-		$location = null;
-		if (isset($vevent->LOCATION) === true) {
-			$location = (string)$vevent->LOCATION;
-		}
-
-		$description = '';
-		if (isset($vevent->DESCRIPTION) === true) {
-			$description = (string)$vevent->DESCRIPTION;
-		}
-
-		$status = null;
-		if (isset($vevent->STATUS) === true) {
-			$status = strtolower((string)$vevent->STATUS);
-		}
-
-		return [
-			'id' => $uri,
-			'uid' => $uid,
-			'calendarId' => $calendarId,
-			'summary' => $summary,
-			'dtstart' => $dtstart,
-			'dtend' => $dtend,
-			'location' => $location,
-			'description' => $description,
-			'attendees' => $attendees,
-			'status' => $status,
-			'objectUuid' => $linkData['objectUuid'],
-			'registerId' => $linkData['registerId'],
-			'schemaId' => $linkData['schemaId'],
-		];
-	}//end veventToArray()
+		return $attendees;
+	}//end veventAttendees()
 
 	/**
 	 * Extract X-OPENREGISTER-* properties from a VEVENT component.

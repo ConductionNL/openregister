@@ -18,6 +18,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,7 +58,7 @@ class FlowTaskBridgeTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
 				return match ($id) {
-					FlowRunService::class => $this->runService,
+					FlowRunServiceInterface::class => $this->runService,
 					FlowRunAdvancer::class => $this->advancer,
 					FlowStreamMapper::class => $this->streams,
 					default => throw new RuntimeException('unexpected service ' . $id),

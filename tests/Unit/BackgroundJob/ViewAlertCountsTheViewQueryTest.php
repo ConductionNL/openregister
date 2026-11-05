@@ -26,8 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\View;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -121,7 +121,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if ($type->getName() === MagicMapper::class) {
+			if (in_array($type->getName(), [MagicMapper::class, \OCA\OpenRegister\Db\MagicMapperInterface::class], true) === true) {
 				$args[] = $this->mapper;
 				continue;
 			}

@@ -51,6 +51,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class OAuth2ReauthorisationTest extends TestCase {
 	/** @var integer How many brand-new credentials were minted. */

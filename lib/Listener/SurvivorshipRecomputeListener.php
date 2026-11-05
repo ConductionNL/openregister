@@ -40,10 +40,10 @@ namespace OCA\OpenRegister\Listener;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
@@ -100,8 +100,8 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * Wire collaborators used to look up the schema, load linked sources +
 	 * trust rows, and resolve the golden record.
 	 *
-	 * @param SchemaMapper $schemaMapper Schema lookup mapper.
-	 * @param ObjectService $objectService Object read path (RBAC + tenant scoped).
+	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param ObjectOperationsInterface $objectService Object read path (RBAC + tenant scoped).
 	 * @param SurvivorshipResolver $resolver Pure golden-record resolver.
 	 * @param TrustTierResolver $trustResolver Pure trust-tier lookup + decay engine.
 	 * @param SourceRecordResolver $sourceRecordResolver Mode-aware source-record resolver (embedded | reverseFk).
@@ -113,8 +113,8 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectService $objectService,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly SurvivorshipResolver $resolver,
 		private readonly TrustTierResolver $trustResolver,
 		private readonly SourceRecordResolver $sourceRecordResolver,

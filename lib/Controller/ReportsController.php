@@ -35,10 +35,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
-use OCA\OpenRegister\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -57,14 +57,14 @@ class ReportsController extends Controller {
 	 * @param string $appName App identifier.
 	 * @param IRequest $request Active request.
 	 * @param ReportRenderService $renderService Composer.
-	 * @param MagicMapper $objectMapper Dashboard loader.
+	 * @param MagicMapperInterface $objectMapper Dashboard loader.
 	 * @param LoggerInterface $logger Logger for render diagnostics.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ReportRenderService $renderService,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

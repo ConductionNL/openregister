@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DashboardController;
-use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardService;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;

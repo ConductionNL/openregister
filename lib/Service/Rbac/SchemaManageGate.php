@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Throwable;
@@ -42,12 +42,12 @@ class SchemaManageGate {
 	 *
 	 * @param IUserSession  $userSession  The caller.
 	 * @param IGroupManager $groupManager The caller's groups and admin status.
-	 * @param SchemaMapper  $schemaMapper Resolves a schema a row names.
+	 * @param SchemaMapperInterface  $schemaMapper Resolves a schema a row names.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -76,6 +76,19 @@ class SchemaManageGate {
 	public function mayManageRegister(Register $register): bool {
 		return $this->allowedByManageRule(authorization: $register->getAuthorization());
 	}//end mayManageRegister()
+
+	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * @return bool False without a session.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function callerIsAdministrator(): bool {
+		$user = $this->userSession->getUser();
+
+		return $user !== null && $this->groupManager->isAdmin($user->getUID()) === true;
+	}//end callerIsAdministrator()
 
 	/**
 	 * Whether an authorization block's `manage` rule admits the caller; administrators always pass.

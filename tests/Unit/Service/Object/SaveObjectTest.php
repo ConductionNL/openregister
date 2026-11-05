@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -27,6 +28,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
@@ -39,7 +41,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for SaveObject
@@ -48,6 +50,8 @@ use Twig\Loader\ArrayLoader;
  * default value processing, slug generation, and cache management.
  */
 class SaveObjectTest extends TestCase {
+	use BuildsObjectSlugHandler;
+
 	/** @var SaveObject */
 	/**
 	 * The ambient flow-run stack the guard reads.
@@ -118,7 +122,8 @@ class SaveObjectTest extends TestCase {
 		$this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$arrayLoader = new ArrayLoader();
+		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler->method('hasPermission')->willReturn(true);
 
 		$this->runContext = new \OCA\OpenRegister\Service\Flow\FlowRunContext();
 		$this->handler = new SaveObject(
@@ -143,7 +148,7 @@ class SaveObjectTest extends TestCase {
 			$this->logger,
 			$this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			$this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			$arrayLoader,
+			$permissionHandler,
 			null,
 			null,
 			null,
@@ -598,78 +603,6 @@ class SaveObjectTest extends TestCase {
 	public function testRemoveQueryParametersStripsParams(): void {
 		$result = $this->invokePrivateMethod('removeQueryParameters', ['schema?key=value&other=1']);
 		$this->assertSame('schema', $result);
-	}
-
-	// =========================================================================
-	// getValueFromPath (private)
-	// =========================================================================
-
-	public function testGetValueFromPathSimple(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => 'Test'], 'name']);
-		$this->assertSame('Test', $result);
-	}
-
-	public function testGetValueFromPathNested(): void {
-		$data = ['contact' => ['email' => 'test@example.com']];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']);
-		$this->assertSame('test@example.com', $result);
-	}
-
-	public function testGetValueFromPathDeeplyNested(): void {
-		$data = ['level1' => ['level2' => ['level3' => 'deep']]];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'level1.level2.level3']);
-		$this->assertSame('deep', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingKey(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => 'Test'], 'missing']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingNestedKey(): void {
-		$data = ['contact' => ['name' => 'Test']];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathConvertsIntToString(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['count' => 42], 'count']);
-		$this->assertSame('42', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForNull(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => null], 'name']);
-		$this->assertNull($result);
-	}
-
-	// =========================================================================
-	// createSlug (private)
-	// =========================================================================
-
-	public function testCreateSlugBasic(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Hello World']);
-		$this->assertSame('hello-world', $result);
-	}
-
-	public function testCreateSlugWithSpecialChars(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Hello! @World# $2024']);
-		$this->assertSame('hello-world-2024', $result);
-	}
-
-	public function testCreateSlugTrimsHyphens(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['--Hello World--']);
-		$this->assertSame('hello-world', $result);
-	}
-
-	public function testCreateSlugLimitsLength(): void {
-		$longText = str_repeat('a', 60);
-		$result = $this->invokePrivateMethod('createSlug', [$longText]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
-
-	public function testCreateSlugWithNumbers(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Product 123']);
-		$this->assertSame('product-123', $result);
 	}
 
 	// =========================================================================
@@ -1342,48 +1275,6 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// generateSlug (private)
-	// =========================================================================
-
-	public function testGenerateSlugWithSlugField(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		$data = ['name' => 'My Product'];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('my-product-', $result);
-	}
-
-	public function testGenerateSlugWithNoSlugField(): void {
-		$schema = $this->createMockSchema(1, 'test', []);
-		$data = ['name' => 'Test'];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugWithMissingFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'title']);
-		$data = ['name' => 'Test'];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugWithNestedField(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'meta.title']);
-		$data = ['meta' => ['title' => 'Nested Title']];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('nested-title-', $result);
-	}
-
-	// =========================================================================
 	// resolveSchemaReference (private) — tests schema reference resolution
 	// =========================================================================
 
@@ -1521,23 +1412,13 @@ class SaveObjectTest extends TestCase {
 	// setSelfMetadata (private)
 	// =========================================================================
 
-	public function testSetSelfMetadataSetsSlugFromSelfData(): void {
+	public function testSetSelfMetadataLeavesTheSlugToObjectSlugHandler(): void {
+		// ObjectSlugHandler::applyOnSave() decides the slug after hydration (#4037).
 		$entity = new ObjectEntity();
-		$selfData = ['slug' => 'my-slug'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], ['slug' => 'data-slug']]);
 
-		$this->assertSame('my-slug', $entity->getSlug());
-	}
-
-	public function testSetSelfMetadataSetsSlugFromData(): void {
-		$entity = new ObjectEntity();
-		$selfData = [];
-		$data = ['slug' => 'data-slug'];
-
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData, $data]);
-
-		$this->assertSame('data-slug', $entity->getSlug());
+		$this->assertNull($entity->getSlug());
 	}
 
 	public function testSetSelfMetadataSetsPublishedDate(): void {
@@ -1698,7 +1579,7 @@ class SaveObjectTest extends TestCase {
 			logger: $this->logger,
 			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
 			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new \Twig\Loader\ArrayLoader(),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
 			groupManager: $groupManager
 		);
 
@@ -2022,6 +1903,24 @@ class SaveObjectTest extends TestCase {
 	// =========================================================================
 	// sanitizeEmptyStringsForObjectProperties (private)
 	// =========================================================================
+
+	public function testSanitizeEmptyStringsClearsOptionalScalarsOfEveryScalarType(): void {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'flag' => ['type' => 'boolean'],
+			'count' => ['type' => 'integer'],
+			'mandatory' => ['type' => 'boolean', 'required' => true],
+			'list' => ['type' => 'array'],
+			'loose' => ['type' => ['string', 'null']],
+		];
+		$schemaObject->required = [];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+		$data = ['flag' => '', 'count' => '', 'mandatory' => '', 'list' => ['a' => '', 'b' => 'x'], 'loose' => ''];
+		$result = $this->invokePrivateMethod('sanitizeEmptyStringsForObjectProperties', [$data, $schema]);
+
+		$this->assertSame(['flag' => null, 'count' => null, 'mandatory' => '', 'list' => ['a' => null, 'b' => 'x'], 'loose' => ''], $result);
+	}
 
 	public function testSanitizeEmptyStringsForObjectPropertiesWithObjectProperty(): void {
 		$schemaObject = new \stdClass();
@@ -2470,7 +2369,7 @@ class SaveObjectTest extends TestCase {
 		$this->assertSame($data, $result);
 	}
 
-	public function testSetDefaultValuesGeneratesSlug(): void {
+	public function testSetDefaultValuesAddsNoSlugToTheData(): void {
 		$schemaObject = new \stdClass();
 		$schemaObject->properties = [
 			'name' => ['type' => 'string'],
@@ -2489,8 +2388,8 @@ class SaveObjectTest extends TestCase {
 		$data = ['name' => 'My Object'];
 		$result = $this->invokePrivateMethod('setDefaultValues', [$entity, $schema, $data]);
 
-		$this->assertArrayHasKey('slug', $result);
-		$this->assertStringStartsWith('my-object-', $result['slug']);
+		// The slug is entity metadata decided by ObjectSlugHandler, never data (#4037).
+		$this->assertArrayNotHasKey('slug', $result);
 	}
 
 	public function testSetDefaultValuesSkipsSlugWhenAlreadyPresent(): void {
@@ -2589,9 +2488,25 @@ class SaveObjectTest extends TestCase {
 	// deleteOrphanedRelatedObjects (private)
 	// =========================================================================
 
+	/**
+	 * An orphan scope whose rows name parent `p-1` through `incident`.
+	 *
+	 * @return array
+	 */
+	private function orphanScope(): array {
+		$this->objectEntityMapper->method('callerOrganisationsHold')->willReturn(true);
+
+		$guard = $this->createMock(\OCA\OpenRegister\Service\Object\OrphanDeletionGuard::class);
+		$guard->method('allows')->willReturn(true);
+		(new \ReflectionProperty(SaveObject::class, 'orphanGuard'))->setValue($this->handler, $guard);
+
+		return ['register' => new Register(), 'schema' => new Schema(), 'inverse' => 'incident', 'parent' => 'p-1'];
+	}//end orphanScope()
+
 	public function testDeleteOrphanedRelatedObjectsSoftDeletes(): void {
 		$orphanedEntity = new ObjectEntity();
 		$orphanedEntity->setUuid('orphan-uuid');
+		$orphanedEntity->setObject(['incident' => 'p-1']);
 
 		$this->objectEntityMapper->method('find')
 			->willReturn($orphanedEntity);
@@ -2603,7 +2518,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->once())
 			->method('update');
 
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], $this->orphanScope()]);
 
 		// Verify the entity was soft-deleted.
 		$deleted = $orphanedEntity->getDeleted();
@@ -2617,7 +2532,7 @@ class SaveObjectTest extends TestCase {
 			->willThrowException(new DoesNotExistException('Not found'));
 
 		// Should not throw.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['nonexistent-uuid'], $this->orphanScope()]);
 		$this->assertTrue(true);
 	}
 
@@ -2628,26 +2543,8 @@ class SaveObjectTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())->method('warning');
 
 		// Should not throw.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['error-uuid'], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['error-uuid'], $this->orphanScope()]);
 		$this->assertTrue(true);
-	}
-
-	public function testDeleteOrphanedRelatedObjectsUsesSystemUserWhenNoUser(): void {
-		$orphanedEntity = new ObjectEntity();
-		$orphanedEntity->setUuid('orphan-uuid');
-
-		$this->objectEntityMapper->method('find')
-			->willReturn($orphanedEntity);
-
-		$this->userSession->method('getUser')->willReturn(null);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('update');
-
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [['orphan-uuid'], null, null]);
-
-		$deleted = $orphanedEntity->getDeleted();
-		$this->assertSame('system', $deleted['deletedBy']);
 	}
 
 	// =========================================================================
@@ -2971,9 +2868,14 @@ class SaveObjectTest extends TestCase {
 
 		$this->unifiedObjectMapper->expects($this->never())->method('update');
 
-		$result = $this->invokePrivateMethod('handleObjectUpdate', [
-			$existingObject, $register, $schema, ['name' => 'New'], [], null, false, false,
-		]);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'New'];
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$result = $this->invokePrivateMethod('handleObjectUpdate', [$call, $existingObject]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 	}
@@ -2999,9 +2901,18 @@ class SaveObjectTest extends TestCase {
 
 		$this->unifiedObjectMapper->expects($this->never())->method('insert');
 
-		$result = $this->invokePrivateMethod('handleObjectCreation', [
-			1, 1, $register, $schema, ['name' => 'Test'], [], 'test-uuid-123', null, false, false, false,
-		]);
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->registerId = 1;
+		$call->schemaId = 1;
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['name' => 'Test'];
+		$call->uuid = 'test-uuid-123';
+		$call->flags->persist = false;
+		$call->flags->silent = false;
+		$call->flags->multitenancy = false;
+		$result = $this->invokePrivateMethod('handleObjectCreation', [$call]);
 
 		$this->assertInstanceOf(ObjectEntity::class, $result);
 		$this->assertSame('test-uuid-123', $result->getUuid());
@@ -3064,7 +2975,7 @@ class SaveObjectTest extends TestCase {
 		$schema->method('getSchemaObject')->willThrowException(new Exception('Schema error'));
 
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3084,7 +2995,7 @@ class SaveObjectTest extends TestCase {
 
 		// 'related' is NOT in data.
 		$data = ['name' => 'Test'];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3103,7 +3014,7 @@ class SaveObjectTest extends TestCase {
 		$entity = new ObjectEntity();
 
 		$data = ['related' => []];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		$this->assertSame($data, $result);
 	}
@@ -3124,7 +3035,7 @@ class SaveObjectTest extends TestCase {
 
 		// Property has writeBack=true, so it should be skipped by cascadeObjects.
 		$data = ['related' => ['name' => 'Sub']];
-		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data]);
+		$result = $this->invokePrivateMethod('cascadeObjects', [$entity, $schema, $data, []]);
 
 		// Data should be unchanged because writeBack properties are skipped.
 		$this->assertSame(['name' => 'Sub'], $result['related']);
@@ -3241,6 +3152,180 @@ class SaveObjectTest extends TestCase {
 
 		// Since removeAfterWriteBack is true, the property should be removed.
 		$this->assertArrayNotHasKey('deelnemers', $result);
+	}
+
+	/**
+	 * Run a write-back from `parent-uuid` to a stored target named by its numeric id.
+	 *
+	 * @param array<string, mixed> $stored The target's stored data.
+	 *
+	 * @return array{lookups: array<int, string>, saved: array<int, array<string, mixed>>}
+	 */
+	private function writeBackToStoredTarget(array $stored): array {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'deelnemers' => [
+				'type' => 'array',
+				'inversedBy' => 'deelnames',
+				'writeBack' => true,
+				'$ref' => '#/components/schemas/deelnemer',
+			],
+		];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+		$entity = new ObjectEntity();
+		$entity->setUuid('parent-uuid');
+		$entity->setRegister('1');
+
+		$targetSchemaObject = new \stdClass();
+		$targetSchemaObject->properties = ['deelnames' => ['type' => 'array'], 'title' => ['type' => 'string']];
+		$targetSchema = $this->getMockBuilder(Schema::class)
+			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
+			->getMock();
+		$targetSchema->setId(2);
+		$targetSchema->setSlug('deelnemer');
+		$targetSchema->method('getSchemaObject')->willReturn($targetSchemaObject);
+		$targetSchema->method('getConfiguration')->willReturn([]);
+		$targetSchema->method('getProperties')->willReturn($targetSchemaObject->properties);
+		$targetSchema->method('hasPropertyAuthorization')->willReturn(false);
+		$this->setPrivateProperty('schemaReferenceCache', ['#/components/schemas/deelnemer' => '2']);
+		$this->setPrivateProperty('schemaCache', ['2' => $targetSchema]);
+		$register = $this->createMockRegister(1, 'test');
+		$this->setPrivateProperty('registerCache', ['1' => $register]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$targetObject = new ObjectEntity();
+		$targetObject->setId(12);
+		$targetObject->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$targetObject->setRegister('1');
+		$targetObject->setSchema('2');
+		$targetObject->setObject($stored);
+		$lookups = [];
+		$this->objectEntityMapper->method('find')->willReturnCallback(
+			function (string|int $identifier) use ($targetObject, &$lookups): ObjectEntity {
+				$lookups[] = (string) $identifier;
+				return clone $targetObject;
+			}
+		);
+		$saved = [];
+		$this->unifiedObjectMapper->method('update')->willReturnCallback(
+			function (ObjectEntity $updated) use (&$saved): ObjectEntity {
+				$saved[] = $updated->getObject();
+				return $updated;
+			}
+		);
+		$this->urlGenerator->method('getAbsoluteURL')->willReturn('http://localhost/test');
+		$this->urlGenerator->method('linkToRoute')->willReturn('/test');
+		$this->settingsService->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => false]);
+
+		$this->invokePrivateMethod('handleInverseRelationsWriteBack', [$entity, $schema, ['deelnemers' => ['12']]]);
+
+		return ['lookups' => $lookups, 'saved' => $saved];
+	}//end writeBackToStoredTarget()
+
+	/**
+	 * A write-back to a target named by its numeric id saves the target by its own uuid.
+	 *
+	 * @return void
+	 */
+	public function testHandleInverseRelationsWriteBackSavesTheTargetByItsUuid(): void {
+		$lookups = $this->writeBackToStoredTarget(stored: ['deelnames' => []])['lookups'];
+
+		$this->assertSame('12', ($lookups[0] ?? null));
+		$this->assertNotContains('12', array_slice($lookups, 1), 'the save looked the target up again by its id');
+		$this->assertContains('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', array_slice($lookups, 1));
+	}
+
+	/**
+	 * @return array<string, array{0: array<string, mixed>, 1: array<int, string>}>
+	 */
+	public static function inverseValues(): array {
+		return [
+			'no inverse yet' => [['title' => 'kept'], ['parent-uuid']],
+			'a list' => [['title' => 'kept', 'deelnames' => ['other']], ['other', 'parent-uuid']],
+			'a single value' => [['title' => 'kept', 'deelnames' => 'other'], ['other', 'parent-uuid']],
+			'already listed' => [['title' => 'kept', 'deelnames' => ['parent-uuid']], ['parent-uuid']],
+		];
+	}//end inverseValues()
+
+	/**
+	 * The saved target keeps its data and lists the source once in its inverse property.
+	 *
+	 * @dataProvider inverseValues
+	 *
+	 * @param array<string, mixed> $stored   The target's stored data.
+	 * @param array<int, string>   $expected The inverse property as saved.
+	 *
+	 * @return void
+	 */
+	public function testWriteBackToTargetAddsTheSourceOnce(array $stored, array $expected): void {
+		$target = new ObjectEntity();
+		$target->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+		$target->setObject($stored);
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('find')->willReturn($target);
+
+		$handler = $this->getMockBuilder(SaveObject::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['saveObject'])
+			->getMock();
+		$saved = [];
+		$handler->method('saveObject')->willReturnCallback(
+			function (mixed ...$args) use (&$saved, $target): ObjectEntity {
+				$saved[] = $args;
+				return $target;
+			}
+		);
+		\Closure::bind(function () use ($mapper): void {
+			$this->objectEntityMapper = $mapper;
+		}, $handler, SaveObject::class)();
+
+		$method = new \ReflectionMethod(SaveObject::class, 'writeBackToTarget');
+		$method->invoke($handler, '12', ['inverseProperty' => 'deelnames', 'register' => '1', 'schema' => '2', 'source' => 'parent-uuid']);
+
+		$this->assertCount(1, $saved);
+		[$register, $schema, $data, $uuid] = $saved[0];
+		$this->assertSame(['1', '2', 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'], [$register, $schema, $uuid]);
+		$this->assertSame('kept', $data['title']);
+		$this->assertSame($expected, $data['deelnames']);
+	}
+
+	/**
+	 * A write-back target without a uuid is not saved: there is nothing to name it by.
+	 *
+	 * @return void
+	 */
+	public function testHandleInverseRelationsWriteBackSkipsATargetWithoutUuid(): void {
+		$schemaObject = new \stdClass();
+		$schemaObject->properties = [
+			'deelnemers' => ['type' => 'array', 'inversedBy' => 'deelnames', 'writeBack' => true, '$ref' => '#/components/schemas/deelnemer'],
+		];
+		$schema = $this->createSchemaWithSchemaObject($schemaObject);
+		$entity = new ObjectEntity();
+		$entity->setUuid('parent-uuid');
+		$entity->setRegister('1');
+		$targetSchema = $this->getMockBuilder(Schema::class)
+			->onlyMethods(['getConfiguration', 'getProperties', 'getSchemaObject', 'hasPropertyAuthorization'])
+			->getMock();
+		$targetSchema->setId(2);
+		$targetSchema->method('getConfiguration')->willReturn([]);
+		$this->setPrivateProperty('schemaReferenceCache', ['#/components/schemas/deelnemer' => '2']);
+		$this->setPrivateProperty('schemaCache', ['2' => $targetSchema]);
+		$this->setPrivateProperty('registerCache', ['1' => $this->createMockRegister(1, 'test')]);
+
+		$targetObject = new ObjectEntity();
+		$targetObject->setObject(['deelnames' => []]);
+		$lookups = 0;
+		$this->objectEntityMapper->method('find')->willReturnCallback(
+			function () use ($targetObject, &$lookups): ObjectEntity {
+				$lookups++;
+				return $targetObject;
+			}
+		);
+
+		$this->invokePrivateMethod('handleInverseRelationsWriteBack', [$entity, $schema, ['deelnemers' => ['12']]]);
+
+		$this->assertSame(1, $lookups, 'only the target lookup ran; no save followed');
 	}
 
 	// =========================================================================
@@ -4554,20 +4639,6 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// generateSlug — empty value returns null
-	// =========================================================================
-
-	public function testGenerateSlugWithEmptyFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		// Field exists but is empty string.
-		$data = ['name' => ''];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
-
-	// =========================================================================
 	// preCacheParentName — no name from hydration and no fallback
 	// =========================================================================
 
@@ -4598,7 +4669,7 @@ class SaveObjectTest extends TestCase {
 		$this->objectEntityMapper->expects($this->never())->method('find');
 
 		// Empty array of UUIDs — nothing to delete.
-		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [[], null, null]);
+		$this->invokePrivateMethod('deleteOrphanedRelatedObjects', [[], $this->orphanScope()]);
 		$this->assertTrue(true);
 	}
 
@@ -4619,5 +4690,126 @@ class SaveObjectTest extends TestCase {
 
 		// Empty array doesn't set image.
 		$this->assertNull($entity->getImage());
+	}
+
+	// =========================================================================
+	// Object slugs through the update pipeline (#4037, review finding save-f6)
+	// =========================================================================
+
+	/**
+	 * Put a real slug handler into the pipeline.
+	 *
+	 * @param array<string, list<string>> $holders Slug => live holders other than the saved object.
+	 *
+	 * @return void
+	 */
+	private function useRealSlugHandler(array $holders = []): void {
+		$register = $this->createMockRegister(id: 7);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->objectEntityMapper->method('findSlugHolders')->willReturnCallback(
+			static fn (Register $r, Schema $s, string $slug): array => ($holders[$slug] ?? [])
+		);
+		$this->setPrivateProperty(
+			'slugHandler',
+			$this->buildSlugHandler(
+				magicMapper: $this->objectEntityMapper,
+				hydrator: new MetadataHydrationHandler(
+					logger: $this->createMock(LoggerInterface::class),
+					cacheHandler: $this->createMock(CacheHandler::class)
+				),
+				registerMapper: $this->registerMapper,
+				logger: $this->logger
+			)
+		);
+	}//end useRealSlugHandler()
+
+	/**
+	 * An entity that holds a slug, on a schema that builds slugs from `title`.
+	 *
+	 * @param string|null $slug The stored slug.
+	 *
+	 * @return array{0: ObjectEntity, 1: Schema} Entity and schema.
+	 */
+	private function slugEntity(?string $slug): array {
+		$entity = new ObjectEntity();
+		$entity->setUuid('11111111-1111-1111-1111-111111111111');
+		$entity->setRegister('7');
+		$entity->setSchema('3');
+		$entity->setObject(['title' => 'Hello World']);
+		if ($slug !== null) {
+			$entity->setSlug($slug);
+		}
+
+		$schema = $this->createMockSchema(
+			id: 3,
+			slug: 'convenanten',
+			configuration: ['objectSlugField' => 'title'],
+			properties: ['title' => ['type' => 'string']]
+		);
+		return [$entity, $schema];
+	}//end slugEntity()
+
+	public function testUpdatingAnObjectKeepsItsSlugWhenTheSourceFieldChanges(): void {
+		$this->useRealSlugHandler();
+		[$entity, $schema] = $this->slugEntity('hello-world');
+		$data = ['title' => 'A Completely New Title'];
+
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
+
+		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');
+	}
+
+	public function testAClientSlugOnAFrozenObjectIsIgnored(): void {
+		$this->useRealSlugHandler();
+		[$entity, $schema] = $this->slugEntity('hello-world');
+
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => 'something-else'], ['title' => 'Hello World']]]);
+
+		$this->assertSame('hello-world', $entity->getSlug());
+	}
+
+	public function testAnEmptyClientSlugOnAFrozenObjectKeepsTheSlug(): void {
+		$this->useRealSlugHandler();
+		[$entity, $schema] = $this->slugEntity('hello-world');
+
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [['slug' => ''], ['title' => 'Hello World']]]);
+
+		$this->assertSame('hello-world', $entity->getSlug());
+	}
+
+	public function testAnUpdateDecidesTheSlugOnce(): void {
+		$this->useRealSlugHandler();
+		[$entity, $schema] = $this->slugEntity(null);
+		$register = $this->createMockRegister(id: 7);
+
+		$call = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall();
+		$call->flags = new \OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags();
+		$call->register = $register;
+		$call->schema = $schema;
+		$call->data = ['title' => 'Free Title'];
+		$call->flags->persist = false;
+		$call->flags->silent = true;
+		$prepared = $this->invokePrivateMethod('handleObjectUpdate', [$call, $entity]);
+
+		$this->assertSame('free-title', $prepared->getSlug(), 'the update path decides the slug of an object without one');
+	}
+
+	public function testUpdateObjectDoesNotDecideTheSlugAgain(): void {
+		// The client asked for a taken slug, so the decision is "no slug". updateObject()
+		// has no @self any more; deciding again would hand the object the slug of its title.
+		$this->useRealSlugHandler(['taken' => ['22222222-2222-2222-2222-222222222222']]);
+		[$entity, $schema] = $this->slugEntity(null);
+		$data = ['title' => 'Free Title'];
+		$register = $this->createMockRegister(id: 7);
+		$this->objectEntityMapper->method('update')->willReturnArgument(0);
+		$this->unifiedObjectMapper->method('update')->willReturnArgument(0);
+
+		$this->invokePrivateMethod('decideSlug', [$entity, $schema, null, [['slug' => 'taken'], $data]]);
+		$this->assertNull($entity->getSlug(), 'precondition: the decision is no slug');
+
+		$updated = $this->handler->updateObject(register: $register, schema: $schema, data: $data, existingObject: $entity, silent: true);
+
+		$this->assertNull($updated->getSlug(), 'updateObject() leaves the decision alone');
 	}
 }

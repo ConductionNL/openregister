@@ -56,6 +56,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
  * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
  * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Db\FlowRun
  */
 class CasePlanCascadeTest extends TestCase {
 

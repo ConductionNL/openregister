@@ -40,15 +40,16 @@ use DateInterval;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
+use OCA\OpenRegister\Service\Archival\ActionDateFollower;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
@@ -72,7 +73,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
-class RetentionService {
+class RetentionService implements RetentionServiceInterface {
 
 	/**
 	 * Why a destruction rule refused an object (destructionRefusal()).
@@ -112,10 +113,10 @@ class RetentionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper Object mapper for queries
-	 * @param SchemaMapper $schemaMapper Schema mapper for lookups
-	 * @param RegisterMapper $registerMapper Register mapper for lookups
-	 * @param AuditTrailMapper $auditMapper Audit trail mapper
+	 * @param MagicMapperInterface $objectMapper Object mapper for queries
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for lookups
+	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
+	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
 	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
 	 * @param IAppConfig $appConfig App configuration
 	 * @param IUserSession $userSession Current user session
@@ -130,10 +131,10 @@ class RetentionService {
 	 *              behind a parameter object would hide the dependency graph without reducing it.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly AuditTrailMapper $auditMapper,
+		private readonly MagicMapperInterface $objectMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
@@ -374,6 +375,11 @@ class RetentionService {
 	/**
 	 * Recalculate archiefactiedatum when a source property changes.
 	 *
+	 * The source is the property the schema's derivation method reads: the
+	 * `sourceDateProperty` under `ander_datumkenmerk`, the reference under the
+	 * relation methods, `bronEigenschap` under `eigenschap` and the closure
+	 * field under `afgehandeld` and `termijn`.
+	 *
 	 * @param ObjectEntity $object The object being updated
 	 * @param Schema $schema The schema
 	 * @param array $oldObject The previous object data
@@ -381,9 +387,7 @@ class RetentionService {
 	 * @return ObjectEntity The object with recalculated dates
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function recalculateArchiveActionDate(
 		ObjectEntity $object,
@@ -391,72 +395,62 @@ class RetentionService {
 		array $oldObject,
 	): ObjectEntity {
 		$archiveConfig = $schema->getArchive();
-
 		if (empty($archiveConfig) === true || ($archiveConfig['enabled'] ?? false) === false) {
 			return $object;
 		}
 
-		$retention = $object->getRetention() ?? [];
-
-		// Skip if no archival metadata present.
-		if (empty($retention['archiefnominatie']) === true) {
+		$property = $this->actionDateCalculator->sourcePropertyOf(archiveConfig: $archiveConfig);
+		if ($property === null) {
 			return $object;
 		}
 
-		// Skip if in immutable status.
-		if (in_array($retention['archiefstatus'] ?? '', self::IMMUTABLE_STATUSES, true) === true) {
+		$newData = ($object->getObject() ?? []);
+		if (($oldObject[$property] ?? null) === ($newData[$property] ?? null)) {
 			return $object;
 		}
 
-		$retentionPeriod = $retention['bewaartermijn'] ?? null;
-		if ($retentionPeriod === null) {
-			return $object;
-		}
-
-		// Check if the source property changed.
-		$afleidingswijze = $archiveConfig['afleidingswijze'] ?? 'afgehandeld';
-		$propertyChanged = false;
-
-		if ($afleidingswijze === 'eigenschap') {
-			$sourceAttribute = $archiveConfig['bronEigenschap'] ?? null;
-			if ($sourceAttribute !== null) {
-				$newData = $object->getObject();
-				$oldVal = $oldObject[$sourceAttribute] ?? null;
-				$newVal = $newData[$sourceAttribute] ?? null;
-				$propertyChanged = ($oldVal !== $newVal);
-			}
-		} elseif (in_array($afleidingswijze, ['afgehandeld', 'termijn'], true) === true) {
-			$closureField = $archiveConfig['closureField'] ?? null;
-			if ($closureField !== null) {
-				$newData = $object->getObject();
-				$oldVal = $oldObject[$closureField] ?? null;
-				$newVal = $newData[$closureField] ?? null;
-				$propertyChanged = ($oldVal !== $newVal);
-			}
-		}
-
-		if ($propertyChanged === false) {
-			return $object;
-		}
-
-		$oldDate = $retention['archiefactiedatum'] ?? null;
-		$newDate = $this->calculateArchiveActionDate(object: $object, schema: $schema, retentionPeriod: $retentionPeriod);
-
-		if ($newDate !== null && $newDate !== $oldDate) {
-			$retention['archiefactiedatum'] = $newDate;
-			$object->setRetention($retention);
-
-			$msg = sprintf(
-				'[RetentionService] Recalculated archiefactiedatum for object %s: %s -> %s',
-				$object->getUuid(),
-				$oldDate,
-				$newDate
-			);
-			$this->logger->info($msg);
-		}
+		$this->followSourceDate(object: $object, schema: $schema);
 
 		return $object;
 	}//end recalculateArchiveActionDate()
+
+	/**
+	 * Recalculate a record's archiefactiedatum from its current source date.
+	 *
+	 * Used for a record whose own data did not change but whose source date
+	 * did, such as a contact person whose client's end date moved.
+	 *
+	 * @param ObjectEntity $object The record
+	 * @param Schema       $schema Its schema
+	 *
+	 * @return bool True when the archiefactiedatum changed
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function followSourceDate(ObjectEntity $object, Schema $schema): bool {
+		$archiveConfig = $schema->getArchive();
+		if (empty($archiveConfig) === true || ($archiveConfig['enabled'] ?? false) === false) {
+			return false;
+		}
+
+		$retention = ($object->getRetention() ?? []);
+
+		// A record without a nomination gets its nomination and date together
+		// once its schema declares a default nomination to give it.
+		if (empty($retention['archiefnominatie']) === true) {
+			if (empty($archiveConfig['defaultNominatie']) === true) {
+				return false;
+			}
+
+			$this->applyArchivalMetadata(object: $object, schema: $schema);
+
+			return (($object->getRetention() ?? [])['archiefactiedatum'] ?? null) !== ($retention['archiefactiedatum'] ?? null);
+		}
+
+		$follower = new ActionDateFollower(calculator: $this->actionDateCalculator, auditMapper: $this->auditMapper, logger: $this->logger);
+
+		return $follower->follow(object: $object, schema: $schema);
+	}//end followSourceDate()
 
 	/**
 	 * Look up a selectielijst entry by categorie code.

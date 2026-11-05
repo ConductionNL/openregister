@@ -28,12 +28,12 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use Psr\Log\LoggerInterface;
 
@@ -53,23 +53,23 @@ class ExportHandler {
 	/**
 	 * Schema mapper instance for handling schema operations.
 	 *
-	 * @var SchemaMapper The schema mapper instance.
+	 * @var SchemaMapperInterface The schema mapper instance.
 	 */
-	private readonly SchemaMapper $schemaMapper;
+	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
 	 * Register mapper instance for handling register operations.
 	 *
-	 * @var RegisterMapper The register mapper instance.
+	 * @var RegisterMapperInterface The register mapper instance.
 	 */
-	private readonly RegisterMapper $registerMapper;
+	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
 	 * Object mapper instance for handling object operations.
 	 *
-	 * @var MagicMapper The object mapper instance.
+	 * @var MagicMapperInterface The object mapper instance.
 	 */
-	private readonly MagicMapper $objectEntityMapper;
+	private readonly MagicMapperInterface $objectEntityMapper;
 
 	/**
 	 * Configuration mapper instance for handling configuration operations.
@@ -129,17 +129,17 @@ class ExportHandler {
 	/**
 	 * Constructor for ExportHandler.
 	 *
-	 * @param SchemaMapper $schemaMapper The schema mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param MagicMapper $objectEntityMapper The object entity mapper.
+	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
+	 * @param RegisterMapperInterface $registerMapper The register mapper.
+	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 */
 	public function __construct(
-		SchemaMapper $schemaMapper,
-		RegisterMapper $registerMapper,
-		MagicMapper $objectEntityMapper,
+		SchemaMapperInterface $schemaMapper,
+		RegisterMapperInterface $registerMapper,
+		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
 		LoggerInterface $logger,

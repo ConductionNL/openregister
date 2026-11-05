@@ -354,23 +354,7 @@ class AppInstallService {
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async installApp(appIds) {
-		if (!appIds) {
-			throw new Error('[AppInstallService] No app IDs provided')
-		}
-
-		if (!Array.isArray(appIds)) {
-			appIds = [appIds]
-		}
-
-		const appsToInstall = []
-		for (const appId of appIds) {
-			const alreadyInstalled = await this.isAppInstalled(appId).catch(
-				() => false,
-			)
-			if (!alreadyInstalled) {
-				appsToInstall.push(appId)
-			}
-		}
+		const appsToInstall = await this.#appsInState(requiredIds(appIds), false)
 
 		// If all apps are already installed, return early
 		if (appsToInstall.length === 0) {
@@ -427,24 +411,10 @@ class AppInstallService {
 	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async uninstallApp(appIds) {
-		if (!appIds) {
-			throw new Error('[AppInstallService] No app IDs provided')
-		}
-
-		if (!Array.isArray(appIds)) {
-			appIds = [appIds]
-		}
-
-		const appsToUninstall = []
-		for (const appId of appIds) {
-			const isInstalled = await this.isAppInstalled(appId).catch(() => false)
-			if (isInstalled) {
-				appsToUninstall.push(appId)
-			}
-		}
+		appIds = requiredIds(appIds)
 
 		// If all apps are not installed, return early
-		if (appsToUninstall.length === 0) {
+		if ((await this.#appsInState(appIds, true)).length === 0) {
 			return null
 		}
 
@@ -458,6 +428,40 @@ class AppInstallService {
 			body: JSON.stringify({ appIds }),
 		}).finally(() => this.reloadCacheList())
 	}
+
+	/**
+	 * The apps whose installed state is the one asked for, checked one after
+	 * the other; an app the list does not know counts as not installed.
+	 *
+	 * @param {string[]} appIds The app IDs.
+	 * @param {boolean} installed Whether to keep the installed apps or the others.
+	 * @return {Promise<string[]>} The matching app IDs.
+	 */
+	async #appsInState(appIds, installed) {
+		const matching = []
+		for (const appId of appIds) {
+			const active = await this.isAppInstalled(appId).catch(() => false)
+			if (Boolean(active) === installed) {
+				matching.push(appId)
+			}
+		}
+		return matching
+	}
+}
+
+/**
+ * App IDs as a list; a single ID becomes a list of one.
+ *
+ * @param {string | string[]} appIds The app ID or IDs.
+ * @return {string[]} The list.
+ * @throws {Error} When no app ID is given.
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
+ */
+function requiredIds(appIds) {
+	if (!appIds) {
+		throw new Error('[AppInstallService] No app IDs provided')
+	}
+	return Array.isArray(appIds) ? appIds : [appIds]
 }
 
 /**

@@ -467,6 +467,25 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertTrue($data['success']);
 	}
 
+	public function testMigrateReturns403WhenTheCallerMayNotMigrate(): void {
+		$this->request->method('getParams')->willReturn([
+			'sourceRegister' => '1',
+			'sourceSchema' => '2',
+			'targetRegister' => '3',
+			'targetSchema' => '4',
+			'objects' => ['uuid-1'],
+			'mapping' => ['field1' => 'field2'],
+		]);
+
+		$this->objectService->method('migrateObjects')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('No access'));
+
+		$result = $this->controller->migrate($this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('No access', $result->getData()['error']);
+	}
+
 	public function testMigrateReturns404OnDoesNotExist(): void {
 		$this->request->method('getParams')->willReturn([
 			'sourceRegister' => '1',
@@ -557,30 +576,6 @@ class ObjectsControllerTest extends TestCase {
 			->willThrowException(new DBException('Stats error'));
 
 		$result = $this->controller->getObjectVectorizationStats();
-
-		$this->assertSame(500, $result->getStatus());
-	}
-
-	public function testGetObjectVectorizationCountSuccess(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(42);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(42, $data['count']);
-	}
-
-	public function testGetObjectVectorizationCountError(): void {
-		$this->request->method('getParam')->willReturn(null);
-
-		$this->objectService->method('getVectorizationCount')
-			->willThrowException(new DBException('Count error'));
-
-		$result = $this->controller->getObjectVectorizationCount();
 
 		$this->assertSame(500, $result->getStatus());
 	}
@@ -3449,24 +3444,6 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getObjectVectorizationCount() — with views parameter
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithViews(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['views', null, '["view1"]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(99);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame(99, $data['count']);
-	}
-
-	// =========================================================================
 	// logs() — register/schema not found paths
 	// =========================================================================
 
@@ -3794,6 +3771,8 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
 		$deleteHandler->method('canDelete')->willReturn($analysis);
+		// The caller reads every referring object.
+		$this->objectService->method('readableDeletionAnalysis')->willReturnArgument(0);
 		$this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
 
 		$result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -4893,25 +4872,6 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertArrayHasKey('limit', $data);
-	}
-
-	// =========================================================================
-	// getObjectVectorizationCount() — with schemas as JSON string
-	// =========================================================================
-
-	public function testGetObjectVectorizationCountWithSchemasJsonString(): void {
-		$this->request->method('getParam')->willReturnMap([
-			['schemas', null, '[1,2,3]'],
-		]);
-
-		$this->objectService->method('getVectorizationCount')->willReturn(55);
-
-		$result = $this->controller->getObjectVectorizationCount();
-
-		$this->assertSame(200, $result->getStatus());
-		$data = $result->getData();
-		$this->assertTrue($data['success']);
-		$this->assertSame(55, $data['count']);
 	}
 
 	// =========================================================================

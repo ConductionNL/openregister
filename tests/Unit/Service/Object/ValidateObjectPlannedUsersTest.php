@@ -38,6 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
  * @covers \OCA\OpenRegister\Formats\UserFormat
+ * @uses   \OCA\OpenRegister\Db\Schema
  */
 class ValidateObjectPlannedUsersTest extends TestCase {
 	private ValidateObject $handler;

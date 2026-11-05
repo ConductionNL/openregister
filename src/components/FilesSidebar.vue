@@ -182,7 +182,7 @@ export default {
 
 	watch: {
 		/**
-		 * @param newVal
+		 * @param {string} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		search(newVal) {
@@ -190,7 +190,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {string|null} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		status(newVal) {
@@ -198,7 +198,7 @@ export default {
 		},
 
 		/**
-		 * @param newVal
+		 * @param {string|null} newVal
 		 * @spec exclude computed filter-state binding
 		 */
 		riskLevel(newVal) {

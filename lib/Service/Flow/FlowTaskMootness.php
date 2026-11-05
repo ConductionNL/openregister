@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -151,7 +151,7 @@ class FlowTaskMootness {
 	 */
 	private function terminate(string $taskUuid, string $nodeId, string $runUuid, string $byTransition): bool {
 		try {
-			$tasks = $this->container->get(TaskService::class);
+			$tasks = $this->container->get(TaskServiceInterface::class);
 			$task = $tasks->get(uuid: $taskUuid);
 
 			$taskRun = trim((string)$task->getRunUuid());

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -98,6 +99,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'schema unresolvable, admin no rbac' => ['schema' => 404, 'user' => 'admin', 'rbac' => false, 'rows' => [$create]],
 			'row names its own schema'          => ['rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'row names an unknown schema'       => ['rows' => [['@self' => ['schema' => 404], 'title' => 'x']]],
+			'mixed batch row names its schema'  => ['schema' => null, 'rows' => [['@self' => ['schema' => 8], 'title' => 'x']], 'deny' => ['create:7']],
 			'register by id'                    => ['register' => 10, 'rows' => [$update]],
 			'register unresolvable'             => ['register' => 404, 'rows' => [$update]],
 			'register zero'                     => ['register' => 0, 'rows' => [$update]],
@@ -107,6 +109,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'update with unknown uuid'          => ['rows' => [['@self' => ['uuid' => self::OTHER], 'title' => 'x']]],
 			'prefetch fails'                    => ['prefetch' => 'throws', 'rows' => [$update]],
 			'prefetch fails and find fails'     => ['prefetch' => 'throws', 'find' => 'throws', 'rows' => [$update]],
+			'prefetch fails and find finds none' => ['prefetch' => 'throws', 'rows' => [['@self' => ['uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'new']]],
 			'append-only update'                => ['appendOnly' => true, 'rows' => [$update]],
 			'append-only create'                => ['appendOnly' => true, 'rows' => [$create]],
 			'append-only update without rbac'   => ['appendOnly' => true, 'user' => 'admin', 'rbac' => false, 'rows' => [$update]],
@@ -228,8 +231,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 				$case['rows'],
 				$this->defaultRegister(register: ($case['register'] ?? 'object')),
 				$this->defaultSchema(case: $case),
-				($case['rbac'] ?? true),
-				($case['validation'] ?? false),
+				['rbac' => ($case['rbac'] ?? true), 'validation' => ($case['validation'] ?? false)],
 				&$result,
 			]
 		);
@@ -275,7 +277,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		}
 
 		if (isset($case['propertyRbac']) === true) {
-			$args['propertyRbac'] = $this->propertyRbac(mode: $case['propertyRbac']);
+			$args['rowRules'] = new BulkRowRules(propertyRbac: $this->propertyRbac(mode: $case['propertyRbac']));
 		}
 
 		return new SaveObjects(...$args);
@@ -377,13 +379,19 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 		$mapper->method('find')->willReturnCallback(
 			function (...$args) use ($case, $stored): ObjectEntity {
 				$this->calls[] = 'find '.json_encode([$args[0], $args[1]?->getId(), $args[2]?->getId()]);
-				if (($case['find'] ?? '') === 'throws' || isset($stored[$args[0]]) === false) {
-					throw new RuntimeException('not found');
+				if (($case['find'] ?? '') === 'throws') {
+					throw new RuntimeException('lookup failed');
+				}
+
+				if (isset($stored[$args[0]]) === false) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 				}
 
 				return $stored[$args[0]];
 			}
 		);
+		// The stored rows lie inside the caller's organisations.
+		$mapper->method('callerOrganisationsHold')->willReturn(true);
 
 		return $mapper;
 	}//end objectMapper()

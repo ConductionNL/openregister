@@ -4,7 +4,7 @@
 
 ### Requirement: A schema can grant file rights apart from object rights
 
-The permission catalogue SHALL publish `readFiles`, `addFiles` and `deleteFiles`, and the matrix SHALL accept them. When an effective authorization block names any of them, file actions on an object SHALL require `read` on the object and the file verb of the action (design D-4). When a block names none of them, file actions SHALL follow the object rule as before.
+The permission catalogue SHALL publish `readFiles`, `addFiles` and `deleteFiles`, and the matrix SHALL accept them. When an effective authorization block names any of them, file actions on an object SHALL require `read` on the object and the file verb of the action (design D-4). When a block names none of them, file actions SHALL follow the object rule as before. Whether a schema is in this file-verb regime SHALL be decided from the declared block, not the compiled one: a declared matrix row naming a file verb (expired or not), a matrix `fileVerbs` other than `false`, or a matrix naming a `rowsFrom` provider without `fileVerbs: false` SHALL keep the schema in it, so an expired row or a failing provider grants no file access instead of falling back to the object rule. A non-boolean `fileVerbs` SHALL be refused when the schema is saved.
 
 #### Scenario: a reader of files cannot add one
 

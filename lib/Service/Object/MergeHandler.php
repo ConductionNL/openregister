@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -48,12 +48,12 @@ class MergeHandler {
 	/**
 	 * Constructor for MergeHandler.
 	 *
-	 * @param MagicMapper $objectEntityMapper Mapper for object entities.
+	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param FileService $fileService Service for file operations.
 	 * @param IUserSession $userSession User session for tracking deletions.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly FileService $fileService,
 		private readonly IUserSession $userSession,
 	) {

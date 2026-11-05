@@ -57,6 +57,7 @@ class RelationGraphServiceTest extends TestCase {
 		int $maxDepth = 3,
 		int $maxNodes = 250,
 		array $stored = [],
+		bool $bothEnds = false,
 	): RelationGraphService {
 		$objectMapper = $this->createMock(MagicMapper::class);
 		$objectMapper->method('find')->willReturnCallback(
@@ -79,15 +80,12 @@ class RelationGraphServiceTest extends TestCase {
 
 		$relationMapper = $this->createMock(ObjectRelationMapper::class);
 		$relationMapper->method('findTouching')->willReturnCallback(
-			static function (array $uuids) use ($stored): array {
+			static function (array $uuids) use ($stored, $bothEnds): array {
 				return array_values(
 					array_filter(
 						$stored,
-						static fn (ObjectRelation $row): bool => in_array(
-							(string)$row->getSourceUuid(),
-							$uuids,
-							true
-						)
+						static fn (ObjectRelation $row): bool => in_array((string)$row->getSourceUuid(), $uuids, true)
+							|| ($bothEnds === true && in_array((string)$row->getTargetUuid(), $uuids, true))
 					)
 				);
 			}
@@ -318,4 +316,70 @@ class RelationGraphServiceTest extends TestCase {
 		$this->assertSame(1, $service->maximumDepth());
 		$this->assertSame(1, $service->maximumNodes());
 	}//end testTheAdministeredBoundsHaveFloors()
+
+	/**
+	 * A request above the maximum is marked even when the chain ends exactly at the maximum.
+	 */
+	public function testARequestAboveTheMaximumIsMarkedEvenWhenNothingIsLeft(): void {
+		$graph = $this->service(['a' => ['b'], 'b' => ['c'], 'c' => []], maxDepth: 2)->graph(rootUuid: 'a', depth: 9);
+
+		$this->assertSame(['a', 'b', 'c'], array_column($graph['nodes'], 'uuid'));
+		$this->assertSame(RelationGraphService::TRUNCATED_DEPTH, $graph['truncatedBy']);
+	}//end testARequestAboveTheMaximumIsMarkedEvenWhenNothingIsLeft()
+
+	/**
+	 * Once the node cap stops a level, no later level is walked.
+	 */
+	public function testTheNodeCapStopsTheWalkForTheLevelsAfterIt(): void {
+		$graph = $this->service(['a' => ['b', 'c'], 'b' => ['d'], 'c' => [], 'd' => []], maxDepth: 5, maxNodes: 2)
+			->graph(rootUuid: 'a', depth: 3);
+
+		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
+		$this->assertSame([['a', 'b'], ['a', 'c']], array_map(static fn (array $e): array => [$e['from'], $e['to']], $graph['edges']));
+		$this->assertSame(RelationGraphService::TRUNCATED_CAP, $graph['truncatedBy']);
+	}//end testTheNodeCapStopsTheWalkForTheLevelsAfterIt()
+
+	/**
+	 * The same edge read twice is listed once.
+	 */
+	public function testADuplicateEdgeIsListedOnce(): void {
+		$graph = $this->service(['a' => ['b', 'b'], 'b' => []])->graph(rootUuid: 'a', depth: 1);
+
+		$this->assertCount(1, $graph['edges']);
+		$this->assertSame(['a', 'b'], array_column($graph['nodes'], 'uuid'));
+	}//end testADuplicateEdgeIsListedOnce()
+
+	/**
+	 * An incoming edge reaches the object it comes from.
+	 */
+	public function testAnIncomingEdgeReachesItsSource(): void {
+		$row = new ObjectRelation();
+		$row->hydrate(['sourceUuid' => 'z', 'targetUuid' => 'a', 'kind' => 'object', 'origin' => ObjectRelation::ORIGIN_MANUAL, 'label' => 'hoort bij']);
+
+		$graph = $this->service(['a' => [], 'z' => []], stored: [$row], bothEnds: true)->graph(rootUuid: 'a', depth: 1);
+
+		$this->assertSame(['a', 'z'], array_column($graph['nodes'], 'uuid'));
+		$this->assertSame([[1 => 'z']], array_map(static fn (array $n): array => [$n['distance'] => $n['uuid']], array_slice($graph['nodes'], 1)));
+	}//end testAnIncomingEdgeReachesItsSource()
+
+	/**
+	 * An external address found one level down sits at that distance.
+	 */
+	public function testAnExternalAddressFurtherOutHasItsDistance(): void {
+		$external = new ObjectRelation();
+		$external->hydrate(
+			[
+				'sourceUuid' => 'b',
+				'targetUrl' => 'https://example.org/x',
+				'targetTitle' => 'Extern',
+				'kind' => ObjectRelation::KIND_EXTERNAL,
+				'origin' => ObjectRelation::ORIGIN_MANUAL,
+				'label' => 'zie',
+			]
+		);
+
+		$graph = $this->service(['a' => ['b'], 'b' => []], stored: [$external])->graph(rootUuid: 'a', depth: 2);
+
+		$this->assertSame([0, 1, 2], array_column($graph['nodes'], 'distance'));
+	}//end testAnExternalAddressFurtherOutHasItsDistance()
 }//end class

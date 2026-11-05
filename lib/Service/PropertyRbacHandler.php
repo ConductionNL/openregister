@@ -100,10 +100,8 @@ class PropertyRbacHandler {
 	 */
 	public function canReadProperty(Schema $schema, string $property, array $object): bool {
 		return $this->checkPropertyAccess(
-			schema: $schema,
-			property: $property,
-			object: $object,
-			action: 'read'
+			rules: $this->actionRules(schema: $schema, property: $property)['read'] ?? [],
+			request: new PropertyAccessRequest(object: $object)
 		);
 	}//end canReadProperty()
 
@@ -127,11 +125,8 @@ class PropertyRbacHandler {
 		bool $isCreate = false,
 	): bool {
 		return $this->checkPropertyAccess(
-			schema: $schema,
-			property: $property,
-			object: $object,
-			action: 'update',
-			isCreate: $isCreate
+			rules: $this->actionRules(schema: $schema, property: $property)['update'] ?? [],
+			request: new PropertyAccessRequest(object: $object, isCreate: $isCreate)
 		);
 	}//end canUpdateProperty()
 
@@ -470,11 +465,11 @@ class PropertyRbacHandler {
 	 * values are, through {@see restoreWriteOnlyValues()}.
 	 *
 	 * Omitting one the caller may not update would be the write the rule refuses.
-	 * Decided against the STORED object; call it on the RAW payload.
+	 * Decided on the STORED record's match envelope; call it on the RAW payload.
 	 *
 	 * @param Schema $schema   Schema whose property authorization applies.
 	 * @param array  $incoming The raw incoming update payload.
-	 * @param array  $stored   The raw stored object.
+	 * @param array  $stored   ObjectEntity::getMatchEnvelope() of the stored record (values come from the raw one).
 	 *
 	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
 	 *
@@ -849,33 +844,27 @@ class PropertyRbacHandler {
 	}//end stateHiddenWrites()
 
 	/**
-	 * Check if user has access to a property for a specific action
+	 * A property's authorization block, by action; empty when none is defined,
+	 * in which case the property follows the object-level rules.
 	 *
-	 * @param Schema $schema Schema containing property definition
+	 * @param Schema $schema   Schema containing property definition
 	 * @param string $property Property name
-	 * @param array $object Object data for conditional matching
-	 * @param string $action Action to check ('read' or 'update')
-	 * @param bool $isCreate Whether this is a create operation
+	 *
+	 * @return array<string, mixed> Rules per action.
+	 */
+	private function actionRules(Schema $schema, string $property): array {
+		return $schema->getPropertyAuthorization($property) ?? [];
+	}//end actionRules()
+
+	/**
+	 * Check if the current user has access under a property's rules for one action
+	 *
+	 * @param mixed                 $rules   The rules for the action; empty means no opinion.
+	 * @param PropertyAccessRequest $request The object and create flag.
 	 *
 	 * @return bool True if user has access
 	 */
-	private function checkPropertyAccess(
-		Schema $schema,
-		string $property,
-		array $object,
-		string $action,
-		bool $isCreate = false,
-	): bool {
-		// Get property authorization.
-		$authorization = $schema->getPropertyAuthorization($property);
-
-		// If no authorization is defined for this property, it follows object-level rules.
-		if ($authorization === null || empty($authorization) === true) {
-			return true;
-		}
-
-		// Get rules for this action.
-		$rules = $authorization[$action] ?? [];
+	private function checkPropertyAccess(mixed $rules, PropertyAccessRequest $request): bool {
 
 		// 🔴 "ACCESSIBLE" WAS THE WRONG WORD, AND IT READ AS A FAIL-OPEN.
 		//
@@ -906,31 +895,21 @@ class PropertyRbacHandler {
 			return true;
 		}
 
-		// Get current user info.
 		$user = $this->userSession->getUser();
-		$userId = $user?->getUID();
-
-		// Get user groups.
 		$userGroups = [];
 		if ($user !== null) {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
+		$request = $request->withUser(userId: $user?->getUID(), userGroups: $userGroups);
+
 		// Admin users bypass all checks.
-		if (in_array('admin', $userGroups, true) === true) {
+		if ($request->isAdmin() === true) {
 			return true;
 		}
 
-		// Process each rule.
 		foreach ($rules as $rule) {
-			if ($this->checkRule(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				object: $object,
-				isCreate: $isCreate
-			) === true
-			) {
+			if ($this->checkRule(rule: $rule, request: $request) === true) {
 				return true;
 			}
 		}
@@ -941,35 +920,20 @@ class PropertyRbacHandler {
 	/**
 	 * Check if a single rule grants access
 	 *
-	 * @param mixed $rule Authorization rule
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 * @param array $object Object data for conditional matching
-	 * @param bool $isCreate Whether this is a create operation
+	 * @param mixed                 $rule    Authorization rule
+	 * @param PropertyAccessRequest $request The user, object and create flag
 	 *
 	 * @return bool True if rule grants access
 	 */
-	private function checkRule(
-		mixed $rule,
-		array $userGroups,
-		?string $userId,
-		array $object,
-		bool $isCreate,
-	): bool {
+	private function checkRule(mixed $rule, PropertyAccessRequest $request): bool {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
-			return $this->userQualifiesForGroup(group: $rule, userGroups: $userGroups, userId: $userId);
+			return $request->qualifiesFor(group: $rule);
 		}
 
 		// Conditional rule: object with 'group' and optional 'match'.
 		if (is_array($rule) === true && isset($rule['group']) === true) {
-			return $this->checkConditionalRule(
-				rule: $rule,
-				userGroups: $userGroups,
-				userId: $userId,
-				object: $object,
-				isCreate: $isCreate
-			);
+			return $this->checkConditionalRule(rule: $rule, request: $request);
 		}
 
 		// Invalid rule format.
@@ -983,26 +947,17 @@ class PropertyRbacHandler {
 	/**
 	 * Check a conditional rule with match criteria
 	 *
-	 * @param array $rule Rule with 'group' and optional 'match'
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 * @param array $object Object data for conditional matching
-	 * @param bool $isCreate Whether this is a create operation
+	 * @param array                 $rule    Rule with 'group' and optional 'match'
+	 * @param PropertyAccessRequest $request The user, object and create flag
 	 *
 	 * @return bool True if rule grants access
 	 */
-	private function checkConditionalRule(
-		array $rule,
-		array $userGroups,
-		?string $userId,
-		array $object,
-		bool $isCreate,
-	): bool {
+	private function checkConditionalRule(array $rule, PropertyAccessRequest $request): bool {
 		$group = $rule['group'];
 		$match = $rule['match'] ?? null;
 
 		// If user doesn't qualify for the group, this rule doesn't apply.
-		if ($this->userQualifiesForGroup(group: $group, userGroups: $userGroups, userId: $userId) === false) {
+		if ($request->qualifiesFor(group: $group) === false) {
 			return false;
 		}
 
@@ -1013,7 +968,7 @@ class PropertyRbacHandler {
 
 		// For creates, skip organisation matching since there's no existing object.
 		// Other match conditions still apply.
-		if ($isCreate === true) {
+		if ($request->isCreate === true) {
 			$match = $this->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
 			if (empty($match) === true) {
 				return true;
@@ -1021,29 +976,8 @@ class PropertyRbacHandler {
 		}
 
 		// Check if object matches all conditions.
-		return $this->conditionMatcher->objectMatchesConditions(object: $object, match: $match);
+		return $this->conditionMatcher->objectMatchesConditions(object: $request->object, match: $match);
 	}//end checkConditionalRule()
-
-	/**
-	 * Check if a user qualifies for a specific group
-	 *
-	 * @param string $group Group name from the rule
-	 * @param array $userGroups User's group IDs
-	 * @param string|null $userId Current user ID
-	 *
-	 * @return bool True if user qualifies for the group
-	 */
-	private function userQualifiesForGroup(string $group, array $userGroups, ?string $userId): bool {
-		if ($group === 'public') {
-			return true;
-		}
-
-		if ($group === 'authenticated' && $userId !== null) {
-			return true;
-		}
-
-		return in_array($group, $userGroups, true);
-	}//end userQualifiesForGroup()
 
 	/**
 	 * Check if current user is admin

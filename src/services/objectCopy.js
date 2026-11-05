@@ -42,15 +42,15 @@ export function copyName(object, pattern) {
 }
 
 /**
- * The payload that saves a copy of an object. The copy is shallow: its
- * `@self` is the original's, so stripping the metadata strips it there too.
+ * A shallow copy of an object without the fields that belong to the
+ * original. Its `@self` is the original's, so stripping the metadata strips
+ * it there too.
  *
  * @param {object} object The original object.
- * @param {string} pattern The naming pattern.
  * @return {object}
- * @spec exclude client-side helper for the mass-copy modal
+ * @spec exclude client-side helper for the copy modals
  */
-export function copyPayload(object, pattern) {
+export function withoutOriginalMetadata(object) {
 	const objectToCopy = { ...object }
 	delete objectToCopy.id
 	if (objectToCopy['@self']) {
@@ -58,8 +58,17 @@ export function copyPayload(object, pattern) {
 			delete objectToCopy['@self'][field]
 		}
 	}
+	return objectToCopy
+}
 
-	const newName = copyName(object, pattern)
+/**
+ * Give a copy its name: in `@self`, and in a root `name` or `title` it has.
+ *
+ * @param {object} objectToCopy The copy.
+ * @param {string} newName The name.
+ * @spec exclude client-side helper for the copy modals
+ */
+export function renameCopy(objectToCopy, newName) {
 	if (objectToCopy['@self']) {
 		objectToCopy['@self'].name = newName
 	}
@@ -69,5 +78,19 @@ export function copyPayload(object, pattern) {
 	if (objectToCopy.title !== undefined) {
 		objectToCopy.title = newName
 	}
+}
+
+/**
+ * The payload that saves a copy of an object. The copy is shallow: its
+ * `@self` is the original's, so stripping the metadata strips it there too.
+ *
+ * @param {object} object The original object.
+ * @param {string} pattern The naming pattern.
+ * @return {object}
+ * @spec exclude client-side helper for the mass-copy modal
+ */
+export function copyPayload(object, pattern) {
+	const objectToCopy = withoutOriginalMetadata(object)
+	renameCopy(objectToCopy, copyName(object, pattern))
 	return objectToCopy
 }

@@ -91,7 +91,7 @@ class SettingsServiceGapTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 		$db = $this->createMock(IDBConnection::class);
 
-		$this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+		$this->searchBackendHandler = new SearchBackendHandler();
 		$this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
 		$this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
 		$this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);

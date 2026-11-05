@@ -27,12 +27,13 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
@@ -41,8 +42,11 @@ use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
+use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -52,7 +56,7 @@ use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
-use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
@@ -139,6 +143,13 @@ class SchemasController extends Controller {
 	private const CONFLICT_ERROR_MARKERS = ['constraint', 'duplicate', 'unique'];
 
 	/**
+	 * The `logs` statistics a caller who may not count the trail is given.
+	 *
+	 * @var array{total: int, size: int}
+	 */
+	private const NO_LOG_STATS = ['total' => 0, 'size' => 0];
+
+	/**
 	 * The shared register-scoped schema resolver.
 	 *
 	 * Built here rather than injected: it is a stateless collaborator over the
@@ -172,12 +183,12 @@ class SchemasController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param IAppConfig $config App configuration for settings
-	 * @param SchemaMapper $schemaMapper Schema mapper for database operations
-	 * @param RegisterMapper $registerMapper Register mapper for register lookups and schema linkage
-	 * @param MagicMapper $objectEntityMapper Object entity mapper for object queries
+	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations
+	 * @param RegisterMapperInterface $registerMapper Register mapper for register lookups and schema linkage
+	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for object queries
 	 * @param UploadService $uploadService Upload service for file uploads
-	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
-	 * @param OrganisationService $organisationService Organisation service for multi-tenancy
+	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics
+	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler for caching operations
 	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service for facet caching
 	 * @param SchemaExplorationInterface $schemaService Schema service for exploration operations
@@ -197,12 +208,12 @@ class SchemasController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly IAppConfig $config,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly MagicMapper $objectEntityMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly UploadService $uploadService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly OrganisationService $organisationService,
+		private readonly AuditTrailMapperInterface $auditTrailMapper,
+		private readonly OrganisationServiceInterface $organisationService,
 		private readonly SchemaCacheHandler $schemaCacheService,
 		private readonly FacetCacheHandler $facetCacheSvc,
 		private readonly SchemaExplorationInterface $schemaService,
@@ -338,33 +349,53 @@ class SchemasController extends Controller {
 		// Break the reference.
 		// If '@self.stats' is requested, attach statistics to each schema.
 		if (in_array('@self.stats', $extend, true) === true) {
-			// Collect all schema IDs for batch queries.
-			$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
-
-			// Batch-load all statistics in 3 queries instead of N*2 queries.
-			$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
-			$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
-
-			foreach ($schemasArr as &$schema) {
-				$schema['stats'] = [
-					'objects' => $objectStats[$schema['id']] ?? [
-						'total' => 0,
-						'size' => 0,
-						'invalid' => 0,
-						'deleted' => 0,
-						'locked' => 0,
-					],
-					'logs' => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
-					'files' => [ 'total' => 0, 'size' => 0 ],
-					// Add the number of registers referencing this schema.
-					'registers' => $registerCounts[$schema['id']] ?? 0,
-				];
-			}
+			$schemasArr = $this->withSchemaStats(schemasArr: $schemasArr);
 		}//end if
 
 		return new JSONResponse(data: ['results' => $schemasArr]);
 	}//end index()
+
+	/**
+	 * Attach the `@self.stats` block to each serialized schema of a list.
+	 *
+	 * Batch-loads the statistics in 3 queries instead of N*2. The audit-trail
+	 * counts are given to an administrator only.
+	 *
+	 * @param array<int, array<string, mixed>> $schemasArr The serialized schemas.
+	 *
+	 * @return array<int, array<string, mixed>> The schemas with a `stats` block.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function withSchemaStats(array $schemasArr): array {
+		$schemaIds = array_map(fn ($schema) => $schema['id'], $schemasArr);
+
+		$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
+		$objectStats = $this->objectEntityMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		$logStats = [];
+		if ($this->isCurrentUserAdmin() === true) {
+			$logStats = $this->auditTrailMapper->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
+		}
+
+		foreach ($schemasArr as &$schema) {
+			$schema['stats'] = [
+				'objects' => $objectStats[$schema['id']] ?? [
+					'total' => 0,
+					'size' => 0,
+					'invalid' => 0,
+					'deleted' => 0,
+					'locked' => 0,
+				],
+				'logs' => $logStats[$schema['id']] ?? self::NO_LOG_STATS,
+				'files' => [ 'total' => 0, 'size' => 0 ],
+				// Add the number of registers referencing this schema.
+				'registers' => $registerCounts[$schema['id']] ?? 0,
+			];
+		}
+
+		unset($schema);
+		return $schemasArr;
+	}//end withSchemaStats()
 
 	/**
 	 * Resolve the {id} route parameter to a Schema, register-scoped when the caller names one.
@@ -573,7 +604,7 @@ class SchemasController extends Controller {
 				$registerCounts = $this->schemaMapper->getRegisterCountPerSchema();
 				$schemaArr['stats'] = [
 					'objects' => $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
-					'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaArr['id']),
+					'logs' => $this->auditLogStats(schemaId: (int)$schemaArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 					// Add the number of registers referencing this schema.
 					'registers' => $registerCounts[$schemaArr['id']] ?? 0,
@@ -1221,8 +1252,12 @@ class SchemasController extends Controller {
 			);
 		}
 
+		$data = $this->withAuthorizationAsStored(document: $data);
+
 		// Validated after the permission check, so an unauthorized caller cannot probe it.
-		$invalid = $this->validateSchemaBody(data: $data);
+		$invalid = ($this->orphanCleanupRefusal(schema: $existingSchema, document: $data)
+			?? $this->validateSchemaBody(data: $data)
+			?? $this->crossOrganisationRefusal(old: $existingSchema->getAuthorization(), document: $data));
 		if ($invalid !== null) {
 			return $invalid;
 		}
@@ -1641,6 +1676,15 @@ class SchemasController extends Controller {
 			);
 		}
 
+		// The cascade removes the rows of every organisation in the table, which a `manage`
+		// rule does not answer for.
+		if ($deleteObjects === true && $this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(
+				data: ['error' => 'Deleting a schema with its objects is for administrators.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
 		try {
 			// Find the schema first (also validates existence and access).
 			$schemaToDelete = $this->schemaMapper->find(id: $id);
@@ -1913,13 +1957,17 @@ class SchemasController extends Controller {
 			return $dialectResult;
 		}
 
-		$phpArray = $dialectResult;
-		if (empty($phpArray['title']) === true) {
-			$phpArray['title'] = 'New Schema';
+		$phpArray = $this->withAuthorizationAsStored(document: $dialectResult);
+		$old      = $schema->getAuthorization();
+		$refusal  = ($this->crossOrganisationRefusal(old: $old, document: $phpArray)
+			?? $this->externalGrantRefusal(data: $phpArray)
+			?? $this->orphanCleanupRefusal(schema: $schema, document: $phpArray));
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
-			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $phpArray));
+			return new JSONResponse(data: $this->saveUploadedSchema(schema: $schema, document: $this->uploadDocument(document: $phpArray, id: $id)));
 		} catch (Exception $e) {
 			return $this->schemaWriteErrorResponse(
 				e: $e,
@@ -1927,6 +1975,95 @@ class SchemasController extends Controller {
 			);
 		}
 	}//end upload()
+
+	/**
+	 * The uploaded body as it is saved: an update keeps the stored identity and
+	 * ownership, and a body without a title gets a default one.
+	 *
+	 * @param array<string, mixed> $document The uploaded body.
+	 * @param int|null             $id       The schema being updated, or null for a new one.
+	 *
+	 * @return array<string, mixed> The body to save.
+	 */
+	private function uploadDocument(array $document, ?int $id): array {
+		if ($id !== null) {
+			unset($document['id'], $document['organisation'], $document['owner'], $document['created']);
+		}
+
+		if (empty($document['title']) === true) {
+			$document['title'] = 'New Schema';
+		}
+
+		return $document;
+	}//end uploadDocument()
+
+	/**
+	 * The body with its authorization in the form the schema will store, so
+	 * every check on it judges that form.
+	 *
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return array<string, mixed> The body with a JSON text block decoded; any other text stays for the write to judge.
+	 */
+	private function withAuthorizationAsStored(array $document): array {
+		$stored = (new CrossOrganisationMarkerChange())->asStored(authorization: ($document['authorization'] ?? null));
+		if (is_array($stored) === true) {
+			$document['authorization'] = $stored;
+		}
+
+		return $document;
+	}//end withAuthorizationAsStored()
+
+	/**
+	 * Refuse a write by a non-administrator that lets a rule cross
+	 * organisations it did not cross before. A schema manager may change the
+	 * rest of the authorization, and remove a marker, but adding or widening
+	 * `crossOrganisation: true` gives every holder of that rule other
+	 * organisations' rows, so it is for administrators only.
+	 *
+	 * @param mixed                $old      The authorization before the write.
+	 * @param array<string, mixed> $document The schema body being written.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go ahead.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	private function crossOrganisationRefusal(mixed $old, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false
+			|| (new CrossOrganisationMarkerChange())->widens(old: $old, new: $document['authorization']) === false
+			|| $this->isCurrentUserAdmin() === true
+		) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator may let a rule read across organisations (crossOrganisation: true)'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end crossOrganisationRefusal()
+
+	/**
+	 * Refuse a schema write by a non-administrator that sets or changes `orphanCleanup`.
+	 *
+	 * The flag makes saves soft-delete rows, so a schema's `manage` rule does not cover it.
+	 *
+	 * @param Schema               $schema   The schema as stored.
+	 * @param array<string, mixed> $document The incoming schema.
+	 *
+	 * @return JSONResponse|null A 403, or null when the write may go on.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function orphanCleanupRefusal(Schema $schema, array $document): ?JSONResponse {
+		if ((new OrphanCleanupFlag())->changedBy(schema: $schema, document: $document) === false || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'Only an administrator can change orphanCleanup on a schema'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end orphanCleanupRefusal()
 
 	/**
 	 * Refuse an upload the caller may not make (H3).
@@ -2162,7 +2299,7 @@ class SchemasController extends Controller {
 					'locked' => ($objectStats['locked'] ?? 0),
 					'size' => ($objectStats['size'] ?? 0),
 				],
-				'logs' => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
+				'logs' => $this->auditLogStats(schemaId: $id),
 				'files' => ['total' => 0, 'size' => 0],
 				// Placeholder for future file statistics.
 				'registers' => $this->schemaMapper->getRegisterCountPerSchema()[$id] ?? 0,
@@ -2436,7 +2573,8 @@ class SchemasController extends Controller {
 	 * Whether an entity is anonymously readable via RBAC authorization.
 	 *
 	 * A resource is visible to anonymous callers when its authorization block
-	 * grants `read` access to the `public` group. This replaces the former
+	 * grants `read` access to the `public` group, as `"public"` or as
+	 * `{"group": "public"}` with no match. This replaces the former
 	 * published/depublished column gate: anonymous publication is an RBAC
 	 * concern, expressed as a `public`-group read rule on the entity.
 	 *
@@ -2449,8 +2587,7 @@ class SchemasController extends Controller {
 			return false;
 		}
 
-		$readGroups = ($authorization['read'] ?? []);
-		return is_array($readGroups) === true && in_array('public', $readGroups, true) === true;
+		return (new ReadRuleTenancy())->readsPublicUnconditionally(readRules: ($authorization['read'] ?? []));
 	}//end isPublicReadable()
 
 	/**
@@ -2550,6 +2687,26 @@ class SchemasController extends Controller {
 	}//end resolveDialectReference()
 
 	/**
+	 * The audit-trail statistics of one schema, for an administrator only.
+	 *
+	 * The count covers every entry of the schema, whichever organisation the
+	 * object belongs to, so a non-admin or anonymous caller is given zeros.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array The statistics, or zeros for a non-admin.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
+	 */
+	private function auditLogStats(int $schemaId): array {
+		if ($this->isCurrentUserAdmin() === false) {
+			return self::NO_LOG_STATS;
+		}
+
+		return $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $schemaId);
+	}//end auditLogStats()
+
+	/**
 	 * Check if the current user is a Nextcloud administrator.
 	 *
 	 * @return bool True when the current user is an admin.
@@ -2581,49 +2738,18 @@ class SchemasController extends Controller {
 	 * @param Schema $schema The schema to check manage permission for.
 	 *
 	 * @return bool True if the current user may manage this schema.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function checkSchemaManagePermission(Schema $schema): bool {
 		try {
-			$user = $this->container->get(\OCP\IUserSession::class)->getUser();
-			if ($user === null) {
-				return false;
-			}
+			$rights = new DefinitionWriteRights(
+				userSession: $this->container->get(\OCP\IUserSession::class),
+				groupManager: $this->container->get(\OCP\IGroupManager::class)
+			);
 
-			$groupManager = $this->container->get(\OCP\IGroupManager::class);
-
-			// Admins always pass.
-			if ($groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			$authorization = $schema->getAuthorization();
-
-			// Default-secure: no manage rule defined → admin-only (already failed above).
-			if (empty($authorization) === true || isset($authorization['manage']) === false) {
-				return false;
-			}
-
-			$userGroups = $groupManager->getUserGroupIds($user);
-			$manageRules = $authorization['manage'];
-			foreach ($userGroups as $groupId) {
-				foreach ($manageRules as $entry) {
-					if (is_string($entry) === true && $entry === $groupId) {
-						return true;
-					}
-
-					if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
-						return true;
-					}
-				}
-			}
+			return $rights->mayManage(authorization: $schema->getAuthorization());
 		} catch (\Throwable $e) {
 			return false;
-		}//end try
-
-		return false;
+		}
 	}//end checkSchemaManagePermission()
 
 	/**

@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
-use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -78,14 +78,14 @@ class ImportTrustConfigurationRegister implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationService $configurationService The OR configuration importer.
+	 * @param ConfigurationServiceInterface $configurationService The OR configuration importer.
 	 * @param IAppManager $appManager Resolves the openregister app path on disk.
 	 * @param LoggerInterface $logger Logger for import diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ConfigurationService $configurationService,
+		private readonly ConfigurationServiceInterface $configurationService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

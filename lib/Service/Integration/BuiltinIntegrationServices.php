@@ -80,8 +80,8 @@ final class BuiltinIntegrationServices {
 			'l10n'         => \OCP\IL10N::class,
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider::class => [
-			'mapper' => \OCA\OpenRegister\Db\AuditTrailMapper::class,
-			'l10n'   => \OCP\IL10N::class,
+			'history' => \OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class,
+			'l10n'    => \OCP\IL10N::class,
 		],
 		// @spec openspec/specs/integration-xwiki/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\XwikiProvider::class => [

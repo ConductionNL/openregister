@@ -153,7 +153,7 @@ class DocumentProcessingHandler {
 	 * @param IRootFolder $rootFolder Root folder for file access.
 	 * @param IUserSession $userSession User session for getting current user.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper Used to honour skip-anonymization
+	 * @param \OCA\OpenRegister\Db\EntityRelationMapperInterface $entityRelationMapper Used to honour skip-anonymization
 	 *                                                                        flags during the redaction pass
 	 *                                                                        (see
 	 *                                                                        `entity-relation-grondslagen`).
@@ -173,7 +173,7 @@ class DocumentProcessingHandler {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
+		private readonly \OCA\OpenRegister\Db\EntityRelationMapperInterface $entityRelationMapper,
 		private readonly OfficeDocumentSanitizer $sanitizer,
 		private readonly ?AnonymisationLogMapper $anonymisationLogMapper = null,
 		private readonly ?IL10N $l10n = null,
@@ -259,9 +259,9 @@ class DocumentProcessingHandler {
 	 * @param Node $node The file node to process.
 	 * @param array $replacements Array of replacement mappings (search => replace).
 	 * @param string|null $outputName Optional name for the output file.
-	 * @param bool $strict PDF only: when true (entity anonymisation),
-	 *                     residual entity text in the output fails
-	 *                     closed instead of being logged as partial.
+	 * @param bool $strict PDF only: when true (entity anonymisation), an
+	 *                     output that cannot be re-read for the residual
+	 *                     check is refused instead of written unchecked.
 	 * @param bool|null $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-
 	 *                                     preservation option — null/absent = auto (preserve
 	 *                                     iff the input is a tagged PDF), true = attempt,
@@ -280,7 +280,7 @@ class DocumentProcessingHandler {
 	 *
 	 * @psalm-return File
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed vs lenient validation per the entity-anonymisation contract.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects strict vs lenient validation per the entity-anonymisation contract.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
@@ -308,22 +308,19 @@ class DocumentProcessingHandler {
 			}
 		}
 
+		$job = (new DocumentReplacement(node: $node, replacements: $replacements, outputName: $outputName))
+			->withPdfOptions(strict: $strict, preserveStructure: $preserveStructure);
+
 		// Process based on file type.
 		if (in_array($fileExtension, ['doc', 'docx'], true) === true) {
-			return $this->replaceWordsInWordDocument(node: $node, replacements: $replacements, outputName: $outputName);
+			return $this->replaceWordsInWordDocument(job: $job);
 		}
 
 		if ($fileExtension === 'pdf') {
-			return $this->replaceWordsInPdfDocument(
-				node: $node,
-				replacements: $replacements,
-				outputName: $outputName,
-				strict: $strict,
-				preserveStructure: $preserveStructure
-			);
+			return $this->replaceWordsInPdfDocument(job: $job);
 		}
 
-		return $this->replaceWordsInTextDocument(node: $node, replacements: $replacements, outputName: $outputName);
+		return $this->replaceWordsInTextDocument(job: $job);
 	}//end replaceWords()
 
 	/**
@@ -380,132 +377,37 @@ class DocumentProcessingHandler {
 			$fileId = $candidate;
 		}
 
-		// Defensive filter — per the `entity-relation-grondslagen` change,
-		// the DI anonymise path MUST honour the operator's skip decisions
-		// even when the caller's entities[] array includes flagged
-		// occurrences. The OR contract is "skipped relations are never
-		// redacted, full stop", regardless of caller filtering behaviour.
+		// Skipped relations are never redacted, whatever the caller passes
+		// (entity-relation-grondslagen). The file's entity rows give stable
+		// `[<TYPE>: <entity_id>]` placeholders, so a re-run is idempotent.
 		$skippedValues = [];
+		$entityRows = [];
 		if ($fileId > 0) {
 			$skippedValues = $this->entityRelationMapper->findSkippedEntityValuesForFile($fileId);
+			$entityRows = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
 		}
 
-		// Resolve the existing entity-id map for this file so substitutions
-		// use the stable `[<TYPE>: <entity_id>]` placeholder format —
-		// matches what DocuDesk's grondslagen-summary report shows and
-		// makes re-runs of anonymise on the same document idempotent
-		// (the previous UUID-prefix fallback produced a fresh placeholder
-		// per call, so re-anonymising the same file produced byte-divergent
-		// output despite identical inputs).
-		$entityIdMap = [];
-		if ($fileId > 0) {
-			$entityIdMap = $this->entityRelationMapper->findEntityIdsByValueForFile($fileId);
-		}
-
-		// Scope-local placeholder numbering (Decision 1 + 3): translate the
-		// internal global `e.id` to a number that is local to this scope, so
-		// the emitted `[<TYPE>: <number>]` never links a person across
-		// documents/publications. Per-document (default) numbers lazily by
-		// first appearance; per-dossier seeds the translator with a map
-		// deterministically recomputed from the whole dossier's stored rows,
-		// so the same person is the same number across every file in the
-		// folder.
+		// Scope-local placeholder numbering (Decision 1 + 3): per document by
+		// first appearance, or per dossier from the whole folder's stored rows,
+		// so the same person is the same number across the dossier.
 		$translator = PlaceholderIdTranslator::perDocument();
 		if ($scope === 'dossier') {
 			$translator = $this->recomputeFileTranslator(node: $node, fileKey: $fileKey);
 		}
 
-		// Build replacements array from entities.
-		$replacements = [];
-		foreach ($entities as $entity) {
-			$originalText = $entity['text'] ?? '';
-			$entityType = $entity['entityType'] ?? 'UNKNOWN';
-
-			if (empty($originalText) === true
-				|| in_array($originalText, $skippedValues, true) === true
-			) {
-				continue;
-			}
-
-			// The needle actually matched/replaced in the document is the
-			// trimmed text: some recognition backends (and the regex pass)
-			// capture entity spans with surrounding whitespace (e.g.
-			// "06-12345678 "), which the document's content stream never
-			// contains verbatim — leaving the value unredacted while the
-			// (whitespace-normalising) validation gate still flags it as
-			// residual. Trim for the map KEY; keep $originalText for the
-			// skip-list and stable-id lookups (those are keyed by the stored
-			// value).
-			$needle = trim($originalText);
-			if ($needle === '') {
-				continue;
-			}
-
-			// Prefer stable per-entity placeholder. Fall back to the
-			// legacy UUID-prefix only when there is no matching entity
-			// row on the file (shouldn't happen in the normal
-			// extract → review → anonymise flow, but defensive against
-			// direct DI callers that bypass extraction).
-			// Localise the TYPE label to the acting user's language
-			// (Decision 6): PERSON → PERSOON on a Dutch instance. Unknown
-			// types fall back to the raw label.
-			$localizedType = $this->localizeEntityType(entityType: $entityType);
-
-			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
-			$replacements[$needle] = '[' . $localizedType . ': ' . $key . ']';
-			if (isset($entityIdMap[$originalText]) === true) {
-				// Translate the internal `e.id` to the scope-local number.
-				$localNumber = $translator->translate(entityId: $entityIdMap[$originalText]['id']);
-				$replacements[$needle] = '[' . $localizedType . ': ' . $localNumber . ']';
-				// Record the EXACT emitted placeholder against the global e.id
-				// so consumers (DocuDesk's grondslagen-summary) can render the
-				// same string (scope-local number + localized label) instead of
-				// re-deriving from the global id.
-				$this->lastPlaceholderMap[(string)$entityIdMap[$originalText]['id']] = $replacements[$needle];
-			}
-		}//end foreach
-
-		// Order needles longest-first so overlapping entities cannot clobber
-		// each other: with insertion order, a bare "Amsterdam" [LOCATION]
-		// earlier in the map rewrites "De gemeente Amsterdam" to
-		// "De gemeente [LOCATION: …]" before the longer needle
-		// "gemeente Amsterdam" gets a chance to match, leaving it
-		// unmatched and mis-typed. Longest-first guarantees every needle
-		// sees the still-untouched text it was detected in for the
-		// str_ireplace branches (docx/odt/txt), which consume the map in
-		// insertion order; the PDF branch re-asserts the same ordering
-		// inside PdfTextReplacer::replaceInPdf so the guarantee survives
-		// SAPP-side changes. Equal lengths tie-break bytewise for
-		// deterministic (idempotent re-run) output. Params deliberately
-		// untyped: PHP coerces purely-numeric needle text ("2026", a
-		// spaceless BSN) to INT array keys, which would fatal a
-		// string-typed closure.
-		uksort(
-			$replacements,
-			static function ($left, $right): int {
-				$left = (string)$left;
-				$right = (string)$right;
-				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
-			}
+		$replacements = $this->replacementsFor(
+			entities: $entities,
+			lookup: new PlaceholderLookup(skippedValues: $skippedValues, entityRows: $entityRows, translator: $translator)
 		);
-
-		// Generate anonymized file name.
-		$fileName = $node->getName();
-		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
-		$fileBaseName = pathinfo($fileName, PATHINFO_FILENAME);
-
-		$anonymizedFileName = $fileBaseName . '_anonymized';
-		if (empty($fileExtension) === false) {
-			$anonymizedFileName .= '.' . $fileExtension;
-		}
+		$anonymizedFileName = $this->anonymizedNameFor(node: $node);
 
 		// Office (DOCX / ODT) documents carry PII in non-text structures the
 		// walker cannot reach (comments, tracked changes, metadata, custom XML,
 		// person field codes, hyperlink URLs). Sanitise to a clean derivative
 		// BEFORE the entity walker pass. The original NC file is untouched.
-		// Entity anonymisation is GDPR-critical: fail closed (strict) if any
-		// original entity text survives in the output rather than writing a
-		// file marked '_anonymized' that still contains it.
+		// Entity anonymisation runs strict: residual entity text is still
+		// written and reported back, but a PDF output that cannot be re-read
+		// for that check is refused rather than written as '_anonymized'.
 		$anonymizedFile = $this->replaceWords(
 			node: $node,
 			replacements: $replacements,
@@ -517,9 +419,7 @@ class DocumentProcessingHandler {
 			&& $this->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
-				node: $node,
-				replacements: $replacements,
-				outputName: $anonymizedFileName
+				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
 			);
 		}
 
@@ -537,19 +437,7 @@ class DocumentProcessingHandler {
 		// re-anonymise, gone on delete). Relations whose entity is absent from
 		// the map keep the legacy "[REDACTED]" marker.
 		if ($fileId > 0 && empty($replacements) === false) {
-			try {
-				$this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
-			} catch (\Throwable $e) {
-				// Persistence-side failure on the audit flag MUST NOT mask
-				// the successful redaction; the file is already written.
-				// Surface via warning log; downstream summary reports
-				// simply won't see this file until the next anonymise
-				// call retries the mark.
-				$this->logger->warning(
-					'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
-					['fileId' => $fileId, 'error' => $e->getMessage()]
-				);
-			}
+			$this->markAnonymized(fileId: $fileId);
 		}
 
 		// Persist a per-run anonymisation log row carrying the sanitisation
@@ -565,6 +453,124 @@ class DocumentProcessingHandler {
 
 		return $anonymizedFile;
 	}//end anonymizeDocument()
+
+	/**
+	 * The replacement map of an anonymisation: trimmed entity text to its
+	 * placeholder, longest needle first.
+	 *
+	 * Empty and skipped values are left out. The needle is the trimmed text,
+	 * because recognisers capture spans with surrounding whitespace the
+	 * document never contains verbatim. Longest-first ordering keeps a short
+	 * needle ("Amsterdam") from rewriting a longer one ("gemeente Amsterdam")
+	 * before it matches; equal lengths tie-break bytewise so a re-run is
+	 * identical. The comparator is untyped because PHP turns numeric needles
+	 * ("2026", a BSN) into int keys.
+	 *
+	 * @param array<int, array{text?: string, entityType?: string, key?: string}> $entities The detected entities.
+	 * @param PlaceholderLookup                                                   $lookup   Skips, entity rows and numbering.
+	 *
+	 * @return array<string, string> Needle to placeholder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function replacementsFor(array $entities, PlaceholderLookup $lookup): array {
+		$replacements = [];
+		foreach ($entities as $entity) {
+			$originalText = $entity['text'] ?? '';
+			if (empty($originalText) === true || $lookup->isSkipped(text: $originalText) === true) {
+				continue;
+			}
+
+			$needle = trim($originalText);
+			if ($needle === '') {
+				continue;
+			}
+
+			$replacements[$needle] = $this->placeholderFor(entity: $entity, lookup: $lookup);
+		}
+
+		uksort(
+			$replacements,
+			static function ($left, $right): int {
+				$left = (string)$left;
+				$right = (string)$right;
+				return [mb_strlen($right), $left] <=> [mb_strlen($left), $right];
+			}
+		);
+
+		return $replacements;
+	}//end replacementsFor()
+
+	/**
+	 * The placeholder for one entity, its TYPE label localised (Decision 6).
+	 *
+	 * An entity with a stable row on the file gets its scope-local number,
+	 * recorded in the placeholder map against the global entity id; any other
+	 * entity gets its key, or a random UUID prefix when it has none.
+	 *
+	 * @param array{text?: string, entityType?: string, key?: string} $entity The entity.
+	 * @param PlaceholderLookup                                       $lookup Entity rows and numbering.
+	 *
+	 * @return string The placeholder, e.g. `[PERSOON: 3]`.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function placeholderFor(array $entity, PlaceholderLookup $lookup): string {
+		$localizedType = $this->localizeEntityType(entityType: ($entity['entityType'] ?? 'UNKNOWN'));
+		$row = $lookup->rowFor(text: ($entity['text'] ?? ''));
+		if ($row === null) {
+			$key = $entity['key'] ?? substr(\Symfony\Component\Uid\Uuid::v4()->toRfc4122(), 0, 8);
+			return '[' . $localizedType . ': ' . $key . ']';
+		}
+
+		$placeholder = '[' . $localizedType . ': ' . $lookup->translator->translate(entityId: $row['id']) . ']';
+		$this->lastPlaceholderMap[(string)$row['id']] = $placeholder;
+
+		return $placeholder;
+	}//end placeholderFor()
+
+	/**
+	 * The output name of an anonymised copy: `<name>_anonymized.<ext>`.
+	 *
+	 * @param Node $node The source file.
+	 *
+	 * @return string The output name.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function anonymizedNameFor(Node $node): string {
+		$fileName = $node->getName();
+		$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+		$anonymizedFileName = pathinfo($fileName, PATHINFO_FILENAME) . '_anonymized';
+		if (empty($fileExtension) === false) {
+			$anonymizedFileName .= '.' . $fileExtension;
+		}
+
+		return $anonymizedFileName;
+	}//end anonymizedNameFor()
+
+	/**
+	 * Flip the source's entity relations to anonymised, each with the exact
+	 * placeholder emitted for it (skip-aware). A failure here must not mask
+	 * the redaction, which is already written, so it is only logged.
+	 *
+	 * @param int $fileId The source file id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function markAnonymized(int $fileId): void {
+		try {
+			$this->entityRelationMapper->markAsAnonymizedWithPlaceholders($fileId, $this->lastPlaceholderMap);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'DocumentProcessingHandler: markAsAnonymizedWithPlaceholders failed after redaction',
+				['fileId' => $fileId, 'error' => $e->getMessage()]
+			);
+		}
+	}//end markAnonymized()
 
 	/**
 	 * Localise an entity-type label to the acting user's language for the
@@ -796,25 +802,21 @@ class DocumentProcessingHandler {
 	 *
 	 * Runs the document sanitiser to produce a cleaned derivative, then runs
 	 * the DOCX word replacement over the cleaned bytes. The replacement's
-	 * output is written to the original file's parent folder under $outputName.
-	 * The sanitisation audit report is retained on {@see getLastSanitizationReport}.
+	 * output is written to the original file's parent folder under the run's
+	 * output name. The sanitisation audit report is retained on
+	 * {@see getLastSanitizationReport}.
 	 *
-	 * @param File $node The Office file to anonymise.
-	 * @param array $replacements Entity-text => placeholder replacement map.
-	 * @param string $outputName Name for the anonymised output file.
+	 * @param DocumentReplacement $job The Office file, replacement map and output name.
 	 *
 	 * @throws Exception If sanitisation or the walker pass fails.
-	 *
-	 * @phpstan-param array<string, string> $replacements
-	 * @psalm-param   array<string, string> $replacements
 	 *
 	 * @return File The anonymised document.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function anonymizeSanitizableDocument(File $node, array $replacements, string $outputName): File {
+	private function anonymizeSanitizableDocument(DocumentReplacement $job): File {
 		try {
-			$result = $this->sanitizer->sanitize($node->getId());
+			$result = $this->sanitizer->sanitize($job->node->getId());
 		} catch (SanitizationException $e) {
 			if ($e->getReason() === SanitizationException::REASON_ENCRYPTED) {
 				// Caller-correctable: cannot anonymise an encrypted document.
@@ -834,25 +836,15 @@ class DocumentProcessingHandler {
 
 		$this->lastSanitizationReport = $result->report;
 
-		$fileExtension = strtolower(pathinfo($node->getName(), PATHINFO_EXTENSION));
+		$fileExtension = strtolower(pathinfo($job->node->getName(), PATHINFO_EXTENSION));
 
 		// ODT and other non-DOCX office text route through the text replacer;
 		// DOCX runs the DOCX word replacement. Both read the sanitised temp file.
 		if ($fileExtension === 'docx') {
-			return $this->replaceWordsInWordDocument(
-				node: $node,
-				replacements: $replacements,
-				outputName: $outputName,
-				sanitizedSourcePath: $result->path
-			);
+			return $this->replaceWordsInWordDocument(job: $job->withSanitizedSource(path: $result->path));
 		}
 
-		return $this->replaceWordsInOfficeContainer(
-			node: $node,
-			replacements: $replacements,
-			outputName: $outputName,
-			sanitizedSourcePath: $result->path
-		);
+		return $this->replaceWordsInOfficeContainer(job: $job->withSanitizedSource(path: $result->path));
 	}//end anonymizeSanitizableDocument()
 
 	/**
@@ -863,26 +855,16 @@ class DocumentProcessingHandler {
 	 * the container is written to the original file's parent folder. This
 	 * avoids the legacy raw-string-on-ZIP corruption path.
 	 *
-	 * @param File $node The original Office file (for parent folder).
-	 * @param array $replacements Entity-text => placeholder replacement map.
-	 * @param string $outputName Name for the output file.
-	 * @param string $sanitizedSourcePath Path to the sanitised ZIP container.
+	 * @param DocumentReplacement $job The run; its sanitised source path is the ZIP container.
 	 *
 	 * @throws Exception If replacement fails.
-	 *
-	 * @phpstan-param array<string, string> $replacements
-	 * @psalm-param   array<string, string> $replacements
 	 *
 	 * @return File The anonymised document.
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	private function replaceWordsInOfficeContainer(
-		File $node,
-		array $replacements,
-		string $outputName,
-		string $sanitizedSourcePath,
-	): File {
+	private function replaceWordsInOfficeContainer(DocumentReplacement $job): File {
+		$sanitizedSourcePath = (string)$job->sanitizedSourcePath();
 		$zip = new ZipArchive();
 		if ($zip->open($sanitizedSourcePath) !== true) {
 			throw new Exception('Failed to open sanitised Office container');
@@ -897,7 +879,7 @@ class DocumentProcessingHandler {
 				continue;
 			}
 
-			foreach ($replacements as $original => $replacement) {
+			foreach ($job->replacements as $original => $replacement) {
 				$xml = str_ireplace((string)$original, $replacement, $xml);
 			}
 
@@ -906,17 +888,14 @@ class DocumentProcessingHandler {
 
 		$zip->close();
 
-		$parentFolder = $node->getParent();
-		if ($parentFolder->nodeExists($outputName) === true) {
-			$parentFolder->get($outputName)->delete();
-		}
+		$this->removeExistingOutput(job: $job);
 
 		$outputStream = fopen($sanitizedSourcePath, 'r');
 		if ($outputStream === false) {
 			throw new Exception('Failed to read sanitised Office container');
 		}
 
-		$newFile = $parentFolder->newFile(path: $outputName, content: $outputStream);
+		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $outputStream);
 
 		$this->logger->info(
 			message: '[DocumentProcessingHandler] Office container anonymised',
@@ -924,7 +903,7 @@ class DocumentProcessingHandler {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'outputFile' => $newFile->getPath(),
-				'replacements' => count($replacements),
+				'replacements' => count($job->replacements),
 			]
 		);
 
@@ -932,64 +911,62 @@ class DocumentProcessingHandler {
 	}//end replaceWordsInOfficeContainer()
 
 	/**
+	 * Delete an existing file with the run's output name next to the source.
+	 *
+	 * @param DocumentReplacement $job The run.
+	 *
+	 * @return void
+	 */
+	private function removeExistingOutput(DocumentReplacement $job): void {
+		$parentFolder = $job->node->getParent();
+		if ($parentFolder->nodeExists($job->outputName) === true) {
+			$parentFolder->get($job->outputName)->delete();
+		}
+	}//end removeExistingOutput()
+
+	/**
 	 * Replace words in a Word document.
 	 *
 	 * Copies the DOCX to a temporary file, lets {@see DocxTextReplacer} edit
 	 * its text parts (body, headers, footers, notes, comments) in place, and
-	 * saves the result as a new file in the same parent folder.
+	 * saves the result as a new file in the same parent folder. When the run
+	 * carries a sanitised source path, those cleaned bytes are edited instead
+	 * of the original node content.
 	 *
-	 * @param Node $node The file node to process.
-	 * @param array $replacements Array of replacement mappings (search => replace).
-	 * @param string $outputName Name for the output file.
-	 * @param string|null $sanitizedSourcePath Optional pre-sanitised source file path; when
-	 *                                         provided, these cleaned bytes are edited
-	 *                                         instead of the original node content.
+	 * @param DocumentReplacement $job The run.
 	 *
 	 * @return File The new file node with replaced content.
 	 *
 	 * @throws Exception If replacement fails.
-	 *
-	 * @phpstan-param  array<string, string> $replacements
-	 * @psalm-param    array<string, string> $replacements
-	 * @phpstan-return File
-	 * @psalm-return   File
 	 */
-	private function replaceWordsInWordDocument(
-		Node $node,
-		array $replacements,
-		string $outputName,
-		?string $sanitizedSourcePath = null,
-	): File {
+	private function replaceWordsInWordDocument(DocumentReplacement $job): File {
 		$tempFile = tempnam(sys_get_temp_dir(), 'openregister_word_');
 		if ($tempFile === false) {
 			throw new Exception('Failed to create temporary file');
 		}
 
 		try {
-			if ($sanitizedSourcePath === null) {
-				$this->copyNodeTo(node: $node, target: $tempFile);
-			} elseif (copy($sanitizedSourcePath, $tempFile) === false) {
+			if ($job->sanitizedSourcePath() === null) {
+				$this->copyNodeTo(node: $job->node, target: $tempFile);
+			} elseif (copy($job->sanitizedSourcePath(), $tempFile) === false) {
 				throw new Exception('Failed to copy sanitised source for processing');
 			}
 
-			(new DocxTextReplacer())->replaceInFile(path: $tempFile, replacements: $replacements);
+			(new DocxTextReplacer())->replaceInFile(path: $tempFile, replacements: $job->replacements);
 
-			$parentFolder = $node->getParent();
-			if ($parentFolder->nodeExists($outputName) === true) {
-				$parentFolder->get($outputName)->delete();
-			}
+			$this->removeExistingOutput(job: $job);
 
 			// Nextcloud closes the stream once the file is written.
-			$newFile = $parentFolder->newFile(path: $outputName, content: fopen($tempFile, 'r'));
+			$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: fopen($tempFile, 'r'));
 
 			$this->logger->debug(
 				message: '[DocumentProcessingHandler] Words replaced in Word document',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
-					'originalFile' => $node->getPath(),
+					'originalFile' => $job->node->getPath(),
 					'outputFile' => $newFile->getPath(),
-					'replacements' => count($replacements),
+					'replacements' => count($job->replacements),
 				]
 			);
 
@@ -1040,50 +1017,31 @@ class DocumentProcessingHandler {
 	 * and saves the result as a new file in the same parent folder. This works
 	 * for any text-based file format (.txt, .md, .html, etc.).
 	 *
-	 * @param File $node The file node to process.
-	 * @param array $replacements Array of replacement mappings (search => replace).
-	 * @param string $outputName Name for the output file.
+	 * @param DocumentReplacement $job The run.
 	 *
 	 * @return File The new file node with replaced content.
 	 *
 	 * @throws Exception If replacement fails.
-	 *
-	 * @phpstan-param  array<string, string> $replacements
-	 * @psalm-param    array<string, string> $replacements
-	 * @phpstan-return File
-	 * @psalm-return   File
 	 */
-	private function replaceWordsInTextDocument(
-		File $node,
-		array $replacements,
-		string $outputName,
-	): File {
+	private function replaceWordsInTextDocument(DocumentReplacement $job): File {
 		// File::getContent() returns the content string and throws on failure
 		// (NotPermitted/Locked) — it never returns false, so no false-check.
-		$content = $node->getContent();
-
-		// Apply replacements.
-		$modifiedContent = $content;
-		foreach ($replacements as $original => $replacement) {
+		$modifiedContent = $job->node->getContent();
+		foreach ($job->replacements as $original => $replacement) {
 			$modifiedContent = str_ireplace((string)$original, $replacement, $modifiedContent);
 		}
 
-		// Create output file.
-		$parentFolder = $node->getParent();
-		if ($parentFolder->nodeExists($outputName) === true) {
-			$parentFolder->get($outputName)->delete();
-		}
-
-		$newFile = $parentFolder->newFile(path: $outputName, content: $modifiedContent);
+		$this->removeExistingOutput(job: $job);
+		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $modifiedContent);
 
 		$this->logger->debug(
 			message: '[DocumentProcessingHandler] Words replaced in text document',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'originalFile' => $node->getPath(),
+				'originalFile' => $job->node->getPath(),
 				'outputFile' => $newFile->getPath(),
-				'replacements' => count($replacements),
+				'replacements' => count($job->replacements),
 			]
 		);
 
@@ -1096,63 +1054,114 @@ class DocumentProcessingHandler {
 	 * Routes to {@see PdfTextReplacer} (text replacement with font switch
 	 * + Helvetica fallback, then /Info and XMP stripping via
 	 * {@see PdfTextReplacer::sanitizeMetadata()}). The output is re-extracted post-replacement; residual
-	 * substitution-map keys are always logged as a PII-free warning, and the
-	 * `$strict` flag then decides the outcome: lenient (default, ad-hoc
-	 * replace) writes the partial PDF for docx parity, strict (entity
-	 * anonymisation) fails closed with `REASON_VALIDATION_FAILED`.
+	 * substitution-map keys are logged as a PII-free warning, the partial PDF
+	 * is written in both modes, and the residuals are kept for
+	 * {@see getLastResidualEntities()} (best-effort, pdf-anonymisation spec).
+	 * When the output cannot be re-read at all, a strict run (entity
+	 * anonymisation) is refused with `REASON_VALIDATION_FAILED`: no file is
+	 * written and an existing output is left alone. A lenient run (ad-hoc
+	 * replace) writes it unchecked.
 	 *
 	 * Pre-dispatch: encrypted PDFs are rejected with `REASON_ENCRYPTED_PDF`
 	 * (caller-correctable, HTTP 422); if smalot/pdfparser cannot extract any
 	 * text from the input, the call defers to the `ocr-document-scanning`
 	 * capability via `REASON_TEXT_LAYER_MISSING` (caller's responsibility to route).
 	 *
-	 * @param File $node The PDF file node to process.
-	 * @param array $replacements Map: entity-text => placeholder.
-	 * @param string $outputName Output file name.
-	 * @param bool $strict When true (entity anonymisation), residual
-	 *                     entity text fails closed instead of being
-	 *                     written as a partial result.
-	 * @param bool|null $preserveStructure Tri-state structure-preservation option
-	 *                                     (REQ-ORTPR-004), forwarded to
-	 *                                     {@see PdfTextReplacer::replaceInPdf()}.
+	 * @param DocumentReplacement $job The PDF file, replacement map (entity-text =>
+	 *                                 placeholder), output name, strict flag (an output
+	 *                                 that cannot be re-read is refused instead of
+	 *                                 written unchecked) and tri-state structure-
+	 *                                 preservation option (REQ-ORTPR-004), forwarded to
+	 *                                 {@see PdfTextReplacer::replaceInPdf()}.
 	 *
 	 * @throws Exception If node content is unreadable.
 	 * @throws PdfAnonymisationException On encrypted PDF, missing text
-	 *                                   layer, validation gate failure (strict),
+	 *                                   layer, unreadable output (strict),
 	 *                                   or internal pipeline errors.
 	 *
-	 * @phpstan-param array<string, string> $replacements
-	 * @psalm-param   array<string, string> $replacements
-	 *
 	 * @return File The anonymised PDF.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict selects fail-closed vs lenient validation.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear probe → replace → sanitise → write pipeline; splitting obscures the flow.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each guard maps a distinct SAPP failure mode to a typed reason.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Same — sequential fail-closed guards, not nested branching.
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
 	 */
-	private function replaceWordsInPdfDocument(
-		File $node,
-		array $replacements,
-		string $outputName,
-		bool $strict = false,
-		?bool $preserveStructure = null,
-	): File {
+	private function replaceWordsInPdfDocument(DocumentReplacement $job): File {
 		// File::getContent() returns the content string and throws on failure
 		// (NotPermitted/Locked) — it never returns false.
-		$content = $node->getContent();
+		$content = $job->node->getContent();
+		$this->assertPdfTextLayer(content: $content);
 
-		// Encryption probe — encrypted PDFs carry an `/Encrypt N G R` indirect
-		// reference in the trailer dictionary. SAPP cannot byte-replace, and
-		// smalot cannot extract, an encrypted PDF without the password, which
-		// is out of scope for v1. Detect it up front and raise the caller-
-		// correctable REASON_ENCRYPTED_PDF (→ HTTP 422) rather than letting it
-		// surface downstream as a generic 500. The `\s+\d+\s+\d+\s+R` form
-		// matches the trailer's indirect reference and avoids false positives
-		// from the literal string appearing inside a content stream.
+		$replacer = new PdfTextReplacer(logger: $this->logger);
+
+		// Run text replacement first; metadata sanitisation operates on
+		// the result so /Info / XMP changes survive the rebuild.
+		// Best-effort: replaceInPdf returns the residual needles so the file
+		// is still produced with a warning. It throws before anything is
+		// written when a strict run's output cannot be re-read.
+		$residualNeedles = [];
+		$structureResult = null;
+		$replacedBytes = $replacer->replaceInPdf(
+			pdfBytes: $content,
+			substitutions: $job->replacements,
+			strict: $job->isStrict(),
+			residualEntities: $residualNeedles,
+			preserveStructure: $job->preserveStructure(),
+			structureResult: $structureResult
+		);
+
+		// Expose the `structurePreservation` result block (REQ-ORTPR-003).
+		// `PdfMetadataSanitizer::sanitize()` below strips ONLY /Info + XMP —
+		// it never touches /StructTreeRoot, /MarkInfo or /StructElem objects
+		// (ADR-022, consumed unchanged) — so the measurement taken inside
+		// `replaceInPdf` already reflects the accessibility structure of the
+		// bytes this method goes on to write.
+		$this->lastStructurePreservation = $structureResult;
+
+		if (empty($residualNeedles) === false) {
+			$this->lastResidualEntities = $this->residualEntityRecords(
+				needles: $residualNeedles,
+				replacements: $job->replacements
+			);
+		}
+
+		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $replacedBytes);
+
+		$this->removeExistingOutput(job: $job);
+		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);
+
+		$this->logger->info(
+			message: '[DocumentProcessingHandler] PDF anonymised via SAPP',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'originalFile' => $job->node->getPath(),
+				'outputFile' => $newFile->getPath(),
+				'replacements' => count($job->replacements),
+			]
+		);
+
+		return $newFile;
+	}//end replaceWordsInPdfDocument()
+
+	/**
+	 * Refuse PDFs that cannot be anonymised by byte replacement.
+	 *
+	 * Encrypted PDFs carry an `/Encrypt N G R` indirect reference in the
+	 * trailer dictionary. SAPP cannot byte-replace, and smalot cannot
+	 * extract, an encrypted PDF without the password, which is out of scope
+	 * for v1, so it is refused up front with the caller-correctable
+	 * REASON_ENCRYPTED_PDF (HTTP 422). The `\s+\d+\s+\d+\s+R` form matches the
+	 * trailer's indirect reference and avoids false positives from the
+	 * literal string inside a content stream. Image-only scans defer to the
+	 * `ocr-document-scanning` capability rather than producing an empty
+	 * no-op output.
+	 *
+	 * @param string $content The PDF bytes.
+	 *
+	 * @throws PdfAnonymisationException When the PDF is encrypted, unparsable or has no text layer.
+	 *
+	 * @return void
+	 */
+	private function assertPdfTextLayer(string $content): void {
 		if (preg_match('/\/Encrypt\s+\d+\s+\d+\s+R/', $content) === 1) {
 			throw new PdfAnonymisationException(
 				reason: PdfAnonymisationException::REASON_ENCRYPTED_PDF,
@@ -1161,15 +1170,32 @@ class DocumentProcessingHandler {
 			);
 		}
 
-		// Pre-dispatch text-layer probe — image-only scans must defer
-		// to the `ocr-document-scanning` capability rather than producing
-		// an empty no-op output via the byte-replace path.
+		if (trim($this->extractPdfText(content: $content)) === '') {
+			throw new PdfAnonymisationException(
+				reason: PdfAnonymisationException::REASON_TEXT_LAYER_MISSING,
+				message: 'PDF has no extractable text layer; defer to OCR',
+				diagnostic: ['stage' => 'input.text_layer_probe']
+			);
+		}
+	}//end assertPdfTextLayer()
+
+	/**
+	 * Extract the text layer of a PDF for the pre-dispatch probe.
+	 *
+	 * The smalot parser rejects encrypted/secured PDFs with a message rather
+	 * than a typed exception; that maps to the caller-correctable 422.
+	 * Everything else is a genuine input-parse failure (500).
+	 *
+	 * @param string $content The PDF bytes.
+	 *
+	 * @throws PdfAnonymisationException When the parser fails.
+	 *
+	 * @return string The extracted text.
+	 */
+	private function extractPdfText(string $content): string {
 		try {
-			$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $content);
+			return (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $content);
 		} catch (\Throwable $e) {
-			// The smalot parser rejects encrypted/secured PDFs with a message
-			// rather than a typed exception; map that to the caller-correctable 422.
-			// Everything else is a genuine input-parse failure → 500.
 			if (preg_match('/secured|encrypt/i', $e->getMessage()) === 1) {
 				throw new PdfAnonymisationException(
 					reason: PdfAnonymisationException::REASON_ENCRYPTED_PDF,
@@ -1186,64 +1212,51 @@ class DocumentProcessingHandler {
 				previous: $e
 			);
 		}//end try
+	}//end extractPdfText()
 
-		if (trim($extracted) === '') {
-			throw new PdfAnonymisationException(
-				reason: PdfAnonymisationException::REASON_TEXT_LAYER_MISSING,
-				message: 'PDF has no extractable text layer; defer to OCR',
-				diagnostic: ['stage' => 'input.text_layer_probe']
-			);
-		}
-
-		$replacer = new PdfTextReplacer(logger: $this->logger);
-
-		// Run text replacement first; metadata sanitisation operates on
-		// the result so /Info / XMP changes survive the rebuild.
-		// Best-effort: replaceInPdf no longer fails closed on residual entity
-		// text — it returns the residual needles so we can produce the file
-		// and warn instead of discarding it.
-		$residualNeedles = [];
-		$structureResult = null;
-		$replacedBytes = $replacer->replaceInPdf(
-			pdfBytes: $content,
-			substitutions: $replacements,
-			strict: $strict,
-			residualEntities: $residualNeedles,
-			preserveStructure: $preserveStructure,
-			structureResult: $structureResult
-		);
-
-		// Expose the `structurePreservation` result block (REQ-ORTPR-003).
-		// `PdfMetadataSanitizer::sanitize()` below strips ONLY /Info + XMP —
-		// it never touches /StructTreeRoot, /MarkInfo or /StructElem objects
-		// (ADR-022, consumed unchanged) — so the measurement taken inside
-		// `replaceInPdf` already reflects the accessibility structure of the
-		// bytes this method goes on to write.
-		$this->lastStructurePreservation = $structureResult;
-
-		// Map residual needles back to entity records {text, type, id} via the
-		// placeholder map (`[<TYPE>: <id>]`). Logs stay PII-free (ADR-005); the
-		// text is carried only to the authenticated anonymise response for the
-		// operator's review/iterate UI.
-		if (empty($residualNeedles) === false) {
-			$records = [];
-			foreach ($residualNeedles as $needle) {
-				$placeholder = $replacements[$needle] ?? '';
-				$type = 'UNKNOWN';
-				$id = '';
-				if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $m) === 1) {
-					$type = trim($m[1]);
-					$id = trim($m[2]);
-				}
-
-				$records[] = ['text' => (string)$needle, 'type' => $type, 'id' => $id];
+	/**
+	 * Map residual needles back to entity records via the placeholder map.
+	 *
+	 * Placeholders have the form `[<TYPE>: <id>]`; anything else yields type
+	 * `UNKNOWN` and an empty id. Logs stay PII-free (ADR-005); the text is
+	 * carried only to the authenticated anonymise response for the
+	 * operator's review/iterate UI.
+	 *
+	 * @param array<int, string> $needles Residual substitution-map keys.
+	 * @param array<string, string> $replacements Map: entity-text => placeholder.
+	 *
+	 * @return array<int, array{text: string, type: string, id: string}> The records.
+	 */
+	private function residualEntityRecords(array $needles, array $replacements): array {
+		$records = [];
+		foreach ($needles as $needle) {
+			$placeholder = $replacements[$needle] ?? '';
+			$type = 'UNKNOWN';
+			$id = '';
+			if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $m) === 1) {
+				$type = trim($m[1]);
+				$id = trim($m[2]);
 			}
 
-			$this->lastResidualEntities = $records;
+			$records[] = ['text' => (string)$needle, 'type' => $type, 'id' => $id];
 		}
 
+		return $records;
+	}//end residualEntityRecords()
+
+	/**
+	 * Strip /Info and XMP metadata from the replaced PDF bytes.
+	 *
+	 * @param PdfTextReplacer $replacer The replacer of this run.
+	 * @param string $pdfBytes The replaced PDF bytes.
+	 *
+	 * @throws PdfAnonymisationException When sanitisation fails.
+	 *
+	 * @return string The sanitised bytes.
+	 */
+	private function sanitizePdfMetadata(PdfTextReplacer $replacer, string $pdfBytes): string {
 		try {
-			$replacedBytes = $replacer->sanitizeMetadata(pdfBytes: $replacedBytes);
+			return $replacer->sanitizeMetadata(pdfBytes: $pdfBytes);
 		} catch (PdfAnonymisationException $e) {
 			// Sanitiser-raised (or the fail-closed guards above) — surface to the caller.
 			throw $e;
@@ -1255,26 +1268,5 @@ class DocumentProcessingHandler {
 				previous: $e
 			);
 		}//end try
-
-		// Create output file.
-		$parentFolder = $node->getParent();
-		if ($parentFolder->nodeExists($outputName) === true) {
-			$parentFolder->get($outputName)->delete();
-		}
-
-		$newFile = $parentFolder->newFile(path: $outputName, content: $replacedBytes);
-
-		$this->logger->info(
-			message: '[DocumentProcessingHandler] PDF anonymised via SAPP',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'originalFile' => $node->getPath(),
-				'outputFile' => $newFile->getPath(),
-				'replacements' => count($replacements),
-			]
-		);
-
-		return $newFile;
-	}//end replaceWordsInPdfDocument()
+	}//end sanitizePdfMetadata()
 }//end class

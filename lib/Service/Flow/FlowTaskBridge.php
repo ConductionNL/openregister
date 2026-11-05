@@ -43,10 +43,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
@@ -98,14 +98,14 @@ class FlowTaskBridge {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $tasks The task lifecycle.
-	 * @param FlowRunMapper $runs Reads the run for its version pin, and to wake it.
+	 * @param TaskServiceInterface $tasks The task lifecycle.
+	 * @param FlowRunMapperInterface $runs Reads the run for its version pin, and to wake it.
 	 * @param ContainerInterface $container Lazily resolves the run service and advancer.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
-		private readonly TaskService $tasks,
-		private readonly FlowRunMapper $runs,
+		private readonly TaskServiceInterface $tasks,
+		private readonly FlowRunMapperInterface $runs,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
@@ -365,7 +365,7 @@ class FlowTaskBridge {
 			return null;
 		}
 
-		$runService = $this->container->get(FlowRunService::class);
+		$runService = $this->container->get(FlowRunServiceInterface::class);
 		$woken = $runService->signal(run: $run, payload: self::outcomeBagFor(task: $task));
 		if ($woken === null) {
 			return null;

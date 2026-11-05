@@ -32,13 +32,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -94,6 +94,7 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 			],
 			'org unknown mode refused'         => ['platform' => 'postgres', 'org' => ['mode' => 'mystery', 'uuids' => []]],
 			'org waived by rbac'               => ['platform' => 'postgres', 'org' => $in, 'waived' => true, 'rows' => [['agg' => 9]]],
+			'org with a public branch refused' => ['platform' => 'postgres', 'org' => $in, 'waived' => true, 'publicBranch' => true],
 			'org widened by rbac'              => ['platform' => 'postgres', 'org' => $in, 'admitted' => true, 'rows' => [['agg' => 9]]],
 			'rbac off ignores rbac answers'    => [
 				'platform'     => 'postgres',
@@ -259,6 +260,7 @@ class AggregationRunnerNativeSqlTest extends TestCase {
 		$magicMapper->method('getTableNameForRegisterSchema')->willReturn($case['table'] ?? 'register_1_schema_case');
 		$magicMapper->method('getMetadataColumnHealer')->willReturn($healer);
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($case['waived'] ?? false);
+		$magicMapper->method('organisationBoundaryHasCrossOrganisationBranch')->willReturn($case['publicBranch'] ?? false);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($case['admitted'] ?? false);
 		$magicMapper->method('rbacRowPredicateSql')->willReturn($case['rowPredicate'] ?? null);
 

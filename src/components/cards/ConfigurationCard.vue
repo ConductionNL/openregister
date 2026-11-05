@@ -729,7 +729,7 @@ export default {
 						// Debug logging removed for production
 					}
 				}
-			} catch (error) {
+			} catch {
 				// Debug logging removed for production
 				// On error, assume not imported
 				this.importedConfigId = null

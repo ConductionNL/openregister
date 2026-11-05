@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
@@ -65,6 +67,55 @@ class RegistersControllerImportGoldenTest extends TestCase {
 	/**
 	 * @return array<string, array{0: array<string, mixed>}>
 	 */
+	/**
+	 * For every import service call, whether creates kept their lifecycle state.
+	 *
+	 * @var list<bool>
+	 */
+	private array $ranAsSystem = [];
+
+	/**
+	 * For every import service call, whether it ran inside SystemOperationContext.
+	 *
+	 * @var list<bool>
+	 */
+	private array $elevated = [];
+
+	public function testAnAdminsHistoricImportKeepsTheRowsStates(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'params' => ['type' => 'csv', 'schema' => '5', 'historic' => 'true']]);
+
+		$response = $controller->import(1, false);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame([true], $this->ranAsSystem);
+		$this->assertSame([false], $this->elevated, 'a historic import is not elevated (ADR-099)');
+		$this->assertFalse(KeepLifecycleStatesScope::isActive(), 'the scope ends with the import');
+	}//end testAnAdminsHistoricImportKeepsTheRowsStates()
+
+	public function testAHistoricImportIsRefusedForSomebodyWhoIsNotAnAdmin(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(
+			case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'user' => 'member', 'manage' => ['editors'], 'params' => ['type' => 'csv', 'schema' => '5', 'historic' => 'true']]
+		);
+
+		$response = $controller->import(1, false);
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame([], $this->ranAsSystem);
+	}//end testAHistoricImportIsRefusedForSomebodyWhoIsNotAnAdmin()
+
+	public function testAnOrdinaryImportIsNotElevated(): void {
+		$this->ranAsSystem = [];
+		$controller = $this->buildController(
+			case: ['file' => ['name' => 'data.csv', 'content' => "a\n1\n"], 'user' => 'member', 'manage' => ['editors'], 'params' => ['type' => 'csv', 'schema' => '5']]
+		);
+
+		$controller->import(1, false);
+
+		$this->assertSame([false], $this->ranAsSystem);
+	}//end testAnOrdinaryImportIsNotElevated()
+
 	public static function cases(): array {
 		$excel = ['name' => 'data.xlsx', 'content' => 'xlsx-bytes'];
 		$csv = ['name' => 'data.csv', 'content' => "a,b\n1,2\n"];
@@ -274,6 +325,8 @@ class RegistersControllerImportGoldenTest extends TestCase {
 		foreach (['importFromExcel', 'importFromCsv', 'importFromJson'] as $method) {
 			$importService->method($method)->willReturnCallback(function () use ($method, $case) {
 				$this->record(method: 'importService.' . $method, args: func_get_args());
+				$this->ranAsSystem[] = KeepLifecycleStatesScope::isActive();
+				$this->elevated[] = SystemOperationContext::isActive();
 				if (($case['throw'] ?? null) === $method) {
 					throw new \Exception('Import failed hard');
 				}

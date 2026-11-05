@@ -236,6 +236,13 @@ return array (
     ),
     'result' => NULL,
   ),
+  'org with a public branch refused' => 
+  array (
+    'statements' => 
+    array (
+    ),
+    'result' => NULL,
+  ),
   'org waived by rbac' => 
   array (
     'statements' => 

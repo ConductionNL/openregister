@@ -34,10 +34,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -75,15 +75,15 @@ class DepartmentMatrixPersonValues {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper    $schemas   Loads the person schema.
-	 * @param RegisterMapper  $registers Finds the register that holds it.
-	 * @param MagicMapper     $objects   Reads the person object.
+	 * @param SchemaMapperInterface    $schemas   Loads the person schema.
+	 * @param RegisterMapperInterface  $registers Finds the register that holds it.
+	 * @param MagicMapperInterface     $objects   Reads the person object.
 	 * @param LoggerInterface $logger    Diagnostics.
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemas,
-		private readonly RegisterMapper $registers,
-		private readonly MagicMapper $objects,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

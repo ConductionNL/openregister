@@ -37,11 +37,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -52,19 +53,21 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class OpenProjectLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
 	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param OpenProjectLinkService $linkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly OpenProjectLinkService $linkService,
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -85,31 +88,13 @@ class OpenProjectLinksController extends Controller {
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->linkService->getLinkedWorkPackages($object->getUuid());
-
-			return new JSONResponse(
-				[
-					'results' => $results,
-					'total' => count($results),
-				]
-			);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedWorkPackages($object->getUuid()))
+		);
 	}//end index()
 
 	/**
@@ -130,36 +115,27 @@ class OpenProjectLinksController extends Controller {
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$workPackageId = (int)$this->request->getParam('workPackageId', 0);
+				if ($workPackageId === 0) {
+					return new JSONResponse(['error' => 'workPackageId is required'], 400);
+				}
+
+				$link = $this->linkService->linkWorkPackage(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$workPackageId
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$workPackageId = (int)$this->request->getParam('workPackageId', 0);
-			if ($workPackageId === 0) {
-				return new JSONResponse(['error' => 'workPackageId is required'], 400);
-			}
-
-			$link = $this->linkService->linkWorkPackage(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$workPackageId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end link()
 
 	/**
@@ -180,45 +156,36 @@ class OpenProjectLinksController extends Controller {
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object): JSONResponse {
+				$projectId = (string)$this->request->getParam('projectId', '');
+				if (trim($projectId) === '') {
+					return new JSONResponse(['error' => 'projectId is required'], 400);
+				}
+
+				$subject = (string)$this->request->getParam('subject', '');
+				if (trim($subject) === '') {
+					return new JSONResponse(['error' => 'subject is required'], 400);
+				}
+
+				$type = (string)$this->request->getParam('type', '');
+
+				$link = $this->linkService->createAndLinkWorkPackage(
+					$object->getUuid(),
+					(int)$object->getRegister(),
+					(int)$object->getSchema(),
+					$projectId,
+					$subject,
+					$type
+				);
+
+				return new JSONResponse($link->jsonSerialize(), 201);
 			}
-
-			$projectId = (string)$this->request->getParam('projectId', '');
-			if (trim($projectId) === '') {
-				return new JSONResponse(['error' => 'projectId is required'], 400);
-			}
-
-			$subject = (string)$this->request->getParam('subject', '');
-			if (trim($subject) === '') {
-				return new JSONResponse(['error' => 'subject is required'], 400);
-			}
-
-			$type = (string)$this->request->getParam('type', '');
-
-			$link = $this->linkService->createAndLinkWorkPackage(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$projectId,
-				$subject,
-				$type
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end createAndLink()
 
 	/**
@@ -238,26 +205,17 @@ class OpenProjectLinksController extends Controller {
 	 */
 	public function destroy(string $register, string $schema, string $id, string $wpId): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
+		return $this->onLinkedObject(
+			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+			action: function (ObjectEntity $object) use ($wpId): JSONResponse {
+				$this->linkService->unlink($object->getUuid(), (int)$wpId);
+
+				return new JSONResponse(['success' => true]);
 			}
-
-			$this->linkService->unlink($object->getUuid(), (int)$wpId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		);
 	}//end destroy()
 
 	/**
@@ -275,10 +233,7 @@ class OpenProjectLinksController extends Controller {
 	 */
 	public function available(): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'OpenConnector app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
 		$search = $this->request->getParam('search');
@@ -293,31 +248,6 @@ class OpenProjectLinksController extends Controller {
 			return $this->mapException(exception: $e);
 		}
 	}//end available()
-
-	/**
-	 * Resolve an OR object from register/schema/id.
-	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
-	 *
-	 * @return ObjectEntity|null
-	 *
-	 * @spec exclude Private helper: resolves an object from register/schema/id;
-	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
-	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
-
-		return $this->objectService->getObject();
-	}//end validateObject()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -338,7 +268,7 @@ class OpenProjectLinksController extends Controller {
 	 * @spec exclude Private helper: maps a service exception code to an HTTP status;
 	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function mapException(Exception $exception): JSONResponse {
+	protected function mapException(Exception $exception): JSONResponse {
 		$code = $exception->getCode();
 		if (in_array($code, [400, 401, 404, 409, 502, 503], true) === true) {
 			return new JSONResponse(['error' => $exception->getMessage()], $code);

@@ -36,7 +36,7 @@ namespace OCA\OpenRegister\Service\Import;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -59,11 +59,11 @@ class MatchResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService $objectService The object read path.
+	 * @param ObjectOperationsInterface $objectService The object read path.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly ObjectService $objectService,
+		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

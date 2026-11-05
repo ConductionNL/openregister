@@ -110,9 +110,7 @@ final class ProcessingPurposeControllerTest extends TestCase {
 			$purposes,
 			$registry,
 			($audit ?? $this->createMock(AuditTrailMapper::class)),
-			$this->session($uid),
-			$this->groupManager($admin)
-		);
+			new \OCA\OpenRegister\Controller\Support\ControllerSession($this->session($uid), $this->groupManager($admin), $this->createMock(\Psr\Log\LoggerInterface::class)));
 	}//end controller()
 
 	public function testAnyAuthenticatedCallerMaySeeThePurposesItCouldName(): void {
@@ -244,6 +242,7 @@ final class ProcessingPurposeControllerTest extends TestCase {
 
 		$body = $this->controller(
 			$this->createMock(ProcessingPurposeMapper::class),
+			admin: true,
 			audit: $audit
 		)->report()->getData();
 

@@ -51,7 +51,7 @@ use OCA\OpenRegister\Db\MultiTenancyTrait;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Db\Webhook;
 use OCP\AppFramework\Db\Entity;
 use OCP\IDBConnection;
@@ -154,8 +154,14 @@ final class TenancyGuardHost {
  * @uses \OCA\OpenRegister\Db\Configuration
  * @uses \OCA\OpenRegister\Db\Endpoint
  * @uses \OCA\OpenRegister\Db\Schema
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Db\Agent
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Service\TenantLogRedactor
  */
 class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 

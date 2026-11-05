@@ -152,6 +152,39 @@ class ObjectSourceRegistrarTest extends TestCase {
 	}//end testBootAddsTheProvidersAndSkipsOneThatFails()
 
 	/**
+	 * boot() keeps adding providers when a provider fails and no logger can be resolved either.
+	 *
+	 * @return void
+	 */
+	public function testBootSkipsAFailingProviderWithoutALogger(): void {
+		$registry = $this->createMock(originalClassName: ObjectSourceRegistry::class);
+		$provider = $this->createMock(originalClassName: ObjectSourceProvider::class);
+
+		$server = $this->createMock(originalClassName: ContainerInterface::class);
+		$server->method('get')->willReturnCallback(
+			function (string $id) use ($registry, $provider) {
+				if ($id === ObjectSourceRegistry::class) {
+					return $registry;
+				}
+
+				if ($id === LoggerInterface::class) {
+					throw new RuntimeException(message: 'no logger');
+				}
+
+				if ($id === 'OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider') {
+					throw new RuntimeException(message: 'caldav is not installed');
+				}
+
+				return $provider;
+			}
+		);
+
+		$registry->expects($this->exactly(12))->method('addProvider')->with($provider);
+
+		ObjectSourceRegistrar::boot(server: $server);
+	}//end testBootSkipsAFailingProviderWithoutALogger()
+
+	/**
 	 * boot() does nothing when the registry itself cannot be resolved.
 	 *
 	 * @return void

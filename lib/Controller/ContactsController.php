@@ -23,10 +23,10 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -60,16 +60,16 @@ class ContactsController extends Controller {
 	/**
 	 * Object service.
 	 *
-	 * @var ObjectService
+	 * @var ObjectOperationsInterface
 	 */
-	private readonly ObjectService $objectService;
+	private readonly ObjectOperationsInterface $objectService;
 
 	/**
 	 * Contact matching service.
 	 *
-	 * @var ContactMatchingService
+	 * @var ContactMatcherInterface
 	 */
-	private readonly ContactMatchingService $matchingService;
+	private readonly ContactMatcherInterface $matchingService;
 
 	/**
 	 * Deep link registry service.
@@ -98,8 +98,8 @@ class ContactsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request
 	 * @param ContactService $contactService Contact service
-	 * @param ObjectService $objectService Object service
-	 * @param ContactMatchingService $matchingService Contact matching service
+	 * @param ObjectOperationsInterface $objectService Object service
+	 * @param ContactMatcherInterface $matchingService Contact matching service
 	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
 	 * @param IL10N $l10n Localization service
 	 * @param LoggerInterface $logger Logger
@@ -111,8 +111,8 @@ class ContactsController extends Controller {
 		string $appName,
 		IRequest $request,
 		ContactService $contactService,
-		ObjectService $objectService,
-		ContactMatchingService $matchingService,
+		ObjectOperationsInterface $objectService,
+		ContactMatcherInterface $matchingService,
 		DeepLinkRegistryService $deepLinkRegistry,
 		IL10N $l10n,
 		LoggerInterface $logger,

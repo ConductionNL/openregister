@@ -182,6 +182,29 @@ class ObjectsToolTest extends TestCase {
 		$this->assertTrue($result['success']);
 	}
 
+	/**
+	 * Keyed arguments bind by name whatever their order, omitted ones take
+	 * their declared default, and a key the method does not declare is dropped.
+	 */
+	public function testExecuteFunctionBindsKeyedArgumentsByName(): void {
+		$this->objectService->expects($this->once())
+			->method('findAll')
+			->with($this->callback(function ($config) {
+				return $config['limit'] === 20
+					&& $config['offset'] === 0
+					&& $config['filters'] === ['schema' => '2', '_search' => 'needle'];
+			}))
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$result = $this->tool->executeFunction('search_objects', [
+			'query' => 'needle',
+			'unknownHint' => 'ignored',
+			'schema' => '2',
+		]);
+
+		$this->assertTrue($result['success']);
+	}
+
 	// ------------------------------------------------------------------
 	// getObject
 	// ------------------------------------------------------------------

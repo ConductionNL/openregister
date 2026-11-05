@@ -1,0 +1,5098 @@
+{
+    "create: alert not an object": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "high"
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "alert: an alert is an object with an operator and a threshold.",
+            "field": "alert"
+        }
+    },
+    "create: config not an array falls to query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": "x",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": "not array"
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: config wins over query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "registers": [
+                                1
+                            ],
+                            "schemas": [
+                                2
+                            ],
+                            "source": "database",
+                            "searchTerms": [
+                                "x"
+                            ],
+                            "facetFilters": {
+                                "a": 1
+                            },
+                            "enabledFacets": [
+                                "f"
+                            ],
+                            "extra": "dropped"
+                        },
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "description": "D",
+                        "isPublic": true,
+                        "isDefault": true
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "D",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            1
+                        ],
+                        "schemas": [
+                            2
+                        ],
+                        "source": "database",
+                        "searchTerms": [
+                            "x"
+                        ],
+                        "facetFilters": {
+                            "a": 1
+                        },
+                        "enabledFacets": [
+                            "f"
+                        ]
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: empty alert": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": ""
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: empty name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View name is required"
+        }
+    },
+    "create: forged owner and userId": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "requestedBy": "mallory"
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: invalid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.shareFindings": [
+                    "bad"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "The view cannot be shared this way: one. two.",
+            "findings": [
+                {
+                    "message": "one."
+                },
+                {
+                    "message": "two."
+                }
+            ]
+        }
+    },
+    "create: neither query nor config": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View query or configuration is required"
+        }
+    },
+    "create: no name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View name is required"
+        }
+    },
+    "create: no session": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            }
+        ],
+        "status": 401,
+        "data": {
+            "error": "User not authenticated"
+        }
+    },
+    "create: null shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.shareFindings": null
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": null
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: partial config gets defaults": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "schemas": [
+                                3
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [],
+                        "schemas": [
+                            3
+                        ],
+                        "source": "auto",
+                        "searchTerms": [],
+                        "facetFilters": [],
+                        "enabledFacets": []
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: query only": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    {
+                        "type": "table"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "create: recipients refused": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "not your recipient"
+        }
+    },
+    "create: service throws": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ViewsController] Error creating view",
+                    {
+                        "exception": "db down"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to create view",
+            "message": "db down"
+        }
+    },
+    "create: valid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.shareFindings": [
+                    {
+                        "type": "user",
+                        "id": "bob"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewService.create": [
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    [
+                        {
+                            "type": "user",
+                            "id": "bob"
+                        }
+                    ],
+                    null
+                ]
+            }
+        ],
+        "status": 201,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "N",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: alert not an object": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "high"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "high"
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "alert: an alert is an object with an operator and a threshold.",
+            "field": "alert"
+        }
+    },
+    "patch: config not an array falls to query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": "not array"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": "x",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": "not array"
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: config wins over query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "description": "D",
+                        "isPublic": true,
+                        "isDefault": true
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "registers": [
+                                1
+                            ],
+                            "schemas": [
+                                2
+                            ],
+                            "source": "database",
+                            "searchTerms": [
+                                "x"
+                            ],
+                            "facetFilters": {
+                                "a": 1
+                            },
+                            "enabledFacets": [
+                                "f"
+                            ],
+                            "extra": "dropped"
+                        },
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "description": "D",
+                        "isPublic": true,
+                        "isDefault": true
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "D",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            1
+                        ],
+                        "schemas": [
+                            2
+                        ],
+                        "source": "database",
+                        "searchTerms": [
+                            "x"
+                        ],
+                        "facetFilters": {
+                            "a": 1
+                        },
+                        "enabledFacets": [
+                            "f"
+                        ]
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: empty alert": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": ""
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": ""
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: empty body keeps the stored view": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    []
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    []
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "Stored",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            5
+                        ]
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: empty name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: explicit false flags": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "isPublic": false,
+                        "isDefault": false
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "isPublic": false,
+                        "isDefault": false,
+                        "favoredBy": [
+                            "bob"
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "Stored",
+                    "Stored description",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            5
+                        ]
+                    },
+                    [
+                        "bob"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: fields refused": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You may not change these fields on this view: name, query",
+            "fields": [
+                "name",
+                "query"
+            ]
+        }
+    },
+    "patch: forged owner and userId": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "owner": "mallory"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "requestedBy": "mallory"
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: invalid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            "bad"
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            "bad"
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": [
+                    "bad"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "The view cannot be shared this way: one. two.",
+            "findings": [
+                {
+                    "message": "one."
+                },
+                {
+                    "message": "two."
+                }
+            ]
+        }
+    },
+    "patch: member saves the owner view": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "dave",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "dave",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "dave",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "dave",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: neither query nor config": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": "nope"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": "nope"
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            5
+                        ]
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: no name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "Stored",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: no session": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            }
+        ],
+        "status": 401,
+        "data": {
+            "error": "User not authenticated"
+        }
+    },
+    "patch: null flags keep stored": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "isPublic": null,
+                        "isDefault": null,
+                        "name": null,
+                        "description": null
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "isPublic": null,
+                        "isDefault": null,
+                        "name": null,
+                        "description": null
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "Stored",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            5
+                        ]
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: null shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": null
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": null
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": null
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: partial config gets defaults": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "schemas": [
+                                3
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [],
+                        "schemas": [
+                            3
+                        ],
+                        "source": "auto",
+                        "searchTerms": [],
+                        "facetFilters": [],
+                        "enabledFacets": []
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: query only": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "table"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: recipients refused": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "not your recipient"
+        }
+    },
+    "patch: service throws": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    null,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ViewsController] Error patching view",
+                    {
+                        "id": "7",
+                        "exception": "db down"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to patch view",
+            "message": "db down"
+        }
+    },
+    "patch: stored view without query or names": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "presentation": null
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "presentation": null
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    [],
+                    [],
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: valid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": [
+                    {
+                        "type": "user",
+                        "id": "bob"
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "Stored description",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    [
+                        "erin"
+                    ],
+                    {
+                        "type": "cards"
+                    },
+                    [
+                        {
+                            "type": "user",
+                            "id": "bob"
+                        }
+                    ],
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "patch: view does not exist": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "View not found"
+        }
+    },
+    "patch: view out of reach": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "carol",
+                    "alice"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "View not found"
+        }
+    },
+    "update: alert not an object": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "high"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "high",
+                        "isPublic": false
+                    }
+                ]
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "alert: an alert is an object with an operator and a threshold.",
+            "field": "alert"
+        }
+    },
+    "update: config not an array falls to query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": "not array"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": "x",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": "not array",
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: config wins over query": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "description": "D",
+                        "isPublic": true,
+                        "isDefault": true
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "registers": [
+                                1
+                            ],
+                            "schemas": [
+                                2
+                            ],
+                            "source": "database",
+                            "searchTerms": [
+                                "x"
+                            ],
+                            "facetFilters": {
+                                "a": 1
+                            },
+                            "enabledFacets": [
+                                "f"
+                            ],
+                            "extra": "dropped"
+                        },
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "description": "D",
+                        "isPublic": true,
+                        "isDefault": true
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "D",
+                    "alice",
+                    true,
+                    true,
+                    {
+                        "registers": [
+                            1
+                        ],
+                        "schemas": [
+                            2
+                        ],
+                        "source": "database",
+                        "searchTerms": [
+                            "x"
+                        ],
+                        "facetFilters": {
+                            "a": 1
+                        },
+                        "enabledFacets": [
+                            "f"
+                        ]
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: empty alert": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": ""
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "alert": "",
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: empty name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "isPublic": false
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View name is required"
+        }
+    },
+    "update: fields refused": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "You may not change these fields on this view: name, query",
+            "fields": [
+                "name",
+                "query"
+            ]
+        }
+    },
+    "update: forged owner and userId": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "owner": "mallory"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "owner": "mallory",
+                        "userId": "mallory",
+                        "requestedBy": "mallory",
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: invalid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            "bad"
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            "bad"
+                        ],
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": [
+                    "bad"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "The view cannot be shared this way: one. two.",
+            "findings": [
+                {
+                    "message": "one."
+                },
+                {
+                    "message": "two."
+                }
+            ]
+        }
+    },
+    "update: member saves the owner view": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "dave",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "dave",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "dave",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "dave",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: neither query nor config": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": "nope"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": "nope",
+                        "isPublic": false
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View query or configuration is required"
+        }
+    },
+    "update: no name": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "isPublic": false
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "View name is required"
+        }
+    },
+    "update: no session": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            }
+        ],
+        "status": 401,
+        "data": {
+            "error": "User not authenticated"
+        }
+    },
+    "update: null shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": null
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": null,
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": null
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: partial config gets defaults": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N"
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "configuration": {
+                            "schemas": [
+                                3
+                            ]
+                        },
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [],
+                        "schemas": [
+                            3
+                        ],
+                        "source": "auto",
+                        "searchTerms": [],
+                        "facetFilters": [],
+                        "enabledFacets": []
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: query only": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "presentation": {
+                            "type": "table"
+                        },
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    {
+                        "type": "table"
+                    },
+                    null,
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: recipients refused": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "isPublic": false
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "not your recipient"
+        }
+    },
+    "update: service throws": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        }
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    null,
+                    null
+                ]
+            },
+            {
+                "logger.error": [
+                    "[ViewsController] Error updating view",
+                    {
+                        "id": "7",
+                        "exception": "db down"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to update view",
+            "message": "db down"
+        }
+    },
+    "update: valid shares": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "alice",
+                    "alice"
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.refusedFields": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.assertMayNameRecipients": [
+                    "alice",
+                    "alice",
+                    {
+                        "name": "N",
+                        "query": {
+                            "registers": [
+                                9
+                            ],
+                            "custom": true
+                        },
+                        "sharedWith": [
+                            {
+                                "type": "user",
+                                "id": "bob"
+                            }
+                        ],
+                        "isPublic": false
+                    }
+                ]
+            },
+            {
+                "viewers.shareFindings": [
+                    {
+                        "type": "user",
+                        "id": "bob"
+                    }
+                ]
+            },
+            {
+                "viewService.update": [
+                    "7",
+                    "N",
+                    "",
+                    "alice",
+                    false,
+                    false,
+                    {
+                        "registers": [
+                            9
+                        ],
+                        "custom": true
+                    },
+                    null,
+                    null,
+                    [
+                        {
+                            "type": "user",
+                            "id": "bob"
+                        }
+                    ],
+                    null
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "view": {
+                "id": null,
+                "uuid": null,
+                "name": "7",
+                "description": null,
+                "owner": "saved-owner",
+                "organisation": null,
+                "isPublic": false,
+                "isDefault": false,
+                "query": [],
+                "presentation": {
+                    "viewType": "table"
+                },
+                "alert": null,
+                "alertState": null,
+                "sharedWith": [],
+                "@self": {
+                    "access": null
+                },
+                "favoredBy": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "created": null,
+                "updated": null,
+                "managedByConfiguration": null
+            }
+        }
+    },
+    "update: view does not exist": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "View not found"
+        }
+    },
+    "update: view out of reach": {
+        "calls": [
+            {
+                "viewers.currentUid": []
+            },
+            {
+                "request.getParams": []
+            },
+            {
+                "viewService.findById": "7"
+            },
+            {
+                "viewers.reachOf": "alice"
+            },
+            {
+                "viewers.reaches": [
+                    "carol",
+                    "alice"
+                ]
+            }
+        ],
+        "status": 404,
+        "data": {
+            "error": "View not found"
+        }
+    }
+}

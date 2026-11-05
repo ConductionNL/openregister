@@ -48,6 +48,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class TaskFormCompletionTest extends TestCase {
 

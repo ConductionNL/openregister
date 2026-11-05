@@ -42,8 +42,15 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @covers \OCA\OpenRegister\Service\ExportService
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkReader
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ExplicitRevealRoutesTest extends TestCase {
 

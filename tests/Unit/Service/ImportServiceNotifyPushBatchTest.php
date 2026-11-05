@@ -56,6 +56,7 @@ use ReflectionClass;
  * on the default import path (lifecycle events disabled).
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\ImportService
+ * @uses \OCA\OpenRegister\Db\StoredEntity
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) End-to-end wiring test requires the real listener plus import mocks
  */

@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectStateController
  * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 final class ObjectStateControllerTest extends TestCase {
 

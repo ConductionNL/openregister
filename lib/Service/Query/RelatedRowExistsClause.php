@@ -579,7 +579,8 @@ final class RelatedRowExistsClause {
 		}
 
 		if ($engine === self::ENGINE_MARIADB) {
-			return sprintf("JSON_UNQUOTE(JSON_EXTRACT(%s.object, '$.%s'))", $alias, $safe);
+			// MariaDB reads a backslash as an escape inside a string literal.
+			return sprintf("JSON_UNQUOTE(JSON_EXTRACT(%s.object, '$.%s'))", $alias, str_replace('\\', '\\\\', $safe));
 		}
 
 		throw new InvalidArgumentException(

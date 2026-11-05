@@ -50,6 +50,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  */
 class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 

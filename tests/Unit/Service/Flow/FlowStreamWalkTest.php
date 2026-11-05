@@ -158,7 +158,7 @@ class FlowStreamWalkTest extends TestCase {
 		$this->claims->method('acquire')->willReturn(null);
 		$this->assertNull($walk->claim(id: 'b', transition: 'T', places: ['p2', 'q']));
 		$this->assertTrue($walk->anyRefused());
-		$this->commit->method('park')->willReturn([]);
+		$this->commit->method('closeStream')->willReturn([]);
 		$walk->park(id: 'c', resumeAt: new DateTime('+1 hour'), reason: 'timer', claimed: ['p3'], enabled: false);
 		$this->assertTrue($walk->anyParked());
 
@@ -255,7 +255,7 @@ class FlowStreamWalkTest extends TestCase {
 		$this->rows = [$this->row('a', '0001.0001', 'wait'), $this->row('b', '0001.0002', 'work')];
 		$walk = $this->walk();
 		$walk->begin(marking: ['wait' => 1, 'work' => 1]);
-		$this->commit->method('park')->willReturn([]);
+		$this->commit->method('closeStream')->willReturn([]);
 
 		$onWait = new Transition('wait', ['wait'], ['after-wait']);
 		$onWork = new Transition('work', ['work'], ['after-work']);
@@ -271,7 +271,7 @@ class FlowStreamWalkTest extends TestCase {
 		$walk = $this->walk();
 		$walk->begin(marking: ['p' => 1]);
 
-		$this->commit->expects($this->once())->method('endStream')->willReturn([]);
+		$this->commit->expects($this->once())->method('closeStream')->willReturn([]);
 		$walk->endStream(id: 'a', status: FlowRun::STATUS_FAILED, error: 'boom', claimed: ['p'], enabled: false);
 		$this->assertNull($walk->nextStream());
 

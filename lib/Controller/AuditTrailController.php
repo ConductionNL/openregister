@@ -32,9 +32,10 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
@@ -64,38 +65,90 @@ use OCP\IRequest;
  */
 class AuditTrailController extends Controller {
 	/**
+	 * The log service
+	 *
+	 * @var LogService
+	 */
+	private readonly LogService $logService;
+
+	/**
+	 * The audit trail mapper
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * The audit hash chain service
+	 *
+	 * @var AuditHashService
+	 */
+	private readonly AuditHashService $auditHashService;
+
+	/**
+	 * Active user session for caller identity.
+	 *
+	 * @var \OCP\IUserSession
+	 */
+	private readonly \OCP\IUserSession $userSession;
+
+	/**
+	 * Group manager for admin / role checks.
+	 *
+	 * @var \OCP\IGroupManager
+	 */
+	private readonly \OCP\IGroupManager $groupManager;
+
+	/**
+	 * Lists the trail within one caller's read scope.
+	 *
+	 * @var ReadableAuditTrailLister
+	 */
+	private readonly ReadableAuditTrailLister $readableLister;
+
+	/**
+	 * The audit page's keyset list and export.
+	 *
+	 * @var AuditTrailPageService
+	 */
+	private readonly AuditTrailPageService $auditPage;
+
+	/**
+	 * One object's history for a non-admin reader of it.
+	 *
+	 * @var ObjectHistoryForReaders
+	 */
+	private readonly ObjectHistoryForReaders $historyForReaders;
+
+	/**
+	 * Masks explicit-reveal values in the admin lists.
+	 *
+	 * @var ?ExplicitRevealTrailMasker
+	 */
+	private readonly ?ExplicitRevealTrailMasker $revealMasker;
+
+	/**
 	 * Constructor for AuditTrailController
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param LogService $logService The log service
-	 * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
-	 * @param AuditHashService $auditHashService The audit hash chain service
-	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
-	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
-	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
-	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
-	 * @param ObjectHistoryForReaders $historyForReaders One object's history for a non-admin reader of it.
-	 * @param ExplicitRevealTrailMasker|null $revealMasker Masks explicit-reveal values in the admin lists.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten: the two framework arguments plus one
-	 *     service per audit surface this controller routes (log, mapper, hash chain, session,
-	 *     groups, scoped list, audit page, object history). Each is already a delegate.
+	 * @param AuditTrailControllerServices $services The audit trail controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LogService $logService,
-		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly AuditHashService $auditHashService,
-		private readonly \OCP\IUserSession $userSession,
-		private readonly \OCP\IGroupManager $groupManager,
-		private readonly ReadableAuditTrailLister $readableLister,
-		private readonly AuditTrailPageService $auditPage,
-		private readonly ObjectHistoryForReaders $historyForReaders,
-		private readonly ?ExplicitRevealTrailMasker $revealMasker = null,
+		AuditTrailControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->logService = $services->log->logService;
+		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
+		$this->auditHashService = $services->log->auditHashService;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->readableLister = $services->log->readableLister;
+		$this->auditPage = $services->log->auditPage;
+		$this->historyForReaders = $services->readers->historyForReaders;
+		$this->revealMasker = $services->readers->revealMasker;
 	}//end __construct()
 
 	/**
@@ -265,6 +318,9 @@ class AuditTrailController extends Controller {
 			'from',
 			'to',
 			'identifier',
+			// The scoped list's cursor is where a walk resumes, not a column.
+			'cursor',
+			'_cursor',
 		];
 
 		return array_filter(
@@ -403,24 +459,27 @@ class AuditTrailController extends Controller {
 	 * it, so an error in this method cannot make that one wider than it was.
 	 *
 	 * What this returns is the entries of the objects the caller may read,
-	 * decided by the RBAC funnel the object read path already uses. An entry
+	 * decided by the object read path itself (RBAC and the organisation
+	 * boundary), with the properties the caller may not see removed. An entry
 	 * whose object is gone, whose schema is gone, or whose readability cannot
 	 * be decided is absent: every unknown hides a row. `session`, `request`
 	 * and `ipAddress` are withheld, because they answer "who else was on this
 	 * instance" rather than "what happened to this object".
 	 *
 	 * The page is cursor-based and the table is never counted. `nextCursor`
-	 * comes back null when the trail is exhausted and an offset otherwise,
-	 * including when the scan budget ran out before the page filled, so a
-	 * short page is not the end of the list.
+	 * comes back null when the trail is exhausted and a sealed cursor
+	 * otherwise, including when the scan budget ran out before the page
+	 * filled, so a short page is not the end of the list. The cursor is sealed
+	 * because the offset it holds counts rows the caller may not read.
 	 *
 	 * @return JSONResponse The scoped page, or 401 when anonymous.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Guarded in-body and downstream: the lister resolves every row's object
-	 *     through PermissionHandler::hasPermission(action: 'read') for the SESSION's user, and takes
-	 *     no object identifier from the request that could name somebody else's row.
+	 * @no-admin-idor-exempt Guarded in-body and downstream: the lister reads every row's object
+	 *     through ObjectHistoryForReaders::readerEntries(), which is ObjectReadAccess::readable()
+	 *     (ObjectService::find with _rbac and _multitenancy on, as the object GET) for the SESSION's
+	 *     user, and takes no object identifier from the request that could name somebody else's row.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-is-readable-within-a-callers-own-scope
 	 */
@@ -435,15 +494,13 @@ class AuditTrailController extends Controller {
 
 		$params = $this->extractRequestParameters();
 
-		$cursor = 0;
+		// Only a cursor this list handed out resumes a walk. An offset is not
+		// accepted: where a walk resumes in the raw trail is never the client's
+		// choice, because the raw trail counts rows the client may not read.
+		$cursor = null;
 		$requested = ($this->request->getParam(key: 'cursor') ?? $this->request->getParam(key: '_cursor'));
 		if ($requested !== null && $requested !== '') {
-			$cursor = (int)$requested;
-		} elseif (($params['offset'] ?? null) !== null) {
-			// An offset is accepted as a starting cursor so a client that only
-			// knows the older parameter still walks the list, rather than
-			// silently reading page one over and over.
-			$cursor = (int)$params['offset'];
+			$cursor = (string)$requested;
 		}
 
 		$page = $this->readableLister->page(
@@ -535,7 +592,9 @@ class AuditTrailController extends Controller {
 
 		try {
 			$log = $this->logService->getLog($id);
-			return new JSONResponse(data: $log);
+			// The single entry shows explicit-reveal values masked, like the lists.
+			$masked = $this->logService->maskExplicitReveal(entries: [$log]);
+			return new JSONResponse(data: $masked[0]);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
 		}
@@ -593,7 +652,7 @@ class AuditTrailController extends Controller {
 	 *     (ObjectService::find with _rbac and _multitenancy on, as the object GET) for the SESSION's
 	 *     user and returns null, answered 404, when that read is refused.
 	 *
-	 * @psalm-return JSONResponse<200|400|401|403|404,
+	 * @psalm-return JSONResponse<200|400|401|403|404|409,
 	 *     array{error?: string,
 	 *     results?: array<array|\OCA\OpenRegister\Db\AuditTrail>,
 	 *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
@@ -637,10 +696,11 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results. An administrator always sees read entries.
+			// Return paginated results. An administrator always sees read entries,
+			// and explicit-reveal values masked, like every other reader.
 			return new JSONResponse(
 				data: [
-					'results' => $logs,
+					'results' => $this->logService->maskExplicitReveal(entries: $logs),
 					'total' => $total,
 					'page' => $params['page'],
 					'pages' => ceil($total / $params['limit']),
@@ -653,8 +713,32 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifier(id: $id);
 		}//end try
 	}//end objects()
+
+	/**
+	 * The 409 an identifier two objects of the register and schema hold answers.
+	 *
+	 * Same body as the object routes (#4037): neither object's history is returned,
+	 * and no uuid is named.
+	 *
+	 * @param string $id The identifier from the path.
+	 *
+	 * @return JSONResponse HTTP 409 `ambiguous-identifier`.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function ambiguousIdentifier(string $id): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+				'error' => 'ambiguous-identifier',
+			],
+			statusCode: 409
+		);
+	}//end ambiguousIdentifier()
 
 	/**
 	 * One object's history for a non-admin, when they may read the object.
@@ -678,6 +762,10 @@ class AuditTrailController extends Controller {
 			);
 		} catch (PurposeRefusedException $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+			// A reader gets the 409 an administrator gets: the identifier is ambiguous
+			// whoever asks, and the body names neither object.
+			return $this->ambiguousIdentifier(id: $id);
 		}
 
 		if ($page === null) {
@@ -1013,7 +1101,11 @@ class AuditTrailController extends Controller {
 	 *
 	 * Renamed from `verwerkingsregister()` by the `verwerkingsregister-i18n` change.
 	 *
-	 * @NoAdminRequired
+	 * Admin-only at the framework level (no @NoAdminRequired), with the body
+	 * `requireAdmin()` as defence-in-depth: the counts cover every entry of
+	 * the trail, whichever organisation it belongs to, and `organisationId`
+	 * names any organisation.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse List of processing activities
@@ -1023,9 +1115,14 @@ class AuditTrailController extends Controller {
 	 *   count; the actual executable body is 12 lines.
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function processingActivities(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
 		$organisationId = $this->request->getParam('organisationId');
 
 		try {
@@ -1048,15 +1145,25 @@ class AuditTrailController extends Controller {
 	 *
 	 * Renamed from `inzageverzoek()` by the `verwerkingsregister-i18n` change.
 	 *
-	 * @NoAdminRequired
+	 * Admin-only at the framework level (no @NoAdminRequired), with the body
+	 * `requireAdmin()` as defence-in-depth: the search runs over every entry of
+	 * the trail and answers whole rows, so it is the admin index by another
+	 * door. A non-admin reads the entries of the objects they may read through
+	 * `GET /api/audit-trails/readable?search=`.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Matching audit trail entries grouped by schema
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md#requirement-the-instance-wide-audit-reads-are-admin-only
 	 */
 	public function subjectAuditTrail(): JSONResponse {
+		$denial = $this->requireAdmin();
+		if ($denial !== null) {
+			return $denial;
+		}
+
 		$identifier = $this->request->getParam('identifier');
 
 		if ($identifier === null || $identifier === '') {
@@ -1068,6 +1175,14 @@ class AuditTrailController extends Controller {
 
 		try {
 			$results = $this->auditTrailMapper->findByIdentifier($identifier);
+			// Explicit-reveal values leave masked here as on every trail route.
+			// The mapper answers raw rows grouped by schema id, `changed` as JSON text.
+			foreach ($results as $schemaId => $rows) {
+				if (is_array($rows) === true) {
+					$results[$schemaId] = $this->logService->maskExplicitReveal(entries: $rows);
+				}
+			}
+
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
 			return new JSONResponse(

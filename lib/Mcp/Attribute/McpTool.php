@@ -68,6 +68,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Attribute;
 
 use Attribute;
+use ReflectionMethod;
 
 /**
  * McpTool
@@ -139,4 +140,22 @@ final class McpTool {
 		public readonly array $annotations = [],
 	) {
 	}//end __construct()
+
+	/**
+	 * The title an #[McpToolTitle] beside this attribute declares on a method, or null.
+	 *
+	 * @param ReflectionMethod $method The attributed method.
+	 *
+	 * @return string|null The declared title.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	public function titleOn(ReflectionMethod $method): ?string {
+		$attributes = $method->getAttributes(McpToolTitle::class);
+		if ($attributes === []) {
+			return null;
+		}
+
+		return $attributes[0]->newInstance()->title;
+	}//end titleOn()
 }//end class
