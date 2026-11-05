@@ -319,7 +319,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 
 		$facetCache = $this->createMock(FacetCacheHandler::class);
 		$facetCache->method('invalidateForSchemaChange')->willReturnCallback(function () {
-			$this->record(method: 'facetCache.invalidateForSchemaChange', args: func_get_args());
+			$this->record(method: 'facetResults.cleared', args: []);
 		});
 
 		$uploadService = $this->createMock(UploadService::class);

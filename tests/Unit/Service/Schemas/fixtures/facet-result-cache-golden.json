@@ -1,0 +1,239 @@
+{
+    "schema update, caches up": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "clear": "distributed",
+                "name": "openregister_facets",
+                "prefix": ""
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "clear": "distributed",
+                "name": "openregister_facet_labels",
+                "prefix": ""
+            }
+        ],
+        "response": null
+    },
+    "schema update, distributed down": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facets"
+            },
+            {
+                "clear": "local",
+                "name": "openregister_facets",
+                "prefix": ""
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "clear": "local",
+                "name": "openregister_facet_labels",
+                "prefix": ""
+            }
+        ],
+        "response": null
+    },
+    "schema update, all down": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facet_labels"
+            }
+        ],
+        "response": null
+    },
+    "admin clear, caches up": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "clear": "distributed",
+                "name": "openregister_facets",
+                "prefix": ""
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "clear": "distributed",
+                "name": "openregister_facet_labels",
+                "prefix": ""
+            }
+        ],
+        "response": {
+            "type": "facet",
+            "userId": null,
+            "timestamp": "<masked>",
+            "results": {
+                "facet": {
+                    "service": "facet",
+                    "cleared": 0,
+                    "before": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "after": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "success": true
+                }
+            },
+            "errors": [],
+            "totalCleared": 0
+        }
+    },
+    "admin clear, distributed down": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facets"
+            },
+            {
+                "clear": "local",
+                "name": "openregister_facets",
+                "prefix": ""
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "clear": "local",
+                "name": "openregister_facet_labels",
+                "prefix": ""
+            }
+        ],
+        "response": {
+            "type": "facet",
+            "userId": null,
+            "timestamp": "<masked>",
+            "results": {
+                "facet": {
+                    "service": "facet",
+                    "cleared": 0,
+                    "before": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "after": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "success": true
+                }
+            },
+            "errors": [],
+            "totalCleared": 0
+        }
+    },
+    "admin clear, all down": {
+        "events": [
+            {
+                "create": "distributed",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facets"
+            },
+            {
+                "create": "distributed",
+                "name": "openregister_facet_labels"
+            },
+            {
+                "create": "local",
+                "name": "openregister_facet_labels"
+            }
+        ],
+        "response": {
+            "type": "facet",
+            "userId": null,
+            "timestamp": "<masked>",
+            "results": {
+                "facet": {
+                    "service": "facet",
+                    "cleared": 0,
+                    "before": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "after": {
+                        "total_entries": 0,
+                        "by_type": [],
+                        "memory_cache_size": 0,
+                        "cache_table": "openregister_schema_facet_cache",
+                        "query_time": "<masked>",
+                        "timestamp": "<masked>"
+                    },
+                    "success": true
+                }
+            },
+            "errors": [],
+            "totalCleared": 0
+        }
+    }
+}
