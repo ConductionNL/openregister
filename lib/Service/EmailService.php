@@ -31,7 +31,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -93,9 +93,9 @@ class EmailService {
 	/**
 	 * Magic mapper for cross-table _mail JSONB containment queries.
 	 *
-	 * @var MagicMapper
+	 * @var MagicMapperInterface
 	 */
-	private readonly MagicMapper $magicMapper;
+	private readonly MagicMapperInterface $magicMapper;
 
 	/**
 	 * Constructor.
@@ -106,7 +106,7 @@ class EmailService {
 	 * @param IUserSession $userSession User session.
 	 * @param LoggerInterface $logger Logger.
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param MagicMapper $magicMapper Magic mapper.
+	 * @param MagicMapperInterface $magicMapper Magic mapper.
 	 */
 	public function __construct(
 		EmailLinkMapper $emailLinkMapper,
@@ -115,7 +115,7 @@ class EmailService {
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		SchemaMapperInterface $schemaMapper,
-		MagicMapper $magicMapper,
+		MagicMapperInterface $magicMapper,
 	) {
 		$this->emailLinkMapper = $emailLinkMapper;
 		$this->appManager = $appManager;

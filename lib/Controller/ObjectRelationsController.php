@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\Register;
@@ -66,36 +67,82 @@ use OCP\IRequest;
  */
 class ObjectRelationsController extends Controller {
 	/**
+	 * The relation row service.
+	 *
+	 * @var ObjectRelationService
+	 */
+	private readonly ObjectRelationService $relations;
+
+	/**
+	 * The bounded graph walk.
+	 *
+	 * @var RelationGraphService
+	 */
+	private readonly RelationGraphService $graphs;
+
+	/**
+	 * Reads and writes objects, with RBAC.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
+	/**
+	 * The export verb, checked before the graph leaves.
+	 *
+	 * @var ExportGate
+	 */
+	private readonly ExportGate $exportGate;
+
+	/**
+	 * Resolves an object under the caller's own RBAC.
+	 *
+	 * @var ObjectReadAccess
+	 */
+	private readonly ObjectReadAccess $access;
+
+	/**
+	 * The bounded walk along a schema's parent property.
+	 *
+	 * @var ObjectTreeService
+	 */
+	private readonly ObjectTreeService $trees;
+
+	/**
+	 * The doelbinding guard the object read runs, asked before a tree or a graph is answered.
+	 *
+	 * @var PurposeGuard
+	 */
+	private readonly PurposeGuard $purposeGuard;
+
+	/**
+	 * Resolves an object's register for that guard.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param ObjectRelationService $relations The relation row service.
-	 * @param RelationGraphService $graphs The bounded graph walk.
-	 * @param ObjectOperationsInterface $objectService Reads and writes objects, with RBAC.
-	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
-	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
-	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
-	 * @param PurposeGuard $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
-	 * @param RegisterMapperInterface $registerMapper Resolves an object's register for that guard.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named above.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 * @param ObjectRelationsControllerServices $services The object relations controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ObjectRelationService $relations,
-		private readonly RelationGraphService $graphs,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ExportGate $exportGate,
-		private readonly ObjectReadAccess $access,
-		private readonly ObjectTreeService $trees,
-		private readonly PurposeGuard $purposeGuard,
-		private readonly RegisterMapperInterface $registerMapper,
+		ObjectRelationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->relations = $services->graph->relations;
+		$this->graphs = $services->graph->graphs;
+		$this->objectService = $services->graph->objectService;
+		$this->exportGate = $services->graph->exportGate;
+		$this->access = $services->guards->access;
+		$this->trees = $services->guards->trees;
+		$this->purposeGuard = $services->guards->purposeGuard;
+		$this->registerMapper = $services->mappers->registerMapper;
 	}//end __construct()
 
 	/**

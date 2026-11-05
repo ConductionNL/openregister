@@ -87,6 +87,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
  * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\PropertyAccessRequest
  * @uses \OCA\OpenRegister\Service\Audit\ReadableAuditCursor
  * @uses \OCA\OpenRegister\Service\Audit\PurposeGuard
  * @uses \OCA\OpenRegister\Service\Audit\PurposeContext

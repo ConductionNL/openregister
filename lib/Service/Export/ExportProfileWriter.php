@@ -36,7 +36,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use Throwable;
 
 /**
@@ -63,13 +63,13 @@ class ExportProfileWriter {
 	/**
 	 * Wire the name resolver and the value renderer.
 	 *
-	 * @param CacheHandler        $cacheHandler Uuid to name resolution for rendered relations.
+	 * @param CacheHandlerInterface        $cacheHandler Uuid to name resolution for rendered relations.
 	 * @param ExportValueRenderer $renderer     What a single cell says, in the profile's mode.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CacheHandler $cacheHandler,
+		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly ExportValueRenderer $renderer,
 	) {
 	}//end __construct()

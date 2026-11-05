@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -77,13 +77,13 @@ class DepartmentMatrixPersonValues {
 	 *
 	 * @param SchemaMapperInterface    $schemas   Loads the person schema.
 	 * @param RegisterMapperInterface  $registers Finds the register that holds it.
-	 * @param MagicMapper     $objects   Reads the person object.
+	 * @param MagicMapperInterface     $objects   Reads the person object.
 	 * @param LoggerInterface $logger    Diagnostics.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
 		private readonly RegisterMapperInterface $registers,
-		private readonly MagicMapper $objects,
+		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

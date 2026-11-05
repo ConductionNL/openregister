@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Archival;
 use DateInterval;
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
@@ -116,11 +116,11 @@ class ArchiveActionDateCalculator {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $objectMapper Object mapper, for following a relation to another record
+	 * @param MagicMapperInterface     $objectMapper Object mapper, for following a relation to another record
 	 * @param LoggerInterface $logger       Logger
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
