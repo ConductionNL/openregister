@@ -313,7 +313,9 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	public function testAFlowMayNameItsApplicationAndBeSwitchedOn(): void {
 		$this->app(app: 'alpha', fragment: ['flows' => [[
 			'key'  => 'kwartaal',
-			'data' => self::flow(extra: ['trigger' => 'schedule', 'cron' => '0 0 1 */3 *', 'applicationSlug' => 'dossiq-planned-follow-up', 'enabled' => true]),
+			'data' => self::flow(
+				extra: ['trigger' => 'schedule', 'cron' => '0 0 1 */3 *', 'applicationSlug' => 'dossiq-planned-follow-up', 'enabled' => true]
+			),
 		]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
