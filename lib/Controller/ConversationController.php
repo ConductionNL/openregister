@@ -795,23 +795,10 @@ class ConversationController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function failed(ConversationFailure $failure, \Exception $e): JSONResponse {
-		$this->logger->error(
-			message: '[ConversationController] ' . $failure->logMessage(),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $failure->uuid,
-				'error' => $e->getMessage(),
-				'trace' => $e->getTraceAsString(),
-			]
-		);
+		$reason = $e->getMessage();
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $failure->uuid, 'error' => $reason, 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[ConversationController] ' . $failure->logMessage(), context: $context);
 
-		return new JSONResponse(
-			data: [
-				'error' => $failure->error,
-				'message' => $e->getMessage(),
-			],
-			statusCode: 500
-		);
+		return new JSONResponse(data: ['error' => $failure->error, 'message' => $reason], statusCode: 500);
 	}//end failed()
 }//end class
