@@ -148,9 +148,6 @@ final class ConfigurationServiceRegistrar {
 		$context->registerService(
 			ConfigurationService::class,
 			function (ContainerInterface $container) {
-				$dataDir = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
-				$appDataPath = $dataDir . '/appdata_openregister';
-
 				return new ConfigurationService(
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 					appManager: $container->get('OCP\App\IAppManager'),
