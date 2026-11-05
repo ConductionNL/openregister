@@ -31,8 +31,8 @@ use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\IGroup;
@@ -53,13 +53,13 @@ use Psr\Log\AbstractLogger;
  * @covers \OCA\OpenRegister\Listener\ViewAlertCrossedListener
  * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
- * @uses \OCA\OpenRegister\Service\Notification\EmailSender
- * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
- * @uses \OCA\OpenRegister\Service\Notification\RecipientSource
- * @uses \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientSource
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
  */

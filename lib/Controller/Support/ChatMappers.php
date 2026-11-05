@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 
 /**
  * The mappers and repositories of the chat API.
@@ -37,7 +37,7 @@ final class ChatMappers {
 	 * Bundle the services.
 	 *
 	 * @param ConversationMapper $conversationMapper Conversation mapper for database operations
-	 * @param MessageMapper      $messageMapper      Message mapper for database operations
+	 * @param MessageMapperInterface      $messageMapper      Message mapper for database operations
 	 * @param FeedbackMapper     $feedbackMapper     Feedback mapper for database operations
 	 * @param AgentMapper        $agentMapper        Agent mapper for database operations
 	 *
@@ -45,7 +45,7 @@ final class ChatMappers {
 	 */
 	public function __construct(
 		public readonly ConversationMapper $conversationMapper,
-		public readonly MessageMapper $messageMapper,
+		public readonly MessageMapperInterface $messageMapper,
 		public readonly FeedbackMapper $feedbackMapper,
 		public readonly AgentMapper $agentMapper,
 	) {

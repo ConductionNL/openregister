@@ -43,7 +43,6 @@ use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
-use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -66,7 +65,6 @@ use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -97,7 +95,6 @@ final class ContractBindings {
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
-		NotificationPreferencesInterface::class => NotificationPreferenceService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,

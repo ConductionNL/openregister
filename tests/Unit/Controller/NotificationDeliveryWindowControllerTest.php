@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\NotificationDeliveryWindowController;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Controller\NotificationDeliveryWindowController;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\IUser;

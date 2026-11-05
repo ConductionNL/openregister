@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;

@@ -13,8 +13,8 @@ use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ChatService
  * @uses   \OCA\OpenRegister\Service\ChatMessageRequest
  * @uses   \OCA\OpenRegister\Db\Conversation
- * @uses   \OCA\OpenRegister\Db\Message
+ * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Db\Agent
  */
 class ChatServiceProcessMessageGoldenTest extends TestCase {

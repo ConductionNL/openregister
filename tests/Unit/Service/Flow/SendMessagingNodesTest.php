@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;

@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -211,11 +211,11 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			$shown = strtolower(trim((string)$category));
 		}
 
-		if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
+		if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthorityInterface::CATEGORIES, true) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
 					'messageCategory must be one of %1$s, not "%2$s".',
-					[implode(', ', OptOutAuthority::CATEGORIES), $shown]
+					[implode(', ', OptOutAuthorityInterface::CATEGORIES), $shown]
 				)
 			);
 		}
@@ -279,7 +279,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * The message categories as picker options, the default first.
 	 *
-	 * The values are OptOutAuthority::CATEGORIES; a category added there
+	 * The values are OptOutAuthorityInterface::CATEGORIES; a category added there
 	 * without a label here still shows, under its own name.
 	 *
 	 * @return array<int, array{value: string, label: string}> The options.
@@ -301,13 +301,13 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 		$ordered = array_values(
 			array_unique(
 				array_merge(
-					[OptOutAuthority::DEFAULT_CATEGORY],
+					[OptOutAuthorityInterface::DEFAULT_CATEGORY],
 					array_keys($labels),
-					OptOutAuthority::CATEGORIES
+					OptOutAuthorityInterface::CATEGORIES
 				)
 			)
 		);
-		$ordered = array_values(array_intersect($ordered, OptOutAuthority::CATEGORIES));
+		$ordered = array_values(array_intersect($ordered, OptOutAuthorityInterface::CATEGORIES));
 
 		return array_map(
 			static fn (string $category): array => ['value' => $category, 'label' => ($labels[$category] ?? $category)],

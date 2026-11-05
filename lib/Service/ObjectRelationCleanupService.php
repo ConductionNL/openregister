@@ -37,6 +37,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 
 /**
  * Cleans up every Nextcloud-entity relation belonging to a deleted object.
@@ -51,7 +52,7 @@ class ObjectRelationCleanupService {
 	 *
 	 * @param NoteService $noteService Note (comment) cleanup.
 	 * @param TaskService $taskService CalDAV task cleanup.
-	 * @param EmailService $emailService Email-link cleanup.
+	 * @param EmailServiceInterface $emailService Email-link cleanup.
 	 * @param CalendarEventService $calendarEventService Calendar-event unlinking.
 	 * @param ContactService $contactService Contact-link cleanup.
 	 * @param DeckCardService $deckCardService Deck-card-link cleanup.
@@ -62,7 +63,7 @@ class ObjectRelationCleanupService {
 	public function __construct(
 		private readonly NoteService $noteService,
 		private readonly TaskService $taskService,
-		private readonly EmailService $emailService,
+		private readonly EmailServiceInterface $emailService,
 		private readonly CalendarEventService $calendarEventService,
 		private readonly ContactService $contactService,
 		private readonly DeckCardService $deckCardService,

@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
- * @uses \OCA\OpenRegister\Db\Watcher
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews

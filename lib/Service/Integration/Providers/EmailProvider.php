@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
@@ -62,7 +62,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * and the Tier-2 {@see EmailLinkService} (idempotent upsert keyed
 	 * on the full composite tuple, plus cursor pagination).
 	 *
-	 * @param EmailService $emailService Legacy service (list + search).
+	 * @param EmailServiceInterface $emailService Legacy service (list + search).
 	 * @param EmailLinkService $emailLinkService Tier-2 link-table service.
 	 * @param IAppManager $appManager NC app manager.
 	 * @param IL10N $l10n Localisation.
@@ -70,7 +70,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private EmailService $emailService,
+		private EmailServiceInterface $emailService,
 		private EmailLinkService $emailLinkService,
 		private IAppManager $appManager,
 		private IL10N $l10n,

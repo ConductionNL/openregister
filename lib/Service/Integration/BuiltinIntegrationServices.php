@@ -157,7 +157,7 @@ final class BuiltinIntegrationServices {
 		],
 		// @spec openspec/specs/integration-email/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\EmailProvider::class => [
-			'emailService'     => \OCA\OpenRegister\Service\EmailService::class,
+			'emailService'     => \OCA\OpenRegister\Notifications\Service\EmailServiceInterface::class,
 			'emailLinkService' => \OCA\OpenRegister\Service\EmailLinkService::class,
 			'appManager'       => \OCP\App\IAppManager::class,
 			'l10n'             => \OCP\IL10N::class,

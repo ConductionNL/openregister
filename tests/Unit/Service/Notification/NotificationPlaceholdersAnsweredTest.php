@@ -40,7 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionClass;
@@ -48,7 +48,7 @@ use ReflectionClass;
 /**
  * The evaluator's rule, and the shipped templates held to it.
  *
- * @covers \OCA\OpenRegister\Service\Notification\NotificationTemplating
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
  */
 class NotificationPlaceholdersAnsweredTest extends TestCase {
 

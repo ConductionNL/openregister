@@ -27,8 +27,8 @@ namespace OCA\OpenRegister\Service\Chat;
 use DateTime;
 use LLPhant\Chat\Message as LLPhantMessage;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -55,9 +55,9 @@ class MessageHistoryHandler {
 	/**
 	 * Message mapper
 	 *
-	 * @var MessageMapper
+	 * @var MessageMapperInterface
 	 */
-	private MessageMapper $messageMapper;
+	private MessageMapperInterface $messageMapper;
 
 	/**
 	 * Conversation mapper
@@ -76,7 +76,7 @@ class MessageHistoryHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param MessageMapper $messageMapper Message mapper.
+	 * @param MessageMapperInterface $messageMapper Message mapper.
 	 * @param ConversationMapper $conversationMapper Conversation mapper.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -85,7 +85,7 @@ class MessageHistoryHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		MessageMapper $messageMapper,
+		MessageMapperInterface $messageMapper,
 		ConversationMapper $conversationMapper,
 		LoggerInterface $logger,
 	) {

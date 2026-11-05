@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCA\OpenRegister\Service\ActivityService;
+use OCA\OpenRegister\Notifications\Service\ActivityService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager;

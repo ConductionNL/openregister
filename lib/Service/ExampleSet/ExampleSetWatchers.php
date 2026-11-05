@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -187,9 +187,9 @@ class ExampleSetWatchers extends ExampleSetEngineRows {
 	/**
 	 * The watcher mapper.
 	 *
-	 * @return WatcherMapper
+	 * @return WatcherMapperInterface
 	 */
-	private function mapper(): WatcherMapper {
-		return $this->container->get(WatcherMapper::class);
+	private function mapper(): WatcherMapperInterface {
+		return $this->container->get(WatcherMapperInterface::class);
 	}//end mapper()
 }//end class

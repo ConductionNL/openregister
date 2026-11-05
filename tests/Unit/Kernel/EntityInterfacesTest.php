@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel;
 
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;

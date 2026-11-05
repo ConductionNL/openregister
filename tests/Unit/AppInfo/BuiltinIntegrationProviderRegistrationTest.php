@@ -126,7 +126,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\EmailProvider' => [
-			'OCA\OpenRegister\Service\EmailService',
+			'OCA\OpenRegister\Notifications\Service\EmailService',
 			'OCA\OpenRegister\Service\EmailLinkService',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',

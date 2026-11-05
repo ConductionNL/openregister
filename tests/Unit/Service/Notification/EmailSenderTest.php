@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
 use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use OCP\IUserManager;
@@ -31,8 +31,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @covers \OCA\OpenRegister\Service\Notification\EmailSender
- * @uses \OCA\OpenRegister\Service\Notification\UnsubscribeHeaders
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UnsubscribeHeaders
  */
 class EmailSenderTest extends TestCase {
 

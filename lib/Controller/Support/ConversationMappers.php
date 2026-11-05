@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 
 /**
  * The mappers and repositories of the conversation API.
@@ -37,7 +37,7 @@ final class ConversationMappers {
 	 * Bundle the services.
 	 *
 	 * @param ConversationMapper $conversationMapper Conversation mapper
-	 * @param MessageMapper      $messageMapper      Message mapper
+	 * @param MessageMapperInterface      $messageMapper      Message mapper
 	 * @param FeedbackMapper     $feedbackMapper     Feedback mapper
 	 * @param AgentMapper        $agentMapper        Agent mapper
 	 *
@@ -45,7 +45,7 @@ final class ConversationMappers {
 	 */
 	public function __construct(
 		public readonly ConversationMapper $conversationMapper,
-		public readonly MessageMapper $messageMapper,
+		public readonly MessageMapperInterface $messageMapper,
 		public readonly FeedbackMapper $feedbackMapper,
 		public readonly AgentMapper $agentMapper,
 	) {

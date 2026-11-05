@@ -36,11 +36,11 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Controller\WebPushController;
-use OCA\OpenRegister\Db\PushSubscription;
-use OCA\OpenRegister\Db\PushSubscriptionMapper;
-use OCA\OpenRegister\Service\WebPush\HexIconService;
-use OCA\OpenRegister\Service\WebPush\WebPushService;
+use OCA\OpenRegister\Notifications\Controller\WebPushController;
+use OCA\OpenRegister\Notifications\Db\PushSubscription;
+use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
+use OCA\OpenRegister\Notifications\Service\WebPush\WebPushService;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;

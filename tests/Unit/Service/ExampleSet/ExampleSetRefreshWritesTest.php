@@ -50,7 +50,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews

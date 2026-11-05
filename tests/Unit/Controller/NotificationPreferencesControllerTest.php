@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\NotificationPreferencesController;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Controller\NotificationPreferencesController;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;

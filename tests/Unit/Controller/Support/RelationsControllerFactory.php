@@ -38,7 +38,7 @@ final class RelationsControllerFactory {
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		\OCA\OpenRegister\Service\NoteService $noteService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface $taskService,
-		\OCA\OpenRegister\Service\EmailService $emailService,
+		\OCA\OpenRegister\Notifications\Service\EmailService $emailService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface $calendarEventService,
 		\OCA\OpenRegister\Service\ContactService $contactService,
 		\OCA\OpenRegister\Service\DeckCardService $deckCardService,

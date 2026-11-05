@@ -37,17 +37,17 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\ObjectPresence;
-use OCA\OpenRegister\Db\ObjectPresenceMapper;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Db\ObjectPresence;
+use OCA\OpenRegister\Notifications\Db\ObjectPresenceMapper;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\PresenceService
- * @uses \OCA\OpenRegister\Db\ObjectPresence
+ * @covers \OCA\OpenRegister\Notifications\Service\PresenceService
+ * @uses \OCA\OpenRegister\Notifications\Db\ObjectPresence
  *
  * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md
  */

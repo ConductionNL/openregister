@@ -5819,7 +5819,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
 		$beat = $service->heartbeat(userId: $caller, objectUuid: $id);
 		$present = $service->present(objectUuid: $id, exceptUser: $caller);
 
@@ -5832,7 +5832,7 @@ class ObjectsController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Service\PresenceService::BEAT_SECONDS]
+			data: ['present' => $present, 'beatSeconds' => \OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::BEAT_SECONDS]
 		);
 	}//end presenceBeat()
 
@@ -5858,7 +5858,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		$service = $this->container->get(\OCA\OpenRegister\Service\PresenceService::class);
+		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
 		$left = $service->depart(userId: $caller, objectUuid: $id);
 
 		// A departure by somebody who was not there pushes nothing: there is no
@@ -5949,7 +5949,7 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(
 			data: [
-				'present' => $this->container->get(\OCA\OpenRegister\Service\PresenceService::class)
+				'present' => $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class)
 					->present(objectUuid: $id, exceptUser: $caller),
 			]
 		);

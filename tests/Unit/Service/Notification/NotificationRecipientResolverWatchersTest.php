@@ -21,7 +21,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * whose group membership changed keeps receiving a sensitive case forever,
  * because the only read check ran when they subscribed.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver
  */
 class NotificationRecipientResolverWatchersTest extends TestCase {
 

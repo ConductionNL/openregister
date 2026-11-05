@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
 
 /**
  * Recipient address rules for the flow send nodes.
@@ -41,10 +41,10 @@ class FlowRecipientAddresses {
 	/**
 	 * Constructor.
 	 *
-	 * @param NotificationRecipientResolver $recipientResolver The subsystem's recipient resolver.
+	 * @param NotificationRecipientResolverInterface $recipientResolver The subsystem's recipient resolver.
 	 */
 	public function __construct(
-		private readonly NotificationRecipientResolver $recipientResolver,
+		private readonly NotificationRecipientResolverInterface $recipientResolver,
 	) {
 
 	}//end __construct()

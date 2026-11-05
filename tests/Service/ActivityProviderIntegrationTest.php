@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ActivityService;
+use OCA\OpenRegister\Notifications\Service\ActivityService;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;

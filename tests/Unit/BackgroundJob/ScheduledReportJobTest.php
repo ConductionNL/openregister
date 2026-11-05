@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\ScheduledReportJob;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportJob;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;

@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers

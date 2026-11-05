@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Notification\ScheduledMessagePolicy;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessagePolicy;
 use PHPUnit\Framework\TestCase;
 
 /**

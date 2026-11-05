@@ -163,7 +163,7 @@ class HandoffMappingEvaluator {
 	/**
 	 * `{{prop}}` interpolation over the source data, HTML-escaped, unknown or
 	 * non-scalar properties rendering as '' — the existing OR convention
-	 * ({@see \OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher}).
+	 * ({@see \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher}).
 	 *
 	 * @param string $template The template string.
 	 * @param array<string, mixed> $data The source object's data.

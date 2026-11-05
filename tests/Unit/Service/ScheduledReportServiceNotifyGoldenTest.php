@@ -10,8 +10,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\ExportService;
@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * fixtures/scheduled-report-notify-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\ScheduledReportService
- * @uses   \OCA\OpenRegister\Db\ScheduledReport
+ * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Service\ScheduledReportRun
  * @uses   \OCA\OpenRegister\Exception\ExportTooLargeException
  */

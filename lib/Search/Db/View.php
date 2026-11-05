@@ -29,9 +29,7 @@ use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Db\TimelineEntry;
 
 /**
  * Entity class representing a View

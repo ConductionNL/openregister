@@ -58,8 +58,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller {
 	// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 	// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-	use OCA\OpenRegister\Controller\GraphQLSubscriptionController;
-	use OCA\OpenRegister\Service\GraphQL\SubscriptionService;
+	use OCA\OpenRegister\Notifications\Controller\GraphQLSubscriptionController;
+	use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
 	use OCP\AppFramework\Http\Response;
 	use OCP\IRequest;
 	use PHPUnit\Framework\MockObject\MockObject;

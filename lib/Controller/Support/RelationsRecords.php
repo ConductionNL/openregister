@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -39,7 +39,7 @@ final class RelationsRecords {
 	 * @param ObjectOperationsInterface                $objectService Object service
 	 * @param NoteService                  $noteService   Note service
 	 * @param ObjectCalendarTasksInterface $taskService   Task service
-	 * @param EmailService                 $emailService  Email service
+	 * @param EmailServiceInterface                 $emailService  Email service
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
 	 */
@@ -47,7 +47,7 @@ final class RelationsRecords {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly NoteService $noteService,
 		public readonly ObjectCalendarTasksInterface $taskService,
-		public readonly EmailService $emailService,
+		public readonly EmailServiceInterface $emailService,
 	) {
 	}//end __construct()
 }//end class

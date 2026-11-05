@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
  * The comment and the upload a link may make.
@@ -87,7 +87,7 @@ class AccessLinkActs {
 			message: $message,
 			actorType: self::LINK_ACTOR_TYPE,
 			actorId: $link->principalId(),
-			visibility: TimelineVisibilityService::PUBLIC_ENTRY
+			visibility: TimelineVisibilityServiceInterface::PUBLIC_ENTRY
 		);
 	}//end comment()
 

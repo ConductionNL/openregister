@@ -26,9 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\BackgroundJob\ScheduledReportRunNowJob;
-use OCA\OpenRegister\Controller\ScheduledReportsController;
-use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledReportRunNowJob;
+use OCA\OpenRegister\Notifications\Controller\ScheduledReportsController;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;

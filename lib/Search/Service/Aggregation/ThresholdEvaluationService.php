@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Search\Service\Aggregation;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcherInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -65,7 +65,7 @@ class ThresholdEvaluationService {
 	 * Wire collaborators and prepare the state cache.
 	 *
 	 * @param AggregationRunner $aggregationRunner Runner that computes aggregation values.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher.
+	 * @param AnnotationNotificationDispatcherInterface $dispatcher Notification dispatcher.
 	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory.
 	 *
@@ -73,7 +73,7 @@ class ThresholdEvaluationService {
 	 */
 	public function __construct(
 		private readonly AggregationRunner $aggregationRunner,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
+		private readonly AnnotationNotificationDispatcherInterface $dispatcher,
 		private readonly LoggerInterface $logger,
 		ICacheFactory $cacheFactory,
 	) {

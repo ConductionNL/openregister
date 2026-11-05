@@ -39,16 +39,17 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NcNotificationSender;
-use OCA\OpenRegister\Service\Notification\NotificationChannelPolicy;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Notification\NotificationTemplating;
-use OCA\OpenRegister\Service\Notification\OptOutAuthority;
-use OCA\OpenRegister\Service\Notification\RateLimiter;
-use OCA\OpenRegister\Service\Notification\TalkSender;
-use OCA\OpenRegister\Service\Notification\TalkSendException;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceServiceInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
+use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RateLimiterInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\TalkSendException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserManager;
@@ -122,7 +123,7 @@ class FlowMessagingService {
 
 	public const BUCKET_AUTHORITY_UNAVAILABLE = 'authorityUnavailable';
 
-	private const REFUSAL_BUCKETS = [OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE => self::BUCKET_AUTHORITY_UNAVAILABLE];
+	private const REFUSAL_BUCKETS = [OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE => self::BUCKET_AUTHORITY_UNAVAILABLE];
 
 	/**
 	 * The address rules: what counts as an address, which may be mailed.
@@ -141,29 +142,29 @@ class FlowMessagingService {
 	/**
 	 * Asks integriq whether an external address may be mailed.
 	 *
-	 * @var OptOutAuthority
+	 * @var OptOutAuthorityInterface
 	 */
-	private readonly OptOutAuthority $optOut;
+	private readonly OptOutAuthorityInterface $optOut;
 
 	/**
 	 * Constructor. Every dependency is one of the subsystem's call-shared
 	 * units — the same objects the declarative dispatcher invokes.
 	 *
-	 * @param NotificationChannelPolicy $channelPolicy The subsystem's per-channel kill switches.
-	 * @param NotificationRecipientResolver $recipientResolver The subsystem's recipient resolver.
-	 * @param NotificationTemplating $templating The dialect's placeholder evaluator.
-	 * @param NcNotificationSender $ncSender The nc-notification channel sender (web-push rides along).
-	 * @param EmailSender $emailSender The email channel sender.
-	 * @param TalkSender $talkSender The Talk channel sender.
-	 * @param RateLimiter $rateLimiter The subsystem's rate limiter (shared per-recipient budget).
-	 * @param NotificationPreferenceService $preferences The recipient preference resolver.
+	 * @param NotificationChannelPolicyInterface $channelPolicy The subsystem's per-channel kill switches.
+	 * @param NotificationRecipientResolverInterface $recipientResolver The subsystem's recipient resolver.
+	 * @param NotificationTemplatingInterface $templating The dialect's placeholder evaluator.
+	 * @param NcNotificationSenderInterface $ncSender The nc-notification channel sender (web-push rides along).
+	 * @param EmailSenderInterface $emailSender The email channel sender.
+	 * @param TalkSenderInterface $talkSender The Talk channel sender.
+	 * @param RateLimiterInterface $rateLimiter The subsystem's rate limiter (shared per-recipient budget).
+	 * @param NotificationPreferenceServiceInterface $preferences The recipient preference resolver.
 	 * @param IUserManager $userManager Resolves the acting user.
 	 * @param IAppConfig $appConfig App config for the recipient bound.
 	 * @param LoggerInterface $logger Logger for send diagnostics.
 	 * @param IEventDispatcher $eventDispatcher Announces each sent email (FlowEmailSentEvent).
 	 * @param FlowRunContext|null $runContext The ambient step frame, for the sending step's node id.
 	 *                                        Nullable so a caller without a run still constructs it.
-	 * @param OptOutAuthority|null $optOut The opt-out seam; null builds one on the same dispatcher.
+	 * @param OptOutAuthorityInterface|null $optOut The opt-out seam; null builds one on the same dispatcher.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
 	 *
@@ -171,20 +172,20 @@ class FlowMessagingService {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function __construct(
-		private readonly NotificationChannelPolicy $channelPolicy,
-		private readonly NotificationRecipientResolver $recipientResolver,
-		private readonly NotificationTemplating $templating,
-		private readonly NcNotificationSender $ncSender,
-		private readonly EmailSender $emailSender,
-		private readonly TalkSender $talkSender,
-		private readonly RateLimiter $rateLimiter,
-		private readonly NotificationPreferenceService $preferences,
+		private readonly NotificationChannelPolicyInterface $channelPolicy,
+		private readonly NotificationRecipientResolverInterface $recipientResolver,
+		private readonly NotificationTemplatingInterface $templating,
+		private readonly NcNotificationSenderInterface $ncSender,
+		private readonly EmailSenderInterface $emailSender,
+		private readonly TalkSenderInterface $talkSender,
+		private readonly RateLimiterInterface $rateLimiter,
+		private readonly NotificationPreferenceServiceInterface $preferences,
 		private readonly IUserManager $userManager,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 		IEventDispatcher $eventDispatcher,
 		?FlowRunContext $runContext = null,
-		?OptOutAuthority $optOut = null,
+		?OptOutAuthorityInterface $optOut = null,
 	) {
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
 		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
@@ -334,7 +335,7 @@ class FlowMessagingService {
 			return;
 		}
 
-		if ($outcome === TalkSender::OUTCOME_KILL_SWITCH) {
+		if ($outcome === TalkSenderInterface::OUTCOME_KILL_SWITCH) {
 			$send->add(bucket: 'skippedByKillSwitch', recipient: $token);
 			return;
 		}
@@ -652,7 +653,7 @@ class FlowMessagingService {
 			body: $this->optOut->withLink(body: $item->body, unsubscribe: $unsubscribe),
 			unsubscribe: $unsubscribe
 		);
-		if ($outcome === EmailSender::OUTCOME_DISPATCHED) {
+		if ($outcome === EmailSenderInterface::OUTCOME_DISPATCHED) {
 			$send->add(bucket: 'delivered', recipient: $item->recipient);
 			$this->announceEmail(send: $send, item: $item);
 			return;
@@ -802,7 +803,7 @@ class FlowMessagingService {
 	private function recipientBound(): int {
 		try {
 			$configured = (int)$this->appConfig->getValueInt(
-				NotificationChannelPolicy::APP_ID,
+				NotificationChannelPolicyInterface::APP_ID,
 				self::CONFIG_RECIPIENT_BOUND,
 				self::DEFAULT_RECIPIENT_BOUND
 			);

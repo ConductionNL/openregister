@@ -38,6 +38,10 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCA\OpenRegister\Search\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -677,7 +681,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
 
 		// ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
-		$activityListener = \OCA\OpenRegister\Listener\ActivityEventListener::class;
+		$activityListener = \OCA\OpenRegister\Notifications\Listener\ActivityEventListener::class;
 		$context->registerEventListener(ObjectCreatedEvent::class, $activityListener);
 		$context->registerEventListener(ObjectUpdatedEvent::class, $activityListener);
 		$context->registerEventListener(ObjectDeletedEvent::class, $activityListener);

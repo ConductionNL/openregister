@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -93,9 +93,9 @@ class ChatController extends Controller {
 	 *
 	 * Handles database operations for message entities.
 	 *
-	 * @var MessageMapper Message mapper instance
+	 * @var MessageMapperInterface Message mapper instance
 	 */
-	private readonly MessageMapper $messageMapper;
+	private readonly MessageMapperInterface $messageMapper;
 
 	/**
 	 * Feedback mapper

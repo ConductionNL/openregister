@@ -59,7 +59,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns

@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Webhook;
 
-use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

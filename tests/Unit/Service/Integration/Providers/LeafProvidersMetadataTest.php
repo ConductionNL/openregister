@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\EmailLinkService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
 use OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider;

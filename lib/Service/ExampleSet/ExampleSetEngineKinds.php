@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntriesInterface;
 
 /**
  * Tasks and saved views of an example set, together.
@@ -63,7 +64,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetCollectivesPages|null $collectivesPages Writes the Collectives pages a fragment ships; null refuses them.
 	 * @param ExampleSetTalkConversations|null $talkConversations Writes the Talk conversations a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetAuditEntries|null $auditEntries Writes the history a fragment gives its objects; null refuses it.
-	 * @param ExampleSetTimelineEntries|null $timelineEntries Writes the timeline a fragment gives its objects; null refuses it.
+	 * @param ExampleSetTimelineEntriesInterface|null $timelineEntries Writes the timeline a fragment gives its objects; null refuses it.
 	 * @param ExampleSetEmailLinks|null $emailLinks Writes the mail a fragment links to its objects; null refuses it.
 	 * @param ExampleSetAccessLinks|null $accessLinks Mints the access links a fragment puts on its objects; null refuses them.
 	 * @param ExampleSetGrants|null $grants Makes the grants a fragment puts on its objects; null refuses them.
@@ -88,7 +89,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetCollectivesPages $collectivesPages=null,
 		private readonly ?ExampleSetTalkConversations $talkConversations=null,
 		private readonly ?ExampleSetAuditEntries $auditEntries=null,
-		private readonly ?ExampleSetTimelineEntries $timelineEntries=null,
+		private readonly ?ExampleSetTimelineEntriesInterface $timelineEntries=null,
 		private readonly ?ExampleSetEmailLinks $emailLinks=null,
 		private readonly ?ExampleSetAccessLinks $accessLinks=null,
 		private readonly ?ExampleSetGrants $grants=null,

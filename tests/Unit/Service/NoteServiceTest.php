@@ -15,7 +15,7 @@ use OCA\OpenRegister\Exception\NoteLockedException;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentsNotFoundException;

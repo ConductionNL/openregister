@@ -35,7 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 
 /**

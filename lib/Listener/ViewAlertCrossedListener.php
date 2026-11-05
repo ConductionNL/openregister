@@ -38,8 +38,8 @@ namespace OCA\OpenRegister\Listener;
 
 use DateTime;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
-use OCA\OpenRegister\Service\Notification\EmailSender;
-use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolverInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
@@ -90,18 +90,18 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param NotificationRecipientResolver $recipients The engine's recipient resolver.
+	 * @param NotificationRecipientResolverInterface $recipients The engine's recipient resolver.
 	 * @param INotificationManager $notifications Nextcloud's notification manager.
-	 * @param EmailSender $email The engine's email sender.
+	 * @param EmailSenderInterface $email The engine's email sender.
 	 * @param IFactory $l10nFactory For each recipient's own language in an email.
 	 * @param IUserManager $userManager To read a recipient's language.
 	 * @param LoggerInterface $logger For recipients and channels nothing could deliver to.
 	 * @param ViewerReachResolver $viewers Re-checks at send time that a recipient may still read the view.
 	 */
 	public function __construct(
-		private readonly NotificationRecipientResolver $recipients,
+		private readonly NotificationRecipientResolverInterface $recipients,
 		private readonly INotificationManager $notifications,
-		private readonly EmailSender $email,
+		private readonly EmailSenderInterface $email,
 		private readonly IFactory $l10nFactory,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
@@ -294,7 +294,7 @@ class ViewAlertCrossedListener implements IEventListener {
 			}
 
 			$outcome = $this->email->send(uid: $uid, subject: $subject, body: $body);
-			if ($outcome !== EmailSender::OUTCOME_DISPATCHED) {
+			if ($outcome !== EmailSenderInterface::OUTCOME_DISPATCHED) {
 				$this->logger->warning(
 					'[ViewAlertCrossedListener] View {view} alert email to {uid} was not sent: {outcome}',
 					['view' => $parameters['viewId'], 'uid' => $uid, 'outcome' => $outcome]

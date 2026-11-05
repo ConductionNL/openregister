@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\TimelineEntriesController;
+use OCA\OpenRegister\Notifications\Controller\TimelineEntriesController;
 
 /**
  * Builds TimelineEntriesController from its services as separate arguments, wrapped into its constructor bundles.
@@ -34,24 +34,24 @@ final class TimelineEntriesControllerFactory {
 		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objects,
-		\OCA\OpenRegister\Service\Timeline\TimelineEntryService $entries,
-		\OCA\OpenRegister\Service\Timeline\TimelineWriteService $writer,
-		\OCA\OpenRegister\Service\Timeline\TimelineEntrySearchService $search,
-		\OCA\OpenRegister\Service\Timeline\ReferenceService $references,
-		\OCA\OpenRegister\Service\TimelineVisibilityService $visibility,
+		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService $entries,
+		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService $writer,
+		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService $search,
+		\OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService $references,
+		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility,
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\TimelineEntriesControllerServices(
-				domain: new \OCA\OpenRegister\Controller\Support\TimelineEntriesDomain(
+			new \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices(
+				domain: new \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesDomain(
 					objects: $objects,
 					entries: $entries,
 					writer: $writer,
 					search: $search,
 				),
-				visibility: new \OCA\OpenRegister\Controller\Support\TimelineEntriesVisibility(
+				visibility: new \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesVisibility(
 					references: $references,
 					visibility: $visibility,
 					logger: $logger,

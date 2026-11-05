@@ -38,7 +38,7 @@ final class ChatControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ChatService $chatService,
 		\OCA\OpenRegister\Db\ConversationMapper $conversationMapper,
-		\OCA\OpenRegister\Db\MessageMapper $messageMapper,
+		\OCA\OpenRegister\Notifications\Db\MessageMapper $messageMapper,
 		\OCA\OpenRegister\Db\FeedbackMapper $feedbackMapper,
 		\OCA\OpenRegister\Db\AgentMapper $agentMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,

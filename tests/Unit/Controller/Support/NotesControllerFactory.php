@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\NotesController;
+use OCA\OpenRegister\Notifications\Controller\NotesController;
 
 /**
  * Builds NotesController from its services as separate arguments, wrapped into its constructor bundles.
@@ -33,14 +33,14 @@ final class NotesControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\NoteService $noteService,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
-		\OCA\OpenRegister\Service\TimelineVisibilityService $visibility,
-		\OCA\OpenRegister\Service\Timeline\TimelineWriteService $timeline,
-		\OCA\OpenRegister\Service\Timeline\TimelineEntryService $entries,
+		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility,
+		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService $timeline,
+		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService $entries,
 	): array {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\NotesControllerServices(
+			new \OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices(
 				noteService: $noteService,
 				objectService: $objectService,
 				visibility: $visibility,

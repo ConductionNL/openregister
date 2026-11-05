@@ -19,8 +19,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
-use OCA\OpenRegister\Service\Notification\TaskPoolRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskPoolRecipientResolver;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;

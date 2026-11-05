@@ -37,7 +37,7 @@ class SearchProviderRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Search\ObjectsProvider',
-				'OCA\OpenRegister\Search\TimelineEntriesProvider',
+				'OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider',
 			],
 			actual: $registered
 		);

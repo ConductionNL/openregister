@@ -43,7 +43,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -64,7 +64,7 @@ class ObjectReadStateController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
 	 * @param ReadStateService $readState The read-state primitive.
-	 * @param NotificationClearingService $clearing Empties the bell when the work is opened.
+	 * @param NotificationClearingServiceInterface $clearing Empties the bell when the work is opened.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
@@ -72,7 +72,7 @@ class ObjectReadStateController extends Controller {
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly ReadStateService $readState,
-		private readonly NotificationClearingService $clearing,
+		private readonly NotificationClearingServiceInterface $clearing,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
