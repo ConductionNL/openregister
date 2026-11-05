@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\LinkTarget;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;

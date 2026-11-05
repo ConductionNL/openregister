@@ -13,7 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Event\DraftDeletedEvent;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
-use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 

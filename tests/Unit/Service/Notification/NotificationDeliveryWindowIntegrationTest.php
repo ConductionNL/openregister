@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob;
-use OCA\OpenRegister\Db\NotificationHistoryMapper;
+use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
+use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\QueuedNotification;
-use OCA\OpenRegister\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Notifications\Db\QueuedNotification;
+use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\DigestScheduleEvaluator;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClientService;
@@ -78,7 +78,7 @@ class NotificationDeliveryWindowIntegrationTest extends TestCase {
 		$this->historyMapper->method('record')->willReturnCallback(
 			function (string $ruleId, string $channel, string $recipient, string $status, ...$rest) {
 				$this->recordedHistory[] = $status;
-				return new \OCA\OpenRegister\Db\NotificationHistory();
+				return new \OCA\OpenRegister\Notifications\Db\NotificationHistory();
 			}
 		);
 

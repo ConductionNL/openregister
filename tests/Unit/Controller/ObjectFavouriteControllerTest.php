@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectFavouriteController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -35,7 +35,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectFavouriteController
- * @uses \OCA\OpenRegister\Db\Watcher
+ * @uses \OCA\OpenRegister\Notifications\Db\Watcher
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 class ObjectFavouriteControllerTest extends TestCase {

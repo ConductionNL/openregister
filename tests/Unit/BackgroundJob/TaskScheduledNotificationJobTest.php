@@ -20,16 +20,16 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\TaskScheduledNotificationJob;
-use OCA\OpenRegister\Db\NotificationDedupeState;
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Db\TaskMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
-use OCA\OpenRegister\Service\Notification\TaskNotificationRules;
-use OCA\OpenRegister\Service\Notification\TaskObjectAdapter;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules;
+use OCA\OpenRegister\Notifications\Service\Notification\TaskObjectAdapter;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;

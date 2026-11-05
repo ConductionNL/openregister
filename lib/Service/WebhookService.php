@@ -37,8 +37,8 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
-use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
-use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -107,9 +107,9 @@ class WebhookService {
 	/**
 	 * CloudEvent formatter
 	 *
-	 * @var CloudEventFormatter|null
+	 * @var CloudEventFormatterInterface|null
 	 */
-	private ?CloudEventFormatter $cloudEventFormatter;
+	private ?CloudEventFormatterInterface $cloudEventFormatter;
 
 	/**
 	 * Job list used to enqueue asynchronous webhook delivery.
@@ -152,7 +152,7 @@ class WebhookService {
 	 * @param MappingService $mappingService Mapping service
 	 * @param MappingMapper $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
-	 * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
+	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
 	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache (optional)
 	 *
 	 * @return void
@@ -164,7 +164,7 @@ class WebhookService {
 		MappingService $mappingService,
 		MappingMapper $mappingMapper,
 		IJobList $jobList,
-		?CloudEventFormatter $cloudEventFormatter = null,
+		?CloudEventFormatterInterface $cloudEventFormatter = null,
 		?WebhookInterceptionCache $interceptionCache = null,
 	) {
 		$this->webhookMapper = $webhookMapper;

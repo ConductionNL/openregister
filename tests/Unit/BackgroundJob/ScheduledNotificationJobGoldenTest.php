@@ -8,15 +8,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\NotificationDedupeState;
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -37,15 +37,15 @@ use RuntimeException;
  * fixtures/scheduled-notification-job-golden.json; set UPDATE_GOLDEN=1 to
  * rewrite it.
  *
- * @covers \OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterParser
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterPosition
- * @uses   \OCA\OpenRegister\Service\Notification\ScheduledFilterGrammar
+ * @covers \OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterEvaluator
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterPosition
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
- * @uses   \OCA\OpenRegister\BackgroundJob\ScheduledFire
+ * @uses   \OCA\OpenRegister\Notifications\BackgroundJob\ScheduledFire
  * @uses   \OCA\OpenRegister\Db\Schema
- * @uses   \OCA\OpenRegister\Db\NotificationDedupeState
+ * @uses   \OCA\OpenRegister\Notifications\Db\NotificationDedupeState
  */
 class ScheduledNotificationJobGoldenTest extends TestCase
 {

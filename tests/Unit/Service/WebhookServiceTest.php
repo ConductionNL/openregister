@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
-use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\WebhookRequestOptions;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Db\DoesNotExistException;

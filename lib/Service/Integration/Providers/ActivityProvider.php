@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
@@ -205,7 +205,7 @@ class ActivityProvider extends AbstractIntegrationProvider {
 					// An NC Activity row is always internal: it is written by
 					// core about what a handler did, never about what a citizen
 					// may read.
-					'visibility' => TimelineVisibilityService::INTERNAL,
+					'visibility' => TimelineVisibilityServiceInterface::INTERNAL,
 					'data' => $row,
 				];
 			},
@@ -230,7 +230,7 @@ class ActivityProvider extends AbstractIntegrationProvider {
 			return false;
 		}
 
-		return strtolower(trim($filters['visibility'])) === TimelineVisibilityService::PUBLIC_ENTRY;
+		return strtolower(trim($filters['visibility'])) === TimelineVisibilityServiceInterface::PUBLIC_ENTRY;
 	}//end wantsPublicOnly()
 
 	/**

@@ -88,6 +88,19 @@ def strip_strings_and_comments(src):
     return re.sub(pattern, blank, src, flags=re.S)
 
 
+DOC_TYPE_TAG = re.compile(r'@(?:param|return|var|throws|property|method|template|extends|implements|mixin|psalm-|phpstan-)')
+
+
+def reference_view(src):
+    """Blank string literals and comments except the lines of a type tag, which name classes as code does."""
+    def keep_tags(m):
+        if m.group(0)[:1] in ('\'', '"'):
+            return re.sub(r'[^\n]', ' ', m.group(0))
+        return '\n'.join(ln if DOC_TYPE_TAG.search(ln) else re.sub(r'.', ' ', ln) for ln in m.group(0).split('\n'))
+    pattern = r"/\*.*?\*/|//[^\n]*|#(?!\[)[^\n]*|'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\""
+    return re.sub(pattern, keep_tags, src, flags=re.S)
+
+
 def imported_names(src):
     """Short names a file imports or declares, so no `use` is added for them."""
     names = set()
@@ -142,8 +155,10 @@ def rewrite_fqcns(text, old_to_new):
     return FQCN_TOKEN.sub(repl, text)
 
 
-def qualify_relative_names(src, old_ns, new_of, imported):
-    """`Object\\SaveObject` resolves against the namespace; make it absolute before the namespace changes."""
+def qualify_relative_names(src, old_ns, new_of, imported, moved_only=False):
+    """`Object\\SaveObject` resolves against the namespace; make it absolute before the namespace changes.
+
+    With moved_only, as for a file that stays, only names that resolve to a moving class change."""
     code_spans = strip_strings_and_comments(src)
     out, last = [], 0
     for match in re.finditer(r'(?<![\\\w$>:])([A-Z]\w*(?:\\[A-Z]\w*)+)\b', code_spans):
@@ -154,6 +169,8 @@ def qualify_relative_names(src, old_ns, new_of, imported):
         if first in imported or first == 'OCA':
             continue
         old = old_ns + '\\' + match.group(1)
+        if moved_only and old not in new_of:
+            continue
         target = new_of.get(old, old)
         out.append(src[last:match.start()])
         out.append('\\' + target)
@@ -259,6 +276,12 @@ def main():
     for fqcn, rel in sorted(all_classes.items()):
         old_ns = split_fqcn(fqcn)[0]
         if old_ns not in affected_ns:
+            if fqcn not in new_of:
+                path = os.path.join(lib, rel)
+                src = open(path, encoding='utf-8').read()
+                fixed = qualify_relative_names(src, old_ns, new_of, imported_names(src), moved_only=True)
+                if fixed != src:
+                    open(path, 'w', encoding='utf-8').write(fixed)
             continue
         path = os.path.join(lib, rel)
         src = open(path, encoding='utf-8').read()
@@ -268,13 +291,14 @@ def main():
         if fqcn in new_of:
             src = qualify_relative_names(src, old_ns, new_of, imported)
         needed = set()
+        refs = reference_view(src)
         for short, neighbour in by_ns[old_ns].items():
             if neighbour == fqcn or short in imported:
                 continue
             target = new_of.get(neighbour, neighbour)
             if split_fqcn(target)[0] == own_new_ns:
                 continue
-            if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', src):
+            if re.search(rf'(?<![\\\w$]){re.escape(short)}\b', refs):
                 needed.add(target)
         clash = {split_fqcn(f)[1] for f in needed} & imported
         if clash:

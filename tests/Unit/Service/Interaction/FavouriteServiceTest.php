@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use PHPUnit\Framework\MockObject\MockObject;

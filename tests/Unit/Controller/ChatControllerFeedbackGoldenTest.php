@@ -15,8 +15,8 @@ use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\Message;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\ChatControllerServices
  * @uses   \OCA\OpenRegister\Db\Conversation
  * @uses   \OCA\OpenRegister\Db\Feedback
- * @uses   \OCA\OpenRegister\Db\Message
+ * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Db\Organisation
  */
 class ChatControllerFeedbackGoldenTest extends TestCase {

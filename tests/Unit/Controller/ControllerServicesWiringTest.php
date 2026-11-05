@@ -38,13 +38,13 @@ class ControllerServicesWiringTest extends TestCase {
 	 */
 	public static function controllerProvider(): array {
 		$cases = [];
-		foreach (glob(__DIR__ . '/../../../lib/Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
-			$relative = substr($file, strpos($file, 'lib/Controller/') + strlen('lib/Controller/'), -4);
-			$class    = 'OCA\\OpenRegister\\Controller\\' . str_replace('/', '\\', $relative);
+		foreach (glob(__DIR__ . '/../../../lib/{,*/}Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
+			$relative = substr($file, strpos($file, 'lib/') + strlen('lib/'), -4);
+			$class    = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $relative);
 			foreach ((new ReflectionClass($class))->getConstructor()?->getParameters() ?? [] as $param) {
 				$type = $param->getType();
 				if ($type instanceof ReflectionNamedType
-					&& str_starts_with($type->getName(), 'OCA\\OpenRegister\\Controller\\Support\\') === true
+					&& self::isBundleName($type->getName()) === true
 					&& str_ends_with($type->getName(), 'ControllerServices') === true
 				) {
 					$cases[$relative] = [$class];
@@ -135,8 +135,19 @@ class ControllerServicesWiringTest extends TestCase {
 	 * @return bool
 	 */
 	private function isBundle(string $type): bool {
-		return str_starts_with($type, 'OCA\\OpenRegister\\Controller\\Support\\');
+		return self::isBundleName($type);
 	}//end isBundle()
+
+	/**
+	 * Whether the class name lies in a Controller\Support namespace, of lib/Controller or of a component.
+	 *
+	 * @param string $type The class name.
+	 *
+	 * @return bool
+	 */
+	private static function isBundleName(string $type): bool {
+		return preg_match('/^OCA\\\\OpenRegister\\\\(\\w+\\\\)?Controller\\\\Support\\\\/', $type) === 1;
+	}//end isBundleName()
 
 	/**
 	 * Whether the leaf is one of the held objects or inside a held bundle.

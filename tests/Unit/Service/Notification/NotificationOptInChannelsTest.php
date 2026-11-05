@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;

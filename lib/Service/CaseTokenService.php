@@ -47,7 +47,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
@@ -291,7 +291,7 @@ class CaseTokenService {
 		}
 
 		try {
-			$reader = $this->container->get(PublicTimeline::class);
+			$reader = $this->container->get(PublicTimelineInterface::class);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[CaseTokenService] the public timeline reader could not be built: ' . $e->getMessage()

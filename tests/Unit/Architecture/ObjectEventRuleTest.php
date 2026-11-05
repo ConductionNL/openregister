@@ -21,7 +21,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
-use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ReadStatePruneListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;

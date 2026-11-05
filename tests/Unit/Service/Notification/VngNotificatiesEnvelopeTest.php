@@ -20,7 +20,7 @@ namespace Unit\Service\Notification;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Notification\VngNotificatiesEnvelope;
+use OCA\OpenRegister\Notifications\Service\Notification\VngNotificatiesEnvelope;
 use PHPUnit\Framework\TestCase;
 
 class VngNotificatiesEnvelopeTest extends TestCase {

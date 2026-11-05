@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
@@ -53,7 +53,7 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Service\ScheduledReportService
  * @covers \OCA\OpenRegister\Service\ScheduledReportRun
- * @uses   \OCA\OpenRegister\Db\ScheduledReport
+ * @uses   \OCA\OpenRegister\Notifications\Db\ScheduledReport
  * @uses   \OCA\OpenRegister\Db\ExportRun
  * @uses   \OCA\OpenRegister\Db\Register
  */

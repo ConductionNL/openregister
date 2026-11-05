@@ -14,7 +14,7 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;

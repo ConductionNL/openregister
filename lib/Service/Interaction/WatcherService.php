@@ -54,8 +54,8 @@ namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Db\Watcher;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -108,7 +108,7 @@ class WatcherService {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherMapper $mapper The watcher rows.
+	 * @param WatcherMapperInterface $mapper The watcher rows.
 	 * @param IUserSession $userSession Resolves the calling user.
 	 * @param IGroupManager $groupManager Resolves the caller's groups for the `manage` posture.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema for the `update` posture.
@@ -117,7 +117,7 @@ class WatcherService {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly WatcherMapper $mapper,
+		private readonly WatcherMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly SchemaMapperInterface $schemaMapper,
@@ -658,7 +658,7 @@ class WatcherService {
 			$counts = [];
 		}
 
-		$this->countsComplete = (count($counts) < WatcherMapper::COUNT_MAP_LIMIT);
+		$this->countsComplete = (count($counts) < WatcherMapperInterface::COUNT_MAP_LIMIT);
 		$this->countsMemo = $counts;
 
 		return $counts;

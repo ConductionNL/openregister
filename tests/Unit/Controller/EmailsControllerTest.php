@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\EmailsController;
+use OCA\OpenRegister\Notifications\Controller\EmailsController;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;

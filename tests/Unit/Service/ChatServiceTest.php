@@ -7,7 +7,7 @@ use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
-use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
 use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;

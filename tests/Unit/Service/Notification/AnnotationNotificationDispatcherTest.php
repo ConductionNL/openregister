@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
-use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
-use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
 use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
-use OCA\OpenRegister\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
@@ -825,7 +825,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		// Concurrent dispatcher / prior dispatch already holds the (slug, key)
 		// slot — record() throws DuplicateDispatchException and dispatch must abort.
 		$logMapper->method('record')->willThrowException(
-			new \OCA\OpenRegister\Db\DuplicateDispatchException('duplicate (slug, key)')
+			new \OCA\OpenRegister\Notifications\Db\DuplicateDispatchException('duplicate (slug, key)')
 		);
 
 		$this->notificationManager->expects($this->never())->method('notify');

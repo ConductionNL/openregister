@@ -41,9 +41,9 @@ class ControllerSessionWiringTest extends TestCase {
 	 */
 	public static function controllerProvider(): array {
 		$cases = [];
-		foreach (glob(__DIR__ . '/../../../lib/Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
-			$relative = substr($file, strpos($file, 'lib/Controller/') + strlen('lib/Controller/'), -4);
-			$class    = 'OCA\\OpenRegister\\Controller\\' . str_replace('/', '\\', $relative);
+		foreach (glob(__DIR__ . '/../../../lib/{,*/}Controller/{,*/}*Controller.php', GLOB_BRACE) as $file) {
+			$relative = substr($file, strpos($file, 'lib/') + strlen('lib/'), -4);
+			$class    = 'OCA\\OpenRegister\\' . str_replace('/', '\\', $relative);
 			$ctor     = (new ReflectionClass($class))->getConstructor();
 			foreach ($ctor?->getParameters() ?? [] as $param) {
 				$type = $param->getType();

@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\FlowsListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\McpListenerRegistrar
- * @uses   \OCA\OpenRegister\Listener\Registrar\NotificationsListenerRegistrar
+ * @uses   \OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar
  * @uses   \OCA\OpenRegister\Listener\Registrar\WorkListenerRegistrar
  * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
@@ -60,8 +60,8 @@ class ListenerOrderTest extends TestCase {
 	 */
 	public function testAComponentRegistrarOwnsItsEventsAlone(): void {
 		$owners = [];
-		foreach (glob(__DIR__.'/../../../lib/Listener/Registrar/*ListenerRegistrar.php') as $path) {
-			$class   = 'OCA\\OpenRegister\\Listener\\Registrar\\'.basename($path, '.php');
+		foreach (glob(__DIR__.'/../../../lib/{,*/}Listener/Registrar/*ListenerRegistrar.php', GLOB_BRACE) as $path) {
+			$class   = 'OCA\\OpenRegister\\'.str_replace('/', '\\', substr($path, strpos($path, 'lib/') + 4, -4));
 			$context = new RecordingRegistrationContext();
 			$class::register(context: $context);
 			foreach ($context->listeners as $registration) {

@@ -34,7 +34,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceService;
+use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -71,7 +72,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === PresenceService::class) {
+				if ($id === PresenceServiceInterface::class) {
 					return $this->presence;
 				}
 

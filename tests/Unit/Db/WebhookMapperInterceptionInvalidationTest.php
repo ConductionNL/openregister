@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookMapper;
-use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;

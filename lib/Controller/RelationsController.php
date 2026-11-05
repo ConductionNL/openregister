@@ -27,7 +27,7 @@ use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -169,9 +169,9 @@ class RelationsController extends Controller {
 	/**
 	 * Email service.
 	 *
-	 * @var EmailService
+	 * @var EmailServiceInterface
 	 */
-	private readonly EmailService $emailService;
+	private readonly EmailServiceInterface $emailService;
 
 	/**
 	 * Calendar event service.

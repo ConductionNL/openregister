@@ -17,10 +17,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
-use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
+use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
+use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;

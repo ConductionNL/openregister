@@ -34,8 +34,8 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
@@ -133,7 +133,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
+	 * @param ScheduledReportMapperInterface $mapper Scheduled report mapper.
 	 * @param RegisterMapperInterface $registerMapper Register lookup (create/update validation).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (create/update validation).
 	 * @param ExportService $exportService The export engine this feature composes.
@@ -153,7 +153,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *     (mail transport vs. system config) rather than an arbitrary parameter split.
 	 */
 	public function __construct(
-		private readonly ScheduledReportMapper $mapper,
+		private readonly ScheduledReportMapperInterface $mapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ExportService $exportService,

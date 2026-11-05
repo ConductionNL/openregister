@@ -29,14 +29,14 @@ namespace Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- PHPUnit fixture properties are named by their type.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Controller\TimelineAdminController;
-use OCA\OpenRegister\Db\ReferencePattern;
-use OCA\OpenRegister\Db\TextBlock;
-use OCA\OpenRegister\Db\TimelineKind;
-use OCA\OpenRegister\Service\Timeline\ReferenceService;
-use OCA\OpenRegister\Service\Timeline\TextBlockService;
-use OCA\OpenRegister\Service\Timeline\TimelineKindService;
-use OCA\OpenRegister\Service\Timeline\TimelineValidationException;
+use OCA\OpenRegister\Notifications\Controller\TimelineAdminController;
+use OCA\OpenRegister\Notifications\Db\ReferencePattern;
+use OCA\OpenRegister\Notifications\Db\TextBlock;
+use OCA\OpenRegister\Notifications\Db\TimelineKind;
+use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineKindService;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;

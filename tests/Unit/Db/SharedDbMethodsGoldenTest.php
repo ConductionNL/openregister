@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\ProcessingPurpose;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Search\Db\View;
 use OCP\IDBConnection;
@@ -57,7 +57,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Db\ProcessingPurpose
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\Verwerkingsactiviteit
- * @covers \OCA\OpenRegister\Db\WatcherMapper
+ * @covers \OCA\OpenRegister\Notifications\Db\WatcherMapper
  * @covers \OCA\OpenRegister\Db\WebhookLogMapper
  * @covers \OCA\OpenRegister\Search\Db\View
  * @uses   \OCA\OpenRegister\Db\DestructionList

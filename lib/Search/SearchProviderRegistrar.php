@@ -42,6 +42,6 @@ final class SearchProviderRegistrar {
 		// The entries beside the objects. Two providers, because a Woo
 		// request asks for every mention of a subject and the answer is a
 		// list of entries, each naming the case it sits on.
-		$context->registerSearchProvider(\OCA\OpenRegister\Search\TimelineEntriesProvider::class);
+		$context->registerSearchProvider(\OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider::class);
 	}//end register()
 }//end class

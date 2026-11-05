@@ -49,7 +49,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -903,7 +903,7 @@ class MagicSearchHandler {
 		// path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(
 			qb: $qb,
-			table: WatcherMapper::TABLE,
+			table: WatcherMapperInterface::TABLE,
 			userId: ($query['_watchingFor'] ?? null)
 		);
 

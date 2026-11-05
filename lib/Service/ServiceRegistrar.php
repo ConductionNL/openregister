@@ -42,7 +42,6 @@ use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
-use OCA\OpenRegister\Service\WebPush\HexIconService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -186,7 +185,6 @@ final class ServiceRegistrar {
 		// Web Push hex-icon service (openregister-web-push-engine): needs an
 		// app-scoped IAppData for its rendered-PNG cache, which is not
 		// auto-wirable, so resolve it via IAppDataFactory here.
-		$context->registerService(\OCA\OpenRegister\Service\WebPush\HexIconService::class, self::buildHexIconService(...));
 
 		// Register the data-sync source-fetcher registry pre-loaded with the
 		// built-in REST/OpenRegister fetcher. Apps can register additional
@@ -440,25 +438,10 @@ final class ServiceRegistrar {
 				userSession: $container->get('OCP\IUserSession'),
 				userManager: $container->get('OCP\IUserManager'),
 				logger: $container->get('Psr\Log\LoggerInterface'),
-				visibility: $container->get(\OCA\OpenRegister\Service\TimelineVisibilityService::class),
+				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
 				versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
 			);
 	}//end buildNoteService()
-
-	/**
-	 * Build the HexIconService service.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return HexIconService
-	 */
-	private static function buildHexIconService(ContainerInterface $container): HexIconService {
-		return new HexIconService(
-			appManager: $container->get(\OCP\App\IAppManager::class),
-			appData: $container->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
-			logger: $container->get(\Psr\Log\LoggerInterface::class)
-		);
-	}//end buildHexIconService()
 
 	/**
 	 * Build the SourceFetcherRegistry service.

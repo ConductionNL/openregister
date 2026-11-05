@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * of the annotation validator. The expected lists live in
  * `fixtures/notification-annotation-validator-golden.json`.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator
  */
 class NotificationAnnotationValidatorCharacterizationTest extends TestCase {
 

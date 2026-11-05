@@ -37,8 +37,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;

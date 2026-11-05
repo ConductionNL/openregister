@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCP\Files\Node;
 use OCP\IUser;
 

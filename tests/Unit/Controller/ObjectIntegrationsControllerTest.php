@@ -128,7 +128,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		IntegrationRegistry $registry,
 		?IRequest $request = null,
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
-		?\OCA\OpenRegister\Service\TimelineVisibilityService $visibility = null,
+		?\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility = null,
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
@@ -146,10 +146,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 * A visibility service that lets every row through, for the dispatch tests
 	 * that are not about the timeline leaves.
 	 *
-	 * @return \OCA\OpenRegister\Service\TimelineVisibilityService
+	 * @return \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService
 	 */
-	private function passThroughVisibility(): \OCA\OpenRegister\Service\TimelineVisibilityService {
-		$visibility = $this->createMock(\OCA\OpenRegister\Service\TimelineVisibilityService::class);
+	private function passThroughVisibility(): \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService {
+		$visibility = $this->createMock(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService::class);
 		$visibility->method('isTimelineIntegration')->willReturn(false);
 		return $visibility;
 	}//end passThroughVisibility()
@@ -436,7 +436,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 			)
 		);
 
-		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
+		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
 			$this->createMock(SchemaMapper::class),
 			$this->permissionHandlerAnswering(false),
 			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
@@ -469,7 +469,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(new _ControllerStubProvider('files'));
 
-		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
+		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
 			$this->createMock(SchemaMapper::class),
 			$this->permissionHandlerAnswering(false),
 			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),

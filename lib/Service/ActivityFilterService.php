@@ -39,6 +39,7 @@ use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
  * Filtered + paginated read access to NC Activity entries linked to an
@@ -132,7 +133,7 @@ class ActivityFilterService {
 		}
 
 		if (is_string($visibility) === true
-			&& strtolower(trim($visibility)) === TimelineVisibilityService::PUBLIC_ENTRY
+			&& strtolower(trim($visibility)) === TimelineVisibilityServiceInterface::PUBLIC_ENTRY
 		) {
 			return [
 				'results' => [],
@@ -397,7 +398,7 @@ class ActivityFilterService {
 			'url' => '/index.php/apps/activity/' . $activityId,
 			// An NC Activity row records what a handler did, so it is always
 			// internal; only a note ever carries the public flag.
-			'visibility' => TimelineVisibilityService::INTERNAL,
+			'visibility' => TimelineVisibilityServiceInterface::INTERNAL,
 			'data' => $row,
 		];
 	}//end normaliseRow()

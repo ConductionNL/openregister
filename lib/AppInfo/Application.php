@@ -43,6 +43,7 @@ use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\FileService;
@@ -142,6 +143,7 @@ class Application extends App implements IBootstrap {
 		FeatureToggleRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
 		SearchRegistrar::register(context: $context);
+		NotificationsRegistrar::register(context: $context);
 
 		// Every outbound call this app makes goes through the administered
 		// proxy (api-as-a-versioned-surface, design D-6). Most gemeenten have

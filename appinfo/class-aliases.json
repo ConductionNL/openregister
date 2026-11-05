@@ -315,6 +315,706 @@
 			"class": "OCA\\OpenRegister\\Search\\Service\\ViewService",
 			"eager": true,
 			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\NotificationQueueFlushJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\NotificationQueueFlushJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\PresenceExpiryJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\PresenceExpiryJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ScheduledNotificationJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\ScheduledNotificationJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ScheduledReportJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\ScheduledReportJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\ScheduledReportRunNowJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\ScheduledReportRunNowJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\TaskScheduledNotificationJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\TaskScheduledNotificationJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\BackgroundJob\\WebPushDispatchJob": {
+			"class": "OCA\\OpenRegister\\Notifications\\BackgroundJob\\WebPushDispatchJob",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Command\\GenerateVapidKeys": {
+			"class": "OCA\\OpenRegister\\Notifications\\Command\\GenerateVapidKeys",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\EmailsController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\EmailsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\GraphQLSubscriptionController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\GraphQLSubscriptionController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\HeartbeatController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\HeartbeatController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotesController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationBroadcastController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationBroadcastController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationDeliveryWindowController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationDeliveryWindowController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationGroupPreferencesController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationGroupPreferencesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationHistoryController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationHistoryController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationPreferencesController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationPreferencesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\NotificationTemplatesController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationTemplatesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ObjectWatchersController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\ObjectWatchersController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ScheduledReportsController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\ScheduledReportsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\NotesControllerServices": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\Support\\NotesControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\TimelineEntriesControllerServices": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\Support\\TimelineEntriesControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\TimelineEntriesDomain": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\Support\\TimelineEntriesDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\TimelineEntriesVisibility": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\Support\\TimelineEntriesVisibility",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\TimelineAdminController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\TimelineAdminController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\TimelineEntriesController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\TimelineEntriesController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\WebPushController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\WebPushController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\DuplicateDispatchException": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\DuplicateDispatchException",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\EntryReference": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\EntryReference",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\EntryReferenceMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\EntryReferenceMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Message": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\Message",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\MessageMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\MessageMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationBroadcast": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcast",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationBroadcastMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationBroadcastReceipt": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastReceipt",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationBroadcastReceiptMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationBroadcastReceiptMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationDedupeState": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeState",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationDedupeStateMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDedupeStateMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationDispatchLog": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDispatchLog",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationDispatchLogMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationDispatchLogMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationHistory": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistory",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationHistoryMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationHistoryMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationReadStateEntity": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationReadStateEntity",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationReadStateMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationReadStateMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationSubscription": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationSubscription",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\NotificationSubscriptionMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\NotificationSubscriptionMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ObjectPresence": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ObjectPresence",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ObjectPresenceMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ObjectPresenceMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\PushSubscription": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\PushSubscription",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\PushSubscriptionMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\PushSubscriptionMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\QueuedNotification": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\QueuedNotification",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\QueuedNotificationMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\QueuedNotificationMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ReferencePattern": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ReferencePattern",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ReferencePatternMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ReferencePatternMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ScheduledReport": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ScheduledReport",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ScheduledReportMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\ScheduledReportMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TextBlock": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TextBlock",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TextBlockMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TextBlockMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TimelineEntry": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntry",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TimelineEntryMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TimelineEntryMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TimelineKind": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TimelineKind",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\TimelineKindMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\TimelineKindMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Watcher": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\Watcher",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\WatcherMapper": {
+			"class": "OCA\\OpenRegister\\Notifications\\Db\\WatcherMapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ActivityEventListener": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\GraphQLSubscriptionListener": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\GraphQLSubscriptionListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\NotificationDedupeAnnotationSyncListener": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\NotificationDedupePruneListener": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupePruneListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\Registrar\\NotificationsListenerRegistrar": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\Registrar\\NotificationsListenerRegistrar",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\SystemEntityNotificationListener": {
+			"class": "OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Search\\TimelineEntriesProvider": {
+			"class": "OCA\\OpenRegister\\Notifications\\Search\\TimelineEntriesProvider",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ActivityService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\ActivityService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\EmailService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\EmailService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetTimelineEntries": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\ExampleSet\\ExampleSetTimelineEntries",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\GraphQL\\SubscriptionService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\GraphQL\\SubscriptionService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\AnnotationNotificationDispatcher": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\AnnotationNotificationDispatcher",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\DigestScheduleEvaluator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\DigestScheduleEvaluator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\EmailSender": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\EmailSender",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ForcedChannelPolicy": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ForcedChannelPolicy",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NcNotificationSender": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NcNotificationSender",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationAnnotationValidator",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationBroadcastService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationBroadcastService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationChannelPolicy": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationChannelPolicy",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationClearingService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationClearingService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationCoalescer": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationCoalescer",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationContentValidator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationContentValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationDeliveryWindowService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationDeliveryWindowService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationPreferenceService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationPreferenceService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationRecipientResolver": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRecipientResolver",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationRecipientValidator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRecipientValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationRuleContext": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRuleContext",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationSchemaFacts": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationSchemaFacts",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationTemplating": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationTemplating",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\NotificationTriggerValidator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationTriggerValidator",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\OptOutAuthority": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\OptOutAuthority",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\OutboundTransportInterface": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\OutboundTransportInterface",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\PreferenceLookup": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\PreferenceLookup",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RateLimiter": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RateLimiter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RecipientAudience": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientAudience",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RecipientDelivery": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientDelivery",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RecipientResolverInterface": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RecipientSource": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientSource",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ReplyThreadResolver": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ReplyThreadResolver",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RuleFiring": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RuleFiring",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\RuleReachRecorder": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\RuleReachRecorder",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ScheduledFilterEvaluator": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ScheduledFilterEvaluator",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ScheduledFilterGrammar": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ScheduledFilterGrammar",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ScheduledFilterParser": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ScheduledFilterParser",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ScheduledFilterPosition": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ScheduledFilterPosition",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\ScheduledMessagePolicy": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\ScheduledMessagePolicy",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\SystemEntityChange": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\SystemEntityChange",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\SystemEntityObjectAdapter": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\SystemEntityObjectAdapter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\SystemSchemaRules": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\SystemSchemaRules",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TalkSendException": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TalkSendException",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TalkSender": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TalkSender",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TaskNotificationRules": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TaskNotificationRules",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TaskObjectAdapter": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TaskObjectAdapter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TaskPoolRecipientResolver": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TaskPoolRecipientResolver",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\TokenBucket": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\TokenBucket",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\UnsubscribeHeaders": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\UnsubscribeHeaders",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Notification\\VngNotificatiesEnvelope": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\VngNotificatiesEnvelope",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Party\\PartyNotificationService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Party\\PartyNotificationService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\PresenceService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\PresenceService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\TimelineVisibilityService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\TimelineVisibilityService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\EntryMentionService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\EntryMentionService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\LanguageDetector": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\LanguageDetector",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\PublicTimeline": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\PublicTimeline",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\ReferenceService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\ReferenceService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TextBlockService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TextBlockService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelineEntrySearchService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineEntrySearchService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelineEntryService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineEntryService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelineKindService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineKindService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelinePermissionException": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelinePermissionException",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelineValidationException": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineValidationException",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Timeline\\TimelineWriteService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Timeline\\TimelineWriteService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\WebPush\\HexIconService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\WebPush\\HexIconService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\WebPush\\WebPushService": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\WebPush\\WebPushService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Webhook\\CloudEventFormatter": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Webhook\\CloudEventFormatter",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Webhook\\WebhookInterceptionCache": {
+			"class": "OCA\\OpenRegister\\Notifications\\Service\\Webhook\\WebhookInterceptionCache",
+			"eager": false,
+			"service": true
 		}
 	}
 }
