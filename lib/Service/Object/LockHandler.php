@@ -378,18 +378,16 @@ class LockHandler {
 
 		// A lock refuses every other writer, and one taken without a duration
 		// holds until it is unlocked, so taking it needs the right to update
-		// the object, not only to find it. A flow run authorizes at its own
-		// call site.
-		if ($runUuid === null) {
-			$this->permissionHandler?->checkPermission(
-				schema: $context['schema'],
-				action: 'update',
-				userId: null,
-				objectOwner: $objectBefore->getOwner(),
-				_rbac: true,
-				object: $objectBefore
-			);
-		}
+		// the object, not only to find it. A flow run is asked the same: it
+		// runs as its acting user, whom the session then names.
+		$this->permissionHandler?->checkPermission(
+			schema: $context['schema'],
+			action: 'update',
+			userId: null,
+			objectOwner: $objectBefore->getOwner(),
+			_rbac: true,
+			object: $objectBefore
+		);
 
 		// Use MagicMapper for lock operation.
 		$objectAfter = $this->magicMapper->lockObjectEntity(

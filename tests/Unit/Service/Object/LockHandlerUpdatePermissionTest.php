@@ -163,10 +163,21 @@ final class LockHandlerUpdatePermissionTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testARunLockIsNotAskedAgain(): void {
-		$this->permissions->expects($this->never())->method('checkPermission');
-		$this->magic->method('lockObjectEntity')->willReturn($this->object);
+	public function testARunWithoutUpdatePermissionCannotLock(): void {
+		$this->permissions->expects($this->once())
+			->method('checkPermission')
+			->with(
+				$this->schema,
+				'update',
+				null,
+				'owner-uid',
+				true,
+				$this->object
+			)
+			->willThrowException(new NotAuthorizedException(message: 'No update permission'));
+		$this->magic->expects($this->never())->method('lockObjectEntity');
 
+		$this->expectException(exception: NotAuthorizedException::class);
 		$this->handler()->lock(identifier: self::OBJ, runUuid: 'run-1');
-	}//end testARunLockIsNotAskedAgain()
+	}//end testARunWithoutUpdatePermissionCannotLock()
 }//end class
