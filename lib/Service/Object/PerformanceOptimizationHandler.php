@@ -68,26 +68,7 @@ class PerformanceOptimizationHandler {
 	 */
 	public function getActiveOrganisationForContext(): ?string {
 		try {
-			$activeOrganisation = $this->organisationService->getActiveOrganisation();
-			if ($activeOrganisation !== null) {
-				$uuid = $activeOrganisation->getUuid();
-				$this->logger->debug(
-					message: '[PerformanceOptimizationHandler] Got active organisation for context',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'organisationUuid' => $uuid,
-						'organisationName' => $activeOrganisation->getName(),
-					]
-				);
-				return $uuid;
-			}
-
-			$this->logger->debug(
-				message: '[PerformanceOptimizationHandler] No active organisation for current user',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
+			return $this->activeOrganisationUuid();
 		} catch (Exception $e) {
 			// Log error but continue without organization context.
 			$this->logger->warning(
@@ -95,7 +76,29 @@ class PerformanceOptimizationHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
 			return null;
-		}//end try
+		}
 	}//end getActiveOrganisationForContext()
+
+	/**
+	 * The active organisation's uuid, logged; null when there is none.
+	 *
+	 * @return string|null
+	 */
+	private function activeOrganisationUuid(): ?string {
+		$organisation = $this->organisationService->getActiveOrganisation();
+		if ($organisation === null) {
+			$this->logger->debug(
+				message: '[PerformanceOptimizationHandler] No active organisation for current user',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+		$this->logger->debug(
+			message: '[PerformanceOptimizationHandler] Got active organisation for context',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'organisationUuid' => $organisation->getUuid(), 'organisationName' => $organisation->getName()]
+		);
+		return $organisation->getUuid();
+	}//end activeOrganisationUuid()
 
 }//end class

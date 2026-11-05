@@ -91,7 +91,6 @@ class RelationHandlerTest extends TestCase {
 		$this->handler = new RelationHandler(
 			objectEntityMapper: $this->objectMapper,
 			schemaMapper: $this->schemaMapper,
-			performanceHandler: $this->performanceHandler,
 			rbacHandler: $this->rbacHandler,
 			logger: $this->logger,
 			registerMapper: $this->registerMapper
@@ -625,49 +624,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// extractRelatedData tests
 	// =========================================================================
-
-	/**
-	 * Delegates extractRelatedData to PerformanceHandler with the same arguments.
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegatesToPerformanceHandler(): void {
-		$results = ['key' => 'value'];
-		$expected = ['related' => ['uuid-1']];
-
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->with(
-				results: $results,
-				includeRelated: true,
-				includeRelatedNames: false
-			)
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData($results, true, false);
-
-		$this->assertSame($expected, $result);
-	}//end testExtractRelatedDataDelegatesToPerformanceHandler()
-
-	/**
-	 * Passes both boolean flags correctly to PerformanceHandler.
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataPassesFlagsCorrectly(): void {
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->with(
-				results: $this->anything(),
-				includeRelated: false,
-				includeRelatedNames: true
-			)
-			->willReturn([]);
-
-		$this->handler->extractRelatedData([], false, true);
-	}//end testExtractRelatedDataPassesFlagsCorrectly()
 
 	// =========================================================================
 	// getContracts tests
@@ -1301,23 +1257,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// Additional extractRelatedData tests
 	// =========================================================================
-
-	/**
-	 * extractRelatedData passes empty array to PerformanceHandler correctly.
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataWithEmptyResults(): void {
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->with(results: [], includeRelated: true, includeRelatedNames: true)
-			->willReturn([]);
-
-		$result = $this->handler->extractRelatedData([], true, true);
-
-		$this->assertSame([], $result);
-	}//end testExtractRelatedDataWithEmptyResults()
 
 	// =========================================================================
 	// Additional getUsedBy tests

@@ -80,7 +80,6 @@ class RelationHandler {
 	 *
 	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas.
-	 * @param PerformanceHandler $performanceHandler Handler for performance operations.
 	 * @param MagicRbacHandler $rbacHandler Handler for RBAC operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
@@ -92,7 +91,6 @@ class RelationHandler {
 	public function __construct(
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PerformanceHandler $performanceHandler,
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapperInterface $registerMapper,
@@ -216,34 +214,6 @@ class RelationHandler {
 
 		return $ids;
 	}//end applyInversedByFilter()
-
-	/**
-	 * Extract related data from results (delegates to PerformanceHandler).
-	 *
-	 * @param array $results The search results.
-	 * @param bool $includeRelated Whether to include related objects.
-	 * @param bool $includeRelatedNames Whether to include related names.
-	 *
-	 * @return string[][]
-	 *
-	 * @psalm-param array<string, mixed> $results
-	 *
-	 * @phpstan-param array<string, mixed> $results
-	 *
-	 * @psalm-return   array{related?: list<string>, relatedNames?: array<string, string>}
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control optional extraction features
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array {
-		return $this->performanceHandler->extractRelatedData(
-			results: $results,
-			includeRelated: $includeRelated,
-			includeRelatedNames: $includeRelatedNames
-		);
-	}//end extractRelatedData()
 
 	/**
 	 * Extract all relationship IDs from objects with circuit breaker.
