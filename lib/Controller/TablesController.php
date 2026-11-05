@@ -28,7 +28,9 @@ use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,12 +85,16 @@ class TablesController extends Controller {
 	 * @param IRequest $request Request object
 	 * @param TablesControllerServices $services The tables controller services.
 	 * @param LoggerInterface $logger Logger
+	 * @param IUserSession $userSession Current user session
+	 * @param IGroupManager $groupManager Group manager for the admin check
 	 */
 	public function __construct(
 		$appName,
 		IRequest $request,
 		TablesControllerServices $services,
 		private readonly LoggerInterface $logger,
+		private readonly IUserSession $userSession,
+		private readonly IGroupManager $groupManager,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->config = $services->config;
@@ -99,6 +105,22 @@ class TablesController extends Controller {
 			schemaMapper: $services->schemaMapper
 		);
 	}//end __construct()
+
+	/**
+	 * Whether the current user is a Nextcloud administrator.
+	 *
+	 * Table sync changes database table structure, so it is admin-only.
+	 *
+	 * @return bool True if a user is signed in and belongs to the admin group.
+	 */
+	private function isCurrentUserAdmin(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->groupManager->isAdmin($user->getUID());
+	}//end isCurrentUserAdmin()
 
 	/**
 	 * Sync magic table for a register/schema combination.
@@ -121,6 +143,10 @@ class TablesController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
 	 */
 	public function sync(int|string $registerId, int|string $schemaId): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+		}
+
 		try {
 			// Find register.
 			$register = null;
@@ -255,6 +281,10 @@ class TablesController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-8
 	 */
 	public function syncAll(): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+		}
+
 		try {
 			$registers = $this->registerMapper->findAll();
 			$results = [];
