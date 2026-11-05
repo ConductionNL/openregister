@@ -9843,9 +9843,6 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws Exception If a batched UPDATE fails for every table.
 	 *
 	 * @psalm-return list<ObjectEntity>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Hook handling requires per-entity branching
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Hook handling requires per-entity branching
 	 */
 	public function softDeleteMultipleObjectEntities(array $entities, array $oldEntities = []): array {
 		if (empty($entities) === true) {
@@ -9855,55 +9852,90 @@ class MagicMapper extends AbstractObjectMapper {
 		$groups = [];
 		$completed = [];
 		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === false) {
-				throw new Exception('softDeleteMultipleObjectEntities() expects ObjectEntity instances');
-			}
-
-			$uuid = $entity->getUuid();
-			$registerId = $entity->getRegister();
-			$schemaId = $entity->getSchema();
-			if ($uuid === null || $uuid === ''
-				|| is_numeric($registerId) === false
-				|| is_numeric($schemaId) === false
-			) {
-				$this->logger->warning(
-					message: '[MagicMapper] Skipping batched soft delete for entity without uuid/register/schema',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-				);
+			$item = $this->softDeleteItem(entity: $entity, oldEntities: $oldEntities);
+			if ($item === null) {
 				continue;
 			}
 
-			$oldEntity = ($oldEntities[$uuid] ?? clone $entity);
-
-			// Pre-save hook — parity with the single-object update path.
-			$updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
-			$this->eventDispatcher->dispatchTyped($updatingEvent);
-			if ($updatingEvent->isPropagationStopped() === true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Batched soft delete skipped by hook',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
-				);
-				continue;
-			}
-
-			$modifiedData = $updatingEvent->getModifiedData();
-			if (empty($modifiedData) === false) {
+			if (empty($item['modified']) === false) {
 				// Hook modified the payload — persist via the full-row save so
 				// the modification is not lost by the marker-only batched UPDATE.
-				$entity->setObject(array_merge(($entity->getObject() ?? []), $modifiedData));
+				$entity->setObject(array_merge(($entity->getObject() ?? []), $item['modified']));
 				if ($this->softDeleteSingleFullRow(entity: $entity) === true) {
-					$completed[] = ['entity' => $entity, 'old' => $oldEntity];
+					$completed[] = ['entity' => $entity, 'old' => $item['old']];
 				}
 
 				continue;
 			}
 
-			$groupKey = ((int)$registerId) . '_' . ((int)$schemaId);
-			$groups[$groupKey]['registerId'] = (int)$registerId;
-			$groups[$groupKey]['schemaId'] = (int)$schemaId;
-			$groups[$groupKey]['items'][] = ['entity' => $entity, 'old' => $oldEntity];
+			$registerId = (int)$entity->getRegister();
+			$schemaId = (int)$entity->getSchema();
+			$groupKey = $registerId . '_' . $schemaId;
+			$groups[$groupKey]['registerId'] = $registerId;
+			$groups[$groupKey]['schemaId'] = $schemaId;
+			$groups[$groupKey]['items'][] = ['entity' => $entity, 'old' => $item['old']];
 		}//end foreach
 
+		$completed = array_merge($completed, $this->executeSoftDeleteGroups(groups: $groups));
+
+		return $this->announceSoftDeleted(completed: $completed);
+	}//end softDeleteMultipleObjectEntities()
+
+	/**
+	 * Prepare one entity of a batched soft delete and run its pre-save hook.
+	 *
+	 * @param mixed                       $entity      The entity to soft-delete.
+	 * @param array<string, ObjectEntity> $oldEntities Pre-delete snapshots keyed by uuid.
+	 *
+	 * @return array{old: ObjectEntity, modified: array}|null The snapshot and the hook's
+	 *     modified data, or null when the entity is skipped.
+	 *
+	 * @throws Exception When the entity is not an ObjectEntity.
+	 */
+	private function softDeleteItem(mixed $entity, array $oldEntities): ?array {
+		if ($entity instanceof ObjectEntity === false) {
+			throw new Exception('softDeleteMultipleObjectEntities() expects ObjectEntity instances');
+		}
+
+		$uuid = $entity->getUuid();
+		if ($uuid === null || $uuid === ''
+			|| is_numeric($entity->getRegister()) === false
+			|| is_numeric($entity->getSchema()) === false
+		) {
+			$this->logger->warning(
+				message: '[MagicMapper] Skipping batched soft delete for entity without uuid/register/schema',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
+			return null;
+		}
+
+		$oldEntity = ($oldEntities[$uuid] ?? clone $entity);
+
+		// Pre-save hook — parity with the single-object update path.
+		$updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
+		$this->eventDispatcher->dispatchTyped($updatingEvent);
+		if ($updatingEvent->isPropagationStopped() === true) {
+			$this->logger->debug(
+				message: '[MagicMapper] Batched soft delete skipped by hook',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+			);
+			return null;
+		}
+
+		return ['old' => $oldEntity, 'modified' => $updatingEvent->getModifiedData()];
+	}//end softDeleteItem()
+
+	/**
+	 * Run one batched soft-delete UPDATE per magic table.
+	 *
+	 * A table whose UPDATE fails is logged; its items are not completed.
+	 *
+	 * @param array<string, array{registerId: int, schemaId: int, items: array}> $groups Items per table.
+	 *
+	 * @return array The completed ['entity', 'old'] items, in table order.
+	 */
+	private function executeSoftDeleteGroups(array $groups): array {
+		$completed = [];
 		foreach ($groups as $group) {
 			try {
 				$this->executeBatchSoftDeleteUpdate(
@@ -9927,6 +9959,19 @@ class MagicMapper extends AbstractObjectMapper {
 			}//end try
 		}//end foreach
 
+		return $completed;
+	}//end executeSoftDeleteGroups()
+
+	/**
+	 * Dispatch the updated event for every soft-deleted entity, unless lifecycle events are withheld.
+	 *
+	 * @param array $completed The completed ['entity', 'old'] items.
+	 *
+	 * @return ObjectEntity[] The soft-deleted entities.
+	 *
+	 * @psalm-return list<ObjectEntity>
+	 */
+	private function announceSoftDeleted(array $completed): array {
 		$result = [];
 		$suppress = $this->suppressLifecycleEvents();
 		foreach ($completed as $item) {
@@ -9938,7 +9983,7 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		return $result;
-	}//end softDeleteMultipleObjectEntities()
+	}//end announceSoftDeleted()
 
 	/**
 	 * Persist one hook-modified entity via the full-row save path (soft delete).
