@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RegistersController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
@@ -45,6 +46,12 @@ use Psr\Log\LoggerInterface;
  * not make a request authenticated. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\RegistersController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Controller\Support\RegistersControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterMappers
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterServices
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterIntegrations
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTransfer
  * @uses \OCA\OpenRegister\Service\Serializer\RegisterSerializer
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -131,7 +138,7 @@ class RegistersControllerIndexGoldenTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn($case['admin'] ?? true);
 
 		$logger = $this->createMock(LoggerInterface::class);
-		$controller = new RegistersController(
+		$controller = RegistersControllerFactory::create(
 			'openregister',
 			$request,
 			$this->registerService(),

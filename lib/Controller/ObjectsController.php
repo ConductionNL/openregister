@@ -243,8 +243,6 @@ class ObjectsController extends Controller {
 	 * @param ObjectsControllerServices $services The objects controller services.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		string $appName,
