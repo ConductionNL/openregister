@@ -1049,6 +1049,10 @@ class SchemaService implements SchemaExplorationInterface {
 		$issues = [];
 		$suggestions = [];
 		$currentType = $currentConfig['type'] ?? null;
+		$typeLabel = $currentType;
+		if (is_array($currentType) === true) {
+			$typeLabel = implode(', ', $currentType);
+		}
 
 		// Check if type is missing.
 		if ($currentType === null) {
@@ -1059,15 +1063,17 @@ class SchemaService implements SchemaExplorationInterface {
 				'recommended' => $recommendedType,
 				'description' => "Consider adding type '{$recommendedType}' based on analysis",
 			];
-		} elseif ($currentType !== $recommendedType) {
-			// Types don't match.
-			$issues[] = "Type mismatch: current type is '{$currentType}', recommended type is '{$recommendedType}'";
+		} elseif ($currentType !== $recommendedType
+			&& (is_array($currentType) === false || in_array($recommendedType, $currentType, true) === false)
+		) {
+			// Types don't match; a union type matches when it lists the recommended type.
+			$issues[] = "Type mismatch: current type is '{$typeLabel}', recommended type is '{$recommendedType}'";
 			$suggestions[] = [
 				'type' => 'type',
 				'field' => 'type',
 				'current' => $currentType,
 				'recommended' => $recommendedType,
-				'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$currentType}'",
+				'description' => "Analysis suggests type '{$recommendedType}' but schema defines '{$typeLabel}'",
 			];
 		}
 
@@ -1241,13 +1247,13 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * A missing or too high minimum, compared with the observed range.
 	 *
-	 * @param mixed $currentMin The schema's minimum; false marks it as unset.
+	 * @param mixed $currentMin The schema's minimum; null or false marks it as unset.
 	 * @param array $range      The observed range, with min and max.
 	 *
 	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
 	 */
 	private function minimumFinding(mixed $currentMin, array $range): ?array {
-		if ($currentMin === false && $range['min'] !== $range['max']) {
+		if (($currentMin === null || $currentMin === false) && $range['min'] !== $range['max']) {
 			return [
 				'missing_minimum',
 				[
@@ -1260,7 +1266,7 @@ class SchemaService implements SchemaExplorationInterface {
 			];
 		}
 
-		if (($currentMin > $range['min']) === false) {
+		if ($currentMin === null || $currentMin === false || ($currentMin > $range['min']) === false) {
 			return null;
 		}
 
@@ -1279,13 +1285,13 @@ class SchemaService implements SchemaExplorationInterface {
 	/**
 	 * A missing or too low maximum, compared with the observed range.
 	 *
-	 * @param mixed $currentMax The schema's maximum; false marks it as unset.
+	 * @param mixed $currentMax The schema's maximum; null or false marks it as unset.
 	 * @param array $range      The observed range, with min and max.
 	 *
 	 * @return array{0: string, 1: array}|null The issue and suggestion, or null.
 	 */
 	private function maximumFinding(mixed $currentMax, array $range): ?array {
-		if ($currentMax === false && $range['min'] !== $range['max']) {
+		if (($currentMax === null || $currentMax === false) && $range['min'] !== $range['max']) {
 			return [
 				'missing_maximum',
 				[
@@ -1298,7 +1304,7 @@ class SchemaService implements SchemaExplorationInterface {
 			];
 		}
 
-		if (($currentMax < $range['max']) === false) {
+		if ($currentMax === null || $currentMax === false || ($currentMax < $range['max']) === false) {
 			return null;
 		}
 

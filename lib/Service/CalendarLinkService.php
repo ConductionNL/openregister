@@ -500,75 +500,54 @@ class CalendarLinkService {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array {
-		$scan = $this->pickerScan(calendarUri: $calendarUri, after: $after);
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new Exception('No user logged in');
+		}
+
+		$principal = 'principals/users/' . $user->getUID();
+		$calendars = $this->calDavBackend->getCalendarsForUser($principal);
+		$calendarId = $this->resolveCalendarIdForUri(calendars: $calendars, calendarUri: $calendarUri);
+
+		if ($calendarId === null) {
+			throw new Exception('Calendar ' . $calendarUri . ' not found for user');
+		}
+
+		$scan = new CalendarPickerScan(calendarId: $calendarId, calendarUri: $calendarUri);
+		$scan->cutoff = $after?->getTimestamp();
 		$results = [];
-		foreach ($this->calDavBackend->getCalendarObjects($scan->calendarId) as $object) {
+
+		foreach ($this->calDavBackend->getCalendarObjects($calendarId) as $object) {
 			$row = $this->parseCalendarObjectForPicker(scan: $scan, object: $object);
 			if ($row !== null) {
 				$results[] = $row;
 			}
-		}
+		}//end foreach
 
-		usort($results, self::compareByStart(...));
+		// Sort ascending by dtstart, nulls last.
+		usort(
+			$results,
+			static function (array $a, array $b): int {
+				$timeA = PHP_INT_MAX;
+				if ($a['dtstart'] !== null) {
+					$timeA = strtotime((string)$a['dtstart']);
+				}
+
+				$timeB = PHP_INT_MAX;
+				if ($b['dtstart'] !== null) {
+					$timeB = strtotime((string)$b['dtstart']);
+				}
+
+				return $timeA <=> $timeB;
+			}
+		);
+
 		if ($limit !== null && $limit > 0) {
 			$results = array_slice($results, 0, $limit);
 		}
 
 		return $results;
 	}//end getEventsForCalendar()
-
-	/**
-	 * The current user's VEVENT calendar with the given URI, as a picker scan.
-	 *
-	 * @param string                 $calendarUri Calendar URI.
-	 * @param DateTimeInterface|null $after       Only events starting at or after this time.
-	 *
-	 * @return CalendarScan The scan.
-	 *
-	 * @throws Exception When no user is logged in or the calendar is unknown.
-	 */
-	private function pickerScan(string $calendarUri, ?DateTimeInterface $after): CalendarScan {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			throw new Exception('No user logged in');
-		}
-
-		$calendars = $this->calDavBackend->getCalendarsForUser('principals/users/' . $user->getUID());
-		$calendarId = $this->resolveCalendarIdForUri(calendars: $calendars, calendarUri: $calendarUri);
-		if ($calendarId === null) {
-			throw new Exception('Calendar ' . $calendarUri . ' not found for user');
-		}
-
-		return (new CalendarScan(calendarId: $calendarId, calendarUri: $calendarUri))
-			->startingFrom(cutoff: $after?->getTimestamp());
-	}//end pickerScan()
-
-	/**
-	 * Order picker rows by start, rows without a start last.
-	 *
-	 * @param array<string,mixed> $left  A picker row.
-	 * @param array<string,mixed> $right A picker row.
-	 *
-	 * @return int The comparison.
-	 */
-	private static function compareByStart(array $left, array $right): int {
-		return self::startTimeOf(row: $left) <=> self::startTimeOf(row: $right);
-	}//end compareByStart()
-
-	/**
-	 * The start of a picker row as a Unix timestamp; PHP_INT_MAX when it has none.
-	 *
-	 * @param array<string,mixed> $row A picker row.
-	 *
-	 * @return int|false The timestamp, false when the start cannot be parsed.
-	 */
-	private static function startTimeOf(array $row): int|false {
-		if ($row['dtstart'] === null) {
-			return PHP_INT_MAX;
-		}
-
-		return strtotime((string)$row['dtstart']);
-	}//end startTimeOf()
 
 	/**
 	 * Find the numeric calendarId for a named URI in a list of CalDAV calendar rows.
@@ -598,79 +577,28 @@ class CalendarLinkService {
 	 * Returns null when the object is not a parseable VEVENT, has no UID,
 	 * or falls before the cutoff timestamp.
 	 *
-	 * @param CalendarScan        $scan   The calendar and cutoff.
+	 * @param CalendarPickerScan  $scan   The calendar being listed and the cutoff.
 	 * @param array<string,mixed> $object Lightweight object row from getCalendarObjects().
 	 *
 	 * @return array<string,mixed>|null Picker row, or null to skip this object.
 	 */
-	private function parseCalendarObjectForPicker(CalendarScan $scan, array $object): ?array {
+	private function parseCalendarObjectForPicker(CalendarPickerScan $scan, array $object): ?array {
 		$calendarData = $this->objectCalendarData(calendarId: $scan->calendarId, objectUri: $object['uri']);
 		if ($calendarData === null || strpos($calendarData, 'VEVENT') === false) {
 			return null;
 		}
 
 		try {
-			$fields = $this->buildPickerRowFromIcal(calendarData: $calendarData, scan: $scan);
+			return $scan->pickerRow(vevent: Reader::read($calendarData)->VEVENT, objectUri: (string)$object['uri']);
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to parse calendar event for picker: ' . $e->getMessage(), ['uri' => $object['uri']]);
-			return null;
-		}
+			$this->logger->warning(
+				'Failed to parse calendar event for picker: ' . $e->getMessage(),
+				['uri' => $object['uri']]
+			);
+		}//end try
 
-		if ($fields === null) {
-			return null;
-		}
-
-		return ['uid' => $fields['uid'], 'uri' => (string)$object['uri']] + $fields
-			+ ['calendarId' => $scan->calendarId, 'calendarUri' => $scan->calendarUri];
+		return null;
 	}//end parseCalendarObjectForPicker()
-
-	/**
-	 * The iCal data of a CalDAV object; null when the object is missing or empty.
-	 *
-	 * @param int   $calendarId Numeric calendar id.
-	 * @param mixed $objectUri  Object URI as the CalDAV store lists it.
-	 *
-	 * @return string|null The iCal data.
-	 */
-	private function objectCalendarData(int $calendarId, mixed $objectUri): ?string {
-		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $objectUri);
-		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
-			return null;
-		}
-
-		return $fullObject['calendardata'];
-	}//end objectCalendarData()
-
-	/**
-	 * Build the event fields of a picker row from raw iCal data.
-	 *
-	 * Returns null when the iCal has no VEVENT, no UID, or the event
-	 * starts before the scan's cutoff.
-	 *
-	 * @param string       $calendarData Raw iCal data.
-	 * @param CalendarScan $scan         The calendar and cutoff.
-	 *
-	 * @return array{uid:string,summary:string,dtstart:?string,dtend:?string,location:?string}|null The fields, or null to skip.
-	 */
-	private function buildPickerRowFromIcal(string $calendarData, CalendarScan $scan): ?array {
-		$vevent = Reader::read($calendarData)->VEVENT;
-		if ($vevent === null || isset($vevent->UID) === false) {
-			return null;
-		}
-
-		$start = $this->veventDateTime(vevent: $vevent, name: 'DTSTART');
-		if ($scan->admits(start: $start) === false) {
-			return null;
-		}
-
-		return [
-			'uid' => (string)$vevent->UID,
-			'summary' => (string)($vevent->SUMMARY ?? ''),
-			'dtstart' => $start?->format('c'),
-			'dtend' => $this->veventDateTime(vevent: $vevent, name: 'DTEND')?->format('c'),
-			'location' => $this->veventText(vevent: $vevent, name: 'LOCATION'),
-		];
-	}//end buildPickerRowFromIcal()
 
 	/**
 	 * Locate a VEVENT on a named calendar and pull cacheable fields.
@@ -701,7 +629,6 @@ class CalendarLinkService {
 
 		return null;
 	}//end locateEventOnCalendar()
-
 	/**
 	 * The id of the user's calendar with the given URI, of any component type.
 	 *
@@ -719,7 +646,6 @@ class CalendarLinkService {
 
 		return null;
 	}//end calendarIdByUri()
-
 	/**
 	 * Parse iCal data and return the cacheable event fields when the UID matches.
 	 *
@@ -750,7 +676,22 @@ class CalendarLinkService {
 
 		return null;
 	}//end parseVeventObjectForLocate()
+	/**
+	 * The iCal data of a CalDAV object; null when the object is missing or empty.
+	 *
+	 * @param int   $calendarId Numeric calendar id.
+	 * @param mixed $objectUri  Object URI as the CalDAV store lists it.
+	 *
+	 * @return string|null The iCal data.
+	 */
+	private function objectCalendarData(int $calendarId, mixed $objectUri): ?string {
+		$fullObject = $this->calDavBackend->getCalendarObject($calendarId, $objectUri);
+		if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+			return null;
+		}
 
+		return $fullObject['calendardata'];
+	}//end objectCalendarData()
 	/**
 	 * A date-time property of a VEVENT; null when the event does not have it.
 	 *
@@ -766,7 +707,6 @@ class CalendarLinkService {
 
 		return DateTime::createFromInterface($vevent->{$name}->getDateTime());
 	}//end veventDateTime()
-
 	/**
 	 * A text property of a VEVENT; null when the event does not have it.
 	 *

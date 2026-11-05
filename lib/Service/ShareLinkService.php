@@ -49,7 +49,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use DateTimeInterface;
 use Exception;
 use OCP\Files\Folder;
@@ -208,92 +207,45 @@ class ShareLinkService {
 	 * the prototype, which is then populated and handed to
 	 * `IManager::createShare()`.
 	 *
-	 * @param string $objectUuid Owning object uuid.
-	 * @param int $registerId OR register id (reserved — folder is per-object).
-	 * @param int $schemaId OR schema id (reserved).
-	 * @param int $fileId Target file node id (must be in the object's folder).
-	 * @param int $shareType IShare::TYPE_* (user/group/link/email).
-	 * @param string|null $shareWith Recipient uid/gid/email; null for public link.
-	 * @param int $permissions Permission bitmask.
-	 * @param string|null $password Optional password (public/email shares).
-	 * @param string|null $expiration Optional ISO-8601 expiration date.
+	 * @param string     $objectUuid Owning object uuid.
+	 * @param ShareDraft $draft      File (must be in the object's folder), share type, recipient,
+	 *                               permissions and optional password and expiration.
 	 *
 	 * @return IShare The created share.
 	 *
 	 * @throws Exception On missing user (401), file-not-in-folder (404),
 	 *                   invalid recipient (400) or share-manager failure.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) createShare() maps directly to
-	 * IManager::createShare()'s required fields (node, shareType, sharedBy, permissions, shareWith,
-	 * password, expiration); bundling into a value-object would add an intermediate type not used elsewhere.
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   createShare() guards share type validity, shareWith
-	 * requirement per type, password/expiration optional fields, and ownership boundary
-	 * (node-in-folder check); each branch enforces a distinct access-control requirement.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)        Optional password + optional expiration + three share-type
-	 * branches that require shareWith produce many independent paths; all enforce the
-	 * IManager::createShare contract.
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)  $registerId and $schemaId are reserved for future
-	 * folder-scoping; removing them now would break the method signature used by the controller
-	 * and SharesProvider.
-	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-share contract is owned by the
 	 *              integration-shares / generic-integrations capability.
 	 */
-	public function createShare(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		int $fileId,
-		int $shareType,
-		?string $shareWith,
-		int $permissions,
-		?string $password = null,
-		?string $expiration = null,
-	): IShare {
+	public function createShare(string $objectUuid, ShareDraft $draft): IShare {
 		$shareManager = $this->getShareManager();
 		$userId = $this->resolveCurrentUserId();
 		if ($userId === null) {
 			throw new Exception('No user logged in', 401);
 		}
 
-		$node = $this->resolveNodeInFolder(objectUuid: $objectUuid, fileId: $fileId);
+		$node = $this->resolveNodeInFolder(objectUuid: $objectUuid, fileId: $draft->fileId);
 		if ($node === null) {
 			throw new Exception('File does not belong to this object', 404);
 		}
 
-		if (in_array($shareType, self::SHARE_TYPES, true) === false) {
+		if (in_array($draft->shareType, self::SHARE_TYPES, true) === false) {
 			throw new Exception('Unsupported share type', 400);
 		}
 
-		if (($shareType === IShare::TYPE_USER
-			|| $shareType === IShare::TYPE_GROUP
-			|| $shareType === IShare::TYPE_EMAIL)
-			&& ($shareWith === null || trim($shareWith) === '')
-		) {
+		if ($draft->lacksRecipient() === true) {
 			throw new Exception('shareWith is required for this share type', 400);
 		}
 
 		$share = $shareManager->newShare();
 		$share->setNode($node);
-		$share->setShareType($shareType);
+		$share->setShareType($draft->shareType);
 		$share->setSharedBy($userId);
-		$share->setPermissions($permissions);
+		$share->setPermissions($draft->permissions());
 
-		if ($shareWith !== null && trim($shareWith) !== '') {
-			$share->setSharedWith(trim($shareWith));
-		}
-
-		if ($password !== null && trim($password) !== '') {
-			$share->setPassword($password);
-		}
-
-		if ($expiration !== null && trim($expiration) !== '') {
-			try {
-				$share->setExpirationDate(new DateTime($expiration));
-			} catch (Throwable $e) {
-				throw new Exception('Invalid expiration date', 400);
-			}
-		}
+		$this->applyOptionalFields(share: $share, draft: $draft);
 
 		try {
 			return $shareManager->createShare($share);
@@ -305,6 +257,31 @@ class ShareLinkService {
 			throw new Exception($e->getMessage(), 400);
 		}
 	}//end createShare()
+
+	/**
+	 * Set the draft's recipient, password and expiration date on the share, each only when given.
+	 *
+	 * @param IShare     $share The share being built.
+	 * @param ShareDraft $draft The draft.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the expiration date cannot be parsed (400).
+	 */
+	private function applyOptionalFields(IShare $share, ShareDraft $draft): void {
+		if ($draft->recipient() !== null) {
+			$share->setSharedWith($draft->recipient());
+		}
+
+		if ($draft->password() !== null) {
+			$share->setPassword($draft->password());
+		}
+
+		$expiresAt = $draft->expiresAt();
+		if ($expiresAt !== null) {
+			$share->setExpirationDate($expiresAt);
+		}
+	}//end applyOptionalFields()
 
 	/**
 	 * Revoke a share by id, ownership-checked.

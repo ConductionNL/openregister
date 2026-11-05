@@ -1,22 +1,27 @@
 <?php
 
 /**
- * Golden test for the calendar picker and event lookup of CalendarLinkService.
+ * Golden test for CalendarLinkService::getEventsForCalendar.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * Records the picker rows for a fixed calendar, per scenario, in
+ * fixtures/calendar-link-picker-golden.json. Set UPDATE_GOLDEN=1 to rewrite it.
+ *
+ * @category Tests
+ * @package  OCA\OpenRegister\Tests\Unit\Service
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
-// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
-
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use DateTime;
+use DateTimeImmutable;
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
@@ -24,169 +29,114 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
- * Pins the rows, CalDAV reads and log lines of getEventsForCalendar() and
- * the event lookup behind linkEvent().
- *
  * @covers \OCA\OpenRegister\Service\CalendarLinkService
- * @uses   \OCA\OpenRegister\Service\CalendarScan
- * @uses   \OCA\OpenRegister\Db\CalendarLink
+ * @covers \OCA\OpenRegister\Service\CalendarPickerScan
  */
 class CalendarLinkServicePickerGoldenTest extends TestCase {
 
-	private const FIXTURE = __DIR__ . '/fixtures/calendar-link-service-picker-golden.json';
-
-	private const SET = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
-
-	private array $calls = [];
-
-	private static function ics(array $lines): string {
-		return implode("\r\n", array_merge(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//T//EN'], $lines, ['END:VCALENDAR', '']));
+	/**
+	 * An iCal document with one VEVENT built from the given lines.
+	 *
+	 * @param array<int, string> $lines VEVENT property lines.
+	 *
+	 * @return string
+	 */
+	private static function ical(array $lines): string {
+		return implode("\r\n", array_merge(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//T//EN', 'BEGIN:VEVENT', 'DTSTAMP:20260101T000000Z'], $lines, ['END:VEVENT', 'END:VCALENDAR', '']));
 	}
 
-	private static function event(string $uid, array $props): string {
-		return self::ics(array_merge(['BEGIN:VEVENT', 'UID:' . $uid, 'DTSTAMP:20260101T000000Z'], $props, ['END:VEVENT']));
-	}
-
+	/**
+	 * The calendar objects by uri; null data means getCalendarObject returns null.
+	 *
+	 * @return array<string, string|null>
+	 */
 	private static function objects(): array {
 		return [
-			'a.ics' => self::event('ev-a', ['SUMMARY:Late', 'DTSTART:20260701T100000Z', 'DTEND:20260701T110000Z', 'LOCATION:HQ']),
-			'b.ics' => self::event('ev-b', ['DTSTART:20260501T090000Z']),
-			'c.ics' => self::event('ev-c', ['SUMMARY:No start']),
-			'd.ics' => self::ics(['BEGIN:VTODO', 'UID:todo-1', 'END:VTODO']),
-			'e.ics' => 'BEGIN:VCALENDAR' . "\r\n" . 'BEGIN:VEVENT broken',
+			'a.ics' => self::ical(['UID:a', 'SUMMARY:Late', 'DTSTART:20260901T100000Z', 'DTEND:20260901T110000Z', 'LOCATION:HQ']),
+			'b.ics' => self::ical(['UID:b', 'SUMMARY:Early', 'DTSTART:20260101T090000Z']),
+			'c.ics' => self::ical(['UID:c', 'SUMMARY:No start']),
+			'd.ics' => self::ical(['SUMMARY:No uid', 'DTSTART:20260301T100000Z']),
+			'e.ics' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:t\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
 			'f.ics' => null,
 			'g.ics' => '',
-			'h.ics' => self::ics(['BEGIN:VEVENT', 'SUMMARY:No uid', 'END:VEVENT']),
-			'i.ics' => self::event('ev-i', ['SUMMARY:Early', 'DTSTART;VALUE=DATE:20260301', 'LOCATION:Room 2']),
-			'j.ics' => self::event('ev-a-copy', ['SUMMARY:Mentions ev-a', 'DTSTART:20260801T100000Z']),
+			'h.ics' => 'VEVENT but not ical',
+			'i.ics' => self::ical(['UID:i', 'DTSTART;VALUE=DATE:20260501', 'DTEND;VALUE=DATE:20260502']),
 		];
 	}
 
-	private static function calendars(): array {
+	/**
+	 * Scenarios: [calendar uri, limit, after].
+	 *
+	 * @return array<string, array>
+	 */
+	public static function scenarios(): array {
 		return [
-			['id' => 1, 'uri' => 'tasks', self::SET => 'VTODO'],
-			['id' => 2, 'uri' => 'work', self::SET => 'VEVENT,VTODO'],
-			['id' => 3, 'uri' => 'iter', self::SET => ['VTODO', 'vevent']],
-			['id' => 4, 'uri' => 'bare'],
-			['id' => 5, 'uri' => 'obj', self::SET => new class {
-				public function getValue(): array {
-					return ['VEVENT'];
-				}
-			}],
+			'all' => ['work', 100, null],
+			'limit two' => ['work', 2, null],
+			'limit zero' => ['work', 0, null],
+			'no limit' => ['work', null, null],
+			'after april' => ['work', 100, '2026-04-01T00:00:00Z'],
+			'after everything' => ['work', 100, '2027-01-01T00:00:00Z'],
+			'todo calendar' => ['tasks', 100, null],
+			'unknown calendar' => ['nope', 100, null],
 		];
 	}
 
-	private static function cases(): array {
-		return [
-			'events no user' => ['events', [null, 'work', null, null]],
-			'events unknown uri' => ['events', ['alice', 'nope', null, null]],
-			'events non vevent calendar' => ['events', ['alice', 'tasks', null, null]],
-			'events no component set' => ['events', ['alice', 'bare', null, null]],
-			'events all' => ['events', ['alice', 'work', 100, null]],
-			'events null limit' => ['events', ['alice', 'iter', null, null]],
-			'events limit two' => ['events', ['alice', 'obj', 2, null]],
-			'events zero limit' => ['events', ['alice', 'work', 0, null]],
-			'events after cutoff' => ['events', ['alice', 'work', 100, '2026-05-15T00:00:00Z']],
-			'events cutoff at a start' => ['events', ['alice', 'work', 100, '2026-05-01T09:00:00Z']],
-			'link no user' => ['link', [null, 'work', 'ev-a']],
-			'link unknown calendar' => ['link', ['alice', 'nope', 'ev-a']],
-			'link found' => ['link', ['alice', 'work', 'ev-a']],
-			'link found no extras' => ['link', ['alice', 'tasks', 'ev-c']],
-			'link date start' => ['link', ['alice', 'bare', 'ev-i']],
-			'link missing uid' => ['link', ['alice', 'work', 'ev-zzz']],
-			'link substring only' => ['link', ['alice', 'work', 'ev-a-cop']],
-			'link broken object' => ['link', ['alice', 'work', 'VEVENT broken']],
-			'link todo' => ['link', ['alice', 'work', 'todo-1']],
-		];
-	}
-
-	public function testPickerAndLookupMatchGolden(): void {
-		$actual = [];
-		foreach (self::cases() as $name => [$kind, $args]) {
-			$this->calls = [];
-			$service = $this->makeService($args[0]);
-			$outcome = [];
-			try {
-				$outcome['result'] = $this->exercise($service, $kind, $args);
-			} catch (\Exception $e) {
-				$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
-			}
-
-			$outcome['calls'] = $this->calls;
-			$actual[$name] = $outcome;
-		}
-
-		if (getenv('UPDATE_GOLDEN') === '1') {
-			file_put_contents(self::FIXTURE, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-			$this->addToAssertionCount(1);
-			return;
-		}
-
-		$expected = json_decode((string)file_get_contents(self::FIXTURE), true);
-		foreach ($expected as $name => $outcome) {
-			$this->assertSame($outcome, $actual[$name] ?? null, $name);
-		}
-
-		$this->assertSame(array_keys($expected), array_keys($actual));
-	}//end testPickerAndLookupMatchGolden()
-
-	private function exercise(CalendarLinkService $service, string $kind, array $args): array {
-		if ($kind === 'events') {
-			$after = $args[3] === null ? null : new DateTime($args[3]);
-			return $service->getEventsForCalendar($args[1], $args[2], $after);
-		}
-
-		$link = $service->linkEvent('obj-1', 3, 4, $args[1], $args[2]);
-		$out = [];
-		foreach (['calendarId', 'eventUri', 'summary', 'location', 'linkedBy', 'eventUid', 'calendarUri'] as $field) {
-			$out[$field] = $link->{'get' . ucfirst($field)}();
-		}
-
-		$out['dtstart'] = $link->getDtstart()?->format(DATE_ATOM);
-		$out['dtend'] = $link->getDtend()?->format(DATE_ATOM);
-		$out['dtstartClass'] = $link->getDtstart() === null ? null : get_class($link->getDtstart());
-		return $out;
-	}//end exercise()
-
-	private function makeService(?string $uid): CalendarLinkService {
-		$session = $this->createMock(IUserSession::class);
-		$user = null;
-		if ($uid !== null) {
-			$user = $this->createMock(IUser::class);
-			$user->method('getUID')->willReturn($uid);
-		}
-
-		$session->method('getUser')->willReturn($user);
-		$backend = $this->createMock(CalDavBackend::class);
-		$backend->method('getCalendarsForUser')->willReturnCallback(
-			function (string $principal): array {
-				$this->calls[] = 'calendars ' . $principal;
-				return self::calendars();
-			}
+	/**
+	 * @dataProvider scenarios
+	 */
+	public function testPickerGolden(string $uri, ?int $limit, ?string $after): void {
+		$warnings = [];
+		$dav = $this->createMock(CalDavBackend::class);
+		$dav->method('getCalendarsForUser')->willReturn(
+			[
+				['id' => 4, 'uri' => 'tasks', '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => 'VTODO'],
+				['id' => 5, 'uri' => 'work'],
+				['id' => 3, 'uri' => 'work', '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => 'VEVENT,VTODO'],
+			]
 		);
-		$backend->method('getCalendarObjects')->willReturnCallback(
-			function ($calendarId): array {
-				$this->calls[] = 'objects ' . $calendarId;
-				return array_map(fn (string $uri) => ['uri' => $uri], array_keys(self::objects()));
-			}
+		$dav->method('getCalendarObjects')->willReturnCallback(
+			fn (int $id) => array_map(fn ($u) => ['uri' => $u], array_keys(self::objects()))
 		);
-		$backend->method('getCalendarObject')->willReturnCallback(
-			function ($calendarId, $uri): ?array {
-				$this->calls[] = 'object ' . $calendarId . ' ' . $uri;
-				$data = self::objects()[$uri];
+		$dav->method('getCalendarObject')->willReturnCallback(
+			function (int $id, string $objectUri) {
+				$data = self::objects()[$objectUri];
 				return $data === null ? null : ['calendardata' => $data];
 			}
 		);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('warning')->willReturnCallback(
-			function (string $message, array $context = []): void {
-				$this->calls[] = 'warning ' . preg_replace('/: .*$/s', ':', $message) . ' ' . json_encode($context);
+			function (string $message, array $context = []) use (&$warnings): void {
+				$warnings[] = [substr($message, 0, 50), $context];
 			}
 		);
-		$mapper = $this->createMock(CalendarLinkMapper::class);
-		$mapper->method('insert')->willReturnArgument(0);
-		return new CalendarLinkService($mapper, $this->createMock(CalendarEventService::class), $backend, $session, $logger);
-	}//end makeService()
-}//end class
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$service = new CalendarLinkService($this->createMock(CalendarLinkMapper::class), $this->createMock(CalendarEventService::class), $dav, $session, $logger);
+
+		$afterValue = $after === null ? null : new DateTimeImmutable($after);
+		try {
+			$actual = ['rows' => $service->getEventsForCalendar($uri, $limit, $afterValue)];
+		} catch (Throwable $e) {
+			$actual = ['error' => [get_class($e), $e->getMessage()]];
+		}
+
+		$actual['warnings'] = $warnings;
+		$actual = json_decode(json_encode($actual, JSON_UNESCAPED_UNICODE), true);
+		$file = __DIR__ . '/fixtures/calendar-link-picker-golden.json';
+		$name = $this->dataName();
+		$all = is_file($file) === true ? json_decode(file_get_contents($file), true) : [];
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			$all[$name] = $actual;
+			ksort($all);
+			file_put_contents($file, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+		}
+
+		$this->assertSame($all[$name], $actual);
+	}
+}

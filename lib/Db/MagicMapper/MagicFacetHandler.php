@@ -76,6 +76,41 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler {
+
+	/**
+	 * Reserved query parameters that are never object field filters.
+	 *
+	 * @var array<int, string>
+	 */
+	private const RESERVED_FILTER_PARAMS = [
+		'_limit',
+		'_offset',
+		'_page',
+		'_order',
+		'_sort',
+		'_search',
+		'_extend',
+		'_fields',
+		'_filter',
+		'_unset',
+		'_facets',
+		'_facetable',
+		'_aggregations',
+		'_debug',
+		'_source',
+		'_rbac',
+		'_multitenancy',
+		'_validation',
+		'_events',
+		'_register',
+		'_schema',
+		'_schemas',
+		'_includeDeleted',
+		'_deleted',
+		'_empty',
+		'@self',
+	];
+
 	/**
 	 * Maximum number of buckets to return per facet.
 	 * Set to high value to effectively disable limit (was 50).
@@ -2011,53 +2046,13 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// List of reserved query parameters that should not be used as filters.
-		$reservedParams = [
-			'_limit',
-			'_offset',
-			'_page',
-			'_order',
-			'_sort',
-			'_search',
-			'_extend',
-			'_fields',
-			'_filter',
-			'_unset',
-			'_facets',
-			'_facetable',
-			'_aggregations',
-			'_debug',
-			'_source',
-			'_rbac',
-			'_multitenancy',
-			'_validation',
-			'_events',
-			'_register',
-			'_schema',
-			'_schemas',
-			'_includeDeleted',
-			'_deleted',
-			'_empty',
-			'@self',
-		];
-
 		// Get schema properties for type checking.
 		$properties = [];
 		if ($schema !== null) {
 			$properties = ($schema->getProperties() ?? []);
 		}
 
-		foreach ($baseQuery as $key => $value) {
-			// Skip reserved parameters.
-			if (in_array($key, $reservedParams, true) === true) {
-				continue;
-			}
-
-			// Skip system parameters starting with underscore.
-			if (str_starts_with($key, '_') === true) {
-				continue;
-			}
-
+		foreach ($this->objectFieldFilterTerms(baseQuery: $baseQuery) as $key => $value) {
 			// This is an object field filter.
 			$columnName = $this->sanitizeColumnName(name: $key);
 
@@ -2103,6 +2098,26 @@ class MagicFacetHandler {
 			);
 		}//end foreach
 	}//end applyObjectFieldFilters()
+
+	/**
+	 * The query terms that filter on an object field: no reserved or underscore-prefixed parameter.
+	 *
+	 * @param array $baseQuery The base query.
+	 *
+	 * @return array The object field terms, key => value, in query order.
+	 */
+	private function objectFieldFilterTerms(array $baseQuery): array {
+		$terms = [];
+		foreach ($baseQuery as $key => $value) {
+			if (in_array($key, self::RESERVED_FILTER_PARAMS, true) === true || str_starts_with($key, '_') === true) {
+				continue;
+			}
+
+			$terms[$key] = $value;
+		}
+
+		return $terms;
+	}//end objectFieldFilterTerms()
 
 	/**
 	 * Apply JSON array containment filter.
