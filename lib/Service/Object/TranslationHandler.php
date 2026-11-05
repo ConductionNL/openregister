@@ -287,22 +287,6 @@ class TranslationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isLanguageKeyedObject(array $value): bool {
-		if (empty($value) === true) {
-			return false;
-		}
-
-		// Check that all keys are strings that match language code patterns.
-		foreach (array_keys($value) as $key) {
-			if (is_string($key) === false) {
-				return false;
-			}
-
-			// BCP 47 language tag pattern: 2-3 lowercase letters, optionally followed by hyphen + subtag.
-			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $key) !== 1) {
-				return false;
-			}
-		}
-
-		return true;
+		return (new LanguageKeyedMap(value: $value))->isLanguageKeyed();
 	}//end isLanguageKeyedObject()
 }//end class
