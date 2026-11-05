@@ -48,6 +48,13 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\FlowProvider
  * @covers \OCA\OpenRegister\Service\Integration\Providers\PollsProvider
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkRowsProvider
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\NcAppLinkTableProvider
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\LinkTableAppDescriptor
+ * @uses   \OCA\OpenRegister\Service\Integration\Providers\FirstRowQuery
+ * @uses   \OCA\OpenRegister\Db\BookmarkLink
+ * @uses   \OCA\OpenRegister\Db\FlowLink
+ * @uses   \OCA\OpenRegister\Db\PollLink
  */
 class LinkRowsListGoldenTest extends TestCase {
 
