@@ -5349,20 +5349,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end tableExistsForRegisterSchema()
 
 	/**
-	 * The register and schema ids of a magic table, as log context.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 *
-	 * @return array{registerId: int|null, schemaId: int|null} The ids.
-	 *
-	 * @spec exclude logging plumbing, not a capability of its own
-	 */
-	private function tableIds(Register $register, Schema $schema): array {
-		return ['registerId' => $register->getId(), 'schemaId' => $schema->getId()];
-	}//end tableIds()
-
-	/**
 	 * Sanitize column name for database compatibility.
 	 *
 	 * Converts camelCase to snake_case for PostgreSQL compatibility while
@@ -6972,6 +6958,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 		return true;
 	}//end ensureTableWhenMagicEnabled()
+
+	/**
+	 * The register and schema ids of a magic table, as log context.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array{registerId: int|null, schemaId: int|null} The ids.
+	 *
+	 * @spec exclude logging plumbing, not a capability of its own
+	 */
+	private function tableIds(Register $register, Schema $schema): array {
+		return ['registerId' => $register->getId(), 'schemaId' => $schema->getId()];
+	}//end tableIds()
 
 	/**
 	 * The query selecting the rows whose ID, UUID, slug or URI is the identifier, key matches first.
