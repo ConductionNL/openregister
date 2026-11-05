@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -2422,6 +2423,11 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
 		$fields = $this->parseFieldsParam(params: $params);
@@ -2444,8 +2450,28 @@ class ObjectsController extends Controller {
 		// application/json content type is kept (NC's Content-Type
 		// override requires the full container); the @self envelope is
 		// omitted so the body is consumable directly by GIS clients.
-		return new JSONResponse(data: $collection);
+		return $this->geoCollectionResponse(collection: $collection, crs: $crs);
 	}//end geoJson()
+
+	/**
+	 * A FeatureCollection in the requested CRS, naming that CRS when one was asked for.
+	 *
+	 * @param array<string, mixed> $collection The collection, in WGS84.
+	 * @param GeoResponseCrs       $crs        The negotiated CRS.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+	 */
+	private function geoCollectionResponse(array $collection, GeoResponseCrs $crs): JSONResponse {
+		$response = new JSONResponse(data: $crs->applyTo(collection: $collection));
+		$contentCrs = $crs->contentCrs();
+		if ($contentCrs !== null) {
+			$response->addHeader('Content-Crs', $contentCrs);
+		}
+
+		return $response;
+	}//end geoCollectionResponse()
 
 	/**
 	 * WFS GetFeature-compatible endpoint (REQ-GEO-008).
@@ -2474,6 +2500,11 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
 
@@ -2497,7 +2528,7 @@ class ObjectsController extends Controller {
 			maxFeatures: $maxFeatures
 		);
 
-		return new JSONResponse(data: $response);
+		return $this->geoCollectionResponse(collection: $response, crs: $crs);
 	}//end wfs()
 
 	/**
