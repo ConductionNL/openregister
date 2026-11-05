@@ -121,9 +121,7 @@ class XwikiLinksController extends Controller {
 				}
 
 				$link = $this->xwikiLinkService->linkPage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$pageReference
 				);
 
@@ -163,9 +161,7 @@ class XwikiLinksController extends Controller {
 				}
 
 				$link = $this->xwikiLinkService->createAndLinkPage(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
+					$this->linkTargetOf(object: $object),
 					$space,
 					$title
 				);
