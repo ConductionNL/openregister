@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @group requires-app-maps
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class MapLinkServiceTest extends TestCase {
 
@@ -122,7 +123,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsWhenNoUser()
 
 	public function testLinkPoiThrowsWhenMapsUnavailable(): void {
@@ -132,7 +133,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsWhenMapsUnavailable()
 
 	public function testLinkPoiThrowsOnDuplicate(): void {
@@ -144,7 +145,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('POI already linked to this object');
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsOnDuplicate()
 
 	public function testCreateAndLinkPoiThrowsWhenNoUser(): void {
