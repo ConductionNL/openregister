@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
@@ -75,31 +76,68 @@ class BulkJobsController extends Controller {
 	private const MAX_PAGE = 500;
 
 	/**
+	 * The lifecycle service.
+	 *
+	 * @var BulkJobService
+	 */
+	private readonly BulkJobService $service;
+
+	/**
+	 * The inverse of a reversible job.
+	 *
+	 * @var BulkJobReversal
+	 */
+	private readonly BulkJobReversal $reversal;
+
+	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapper
+	 */
+	private readonly BulkJobMapper $jobMapper;
+
+	/**
+	 * The action catalogue.
+	 *
+	 * @var BulkActionRegistry
+	 */
+	private readonly BulkActionRegistry $registry;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager (admin check).
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param BulkJobService $service The lifecycle service.
-	 * @param BulkJobReversal $reversal The inverse of a reversible job.
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkActionRegistry $registry The action catalogue.
-	 * @param IUserSession $userSession Current-user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
+	 * @param BulkJobsControllerServices $services The bulk jobs controller services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection.
 	 * Each is a collaborator this REST surface genuinely uses.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly BulkJobService $service,
-		private readonly BulkJobReversal $reversal,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkActionRegistry $registry,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		BulkJobsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->domain->service;
+		$this->reversal = $services->domain->reversal;
+		$this->jobMapper = $services->domain->jobMapper;
+		$this->registry = $services->domain->registry;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
 	}//end __construct()
 
 	/**

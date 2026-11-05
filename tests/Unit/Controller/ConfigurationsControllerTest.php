@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConfigurationsControllerFactory;
 use OCA\OpenRegister\Controller\ConfigurationsController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
@@ -39,7 +40,7 @@ class ConfigurationsControllerTest extends TestCase {
 		$groupManager = $this->createMock(\OCP\IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new ConfigurationsController(
+		$this->controller = ConfigurationsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->configurationMapper,

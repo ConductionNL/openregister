@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatStreamControllerFactory;
+
 use OCA\OpenRegister\Controller\ChatStreamController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -87,7 +89,7 @@ class HeartbeatTestableChatStreamController extends ChatStreamController {
 class ChatStreamControllerHeartbeatTest extends TestCase {
 
 	private function makeController(): HeartbeatTestableChatStreamController {
-		return new HeartbeatTestableChatStreamController(
+		return new HeartbeatTestableChatStreamController(...ChatStreamControllerFactory::args(
 			appName: 'openregister',
 			request: $this->createMock(IRequest::class),
 			chatService: $this->createMock(ChatService::class),
@@ -96,7 +98,7 @@ class ChatStreamControllerHeartbeatTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			userSession: $this->createMock(IUserSession::class),
 			db: $this->createMock(IDBConnection::class)
-		);
+		));
 	}//end makeController()
 
 	/**

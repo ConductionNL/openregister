@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\McpServerControllerServices;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
@@ -102,28 +103,66 @@ class McpServerController extends Controller {
 	private const ERR_UNAUTHORIZED = -32001;
 
 	/**
+	 * MCP protocol service
+	 *
+	 * @var McpProtocolService
+	 */
+	private readonly McpProtocolService $protocolService;
+
+	/**
+	 * MCP tools service
+	 *
+	 * @var McpToolsService
+	 */
+	private readonly McpToolsService $toolsService;
+
+	/**
+	 * MCP resources service
+	 *
+	 * @var McpResourcesService
+	 */
+	private readonly McpResourcesService $resourcesService;
+
+	/**
+	 * Logger
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Read per request, never at construction (#4284)
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Holds a session that declared an agent to its grant
+	 *
+	 * @var McpAgentScope
+	 */
+	private readonly McpAgentScope $agentScope;
+
+	/**
 	 * McpServerController constructor
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request Request object
-	 * @param McpProtocolService $protocolService MCP protocol service
-	 * @param McpToolsService $toolsService MCP tools service
-	 * @param McpResourcesService $resourcesService MCP resources service
-	 * @param LoggerInterface $logger Logger
-	 * @param IUserSession $userSession Read per request, never at construction (#4284)
-	 * @param McpAgentScope $agentScope Holds a session that declared an agent to its grant
+	 * @param McpServerControllerServices $services The mcp server controller services.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly McpProtocolService $protocolService,
-		private readonly McpToolsService $toolsService,
-		private readonly McpResourcesService $resourcesService,
-		private readonly LoggerInterface $logger,
-		private readonly IUserSession $userSession,
-		private readonly McpAgentScope $agentScope,
+		McpServerControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->protocolService = $services->domain->protocolService;
+		$this->toolsService = $services->domain->toolsService;
+		$this->resourcesService = $services->domain->resourcesService;
+		$this->logger = $services->platform->logger;
+		$this->userSession = $services->platform->userSession;
+		$this->agentScope = $services->domain->agentScope;
 	}//end __construct()
 
 	/**

@@ -27,6 +27,7 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkJobsControllerFactory;
 use OCA\OpenRegister\Controller\BulkJobsController;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
@@ -135,7 +136,7 @@ final class BulkJobsControllerTest extends TestCase {
 	}
 
 	private function controller(): BulkJobsController {
-		return new BulkJobsController(
+		return BulkJobsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
