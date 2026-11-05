@@ -159,8 +159,7 @@ trait MultiTenancyTrait {
 	 * This accessor exists so that number does not grow. A fifth probe would
 	 * have needed a fifth baseline entry, and a baseline that grows every time
 	 * somebody reads an optional property is a baseline nobody can read a
-	 * regression out of. `isSaasMode()` now routes through here too, so the
-	 * count is unchanged.
+	 * regression out of.
 	 *
 	 * @return IAppConfig|null The app config, or null.
 	 *
@@ -544,26 +543,6 @@ trait MultiTenancyTrait {
 
 		return $multitenancyData['adminOverride'] ?? false;
 	}//end isAdminOverrideEnabled()
-
-	/**
-	 * Check if SaaS mode is enabled
-	 *
-	 * @return bool True if SaaS mode is enabled
-	 */
-	protected function isSaasMode(): bool {
-		$appConfig = $this->tenancyAppConfig();
-		if ($appConfig === null) {
-			return false;
-		}
-
-		$multitenancyConfig = $appConfig->getValueString('openregister', 'multitenancy', '');
-		if (empty($multitenancyConfig) === true) {
-			return false;
-		}
-
-		$multitenancyData = json_decode($multitenancyConfig, true);
-		return ($multitenancyData['saasMode'] ?? false) === true;
-	}//end isSaasMode()
 
 	/**
 	 * Apply filter when no active organisation is set

@@ -476,54 +476,6 @@ class MagicOrganizationHandler {
 	}//end getActiveOrganizationUuids()
 
 	/**
-	 * Get the primary active organization UUID for the current user
-	 *
-	 * @return string|null The active organization UUID or null if none
-	 */
-	public function getActiveOrganizationUuid(): ?string {
-		$uuids = $this->getActiveOrganizationUuids();
-		return $uuids[0] ?? null;
-	}//end getActiveOrganizationUuid()
-
-	/**
-	 * Check if an object belongs to the user's active organization
-	 *
-	 * @param string|null $objectOrganisation The organization UUID of the object
-	 *
-	 * @return bool True if object belongs to user's organization
-	 */
-	public function belongsToActiveOrganization(?string $objectOrganisation): bool {
-		if ($objectOrganisation === null) {
-			// Objects with null organization are only accessible to admin users.
-			$user = $this->userSession->getUser();
-			if ($user !== null) {
-				$userGroups = $this->groupManager->getUserGroupIds($user);
-				return in_array('admin', $userGroups, true);
-			}
-
-			return false;
-		}
-
-		$activeOrgUuids = $this->getActiveOrganizationUuids();
-
-		return in_array($objectOrganisation, $activeOrgUuids, true);
-	}//end belongsToActiveOrganization()
-
-	/**
-	 * Get the default organization UUID from app config
-	 *
-	 * @return string|null The default organization UUID or null
-	 */
-	public function getDefaultOrganizationUuid(): ?string {
-		$defaultOrgId = $this->appConfig->getValueString('openregister', 'defaultOrganisation', '');
-		if ($defaultOrgId !== '') {
-			return $defaultOrgId;
-		}
-
-		return null;
-	}//end getDefaultOrganizationUuid()
-
-	/**
 	 * Check if admin users should bypass multi-tenancy filtering
 	 *
 	 * This reads the adminOverride setting from the multitenancy config,
@@ -547,15 +499,6 @@ class MagicOrganizationHandler {
 		// Default to true if not explicitly set (matches ConfigurationSettingsHandler).
 		return $multitenancyData['adminOverride'] ?? true;
 	}//end isAdminOverrideEnabled()
-
-	/**
-	 * Check if the current user is logged in (not anonymous)
-	 *
-	 * @return bool True if a user is logged in, false for anonymous access
-	 */
-	public function isUserLoggedIn(): bool {
-		return $this->userSession->getUser() !== null;
-	}//end isUserLoggedIn()
 
 	/**
 	 * Check if SaaS mode is enabled in multitenancy configuration.
