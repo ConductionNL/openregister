@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -38,6 +37,8 @@ use OCP\IDBConnection;
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPackMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -59,12 +60,7 @@ class MigrationPackMapper extends QBMapper {
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function find(int $id): MigrationPack {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -81,12 +77,7 @@ class MigrationPackMapper extends QBMapper {
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function findByPackSlug(string $packSlug): MigrationPack {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('pack_slug', $qb->createNamedParameter($packSlug)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'pack_slug', value: $packSlug)));
 	}//end findByPackSlug()
 
 	/**
@@ -97,11 +88,6 @@ class MigrationPackMapper extends QBMapper {
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
 	public function findAll(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('id', 'ASC');
-
-		return $this->findEntities(query: $qb);
+		return $this->findEntities(query: $this->selectAllById());
 	}//end findAll()
 }//end class
