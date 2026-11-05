@@ -72,7 +72,7 @@ class ExternalGrantLapseNotifier {
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function warn(Schema $schema, array $grant): int {
-		$holders = $this->holdersOf(principal: (string)($grant['principal'] ?? ''));
+		$holders = $this->holdersOf(holder: ($grant['holder'] ?? null));
 		foreach ($holders as $uid) {
 			$notification = $this->notificationFor(schema: $schema, grant: $grant)->setUser($uid);
 			$this->notifications->markProcessed($notification);
@@ -85,26 +85,59 @@ class ExternalGrantLapseNotifier {
 	/**
 	 * The users who hold a grant: the user it names, or the members of the group it names.
 	 *
-	 * @param string $principal The grant's principal.
+	 * The kind comes from the grant entry's own key, so a group is never warned
+	 * as a user of the same name, nor a user as a group.
+	 *
+	 * @param mixed $holder `{kind: user|group, id}` from ExternalGrantGuard::lapsingWithin().
 	 *
 	 * @return array<int, string> The user ids.
 	 */
-	private function holdersOf(string $principal): array {
-		if ($principal === '') {
+	private function holdersOf(mixed $holder): array {
+		if (is_array($holder) === false || is_string($holder['id'] ?? null) === false) {
 			return [];
 		}
 
-		if ($this->users->userExists($principal) === true) {
-			return [$principal];
+		if (($holder['kind'] ?? '') === 'user') {
+			return $this->namedUser(uid: $holder['id']);
 		}
 
-		$group = $this->groups->get($principal);
+		if (($holder['kind'] ?? '') === 'group') {
+			return $this->groupMembers(gid: $holder['id']);
+		}
+
+		return [];
+	}//end holdersOf()
+
+	/**
+	 * The named user, when it exists.
+	 *
+	 * @param string $uid The user id.
+	 *
+	 * @return array<int, string> The user id, or nothing.
+	 */
+	private function namedUser(string $uid): array {
+		if ($this->users->userExists($uid) === true) {
+			return [$uid];
+		}
+
+		return [];
+	}//end namedUser()
+
+	/**
+	 * The members of the named group, when it exists.
+	 *
+	 * @param string $gid The group id.
+	 *
+	 * @return array<int, string> The member user ids.
+	 */
+	private function groupMembers(string $gid): array {
+		$group = $this->groups->get($gid);
 		if ($group === null) {
 			return [];
 		}
 
 		return array_values(array_map(static fn ($user): string => $user->getUID(), $group->getUsers()));
-	}//end holdersOf()
+	}//end groupMembers()
 
 	/**
 	 * The notification for one grant, without its recipient.

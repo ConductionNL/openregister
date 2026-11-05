@@ -61,7 +61,9 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 	private array $warned = [];
 
 	/**
-	 * A notifier whose user and group lookups know `adviser` and the group `advisers` (ann, bob).
+	 * A notifier whose lookups know the users `adviser` and `advisers`, and the group `advisers` (ann, bob).
+	 *
+	 * The user and the group named `advisers` collide on purpose.
 	 *
 	 * @return ExternalGrantLapseNotifier
 	 */
@@ -81,7 +83,7 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 		$this->manager->method('createNotification')->willReturn($notification);
 
 		$users = $this->createMock(IUserManager::class);
-		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'adviser');
+		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => in_array($uid, ['adviser', 'advisers'], true));
 
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('get')->willReturnCallback(fn (string $gid): ?IGroup => $gid === 'advisers' ? $this->group() : null);
@@ -125,7 +127,7 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 	}//end schema()
 
 	/**
-	 * A user principal is warned once, and the earlier warning for the same grant is replaced.
+	 * A `{user}` holder is warned once, and the earlier warning for the same grant is replaced.
 	 *
 	 * @return void
 	 */
@@ -134,35 +136,87 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 		$this->manager->expects($this->once())->method('markProcessed');
 		$this->manager->expects($this->once())->method('notify');
 
-		$count = $notifier->warn(schema: $this->schema(), grant: ['action' => 'update', 'principal' => 'adviser', 'endsAt' => 'x', 'daysLeft' => 3]);
+		$count = $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'adviser']));
 
 		$this->assertSame(1, $count);
 		$this->assertSame(['adviser'], $this->warned);
 	}//end testAUserHolderIsWarnedAndTheEarlierWarningReplaced()
 
 	/**
-	 * A group principal warns each member.
+	 * A `{group}` holder warns each member.
 	 *
 	 * @return void
 	 */
 	public function testAGroupHolderWarnsEachMember(): void {
 		$notifier = $this->notifier();
 
-		$this->assertSame(2, $notifier->warn(schema: $this->schema(), grant: ['action' => 'read', 'principal' => 'advisers']));
+		$this->assertSame(2, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['group' => 'advisers'])));
 		$this->assertSame(['ann', 'bob'], $this->warned);
 	}//end testAGroupHolderWarnsEachMember()
 
 	/**
-	 * A principal nobody resolves warns nobody.
+	 * A plain string names a group.
 	 *
 	 * @return void
 	 */
-	public function testAnUnknownPrincipalWarnsNobody(): void {
+	public function testAPlainStringIsAGroup(): void {
+		$notifier = $this->notifier();
+
+		$notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: 'advisers'));
+
+		$this->assertSame(['ann', 'bob'], $this->warned);
+	}//end testAPlainStringIsAGroup()
+
+	/**
+	 * 🔴 A user and a group with the same name are never confused, either way.
+	 *
+	 * @return void
+	 */
+	public function testAUserAndAGroupWithTheSameNameAreNotConfused(): void {
+		$notifier = $this->notifier();
+
+		$notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['group' => 'advisers']));
+		$this->assertSame(['ann', 'bob'], $this->warned, 'a group grant warns its members, not the user of that name');
+
+		$this->warned = [];
+		$notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'advisers']));
+		$this->assertSame(['advisers'], $this->warned, 'a user grant warns that user, not the group of that name');
+	}//end testAUserAndAGroupWithTheSameNameAreNotConfused()
+
+	/**
+	 * A holder nobody resolves, or an entry naming no holder, warns nobody.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownOrUnnamedHolderWarnsNobody(): void {
 		$notifier = $this->notifier();
 		$this->manager->expects($this->never())->method('notify');
 
-		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: ['action' => 'read', 'principal' => 'ghost']));
-	}//end testAnUnknownPrincipalWarnsNobody()
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'ghost'])));
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['group' => 'ghosts'])));
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['name' => 'adviser'])));
+	}//end testAnUnknownOrUnnamedHolderWarnsNobody()
+
+	/**
+	 * The one lapsing grant ExternalGrantGuard reports for an entry ending in three days.
+	 *
+	 * @param mixed $entry The entry, without its `external` flag and end.
+	 *
+	 * @return array<string, mixed> The lapsing grant.
+	 */
+	private function lapsing(mixed $entry): array {
+		if (is_string($entry) === true) {
+			$entry = ['group' => $entry];
+		}
+
+		$entry['external'] = true;
+		$entry['until'] = (new \DateTimeImmutable('+3 days'))->format(DATE_ATOM);
+
+		$lapsing = (new \OCA\OpenRegister\Service\Rbac\ExternalGrantGuard())->lapsingWithin(authorization: ['update' => [$entry]]);
+		$this->assertCount(1, $lapsing);
+
+		return $lapsing[0];
+	}//end lapsing()
 
 	/**
 	 * The daily sweep warns only for external grants inside the window, across every schema.
@@ -179,8 +233,8 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 					[
 						'update' => [
 							['user' => 'adviser', 'external' => true, 'until' => $soon],
-							['user' => 'advisers', 'external' => true, 'until' => $later],
-							['user' => 'advisers', 'until' => $soon],
+							['group' => 'advisers', 'external' => true, 'until' => $later],
+							['group' => 'advisers', 'until' => $soon],
 						],
 					]
 				),

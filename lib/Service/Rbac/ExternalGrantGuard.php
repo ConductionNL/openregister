@@ -185,6 +185,7 @@ class ExternalGrantGuard {
 			$lapsing[] = [
 				'action' => $found['action'],
 				'principal' => $this->principalOf(entry: $found['entry']),
+				'holder' => $this->holderOf(entry: $found['entry']),
 				'endsAt' => date(DATE_ATOM, $ends),
 				'daysLeft' => (int)ceil((($ends - $now->getTimestamp()) / 86400)),
 			];
@@ -284,6 +285,55 @@ class ExternalGrantGuard {
 
 		return $ends;
 	}//end endOf()
+
+	/**
+	 * Who holds a grant, read by the entry's own key as access enforcement reads it.
+	 *
+	 * `user` names a user; `group`, or a plain string, names a group. Any other
+	 * shape names no holder anybody can be warned through.
+	 *
+	 * @param mixed $entry The entry.
+	 *
+	 * @return array{kind: string, id: string}|null The holder, or null when the entry names none.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private function holderOf(mixed $entry): ?array {
+		if (is_string($entry) === true) {
+			return $this->holder(kind: 'group', id: $entry);
+		}
+
+		if (is_array($entry) === false) {
+			return null;
+		}
+
+		if (is_string($entry['user'] ?? null) === true) {
+			return $this->holder(kind: 'user', id: $entry['user']);
+		}
+
+		$group = ($entry['group'] ?? null);
+		if (is_string($group) === false) {
+			return null;
+		}
+
+		return $this->holder(kind: 'group', id: $group);
+	}//end holderOf()
+
+	/**
+	 * A holder, or null for a blank id.
+	 *
+	 * @param string $kind `user` or `group`.
+	 * @param string $id   The id.
+	 *
+	 * @return array{kind: string, id: string}|null The holder.
+	 */
+	private function holder(string $kind, string $id): ?array {
+		if (trim($id) === '') {
+			return null;
+		}
+
+		return ['kind' => $kind, 'id' => trim($id)];
+	}//end holder()
 
 	/**
 	 * The principal an entry names, for the refusal to be actionable.
