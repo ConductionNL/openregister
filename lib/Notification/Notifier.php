@@ -284,11 +284,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareSecuritySettingChanged()
 
 	/**
@@ -325,11 +321,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareOwnershipChanged()
 
 	/**
@@ -359,11 +351,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareTimelineMention()
 
 	/**
@@ -402,11 +390,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareRetentionHoldsSkipped()
 
 	/**
@@ -439,11 +423,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDestructionHoldsSkipped()
 
 	/**
@@ -479,11 +459,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDestructionReviewPending()
 
 	/**
@@ -514,9 +490,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
+		$this->withAppIcon(notification: $notification);
 
 		// Add action to view the configuration.
 		if (($parameters['configurationId'] ?? null) !== null) {
@@ -574,11 +548,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareHandoffDrainFailed()
 
 	/**
@@ -628,11 +598,7 @@ class Notifier implements INotifier {
 			$this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page') . '#user-settings'
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareCredentialRelinkNeeded()
 
 	/**
@@ -744,11 +710,7 @@ class Notifier implements INotifier {
 			->setPrimary(false);
 		$notification->addAction($deny);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDelegationConsentRequested()
 
 	/**
@@ -798,9 +760,7 @@ class Notifier implements INotifier {
 
 		$notification->setParsedMessage($message);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
+		$this->withAppIcon(notification: $notification);
 
 		if ($mode !== 'email') {
 			$action = $notification->createAction();
@@ -840,9 +800,7 @@ class Notifier implements INotifier {
 		$notification->setParsedMessage(
 			$l->t('Your audit trail export of %1$s entries was saved to %2$s%3$s.', [$rows, $folder, $filename])
 		);
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
+		$this->withAppIcon(notification: $notification);
 
 		$action = $notification->createAction();
 		$action->setLabel($l->t('Open Files'))
@@ -882,11 +840,7 @@ class Notifier implements INotifier {
 			$l->t('Your scheduled report "%s" could not be generated: %s', [$reportName, $reason])
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareScheduledReportFailed()
 
 	/**
@@ -919,11 +873,7 @@ class Notifier implements INotifier {
 
 		$notification->setParsedMessage($message);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareViewAlertCrossed()
 
 	/**
@@ -950,10 +900,21 @@ class Notifier implements INotifier {
 		$notification->setParsedMessage(
 			$l->t('A change to "%1$s" left %2$s problems in the form. Fix them and publish the form again.', [$schema, $count])
 		);
+		return $this->withAppIcon(notification: $notification);
+	}//end prepareFormUnpublished()
+
+	/**
+	 * Set the app icon on a prepared notification.
+	 *
+	 * @param INotification $notification The notification being prepared
+	 *
+	 * @return INotification The same notification
+	 */
+	private function withAppIcon(INotification $notification): INotification {
 		$notification->setIcon(
 			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
 		);
 
 		return $notification;
-	}//end prepareFormUnpublished()
+	}//end withAppIcon()
 }//end class
