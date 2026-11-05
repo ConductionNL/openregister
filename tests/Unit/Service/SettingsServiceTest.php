@@ -1865,7 +1865,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1896,7 +1896,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1922,7 +1922,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -1954,7 +1954,7 @@ class SettingsServiceTest extends TestCase {
 		$container = $this->createMock(IAppContainer::class);
 		$container->method('get')->willReturnMap(
 			[
-				[\OCA\OpenRegister\Db\MagicMapper::class, $objectMapper],
+				[\OCA\OpenRegister\Db\MagicMapperInterface::class, $objectMapper],
 				[ObjectService::class, $objectService],
 			]
 		);
@@ -2079,7 +2079,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2104,7 +2104,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2129,7 +2129,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2157,7 +2157,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2545,7 +2545,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;
@@ -2573,7 +2573,7 @@ class SettingsServiceTest extends TestCase {
 
 		$container->method('get')
 			->willReturnCallback(function (string $class) use ($objectMapper) {
-				if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
+				if ($class === \OCA\OpenRegister\Db\MagicMapperInterface::class) {
 					return $objectMapper;
 				}
 				return null;

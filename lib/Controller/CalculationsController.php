@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -52,7 +52,7 @@ class CalculationsController extends Controller {
 	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
 	 * @param RegisterMapperInterface $registerMapper Register lookup, scoped to the caller.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup, scoped to the caller.
-	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
+	 * @param MagicMapperInterface $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
@@ -63,7 +63,7 @@ class CalculationsController extends Controller {
 		private readonly CalculationTrialService $trials,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

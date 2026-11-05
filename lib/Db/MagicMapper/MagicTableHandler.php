@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IAppConfig;
@@ -64,14 +65,14 @@ class MagicTableHandler {
 	 * @param IDBConnection $db Database connection for table operations
 	 * @param IAppConfig $appConfig App configuration for feature flags
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param MagicMapper $magicMapper Parent MagicMapper for callback access to helpers
+	 * @param MagicMapperInterface $magicMapper Parent MagicMapper for callback access to helpers
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Adds missing metadata columns on first use of a table
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
-		private readonly MagicMapper $magicMapper,
+		private readonly MagicMapperInterface $magicMapper,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 	}//end __construct()

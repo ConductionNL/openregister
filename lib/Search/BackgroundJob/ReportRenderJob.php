@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -130,7 +130,7 @@ class ReportRenderJob extends TimedJob {
 	 * @param ReportRenderService $renderService Render composer.
 	 * @param RegisterMapperInterface $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the register's schemas.
-	 * @param MagicMapper $objectMapper Object loader.
+	 * @param MagicMapperInterface $objectMapper Object loader.
 	 * @param IRootFolder $rootFolder Files root.
 	 * @param LoggerInterface $logger Logger.
 	 */
@@ -140,7 +140,7 @@ class ReportRenderJob extends TimedJob {
 		private readonly ReportRenderService $renderService,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly IRootFolder $rootFolder,
 		private readonly LoggerInterface $logger,
 	) {

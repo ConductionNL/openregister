@@ -25,7 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use Psr\Container\ContainerInterface;
@@ -69,14 +70,14 @@ final class MassValidationRun {
 	/**
 	 * The service that re-saves objects, resolved on the first save.
 	 *
-	 * @var ObjectService|null
+	 * @var ObjectOperationsInterface|null
 	 */
-	private ?ObjectService $objectService = null;
+	private ?ObjectOperationsInterface $objectService = null;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper          $objectMapper Mapper that counts and reads the objects.
+	 * @param MagicMapperInterface          $objectMapper Mapper that counts and reads the objects.
 	 * @param AppSettingsInterface $settings     Settings service, for formatting byte counts.
 	 * @param LoggerInterface      $logger       Logger.
 	 * @param ContainerInterface   $container    Container that provides the ObjectService at save time.
@@ -84,7 +85,7 @@ final class MassValidationRun {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AppSettingsInterface $settings,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
@@ -371,9 +372,9 @@ final class MassValidationRun {
 	 * The ObjectService, taken from the container on first use: SettingsService cannot
 	 * receive it at construction because ObjectService depends on it.
 	 *
-	 * @return ObjectService The service that re-saves objects.
+	 * @return ObjectOperationsInterface The service that re-saves objects.
 	 */
-	private function objectService(): ObjectService {
+	private function objectService(): ObjectOperationsInterface {
 		if ($this->objectService === null) {
 			$this->objectService = $this->container->get(ObjectService::class);
 		}

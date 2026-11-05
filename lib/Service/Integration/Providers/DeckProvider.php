@@ -38,7 +38,9 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
 use Exception;
+use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -168,14 +170,10 @@ class DeckProvider extends AbstractIntegrationProvider {
 			}
 
 			$link = $this->deckLinkService->createAndLinkCard(
-				$objectId,
-				$registerId,
-				$schemaId,
-				(int)$payload['boardId'],
-				(int)$payload['stackId'],
-				(string)($payload['title'] ?? 'Untitled'),
-				$description,
-				$duedate
+				target: (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId),
+				card: (new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']))
+					->onBoard(boardId: (int)$payload['boardId'])
+					->withDetails(description: $description, duedate: $duedate)
 			);
 
 			return $link->jsonSerialize();

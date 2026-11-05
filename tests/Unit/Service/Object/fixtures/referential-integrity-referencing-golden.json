@@ -1,0 +1,596 @@
+{
+    "mysql scalar": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r1",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r1",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r2",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r2",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r3",
+                "7",
+                "2",
+                {
+                    "deletedBy": "ann"
+                },
+                {
+                    "id": "r3",
+                    "labels": "[\"target\"]"
+                }
+            ],
+            [
+                "r4",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r4",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r5",
+                "7",
+                "2",
+                {
+                    "deletedBy": "bob"
+                },
+                {
+                    "id": "r5",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r6",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r6",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "mysql array": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND JSON_CONTAINS(`labels_1`, JSON_QUOTE(?)) LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r1",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r1",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r2",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r2",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r3",
+                "7",
+                "2",
+                {
+                    "deletedBy": "ann"
+                },
+                {
+                    "id": "r3",
+                    "labels": "[\"target\"]"
+                }
+            ],
+            [
+                "r4",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r4",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r5",
+                "7",
+                "2",
+                {
+                    "deletedBy": "bob"
+                },
+                {
+                    "id": "r5",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r6",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r6",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "postgres scalar": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, \"labels_1\" AS _prop FROM \"oc_openregister_table_7_2\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND \"labels_1\" = ? LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r1",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r1",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r2",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r2",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r3",
+                "7",
+                "2",
+                {
+                    "deletedBy": "ann"
+                },
+                {
+                    "id": "r3",
+                    "labels": "[\"target\"]"
+                }
+            ],
+            [
+                "r4",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r4",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r5",
+                "7",
+                "2",
+                {
+                    "deletedBy": "bob"
+                },
+                {
+                    "id": "r5",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r6",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r6",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "postgres array": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, \"labels_1\" AS _prop FROM \"oc_openregister_table_7_2\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND \"labels_1\"::jsonb @> to_jsonb(?::text) LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r1",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r1",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "key, mysql array": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND JSON_CONTAINS(`labels_1`, JSON_QUOTE(?)) LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r1",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r1",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r2",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r2",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r3",
+                "7",
+                "2",
+                {
+                    "deletedBy": "ann"
+                },
+                {
+                    "id": "r3",
+                    "labels": "[\"target\"]"
+                }
+            ],
+            [
+                "r4",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r4",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r5",
+                "7",
+                "2",
+                {
+                    "deletedBy": "bob"
+                },
+                {
+                    "id": "r5",
+                    "labels": "target"
+                }
+            ],
+            [
+                "r6",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r6",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "key, postgres scalar": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, \"labels_1\" AS _prop FROM \"oc_openregister_table_7_2\" WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND \"labels_1\" = ? LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": [
+            [
+                "r2",
+                "7",
+                "2",
+                [],
+                {
+                    "id": "r2",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "no rows": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [
+            [
+                "target"
+            ]
+        ],
+        "logs": [],
+        "found": []
+    },
+    "empty value": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "found": []
+    },
+    "key, empty value": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "found": []
+    },
+    "prepare fails, no table": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [],
+        "logs": [],
+        "tableExists": "openregister_table_7_2",
+        "found": []
+    },
+    "prepare fails, table": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] reference could not be checked, so the delete is refused",
+                {
+                    "schemaId": "2",
+                    "property": "labels",
+                    "error": "prepare failed"
+                }
+            ]
+        ],
+        "tableExists": "openregister_table_7_2",
+        "found": null
+    },
+    "key fails, no table": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [],
+        "logs": [],
+        "tableExists": "openregister_table_7_2",
+        "found": []
+    },
+    "key fails, table": {
+        "sql": [
+            "SELECT _uuid, _register, _schema, _deleted, `labels_1` AS _prop FROM `oc_openregister_table_7_2` WHERE _deleted IS NULL AND `labels_1` = ? LIMIT 100"
+        ],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] key reference could not be checked, so the delete is refused",
+                {
+                    "schemaId": "2",
+                    "property": "labels",
+                    "error": "prepare failed"
+                }
+            ]
+        ],
+        "tableExists": "openregister_table_7_2",
+        "found": null
+    },
+    "no column, table": {
+        "sql": [],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] reference could not be checked, so the delete is refused",
+                {
+                    "schemaId": "2",
+                    "property": "labels",
+                    "error": "The table of schema 2 has no column for property labels"
+                }
+            ]
+        ],
+        "tableExists": "openregister_table_7_2",
+        "found": null
+    },
+    "key no column, table": {
+        "sql": [],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] key reference could not be checked, so the delete is refused",
+                {
+                    "schemaId": "2",
+                    "property": "labels",
+                    "error": "The table of schema 2 has no column for property labels"
+                }
+            ]
+        ],
+        "tableExists": "openregister_table_7_2",
+        "found": null
+    },
+    "fallback scalar": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "relation": "target",
+        "found": [
+            [
+                "c1",
+                null,
+                "2",
+                [],
+                {
+                    "id": "c1",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "fallback array": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "relation": "target",
+        "found": [
+            [
+                "c6",
+                null,
+                "2",
+                [],
+                {
+                    "id": "c6",
+                    "labels": [
+                        "x",
+                        "target"
+                    ]
+                }
+            ],
+            [
+                "c9",
+                null,
+                "2",
+                [],
+                {
+                    "id": "c9",
+                    "labels": [
+                        "target"
+                    ]
+                }
+            ]
+        ]
+    },
+    "fallback fails": {
+        "sql": [],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] findByRelation failed, so the delete is refused",
+                {
+                    "uuid": "target",
+                    "error": "relation search failed"
+                }
+            ]
+        ],
+        "relation": "target",
+        "found": null
+    },
+    "fallback, no schema": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "relation": "target",
+        "found": [
+            [
+                "c1",
+                null,
+                "2",
+                [],
+                {
+                    "id": "c1",
+                    "labels": "target"
+                }
+            ]
+        ]
+    },
+    "key, no register": {
+        "sql": [],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] key reference cannot be checked: citing schema has no register",
+                {
+                    "schemaId": "2",
+                    "property": "labels"
+                }
+            ]
+        ],
+        "found": null
+    },
+    "key, no schema": {
+        "sql": [],
+        "bound": [],
+        "logs": [
+            [
+                "[ReferentialIntegrity] key reference cannot be checked: citing schema has no register",
+                {
+                    "schemaId": "2",
+                    "property": "labels"
+                }
+            ]
+        ],
+        "found": null
+    },
+    "fallback, no schema row": {
+        "sql": [],
+        "bound": [],
+        "logs": [],
+        "relation": "target",
+        "found": [
+            [
+                "c1",
+                null,
+                "2",
+                [],
+                {
+                    "id": "c1",
+                    "labels": "target"
+                }
+            ]
+        ]
+    }
+}

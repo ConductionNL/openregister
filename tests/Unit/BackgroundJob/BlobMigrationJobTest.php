@@ -81,7 +81,7 @@ class BlobMigrationJobTest extends TestCase {
 		$this->registerService(SchemaMapperInterface::class, function () {
 			return $this->schemaMapper;
 		});
-		$this->registerService(MagicMapper::class, function () {
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () {
 			return $this->magicMapper;
 		});
 

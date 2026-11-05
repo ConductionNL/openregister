@@ -1279,7 +1279,7 @@ class EntityRecognitionHandler {
 		}
 
 		try {
-			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
+			$objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 			$object = $objectMapper->find(
 				$objectId,
 				_rbac: false,

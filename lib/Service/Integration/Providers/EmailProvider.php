@@ -31,9 +31,11 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Throwable;
@@ -221,12 +223,8 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$messageUid = (string)($payload['messageUid'] ?? $payload['mailMessageUid'] ?? '');
 
 		$link = $this->emailLinkService->linkEmail(
-			objectUuid: $objectId,
-			registerId: $registerId,
-			schemaId: $schemaId,
-			mailAccountId: $mailAccountId,
-			messageId: $messageId,
-			messageUid: $messageUid
+			target: (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId),
+			message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid)
 		);
 
 		return $link->jsonSerialize();

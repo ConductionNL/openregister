@@ -45,7 +45,7 @@ namespace OCA\OpenRegister\Service\Audit;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use Throwable;
 
 /**
@@ -109,14 +109,14 @@ class ReadableAuditTrailLister {
 	 * Constructor.
 	 *
 	 * @param AuditTrailMapperInterface        $auditTrailMapper Reads the candidate rows.
-	 * @param MagicMapper             $objectMapper     Locates an entry's object across the magic tables.
+	 * @param MagicMapperInterface             $objectMapper     Locates an entry's object across the magic tables.
 	 * @param ObjectHistoryForReaders $history          Reads each object and redacts its entries as its history does,
 	 *                                                  and holds the rule on who may see read entries.
 	 * @param ReadableAuditCursor     $cursors          Seals the raw-trail offset a client is handed.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly ObjectHistoryForReaders $history,
 		private readonly ReadableAuditCursor $cursors,
 	) {
