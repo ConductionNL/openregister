@@ -26,6 +26,7 @@ use RuntimeException;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @covers \OCA\OpenRegister\Controller\Support\RelationUrlStamper
  * @uses   \OCA\OpenRegister\Controller\Support\LinkedDataServices
  */
 class ObjectsControllerRelationUrlsGoldenTest extends TestCase {
