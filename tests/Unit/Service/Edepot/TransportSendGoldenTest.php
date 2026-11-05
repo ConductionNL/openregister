@@ -45,6 +45,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Edepot\Transport\OpenConnectorTransport
  * @covers \OCA\OpenRegister\Service\Edepot\Transport\SftpTransport
  * @uses   \OCA\OpenRegister\Service\Edepot\Transport\TransportResult
+ * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 class TransportSendGoldenTest extends TestCase {
 
