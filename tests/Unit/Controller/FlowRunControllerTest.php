@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowRunController;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -134,7 +135,7 @@ class FlowRunControllerTest extends TestCase {
 		// and failing as a TypeError. Positionally, both look like a correct
 		// call right up until the type happens not to match — and a nullable
 		// parameter would have accepted the wrong value in silence.
-		$this->controller = new FlowRunController(
+		$this->controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -482,7 +483,7 @@ class FlowRunControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$controller = new FlowRunController(
+		$controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -524,7 +525,7 @@ class FlowRunControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$controller = new FlowRunController(
+		$controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -797,7 +798,7 @@ class FlowRunControllerTest extends TestCase {
 		IUserSession $session,
 		?IGroupManager $groupManager = null,
 	): FlowRunController {
-		return new FlowRunController(
+		return FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,

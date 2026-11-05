@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
@@ -59,7 +60,7 @@ class SettingsControllerSearchIndexStatusTest extends TestCase {
 			->with(SearchIndexMaintenance::class)
 			->willReturn($maintenance);
 
-		return new SettingsController(
+		return SettingsControllerFactory::create(
 			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			config: $this->createMock(originalClassName: IAppConfig::class),

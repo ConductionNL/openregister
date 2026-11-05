@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
@@ -1945,7 +1946,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	 * @return BulkController
 	 */
 	private function buildBulkController(): BulkController {
-		return new BulkController(
+		return BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			\OC::$server->get(ObjectService::class),
