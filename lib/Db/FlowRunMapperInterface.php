@@ -638,23 +638,6 @@ interface FlowRunMapperInterface {
 	public function pruneBefore(DateTime $before): int;
 
 	/**
-	 * How many runs that can still move are pinned to one version of a flow.
-	 *
-	 * Asked before a version may be removed. Counts only ACTIVE runs on
-	 * purpose: a completed run's pin is history, and history keeping a version
-	 * alive forever would make the version table unprunable. A run that can
-	 * still move, though, needs its graph to still exist.
-	 *
-	 * @param string  $flowUuid The flow.
-	 * @param integer $version  The version number.
-	 *
-	 * @return integer The number of non-terminal runs pinned to that version.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function countActivePinnedTo(string $flowUuid, int $version): int;
-
-	/**
 	 * Pin every still-movable run of a flow that has no version yet.
 	 *
 	 * The upgrade path. Deliberately scoped to `flow_version IS NULL` so it is

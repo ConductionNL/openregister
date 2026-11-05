@@ -1511,6 +1511,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end logProcessingRead()
 
     /**
+     * AVG / GDPR read logging for a list or search result.
+     *
+     * @param mixed                $objects The listed objects; anything but an array is not a list and is skipped.
+     * @param array<string, mixed> $query   The query parameters of the list or search.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+     */
+    private function logProcessingReadList(mixed $objects, array $query): void
+    {
+        if (is_array($objects) === false) {
+            return;
+        }
+
+        try {
+            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+                ->registerProcessingReadList(objects: $objects, query: $query);
+        } catch (\Throwable $e) {
+            // Fail-soft: read logging never breaks the list.
+            $this->logger->debug(
+                message: '[AVG] processing-log list read hook skipped',
+                context: ['exception' => $e->getMessage()]
+            );
+        }
+    }//end logProcessingReadList()
+
+    /**
      * Gets an object by its ID without creating an audit trail.
      *
      * This method is used internally by other operations (like UPDATE) that need to
@@ -4583,6 +4611,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result = $this->extendSearchResult(result: $result, query: $query);
 
         $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+        $this->logProcessingReadList(objects: ($result['results'] ?? []), query: $query);
 
         return $result;
     }//end searchObjectsPaginated()

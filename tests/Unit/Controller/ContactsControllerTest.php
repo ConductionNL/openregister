@@ -18,6 +18,8 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContactsControllerFactory;
 use OCA\OpenRegister\Controller\ContactsController;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -42,7 +44,9 @@ class ContactsControllerTest extends TestCase {
 	private IL10N&MockObject $l10n;
 	private LoggerInterface&MockObject $logger;
 	private PersonLinkService&MockObject $personLinks;
+	private PermissionHandler&MockObject $permissions;
 	private ContactsController $controller;
+	private bool $mayUpdate = true;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -55,6 +59,9 @@ class ContactsControllerTest extends TestCase {
 		$this->l10n = $this->createMock(IL10N::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->personLinks = $this->createMock(PersonLinkService::class);
+		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions->method('hasPermission')->willReturnCallback(fn (): bool => $this->mayUpdate);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
 		$this->l10n->method('t')->willReturnCallback(
 			static function (string $text): string {
@@ -71,7 +78,8 @@ class ContactsControllerTest extends TestCase {
 			$this->deepLinkRegistry,
 			$this->l10n,
 			$this->logger,
-			$this->personLinks
+			$this->personLinks,
+			$this->permissions
 		);
 	}
 
@@ -207,11 +215,32 @@ class ContactsControllerTest extends TestCase {
 
 		$this->contactService->expects($this->once())
 			->method('unlinkContact')
-			->with(42);
+			->with(42, 'abc-123');
 
 		$response = $this->controller->destroy('reg', 'sch', 'oid', '42');
 
 		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['success' => true], $response->getData());
+	}
+
+	/**
+	 * A numeric link id of another object's link answers 404 and deletes nothing.
+	 */
+	public function testDestroyRefusesANumericIdOfAnotherObjectsLink(): void {
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('abc-123');
+
+		$this->objectService->method('getObject')->willReturn($object);
+
+		$this->contactService->expects($this->once())
+			->method('unlinkContact')
+			->with(77, 'abc-123')
+			->willThrowException(new \Exception('Contact link not found', 404));
+
+		$response = $this->controller->destroy('reg', 'sch', 'oid', '77');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['error' => 'Contact link not found'], $response->getData());
 	}
 
 	/**
@@ -458,4 +487,46 @@ class ContactsControllerTest extends TestCase {
 		$this->assertSame(['success' => true, 'removed' => 1], $response->getData());
 	}//end testDestroyWithARoleRemovesThatRoleOnly()
 
+
+	/**
+	 * Every contacts write on an object the caller may only read answers 403 and changes nothing.
+	 */
+	public function testContactWritesNeedTheObjectUpdateRight(): void {
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('abc-123');
+		$object->setOwner('someone-else');
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['userId' => 'jan', 'role' => 'applicant', 'fullName' => 'Jan']);
+		$this->mayUpdate = false;
+
+		$this->personLinks->expects($this->never())->method('link');
+		$this->personLinks->expects($this->never())->method('update');
+		$this->personLinks->expects($this->never())->method('unlink');
+		$this->contactService->expects($this->never())->method('unlinkContact');
+		$this->contactService->expects($this->never())->method('createAndLinkContact');
+
+		$responses = [
+			'create' => $this->controller->create('reg', 'sch', 'oid'),
+			'createNew' => $this->controller->createNew('reg', 'sch', 'oid'),
+			'update' => $this->controller->update('reg', 'sch', 'oid', 'jan-uid'),
+			'destroy uid' => $this->controller->destroy('reg', 'sch', 'oid', 'jan-uid'),
+			'destroy id' => $this->controller->destroy('reg', 'sch', 'oid', '42'),
+		];
+
+		foreach ($responses as $action => $response) {
+			$this->assertSame(403, $response->getStatus(), $action);
+		}
+	}
+
+	/**
+	 * Reading an object's contacts needs no update right.
+	 */
+	public function testListingContactsNeedsOnlyRead(): void {
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('abc-123');
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->mayUpdate = false;
+
+		$this->assertNotSame(403, $this->controller->index('reg', 'sch', 'oid')->getStatus());
+	}
 }

@@ -37,13 +37,12 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 <script>
 import Restore from 'vue-material-design-icons/Restore.vue'
 import BulkSelectionDialog from './BulkSelectionDialog.vue'
-import eventBus from '../../eventBus.js'
 import {
-	closeBulkDialog,
-	dropFromSelection,
-	objectTitle,
+	bulkDialogData,
+	bulkDialogLifecycle,
+	bulkDialogMethods,
 	reviewStateOf,
-	takeSelection,
+	runBulkAction,
 } from './bulkSelection.js'
 
 export default {
@@ -53,16 +52,7 @@ export default {
 		Restore,
 	},
 
-	data() {
-		return {
-			success: null,
-			successMessage: '',
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-			selectedObjects: [],
-		}
-	},
+	data: bulkDialogData,
 
 	computed: {
 		/**
@@ -86,49 +76,10 @@ export default {
 		},
 	},
 
-	watch: {
-		'navigationStore.dialog': function (newValue, oldValue) {
-			if (newValue === 'restoreMultiple' && oldValue !== 'restoreMultiple') {
-				this.initializeSelection()
-			}
-		},
-	},
-
-	mounted() {
-		this.initializeSelection()
-	},
+	...bulkDialogLifecycle('restoreMultiple'),
 
 	methods: {
-		/**
-		 * Initialize selection from transfer data
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			takeSelection(this)
-		},
-
-		/**
-		 * Remove object from selection
-		 *
-		 * @param {string} objectId - ID of object to remove
-		 * @return {void}
-		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			dropFromSelection(this, objectId)
-		},
-
-		/**
-		 * Close the dialog and reset state
-		 *
-		 * @return {void}
-		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
-		 */
-		closeDialog() {
-			closeBulkDialog(this)
-		},
+		...bulkDialogMethods,
 
 		/**
 		 * Restore multiple objects
@@ -142,48 +93,42 @@ export default {
 				return
 			}
 
-			this.loading = true
+			await runBulkAction(this, this.restoreAction())
+		},
 
-			try {
-				const ids = this.objectsToRestore.map((obj) => obj.id)
-				await deletedStore.restoreMultiple(ids)
-
-				this.success = true
-				this.error = false
-				this.successMessage = n(
+		/**
+		 * What a restore runs and reports.
+		 *
+		 * @return {object} The bulk action
+		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
+		restoreAction() {
+			return {
+				run: (ids) => deletedStore.restoreMultiple(ids),
+				done: () => this.restoredMessage(),
+				event: 'deleted-objects-restored',
+				closeAfter: 2000,
+				failure: t(
 					'openregister',
-					'Successfully restored {count} object',
-					'Successfully restored {count} objects',
-					this.objectsToRestore.length,
-					{ count: this.objectsToRestore.length },
-				)
-
-				// Auto-close after 2 seconds
-				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-
-				// Emit event to refresh parent list
-				eventBus.emit('deleted-objects-restored', ids)
-			} catch (error) {
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while restoring the objects',
-					)
-			} finally {
-				this.loading = false
+					'An error occurred while restoring the objects',
+				),
 			}
 		},
 
 		/**
-		 * Get object title from object data
+		 * The message for a finished restore.
 		 *
-		 * @param {object} object - The object
-		 * @return {string} The object title
+		 * @return {string} The message
+		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
-		getObjectTitle(object) {
-			return objectTitle(object)
+		restoredMessage() {
+			return n(
+				'openregister',
+				'Successfully restored {count} object',
+				'Successfully restored {count} objects',
+				this.objectsToRestore.length,
+				{ count: this.objectsToRestore.length },
+			)
 		},
 	},
 }

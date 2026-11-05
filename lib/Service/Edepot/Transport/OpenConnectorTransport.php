@@ -24,9 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use GuzzleHttp\Client;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -37,23 +35,9 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class OpenConnectorTransport implements TransportInterface {
+class OpenConnectorTransport extends HttpSipTransport {
 
 	use SipTransportSteps;
-	/**
-	 * Constructor.
-	 *
-	 * @param Client $httpClient The HTTP client.
-	 * @param LoggerInterface $logger Logger.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 */
-	public function __construct(
-		private readonly Client $httpClient,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
-
 	/**
 	 * Send a SIP package via OpenConnector.
 	 *

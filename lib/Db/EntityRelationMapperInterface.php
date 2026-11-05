@@ -250,8 +250,8 @@ interface EntityRelationMapperInterface {
 	 * @param array<int|string, string> $placeholders Keys are int|string,
 	 *        not string: a stringified entity id is a canonical numeric string,
 	 *        which PHP coerces to an int array key. Map of entity id → the
-	 *                                                     exact placeholder emitted for it
-	 *                                                     (e.g. "7" => "[PERSOON: 1]").
+	 *                                                exact placeholder emitted for it
+	 *                                                (e.g. "7" => "[PERSOON: 1]").
 	 *
 	 * @return int Number of relation rows marked anonymized.
 	 */

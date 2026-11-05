@@ -44,6 +44,8 @@ use Throwable;
  * Read-only object-source provider backed by the Nextcloud user directory.
  */
 class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
+
+	use CountsThroughFindAll;
 	/**
 	 * Constructor.
 	 *
@@ -144,22 +146,6 @@ class UserDirectoryObjectSourceProvider implements ObjectSourceProvider {
 
 		return $objects;
 	}//end findAll()
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param Register $register The register the schema belongs to.
-	 * @param Schema $schema The sourced schema.
-	 * @param array<string, mixed> $query Query (filters/search).
-	 * @param array<string, mixed> $config The object-source config block (unused).
-	 *
-	 * @return int The number of matching virtual objects.
-	 *
-	 * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-3.1
-	 */
-	public function count(Register $register, Schema $schema, array $query = [], array $config = []): int {
-		return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
-	}//end count()
 
 	/**
 	 * Read the users visible to the acting user, failing closed to an empty list.

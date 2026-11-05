@@ -150,7 +150,7 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -206,7 +206,7 @@ class ContactsController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-16
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -262,6 +262,44 @@ class ContactsController extends Controller {
 			return $this->errorResponse(exception: $e, fallbackStatus: $fallbackStatus);
 		}//end try
 	}//end withObject()
+
+	/**
+	 * Run a handler on a validated object the caller may update.
+	 *
+	 * Changing an object's contacts changes the object, so it needs the same
+	 * `update` right as editing the object; a caller who may only read it gets 403.
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema The schema slug.
+	 * @param string $id The object id.
+	 * @param callable(ObjectEntity): JSONResponse $handler What to do with the object.
+	 *
+	 * @return JSONResponse The handler's response, or the error's.
+	 *
+	 * @spec openspec/specs/contacts-actions/spec.md
+	 */
+	private function withWritableObject(string $register, string $schema, string $id, callable $handler): JSONResponse {
+		return $this->withObject(
+			register: $register,
+			schema: $schema,
+			id: $id,
+			handler: function (ObjectEntity $object) use ($handler): JSONResponse {
+				$schemaEntity = $this->objectService->getCurrentSchemaEntity();
+				if ($schemaEntity === null
+					|| $this->services->platform->permissions->hasPermission(
+						schema: $schemaEntity,
+						action: 'update',
+						objectOwner: $object->getOwner(),
+						object: $object
+					) === false
+				) {
+					return new JSONResponse(['error' => 'You may not change this object, so you cannot change its contacts.'], 403);
+				}
+
+				return $handler($object);
+			}
+		);
+	}//end withWritableObject()
 
 	/**
 	 * Whether a payload names a person to link: a user, or a contact in an address book.
@@ -366,7 +404,7 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
@@ -409,14 +447,14 @@ class ContactsController extends Controller {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse {
-		return $this->withObject(
+		return $this->withWritableObject(
 			register: $register,
 			schema: $schema,
 			id: $id,
 			handler: function (ObjectEntity $object) use ($contactUid): JSONResponse {
-				// Numeric param: legacy link-id path.
+				// Numeric param: legacy link-id path, limited to this object's links.
 				if (ctype_digit($contactUid) === true) {
-					$this->contactService->unlinkContact((int)$contactUid);
+					$this->contactService->unlinkContact(linkId: (int)$contactUid, objectUuid: $object->getUuid());
 
 					return new JSONResponse(['success' => true]);
 				}

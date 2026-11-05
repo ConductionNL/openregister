@@ -7,6 +7,8 @@
 - [ ] 1.3 The cause is forwarded into deferred listener jobs with the actor.
 - [x] 1.4 The audit read and export filter on cause and on run.
 - [x] 1.5 A cause supplied by a client is ignored, and the attempt is recorded.
+      The attempt is recorded on the entry itself: `AuditTrailMapper::buildAuditTrail()`
+      marks `changed.clientSuppliedCause` when `WriteCause::clientAttempted()`, before the row is sealed.
 
 ## 2. The data quality audit
 
