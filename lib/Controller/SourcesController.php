@@ -19,6 +19,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Db\Source;
@@ -33,10 +34,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCP\Security\ICrypto;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -81,18 +80,11 @@ class SourcesController extends Controller {
 	private readonly IL10N $l10n;
 
 	/**
-	 * User session for admin checks
+	 * The session bundle, which answers the admin check.
 	 *
-	 * @var IUserSession
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for admin checks
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Crypto service for databaseUrl encryption
@@ -154,8 +146,7 @@ class SourcesController extends Controller {
 		$this->config = $services->platform->config;
 		$this->sourceMapper = $services->mappers->sourceMapper;
 		$this->l10n = $services->platform->l10n;
-		$this->userSession = $services->session->userSession;
-		$this->groupManager = $services->session->groupManager;
+		$this->session = $services->session;
 		$this->crypto = $services->platform->crypto;
 		$this->fetcherRegistry = $services->domain->fetcherRegistry;
 		$this->pipeline = $services->domain->pipeline;
@@ -170,12 +161,7 @@ class SourcesController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

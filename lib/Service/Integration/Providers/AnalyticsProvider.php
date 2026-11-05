@@ -41,14 +41,29 @@ use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class AnalyticsProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'analytics';
 
 	private const MARKER_PREFIX = '[or:';
+
+	/**
+	 * Where the legacy `[or:{uuid}]` marker lives: table, marker column, extra
+	 * columns, id column, and the app URL a row's id is appended to.
+	 *
+	 * @var array{table: string, column: string, extra: list<string>, id: string, url: string}
+	 */
+	private const MARKER_SOURCE = [
+		'table' => 'analytics_report',
+		'column' => 'name',
+		'extra' => ['subheader', 'type'],
+		'id' => 'id',
+		'url' => '/index.php/apps/analytics/#/r/',
+	];
 
 	/**
 	 * Constructor.
@@ -84,78 +99,14 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List linked Analytics reports for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `analytics_report.name` (wave-2.2 convention) so reports that
-	 * pre-date the link table still surface.
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-analytics/spec.md
+	 * @return AnalyticsLinkMapper
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->analyticsLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (AnalyticsLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]` marker
-		// in `analytics_report.name` (wave-2.2 marker-on-name convention).
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: 'analytics_report',
-			markerColumn: 'name',
-			marker: $marker,
-			extraColumns: ['subheader', 'type'],
-			idColumn: 'id',
-		);
-
-		return array_map(
-			static function (array $row): array {
-				return [
-					'id' => (string)($row['id'] ?? ''),
-					'title' => (string)($row['name'] ?? ''),
-					'url' => '/index.php/apps/analytics/#/r/' . (string)($row['id'] ?? ''),
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+	protected function linkMapper(): AnalyticsLinkMapper {
+		return $this->analyticsLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert an AnalyticsLink row into the registry leaf-row shape.
@@ -164,7 +115,7 @@ class AnalyticsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(AnalyticsLink $link): array {
+	protected function rowFromLink(AnalyticsLink $link): array {
 		$reportId = (int)$link->getReportId();
 		$data = $link->jsonSerialize();
 

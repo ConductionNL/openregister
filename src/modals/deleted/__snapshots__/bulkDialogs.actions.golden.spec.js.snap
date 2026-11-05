@@ -134,6 +134,8 @@ exports[`bulk dialogs actions golden purge: titles objects 1`] = `
   "N",
   "OT",
   "ON",
+  "OT",
+  "f",
   7,
   "Unknown",
 ]
@@ -458,6 +460,8 @@ exports[`bulk dialogs actions golden restore: titles objects 1`] = `
   "N",
   "OT",
   "ON",
+  "OT",
+  "f",
   7,
   "Unknown",
 ]

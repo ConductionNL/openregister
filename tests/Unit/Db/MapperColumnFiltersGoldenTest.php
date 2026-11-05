@@ -43,6 +43,7 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\SourceMapper
  * @covers \OCA\OpenRegister\Db\WebhookMapper
+ * @uses   \OCA\OpenRegister\Db\QueryPage
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  */
 class MapperColumnFiltersGoldenTest extends TestCase {
