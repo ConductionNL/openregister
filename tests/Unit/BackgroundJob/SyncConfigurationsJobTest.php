@@ -595,4 +595,66 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->assertSame([[11, 'success', true], [12, 'success', true], [13, 'success', true], [14, 'success', true]], $recorded);
 	}
+
+	/**
+	 * A mixed run logs each step and the tally, and records a failure even when the status write fails.
+	 *
+	 * @return void
+	 */
+	public function testAMixedRunLogsEachStepAndTheTally(): void {
+		$this->githubService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['id' => 1, 'title' => 'Later', 'lastSyncDate' => new DateTime(), 'syncInterval' => 24]),
+			$this->createConfigEntity(['id' => 2, 'title' => 'Good', 'sourceType' => 'github']),
+			$this->createConfigEntity(['id' => 3, 'title' => 'Odd', 'sourceType' => 'ftp']),
+		]);
+		$statuses = [];
+		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
+			function (int $id, string $status, \DateTime $date, string $message = '') use (&$statuses) {
+				$statuses[] = "$id $status $message";
+				if ($status === 'failed') {
+					throw new \Exception('db gone');
+				}
+
+				return $this->createConfigEntity(['id' => $id]);
+			}
+		);
+		$lines = [];
+		foreach (['info', 'error'] as $level) {
+			$this->logger->method($level)->willReturnCallback(function (string $message, array $context = []) use ($level, &$lines) {
+				$lines[] = $level . ' ' . $message . ' ' . basename((string)($context['file'] ?? ''));
+			});
+		}
+
+		$this->runJob(null);
+
+		$file = ' SyncConfigurationsJob.php';
+		$this->assertSame(['2 success ', '3 failed Unsupported source type: ftp'], $statuses);
+		$this->assertSame([
+			'info [SyncConfigurationsJob] Starting configuration sync job' . $file,
+			'info [SyncConfigurationsJob] Found 3 configurations with sync enabled' . $file,
+			'info [SyncConfigurationsJob] Syncing configuration: Good (ID: 2)' . $file,
+			'info [SyncConfigurationsJob] Successfully synced configuration Good' . $file,
+			'info [SyncConfigurationsJob] Syncing configuration: Odd (ID: 3)' . $file,
+			'error [SyncConfigurationsJob] Sync error: Unsupported source type: ftp' . $file,
+			'error [SyncConfigurationsJob] Failed to update sync status: db gone' . $file,
+			'info [SyncConfigurationsJob] Completed: 1 synced, 1 skipped, 1 failed' . $file,
+		], $lines);
+	}
+
+	/**
+	 * A configured GitHub branch is the one the file is read from.
+	 *
+	 * @return void
+	 */
+	public function testRunGitHubReadsTheConfiguredBranch(): void {
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['githubRepo' => 'acme/conf', 'githubBranch' => 'release', 'githubPath' => 'c.json']),
+		]);
+		$this->githubService->expects($this->once())->method('getFileContent')
+			->with('acme', 'conf', 'c.json', 'release')
+			->willReturn(['info' => ['version' => '1.0.0']]);
+
+		$this->runJob(null);
+	}
 }
