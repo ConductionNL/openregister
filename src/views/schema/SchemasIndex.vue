@@ -529,6 +529,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/common.scss' as *;
+@use '../../styles/views.scss' as *;
+
 /* Table row accents. Drawn with an inset box-shadow, never border-left: a
    border adds layout width and shifts the row's cell content sideways, while
    box-shadow paints inside the box. Matches .cn-table-row--selected.
@@ -554,35 +557,10 @@ export default {
 }
 
 /* Status Pills */
-.statusPill {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-	white-space: nowrap;
-}
-
-.statusPill--alert {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-.statusPill--success {
-	background-color: var(--color-success);
-	color: white;
-}
+@include status-pill-rules;
 
 /* Title with badges layout */
-.titleWithBadges {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	margin-bottom: 4px;
-}
+@include title-with-badges;
 
 .textDescription {
 	display: block;
@@ -595,27 +573,11 @@ export default {
 }
 
 /* Managed by Configuration badge */
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
+@include managed-badge;
 
 /* External (managed) badge - green */
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
+@include managed-badge-external;
 
 /* Local configuration badge - orange */
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-text);
-}
+@include managed-badge-local;
 </style>

@@ -1,0 +1,50 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by several components under src/components.
+// Each mixin emits one complete rule; a component includes it where the rule belongs.
+
+@mixin sidebar-header-h3 {
+	.sidebar-header h3 {
+		font-size: 18px;
+		font-weight: 600;
+		margin: 0;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin filter-section-h4 {
+	.filter-section h4 {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--color-main-text);
+		margin: 0 0 12px 0;
+	}
+}
+
+@mixin filter-options {
+	.filter-options {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+
+@mixin material-design-icon-deep-svg {
+	.material-design-icon :deep(svg) {
+		width: 64px;
+		height: 64px;
+		fill: currentColor;
+	}
+}
+
+@mixin lead {
+	.lead {
+		color: var(--color-text-maxcontrast);
+		margin-bottom: 12px;
+	}
+}
+
+@mixin filter-section-h4-rules {
+	@include filter-section-h4;
+	@include filter-options;
+}

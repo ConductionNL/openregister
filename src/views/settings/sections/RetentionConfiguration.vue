@@ -650,27 +650,16 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
-.section-description-full {
-	margin-bottom: 24px;
-	padding: 16px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	border: 1px solid var(--color-border);
-}
+@include section-description-full-2;
 
-.main-description {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
+@include main-description-2;
 
-.toggle-status {
-	margin: 0 0 12px 0;
-	color: var(--color-text-light);
-}
+@include toggle-status;
 
 .warning-box {
 	background: rgba(var(--color-warning), 0.1);
@@ -680,27 +669,15 @@ export default {
 	border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-.impact-description {
-	margin: 0;
-	color: var(--color-text-light);
-	line-height: 1.5;
-}
+@include impact-description;
 
 .option-section {
 	margin: 24px 0;
 }
 
-.option-description {
-	color: var(--color-text-maxcontrast);
-	margin: 8px 0 16px 0;
-	line-height: 1.4;
-}
+@include option-description;
 
-.option-section h4 {
-	color: var(--color-text-light);
-	margin: 24px 0 16px 0;
-	font-size: 16px;
-}
+@include option-section-h4;
 
 .trail-switches {
 	display: flex;
@@ -809,10 +786,7 @@ export default {
 	padding: 8px 0;
 }
 
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
 	.retention-row {

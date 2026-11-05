@@ -1415,6 +1415,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/common.scss' as *;
+
 .registerSchemaCard {
 	background: var(--color-main-background);
 	border: 1px solid var(--color-border);
@@ -1584,48 +1586,13 @@ export default {
 	padding: 16px !important;
 }
 
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
+@include managed-badge;
 
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
+@include managed-badge-external;
 
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-text);
-}
+@include managed-badge-local;
 
-.statusPill {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-	white-space: nowrap;
-}
-
-.statusPill--alert {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-.statusPill--success {
-	background-color: var(--color-success);
-	color: white;
-}
+@include status-pill-rules;
 
 .schemaNameCell {
 	display: table-cell;

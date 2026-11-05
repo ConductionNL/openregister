@@ -133,7 +133,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .json-editor {
 	position: relative;
 	margin-bottom: 2.5rem;
@@ -150,10 +152,7 @@ export default {
 	margin-block-start: 6px;
 }
 
-.codeMirrorContainer :deep(.cm-content) {
-	border-radius: 0 !important;
-	border: none !important;
-}
+@include code-mirror-container-deep-cm-content;
 
 .codeMirrorContainer :deep(.cm-editor) {
 	outline: none !important;

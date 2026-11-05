@@ -2095,7 +2095,10 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+@use '../../../styles/views.scss' as *;
+
 /* SettingsSection handles all action button positioning and spacing */
 
 /* Fix for action menu icon wrapper to prevent layout shifts when showing loading icons */
@@ -2107,28 +2110,7 @@ export default {
 	height: 20px;
 }
 
-.section-description-full {
-	background: var(--color-background-hover);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 20px;
-	margin-bottom: 20px;
-}
-
-.main-description {
-	color: var(--color-text-light);
-	font-size: 14px;
-	line-height: 1.6;
-	margin: 0 0 16px 0;
-}
-
-.main-description.info-note {
-	background: var(--color-background-dark);
-	border-left: 4px solid var(--color-primary-element);
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-}
+@include section-description-full-rules-2;
 
 .main-description.info-note strong {
 	color: var(--color-primary-element);
@@ -2312,11 +2294,7 @@ export default {
 	gap: 16px;
 }
 
-.field-group {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
+@include field-group;
 
 .field-hint {
 	font-size: 12px;
@@ -2324,28 +2302,9 @@ export default {
 	margin: 0;
 }
 
-.save-message {
-	padding: 12px 16px;
-	border-radius: var(--border-radius);
-	margin-top: 16px;
-	text-align: center;
-	font-weight: 500;
-}
+@include save-message-rules;
 
-.save-message.success {
-	background: var(--color-success);
-	color: white;
-}
-
-.save-message.error {
-	background: var(--color-error);
-	color: white;
-}
-
-.loading-icon {
-	margin: 40px auto;
-	display: block;
-}
+@include loading-icon;
 
 @media (max-width: 768px) {
 	.section-header-inline {

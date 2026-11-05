@@ -860,7 +860,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
 /* Specific column widths for search trail table */
 .searchTermColumn {
 	width: 200px;
@@ -938,21 +940,5 @@ export default {
 	animation: copySuccess 0.3s ease-in-out;
 }
 
-@keyframes copySuccess {
-	0% {
-		transform: scale(1);
-	}
-	50% {
-		transform: scale(1.2);
-	}
-	100% {
-		transform: scale(1);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	:deep(.copySuccessIcon) {
-		animation: none;
-	}
-}
+@include keyframes-copy-success-rules;
 </style>

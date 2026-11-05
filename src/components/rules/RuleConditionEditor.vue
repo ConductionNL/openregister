@@ -371,7 +371,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
+
 .ruleEditor {
 	margin-bottom: 24px;
 }
@@ -397,10 +399,7 @@ export default {
 	margin: 0;
 }
 
-.lead {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 12px;
-}
+@include lead;
 
 textarea {
 	width: 100%;

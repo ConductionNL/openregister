@@ -406,7 +406,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-details {
 	padding: 16px 0;
 }
@@ -430,11 +432,7 @@ export default {
 	gap: 16px;
 }
 
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
+@include detail-item;
 
 .detail-item label {
 	font-size: 0.9rem;

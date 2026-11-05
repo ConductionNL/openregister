@@ -290,11 +290,10 @@ export default {
 }
 </script>
 
-<style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 1200px;
-}
+<style scoped lang="scss">
+@use '../../styles/views.scss' as *;
+
+@include view-container-3;
 
 .viewHeader h1 {
 	margin-bottom: 4px;
@@ -313,18 +312,7 @@ export default {
 	border-bottom: 1px solid var(--color-border);
 }
 
-.pagination {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-top: 12px;
-}
-
-.badge {
-	padding: 2px 8px;
-	border-radius: var(--border-radius-pill);
-	background-color: var(--color-background-dark);
-}
+@include pagination-2-rules;
 
 .badge-status-reversible {
 	color: var(--color-main-text);
