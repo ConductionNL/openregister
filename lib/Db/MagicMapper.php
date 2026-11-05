@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableHit;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicIdentifierProbe;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowWrite;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
@@ -1223,10 +1224,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		try {
 			foreach ($objects as $object) {
 				$uuid = $this->saveObjectToRegisterSchemaTable(
-					objectData: $object,
-					register: $register,
-					schema: $schema,
-					tableName: $tableName
+					write: new MagicRowWrite(objectData: $object, register: $register, schema: $schema, tableName: $tableName)
 				);
 				if ($uuid !== '') {
 					$savedUuids[] = $uuid;
@@ -4592,159 +4590,178 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Save single object to register+schema-specific table
 	 *
-	 * @param array $objectData The object data to save
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema for validation and table selection
-	 * @param string $tableName The table name to save to
-	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken
-	 * @param int|null $insertedId Out-param: the generated `_id` when this call INSERTED, null when it
-	 *                             updated or lost an insert race. Lets the caller learn the generated key
-	 *                             without selecting the row back, which is what made every create emit a
-	 *                             "dirty table read".
+	 * @param MagicRowWrite $write The object, its table and the claim flag; its insertedId
+	 *                             is set to the generated `_id` when this call inserted, so the
+	 *                             caller learns the key without selecting the row back.
 	 *
 	 * @throws Exception If save operation fails
 	 *
 	 * @return string The UUID of the saved object — the identity callers actually use
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	protected function saveObjectToRegisterSchemaTable(
-		array $objectData,
-		Register $register,
-		Schema $schema,
-		string $tableName,
-		bool $failIfExists = false,
-		?int &$insertedId = null,
-	): string {
-		// Prepare object data for table storage with register+schema context.
-		$preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
-		$this->refuseNumbersTheColumnsWouldRound(row: $preparedData, tableName: $tableName);
+	protected function saveObjectToRegisterSchemaTable(MagicRowWrite $write): string {
+		$write->row = $this->prepareObjectDataForTable(
+			objectData: $write->objectData,
+			register: $write->register,
+			schema: $write->schema
+		);
+		$this->refuseNumbersTheColumnsWouldRound(row: $write->row, tableName: $write->tableName);
+		$write->row[self::METADATA_PREFIX . 'uuid'] = $this->rowUuid(write: $write);
+		$write->uuid = $write->row[self::METADATA_PREFIX . 'uuid'];
 
-		// Generate UUID if not provided in prepared data.
-		// Check both in metadata and top-level for UUID.
-		$metaKey = self::METADATA_PREFIX . 'uuid';
-		$uuidFromMeta = $preparedData[$metaKey] ?? null;
+		try {
+			if ($this->findObjectInRegisterSchemaTable(uuid: $write->uuid, tableName: $write->tableName) === null) {
+				return $this->insertClaimedRow(write: $write);
+			}
+
+			return $this->updateFoundRow(write: $write);
+		} catch (Exception $e) {
+			$this->logFailedSave(error: $e, where: ['uuid' => $write->uuid, 'tableName' => $write->tableName]);
+			throw $e;
+		}
+	}//end saveObjectToRegisterSchemaTable()
+
+	/**
+	 * The uuid a row is written under: the one in the prepared row, in `@self`
+	 * or at the top of the object, or a new v4 when none is set.
+	 *
+	 * @param MagicRowWrite $write The write; its row is prepared.
+	 *
+	 * @return mixed The uuid.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function rowUuid(MagicRowWrite $write): mixed {
+		$objectData = $write->objectData;
+		$uuidFromMeta = $write->row[self::METADATA_PREFIX . 'uuid'] ?? null;
 		$uuidFromSelf = $objectData['@self']['id'] ?? $objectData['@self']['uuid'] ?? null;
 		$uuidFromTop = $objectData['id'] ?? $objectData['uuid'] ?? null;
 		$existingUuid = $uuidFromMeta ?? $uuidFromSelf ?? $uuidFromTop;
 
-		$preparedData[self::METADATA_PREFIX . 'uuid'] = Uuid::v4()->toRfc4122();
 		if (empty($existingUuid) === false) {
-			$preparedData[self::METADATA_PREFIX . 'uuid'] = $existingUuid;
+			return $existingUuid;
 		}
 
-		$uuid = $preparedData[self::METADATA_PREFIX . 'uuid'];
+		return Uuid::v4()->toRfc4122();
+	}//end rowUuid()
 
+	/**
+	 * Insert a row whose identifier the lookup found free.
+	 *
+	 * The lookup and the insert are two operations, so concurrent writers can
+	 * all find nothing and all arrive here (openregister#2212). The `_uuid`
+	 * unique constraint lets the database arbitrate: exactly one INSERT wins,
+	 * and the losers are handled by applyLostInsertRace(). Catching the
+	 * violation by reason keeps this portable across MySQL and PostgreSQL.
+	 *
+	 * @param MagicRowWrite $write The write; its insertedId is set on success.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws ObjectExistsException When the race is lost and the caller claims the identifier.
+	 * @throws DbException When the insert fails for another reason.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function insertClaimedRow(MagicRowWrite $write): string {
 		try {
-			// Check if object exists (for update vs insert).
-			$existingObject = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-
-			if ($existingObject === null) {
-				// CONCURRENCY (openregister#2212). The lookup above and this
-				// insert are two operations, so N concurrent writers can all
-				// find nothing and all arrive here. Measured before this
-				// change: 12 simultaneous claims on one identifier produced up
-				// to 3 audit `create` entries against a single surviving row,
-				// each caller told 201 — writes lost, silently.
-				//
-				// The fix is not a better check. It is to let the DATABASE
-				// arbitrate: the `_uuid` unique constraint already exists, so
-				// exactly one INSERT can win. Catching its violation by reason
-				// (rather than emitting dialect-specific ON CONFLICT SQL) keeps
-				// this portable across the MySQL and PostgreSQL backends and
-				// matches the pattern already used in
-				// NotificationDedupeStateMapper and NotificationDispatchLogMapper.
-				try {
-					$insertedId = $this->insertObjectInRegisterSchemaTable(
-						data: $preparedData,
-						tableName: $tableName
-					);
-				} catch (DbException $e) {
-					if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
-						throw $e;
-					}
-
-					// Someone else won the race for this identifier.
-					if ($failIfExists === true) {
-						// The caller asked to CLAIM. Losing is the answer, and
-						// it must be reported rather than absorbed.
-						throw new ObjectExistsException(
-							message: sprintf('An object with identifier "%s" already exists.', $uuid),
-							uuid: $uuid
-						);
-					}
-
-					// Upsert intent: fall through to the update the outer
-					// lookup would have chosen had it run a moment later. The
-					// caller's data still lands, which is the behaviour every
-					// existing caller depends on.
-					$this->logger->debug(
-						message: '[MagicMapper] Insert lost a race; applying as update',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'uuid' => $uuid,
-							'tableName' => $tableName,
-						]
-					);
-					$this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
-					$this->lastWriteAction = 'update';
-					return $uuid;
-				}//end try
-
-				$this->logger->debug(
-					message: '[MagicMapper] Inserted object in register+schema table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $uuid,
-						'tableName' => $tableName,
-					]
-				);
-				$this->lastWriteAction = 'create';
-				return $uuid;
-			}//end if
-
-			// THE ACTUAL LOST-UPDATE PATH (openregister#2212).
-			//
-			// The caller reached this method because the SERVICE-level lookup
-			// in SaveObject found nothing — so the operation is labelled a
-			// create, and the audit trail records `create`. By the time we look
-			// again here, a concurrent writer has landed the row, and without
-			// this guard we quietly UPDATE it instead: the caller's data
-			// overwrites the winner's, the response is 201, and the audit says
-			// `create`. Measured before this guard: 12 simultaneous claims
-			// produced up to 8 such "creates" against a single `_id`.
-			//
-			// This is not the same case as the constraint violation handled
-			// above. That one fires when two INSERTs truly collide; this one
-			// fires when the second writer's lookup is late enough to see the
-			// first writer's row and quietly downgrade to an update. The second
-			// case is the common one, which is why guarding only the first
-			// changed nothing.
-			if ($failIfExists === true) {
-				throw new ObjectExistsException(
-					message: sprintf('An object with identifier "%s" already exists.', $uuid),
-					uuid: $uuid
-				);
+			$write->insertedId = $this->insertObjectInRegisterSchemaTable(data: $write->row, tableName: $write->tableName);
+		} catch (DbException $e) {
+			if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+				throw $e;
 			}
 
-			// Update existing object.
-			$this->updateExistingObject(uuid: $uuid, data: $preparedData, tableName: $tableName);
-			$this->lastWriteAction = 'update';
-			$this->logger->debug(
-				message: '[MagicMapper] Updated object in register+schema table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
+			return $this->applyLostInsertRace(write: $write);
+		}
+
+		$this->logger->debug(
+			message: '[MagicMapper] Inserted object in register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $write->uuid,
+				'tableName' => $write->tableName,
+			]
+		);
+		$this->lastWriteAction = 'create';
+		return $write->uuid;
+	}//end insertClaimedRow()
+
+	/**
+	 * Handle an insert that lost the race for its identifier.
+	 *
+	 * A caller that claims the identifier is told it is taken. Any other
+	 * caller's upsert intent is applied as the update the lookup would have
+	 * chosen had it run a moment later.
+	 *
+	 * @param MagicRowWrite $write The write.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws ObjectExistsException When the caller claims the identifier.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function applyLostInsertRace(MagicRowWrite $write): string {
+		if ($write->failIfExists === true) {
+			throw new ObjectExistsException(
+				message: sprintf('An object with identifier "%s" already exists.', $write->uuid),
+				uuid: $write->uuid
 			);
-			return $uuid;
-		} catch (Exception $e) {
-			$this->logFailedSave(error: $e, where: ['uuid' => $uuid, 'tableName' => $tableName]);
-			throw $e;
-		}//end try
-	}//end saveObjectToRegisterSchemaTable()
+		}
+
+		$this->logger->debug(
+			message: '[MagicMapper] Insert lost a race; applying as update',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $write->uuid,
+				'tableName' => $write->tableName,
+			]
+		);
+		$this->updateObjectInRegisterSchemaTable(uuid: $write->uuid, data: $write->row, tableName: $write->tableName);
+		$this->lastWriteAction = 'update';
+		return $write->uuid;
+	}//end applyLostInsertRace()
+
+	/**
+	 * Update a row the lookup found.
+	 *
+	 * A caller that claims the identifier is refused here too: a concurrent
+	 * writer can land the row between the service-level lookup and this one,
+	 * and without the refusal the claim would quietly overwrite it while the
+	 * audit trail records a create (openregister#2212).
+	 *
+	 * @param MagicRowWrite $write The write.
+	 *
+	 * @return string The uuid written.
+	 *
+	 * @throws ObjectExistsException When the caller claims the identifier.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function updateFoundRow(MagicRowWrite $write): string {
+		if ($write->failIfExists === true) {
+			throw new ObjectExistsException(
+				message: sprintf('An object with identifier "%s" already exists.', $write->uuid),
+				uuid: $write->uuid
+			);
+		}
+
+		$this->updateExistingObject(uuid: $write->uuid, data: $write->row, tableName: $write->tableName);
+		$this->lastWriteAction = 'update';
+		$this->logger->debug(
+			message: '[MagicMapper] Updated object in register+schema table',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $write->uuid,
+				'tableName' => $write->tableName,
+			]
+		);
+		return $write->uuid;
+	}//end updateFoundRow()
 
 	/**
 	 * Log a failed table write. A taken identifier is an answer for the caller, not a failure, so it is not logged.
@@ -9474,16 +9491,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [$this->updateRefusedCreate(entity: $entity, write: $write), null];
 		}
 
-		$insertedId = null;
+		$rowWrite = new MagicRowWrite(
+			objectData: $write['data'],
+			register: $write['register'],
+			schema: $write['schema'],
+			tableName: $write['table']
+		);
+		$rowWrite->failIfExists = true;
 		try {
-			$uuid = $this->saveObjectToRegisterSchemaTable(
-				objectData: $write['data'],
-				register: $write['register'],
-				schema: $write['schema'],
-				tableName: $write['table'],
-				failIfExists: true,
-				insertedId: $insertedId
-			);
+			$uuid = $this->saveObjectToRegisterSchemaTable(write: $rowWrite);
 		} catch (ObjectExistsException $e) {
 			if ($write['failIfExists'] === true) {
 				throw $e;
@@ -9492,7 +9508,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$uuid = $this->updateTakenIdentifier(entity: $entity, target: $write);
 		}
 
-		return [$uuid, $insertedId];
+		return [$uuid, $rowWrite->insertedId];
 	}//end writeClaimingIdentifier()
 
 	/**
@@ -9706,10 +9722,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// Update in table.
 		$this->saveObjectToRegisterSchemaTable(
-			objectData: $objectArray,
-			register: $register,
-			schema: $schema,
-			tableName: $tableName
+			write: new MagicRowWrite(objectData: $objectArray, register: $register, schema: $schema, tableName: $tableName)
 		);
 
 		// The re-read that used to sit here is gone, and nothing is lost with it.
@@ -9995,10 +10008,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$schema = $this->schemaMapper->find((int)$entity->getSchema(), _rbac: false, _multitenancy: false);
 			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 			$this->saveObjectToRegisterSchemaTable(
-				objectData: $entity->jsonSerialize(),
-				register: $register,
-				schema: $schema,
-				tableName: $tableName
+				write: new MagicRowWrite(objectData: $entity->jsonSerialize(), register: $register, schema: $schema, tableName: $tableName)
 			);
 			return true;
 		} catch (Exception $e) {
