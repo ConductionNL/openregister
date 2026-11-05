@@ -774,17 +774,6 @@ class SchemaGenerator {
 	}//end createMutationResolverPlaceholder()
 
 	/**
-	 * Get schemas indexed by ID.
-	 *
-	 * @return array<int, RegisterSchema>
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
-	 */
-	public function getSchemasById(): array {
-		return $this->schemasById;
-	}//end getSchemasById()
-
-	/**
 	 * Get registers indexed by ID.
 	 *
 	 * @return array<int, Register>
