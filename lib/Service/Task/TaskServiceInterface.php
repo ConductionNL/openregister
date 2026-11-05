@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -79,6 +80,8 @@ interface TaskServiceInterface {
 	 * @param string|null $actor The creating identity.
 	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
 	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
+	 * @param DateTime|null $createdAt The moment the task was created, for a task carried over from elsewhere; it stamps
+	 *                                 the task and its create audit entry. Null stamps both with now.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -88,7 +91,7 @@ interface TaskServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null): Task;
+	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null, ?DateTime $createdAt = null): Task;
 
 	/**
 	 * Offer a task to a candidate pool, optionally routing it.
