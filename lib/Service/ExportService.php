@@ -1212,39 +1212,20 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	private function metadataValue(ObjectEntity $object, string $fieldName): ?string {
 		$value = $object->getObjectArray()[$fieldName] ?? null;
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_string($value) === true) {
-			return $this->isoDateCell(value: $value);
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
+		if (is_string($value) === false
+			|| str_contains(haystack: $value, needle: 'T') === false
+			|| str_contains(haystack: $value, needle: 'Z') === false
+		) {
 			return $this->convertValueToString(value: $value);
 		}
 
-		return (string)$value;
-	}//end metadataValue()
-
-	/**
-	 * An ISO 8601 timestamp as `Y-m-d H:i:s`; any other string as it is.
-	 *
-	 * @param string $value The metadata value
-	 *
-	 * @return string
-	 */
-	private function isoDateCell(string $value): string {
-		if (str_contains(haystack: $value, needle: 'T') === false || str_contains(haystack: $value, needle: 'Z') === false) {
-			return $value;
-		}
-
+		// An ISO 8601 timestamp is written as `Y-m-d H:i:s`.
 		try {
 			return (new DateTime($value))->format('Y-m-d H:i:s');
 		} catch (Exception $e) {
 			return $value;
 		}
-	}//end isoDateCell()
+	}//end metadataValue()
 
 	/**
 	 * Resolve the language list to use for translatable column emission.
