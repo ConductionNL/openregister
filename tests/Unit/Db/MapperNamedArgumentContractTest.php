@@ -19,11 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\DestructionList;
-use OCA\OpenRegister\Db\DestructionListMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\SelectionList;
-use OCA\OpenRegister\Db\SelectionListMapper;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -100,55 +96,6 @@ class MapperNamedArgumentContractTest extends TestCase {
 			);
 		}
 	}//end testOrganisationMapperFindAllIsCallableWithOnlyFilters()
-
-	/**
-	 * `SelectionListMapper::updateEntry()` forwarded to the inherited
-	 * `QBMapper::update()` as `update(objectId: $entity)`. `QBMapper::update()`
-	 * takes `$entity`, so the first ever call to `updateEntry()` would have
-	 * raised `Error: Unknown named parameter $objectId`.
-	 *
-	 * This drives the real method body against a stub of `update()` whose
-	 * signature PHPUnit copies from QBMapper — so the named argument is
-	 * resolved for real. Before the fix this test fails with \Error.
-	 *
-	 * @return void
-	 */
-	public function testSelectionListMapperUpdateEntryForwardsWithAValidArgumentName(): void {
-		$entity = new SelectionList();
-
-		$mapper = $this->getMockBuilder(SelectionListMapper::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['update'])
-			->getMock();
-
-		$mapper->expects($this->once())
-			->method('update')
-			->with($this->identicalTo($entity))
-			->willReturn($entity);
-
-		$this->assertSame($entity, $mapper->updateEntry($entity));
-	}//end testSelectionListMapperUpdateEntryForwardsWithAValidArgumentName()
-
-	/**
-	 * Identical defect, identical shape, in DestructionListMapper.
-	 *
-	 * @return void
-	 */
-	public function testDestructionListMapperUpdateEntryForwardsWithAValidArgumentName(): void {
-		$entity = new DestructionList();
-
-		$mapper = $this->getMockBuilder(DestructionListMapper::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['update'])
-			->getMock();
-
-		$mapper->expects($this->once())
-			->method('update')
-			->with($this->identicalTo($entity))
-			->willReturn($entity);
-
-		$this->assertSame($entity, $mapper->updateEntry($entity));
-	}//end testDestructionListMapperUpdateEntryForwardsWithAValidArgumentName()
 
 	/**
 	 * The mechanical guard for the whole defect class.

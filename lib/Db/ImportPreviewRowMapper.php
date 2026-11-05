@@ -112,28 +112,6 @@ class ImportPreviewRowMapper extends QBMapper {
 	}//end findPendingWrites()
 
 	/**
-	 * Count a preview's rows carrying one decision.
-	 *
-	 * @param int $previewId The preview id.
-	 * @param string $decision The decision.
-	 *
-	 * @return int The count.
-	 */
-	public function countByDecision(int $previewId, string $decision): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*', 'row_count'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('preview_id', $qb->createNamedParameter($previewId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('decision', $qb->createNamedParameter($decision)));
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countByDecision()
-
-	/**
 	 * Persist one decision.
 	 *
 	 * @param ImportPreviewRow $row The row to persist.

@@ -430,48 +430,6 @@ class MappingMapper extends QBMapper {
 	}//end delete()
 
 	/**
-	 * Get the total count of all mappings.
-	 *
-	 * @return int The total number of mappings in the database.
-	 */
-	public function getTotalCount(): int {
-		$qb = $this->db->getQueryBuilder();
-
-		// Select count of all mappings.
-		$qb->select($qb->createFunction('COUNT(*) as count'))
-			->from($this->getTableName());
-
-		$this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-
-		// Return the total count.
-		return (int)$row['count'];
-	}//end getTotalCount()
-
-	/**
-	 * Find all mappings that belong to a specific configuration.
-	 *
-	 * @param string $configurationId The ID of the configuration to find mappings for
-	 *
-	 * @return Mapping[] Array of Mapping entities
-	 */
-	public function findByConfiguration(string $configurationId): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where('JSON_CONTAINS(configurations, :configId)');
-
-		$qb->setParameter('configId', '"' . $configurationId . '"');
-
-		$this->applyOrganisationFilter(qb: $qb, allowNullOrg: true);
-
-		return $this->findEntities(query: $qb);
-	}//end findByConfiguration()
-
-	/**
 	 * Get all mapping ID to slug mappings
 	 *
 	 * @param bool $includeNullOrg Include mappings with no organisation set

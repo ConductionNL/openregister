@@ -2324,16 +2324,6 @@ parameters:
 			path: lib/Db/ConversationMapper.php
 
 		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/DestructionListMapper.php
-
-		-
 			message: "#^Unknown PHPDoc tag\\: @phpstan\\-api$#"
 			count: 1
 			path: lib/Db/EndpointLog.php
@@ -2901,16 +2891,6 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
-			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
-
-		-
-			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SelectionListMapper.php
-
-		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
@@ -3039,26 +3019,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Event\\\\ViewUpdatedEvent\\:\\:\\$oldView is never read, only written\\.$#"
 			count: 1
 			path: lib/Event/ViewUpdatedEvent.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodeFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodeFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$fileService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\EventListener\\\\AbstractNodesFolderEventListener\\:\\:\\$objectService is never read, only written\\.$#"
-			count: 1
-			path: lib/EventListener/AbstractNodesFolderEventListener.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
@@ -5487,31 +5447,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TenantLifecycleService\\:\\:\\$eventDispatcher is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/TenantLifecycleService.php
-
-		-
-			message: "#^Offset 'confidence' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'language' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'level' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'method' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
-
-		-
-			message: "#^Offset 'mtime' on array\\{fileid\\: int, storage\\: int, path\\: string, path_hash\\: string, parent\\: int, name\\: string, mimetype\\: string, mimepart\\: string, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/FileHandler.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"

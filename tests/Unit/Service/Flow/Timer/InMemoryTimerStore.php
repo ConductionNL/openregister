@@ -150,10 +150,6 @@ final class InMemoryTimerStore {
 				));
 			}
 
-			public function findSuccessors(string $uuid): array {
-				return array_values(array_filter($this->store->timers, static fn (FlowTimer $t): bool => $t->getSupersedesUuid() === $uuid));
-			}
-
 			public function findByStatePaged(string $state, int $afterId, int $limit): array {
 				$rows = array_filter($this->store->timers, static fn (FlowTimer $t): bool => $t->getState() === $state && (int)$t->getId() > $afterId);
 				usort($rows, static fn (FlowTimer $a, FlowTimer $b): int => (int)$a->getId() <=> (int)$b->getId());

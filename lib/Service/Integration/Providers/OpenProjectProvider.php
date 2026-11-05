@@ -51,6 +51,9 @@ use Throwable;
  */
 class OpenProjectProvider extends AbstractIntegrationProvider {
 
+	use ConnectorRoutedProviderTrait;
+	use ConnectorEntityCallsTrait;
+
 	/**
 	 * OpenConnector source id this provider routes through.
 	 *
@@ -99,37 +102,6 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	public function getIcon(): string {
 		return 'Briefcase';
 	}//end getIcon()
-
-	public function getGroup(): ?string {
-		return 'external';
-	}//end getGroup()
-
-	/**
-	 * Nextcloud app that must be installed for this integration to function.
-	 *
-	 * Returns the id the instance ACTUALLY registered, not the canonical name.
-	 * The value is published verbatim in the `integrations` capability and
-	 * read back client-side as `isAppInstalled(requiredApp)`, so a spelling the
-	 * instance does not answer to renders "not installed" over a connector that
-	 * is installed and working.
-	 *
-	 * @return string|null
-	 */
-	public function getRequiredApp(): ?string {
-		return (FleetAppId::resolve($this->appManager, self::REQUIRED_APP) ?? self::REQUIRED_APP);
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'external';
-	}//end getStorageStrategy()
-
-	public function getOpenConnectorSource(): ?string {
-		return self::SOURCE_ID;
-	}//end getOpenConnectorSource()
-
-	public function isEnabled(): bool {
-		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
-	}//end isEnabled()
 
 	/**
 	 * Auth requirements descriptor.
@@ -221,161 +193,6 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 			'data' => $data,
 		];
 	}//end rowFromLink()
-
-	/**
-	 * Fetch a single linked OpenProject work package.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
-	 * @param string $entityId Work-package id.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/specs/integration-openproject/spec.md
-	 */
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$query = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []);
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: rawurlencode($entityId),
-			options: ['query' => $query, 'headers' => $this->requestHeaders()]
-		);
-
-		return $this->normalizeRow(row: $response);
-	}//end get()
-
-	/**
-	 * Link or create an OpenProject work package against an OR object.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
-	 * @param array<string,mixed> $payload Reference or new-WP fields.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/specs/integration-openproject/spec.md
-	 */
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$body = $payload;
-		$body['register'] = $register;
-		$body['schema'] = $schema;
-		$body['object'] = $objectId;
-
-		$response = $this->router->call(
-			provider: $this,
-			method: 'POST',
-			path: '',
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
-
-		return $this->normalizeRow(row: $response);
-	}//end create()
-
-	/**
-	 * Update a linked work-package pairing.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
-	 * @param string $entityId Work-package id.
-	 * @param array<string,mixed> $payload Fields to update.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/specs/integration-openproject/spec.md
-	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-		$body = $payload;
-		$body['register'] = $register;
-		$body['schema'] = $schema;
-		$body['object'] = $objectId;
-
-		$response = $this->router->call(
-			provider: $this,
-			method: 'PUT',
-			path: rawurlencode($entityId),
-			options: ['body' => $body, 'headers' => $this->requestHeaders(withBody: true)]
-		);
-
-		return $this->normalizeRow(row: $response);
-	}//end update()
-
-	/**
-	 * Unlink a work package. The package itself stays in OpenProject.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
-	 * @param string $entityId Work-package id.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/integration-openproject/spec.md
-	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->router->call(
-			provider: $this,
-			method: 'DELETE',
-			path: rawurlencode($entityId),
-			options: [
-				'query' => $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: []),
-				'headers' => $this->requestHeaders(),
-			]
-		);
-	}//end delete()
-
-	/**
-	 * Health descriptor — defers to the router's probe.
-	 *
-	 * @return array{status: string, authStatus: string, message: ?string}
-	 *
-	 * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
-	 *   (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
-	 */
-	public function health(): array {
-		return $this->router->probe(provider: $this);
-	}//end health()
-
-	/**
-	 * Standard `{register, schema, object, …filters}` context query.
-	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
-	 * @param array<string,mixed> $filters Caller filters merged in.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function contextQuery(string $register, string $schema, string $objectId, array $filters): array {
-		return array_merge(
-			$filters,
-			['register' => $register, 'schema' => $schema, 'object' => $objectId]
-		);
-	}//end contextQuery()
-
-	/**
-	 * Headers every OpenProject call carries.
-	 *
-	 * @param bool $withBody Whether the request carries a JSON body.
-	 *
-	 * @return array<string,string>
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the
-	 *     natural toggle for HTTP request headers; a two-method split
-	 *     (requestHeaders / requestHeadersWithBody) would duplicate the
-	 *     static Accept header.
-	 */
-	private function requestHeaders(bool $withBody = false): array {
-		$headers = ['Accept' => 'application/json'];
-		if ($withBody === true) {
-			$headers['Content-Type'] = 'application/json';
-		}
-
-		return $headers;
-	}//end requestHeaders()
 
 	/**
 	 * Pull the rows array out of the source's envelope and shape each

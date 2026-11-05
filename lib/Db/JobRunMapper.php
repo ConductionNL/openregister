@@ -181,35 +181,6 @@ class JobRunMapper extends QBMapper {
 	}//end findRunning()
 
 	/**
-	 * The last run of every job that has one, keyed by job class.
-	 *
-	 * The console needs "when did each job last run and how did it come out"
-	 * for a page of jobs at once; asking per job is a query per row.
-	 *
-	 * @param int $limit How many jobs to answer for.
-	 *
-	 * @return array<string, JobRun> The newest run per job class.
-	 *
-	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
-	 */
-	public function lastRunPerJob(int $limit = self::MAX_LIMIT): array {
-		$newest = [];
-
-		foreach ($this->findRecent(limit: max(1, min($limit, self::MAX_LIMIT))) as $run) {
-			$class = (string)$run->getJobClass();
-
-			if (array_key_exists($class, $newest) === true) {
-				continue;
-			}
-
-			$newest[$class] = $run;
-		}
-
-		return $newest;
-
-	}//end lastRunPerJob()
-
-	/**
 	 * The failed runs of one job inside a period, oldest first.
 	 *
 	 * The alert names the FIRST failure in the period (REQ-AOC-003), so the

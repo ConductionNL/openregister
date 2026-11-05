@@ -44,23 +44,6 @@ class CollectiveLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find collective links by page id.
-	 *
-	 * @param int $pageId The page id.
-	 *
-	 * @return CollectiveLink[] Array of collective links.
-	 */
-	public function findByPageId(int $pageId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('page_id', $qb->createNamedParameter($pageId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByPageId()
-
-	/**
 	 * Find a specific collective link by object UUID and page id.
 	 *
 	 * @param string $objectUuid The object UUID.
