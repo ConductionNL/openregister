@@ -413,9 +413,6 @@ class CospendLinkService {
 	 */
 	private function hydrateLink(array $opts): CospendLink {
 		$link = new CospendLink();
-		$link->setObjectUuid((string)$opts['objectUuid']);
-		$link->setRegisterId((int)$opts['registerId']);
-		$link->setSchemaId((int)$opts['schemaId']);
 		$link->setEntryType((string)$opts['entryType']);
 		$link->setProjectId((string)$opts['projectId']);
 		$billId = null;
@@ -438,8 +435,9 @@ class CospendLinkService {
 
 		$link->setAmount($amount);
 		$link->setCurrency($currency);
-		$link->setLinkedBy((string)$opts['uid']);
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: (string)$opts['objectUuid'], registerId: (int)$opts['registerId']))
+			->inSchema(schemaId: (int)$opts['schemaId'])
+			->stamp(link: $link, linkedBy: (string)$opts['uid']);
 
 		return $link;
 	}//end hydrateLink()

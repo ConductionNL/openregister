@@ -48,7 +48,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\MapLinkMapper;
@@ -182,17 +181,15 @@ class MapLinkService {
 		}
 
 		$link = new MapLink();
-		$link->setObjectUuid($objectUuid);
-		$link->setRegisterId($registerId);
-		$link->setSchemaId($schemaId);
 		$link->setFavoriteId($favoriteId);
 		$link->setName($info['name']);
 		$link->setCategory($info['category']);
 		$link->setLat($info['lat']);
 		$link->setLng($info['lng']);
 		$link->setComment($info['comment']);
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
+		(new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))
+			->inSchema(schemaId: $schemaId)
+			->stamp(link: $link, linkedBy: $uid);
 
 		return $this->mapLinkMapper->insert($link);
 	}//end linkPoi()
@@ -235,17 +232,13 @@ class MapLinkService {
 		}
 
 		$link = new MapLink();
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
 		$link->setFavoriteId($favoriteId);
 		$link->setName($name);
 		$link->setCategory($poi->category());
 		$link->setLat($poi->lat());
 		$link->setLng($poi->lng());
 		$link->setComment($poi->comment());
-		$link->setLinkedBy($uid);
-		$link->setLinkedAt(new DateTime());
+		$target->stamp(link: $link, linkedBy: $uid);
 
 		return $this->mapLinkMapper->insert($link);
 	}//end createAndLinkPoi()
