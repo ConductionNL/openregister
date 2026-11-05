@@ -35,38 +35,7 @@ use Throwable;
  */
 trait NcAppLinkTableProvider {
 
-	/**
-	 * Nextcloud app that must be installed for this integration to function.
-	 *
-	 * @return string|null
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	/**
-	 * Storage strategy (AD-22): links live in an OpenRegister link table.
-	 *
-	 * @return string
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	/**
-	 * Whether the backing app is installed.
-	 *
-	 * @return bool
-	 *
-	 * @spec exclude Provider descriptor shared by the link-table providers; each provider spec owns the values.
-	 */
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
+	use LinkTableAppDescriptor;
 
 	/**
 	 * The rows linked to an object: from the link table, else the provider's fallback.
