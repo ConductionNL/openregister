@@ -89,7 +89,7 @@ class LinkRowsListGoldenTest extends TestCase {
 	private array $queries = [];
 
 	/**
-	 * How the database behaves: 'answers', 'empty' or 'fails'.
+	 * How the database behaves: 'answers', 'empty', 'fails' or 'votes fail'.
 	 *
 	 * @var string
 	 */
@@ -130,7 +130,15 @@ class LinkRowsListGoldenTest extends TestCase {
 		);
 		$qb->method('expr')->willReturn($expr);
 		$qb->method('func')->willReturn($func);
-		$qb->method('executeQuery')->willReturnCallback(fn () => $this->tableResult(table: (string)($this->queries[$index]['table'] ?? '')));
+		$qb->method('executeQuery')->willReturnCallback(
+			function () use ($index): IResult {
+				$table = (string)($this->queries[$index]['table'] ?? '');
+				if ($this->dbMode === 'votes fail' && $table === 'polls_votes') {
+					throw new RuntimeException('votes down');
+				}
+				return $this->tableResult(table: $table);
+			}
+		);
 		return $qb;
 	}//end queryBuilder()
 
@@ -263,6 +271,7 @@ class LinkRowsListGoldenTest extends TestCase {
 				'linked rows' => [true, $this->links($name), 'answers'],
 				'linked rows, empty database' => [true, $this->links($name), 'empty'],
 				'linked rows, failing database' => [true, $this->links($name), 'fails'],
+				'linked rows, failing vote tables' => [true, $this->links($name), 'votes fail'],
 				'mapper fails' => [true, new RuntimeException('no table'), 'answers'],
 				'no links' => [true, [], 'answers'],
 			];
