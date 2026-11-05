@@ -121,7 +121,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if ($type->getName() === MagicMapper::class) {
+			if (in_array($type->getName(), [MagicMapper::class, \OCA\OpenRegister\Db\MagicMapperInterface::class], true) === true) {
 				$args[] = $this->mapper;
 				continue;
 			}

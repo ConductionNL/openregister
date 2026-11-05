@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -58,7 +58,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory                $time           The clock
-	 * @param MagicMapper                 $objectMapper   Reads and writes the records
+	 * @param MagicMapperInterface                 $objectMapper   Reads and writes the records
 	 * @param SchemaMapperInterface                $schemaMapper   Resolves the source record's schema
 	 * @param RegisterMapperInterface              $registerMapper Finds the registers a dependant schema lives in
 	 * @param DependantRetentionIndex     $index          Knows the dependant schemas
@@ -70,7 +70,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly DependantRetentionIndex $index,

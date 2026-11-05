@@ -3345,7 +3345,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$total = 0;
 
 		foreach ($this->getRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
-			$tableName = MagicMapper::TABLE_PREFIX . $registerId . '_' . $schemaId;
+			$tableName = MagicMapperInterface::TABLE_PREFIX . $registerId . '_' . $schemaId;
 
 			if ($this->db->tableExists($tableName) === false) {
 				continue;

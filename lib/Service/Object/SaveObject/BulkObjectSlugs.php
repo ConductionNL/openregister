@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * managed group whose register cannot be resolved gets no slug rather than
  * an unchecked client value.
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
  */
 class BulkObjectSlugs {
 
@@ -87,7 +87,7 @@ class BulkObjectSlugs {
 	 *
 	 * @return string|null The slug, or null when `@self` has one or none was sent.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function clientSlugToCarry(mixed $selfData, array $object): ?string {
 		$slug = ($object['slug'] ?? null);
@@ -107,7 +107,7 @@ class BulkObjectSlugs {
 	 *
 	 * @return array The rows, each with its slug decided and without the carrier key.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function apply(array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null): array {
 		foreach ($this->groups(objects: $objects, register: $register, schema: $schema) as $group) {
