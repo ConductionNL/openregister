@@ -1,0 +1,134 @@
+<?php
+
+/**
+ * PayloadTokenReading: how a calculation reference reads a criterion token
+ * from the saving object's payload.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Calculation
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Calculation;
+
+use DateTimeImmutable;
+use Throwable;
+
+/**
+ * Criterion tokens (`@self.<field>`, `@ref.<path>`, `{ "year": <token> }`) read from a payload.
+ */
+trait PayloadTokenReading {
+
+	/**
+	 * Resolve a criterion token to a concrete value.
+	 *
+	 * Supported tokens (kept deliberately small to avoid coupling to the pure
+	 * CalculationEvaluator):
+	 * - A literal scalar (passed through unchanged).
+	 * - A `@self.<field>` / `@ref`-prefixed dotted-path string, resolved against the payload.
+	 * - A single-key AST node `{ "year": <token> }` — only `year` is supported
+	 *   here, mirroring the lookup criteria used by rate tables.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param mixed $token The criterion token.
+	 *
+	 * @return mixed The resolved value.
+	 *
+	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 */
+	private function resolveToken(array $payload, mixed $token): mixed {
+		if (is_string($token) === true) {
+			if (str_starts_with($token, '@self.') === true || str_starts_with($token, '@ref.') === true) {
+				return $this->readPath(payload: $payload, path: $token);
+			}
+
+			return $token;
+		}
+
+		if (is_array($token) === true && count($token) === 1) {
+			$op = (string)array_key_first($token);
+			if ($op === 'year') {
+				return $this->yearToken(payload: $payload, arg: $token[$op]);
+			}
+		}
+
+		return $token;
+	}//end resolveToken()
+
+	/**
+	 * Resolve a `{ "year": <token> }` criterion to a four-digit year integer.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param mixed $arg The inner token (typically a `@self.<date>` reference).
+	 *
+	 * @return int|null The year, or null when the inner token is not a parseable date.
+	 *
+	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 */
+	private function yearToken(array $payload, mixed $arg): ?int {
+		$raw = $this->resolveToken(payload: $payload, token: $arg);
+		if (is_string($raw) === false || $raw === '') {
+			return null;
+		}
+
+		try {
+			return (int)(new DateTimeImmutable($raw))->format('Y');
+		} catch (Throwable) {
+			return null;
+		}
+	}//end yearToken()
+
+	/**
+	 * Read a dotted path (e.g. `@self.journeyDate`) from the payload.
+	 *
+	 * @param array<string, mixed> $payload Object data.
+	 * @param string $path Dotted path.
+	 *
+	 * @return mixed The resolved value, or null when the path is missing.
+	 *
+	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 */
+	private function readPath(array $payload, string $path): mixed {
+		$parts = explode('.', $path);
+
+		// `@self.<field>` may address either the injected `@self` system
+		// metadata (id/created/…) OR — the common case for lookup criteria —
+		// one of the object's OWN data fields (e.g. `@self.journeyDate`). The
+		// listener injects user data at the top level of the payload, not under
+		// `@self`, so when `@self.<field>` is not a system field fall back to
+		// the top-level field. This makes the lookup parameterisable by the
+		// saving object exactly as the schema author expects.
+		if ($parts[0] === '@self' && count($parts) === 2) {
+			$field = $parts[1];
+			$self = ($payload['@self'] ?? []);
+			if (is_array($self) === true && array_key_exists($field, $self) === true) {
+				return $self[$field];
+			}
+
+			return ($payload[$field] ?? null);
+		}
+
+		$current = $payload;
+		foreach ($parts as $part) {
+			if (is_array($current) === false || array_key_exists($part, $current) === false) {
+				return null;
+			}
+
+			$current = $current[$part];
+		}
+
+		return $current;
+	}//end readPath()
+}//end trait
