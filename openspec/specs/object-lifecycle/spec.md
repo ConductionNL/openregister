@@ -61,7 +61,6 @@ The `ValidateObject` and `ValidationHandler` MUST check all object field values 
 - **GIVEN** object `abc-123` was previously fetched and cached
 - **WHEN** a second request for `abc-123` arrives within the cache TTL
 - **THEN** the response MUST be served from cache without a database query
-- **AND** `PerformanceHandler` metrics MUST record a cache hit
 
 #### Scenario: Save invalidates cache
 - **GIVEN** object `abc-123` is in cache
@@ -415,7 +414,7 @@ deletions and that blob storage has been retired in favor of magic tables.
 ### Requirement: REQ-006 The facade MUST resolve register, schema, and object context with cached lookup
 MUST resolve register, schema, and object context from an entity, numeric ID, UUID, or slug into request-scoped state, using cached-entity lookup for numeric IDs and bypassing access checks when deriving context from an already-accessible object.
 
-`ObjectService::setRegister()`, `setSchema()`, and `setObject()` MUST accept an entity, a numeric ID, a UUID, or a slug and resolve it to the corresponding entity stored as request-scoped context. Numeric-ID lookups MUST go through the cached-entity path (`PerformanceHandler::getCachedEntities`) with a direct mapper `find()` fallback when the cache misses. When context is being derived from an already-accessible object, resolution MUST bypass RBAC and multi-tenancy checks (`_rbac: false`, `_multitenancy: false`), because access to the object already implies access to its register and schema. A `setSchema()` lookup that fails MUST propagate the `DoesNotExistException` unwrapped so the framework returns a 404 rather than a generic 500. `setObject()` MUST route through the magic-table mapper when register and schema context are already set.
+`ObjectService::setRegister()`, `setSchema()`, and `setObject()` MUST accept an entity, a numeric ID, a UUID, or a slug and resolve it to the corresponding entity stored as request-scoped context. Numeric-ID lookups MUST go through the cached-entity path with a direct mapper `find()` fallback when the cache misses. When context is being derived from an already-accessible object, resolution MUST bypass RBAC and multi-tenancy checks (`_rbac: false`, `_multitenancy: false`), because access to the object already implies access to its register and schema. A `setSchema()` lookup that fails MUST propagate the `DoesNotExistException` unwrapped so the framework returns a 404 rather than a generic 500. `setObject()` MUST route through the magic-table mapper when register and schema context are already set.
 
 #### Scenario: Numeric register ID resolved via cache
 - **GIVEN** `setRegister(42)` is called with a numeric ID
