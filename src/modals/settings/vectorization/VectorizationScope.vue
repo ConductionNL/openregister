@@ -17,6 +17,7 @@
 <script>
 import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import { modelProxy } from './modelProxy.js'
 
 /**
  * What a vectorization run covers: everything, or the selection the slot
@@ -38,23 +39,7 @@ export default {
 	emits: ['update:modelValue'],
 
 	computed: {
-		all: {
-			/**
-			 * @spec exclude Two-way binding of the everything switch.
-			 * @return {boolean} Whether the run covers everything
-			 */
-			get() {
-				return this.modelValue
-			},
-
-			/**
-			 * @param {boolean} value Whether the run covers everything
-			 * @spec exclude Two-way binding of the everything switch.
-			 */
-			set(value) {
-				this.$emit('update:modelValue', value)
-			},
-		},
+		all: modelProxy(),
 	},
 }
 </script>

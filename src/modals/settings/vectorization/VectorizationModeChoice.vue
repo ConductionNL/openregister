@@ -33,6 +33,7 @@
 
 <script>
 import { NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { modelProxy } from './modelProxy.js'
 
 /**
  * The serial or parallel choice of a vectorization run, with a line on
@@ -53,23 +54,7 @@ export default {
 	emits: ['update:modelValue'],
 
 	computed: {
-		mode: {
-			/**
-			 * @spec exclude Two-way binding of the chosen mode.
-			 * @return {string} The chosen mode
-			 */
-			get() {
-				return this.modelValue
-			},
-
-			/**
-			 * @param {string} value The chosen mode
-			 * @spec exclude Two-way binding of the chosen mode.
-			 */
-			set(value) {
-				this.$emit('update:modelValue', value)
-			},
-		},
+		mode: modelProxy(),
 	},
 }
 </script>
