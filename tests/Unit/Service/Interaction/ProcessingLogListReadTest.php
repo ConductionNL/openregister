@@ -59,6 +59,9 @@ class ProcessingLogListReadTest extends TestCase {
 	 */
 	private array $schemaConfig = [];
 
+	/** @var array<int, array{0: string, 1: array<string, mixed>}> Warnings the read registration logged. */
+	private array $warnings = [];
+
 	/**
 	 * The real processing log over doubled mappers.
 	 *
@@ -118,11 +121,17 @@ class ProcessingLogListReadTest extends TestCase {
 	private function objectService(array $results): ObjectService {
 		$processingLog = $this->processingLog();
 		$container = $this->createMock(IAppContainer::class);
+		$historyLogger = $this->createMock(LoggerInterface::class);
+		$historyLogger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []): void {
+				$this->warnings[] = [$message, $context];
+			}
+		);
 		$history = new ReadHistoryService(
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(SettingsService::class),
 			$container,
-			new NullLogger()
+			$historyLogger
 		);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
@@ -157,13 +166,13 @@ class ProcessingLogListReadTest extends TestCase {
 	 *
 	 * @return ObjectEntity
 	 */
-	private function object(string $schema): ObjectEntity {
+	private function object(string $schema, string $bsn = '123'): ObjectEntity {
 		$object = new ObjectEntity();
 		$object->setUuid(uniqid('obj-', true));
 		$object->setRegister('3');
 		$object->setSchema($schema);
 		$object->setOrganisation('org-1');
-		$object->setObject(['bsn' => '123']);
+		$object->setObject(['bsn' => $bsn]);
 		return $object;
 	}
 
@@ -204,5 +213,64 @@ class ProcessingLogListReadTest extends TestCase {
 		$this->objectService([$this->object('6')])->searchObjectsPaginated(query: []);
 
 		$this->assertSame([], $this->written);
+	}
+
+	public function testASmallListCarriesEachObjectAndSubjectAndTheQuery(): void {
+		$this->schemaConfig = ['5' => ['x-openregister-processing' => [
+			'logReads' => true,
+			'attribution' => ['default' => 'act'],
+			'subjectIdFields' => ['BSN' => 'bsn'],
+		]]];
+		$objects = [$this->object('5', '111'), $this->object('5', '222')];
+		$query = ['_search' => 'jansen', 'status' => 'open', '_limit' => 20];
+
+		$this->objectService($objects)->searchObjectsPaginated(query: $query);
+
+		$this->assertCount(1, $this->written);
+		$this->assertSame([$objects[0]->getUuid(), $objects[1]->getUuid()], $this->written[0]->getObjectUuids());
+		$this->assertSame(
+			[['type' => 'BSN', 'value' => '111'], ['type' => 'BSN', 'value' => '222']],
+			$this->written[0]->getSubjectIds()
+		);
+		$this->assertSame('jansen', $this->written[0]->getQueryParams()['_search']);
+		$this->assertSame('open', $this->written[0]->getQueryParams()['status']);
+	}
+
+	public function testAListOverTheLimitStaysACountWithTheQuery(): void {
+		$this->schemaConfig = ['5' => ['x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']]]];
+		$objects = [];
+		for ($i = 0; $i <= ProcessingLogService::LIST_IDENTIFIER_LIMIT; $i++) {
+			$objects[] = $this->object('5');
+		}
+
+		$this->objectService($objects)->searchObjectsPaginated(query: ['status' => 'open']);
+
+		$this->assertSame(ProcessingLogService::LIST_IDENTIFIER_LIMIT + 1, $this->written[0]->getObjectCount());
+		$this->assertNull($this->written[0]->getObjectUuids());
+		$this->assertSame('open', $this->written[0]->getQueryParams()['status']);
+	}
+
+	public function testRenderedArrayRowsAreLoggedByTheirSelfBlock(): void {
+		$this->schemaConfig = ['5' => ['x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']]]];
+		$rows = [
+			['naam' => 'A', '@self' => ['id' => 'uuid-a', 'register' => '3', 'schema' => '5', 'organisation' => 'org-1']],
+			['naam' => 'B', '@self' => ['id' => 'uuid-b', 'register' => '3', 'schema' => '5', 'organisation' => 'org-1']],
+		];
+
+		$this->objectService($rows)->searchObjectsPaginated(query: []);
+
+		$this->assertCount(1, $this->written);
+		$this->assertSame(2, $this->written[0]->getObjectCount());
+		$this->assertSame(['uuid-a', 'uuid-b'], $this->written[0]->getObjectUuids());
+	}
+
+	public function testRowsThatCannotBeAttributedAreReported(): void {
+		$this->schemaConfig = ['5' => ['x-openregister-processing' => ['logReads' => true, 'attribution' => ['default' => 'act']]]];
+
+		$this->objectService([['naam' => 'no self block'], $this->object('5')])->searchObjectsPaginated(query: []);
+
+		$this->assertCount(1, $this->written, 'the attributable row is still logged');
+		$this->assertCount(1, $this->warnings);
+		$this->assertSame(['rows' => 1, 'of' => 2], $this->warnings[0][1]);
 	}
 }
