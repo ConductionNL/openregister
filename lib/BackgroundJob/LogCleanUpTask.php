@@ -24,6 +24,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
+use OCA\OpenRegister\Search\Service\MetricsService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -33,7 +34,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Background job that enforces log retention
  *
- * Runs hourly and performs two INDEPENDENT sweeps:
+ * Runs hourly and performs INDEPENDENT sweeps:
  *
  *   1. Audit trail: expired rows are tombstoned (payload destroyed, row and
  *      hash-chain links kept) through AuditTrailMapper::clearLogs().
@@ -42,6 +43,8 @@ use Psr\Log\LoggerInterface;
  *      stamps `expires` first and sweeps second; before this job did that, the
  *      retention setting was echoed to the admin UI and enforced by nothing,
  *      the only caller of the sweep being a manual admin endpoint.
+ *   3. Metrics: rows past the 90-day default of
+ *      MetricsService::cleanOldMetrics() are deleted. Audit rows are not touched.
  *
  * A failure in one sweep is logged and never skips the other.
  *
@@ -108,6 +111,7 @@ class LogCleanUpTask extends TimedJob {
 	 * @param ObjectRetentionHandler $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 * @param StateHistoryMapper|null $stateHistory     The derived state-history projection, pruned with the trail
+	 * @param MetricsService|null     $metrics          The operational metrics, cut to their retention
 	 *
 	 * @return void
 	 *
@@ -122,6 +126,7 @@ class LogCleanUpTask extends TimedJob {
 		// LAST AND NULLABLE so every existing construction of this job keeps
 		// working; the container always supplies it.
 		private readonly ?StateHistoryMapper $stateHistory = null,
+		private readonly ?MetricsService $metrics = null,
 	) {
 		parent::__construct(time: $time);
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -161,7 +166,32 @@ class LogCleanUpTask extends TimedJob {
 		// purge just tombstoned, so running it first would prune last hour's
 		// purge and leave this one's derivations standing for an hour.
 		$this->pruneStateHistory();
+		$this->clearOldMetrics();
 	}//end run()
+
+	/**
+	 * Delete operational metrics past their retention.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/production-observability/spec.md
+	 */
+	private function clearOldMetrics(): void {
+		try {
+			$deleted = $this->metrics?->cleanOldMetrics();
+			if ($deleted !== null) {
+				$this->logger->info(
+					message: '[LogCleanUpTask] Deleted ' . $deleted . ' metric rows past their retention',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[LogCleanUpTask] Metrics cleanup failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end clearOldMetrics()
 
 	/**
 	 * Drop the projected intervals whose source payload has been purged.
