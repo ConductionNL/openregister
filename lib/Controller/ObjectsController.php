@@ -4099,7 +4099,7 @@ class ObjectsController extends Controller {
 			// client that sent `_expectedUpdated` on a PUT got no assertion at
 			// all, silently, and overwrote whatever had landed meanwhile. The
 			// two doors now call one method, so they cannot answer differently.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
@@ -4314,7 +4314,7 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
@@ -5750,14 +5750,16 @@ class ObjectsController extends Controller {
 	 * key is already stripped from the payload by the `_`-prefix filter or
 	 * ignored by validation, so this only notices.
 	 *
+	 * @param ObjectEntity $object The object this write is for; only its audit rows carry the mark.
+	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	private function noteClientSuppliedCause(): void {
+	private function noteClientSuppliedCause(ObjectEntity $object): void {
 		foreach (['cause', '_cause', 'causeRun', '_causeRun'] as $key) {
 			if ($this->request->getParam($key) !== null) {
-				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt();
+				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
 				$this->logger->warning(
 					message: '[ObjectsController] a request supplied its own audit cause; it was ignored',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'key' => $key]
