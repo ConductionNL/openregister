@@ -432,19 +432,6 @@ class ReferentialIntegrityService {
 	}//end hasIncomingOnDeleteReferences()
 
 	/**
-	 * Validate an onDelete value on a schema property.
-	 *
-	 * @param string $value The onDelete value to validate.
-	 *
-	 * @return bool True if the value is valid.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public static function isValidOnDeleteAction(string $value): bool {
-		return in_array(strtoupper($value), self::VALID_ON_DELETE_ACTIONS, true);
-	}//end isValidOnDeleteAction()
-
-	/**
 	 * Build the relation index from all schemas if not already cached.
 	 *
 	 * The index maps: target schema ID → [{sourceSchemaId, property, onDelete, isArray, sourceSchemaSlug}]

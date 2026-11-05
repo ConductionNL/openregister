@@ -1,0 +1,1615 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LLM configuration actions golden loadAvailableBackends database fails 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available fallback",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available fallback",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends missing database 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends missing none 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends missing other 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends pgvector database 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Fast database-level vector search (Recommended)",
+      "id": "database",
+      "name": "PostgreSQL + pgvector",
+      "performance": "fast",
+      "performanceNote": "n",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": true,
+        "description": "Fast database-level vector search (Recommended)",
+        "id": "database",
+        "name": "PostgreSQL + pgvector",
+        "performance": "fast",
+        "performanceNote": "n",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends pgvector none 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": true,
+        "description": "Fast database-level vector search (Recommended)",
+        "id": "database",
+        "name": "PostgreSQL + pgvector",
+        "performance": "fast",
+        "performanceNote": "n",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends pgvector other 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": true,
+        "description": "Fast database-level vector search (Recommended)",
+        "id": "database",
+        "name": "PostgreSQL + pgvector",
+        "performance": "fast",
+        "performanceNote": "n",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends plain database 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": false,
+      "description": "PostgreSQL with pgvector extension required",
+      "id": "database",
+      "name": "MySQL + pgvector",
+      "performance": null,
+      "performanceNote": undefined,
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": false,
+        "description": "PostgreSQL with pgvector extension required",
+        "id": "database",
+        "name": "MySQL + pgvector",
+        "performance": null,
+        "performanceNote": undefined,
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends plain none 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": false,
+        "description": "PostgreSQL with pgvector extension required",
+        "id": "database",
+        "name": "MySQL + pgvector",
+        "performance": null,
+        "performanceNote": undefined,
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends plain other 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+      {
+        "available": false,
+        "description": "PostgreSQL with pgvector extension required",
+        "id": "database",
+        "name": "MySQL + pgvector",
+        "performance": null,
+        "performanceNote": undefined,
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends refused database 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends refused none 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends refused other 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends settings fail 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available fallback",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available fallback",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends unknown database 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends unknown none 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden loadAvailableBackends unknown other 1`] = `
+{
+  "log": [
+    [
+      "get",
+      "url:/apps/openregister/api/settings/database",
+    ],
+    [
+      "get",
+      "url:/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "state": {
+    "loadingBackends": false,
+    "selectedVectorBackend": {
+      "available": true,
+      "description": "Always available, but slow for large datasets (>500 vectors)",
+      "id": "php",
+      "name": "PHP Cosine Similarity",
+      "performance": "slow",
+      "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+    },
+    "vectorBackendOptions": [
+      {
+        "available": true,
+        "description": "Always available, but slow for large datasets (>500 vectors)",
+        "id": "php",
+        "name": "PHP Cosine Similarity",
+        "performance": "slow",
+        "performanceNote": "Calculates similarity in PHP. Suitable for small datasets.",
+      },
+    ],
+  },
+}
+`;
+
+exports[`LLM configuration actions golden saveConfiguration network error 1`] = `
+{
+  "log": [
+    [
+      "patch",
+      "url:/apps/openregister/api/settings/llm",
+      {
+        "chatProvider": undefined,
+        "embeddingProvider": undefined,
+        "enabledFeatures": [
+          "a",
+        ],
+        "fireworksConfig": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "chatModel": "fc",
+          "embeddingModel": "fe",
+        },
+        "ollamaConfig": {
+          "chatModel": "lc",
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "openaiConfig": {
+          "apiKey": "ok",
+          "chatModel": "oc",
+          "model": "oe",
+          "organizationId": undefined,
+        },
+        "vectorConfig": {
+          "backend": "php",
+        },
+      },
+    ],
+    [
+      "error",
+      "Failed to save configuration: {error} {"error":"network down"}",
+    ],
+  ],
+  "state": {
+    "saving": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden saveConfiguration no selections 1`] = `
+{
+  "log": [
+    [
+      "patch",
+      "url:/apps/openregister/api/settings/llm",
+      {
+        "chatProvider": undefined,
+        "embeddingProvider": undefined,
+        "enabledFeatures": [
+          "a",
+        ],
+        "fireworksConfig": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "chatModel": "fc",
+          "embeddingModel": "fe",
+        },
+        "ollamaConfig": {
+          "chatModel": "lc",
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "openaiConfig": {
+          "apiKey": "ok",
+          "chatModel": "oc",
+          "model": "oe",
+          "organizationId": undefined,
+        },
+        "vectorConfig": {
+          "backend": "php",
+        },
+      },
+    ],
+    [
+      "success",
+      "LLM configuration saved successfully",
+    ],
+    [
+      "emit",
+      "closing",
+    ],
+  ],
+  "state": {
+    "saving": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden saveConfiguration object 1`] = `
+{
+  "log": [
+    [
+      "patch",
+      "url:/apps/openregister/api/settings/llm",
+      {
+        "chatProvider": "ollama",
+        "embeddingProvider": "openai",
+        "enabledFeatures": [
+          "a",
+        ],
+        "fireworksConfig": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "chatModel": "fc",
+          "embeddingModel": "fe",
+        },
+        "ollamaConfig": {
+          "chatModel": "lc",
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "openaiConfig": {
+          "apiKey": "ok",
+          "chatModel": "oc",
+          "model": "oe",
+          "organizationId": "org",
+        },
+        "vectorConfig": {
+          "backend": "database",
+        },
+      },
+    ],
+    [
+      "success",
+      "LLM configuration saved successfully",
+    ],
+    [
+      "emit",
+      "closing",
+    ],
+  ],
+  "state": {
+    "saving": false,
+    "selectedVectorBackend": {
+      "id": "database",
+    },
+  },
+}
+`;
+
+exports[`LLM configuration actions golden saveConfiguration server error 1`] = `
+{
+  "log": [
+    [
+      "patch",
+      "url:/apps/openregister/api/settings/llm",
+      {
+        "chatProvider": undefined,
+        "embeddingProvider": undefined,
+        "enabledFeatures": [
+          "a",
+        ],
+        "fireworksConfig": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "chatModel": "fc",
+          "embeddingModel": "fe",
+        },
+        "ollamaConfig": {
+          "chatModel": "lc",
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "openaiConfig": {
+          "apiKey": "ok",
+          "chatModel": "oc",
+          "model": "oe",
+          "organizationId": undefined,
+        },
+        "vectorConfig": {
+          "backend": "php",
+        },
+      },
+    ],
+    [
+      "error",
+      "Failed to save configuration: {error} {"error":"denied"}",
+    ],
+  ],
+  "state": {
+    "saving": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden saveConfiguration string 1`] = `
+{
+  "log": [
+    [
+      "patch",
+      "url:/apps/openregister/api/settings/llm",
+      {
+        "chatProvider": "ollama",
+        "embeddingProvider": "openai",
+        "enabledFeatures": [
+          "a",
+        ],
+        "fireworksConfig": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "chatModel": "fc",
+          "embeddingModel": "fe",
+        },
+        "ollamaConfig": {
+          "chatModel": "lc",
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "openaiConfig": {
+          "apiKey": "ok",
+          "chatModel": "oc",
+          "model": "oe",
+          "organizationId": undefined,
+        },
+        "vectorConfig": {
+          "backend": "database",
+        },
+      },
+    ],
+    [
+      "success",
+      "LLM configuration saved successfully",
+    ],
+    [
+      "emit",
+      "closing",
+    ],
+  ],
+  "state": {
+    "saving": false,
+    "selectedVectorBackend": {
+      "id": "database",
+    },
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection network error 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oc",
+        },
+        "provider": "openai",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "error",
+      "Chat test failed: {error} {"error":"network down"}",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Failed",
+      "success": false,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection object fireworks 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "model": "fc",
+        },
+        "provider": "fireworks",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection object ollama 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "model": "lc",
+          "url": "http://ollama",
+        },
+        "provider": "ollama",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection object openai 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oc",
+        },
+        "provider": "openai",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection object other 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {},
+        "provider": "other",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection object undefined 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {},
+        "provider": undefined,
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection server error 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "model": "fc",
+        },
+        "provider": "fireworks",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "error",
+      "Chat test failed: {error} {"error":"no model"}",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Failed",
+      "success": false,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection string fireworks 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "model": "fc",
+        },
+        "provider": "fireworks",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection string ollama 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "model": "lc",
+          "url": "http://ollama",
+        },
+        "provider": "ollama",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection string openai 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oc",
+        },
+        "provider": "openai",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection string other 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {},
+        "provider": "other",
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testChatConnection string undefined 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/llm/test-chat",
+      {
+        "config": {},
+        "provider": undefined,
+        "testMessage": "Hello! Please respond with a brief greeting.",
+      },
+    ],
+    [
+      "success",
+      "Chat provider connection successful!",
+    ],
+  ],
+  "state": {
+    "chatTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingChat": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection missing config 1`] = `
+{
+  "log": [
+    [
+      "error",
+      "Embedding test failed: {error} {"error":"Cannot read properties of undefined (reading 'apiKey')"}",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Failed",
+      "success": false,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection network error 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "provider": "ollama",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "error",
+      "Embedding test failed: {error} {"error":"network down"}",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Failed",
+      "success": false,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection object fireworks 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "model": "fe",
+        },
+        "provider": "fireworks",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection object ollama 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "provider": "ollama",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection object openai 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oe",
+        },
+        "provider": "openai",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection object other 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {},
+        "provider": "other",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection object undefined 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {},
+        "provider": undefined,
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection server error 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oe",
+        },
+        "provider": "openai",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "error",
+      "Embedding test failed: {error} {"error":"bad key"}",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Failed",
+      "success": false,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection string fireworks 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "apiKey": "fk",
+          "baseUrl": "http://fw",
+          "model": "fe",
+        },
+        "provider": "fireworks",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection string ollama 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "model": "le",
+          "url": "http://ollama",
+        },
+        "provider": "ollama",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection string openai 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {
+          "apiKey": "ok",
+          "model": "oe",
+        },
+        "provider": "openai",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection string other 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {},
+        "provider": "other",
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;
+
+exports[`LLM configuration actions golden testEmbeddingConnection string undefined 1`] = `
+{
+  "log": [
+    [
+      "post",
+      "url:/apps/openregister/api/vectors/test-embedding",
+      {
+        "config": {},
+        "provider": undefined,
+        "testText": "This is a test embedding generation.",
+      },
+    ],
+    [
+      "success",
+      "Embedding provider connection successful!",
+    ],
+  ],
+  "state": {
+    "embeddingTestResult": {
+      "message": "Connected",
+      "success": true,
+    },
+    "testingEmbedding": false,
+  },
+}
+`;

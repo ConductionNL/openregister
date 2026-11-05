@@ -57,15 +57,10 @@ The Mail Integration feature connects OpenRegister objects to Nextcloud Mail thr
 | ObjectsTab.vue | `src/mail-sidebar/components/ObjectsTab.vue` | "Connections" tab — the objects linked to this email |
 | ActionsTab.vue | `src/mail-sidebar/components/ActionsTab.vue` | "Connect" tab — per-schema search-and-link, and create-from-email |
 | EntitiesTab.vue | `src/mail-sidebar/components/EntitiesTab.vue` | "Entities" tab — extracted-entity view |
-| LinkedObjectsList.vue | `src/mail-sidebar/components/LinkedObjectsList.vue` | Displays explicitly linked objects |
-| SuggestedObjectsList.vue | `src/mail-sidebar/components/SuggestedObjectsList.vue` | Displays sender-based discovery results |
-| ObjectCard.vue | `src/mail-sidebar/components/ObjectCard.vue` | Card with title, schema, register, deep link, unlink button |
 | CreateConnectedObjectDialog.vue | `src/dialogs/mail/CreateConnectedObjectDialog.vue` | Create a new object from the current email |
 | RemoveConnectionDialog.vue | `src/dialogs/mail/RemoveConnectionDialog.vue` | Confirm removing a link |
 | useMailObserver.js | `src/mail-sidebar/composables/useMailObserver.js` | Observes Mail app URL changes (hash-based routing) |
-| useEmailLinks.js | `src/mail-sidebar/composables/useEmailLinks.js` | API state management with caching and abort control |
 | useAttachmentDrag.js | `src/mail-sidebar/composables/useAttachmentDrag.js` | Drag-and-drop of mail attachments onto objects |
-| emailLinks.js | `src/mail-sidebar/api/emailLinks.js` | Axios API wrapper |
 | icons.js | `src/mail-sidebar/icons.js` | Schema-to-icon resolution |
 | mail-sidebar.css | `css/mail-sidebar.css` | NL Design System compatible styles |
 
