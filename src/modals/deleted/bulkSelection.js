@@ -67,3 +67,19 @@ export function objectTitle(object) {
 		|| 'Unknown'
 	)
 }
+
+/**
+ * The selection and outcome a bulk dialog hands to its dialog body.
+ *
+ * @param {object} dialog The dialog component
+ * @return {object} The body's state props
+ */
+export function reviewStateOf(dialog) {
+	return {
+		objects: dialog.selectedObjects,
+		success: dialog.success,
+		successMessage: dialog.successMessage,
+		error: dialog.error,
+		loading: dialog.loading,
+	}
+}
