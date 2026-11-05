@@ -1,0 +1,206 @@
+{
+    "getRegisterChartData / NULL / NULL": {
+        "result": {
+            "labels": [
+                "Register title 1",
+                "Register 3",
+                "Register title 4"
+            ],
+            "series": [
+                431,
+                312,
+                413
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []",
+            "register [2,false,false]",
+            "schema [10,[],false,false]",
+            "count 2/10 []",
+            "register [3,false,false]",
+            "schema [12,[],false,false]",
+            "count 3/12 []",
+            "register [4,false,false]",
+            "schema [13,[],false,false]",
+            "count 4/13 []",
+            "register [9,false,false]"
+        ]
+    },
+    "getRegisterChartData / 1 / NULL": {
+        "result": {
+            "labels": [
+                "Register title 1"
+            ],
+            "series": [
+                221
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []"
+        ]
+    },
+    "getRegisterChartData / NULL / 10": {
+        "result": {
+            "labels": [
+                "Register title 1"
+            ],
+            "series": [
+                320
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [2,false,false]",
+            "schema [10,[],false,false]",
+            "count 2/10 []",
+            "register [9,false,false]"
+        ]
+    },
+    "getRegisterChartData / 1 / 11": {
+        "result": {
+            "labels": [
+                "Register title 1"
+            ],
+            "series": [
+                111
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []"
+        ]
+    },
+    "getRegisterChartData / 7 / NULL": {
+        "result": {
+            "labels": [],
+            "series": []
+        },
+        "calls": []
+    },
+    "getRegisterChartData / 9 / NULL": {
+        "result": {
+            "labels": [],
+            "series": []
+        },
+        "calls": [
+            "register [9,false,false]"
+        ]
+    },
+    "getSchemaChartData / NULL / NULL": {
+        "result": {
+            "labels": [
+                "Schema title 10",
+                "Schema title 11",
+                "Schema title 12",
+                "Schema 13"
+            ],
+            "series": [
+                320,
+                111,
+                312,
+                413
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []",
+            "register [2,false,false]",
+            "schema [10,[],false,false]",
+            "count 2/10 []",
+            "register [3,false,false]",
+            "schema [12,[],false,false]",
+            "count 3/12 []",
+            "register [4,false,false]",
+            "schema [13,[],false,false]",
+            "count 4/13 []",
+            "register [9,false,false]"
+        ]
+    },
+    "getSchemaChartData / 1 / NULL": {
+        "result": {
+            "labels": [
+                "Schema title 10",
+                "Schema title 11"
+            ],
+            "series": [
+                110,
+                111
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []"
+        ]
+    },
+    "getSchemaChartData / NULL / 10": {
+        "result": {
+            "labels": [
+                "Schema title 10"
+            ],
+            "series": [
+                320
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [10,[],false,false]",
+            "count 1/10 []",
+            "register [2,false,false]",
+            "schema [10,[],false,false]",
+            "count 2/10 []",
+            "register [9,false,false]"
+        ]
+    },
+    "getSchemaChartData / 1 / 11": {
+        "result": {
+            "labels": [
+                "Schema title 11"
+            ],
+            "series": [
+                111
+            ]
+        },
+        "calls": [
+            "register [1,false,false]",
+            "schema [11,[],false,false]",
+            "count 1/11 []"
+        ]
+    },
+    "getSchemaChartData / 7 / NULL": {
+        "result": {
+            "labels": [],
+            "series": []
+        },
+        "calls": []
+    },
+    "getSchemaChartData / 9 / NULL": {
+        "result": {
+            "labels": [],
+            "series": []
+        },
+        "calls": [
+            "register [9,false,false]"
+        ]
+    }
+}

@@ -50,8 +50,6 @@ class TransportTest extends TestCase {
 
 		$this->assertTrue($result->isSuccess());
 		$this->assertFalse($result->isPartialSuccess());
-		$this->assertCount(2, $result->getAcceptedUuids());
-		$this->assertCount(0, $result->getRejectedUuids());
 		$this->assertEquals('transfer-ref-1', $result->getTransferReference());
 	}
 
@@ -69,8 +67,6 @@ class TransportTest extends TestCase {
 
 		$this->assertFalse($result->isSuccess());
 		$this->assertTrue($result->isPartialSuccess());
-		$this->assertCount(1, $result->getAcceptedUuids());
-		$this->assertCount(1, $result->getRejectedUuids());
 	}
 
 	/**

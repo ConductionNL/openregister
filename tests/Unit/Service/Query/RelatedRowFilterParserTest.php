@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterParser;
 use PHPUnit\Framework\TestCase;
 
@@ -239,22 +240,20 @@ class RelatedRowFilterParserTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOperatorsAreTheOnesTheQueryAlreadyAccepts(): void {
-		$sql = (string)file_get_contents(
-			__DIR__ . '/../../../../lib/Db/ObjectHandlers/MariaDbSearchHandler.php'
-		);
+		$accepted = (new \ReflectionClassConstant(MagicSearchHandler::class, 'COMPARISON_OPERATORS'))->getValue();
 
 		foreach (RelatedRowFilterParser::OPERATORS as $operator) {
-			if ($operator === 'in') {
-				// `in` is a list membership rather than a binary operator, and
-				// the handler builds it elsewhere.
+			if ($operator === 'eq') {
+				// A plain value is the object query's equality, so `eq` has no
+				// entry of its own in the operator list.
 				continue;
 			}
 
-			$this->assertStringContainsString(
-				sprintf("'%s' =>", $operator),
-				$sql,
+			$this->assertContains(
+				$operator,
+				$accepted,
 				sprintf(
-					'operator %s is accepted here and is not in the query handler\'s operator map, '
+					'operator %s is accepted here and is not among the object query\'s operators, '
 					. 'so this parser invented a second query language',
 					$operator
 				)

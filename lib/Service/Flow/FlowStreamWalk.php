@@ -505,28 +505,6 @@ class FlowStreamWalk {
 	}//end budgetSpent()
 
 	/**
-	 * Whether any stream was parked during this pass.
-	 *
-	 * @return bool True when a stream suspended.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
-	 */
-	public function anyParked(): bool {
-		return $this->parked !== [];
-	}//end anyParked()
-
-	/**
-	 * Whether any stream's claim was refused during this pass.
-	 *
-	 * @return bool True when a firing was skipped on contention.
-	 *
-	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-firing-must-exclusively-claim-every-place-it-touches
-	 */
-	public function anyRefused(): bool {
-		return $this->refused !== [];
-	}//end anyRefused()
-
-	/**
 	 * The run, refreshed by the last commit.
 	 *
 	 * @return FlowRun The run.

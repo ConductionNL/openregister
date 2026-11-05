@@ -267,22 +267,6 @@ class PollsProvider extends AbstractIntegrationProvider {
 	 *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$installed = $this->appManager->isInstalled(self::REQUIRED_APP);
-
-		$status = 'unavailable';
-		if ($installed === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Polls app is not installed';
-		if ($installed === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->appManager->isInstalled(self::REQUIRED_APP) === true, missing: 'NC Polls app is not installed');
 	}//end health()
 }//end class

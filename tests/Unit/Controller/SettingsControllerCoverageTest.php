@@ -55,7 +55,6 @@ class SettingsControllerCoverageTest extends TestCase {
 			$this->config,
 			$this->db,
 			$this->container,
-			$this->appManager,
 			$this->settingsService,
 			$this->logger,
 			$l10n
@@ -78,23 +77,6 @@ class SettingsControllerCoverageTest extends TestCase {
 				return $this->platformName;
 			}
 		};
-	}
-
-	// =========================================================================
-	// getConfigurationService — success path
-	// =========================================================================
-
-	public function testGetConfigurationServiceReturnsServiceWhenInstalled(): void {
-		$configSvc = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
-		$this->appManager->method('getInstalledApps')
-			->willReturn(['openregister', 'files']);
-		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\ConfigurationService')
-			->willReturn($configSvc);
-
-		$result = $this->controller->getConfigurationService();
-
-		$this->assertSame($configSvc, $result);
 	}
 
 	// =========================================================================

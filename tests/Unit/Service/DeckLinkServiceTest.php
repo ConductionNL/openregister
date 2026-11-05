@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Service\DeckRowMapper
  */
 class DeckLinkServiceTest extends TestCase {
 	private DeckLinkMapper&MockObject $mapper;

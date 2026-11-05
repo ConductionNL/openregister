@@ -27,6 +27,7 @@ use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
+use OCP\Notification\IAction;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 use OCP\Notification\UnknownNotificationException;
@@ -284,11 +285,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareSecuritySettingChanged()
 
 	/**
@@ -325,11 +322,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareOwnershipChanged()
 
 	/**
@@ -359,11 +352,7 @@ class Notifier implements INotifier {
 			);
 		}
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareTimelineMention()
 
 	/**
@@ -402,11 +391,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareRetentionHoldsSkipped()
 
 	/**
@@ -439,11 +424,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDestructionHoldsSkipped()
 
 	/**
@@ -479,11 +460,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDestructionReviewPending()
 
 	/**
@@ -498,39 +475,15 @@ class Notifier implements INotifier {
 	 */
 	private function prepareConfigurationUpdate(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();
+		$title = $parameters['configurationTitle'] ?? 'Configuration';
+		$notification->setParsedSubject($l->t('Configuration update available: %s', [$title]));
+		$versions = [$parameters['newVersion'] ?? 'unknown', $title, $parameters['currentVersion'] ?? 'unknown'];
+		$notification->setParsedMessage($l->t('A new version (%s) of configuration "%s" is available. Current version: %s', $versions));
+		$this->withAppIcon(notification: $notification);
 
-		$configurationTitle = $parameters['configurationTitle'] ?? 'Configuration';
-		$currentVersion = $parameters['currentVersion'] ?? 'unknown';
-		$newVersion = $parameters['newVersion'] ?? 'unknown';
-
-		$notification->setParsedSubject(
-			$l->t('Configuration update available: %s', [$configurationTitle])
-		);
-
-		$notification->setParsedMessage(
-			$l->t(
-				'A new version (%s) of configuration "%s" is available. Current version: %s',
-				[$newVersion, $configurationTitle, $currentVersion]
-			)
-		);
-
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		// Add action to view the configuration.
 		if (($parameters['configurationId'] ?? null) !== null) {
-			$action = $notification->createAction();
-			$action->setLabel($l->t('View'))
-				->setPrimary(true)
-				->setLink(
-					link: $this->urlGenerator->linkToRouteAbsolute(
-						routeName: 'openregister.dashboard.page'
-					) . '#/configurations/' . $parameters['configurationId'],
-					requestType: 'GET'
-				);
-
-			$notification->addAction($action);
+			$url = $this->urlGenerator->linkToRouteAbsolute(routeName: 'openregister.dashboard.page') . '#/configurations/' . $parameters['configurationId'];
+			$notification->addAction($this->primaryAction(notification: $notification, label: $l->t('View'))->setLink(link: $url, requestType: 'GET'));
 		}
 
 		return $notification;
@@ -574,11 +527,7 @@ class Notifier implements INotifier {
 			)
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareHandoffDrainFailed()
 
 	/**
@@ -628,11 +577,7 @@ class Notifier implements INotifier {
 			$this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page') . '#user-settings'
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareCredentialRelinkNeeded()
 
 	/**
@@ -744,11 +689,7 @@ class Notifier implements INotifier {
 			->setPrimary(false);
 		$notification->addAction($deny);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareDelegationConsentRequested()
 
 	/**
@@ -769,55 +710,46 @@ class Notifier implements INotifier {
 	 */
 	private function prepareScheduledReportDelivered(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();
-
 		$reportName = $parameters['reportName'] ?? 'Scheduled report';
-		$folder = $parameters['folder'] ?? 'Reports/';
-		$filename = $parameters['filename'] ?? '';
-		$mode = $parameters['mode'] ?? 'files';
-		$emailFailureReason = $parameters['emailFailureReason'] ?? null;
+		$notification->setParsedSubject($l->t('Scheduled report "%s" delivered', [$reportName]));
+		$notification->setParsedMessage($this->reportDeliveredMessage(parameters: $parameters, l: $l));
+		$this->withAppIcon(notification: $notification);
 
-		$notification->setParsedSubject(
-			$l->t('Scheduled report "%s" delivered', [$reportName])
-		);
-
-		$message = match ($mode) {
-			'email' => $l->t('Your scheduled report "%s" ran and was emailed to its recipients.', [$reportName]),
-			'both' => $l->t(
-				'Your scheduled report "%s" ran, was saved to %s%s, and emailed to its recipients.',
-				[$reportName, $folder, $filename]
-			),
-			default => $l->t(
-				'Your scheduled report "%s" ran and was saved to %s%s',
-				[$reportName, $folder, $filename]
-			),
-		};
-
-		if (is_string($emailFailureReason) === true && $emailFailureReason !== '') {
-			$message .= ' ' . $l->t('Note: email delivery failed (%s).', [$emailFailureReason]);
-		}
-
-		$notification->setParsedMessage($message);
-
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		if ($mode !== 'email') {
-			$action = $notification->createAction();
-			$action->setLabel($l->t('Open Files'))
-				->setPrimary(true)
-				->setLink(
-					link: $this->urlGenerator->linkToRouteAbsolute(
-						routeName: 'files.view.index'
-					) . '?dir=' . rawurlencode('/' . trim((string)$folder, '/')),
-					requestType: 'GET'
-				);
-
-			$notification->addAction($action);
+		if (($parameters['mode'] ?? 'files') !== 'email') {
+			$folder = '/' . trim((string)($parameters['folder'] ?? 'Reports/'), '/');
+			$filesUrl = $this->urlGenerator->linkToRouteAbsolute(routeName: 'files.view.index') . '?dir=' . rawurlencode($folder);
+			$notification->addAction(
+				$this->primaryAction(notification: $notification, label: $l->t('Open Files'))->setLink(link: $filesUrl, requestType: 'GET')
+			);
 		}
 
 		return $notification;
 	}//end prepareScheduledReportDelivered()
+
+	/**
+	 * The message of a delivered scheduled report, by delivery mode, with any email failure noted.
+	 *
+	 * @param array<string, mixed> $parameters The notification's subject parameters
+	 * @param mixed $l The localization instance
+	 *
+	 * @return string The message
+	 */
+	private function reportDeliveredMessage(array $parameters, $l): string {
+		$reportName = $parameters['reportName'] ?? 'Scheduled report';
+		$saved = [$reportName, $parameters['folder'] ?? 'Reports/', $parameters['filename'] ?? ''];
+		$message = match ($parameters['mode'] ?? 'files') {
+			'email' => $l->t('Your scheduled report "%s" ran and was emailed to its recipients.', [$reportName]),
+			'both' => $l->t('Your scheduled report "%s" ran, was saved to %s%s, and emailed to its recipients.', $saved),
+			default => $l->t('Your scheduled report "%s" ran and was saved to %s%s', $saved),
+		};
+
+		$emailFailureReason = $parameters['emailFailureReason'] ?? null;
+		if (is_string($emailFailureReason) === true && $emailFailureReason !== '') {
+			$message .= ' ' . $l->t('Note: email delivery failed (%s).', [$emailFailureReason]);
+		}
+
+		return $message;
+	}//end reportDeliveredMessage()
 
 	/**
 	 * Prepare the notification for a large audit trail export that was saved
@@ -840,9 +772,7 @@ class Notifier implements INotifier {
 		$notification->setParsedMessage(
 			$l->t('Your audit trail export of %1$s entries was saved to %2$s%3$s.', [$rows, $folder, $filename])
 		);
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
+		$this->withAppIcon(notification: $notification);
 
 		$action = $notification->createAction();
 		$action->setLabel($l->t('Open Files'))
@@ -882,11 +812,7 @@ class Notifier implements INotifier {
 			$l->t('Your scheduled report "%s" could not be generated: %s', [$reportName, $reason])
 		);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareScheduledReportFailed()
 
 	/**
@@ -919,11 +845,7 @@ class Notifier implements INotifier {
 
 		$notification->setParsedMessage($message);
 
-		$notification->setIcon(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
-		);
-
-		return $notification;
+		return $this->withAppIcon(notification: $notification);
 	}//end prepareViewAlertCrossed()
 
 	/**
@@ -950,10 +872,33 @@ class Notifier implements INotifier {
 		$notification->setParsedMessage(
 			$l->t('A change to "%1$s" left %2$s problems in the form. Fix them and publish the form again.', [$schema, $count])
 		);
+		return $this->withAppIcon(notification: $notification);
+	}//end prepareFormUnpublished()
+
+	/**
+	 * A new primary action on the notification, labelled; the caller sets its link and adds it.
+	 *
+	 * @param INotification $notification The notification being prepared
+	 * @param string $label The action label
+	 *
+	 * @return IAction The action
+	 */
+	private function primaryAction(INotification $notification, string $label): IAction {
+		return $notification->createAction()->setLabel($label)->setPrimary(true);
+	}//end primaryAction()
+
+	/**
+	 * Set the app icon on a prepared notification.
+	 *
+	 * @param INotification $notification The notification being prepared
+	 *
+	 * @return INotification The same notification
+	 */
+	private function withAppIcon(INotification $notification): INotification {
 		$notification->setIcon(
 			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
 		);
 
 		return $notification;
-	}//end prepareFormUnpublished()
+	}//end withAppIcon()
 }//end class

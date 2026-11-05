@@ -415,22 +415,6 @@ class ImportHandler {
 	}//end __construct()
 
 	/**
-	 * Set the ObjectService dependency.
-	 *
-	 * This method allows setting the ObjectService after construction
-	 * to avoid circular dependency issues.
-	 *
-	 * @param ObjectOperationsInterface $objectService The object service instance.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function setObjectService(ObjectOperationsInterface $objectService): void {
-		$this->objectService = $objectService;
-	}//end setObjectService()
-
-	/**
 	 * Set the OpenConnector ConfigurationService dependency.
 	 *
 	 * This method allows setting the OpenConnector configuration service

@@ -343,18 +343,6 @@ interface MagicMapperInterface {
 	public function createTableForRegisterSchema(Register $register, Schema $schema): bool;
 
 	/**
-	 * Update existing table for register+schema changes
-	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema to update table for
-	 *
-	 * @throws Exception If table update fails
-	 *
-	 * @return array Statistics about what was changed
-	 */
-	public function updateTableForRegisterSchema(Register $register, Schema $schema): array;
-
-	/**
 	 * Synchronize table structure with schema definition.
 	 *
 	 * This is a public method that can be called to update an existing magic table

@@ -44,23 +44,6 @@ class OpenProjectLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find OpenProject links by work-package id.
-	 *
-	 * @param int $workPackageId The work-package id.
-	 *
-	 * @return OpenProjectLink[] Array of OpenProject links.
-	 */
-	public function findByWorkPackageId(int $workPackageId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('work_package_id', $qb->createNamedParameter($workPackageId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByWorkPackageId()
-
-	/**
 	 * Find a specific OpenProject link by object UUID and work-package id.
 	 *
 	 * @param string $objectUuid The object UUID.
