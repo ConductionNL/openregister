@@ -553,6 +553,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ExampleSetInstallCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetRemoveCommand</command>
 		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
+		<command>OCA\OpenRegister\Command\RotateTenantKeyCommand</command>
 	</commands>
 
 	<settings>
