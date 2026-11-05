@@ -1,0 +1,1263 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`scope pickers golden dashboard: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "noSchemas",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    "throws TypeError",
+    {
+      "label": "Three",
+      "register": 3,
+      "title": "Three",
+      "value": 3,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
+
+exports[`scope pickers golden import: close resets the form 1`] = `
+{
+  "log": [
+    [
+      "navigationStore.setModal",
+      false,
+    ],
+  ],
+  "state": {
+    "allowedFileTypes": [
+      "json",
+      "xlsx",
+      "xls",
+      "csv",
+    ],
+    "error": null,
+    "events": false,
+    "expandedErrors": {},
+    "expandedSheets": {},
+    "heartbeatStatus": null,
+    "importResults": null,
+    "importSummary": null,
+    "includeObjects": true,
+    "isHeartbeatActive": false,
+    "loading": false,
+    "multi": true,
+    "rbac": true,
+    "registerLoading": false,
+    "schemaLoading": false,
+    "selectedFile": null,
+    "sheetName": null,
+    "success": false,
+    "validation": true,
+  },
+}
+`;
+
+exports[`scope pickers golden import: completeness 1`] = `
+[
+  [
+    null,
+    false,
+    false,
+    false,
+  ],
+  [
+    null,
+    true,
+    false,
+    false,
+  ],
+  [
+    null,
+    true,
+    true,
+    false,
+  ],
+  [
+    "a.json",
+    false,
+    false,
+    true,
+  ],
+  [
+    "a.json",
+    true,
+    false,
+    true,
+  ],
+  [
+    "a.json",
+    true,
+    true,
+    true,
+  ],
+  [
+    "a.xlsx",
+    false,
+    false,
+    false,
+  ],
+  [
+    "a.xlsx",
+    true,
+    false,
+    true,
+  ],
+  [
+    "a.xlsx",
+    true,
+    true,
+    true,
+  ],
+  [
+    "a.xls",
+    false,
+    false,
+    false,
+  ],
+  [
+    "a.xls",
+    true,
+    false,
+    true,
+  ],
+  [
+    "a.xls",
+    true,
+    true,
+    true,
+  ],
+  [
+    "a.csv",
+    false,
+    false,
+    false,
+  ],
+  [
+    "a.csv",
+    true,
+    false,
+    false,
+  ],
+  [
+    "a.csv",
+    true,
+    true,
+    true,
+  ],
+  [
+    "a.txt",
+    false,
+    false,
+    false,
+  ],
+  [
+    "a.txt",
+    true,
+    false,
+    false,
+  ],
+  [
+    "a.txt",
+    true,
+    true,
+    false,
+  ],
+]
+`;
+
+exports[`scope pickers golden import: file selection 1`] = `
+[
+  [
+    null,
+    null,
+  ],
+  [
+    "a.json",
+    null,
+  ],
+  [
+    null,
+    "Invalid file type: a.exe. Please select a .json, .xlsx, .xls, .csv file.",
+  ],
+  [
+    "b.XLSX",
+    null,
+  ],
+  [
+    null,
+    "Invalid file type: noext. Please select a .json, .xlsx, .xls, .csv file.",
+  ],
+]
+`;
+
+exports[`scope pickers golden import: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "noSchemas",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [],
+      "reduced": [
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Three",
+      "register": 3,
+      "title": "Three",
+      "value": 3,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
+
+exports[`scope pickers golden import: register change cleared 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      null,
+    ],
+    [
+      "setSchemaItem",
+      null,
+    ],
+  ],
+  "schemaLoading": false,
+}
+`;
+
+exports[`scope pickers golden import: register change noSchemas 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      3,
+    ],
+    [
+      "setSchemaItem",
+      null,
+    ],
+  ],
+  "schemaLoading": false,
+}
+`;
+
+exports[`scope pickers golden import: register change refreshFails 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      1,
+    ],
+    [
+      "setSchemaItem",
+      null,
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+  "schemaLoading": false,
+}
+`;
+
+exports[`scope pickers golden import: register change withSchemas 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      2,
+    ],
+    [
+      "setSchemaItem",
+      null,
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+  "schemaLoading": false,
+}
+`;
+
+exports[`scope pickers golden import: submit fails 1`] = `
+{
+  "after": {
+    "error": "rejected",
+    "heartbeat": false,
+    "heartbeatStatus": "beat",
+    "importResults": null,
+    "importSummary": null,
+    "loading": false,
+    "success": false,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": true,
+  },
+  "log": [
+    [
+      "importRegister",
+      "a.json",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`scope pickers golden import: submit failsQuietly 1`] = `
+{
+  "after": {
+    "error": "Failed to import register",
+    "heartbeat": false,
+    "heartbeatStatus": "beat",
+    "importResults": null,
+    "importSummary": null,
+    "loading": false,
+    "success": false,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": true,
+  },
+  "log": [
+    [
+      "importRegister",
+      "a.json",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`scope pickers golden import: submit invalidType 1`] = `
+{
+  "after": {
+    "error": "Please select a valid file to import",
+    "heartbeat": false,
+    "heartbeatStatus": null,
+    "importResults": null,
+    "importSummary": null,
+    "loading": false,
+    "success": false,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`scope pickers golden import: submit large 1`] = `
+{
+  "after": {
+    "error": null,
+    "heartbeat": false,
+    "heartbeatStatus": "beat",
+    "importResults": {
+      "created": 2,
+    },
+    "importSummary": {
+      "created": 2,
+    },
+    "loading": false,
+    "success": true,
+  },
+  "during": {
+    "heartbeat": true,
+    "loading": true,
+  },
+  "log": [
+    [
+      "importRegister",
+      "a.json",
+      614400,
+    ],
+  ],
+}
+`;
+
+exports[`scope pickers golden import: submit noFile 1`] = `
+{
+  "after": {
+    "error": "Please select a valid file to import",
+    "heartbeat": false,
+    "heartbeatStatus": null,
+    "importResults": null,
+    "importSummary": null,
+    "loading": false,
+    "success": false,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": false,
+  },
+  "log": [],
+}
+`;
+
+exports[`scope pickers golden import: submit noSummary 1`] = `
+{
+  "after": {
+    "error": null,
+    "heartbeat": false,
+    "heartbeatStatus": "beat",
+    "importResults": null,
+    "importSummary": null,
+    "loading": false,
+    "success": true,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": true,
+  },
+  "log": [
+    [
+      "importRegister",
+      "a.json",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`scope pickers golden import: submit small 1`] = `
+{
+  "after": {
+    "error": null,
+    "heartbeat": false,
+    "heartbeatStatus": "beat",
+    "importResults": {
+      "created": 1,
+    },
+    "importSummary": {
+      "created": 1,
+    },
+    "loading": false,
+    "success": true,
+  },
+  "during": {
+    "heartbeat": false,
+    "loading": true,
+  },
+  "log": [
+    [
+      "importRegister",
+      "a.json",
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`scope pickers golden registers: object stats breakdown 1`] = `
+[
+  null,
+  null,
+  null,
+  null,
+  {
+    "deleted": 2,
+    "invalid": 1,
+    "locked": 3,
+    "size": "2 KB",
+  },
+  {
+    "deleted": 4,
+  },
+]
+`;
+
+exports[`scope pickers golden registers: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "noSchemas",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    "throws TypeError",
+    {
+      "label": "Three",
+      "register": 3,
+      "title": "Three",
+      "value": 3,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "Three",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+        {
+          "label": "Three",
+          "register": 3,
+          "title": "Three",
+          "value": 3,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        3,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
