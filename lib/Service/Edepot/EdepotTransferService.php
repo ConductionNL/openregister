@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Edepot\Transport\TransportInterface;
@@ -74,7 +74,7 @@ class EdepotTransferService {
 	 * @param SipPackageBuilder $sipBuilder The SIP package builder.
 	 * @param TransferListService $transferListService The transfer list service.
 	 * @param TransferRecordService $transferRecordService Durable transfer + proof persistence.
-	 * @param MagicMapper $objectMapper The object mapper.
+	 * @param MagicMapperInterface $objectMapper The object mapper.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The audit trail mapper.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param INotificationManager $notificationManager The notification manager.
@@ -85,7 +85,7 @@ class EdepotTransferService {
 		private readonly SipPackageBuilder $sipBuilder,
 		private readonly TransferListService $transferListService,
 		private readonly TransferRecordService $transferRecordService,
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly INotificationManager $notificationManager,

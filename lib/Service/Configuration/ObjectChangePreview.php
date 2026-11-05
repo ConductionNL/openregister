@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Closure;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -45,13 +45,13 @@ final class ObjectChangePreview {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objectMapper The object mapper, to find the local object a remote one would update.
+	 * @param MagicMapperInterface $objectMapper The object mapper, to find the local object a remote one would update.
 	 * @param Closure     $compare      PreviewHandler::compareArrays(), as fn(array $current, array $proposed): array.
 	 *
 	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
+		private readonly MagicMapperInterface $objectMapper,
 		private readonly Closure $compare,
 	) {
 	}//end __construct()

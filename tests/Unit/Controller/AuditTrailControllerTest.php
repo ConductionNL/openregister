@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AuditTrailControllerFactory;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -57,7 +58,7 @@ class AuditTrailControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
-		$this->controller = new AuditTrailController(
+		$this->controller = AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -592,7 +593,7 @@ class AuditTrailControllerTest extends TestCase {
 			$groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
 		}
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->logService,
@@ -859,7 +860,7 @@ class AuditTrailControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($bob);
 
-		return new AuditTrailController(
+		return AuditTrailControllerFactory::create(
 			'openregister',
 			$request,
 			$this->logService,

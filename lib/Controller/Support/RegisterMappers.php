@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
@@ -39,7 +39,7 @@ final class RegisterMappers {
 	 * @param RegisterMapperInterface   $registerMapper     The register mapper.
 	 * @param SchemaMapperInterface     $schemaMapper       The schema mapper.
 	 * @param AuditTrailMapperInterface $auditTrailMapper   The audit trail mapper.
-	 * @param MagicMapper      $objectEntityMapper The object table mapper.
+	 * @param MagicMapperInterface      $objectEntityMapper The object table mapper.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
@@ -47,7 +47,7 @@ final class RegisterMappers {
 		public readonly RegisterMapperInterface $registerMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly MagicMapper $objectEntityMapper,
+		public readonly MagicMapperInterface $objectEntityMapper,
 	) {
 	}//end __construct()
 }//end class

@@ -169,7 +169,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 			}
 		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(fn (string $id) => ($id === MagicMapper::class ? $magicMapper : $this->createMock($id)));
+		$container->method('get')->willReturnCallback(fn (string $id) => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class ? $magicMapper : $this->createMock($id)));
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($register);

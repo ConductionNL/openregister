@@ -26,6 +26,7 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCP\AppFramework\IAppContainer;
@@ -79,9 +80,9 @@ class CacheSettingsHandler {
 	/**
 	 * Object cache service (lazy-loaded when needed)
 	 *
-	 * @var CacheHandler|null
+	 * @var CacheHandlerInterface|null
 	 */
-	private ?CacheHandler $objectCacheService = null;
+	private ?CacheHandlerInterface $objectCacheService = null;
 
 	/**
 	 * Container for lazy loading services
@@ -112,7 +113,7 @@ class CacheSettingsHandler {
 	 * @param ICacheFactory $cacheFactory Cache factory.
 	 * @param SchemaCacheHandler $schemaCacheService Schema cache handler.
 	 * @param FacetCacheHandler $facetCacheSvc Schema facet cache service.
-	 * @param CacheHandler|null $objectCacheService Object cache service (optional, lazy-loaded).
+	 * @param CacheHandlerInterface|null $objectCacheService Object cache service (optional, lazy-loaded).
 	 * @param IAppContainer|null $container Container for lazy loading (optional).
 	 *
 	 * @return void
@@ -121,7 +122,7 @@ class CacheSettingsHandler {
 		ICacheFactory $cacheFactory,
 		SchemaCacheHandler $schemaCacheService,
 		FacetCacheHandler $facetCacheSvc,
-		?CacheHandler $objectCacheService = null,
+		?CacheHandlerInterface $objectCacheService = null,
 		?IAppContainer $container = null,
 	) {
 		$this->cacheFactory = $cacheFactory;

@@ -1,0 +1,150 @@
+{
+    "none": [],
+    "properties-scalar": [],
+    "vocabulary-scalar": [
+        {
+            "code": "relation-vocabulary-malformed",
+            "message": "\"x-openregister-relation-types\" must be a list of relation types."
+        }
+    ],
+    "vocabulary-entries": [
+        {
+            "code": "relation-vocabulary-malformed",
+            "message": "Entry 0 of \"x-openregister-relation-types\" must be an object."
+        },
+        {
+            "code": "relation-vocabulary-key-missing",
+            "message": "Entry 7 of \"x-openregister-relation-types\" declares no \"key\", so no property can point at it."
+        },
+        {
+            "code": "relation-vocabulary-key-missing",
+            "message": "Entry 8 of \"x-openregister-relation-types\" declares no \"key\", so no property can point at it."
+        },
+        {
+            "code": "relation-vocabulary-key-duplicate",
+            "message": "\"x-openregister-relation-types\" declares the key \"parent\" twice, and a property pointing at it would resolve to whichever came last."
+        },
+        {
+            "code": "relation-symmetric-malformed",
+            "message": "The relation type \"obj\" declares \"symmetric\" as something other than true or false."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"obj\" declares a \"label\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"obj\" declares an \"inverseLabel\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"sym\" declares a \"label\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-symmetric-inverse-label",
+            "message": "The relation type \"sym\" is symmetric and also declares an \"inverseLabel\". A symmetric relation reads the same from both sides."
+        },
+        {
+            "code": "relation-inherits-malformed",
+            "message": "The relation type \"inh\" maps the inherited \"responsible\" onto something that is not a property name."
+        },
+        {
+            "code": "relation-inherits-unknown",
+            "message": "The relation type \"inh\" declares inheritance of \"colour\", which is not one of: classification, confidentiality, responsible."
+        },
+        {
+            "code": "relation-inherits-unknown",
+            "message": "The relation type \"inh2\" declares inheritance of \"integer\", which is not one of: classification, confidentiality, responsible."
+        },
+        {
+            "code": "relation-inherits-unknown",
+            "message": "The relation type \"inh2\" declares inheritance of \"secret\", which is not one of: classification, confidentiality, responsible."
+        },
+        {
+            "code": "relation-inherits-unknown",
+            "message": "The relation type \"inh2\" declares inheritance of \"array\", which is not one of: classification, confidentiality, responsible."
+        },
+        {
+            "code": "relation-inherits-malformed",
+            "message": "The relation type \"inh3\" declares \"inherits\" as neither a list of names nor a map of name to property."
+        },
+        {
+            "code": "relation-inherits-malformed",
+            "message": "The relation type \"inh4\" maps the inherited \"classification\" onto something that is not a property name."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"lbl\" declares a \"label\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"objLabel\" declares a \"label\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The relation type \"objLabel\" declares an \"inverseLabel\" that is neither a string nor a map of language tag to string."
+        }
+    ],
+    "properties": [
+        {
+            "code": "relation-annotation-malformed",
+            "message": "The property \"scalarDecl\" declares \"x-openregister-relation\", which must be an object."
+        },
+        {
+            "code": "relation-without-ref",
+            "message": "The property \"noRef\" declares \"x-openregister-relation\" but holds no \"$ref\", so there is no link for the labels to name."
+        },
+        {
+            "code": "relation-type-unknown",
+            "message": "The property \"badType\" points at the relation type \"child%d\", which \"x-openregister-relation-types\" does not declare."
+        },
+        {
+            "code": "relation-type-unknown",
+            "message": "The property \"blankType\" declares a relation \"type\" that is not a vocabulary key."
+        },
+        {
+            "code": "relation-type-unknown",
+            "message": "The property \"intType\" declares a relation \"type\" that is not a vocabulary key."
+        },
+        {
+            "code": "relation-label-missing",
+            "message": "The property \"noLabel\" declares \"x-openregister-relation\" with neither a \"label\" nor a \"type\"."
+        },
+        {
+            "code": "relation-symmetric-inverse-label",
+            "message": "The property \"items\" is symmetric and also declares an \"inverseLabel\". A symmetric relation reads the same from both sides."
+        },
+        {
+            "code": "relation-type-unknown",
+            "message": "The property \"both\" points at the relation type \"nope\", which \"x-openregister-relation-types\" does not declare."
+        },
+        {
+            "code": "relation-label-malformed",
+            "message": "The property \"both\" declares a \"label\" that is neither a string nor a map of language tag to string."
+        },
+        {
+            "code": "relation-inherits-unknown",
+            "message": "The property \"both\" declares inheritance of \"x\", which is not one of: classification, confidentiality, responsible."
+        },
+        {
+            "code": "relation-without-ref",
+            "message": "The property \"7\" declares \"x-openregister-relation\" but holds no \"$ref\", so there is no link for the labels to name."
+        },
+        {
+            "code": "relation-inherits-malformed",
+            "message": "The property \"7\" maps the inherited \"responsible\" onto something that is not a property name."
+        },
+        {
+            "code": "relation-label-missing",
+            "message": "The property \"objProp\" declares \"x-openregister-relation\" with neither a \"label\" nor a \"type\"."
+        },
+        {
+            "code": "relation-symmetric-malformed",
+            "message": "The property \"objProp\" declares \"symmetric\" as something other than true or false."
+        },
+        {
+            "code": "relation-label-missing",
+            "message": "The property \"objItems\" declares \"x-openregister-relation\" with neither a \"label\" nor a \"type\"."
+        }
+    ]
+}

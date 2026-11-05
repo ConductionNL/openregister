@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ConversationControllerFactory;
 use DateTime;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\AgentMapper;
@@ -36,6 +37,10 @@ use RuntimeException;
  * cannot grant access. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ConversationController
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationDomain
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConversationControllerServices
  * @uses \OCA\OpenRegister\Db\Conversation
  */
 class ConversationControllerDeleteGoldenTest extends TestCase {
@@ -148,7 +153,7 @@ class ConversationControllerDeleteGoldenTest extends TestCase {
 			});
 		}
 
-		$controller = new ConversationController(
+		$controller = ConversationControllerFactory::create(
 			'openregister',
 			$request,
 			$conversations,
