@@ -41,6 +41,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowHopAudit
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
+ * @uses   \OCA\OpenRegister\Db\Flow
+ * @uses   \OCA\OpenRegister\Db\FlowRun
+ * @uses   \OCA\OpenRegister\Db\FlowRunStep
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStepHistory
  */
 class FlowHopAuditTest extends TestCase {
