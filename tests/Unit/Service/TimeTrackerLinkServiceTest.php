@@ -33,7 +33,6 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
-use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\TimeTrackerLinkService;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
