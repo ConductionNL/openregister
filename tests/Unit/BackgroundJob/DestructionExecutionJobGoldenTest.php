@@ -84,6 +84,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
             'settings throw'        => [['settings' => 'throw']],
             'empty list'            => [['entries' => [], 'settings' => ['archivalRegister' => 5]]],
             'default batch of 50'   => [['entries' => array_fill(0, 51, ['decision' => 'retain']), 'settings' => []]],
+            'default batch, full'   => [['entries' => array_fill(0, 50, ['decision' => 'retain']), 'settings' => []]],
         ];
     }//end cases()
 
