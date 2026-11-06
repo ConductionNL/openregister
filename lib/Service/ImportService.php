@@ -1772,57 +1772,76 @@ class ImportService implements ObjectImporterInterface {
 		Schema $schema,
 		?IUser $currentUser = null,
 	): array {
-		$schemaId = $schema->getId();
-		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
-
-		$objectData = [];
-		$selfData = [
-			'register' => $register->getId(),
-			'schema' => $schemaId,
-		];
-
 		$isAdmin = $this->isRowImporterAdmin(user: $currentUser);
 
 		// Translatable-property pre-pass (register-i18n Phase 3 wire-in):
 		// turn flat `field_lang` columns into the nested `field: {lang: value}`
 		// shape the rest of the save pipeline expects. The codec is
 		// tolerant of empty cells and unrelated underscore-suffixed
-		// columns; the rest of this loop sees the un-flattened shape.
+		// columns; the rest of this method sees the un-flattened shape.
 		$rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
-		$cells = array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '');
-		foreach ($cells as $key => $value) {
-			$firstChar = ((string)$key)[0] ?? '';
-
-			// `_` columns are ignored; of the `@` columns only `@self.*`, and only for an admin.
-			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
-			if ($selfPropertyName !== null) {
-				$selfData[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
-			}
-
-			if ($firstChar === '_' || $firstChar === '@') {
-				continue;
-			}
-
-			$objectData[$key] = $value;
-			if (($schemaProperties[$key] ?? null) !== null) {
-				$objectData[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
-			}
-		}//end foreach
-
-		// Add ID if present in the data (for updates) - check once at the end.
+		[$selfColumns, $columns] = $this->splitRowColumns(rowData: $rowData, isAdmin: $isAdmin);
+		$selfData = array_replace(['register' => $register->getId(), 'schema' => $schema->getId()], $selfColumns);
 		if (empty($rowData['id']) === false) {
 			$selfData['id'] = $rowData['id'];
 		}
 
-		// Add @self array to object data.
+		$objectData = $this->typedColumns(columns: $columns, schema: $schema);
 		$objectData['@self'] = $selfData;
 
 		// Validate that we're not accidentally creating invalid properties.
-		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$schemaId);
+		$this->validateObjectProperties(objectData: $objectData, _schemaId: (string)$schema->getId());
 
 		return $objectData;
 	}//end transformCsvRowToObject()
+
+	/**
+	 * Split the filled cells of a row into `@self` values and object properties.
+	 *
+	 * `_` columns are ignored; of the `@` columns only `@self.*`, and only for an admin.
+	 *
+	 * @param array $rowData The row, by column name.
+	 * @param bool  $isAdmin Whether the importing user is an admin.
+	 *
+	 * @return array{0: array, 1: array} The `@self` values and the properties.
+	 */
+	private function splitRowColumns(array $rowData, bool $isAdmin): array {
+		$selfColumns = [];
+		$columns = [];
+		foreach (array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '') as $key => $value) {
+			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
+			if ($selfPropertyName !== null) {
+				$selfColumns[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+			}
+
+			$firstChar = ((string)$key)[0] ?? '';
+			if ($firstChar !== '_' && $firstChar !== '@') {
+				$columns[$key] = $value;
+			}
+		}
+
+		return [$selfColumns, $columns];
+	}//end splitRowColumns()
+
+	/**
+	 * The columns with the values of schema properties converted to their type.
+	 *
+	 * @param array  $columns The properties, by column name.
+	 * @param Schema $schema  The schema.
+	 *
+	 * @return array The properties.
+	 */
+	private function typedColumns(array $columns, Schema $schema): array {
+		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
+		foreach ($columns as $key => $value) {
+			if (($schemaProperties[$key] ?? null) !== null) {
+				$columns[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
+			}
+		}
+
+		return $columns;
+	}//end typedColumns()
 
 	/**
 	 * The @self property an `@self.<name>` column sets, for an admin; null for any other column.
@@ -1955,8 +1974,6 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @return array<string, mixed>|null Object data or null if transformation fails
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Excel row transformation requires many type-specific branches
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple column types and transformations create execution paths
 	 */
 	private function transformExcelRowToObject(
 		array $rowData,
@@ -1964,49 +1981,7 @@ class ImportService implements ObjectImporterInterface {
 		?Schema $schema,
 		?IUser $currentUser = null,
 	): ?array {
-		// Separate regular properties from system properties.
-		$objectData = [];
-		$selfData = [];
-
-		// Check if current user is admin for column filtering.
-		$isAdmin = $this->isUserAdmin(user: $currentUser);
-
-		foreach ($rowData as $key => $value) {
-			// Skip empty values.
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// PHP turns a numeric column header into an integer key.
-			$key = (string)$key;
-			if (str_starts_with($key, '_') === true) {
-				// REQUIREMENT: Columns starting with _ are completely ignored.
-				continue;
-			} elseif (str_starts_with($key, '@') === true) {
-				// REQUIREMENT: @ columns only processed if user is admin.
-				if ($isAdmin === false) {
-					continue;
-					// Skip @ columns for non-admin users.
-				}
-
-				if (str_starts_with($key, '@self.') === true) {
-					// Move properties starting with @self. to @self array and remove the @self. prefix.
-					$selfPropertyName = substr($key, 6);
-
-					// Transform special @self properties.
-					$selfData[$selfPropertyName] = $this->transformSelfProperty(
-						propertyName: $selfPropertyName,
-						value: $value
-					);
-				}
-
-				// Note: Other @ columns that don't start with @self. are ignored.
-				continue;
-			}//end if
-
-			// Regular properties go to main object data.
-			$objectData[$key] = $value;
-		}//end foreach
+		[$selfData, $objectData] = $this->splitRowColumns(rowData: $rowData, isAdmin: $this->isUserAdmin(user: $currentUser));
 
 		// Build @self section with metadata if available.
 		if ($register !== null) {
@@ -2018,22 +1993,19 @@ class ImportService implements ObjectImporterInterface {
 		}
 
 		// Add ID if present in the data (for updates).
-		if (($rowData['id'] ?? null) !== null && empty($rowData['id']) === false) {
+		if (empty($rowData['id']) === false) {
 			$selfData['id'] = $rowData['id'];
 		}
 
-		// Add @self array to object data if we have self properties.
 		if (empty($selfData) === false) {
 			$objectData['@self'] = $selfData;
 		}
 
-		// Transform object data based on schema property types if schema is available.
-		$transformedData = $objectData;
-		if ($schema !== null) {
-			$transformedData = $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
+		if ($schema === null) {
+			return $objectData;
 		}
 
-		return $transformedData;
+		return $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
 	}//end transformExcelRowToObject()
 
 	/**
