@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
@@ -98,6 +99,7 @@ class EmailsController extends Controller {
 	 * @param \Psr\Log\LoggerInterface $logger Logger
 	 * @param EmailLinkService $emailLinkService Object-scoped email links
 	 * @param PermissionHandler $permissions Answers the object update right
+	 * @param ReplyThreadService|null $replyThreads Resolves reply headers onto objects
 	 *
 	 * @return void
 	 */
@@ -110,6 +112,7 @@ class EmailsController extends Controller {
 		\Psr\Log\LoggerInterface $logger,
 		EmailLinkService $emailLinkService,
 		PermissionHandler $permissions,
+		private readonly ?ReplyThreadService $replyThreads = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -335,6 +338,36 @@ class EmailsController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}
 	}//end search()
+
+	/**
+	 * Which object a reply threads onto, by its `In-Reply-To` and `References`.
+	 *
+	 * Answers `threaded`, `ambiguous` or `unthreaded`; the subject is never read.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Guarded downstream: ReplyThreadService keeps only objects the
+	 *   caller can read through ObjectService::find() with RBAC and multitenancy on.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function resolve(): JSONResponse {
+		if ($this->replyThreads === null) {
+			return new JSONResponse(['error' => 'Reply threading is not available'], 501);
+		}
+
+		return new JSONResponse(
+			$this->replyThreads->resolve(
+				headers: [
+					'In-Reply-To' => $this->request->getParam('inReplyTo', ''),
+					'References' => $this->request->getParam('references', ''),
+				]
+			)
+		);
+	}//end resolve()
 
 	/**
 	 * Validate that the object exists and return it.

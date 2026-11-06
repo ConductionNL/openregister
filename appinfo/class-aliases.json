@@ -916,11 +916,6 @@
 			"eager": true,
 			"service": true
 		},
-		"OCA\\OpenRegister\\Service\\Notification\\VngNotificatiesEnvelope": {
-			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\VngNotificatiesEnvelope",
-			"eager": false,
-			"service": true
-		},
 		"OCA\\OpenRegister\\Service\\Party\\PartyNotificationService": {
 			"class": "OCA\\OpenRegister\\Notifications\\Service\\Party\\PartyNotificationService",
 			"eager": false,

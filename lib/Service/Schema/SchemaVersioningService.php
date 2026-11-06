@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Schema;
 
 use DateTime;
+use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
@@ -238,7 +239,7 @@ class SchemaVersioningService {
 
 			// Fallback: count invalid entries in the side table.
 			try {
-				return count($this->runEntryMapper->findByRun($run->getId(), SchemaRunEntry::OUTCOME_INVALID));
+				return count($this->runEntryMapper->findByRun(runId: $run->getId(), filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_INVALID)));
 			} catch (\Throwable $e) {
 				return null;
 			}

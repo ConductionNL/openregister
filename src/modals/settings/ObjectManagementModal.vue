@@ -275,7 +275,7 @@
 		</div>
 
 		<template #actions>
-			<VectorizationSaveActions
+			<SettingsSaveActions
 				:saving="saving"
 				@save="saveConfiguration"
 				@cancel="$emit('closing')" />
@@ -289,8 +289,8 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import SettingsSaveActions from './SettingsSaveActions.vue'
 import VectorizationBatchSection from './vectorization/VectorizationBatchSection.vue'
-import VectorizationSaveActions from './vectorization/VectorizationSaveActions.vue'
 import VectorizationSwitchField from './vectorization/VectorizationSwitchField.vue'
 import {
 	readVectorizeSettings,
@@ -329,7 +329,7 @@ export default {
 		InformationOutline,
 		AlertCircle,
 		VectorizationBatchSection,
-		VectorizationSaveActions,
+		SettingsSaveActions,
 		VectorizationSwitchField,
 	},
 

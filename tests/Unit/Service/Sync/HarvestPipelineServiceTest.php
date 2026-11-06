@@ -26,6 +26,8 @@ namespace Unit\Service\Sync;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Db\SyncExecution;
+use OCA\OpenRegister\Db\SyncFailure;
 use OCA\OpenRegister\Db\SyncRecord;
 use OCA\OpenRegister\Db\SyncRecordMapper;
 use OCA\OpenRegister\Service\MappingService;
@@ -43,6 +45,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Db\SyncExecution
+ * @uses \OCA\OpenRegister\Db\SyncFailure
  * @uses \OCA\OpenRegister\Db\SyncRecord
  * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
  * @uses \OCA\OpenRegister\Service\WriteCause
@@ -67,10 +71,10 @@ class HarvestPipelineServiceTest extends TestCase {
 
 		// createPending returns a real entity carrying the external id.
 		$this->syncRecordMapper->method('createPending')->willReturnCallback(
-			function (int $sourceId, string $exec, string $externalId): SyncRecord {
+			function (SyncExecution $execution, string $externalId): SyncRecord {
 				$rec = new SyncRecord();
-				$rec->setSourceId($sourceId);
-				$rec->setExecutionId($exec);
+				$rec->setSourceId((int) $execution->source->getId());
+				$rec->setExecutionId($execution->executionId);
 				$rec->setExternalId($externalId);
 				$rec->setStatus(SyncRecordStatus::PENDING);
 				$rec->setAttempts(0);
@@ -80,11 +84,17 @@ class HarvestPipelineServiceTest extends TestCase {
 
 		// transitionStatus applies the status to the entity and returns it.
 		$this->syncRecordMapper->method('transitionStatus')->willReturnCallback(
-			function (SyncRecord $rec, string $status, ?string $err = null): SyncRecord {
+			function (SyncRecord $rec, string $status): SyncRecord {
 				$rec->setStatus($status);
-				if ($err !== null) {
-					$rec->setErrorMessage($err);
-				}
+				return $rec;
+			}
+		);
+
+		// recordFailure applies the error status and message to the entity and returns it.
+		$this->syncRecordMapper->method('recordFailure')->willReturnCallback(
+			function (SyncRecord $rec, SyncFailure $failure): SyncRecord {
+				$rec->setStatus($failure->status);
+				$rec->setErrorMessage($failure->message);
 				return $rec;
 			}
 		);

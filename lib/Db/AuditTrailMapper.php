@@ -951,7 +951,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// The markers are added before the row is built and sealed: the hash
 		// chain covers whatever is in the row.
 		$changed = $this->markTransitionOrigin(changed: $changed, objectEntity: $objectEntity);
-		$changed = $this->markClientSuppliedCause(changed: $changed);
+		$changed = $this->markClientSuppliedCause(changed: $changed, objectEntity: $objectEntity);
 
 		$auditTrail = new AuditTrail();
 		$auditTrail->setUuid((string)Uuid::v4());
@@ -1169,9 +1169,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * Mark the row when the request tried to supply its own audit cause.
 	 *
 	 * The supplied cause is ignored and the derived one is stamped; this marker
-	 * records that the attempt was made, on the sealed row itself.
+	 * records that the attempt was made, on the sealed row itself. Only rows of
+	 * the object whose write carried the attempt are marked.
 	 *
-	 * @param array<string, mixed> $changed The changed payload.
+	 * @param array<string, mixed> $changed      The changed payload.
+	 * @param ObjectEntity         $objectEntity The object the row describes.
 	 *
 	 * @return array<string, mixed> The payload, marked when a client attempted it.
 	 *
@@ -1179,8 +1181,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	private function markClientSuppliedCause(array $changed): array {
-		if (WriteCause::clientAttempted() === true) {
+	private function markClientSuppliedCause(array $changed, ObjectEntity $objectEntity): array {
+		if (WriteCause::clientAttemptedFor(objectUuid: (string)$objectEntity->getUuid()) === true) {
 			$changed['clientSuppliedCause'] = true;
 		}
 
