@@ -45,6 +45,10 @@ use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
+use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use RuntimeException;
@@ -57,7 +61,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRowWrite;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableDdl;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
@@ -71,6 +74,10 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableAlterer;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableColumnReader;
 use OCA\OpenRegister\Db\MagicMapper\TableStructureSync;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -210,15 +217,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
-
-	/**
-	 * Metadata fields indexed on every magic table besides UUID, register/schema,
-	 * organisation and owner. `slug` and `uri` are here because the single-object
-	 * lookup ORs `_id OR _uuid OR _slug OR _uri`, and Postgres only uses an index
-	 * for a disjunction when every branch has one (measured: 2.5ms Seq Scan
-	 * against 0.107ms by `_uuid` alone on a 2,962-row register).
-	 */
-	private const INDEXED_METADATA_FIELDS = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
 
 	/**
 	 * Schema-and-property pairs already warned about as named like a metadata column.
@@ -592,11 +590,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicStatisticsHandler $statisticsHandler = null;
 
 	/**
-	 * Cached result of pg_trgm extension availability check
+	 * Answers once whether pg_trgm is available.
 	 *
-	 * @var boolean|null null = not checked yet, true/false = checked result
+	 * @var MagicPgTrgmProbe|null
 	 */
-	private ?bool $hasPgTrgm = null;
+	private ?MagicPgTrgmProbe $pgTrgmProbe = null;
 
 	/**
 	 * Undeclared properties already reported as discarded, by schema id then property name.
@@ -670,22 +668,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Get the configured database table prefix.
 	 *
 	 * Reads `dbtableprefix` from the Nextcloud system config once per call,
-	 * defaulting to `oc_`. Centralising this replaces the hardcoded `'oc_'`
-	 * literals that previously broke every raw-SQL path on installs with a
-	 * custom prefix (BUG-DB-3).
+	 * defaulting to `oc_`. An empty value stays empty: the connection applies
+	 * the same value to every query builder table, so raw SQL must too.
 	 *
 	 * @return string The configured table prefix (e.g. `oc_`).
 	 */
 	private function getTablePrefix(): string {
-		// Fall back to the Nextcloud default when the system value is empty or
-		// unset. An empty prefix would yield unprefixed table names, breaking
-		// magic-table discovery and every raw-SQL table reference.
-		$prefix = (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
-		if ($prefix === '') {
-			return 'oc_';
-		}
-
-		return $prefix;
+		return (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
 	}//end getTablePrefix()
 
 	/**
@@ -1120,34 +1109,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return bool True if pg_trgm is available, false otherwise
 	 */
 	private function hasPgTrgmExtension(): bool {
-		// Return cached result if available.
-		if ($this->hasPgTrgm !== null) {
-			return $this->hasPgTrgm;
-		}
-
-		// Not PostgreSQL = no pg_trgm.
-		$platform = $this->db->getDatabasePlatform();
-		if ($platform instanceof PostgreSQLPlatform === false) {
-			$this->hasPgTrgm = false;
-			return false;
-		}
-
-		// Check if pg_trgm extension is installed.
-		try {
-			$stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-			$result = $stmt->execute();
-			$count = (int)$result->fetchOne();
-			$this->hasPgTrgm = $count > 0;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Failed to check pg_trgm extension availability',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			$this->hasPgTrgm = false;
-		}
-
-		return $this->hasPgTrgm;
+		return $this->trgmProbe()->available();
 	}//end hasPgTrgmExtension()
+
+	/**
+	 * The pg_trgm probe of this mapper.
+	 *
+	 * @return MagicPgTrgmProbe
+	 */
+	private function trgmProbe(): MagicPgTrgmProbe {
+		$this->pgTrgmProbe ??= new MagicPgTrgmProbe(db: $this->db, logger: $this->logger);
+
+		return $this->pgTrgmProbe;
+	}//end trgmProbe()
 
 	/**
 	 * Create or update table for a specific register+schema combination
@@ -3141,20 +3115,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end buildTableColumnsFromSchema()
 
 	/**
-	 * Create table with specified columns
-	 *
-	 * @param string $tableName The table name
-	 * @param array $columns Array of column definitions
-	 *
-	 * @throws Exception If table creation fails
-	 *
-	 * @return void
-	 */
-
-	/**
 	 * Create a new table with specified columns.
-	 *
-	 * Uses Nextcloud 32+ compatible schema API for table creation.
 	 *
 	 * @param string $tableName The table name
 	 * @param array $columns The column definitions
@@ -3164,173 +3125,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return void
 	 */
 	private function createTable(string $tableName, array $columns): void {
-		try {
-			// Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
-			$ddl = new MagicTableDdl(platform: $this->db->getDatabasePlatform(), tableName: $tableName);
-
-			// Get database table prefix from Nextcloud config.
-			$tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
-			$fullTableName = $tablePrefix . $tableName;
-
-			foreach ($columns as $column) {
-				$this->addColumnDefinition(ddl: $ddl, column: $column);
-			}
-
-			$sql = 'CREATE TABLE IF NOT EXISTS ' . $ddl->quoted(name: $fullTableName) . ' (';
-			$sql .= implode(', ', $ddl->columnDefs);
-			$sql .= $this->tableConstraintsSql(ddl: $ddl);
-			$sql .= ')';
-
-			// Execute table creation.
-			$this->db->executeStatement($sql);
-
-			$this->logger->debug(
-				message: '[MagicMapper] Created table with columns',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'fullTableName' => $fullTableName,
-					'columns' => array_column($columns, 'name'),
-				]
-			);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] Failed to create table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			throw new Exception('Failed to create table ' . $tableName . ': ' . $e->getMessage(), 0, $e);
-		}//end try
+		(new MagicTableCreator(db: $this->db, config: $this->config, logger: $this->logger))->create(tableName: $tableName, columns: $columns);
 	}//end createTable()
-
-	/**
-	 * Add one column's definition to the statement, and track its primary key and unique constraint.
-	 *
-	 * @param MagicTableDdl $ddl    The statement being built.
-	 * @param array         $column The column definition.
-	 *
-	 * @return void
-	 */
-	private function addColumnDefinition(MagicTableDdl $ddl, array $column): void {
-		// BUG-DB-7: route the raw column name through quoteIdentifier so
-		// embedded quote characters are escaped (doubled) rather than
-		// concatenated unescaped.
-		$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $ddl->isPostgres);
-
-		$def = $colName . ' ' . $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
-
-		if (($column['nullable'] ?? true) === false) {
-			$def .= ' NOT NULL';
-		}
-
-		if (isset($column['default']) === true) {
-			$def .= ' DEFAULT ' . $this->defaultLiteral(ddl: $ddl, value: $column['default']);
-		}
-
-		if (($column['autoincrement'] ?? false) === true) {
-			$def = ($this->autoincrementColumn(ddl: $ddl, colName: $colName) ?? $def . ' AUTO_INCREMENT');
-		}
-
-		$ddl->columnDefs[] = $def;
-
-		if (($column['primary'] ?? false) === true) {
-			$ddl->primaryKey = $colName;
-		}
-
-		// Track unique constraints (required for PostgreSQL ON CONFLICT).
-		if (($column['unique'] ?? false) === true) {
-			$ddl->uniqueConstraints[] = $colName;
-		}
-	}//end addColumnDefinition()
-
-	/**
-	 * The SQL literal of a column default.
-	 *
-	 * @param MagicTableDdl $ddl   The statement being built.
-	 * @param mixed         $value The default value, never null (a null default is not written).
-	 *
-	 * @return mixed The literal: TRUE/FALSE, a quoted string, or the value itself.
-	 */
-	private function defaultLiteral(MagicTableDdl $ddl, mixed $value): mixed {
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'TRUE';
-			}
-
-			return 'FALSE';
-		}
-
-		if (is_string($value) === true) {
-			// BUG-DB-1: escape via the platform so values containing a single
-			// quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
-			// injection.
-			return $ddl->platform->quoteStringLiteral($value);
-		}
-
-		return $value;
-	}//end defaultLiteral()
-
-	/**
-	 * The definition of an autoincrement column on PostgreSQL or SQLite.
-	 *
-	 * PostgreSQL uses BIGSERIAL. SQLite auto-increments an INTEGER PRIMARY KEY
-	 * column declared inline; AUTO_INCREMENT is a syntax error there and a
-	 * separate PRIMARY KEY(...) constraint would stop the column from aliasing
-	 * rowid, so the inline declaration is recorded on the statement.
-	 *
-	 * @param MagicTableDdl $ddl     The statement being built.
-	 * @param string        $colName The quoted column name.
-	 *
-	 * @return string|null The definition, or null where MySQL's AUTO_INCREMENT applies.
-	 */
-	private function autoincrementColumn(MagicTableDdl $ddl, string $colName): ?string {
-		if ($ddl->isPostgres === true) {
-			return $colName . ' BIGSERIAL';
-		}
-
-		if ($ddl->isSqlite === true) {
-			$ddl->inlinePrimaryKey = true;
-			return $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
-		}
-
-		return null;
-	}//end autoincrementColumn()
-
-	/**
-	 * The PRIMARY KEY and UNIQUE table constraints of the statement.
-	 *
-	 * The primary key is skipped on SQLite when the autoincrement column already
-	 * declared it inline. Unique constraints (required for PostgreSQL ON
-	 * CONFLICT) are named explicitly so MySQL/MariaDB doesn't fall back to using
-	 * the column name as the constraint/index name, which collides across tables
-	 * (e.g. every dynamic table getting a constraint literally called `_uuid`)
-	 * and breaks Nextcloud's ensureUniqueNamesConstraints check on the next app
-	 * install.
-	 *
-	 * @param MagicTableDdl $ddl The statement being built.
-	 *
-	 * @return string The constraints, each with a leading comma.
-	 */
-	private function tableConstraintsSql(MagicTableDdl $ddl): string {
-		$sql = '';
-		if ($ddl->primaryKey !== null && $ddl->inlinePrimaryKey === false) {
-			$sql .= ', PRIMARY KEY (' . $ddl->primaryKey . ')';
-		}
-
-		foreach ($ddl->uniqueConstraints as $uniqueCol) {
-			$rawCol = trim($uniqueCol, '`"');
-			$constraintName = $ddl->tableName . '_' . ltrim($rawCol, '_') . '_uq';
-			$sql .= ', CONSTRAINT ' . $ddl->quoted(name: $constraintName) . ' UNIQUE (' . $uniqueCol . ')';
-		}
-
-		return $sql;
-	}//end tableConstraintsSql()
 
 	/**
 	 * Map column type to SQL type string.
@@ -3339,51 +3135,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $column The column configuration
 	 *
 	 * @return string The SQL type string
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type mapping switch requires handling all SQL types
 	 */
 	private function mapColumnTypeToSQL(string $type, array $column): string {
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+		$isPostgres = $this->db->getDatabasePlatform() instanceof PostgreSQLPlatform;
 
-		switch ($type) {
-			case 'bigint':
-				return 'BIGINT';
-			case 'integer':
-				return 'INTEGER';
-			case 'smallint':
-				return 'SMALLINT';
-			case 'string':
-				$length = $column['length'] ?? 255;
-				return "VARCHAR($length)";
-			case 'text':
-				return 'TEXT';
-			case 'datetime':
-				if ($isPostgres === true) {
-					return 'TIMESTAMP';
-				}
-				return 'DATETIME';
-			case 'boolean':
-				return 'BOOLEAN';
-			case 'decimal':
-				$precision = $column['precision'] ?? 10;
-				$scale = $column['scale'] ?? 2;
-				return "DECIMAL($precision,$scale)";
-			case 'json':
-				if ($isPostgres === true) {
-					return 'JSONB';
-				}
-				return 'JSON';
-			case 'json_ordered':
-				// Order-preserving JSON storage for object-typed schema properties.
-				// PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
-				// stores the document verbatim. MySQL/MariaDB JSON also stores in document
-				// order (LONGTEXT-backed), so the same type label maps to JSON on both
-				// platforms. See issue #1720.
-				return 'JSON';
-			default:
-				return 'TEXT';
-		}//end switch
+		return (new MagicColumnSql(isPostgres: $isPostgres))->type(type: $type, column: $column);
 	}//end mapColumnTypeToSQL()
 
 	/**
@@ -3391,341 +3147,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param string $tableName The table name
 	 * @param Register $_register The register context (unused)
-	 * @param Schema $_schema The schema for index analysis (unused)
+	 * @param Schema $_schema The schema for index analysis
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void {
-		try {
-			// Add prefix for raw SQL queries.
-			$run = new MagicTableIndexRun(
-				tableName: $tableName,
-				fullTableName: $this->getFullTableName(tableName: $tableName)
-			);
-			$this->createBaseIndexes(run: $run);
-
-			$platform = $this->db->getDatabasePlatform();
-			$run->isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-			if ($run->isPostgres === true) {
-				$this->createPostgresIndexes(run: $run);
-			} else {
-				$this->createMySqlDeletedOwnerIndex(run: $run);
-			}
-
-			// Create indexes for schema-specific properties.
-			$schemaProperties = $_schema->getProperties();
-			if (is_array($schemaProperties) === true) {
-				foreach ($schemaProperties as $propertyName => $propertyConfig) {
-					$run->column = $this->sanitizeColumnName(name: $propertyName);
-					$run->quotedColumn = $this->quoteIdentifier(name: $run->column, isPostgres: $run->isPostgres);
-					$this->createPropertyIndexes(run: $run, propertyConfig: $propertyConfig);
-				}
-			}
-
-			$this->logger->debug(
-				message: '[MagicMapper] Created table indexes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
-					'relationIndexes' => $run->relationIndexes,
-					'facetIndexes' => $run->facetIndexes,
-					'searchableIndexes' => $run->searchableIndexes,
-				]
-			);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Failed to create some table indexes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-			// Don't fail table creation if indexes fail.
-		}//end try
+		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer->create(run: $run, schema: $_schema);
 	}//end createTableIndexes()
-
-	/**
-	 * Create the indexes every magic table carries: the unique UUID index, the
-	 * multitenancy and RBAC indexes and the frequently filtered metadata fields.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createBaseIndexes(MagicTableIndexRun $run): void {
-		$tableName = $run->tableName;
-		$fullTableName = $run->fullTableName;
-
-		// Create unique index on UUID.
-		$this->db->executeStatement(
-			"CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (" . self::METADATA_PREFIX . 'uuid)'
-		);
-
-		// Composite index on register + schema for multitenancy.
-		$registerCol = self::METADATA_PREFIX . 'register';
-		$schemaCol = self::METADATA_PREFIX . 'schema';
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$fullTableName} ({$registerCol}, {$schemaCol})"
-		);
-
-		// Organisation for multitenancy, owner for RBAC, then the frequently
-		// filtered metadata fields.
-		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
-			$col = self::METADATA_PREFIX . $field;
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$tableName}_{$field}_idx ON {$fullTableName} ({$col})"
-			);
-		}
-	}//end createBaseIndexes()
-
-	/**
-	 * Create the PostgreSQL-only indexes: the GIN index on `_relations`, the
-	 * partial live-owner index and the baseline `_name` trigram index.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createPostgresIndexes(MagicTableIndexRun $run): void {
-		$tableName = $run->tableName;
-		$fullTableName = $run->fullTableName;
-
-		// GIN index on _relations for fast containment (@>) relationship lookups.
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_relations_gin_idx ON {$fullTableName} USING GIN (_relations)"
-		);
-
-		// PERF-5: every list/search query filters `_deleted IS NULL`. A partial
-		// index on (_owner) restricted to live rows serves the common
-		// "WHERE _owner = ? AND _deleted IS NULL" access pattern. Partial
-		// indexes are a PostgreSQL feature, so this is Postgres-only.
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-		$ownerCol = self::METADATA_PREFIX . 'owner';
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_live_owner_idx ON {$fullTableName} ({$ownerCol}) WHERE {$deletedCol} IS NULL"
-		);
-
-		if ($this->hasPgTrgmExtension() === true) {
-			$this->createNameTrigramIndex(run: $run);
-		}
-	}//end createPostgresIndexes()
-
-	/**
-	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
-	 *
-	 * `_name` is searched for every schema by
-	 * MagicSearchHandler::buildSearchConditionSql() (the ILIKE path and the
-	 * `_fuzzy=true` similarity() path), so a rare-term search without this
-	 * index is a sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
-	 * 81,950-row table). The index is on an existing varchar/text column, so it
-	 * stays invisible to Doctrine's introspectSchema(). A missing extension or
-	 * incompatible column never fails table creation.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createNameTrigramIndex(MagicTableIndexRun $run): void {
-		$nameCol = self::METADATA_PREFIX . 'name';
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->tableName}_name_trgm_idx ON {$run->fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
-			);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[MagicMapper] Skipped baseline _name trgm index',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $run->tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-		}
-	}//end createNameTrigramIndex()
-
-	/**
-	 * Create the composite (_deleted, _owner) index on MySQL/MariaDB.
-	 *
-	 * MySQL/MariaDB have no partial indexes, so the "WHERE _owner = ? AND
-	 * _deleted IS NULL" access pattern gets the closest composite index.
-	 * `CREATE INDEX IF NOT EXISTS` is not portable across older MySQL, so a
-	 * duplicate-index error is treated as a no-op.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createMySqlDeletedOwnerIndex(MagicTableIndexRun $run): void {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-		$ownerCol = self::METADATA_PREFIX . 'owner';
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX {$run->tableName}_deleted_owner_idx ON {$run->fullTableName} ({$deletedCol}, {$ownerCol})"
-			);
-		} catch (\Throwable $e) {
-			// Index already exists (no IF NOT EXISTS on MySQL): ignore.
-		}
-	}//end createMySqlDeletedOwnerIndex()
-
-	/**
-	 * Create the indexes one schema property asks for: relation, array GIN,
-	 * facet and searchable (trigram) indexes.
-	 *
-	 * @param MagicTableIndexRun $run            The index-creation pass, positioned on the property's column.
-	 * @param array              $propertyConfig The property definition.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createPropertyIndexes(MagicTableIndexRun $run, array $propertyConfig): void {
-		// Single object references (stored as VARCHAR UUID), for _extend queries.
-		if ($this->isSingleRelation(propertyConfig: $propertyConfig) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'rel_idx') === true
-		) {
-			$run->relationIndexes[] = $run->column;
-		}
-
-		// Arrays of object references or inversedBy relations get a GIN index on PostgreSQL.
-		if ($this->wantsArrayGinIndex(run: $run, propertyConfig: $propertyConfig) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'arr_gin_idx') === true
-		) {
-			$run->relationIndexes[] = $run->column . ' (GIN)';
-		}
-
-		// Facetable fields, for efficient facet queries.
-		if (($propertyConfig['facetable'] ?? false) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'facet_idx') === true
-		) {
-			$run->facetIndexes[] = $run->column;
-		}
-
-		// Opt-in `searchable: true`: a pg_trgm GIN index so fuzzy/substring
-		// matching on the column is index-backed (PostgreSQL + pg_trgm only).
-		if (($propertyConfig['searchable'] ?? false) === true
-			&& $run->isPostgres === true
-			&& $this->hasPgTrgmExtension() === true
-		) {
-			$this->createSearchableIndex(run: $run);
-		}
-	}//end createPropertyIndexes()
-
-	/**
-	 * Whether a property is a single object reference that relates objects.
-	 *
-	 * @param array $propertyConfig The property definition.
-	 *
-	 * @return bool
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function isSingleRelation(array $propertyConfig): bool {
-		$handling = ($propertyConfig['objectConfiguration'] ?? [])['handling'] ?? null;
-
-		return ($propertyConfig['type'] ?? 'string') === 'object'
-			&& isset($propertyConfig['$ref']) === true
-			&& ObjectHandling::relates($handling) === true;
-	}//end isSingleRelation()
-
-	/**
-	 * Whether a property is an array of references (or an inversedBy relation)
-	 * on PostgreSQL, which gets a GIN index.
-	 *
-	 * @param MagicTableIndexRun $run            The index-creation pass.
-	 * @param array              $propertyConfig The property definition.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function wantsArrayGinIndex(MagicTableIndexRun $run, array $propertyConfig): bool {
-		if (($propertyConfig['type'] ?? 'string') !== 'array' || $run->isPostgres === false) {
-			return false;
-		}
-
-		$items = $propertyConfig['items'] ?? [];
-
-		return ($items['$ref'] ?? null) !== null
-			|| ($items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null)) !== null;
-	}//end wantsArrayGinIndex()
-
-	/**
-	 * Create an index on the current property column, tolerating an index that
-	 * already exists or a column type the index does not support.
-	 *
-	 * @param MagicTableIndexRun $run    The index-creation pass, positioned on the column.
-	 * @param string             $suffix The index kind; a `gin` kind is created with USING GIN.
-	 *
-	 * @return bool Whether the index statement succeeded.
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function tryCreateColumnIndex(MagicTableIndexRun $run, string $suffix): bool {
-		$using = '';
-		if (str_contains($suffix, 'gin') === true) {
-			$using = 'USING GIN ';
-		}
-
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: $suffix)} ON {$run->fullTableName} {$using}({$run->quotedColumn})"
-			);
-			return true;
-		} catch (Exception $e) {
-			// Index may already exist or column type incompatible.
-			return false;
-		}
-	}//end tryCreateColumnIndex()
-
-	/**
-	 * Create the pg_trgm GIN index of a `searchable` property column.
-	 *
-	 * A column type gin_trgm_ops does not support (a non-string property marked
-	 * searchable) or an existing index is logged as a warning; table creation
-	 * and sync continue.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass, positioned on the column.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createSearchableIndex(MagicTableIndexRun $run): void {
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: 'trgm_idx')} ON {$run->fullTableName} USING GIN ({$run->quotedColumn} gin_trgm_ops)"
-			);
-			$run->searchableIndexes[] = $run->column;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $run->tableName,
-					'column' => $run->column,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end createSearchableIndex()
 
 	/**
 	 * Save single object to register+schema-specific table
@@ -4898,58 +4330,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return (bool|mixed)[][] Array of existing column definitions
 	 */
 	public function getExistingTableColumns(string $tableName): array {
-		try {
-			// Use direct SQL query to get table columns (Nextcloud 32 compatible).
-			// NOTE: We use raw SQL here because information_schema is a system table that should not be prefixed.
-			$fullTableName = $this->getFullTableName(tableName: $tableName);
-
-			// Get database platform to use correct schema check.
-			// MySQL/MariaDB: table_schema = DATABASE().
-			// PostgreSQL: table_schema = 'public'.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-			// MySQL/MariaDB.
-			$sql = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default
-                    FROM information_schema.columns
-                    WHERE table_name = ? AND table_schema = DATABASE()';
-			if ($isPostgres === true) {
-				$sql = 'SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default
-                        FROM information_schema.columns
-                        WHERE table_name = ? AND table_schema = current_schema()';
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$fullTableName]);
-			$columns = $stmt->fetchAll();
-
-			$columnDefinitions = [];
-			foreach ($columns as $column) {
-				$columnDefinitions[$column['column_name']] = [
-					'name' => $column['column_name'],
-					'type' => $column['data_type'],
-					'length' => $column['character_maximum_length'],
-					'precision' => $column['numeric_precision'] ?? null,
-					'scale' => $column['numeric_scale'] ?? null,
-					'nullable' => $column['is_nullable'] === 'YES',
-					'default' => $column['column_default'],
-				];
-			}
-
-			return $columnDefinitions;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] Failed to get existing table columns',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			throw $e;
-		}//end try
+		return (new MagicTableColumnReader(db: $this->db, logger: $this->logger))->read(
+			tableName: $tableName,
+			fullTableName: $this->getFullTableName(tableName: $tableName)
+		);
 	}//end getExistingTableColumns()
 
 	/**
@@ -4964,76 +4348,47 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Column operation statistics with keys columnsAdded, columnsDeRequired, columnsReRequired, columnsDropped
 	 */
 	public function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array {
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
-		$tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
-		$fullTableName = $tablePrefix . $tableName;
+		$columns = new MagicColumnDrift(current: $currentColumns, required: $requiredColumns);
 
-		$tableNameQuoted = '`' . $fullTableName . '`';
-		if ($isPostgres === true) {
-			$tableNameQuoted = '"' . $fullTableName . '"';
-		}
-
-		$sync = new TableStructureSync(
-			tableName: $tableName,
-			tableNameQuoted: $tableNameQuoted,
-			currentColumns: $currentColumns,
-			requiredColumns: $requiredColumns,
-			isPostgres: $isPostgres
-		);
-
-		// 1. Add missing columns.
-		$columnsAdded = $this->addMissingColumns(sync: $sync);
-
-		// 2. De-require columns that are now nullable in schema but NOT NULL in table.
-		$columnsDeRequired = $this->deRequireColumns(sync: $sync);
-
-		// 3. Re-require columns that are NOT NULL in schema but nullable in table.
-		$columnsReRequired = $this->reRequireColumns(sync: $sync);
-
-		// 5. Handle duplicate columns (camelCase versions when snake_case exists).
-		$sync->snakeCaseColumns = $this->buildSnakeCaseColumnMap(requiredColumns: $requiredColumns);
-		$columnsDropped = $this->dropDuplicateCamelCaseColumns(sync: $sync);
-
-		// 6. Make obsolete columns nullable (columns in table but not in schema).
-		$columnsDeRequired = array_merge($columnsDeRequired, $this->makeObsoleteColumnsNullable(sync: $sync));
-
-		// 7. Migrate object-typed columns from JSONB to JSON to preserve insertion order.
-		// PostgreSQL JSONB normalises key order; for schema properties of `type: object`
-		// (which use object-keyed semantics like openconnector mapping rules) clients
-		// require the order they sent on PUT to round-trip on GET. See issue #1720.
-		$columnsRetyped = $this->migrateJsonbToJsonForOrderedColumns(sync: $sync);
-
-		// 8. Widen number columns narrower than their property now maps to.
-		$columnsRetyped = array_merge(
-			$columnsRetyped,
-			$this->widenDecimalColumns(tableName: $tableName, currentColumns: $currentColumns, requiredColumns: $requiredColumns)
-		);
-
-		// Info: a DDL change to a live table is worth a permanent record.
-		$this->logger->info(
-			message: '[MagicMapper] Successfully updated table structure',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'tableName' => $tableName,
-				'columnsAdded' => $columnsAdded,
-				'columnsDeRequired' => $columnsDeRequired,
-				'columnsReRequired' => $columnsReRequired,
-				'columnsDropped' => $columnsDropped,
-				'columnsRetyped' => $columnsRetyped,
-			]
-		);
-
-		// Return statistics about what was changed.
-		return [
-			'columnsAdded' => $columnsAdded,
-			'columnsDeRequired' => $columnsDeRequired,
-			'columnsReRequired' => $columnsReRequired,
-			'columnsDropped' => $columnsDropped,
-			'columnsRetyped' => $columnsRetyped,
-		];
+		return $this->tableAlterer()->update(sync: $this->tableSync(tableName: $tableName, columns: $columns));
 	}//end updateTableStructure()
+
+	/**
+	 * The table alterer of this mapper.
+	 *
+	 * @return MagicTableAlterer
+	 */
+	private function tableAlterer(): MagicTableAlterer {
+		$sizes = new MagicNumberColumnSizes(db: $this->db, tablePrefix: $this->getTablePrefix());
+
+		return new MagicTableAlterer(db: $this->db, logger: $this->logger, sizes: $sizes);
+	}//end tableAlterer()
+
+	/**
+	 * Whether the connection is PostgreSQL.
+	 *
+	 * @return bool
+	 */
+	private function onPostgres(): bool {
+		return $this->db->getDatabasePlatform() instanceof PostgreSQLPlatform;
+	}//end onPostgres()
+
+	/**
+	 * The sync of one table against the given columns.
+	 *
+	 * @param string           $tableName The table name, without prefix.
+	 * @param MagicColumnDrift $columns   The live and required columns.
+	 *
+	 * @return TableStructureSync
+	 */
+	private function tableSync(string $tableName, MagicColumnDrift $columns): TableStructureSync {
+		return new TableStructureSync(
+			tableName: $tableName,
+			fullTableName: $this->getFullTableName(tableName: $tableName),
+			columns: $columns,
+			isPostgres: $this->onPostgres()
+		);
+	}//end tableSync()
 
 	/**
 	 * Identify required columns whose physical column is absent from the live table.
@@ -5055,15 +4410,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function findMissingColumns(array $currentColumns, array $requiredColumns): array {
-		$missing = [];
-		foreach ($requiredColumns as $propertyName => $columnDef) {
-			$columnName = ($columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName));
-			if (isset($currentColumns[$columnName]) === false) {
-				$missing[$propertyName] = $columnDef;
-			}
-		}
-
-		return $missing;
+		return (new MagicColumnDrift(current: $currentColumns, required: $requiredColumns))->missing();
 	}//end findMissingColumns()
 
 	/**
@@ -5085,31 +4432,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string[] Column names whose storage type needs to change from JSONB to JSON.
 	 */
 	public function findJsonbColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array {
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
-		if ($isPostgres === false) {
+		if ($this->onPostgres() === false) {
 			return [];
 		}
 
-		$needsRetype = [];
-
-		foreach ($requiredColumns as $propertyName => $columnDef) {
-			if (($columnDef['type'] ?? null) !== 'json_ordered') {
-				continue;
-			}
-
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-			if (isset($currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$currentType = strtolower((string)($currentColumns[$columnName]['type'] ?? ''));
-			if ($currentType === 'jsonb') {
-				$needsRetype[] = $columnName;
-			}
-		}
-
-		return $needsRetype;
+		return (new MagicColumnDrift(current: $currentColumns, required: $requiredColumns))->storedAs(declaredType: 'json_ordered', liveTypes: ['jsonb']);
 	}//end findJsonbColumnsNeedingRetype()
 
 	/**
@@ -5134,26 +4461,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec exclude schema-drift detection for the magic-table sync
 	 */
 	public function findRelationColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array {
-		$needsRetype = [];
-
-		foreach ($requiredColumns as $propertyName => $columnDef) {
-			// A relating property is declared as a plain string column (the UUID).
-			if (($columnDef['type'] ?? null) !== 'string') {
-				continue;
-			}
-
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-			if (isset($currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$currentType = strtolower((string)($currentColumns[$columnName]['type'] ?? ''));
-			if (in_array($currentType, ['json', 'jsonb'], true) === true) {
-				$needsRetype[] = $columnName;
-			}
-		}
-
-		return $needsRetype;
+		return (new MagicColumnDrift(current: $currentColumns, required: $requiredColumns))->storedAs(declaredType: 'string', liveTypes: ['json', 'jsonb']);
 	}//end findRelationColumnsNeedingRetype()
 
 	/**
@@ -5177,63 +4485,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec exclude magic-table DDL sync
 	 */
 	public function migrateRelationColumnsToVarchar(string $tableName, array $currentColumns, array $requiredColumns): array {
-		$platform = $this->db->getDatabasePlatform();
-		if (($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) === false) {
-			return [];
-		}
+		$columns = new MagicColumnDrift(current: $currentColumns, required: $requiredColumns);
 
-		$columnsRetyped = [];
-
-		// The magic tables carry the Nextcloud table prefix (oc_). Quoting the bare
-		// name yields `relation "openregister_table_..." does not exist`.
-		$tableNameQuoted = $this->quoteIdentifier(
-			name: $this->getFullTableName(tableName: $tableName),
-			isPostgres: true
-		);
-
-		$relationColumns = $this->findRelationColumnsNeedingRetype(
-			currentColumns: $currentColumns,
-			requiredColumns: $requiredColumns
-		);
-
-		foreach ($relationColumns as $columnName) {
-			$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
-
-			$sql = 'ALTER TABLE ' . $tableNameQuoted;
-			$sql .= ' ALTER COLUMN ' . $colNameQuoted;
-			$sql .= ' TYPE VARCHAR(255) USING ' . $colNameQuoted . " #>> '{}'";
-
-			try {
-				$this->db->executeStatement($sql);
-				$columnsRetyped[] = $columnName;
-				$this->logger->debug(
-					message: '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'columnName' => $columnName,
-					]
-				);
-			} catch (Exception $e) {
-				// The column still holds documents that will not fit a UUID. Say so —
-				// do NOT truncate the user's data to make the schema edit succeed.
-				$this->logger->warning(
-					message: '[MagicMapper] Could not retype relation column to VARCHAR; it still holds data '
-						. 'that is not a UUID reference. Saves to this property will keep failing until '
-						. 'the existing values are migrated.',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'columnName' => $columnName,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $columnsRetyped;
+		return $this->tableAlterer()->retypeRelations(sync: $this->tableSync(tableName: $tableName, columns: $columns));
 	}//end migrateRelationColumnsToVarchar()
 
 	/**
@@ -5250,7 +4504,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function findDecimalColumnsNeedingWiden(array $currentColumns, array $requiredColumns): array {
-		return array_keys($this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns));
+		$columns = new MagicColumnDrift(current: $currentColumns, required: $requiredColumns);
+
+		return array_keys($this->tableAlterer()->widener()->widenings(columns: $columns));
 	}//end findDecimalColumnsNeedingWiden()
 
 	/**
@@ -5268,53 +4524,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-column-holds-every-value-its-property-accepts-req-mtc-001
 	 */
 	public function widenDecimalColumns(string $tableName, array $currentColumns, array $requiredColumns): array {
-		$widenings = $this->decimalColumnWidenings(currentColumns: $currentColumns, requiredColumns: $requiredColumns);
-		if ($widenings === []) {
-			return [];
-		}
+		$columns = new MagicColumnDrift(current: $currentColumns, required: $requiredColumns);
 
-		$isPostgres = ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
-		$tableNameQuoted = $this->quoteIdentifier(name: $this->getFullTableName(tableName: $tableName), isPostgres: $isPostgres);
-
-		$widened = [];
-		foreach ($widenings as $columnName => $size) {
-			$type = 'DECIMAL('.$size['precision'].','.$size['scale'].')';
-			$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$sql = 'ALTER TABLE '.$tableNameQuoted.' ALTER COLUMN '.$colNameQuoted.' TYPE '.$type;
-			if ($isPostgres === false) {
-				// MODIFY restates the whole column, so its nullability and default are carried over.
-				$sql = 'ALTER TABLE '.$tableNameQuoted.' MODIFY '.$colNameQuoted.' '.$type;
-				$nullability = ' NULL';
-				if (($currentColumns[$columnName]['nullable'] ?? true) === false) {
-					$nullability = ' NOT NULL';
-				}
-
-				$sql .= $nullability;
-				$default = $currentColumns[$columnName]['default'] ?? null;
-				if (is_numeric($default) === true) {
-					$sql .= ' DEFAULT '.$default;
-				}
-			}
-
-			try {
-				$this->db->executeStatement($sql);
-				$widened[] = $columnName;
-				MagicNumberColumnSizes::forget(fullTableName: $this->getFullTableName(tableName: $tableName));
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] Could not widen number column; values it cannot hold are refused on save',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'columnName' => $columnName,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		return $widened;
+		return $this->tableAlterer()->widener()->widen(sync: $this->tableSync(tableName: $tableName, columns: $columns));
 	}//end widenDecimalColumns()
 
 	/**
@@ -5333,17 +4545,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	public function widenNumberColumnsToDefault(string $tableName): array {
 		$currentColumns = $this->getExistingTableColumns(tableName: $tableName);
-		$requiredColumns = [];
-		foreach ($currentColumns as $columnName => $column) {
-			if (in_array(strtolower((string)($column['type'] ?? '')), ['decimal', 'numeric'], true) === true) {
-				$requiredColumns[$columnName] = [
-					'name' => $columnName,
-					'type' => 'decimal',
-					'precision' => MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE,
-					'scale' => MagicNumberColumn::DEFAULT_SCALE,
-				];
-			}
-		}
+		$requiredColumns = $this->tableAlterer()->widener()->defaultSizes(currentColumns: $currentColumns);
 
 		return $this->widenDecimalColumns(tableName: $tableName, currentColumns: $currentColumns, requiredColumns: $requiredColumns);
 	}//end widenNumberColumnsToDefault()
@@ -5369,120 +4571,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end refuseNumbersTheColumnsWouldRound()
 
 	/**
-	 * The widened size of each number column narrower than its property maps to.
-	 *
-	 * @param array $currentColumns  Live columns, keyed by physical column name.
-	 * @param array $requiredColumns Desired columns, keyed by property name.
-	 *
-	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by physical column name.
-	 */
-	private function decimalColumnWidenings(array $currentColumns, array $requiredColumns): array {
-		$numberColumn = new MagicNumberColumn();
-		$widenings = [];
-		foreach ($requiredColumns as $propertyName => $columnDef) {
-			if (($columnDef['type'] ?? null) !== 'decimal') {
-				continue;
-			}
-
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: (string)$propertyName);
-			if (isset($currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$size = $numberColumn->widening(
-				currentColumn: $currentColumns[$columnName],
-				precision: (int)($columnDef['precision'] ?? MagicNumberColumn::INTEGER_DIGITS + MagicNumberColumn::DEFAULT_SCALE),
-				scale: (int)($columnDef['scale'] ?? MagicNumberColumn::DEFAULT_SCALE)
-			);
-			if ($size !== null) {
-				$widenings[$columnName] = $size;
-			}
-		}
-
-		return $widenings;
-	}//end decimalColumnWidenings()
-
-	/**
-	 * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
-	 *
-	 * PostgreSQL JSONB stores keys in hashed/normalised order, which silently drops
-	 * client-supplied ordering for object-keyed schema properties (e.g. openconnector
-	 * mapping/cast rules where insertion order is semantically meaningful — issue #1720).
-	 * The plain JSON type stores the document verbatim and round-trips insertion order.
-	 *
-	 * On MySQL/MariaDB the JSON type already preserves document order, so this method
-	 * is a no-op there. On other platforms (e.g. SQLite) JSON is stored as TEXT and
-	 * order is preserved by definition, so nothing to do.
-	 *
-	 * Idempotent: re-running on an already-JSON column issues no SQL.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return string[] Names of columns whose type was migrated.
-	 */
-	private function migrateJsonbToJsonForOrderedColumns(TableStructureSync $sync): array {
-		// Only PostgreSQL distinguishes JSONB from JSON. MySQL/MariaDB JSON already
-		// preserves document order; no migration is required there.
-		if ($sync->isPostgres === false) {
-			return [];
-		}
-
-		$columnsRetyped = [];
-
-		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
-			if (($columnDef['type'] ?? null) !== 'json_ordered') {
-				continue;
-			}
-
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-			if (isset($sync->currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$currentType = strtolower((string)($sync->currentColumns[$columnName]['type'] ?? ''));
-			if ($currentType !== 'jsonb') {
-				// Already JSON (or some other type added by an out-of-band migration); skip.
-				continue;
-			}
-
-			$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
-
-			// Cast JSONB to text first to retain a stable serialisation, then parse as JSON.
-			// JSONB → text gives PostgreSQL's normalised key order; that's the same order the
-			// column has held until now, so this migration does not retroactively reorder
-			// existing rows — only NEW writes will preserve client-supplied order.
-			$sql = 'ALTER TABLE ' . $sync->tableNameQuoted;
-			$sql .= ' ALTER COLUMN ' . $colNameQuoted;
-			$sql .= ' TYPE JSON USING ' . $colNameQuoted . '::text::json';
-
-			try {
-				$this->db->executeStatement($sql);
-				$columnsRetyped[] = $columnName;
-				$this->logger->debug(
-					message: '[MagicMapper] Migrated object-typed column from JSONB to JSON for key-order preservation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'columnName' => $columnName,
-					]
-				);
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] Failed to migrate column from JSONB to JSON',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'columnName' => $columnName,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end foreach
-
-		return $columnsRetyped;
-	}//end migrateJsonbToJsonForOrderedColumns()
-
-	/**
 	 * Quote a column or identifier name for the current database platform.
 	 *
 	 * @param string $name The unquoted identifier name.
@@ -5491,347 +4579,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string The quoted identifier.
 	 */
 	private function quoteIdentifier(string $name, bool $isPostgres): string {
-		// BUG-DB-7: escape any embedded quote characters by doubling them so an
-		// identifier containing the quote char cannot break out of the quoting.
-		if ($isPostgres === true) {
-			return '"' . str_replace('"', '""', $name) . '"';
-		}
-
-		return '`' . str_replace('`', '``', $name) . '`';
+		return (new MagicColumnSql(isPostgres: $isPostgres))->quote(name: $name);
 	}//end quoteIdentifier()
-
-	/**
-	 * Add columns that exist in the schema but not yet in the table.
-	 *
-	 * NOTE: $requiredColumns is keyed by property name (camelCase), but the actual
-	 * column name to use is in $columnDef['name'] (snake_case). We must use
-	 * $columnDef['name'] to check for existing columns and create new ones.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return array List of column names that were added.
-	 */
-	private function addMissingColumns(TableStructureSync $sync): array {
-		$columnsAdded = [];
-
-		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
-			// Get the actual column name (snake_case) from the column definition.
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-
-			if (isset($sync->currentColumns[$columnName]) === false) {
-				$this->logger->debug(
-					message: '[MagicMapper] Adding new column to schema table',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $sync->tableName,
-						'propertyName' => $propertyName,
-						'columnName' => $columnName,
-						'columnType' => $columnDef['type'],
-					]
-				);
-
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
-				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ADD COLUMN ' . $colNameQuoted . ' ' . $colType;
-
-				// This path retrofits a column onto an ALREADY-EXISTING table, which
-				// may already hold rows. `ADD COLUMN ... NOT NULL` without a DEFAULT
-				// is rejected by the database on a populated table ("column contains
-				// null values"), which is exactly why a required property added to an
-				// existing schema could never get its column and the change was lost.
-				// A NOT NULL is therefore only safe here when a DEFAULT backfills the
-				// existing rows; otherwise the column is added nullable. Required-ness
-				// is enforced by schema validation at write time, not by the physical
-				// column constraint (see #2082/#2075).
-				$hasDefault = isset($columnDef['default']);
-				$wantNotNull = (($columnDef['nullable'] ?? true) === false);
-
-				if ($wantNotNull === true && $hasDefault === true) {
-					$sql .= ' NOT NULL';
-				} elseif ($wantNotNull === true) {
-					$this->logger->debug(
-						message: '[MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'tableName' => $sync->tableName,
-							'columnName' => $columnName,
-						]
-					);
-				}
-
-				if ($hasDefault === true) {
-					$defaultValue = $this->formatDefaultValueForSQL(default: $columnDef['default']);
-					$sql .= ' DEFAULT ' . $defaultValue;
-				}
-
-				$this->db->executeStatement($sql);
-				$columnsAdded[] = $columnName;
-			}//end if
-		}//end foreach
-
-		return $columnsAdded;
-	}//end addMissingColumns()
-
-	/**
-	 * De-require columns that are now nullable in the schema but NOT NULL in the table.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return array List of column names that were made nullable.
-	 */
-	private function deRequireColumns(TableStructureSync $sync): array {
-		$columnsDeRequired = [];
-
-		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
-			// Get the actual column name (snake_case) from the column definition.
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-
-			if (isset($sync->currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$currentCol = $sync->currentColumns[$columnName];
-			$schemaIsNullable = ($columnDef['nullable'] ?? true);
-			$tableIsNullable = ($currentCol['nullable'] ?? true);
-
-			// If schema says nullable but table says NOT NULL, make column nullable.
-			if ($schemaIsNullable === true && $tableIsNullable === false) {
-				$this->logger->debug(
-					message: '[MagicMapper] Making column nullable (no longer required)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $sync->tableName,
-						'columnName' => $columnName,
-					]
-				);
-
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
-
-				// MySQL syntax - need to specify full column definition.
-				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
-				if ($sync->isPostgres === true) {
-					$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
-				}
-
-				try {
-					$this->db->executeStatement($sql);
-					$columnsDeRequired[] = $columnName;
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to make column nullable',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'columnName' => $columnName,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end if
-		}//end foreach
-
-		return $columnsDeRequired;
-	}//end deRequireColumns()
-
-	/**
-	 * Re-require columns that are NOT NULL in the schema but nullable in the table.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return array List of column names that were made NOT NULL.
-	 */
-	private function reRequireColumns(TableStructureSync $sync): array {
-		$columnsReRequired = [];
-
-		foreach ($sync->requiredColumns as $propertyName => $columnDef) {
-			// Get the actual column name (snake_case) from the column definition.
-			$columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-
-			if (isset($sync->currentColumns[$columnName]) === false) {
-				continue;
-			}
-
-			$currentCol = $sync->currentColumns[$columnName];
-			$schemaIsNullable = ($columnDef['nullable'] ?? true);
-			$tableIsNullable = ($currentCol['nullable'] ?? true);
-
-			// If schema says NOT NULL but table says nullable, add NOT NULL constraint.
-			if ($schemaIsNullable === false && $tableIsNullable === true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Making column NOT NULL (now required)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $sync->tableName,
-						'columnName' => $columnName,
-					]
-				);
-
-				$colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: $sync->isPostgres);
-
-				// MySQL syntax - need to specify full column definition.
-				$colType = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
-				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NOT NULL';
-				if ($sync->isPostgres === true) {
-					$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' SET NOT NULL';
-				}
-
-				try {
-					$this->db->executeStatement($sql);
-					$columnsReRequired[] = $columnName;
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to make column NOT NULL (may contain null values)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'columnName' => $columnName,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end if
-		}//end foreach
-
-		return $columnsReRequired;
-	}//end reRequireColumns()
-
-	/**
-	 * Build a lookup map of snake_case column names from the required columns.
-	 *
-	 * @param array $requiredColumns Required column definitions from the schema.
-	 *
-	 * @return array Associative array with snake_case column names as keys and true as values.
-	 */
-	private function buildSnakeCaseColumnMap(array $requiredColumns): array {
-		$snakeCaseColumns = [];
-		foreach ($requiredColumns as $propertyName => $colDef) {
-			$actualColName = $colDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-			$snakeCaseColumns[$actualColName] = true;
-		}
-
-		return $snakeCaseColumns;
-	}//end buildSnakeCaseColumnMap()
-
-	/**
-	 * Drop duplicate camelCase columns when a snake_case equivalent exists.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return array List of column names that were dropped.
-	 */
-	private function dropDuplicateCamelCaseColumns(TableStructureSync $sync): array {
-		$columnsDropped = [];
-
-		// Find camelCase duplicates in current columns.
-		foreach (array_keys($sync->currentColumns) as $colName) {
-			// Skip metadata columns (start with _).
-			if (str_starts_with($colName, '_') === true) {
-				continue;
-			}
-
-			// Check if this looks like a camelCase version of a snake_case column.
-			$snakeVersion = $this->sanitizeColumnName(name: $colName);
-			if ($snakeVersion !== $colName && isset($sync->snakeCaseColumns[$snakeVersion]) === true) {
-				// This is a camelCase duplicate - drop it.
-				$this->logger->debug(
-					message: '[MagicMapper] Dropping duplicate camelCase column (snake_case version exists)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $sync->tableName,
-						'camelCaseCol' => $colName,
-						'snakeCaseCol' => $snakeVersion,
-					]
-				);
-
-				$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $sync->isPostgres);
-				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' DROP COLUMN IF EXISTS ' . $colNameQuoted;
-
-				try {
-					$this->db->executeStatement($sql);
-					$columnsDropped[] = $colName;
-				} catch (Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to drop duplicate column',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'columnName' => $colName,
-							'error' => $e->getMessage(),
-						]
-					);
-				}
-			}//end if
-		}//end foreach
-
-		return $columnsDropped;
-	}//end dropDuplicateCamelCaseColumns()
-
-	/**
-	 * Make obsolete columns nullable (columns in the table but not in the schema).
-	 *
-	 * This is safer than dropping them — data is preserved.
-	 *
-	 * @param TableStructureSync $sync The table, its current and required columns, and the platform.
-	 *
-	 * @return array List of column names (suffixed with " (obsolete)") that were made nullable.
-	 */
-	private function makeObsoleteColumnsNullable(TableStructureSync $sync): array {
-		$columnsDeRequired = [];
-
-		foreach ($sync->currentColumns as $colName => $colDef) {
-			// Skip metadata columns.
-			if (str_starts_with($colName, '_') === true) {
-				continue;
-			}
-
-			// Skip if column is a schema column (exists in snakeCaseColumns map).
-			if (isset($sync->snakeCaseColumns[$colName]) === true) {
-				continue;
-			}
-
-			// Skip if column is already nullable.
-			if (($colDef['nullable'] ?? true) === true) {
-				continue;
-			}
-
-			// This is an obsolete column - make it nullable.
-			$this->logger->debug(
-				message: '[MagicMapper] Making obsolete column nullable',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $sync->tableName,
-					'columnName' => $colName,
-				]
-			);
-
-			$colNameQuoted = $this->quoteIdentifier(name: $colName, isPostgres: $sync->isPostgres);
-
-			$colType = $colDef['type'] ?? 'text';
-			$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY COLUMN ' . $colNameQuoted . ' ' . $colType . ' NULL';
-			if ($sync->isPostgres === true) {
-				$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $colNameQuoted . ' DROP NOT NULL';
-			}
-
-			try {
-				$this->db->executeStatement($sql);
-				$columnsDeRequired[] = $colName . ' (obsolete)';
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] Failed to make obsolete column nullable',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'columnName' => $colName, 'error' => $e->getMessage()]
-				);
-			}
-		}//end foreach
-
-		return $columnsDeRequired;
-	}//end makeObsoleteColumnsNullable()
 
 	/**
 	 * Format a default value for SQL statement.
@@ -5841,26 +4590,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string SQL-formatted default value
 	 */
 	private function formatDefaultValueForSQL(mixed $default): string {
-		if (is_bool($default) === true) {
-			if ($default === true) {
-				return 'TRUE';
-			}
-
-			return 'FALSE';
-		}
-
-		if (is_string($default) === true) {
-			// BUG-DB-1: escape via the platform so values containing a single
-			// quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
-			// injection.
-			return $this->db->getDatabasePlatform()->quoteStringLiteral($default);
-		}
-
-		if ($default === null) {
-			return 'NULL';
-		}
-
-		return (string)$default;
+		return (new MagicColumnAdder(db: $this->db, logger: $this->logger))->defaultLiteral(default: $default);
 	}//end formatDefaultValueForSQL()
 
 	/**
