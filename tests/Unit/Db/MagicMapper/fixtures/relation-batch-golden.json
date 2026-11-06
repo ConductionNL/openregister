@@ -106,7 +106,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -115,7 +115,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -167,15 +167,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -184,37 +176,20 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_7",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
                     "u-1",
                     "u-1"
                 ]
-            },
-            {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_8",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
             },
             {
                 "log": "debug",
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 4
                 }
             }
@@ -349,7 +324,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -358,7 +333,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -410,15 +385,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -427,37 +394,20 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_7",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
                     "u-1",
                     "u-1"
                 ]
-            },
-            {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_8",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
             },
             {
                 "log": "debug",
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 4
                 }
             }
@@ -558,7 +508,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -575,7 +525,7 @@
                 }
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( -- Array format: check if UUID is in the array using @> containment (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR -- Object format: check if UUID is a value in the object (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -614,15 +564,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -640,7 +582,7 @@
                 }
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND ( (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations) = 'object' AND EXISTS ( SELECT 1 FROM jsonb_each_text(_relations) AS kv WHERE kv.value = ? )) ) LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb) AND (((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text)) OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))) LIMIT 100"
             },
             {
                 "execute": [
@@ -662,6 +604,7 @@
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 0
                 }
             }
@@ -848,7 +791,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -856,7 +799,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -907,15 +850,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
@@ -923,36 +858,19 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_7",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL AND _organisation IS NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) AND _organisation IS NULL LIMIT 100"
             },
             {
                 "execute": [
                     "u-1"
                 ]
-            },
-            {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_8",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
             },
             {
                 "log": "debug",
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 4
                 }
             }
@@ -1084,7 +1002,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1092,7 +1010,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1143,15 +1061,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1159,36 +1069,19 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_7",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
                     "u-1"
                 ]
-            },
-            {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelationInTable query executed",
-                "context": {
-                    "tableName": "oc_openregister_table_3_8",
-                    "uuid": "u-1",
-                    "resultCount": 3
-                }
             },
             {
                 "log": "debug",
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 4
                 }
             }
@@ -1287,7 +1180,7 @@
                 ]
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1303,7 +1196,7 @@
                 }
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1341,15 +1234,7 @@
                 ]
             },
             {
-                "log": "debug",
-                "message": "[MagicMapper] findByRelation searching across tables",
-                "context": {
-                    "uuid": "u-1",
-                    "tableCount": 2
-                }
-            },
-            {
-                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_7 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1366,7 +1251,7 @@
                 }
             },
             {
-                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL LIMIT 100"
+                "prepare": "SELECT * FROM oc_openregister_table_3_8 WHERE _deleted IS NULL AND (JSON_SEARCH(_relations, 'one', ?) IS NOT NULL) LIMIT 100"
             },
             {
                 "execute": [
@@ -1387,6 +1272,7 @@
                 "message": "[MagicMapper] findByRelation completed",
                 "context": {
                     "uuid": "u-1",
+                    "tableCount": 2,
                     "resultCount": 0
                 }
             }
