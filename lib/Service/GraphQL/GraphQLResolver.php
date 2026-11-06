@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Log\LoggerInterface;
@@ -649,7 +650,7 @@ class GraphQLResolver {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
 	public function resolveUsedBy(string $objectUuid): array {
-		$result = $this->relationHandler->getUsedBy($objectUuid);
+		$result = $this->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: $objectUuid));
 		return $result['results'];
 	}//end resolveUsedBy()
 

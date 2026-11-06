@@ -89,18 +89,14 @@ class ConfigurationSettingsHandler {
 	 * The flow engine switches: settings field => [app config key, default].
 	 *
 	 * These are administrator settings, deliberately: whether every hop is
-	 * audit-trailed and whether the oversight gate runs are instance policy,
-	 * not a per-user preference. The two have opposite defaults on purpose.
-	 * Auditing is write volume (one entry per node per run) and the step rows
-	 * already carry the operational history, so it is opt-in. Oversight is
-	 * what stops a running flow, and a safety rail defaulting to off protects
-	 * only the flows somebody remembered to configure.
+	 * audit-trailed is instance policy, not a per-user preference. Auditing is
+	 * write volume (one entry per node per run) and the step rows already
+	 * carry the operational history, so it is opt-in.
 	 *
 	 * @var array<string, array{0: string, 1: bool}>
 	 */
 	private const FLOW_SWITCHES = [
 		'auditEnabled' => ['flow_audit_enabled', false],
-		'oversightEnabled' => ['flow_oversight_enabled', true],
 		'killSwitch' => ['flow_kill_switch', false],
 	];
 

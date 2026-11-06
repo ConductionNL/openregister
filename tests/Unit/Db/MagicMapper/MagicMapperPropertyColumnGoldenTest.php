@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for MagicMapper::mapSchemaPropertyToColumn().
+ * Golden test for MagicSchemaColumns::forProperty().
  *
  * Records the column definition and the log lines for every property type,
  * format, required form and reference shape, so a decomposition keeps the
@@ -22,14 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
-use ReflectionMethod;
 
 /**
- * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes
@@ -63,6 +61,11 @@ class MagicMapperPropertyColumnGoldenTest extends TestCase {
 			'integer' => ['type' => 'integer'],
 			'integer bounded' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 10],
 			'integer big' => ['type' => 'integer', 'maximum' => 99999999999],
+			'integer maximum only' => ['type' => 'integer', 'maximum' => 10],
+			'integer mid range' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100000],
+			'integer negative minimum' => ['type' => 'integer', 'minimum' => -1, 'maximum' => 10],
+			'integer smallint bound' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 65535],
+			'integer integer bound' => ['type' => 'integer', 'maximum' => 2147483647],
 			'number' => ['type' => 'number'],
 			'number money' => ['type' => 'number', 'multipleOf' => 0.01],
 			'boolean' => ['type' => 'boolean'],
@@ -102,14 +105,12 @@ class MagicMapperPropertyColumnGoldenTest extends TestCase {
 	}//end properties()
 
 	public function testPropertyColumnsMatchGolden(): void {
-		$mapper = $this->makeMapper();
-		$method = new ReflectionMethod(MagicMapper::class, 'mapSchemaPropertyToColumn');
-		$method->setAccessible(true);
+		$columns = new MagicSchemaColumns(logger: $this->makeLogger());
 		$actual = [];
 		foreach (self::properties() as $name => $config) {
 			$this->events = [];
 			foreach (['myProp', 'Weird Name!'] as $propertyName) {
-				$this->events[] = ['column' => $method->invoke($mapper, $propertyName, $config)];
+				$this->events[] = ['column' => $columns->forProperty(propertyName: $propertyName, propertyConfig: $config)];
 			}
 
 			$actual[$name] = $this->events;
@@ -129,7 +130,7 @@ class MagicMapperPropertyColumnGoldenTest extends TestCase {
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testPropertyColumnsMatchGolden()
 
-	private function makeMapper(): MagicMapper {
+	private function makeLogger(): LoggerInterface {
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['warning', 'debug', 'info', 'error'] as $level) {
 			$logger->method($level)->willReturnCallback(
@@ -140,12 +141,6 @@ class MagicMapperPropertyColumnGoldenTest extends TestCase {
 			);
 		}
 
-		$reflection = new ReflectionClass(MagicMapper::class);
-		$mapper = $reflection->newInstanceWithoutConstructor();
-		$property = $reflection->getProperty('logger');
-		$property->setAccessible(true);
-		$property->setValue($mapper, $logger);
-
-		return $mapper;
-	}//end makeMapper()
+		return $logger;
+	}//end makeLogger()
 }//end class

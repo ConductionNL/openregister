@@ -201,7 +201,7 @@ class DashboardService {
 				'logs' => $this->sizeTotals(stats: $this->auditTrailMapper->getStatistics(registerId: null, schemaId: null, exclude: $valid)),
 				'files' => self::ZERO_TOTALS,
 			];
-		} catch (Exception $e) {
+		} catch (Throwable $e) {
 			$this->logFailure(what: 'orphaned statistics', error: $e);
 			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
 		}
@@ -487,11 +487,11 @@ class DashboardService {
 	 * Log that one dashboard read failed.
 	 *
 	 * @param string $what What could not be read.
-	 * @param Exception $error The failure.
+	 * @param Throwable $error The failure.
 	 *
 	 * @return void
 	 */
-	private function logFailure(string $what, Exception $error): void {
+	private function logFailure(string $what, Throwable $error): void {
 		$this->logger->error(
 			message: '[DashboardService] Failed to get ' . $what . ': ' . $error->getMessage(),
 			context: ['file' => __FILE__, 'line' => __LINE__]

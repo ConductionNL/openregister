@@ -1835,6 +1835,906 @@
             }
         }
     ],
+    "integer maximum only / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer maximum only / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer mid range / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer negative minimum / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer smallint bound / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "smallint",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required not set": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required false": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list with name": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list with column": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list without": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required string": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list loose": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": true,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
+    "integer integer bound / required list loose true": [
+        {
+            "column": {
+                "name": "my_prop",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        },
+        {
+            "column": {
+                "name": "weird_name",
+                "type": "integer",
+                "nullable": false,
+                "default": null,
+                "index": true
+            }
+        }
+    ],
     "number / required not set": [
         {
             "column": {

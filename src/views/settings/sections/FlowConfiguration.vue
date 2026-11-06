@@ -2,13 +2,13 @@
   Flow-engine instance policy.
 
   ADMINISTRATOR settings, deliberately — not personal preferences. How long run
-  history is kept, whether every hop is audit-trailed, and whether the oversight
-  gate runs are properties of the instance, and a per-user version of them would
-  mean the same flow behaved differently depending on who happened to look at it.
+  history is kept and whether every hop is audit-trailed are properties of the
+  instance, and a per-user version of them would mean the same flow behaved
+  differently depending on who happened to look at it.
 
-  Every value here is a DEFAULT. A flow may override retention, auditing and
-  oversight individually; a flow that overrides none of them tracks whatever is
-  set here, including later changes to it.
+  Every value here is a DEFAULT. A flow may override retention and auditing
+  individually; a flow that overrides neither tracks whatever is set here,
+  including later changes to it.
 
   SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
   SPDX-License-Identifier: EUPL-1.2
@@ -44,18 +44,6 @@
 				t(
 					'openregister',
 					'Off by default: one entry per step per run is a lot of writes, and the run history already records what each step did. Turn this on where a compliance record of every step is required.',
-				)
-			}}
-		</p>
-
-		<NcCheckboxRadioSwitch v-model="form.oversightEnabled" type="switch">
-			{{ t('openregister', 'Run oversight checks before each step') }}
-		</NcCheckboxRadioSwitch>
-		<p class="flow-settings__hint">
-			{{
-				t(
-					'openregister',
-					'On by default. Oversight checks — contributed by apps — can stop a running flow. Turning this off applies to every flow that has not chosen for itself.',
 				)
 			}}
 		</p>
@@ -121,7 +109,6 @@ export default {
 			form: {
 				retentionDays: 31,
 				auditEnabled: false,
-				oversightEnabled: true,
 				killSwitch: false,
 			},
 		}

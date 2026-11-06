@@ -9582,7 +9582,6 @@ exports[`settings store actions golden loadFlowSettings([]): full answer 1`] = `
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },
@@ -9713,7 +9712,6 @@ exports[`settings store actions golden loadFlowSettings([]): same cache 1`] = `
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },
@@ -9739,7 +9737,6 @@ exports[`settings store actions golden loadFlowSettings([]): shrunk cache 1`] = 
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },
@@ -22383,7 +22380,6 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },
@@ -22622,7 +22618,6 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },
@@ -22701,7 +22696,6 @@ exports[`settings store actions golden updateFlowSettings([{"retentionDays":3}])
     "flowOptions": {
       "auditEnabled": false,
       "killSwitch": false,
-      "oversightEnabled": true,
       "retentionDays": 7,
     },
   },

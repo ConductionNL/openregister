@@ -102,7 +102,6 @@ class ConfigurationKeyRegistry {
 		'objectManagement' => self::TYPE_OBJECT,
 		'flow_run_retention_days' => self::TYPE_STRING,
 		'flow_audit_enabled' => self::TYPE_BOOLEAN,
-		'flow_oversight_enabled' => self::TYPE_BOOLEAN,
 		'flow_kill_switch' => self::TYPE_BOOLEAN,
 		'party_query_cap' => self::TYPE_INTEGER,
 	];

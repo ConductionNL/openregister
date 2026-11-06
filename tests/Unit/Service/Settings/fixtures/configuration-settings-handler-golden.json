@@ -94,7 +94,6 @@
             "flow": {
                 "retentionDays": 31,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -194,7 +193,6 @@
             "flow": {
                 "retentionDays": 31,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -298,7 +296,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -488,7 +485,6 @@
             "flow": {
                 "retentionDays": 3,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -518,12 +514,6 @@
                 "setValueBool",
                 "openregister",
                 "flow_audit_enabled",
-                true
-            ],
-            [
-                "setValueBool",
-                "openregister",
-                "flow_oversight_enabled",
                 true
             ],
             [
@@ -597,7 +587,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -610,12 +599,6 @@
                 "openregister",
                 "flow_audit_enabled",
                 false
-            ],
-            [
-                "setValueBool",
-                "openregister",
-                "flow_oversight_enabled",
-                true
             ],
             [
                 "setValueBool",
@@ -676,7 +659,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -736,7 +718,6 @@
             "flow": {
                 "retentionDays": 31,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -755,12 +736,6 @@
                 "openregister",
                 "flow_audit_enabled",
                 false
-            ],
-            [
-                "setValueBool",
-                "openregister",
-                "flow_oversight_enabled",
-                true
             ],
             [
                 "setValueBool",
@@ -821,7 +796,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -881,7 +855,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -948,7 +921,6 @@
             "flow": {
                 "retentionDays": 7,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {
@@ -1059,7 +1031,6 @@
             "flow": {
                 "retentionDays": 31,
                 "auditEnabled": false,
-                "oversightEnabled": true,
                 "killSwitch": true
             },
             "party": {

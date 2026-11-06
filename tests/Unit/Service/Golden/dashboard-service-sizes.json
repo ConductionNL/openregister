@@ -849,8 +849,305 @@
             "log [DashboardService] Failed to get orphaned statistics: schema conflict []"
         ]
     },
-    "listing error thrown": {
-        "thrown": "TypeError: schema conflict",
+    "listing with an Error": {
+        "result": [
+            {
+                "id": "totals",
+                "title": "System Totals",
+                "description": "Total statistics across all registers and schemas",
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            },
+            {
+                "id": 1,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 1",
+                "version": null,
+                "description": null,
+                "schemas": [
+                    {
+                        "id": 10,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 10",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    },
+                    {
+                        "id": 11,
+                        "uuid": null,
+                        "uri": null,
+                        "slug": null,
+                        "title": "Schema 11",
+                        "description": null,
+                        "version": null,
+                        "summary": null,
+                        "icon": null,
+                        "required": [],
+                        "properties": [],
+                        "archive": [],
+                        "source": null,
+                        "hardValidation": true,
+                        "immutable": false,
+                        "appendOnly": false,
+                        "searchable": true,
+                        "smartPickerEnabled": false,
+                        "updated": null,
+                        "created": null,
+                        "maxDepth": 0,
+                        "owner": null,
+                        "application": null,
+                        "organisation": null,
+                        "groups": [],
+                        "authorization": [],
+                        "sharedWith": [],
+                        "deleted": null,
+                        "configuration": null,
+                        "exportable": false,
+                        "allOf": null,
+                        "oneOf": null,
+                        "anyOf": null,
+                        "facets": null,
+                        "hooks": null,
+                        "_mail": null,
+                        "_contacts": null,
+                        "_notes": null,
+                        "_todos": null,
+                        "_calendar": null,
+                        "_talk": null,
+                        "_deck": null,
+                        "draft": null,
+                        "stats": {
+                            "objects": {
+                                "total": 11,
+                                "size": 12,
+                                "invalid": 13,
+                                "deleted": 14,
+                                "locked": 15
+                            },
+                            "logs": {
+                                "total": 21,
+                                "size": 22
+                            },
+                            "webhookLogs": {
+                                "total": 31,
+                                "size": 0
+                            },
+                            "files": {
+                                "total": 0,
+                                "size": 0
+                            }
+                        }
+                    }
+                ],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": {
+                    "objects": {
+                        "total": 11,
+                        "size": 12,
+                        "invalid": 13,
+                        "deleted": 14,
+                        "locked": 15
+                    },
+                    "logs": {
+                        "total": 21,
+                        "size": 22
+                    },
+                    "webhookLogs": {
+                        "total": 31,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "uuid": null,
+                "slug": null,
+                "title": "Register 3",
+                "version": null,
+                "description": null,
+                "schemas": [],
+                "source": null,
+                "tablePrefix": null,
+                "folder": null,
+                "updated": null,
+                "created": null,
+                "owner": null,
+                "application": null,
+                "organisation": null,
+                "authorization": [],
+                "sharedWith": [],
+                "groups": [],
+                "type": null,
+                "languages": null,
+                "configuration": [],
+                "quota": {
+                    "storage": null,
+                    "bandwidth": null,
+                    "requests": null,
+                    "users": null,
+                    "groups": null
+                },
+                "usage": {
+                    "storage": 0,
+                    "bandwidth": 0,
+                    "requests": 0,
+                    "users": 0,
+                    "groups": 0
+                },
+                "deleted": null,
+                "_mail": null,
+                "_contacts": null,
+                "_notes": null,
+                "_todos": null,
+                "_calendar": null,
+                "_talk": null,
+                "_deck": null,
+                "stats": [],
+                "error": "schema conflict"
+            },
+            {
+                "id": "orphaned",
+                "title": "Orphaned Items",
+                "description": "Items referencing non-existent registers/schemas or invalid combinations",
+                "stats": {
+                    "objects": {
+                        "total": 0,
+                        "size": 0,
+                        "invalid": 0,
+                        "deleted": 0,
+                        "locked": 0
+                    },
+                    "logs": {
+                        "total": 0,
+                        "size": 0
+                    },
+                    "files": {
+                        "total": 0,
+                        "size": 0
+                    }
+                },
+                "schemas": []
+            }
+        ],
         "calls": [
             "registers.findAll [null,null,[],[],[],true,true]",
             "objects.getStatistics [null,null,[]]",
@@ -862,7 +1159,8 @@
             "log [DashboardService] Skipping a register whose schemas could not be loaded: schema conflict {\"register\":3}",
             "registers.findAll [null,null,[],[],[],true,true]",
             "registers.getSchemasByRegisterId [1,true,true]",
-            "registers.getSchemasByRegisterId [3,true,true]"
+            "registers.getSchemasByRegisterId [3,true,true]",
+            "log [DashboardService] Failed to get orphaned statistics: schema conflict []"
         ]
     }
 }

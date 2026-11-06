@@ -583,7 +583,6 @@ class FlowService {
 		$inheritable = [
 			'retentionDays' => ['setRetentionDays', static fn ($value): int => max(1, (int)$value)],
 			'auditEnabled' => ['setAuditEnabled', static fn ($value): bool => (bool)$value],
-			'oversightEnabled' => ['setOversightEnabled', static fn ($value): bool => (bool)$value],
 		];
 
 		foreach ($inheritable as $key => [$setter, $cast]) {

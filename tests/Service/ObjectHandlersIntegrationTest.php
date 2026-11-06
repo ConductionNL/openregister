@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Integration tests for ObjectService handler classes
@@ -584,14 +585,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsesNoRelations(): void {
 		$obj = $this->saveTestObject(['title' => 'No Relations']);
-		$result = $this->relationHandler->getUses(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUses(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -602,7 +596,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUses for nonexistent object.
 	 */
 	public function testGetUsesNonexistentObject(): void {
-		$result = $this->relationHandler->getUses('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUses(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
@@ -613,14 +607,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsedByReturnsStructure(): void {
 		$obj = $this->saveTestObject(['title' => 'UsedBy Test']);
-		$result = $this->relationHandler->getUsedBy(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUsedBy(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -632,7 +619,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUsedBy for nonexistent object.
 	 */
 	public function testGetUsedByNonexistentObject(): void {
-		$result = $this->relationHandler->getUsedBy('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);

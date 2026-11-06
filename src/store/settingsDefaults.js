@@ -52,10 +52,7 @@ export function defaultMultitenancyOptions() {
  * The flow-engine instance policy before it is loaded.
  *
  * Administrator settings, not personal preferences: how long run history is
- * kept, whether every hop is audit-trailed, and whether the oversight gate
- * runs. `auditEnabled` and `oversightEnabled` default oppositely on purpose:
- * auditing is write volume and opt-in, oversight is what stops a running flow
- * and so must be on unless deliberately turned off.
+ * kept and whether every hop is audit-trailed, which is write volume and opt-in.
  *
  * @spec openspec/specs/entity-management-modals/spec.md
  * @return {object}
@@ -64,7 +61,6 @@ export function defaultFlowOptions() {
 	return {
 		retentionDays: 31,
 		auditEnabled: false,
-		oversightEnabled: true,
 		killSwitch: false,
 	}
 }

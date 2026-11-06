@@ -86,8 +86,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRetentionDays(?int $retentionDays)
  * @method boolean|null getAuditEnabled()
  * @method void setAuditEnabled(?bool $auditEnabled)
- * @method boolean|null getOversightEnabled()
- * @method void setOversightEnabled(?bool $oversightEnabled)
  * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
@@ -364,14 +362,6 @@ class Flow extends Entity implements JsonSerializable {
 	protected ?bool $auditEnabled = null;
 
 	/**
-	 * A stored preference with no effect: the oversight gate runs before every
-	 * hop of every flow.
-	 *
-	 * @var boolean|null
-	 */
-	protected ?bool $oversightEnabled = null;
-
-	/**
 	 * Nextcloud UID of the person who authored and activated this flow.
 	 *
 	 * @var string|null
@@ -499,7 +489,6 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'limits', type: 'json');
 		$this->addType(fieldName: 'retentionDays', type: 'integer');
 		$this->addType(fieldName: 'auditEnabled', type: 'boolean');
-		$this->addType(fieldName: 'oversightEnabled', type: 'boolean');
 		$this->addType(fieldName: 'owner', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'notes', type: 'string');
@@ -670,7 +659,6 @@ class Flow extends Entity implements JsonSerializable {
 			'limits' => ($this->limits ?? []),
 			'retentionDays' => $this->retentionDays,
 			'auditEnabled' => $this->auditEnabled,
-			'oversightEnabled' => $this->oversightEnabled,
 			'owner' => $this->owner,
 			'organisation' => $this->organisation,
 			'notes' => $this->notes,
