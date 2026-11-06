@@ -151,7 +151,10 @@ export default {
 		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
 		 */
 		unlinkContact(contact) {
-			return this.unlink(contact.uid || contact.contactUid || contact.id, 'contacts-changed')
+			return this.unlink(
+				contact.uid || contact.contactUid || contact.id,
+				'contacts-changed',
+			)
 		},
 
 		/**
