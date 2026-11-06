@@ -54,4 +54,19 @@ class QueryHandlerDeclaresLensesTest extends TestCase {
 		);
 		$this->assertFalse(condition: (new SearchRenderNeed())->declaredBy(schemas: [['configuration' => []], ['properties' => []]]));
 	}//end testASchemaWithALensIsFound()
+
+	/**
+	 * Each thing a query can ask for takes the render path on its own.
+	 *
+	 * @return void
+	 */
+	public function testEachAskForRenderingCountsOnItsOwn(): void {
+		$need = new SearchRenderNeed();
+
+		$this->assertTrue($need->asked(query: [], extend: ['owner']));
+		$this->assertTrue($need->asked(query: ['_fields' => ['a']], extend: []));
+		$this->assertTrue($need->asked(query: ['_filter' => ['a']], extend: []));
+		$this->assertTrue($need->asked(query: ['_unset' => ['a']], extend: []));
+		$this->assertFalse($need->asked(query: ['_fields' => [], '_limit' => 5], extend: []));
+	}//end testEachAskForRenderingCountsOnItsOwn()
 }//end class
