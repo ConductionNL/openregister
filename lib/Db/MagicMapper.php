@@ -10642,7 +10642,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?string $uses = null,
 	): array|int {
 		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query) === true) {
+		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
 			return [];
 		}
 
@@ -10733,16 +10733,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end narrowedToIds()
 
 	/**
-	 * Whether the query's id list is present and empty, which selects no row.
+	 * Whether a given id list left nothing to select.
 	 *
-	 * @param array $query The search query.
+	 * @param array      $query The narrowed search query.
+	 * @param array|null $ids   The ids the caller gave, or null for none.
 	 *
 	 * @return bool True when no row can match.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
 	 */
-	private function selectsNothing(array $query): bool {
-		return (($query['_ids'] ?? null) === []);
+	private function selectsNothing(array $query, ?array $ids): bool {
+		return ($ids !== null && $query['_ids'] === []);
 	}//end selectsNothing()
 
 	/**
@@ -10768,7 +10769,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?string $uses = null,
 	): int {
 		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query) === true) {
+		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
 			return 0;
 		}
 
@@ -10938,7 +10939,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?string $uses = null,
 	): array {
 		$searchQuery = $this->narrowedToIds(query: $searchQuery, ids: $ids);
-		if ($this->selectsNothing(query: $searchQuery) === true) {
+		if ($this->selectsNothing(query: $searchQuery, ids: $ids) === true) {
 			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
 		}
 

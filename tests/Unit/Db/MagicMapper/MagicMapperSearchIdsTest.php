@@ -185,6 +185,27 @@ class MagicMapperSearchIdsTest extends TestCase {
 	}//end testAnEmptyListSelectsNothing()
 
 	/**
+	 * Ids that share nothing with the query's own `_ids` select nothing.
+	 *
+	 * @return void
+	 */
+	public function testDisjointIdsSelectNothing(): void {
+		$this->assertSame([], $this->mapper()->searchObjects(query: (self::SCOPE + ['_ids' => ['a']]), ids: ['b']));
+		$this->assertSame([], $this->tableQueries);
+	}//end testDisjointIdsSelectNothing()
+
+	/**
+	 * An empty `_ids` in the query, with no ids given, is not an id list.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyIdsKeyInTheQueryStaysAsItWas(): void {
+		$this->mapper()->searchObjects(query: (self::SCOPE + ['_ids' => []]));
+
+		$this->assertSame([[]], $this->tableIds());
+	}//end testAnEmptyIdsKeyInTheQueryStaysAsItWas()
+
+	/**
 	 * Without ids the query is left as it came.
 	 *
 	 * @return void
