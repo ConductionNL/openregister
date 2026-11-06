@@ -236,7 +236,11 @@ final class ValidationErrorMessages {
 	private function emptyValueMessage(mixed $expected, mixed $value): ?string {
 		[$empty, $message] = (self::EMPTY_VALUE_MESSAGES[$expected] ?? [null, null]);
 
-		return ($value === $empty ? $message : null);
+		if ($value === $empty) {
+			return $message;
+		}
+
+		return null;
 	}//end emptyValueMessage()
 
 	/**
@@ -249,7 +253,10 @@ final class ValidationErrorMessages {
 	 */
 	private function itemCountMessage(ValidationError $error, string $path): string {
 		$value  = $error->data()->value();
-		$actual = (is_array($value) === true ? count($value) : 0);
+		$actual = 0;
+		if (is_array($value) === true) {
+			$actual = count($value);
+		}
 
 		if ($error->keyword() === 'minItems') {
 			$minItems = ($error->args()['min'] ?? 0);
@@ -270,8 +277,7 @@ final class ValidationErrorMessages {
 	 * @return string The message.
 	 */
 	private function lengthMessage(ValidationError $error, string $path): string {
-		$value  = $error->data()->value();
-		$actual = (is_string($value) === true ? strlen($value) : 0);
+		$actual = self::lengthOf(value: $error->data()->value());
 
 		if ($error->keyword() === 'maxLength') {
 			$maxLength = ($error->args()['max'] ?? 0);
@@ -285,6 +291,21 @@ final class ValidationErrorMessages {
 
 		return "Property '{$path}' requires at least {$minLength} chars, has {$actual}. Please provide a longer string value.";
 	}//end lengthMessage()
+
+	/**
+	 * The length of a value, 0 for anything but a string.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return int The length.
+	 */
+	private static function lengthOf(mixed $value): int {
+		if (is_string($value) === true) {
+			return strlen($value);
+		}
+
+		return 0;
+	}//end lengthOf()
 
 	/**
 	 * The message for a value outside its enum.
