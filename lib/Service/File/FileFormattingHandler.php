@@ -34,7 +34,7 @@ use OCP\IUserSession;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Files\Service\File\TaggingHandler;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 
 /**
  * Handles file formatting and filtering operations.
@@ -84,7 +84,7 @@ class FileFormattingHandler {
 	/**
 	 * Constructor for FileFormattingHandler.
 	 *
-	 * @param TaggingHandler $taggingHandler Tagging handler for tag operations.
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for tag operations.
 	 * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
 	 * @param IURLGenerator $urlGenerator URL generator for creating URLs.
 	 * @param ILockManager $lockManager Lock manager for reading file lock state.
@@ -96,7 +96,7 @@ class FileFormattingHandler {
 	 *                                                         callers), enrichment is skipped silently.
 	 */
 	public function __construct(
-		private readonly TaggingHandler $taggingHandler,
+		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly FileSharingHandler $fileSharingHandler,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly ILockManager $lockManager,

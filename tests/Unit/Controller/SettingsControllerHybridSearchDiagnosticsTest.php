@@ -11,7 +11,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\DB\IPreparedStatement;
@@ -92,11 +92,11 @@ class SettingsControllerHybridSearchDiagnosticsTest extends TestCase {
 			return $result;
 		});
 
-		$chunkMapper = $this->createMock(ChunkMapper::class);
+		$chunkMapper = $this->createMock(ChunkMapperInterface::class);
 		$chunkMapper->method('countAll')->willReturn(20);
 		$chunkMapper->method('countVectorized')->willReturn(15);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(ChunkMapper::class)->willReturn($chunkMapper);
+		$container->method('get')->with(ChunkMapperInterface::class)->willReturn($chunkMapper);
 
 		$controller = SettingsControllerFactory::create(
 			'openregister',

@@ -22,17 +22,23 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files;
 
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
@@ -49,12 +55,15 @@ final class FilesRegistrar
      * conversion API, so whichever office server registered a provider does the work.
      */
     public const BINDINGS = [
-        AccessLinkReaderInterface::class      => AccessLinkReader::class,
-        FileMapperInterface::class            => FileMapper::class,
-        NcOfficeConverterInterface::class     => ConversionManagerConverter::class,
-        NoteServiceInterface::class           => NoteService::class,
-        TextExtractionServiceInterface::class => TextExtractionService::class,
-        UploadServiceInterface::class         => UploadService::class,
+        AccessLinkReaderInterface::class          => AccessLinkReader::class,
+        ChunkMapperInterface::class               => ChunkMapper::class,
+        DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        FileMapperInterface::class                => FileMapper::class,
+        NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
+        NoteServiceInterface::class               => NoteService::class,
+        TaggingHandlerInterface::class            => TaggingHandler::class,
+        TextExtractionServiceInterface::class     => TextExtractionService::class,
+        UploadServiceInterface::class             => UploadService::class,
     ];
 
     /**

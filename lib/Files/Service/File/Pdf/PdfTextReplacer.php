@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File\Pdf;
 
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use ddn\sapp\PDFDoc;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;

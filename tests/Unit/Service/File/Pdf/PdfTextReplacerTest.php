@@ -29,7 +29,7 @@ namespace Unit\Service\File\Pdf;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
-use OCA\OpenRegister\Files\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

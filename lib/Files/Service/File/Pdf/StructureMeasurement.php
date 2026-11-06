@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File\Pdf;
 
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
+
 /**
  * Structure counts of one redaction run.
  *
