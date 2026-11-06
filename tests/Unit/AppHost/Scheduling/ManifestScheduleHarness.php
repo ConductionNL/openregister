@@ -170,9 +170,9 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn () => $this->user());
 
-		$container = $this->container(flowMapper: $flowMapper);
 		$this->refusals = new ScheduleRefusals($this->logger);
 		$membership = new FlowTenantMembership($this->organisations());
+		$container = $this->container(flowMapper: $flowMapper, membership: $membership);
 		$sync = new ScheduleFlowSync(
 			new ScheduleFlowStore($flowMapper, $versions, $flowService, new FlowTriggerValidator($container, $this->logger)),
 			$membership,
@@ -456,10 +456,11 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 * The container the queue and the trigger validator resolve from.
 	 *
 	 * @param FlowMapper $flowMapper The table.
+	 * @param FlowTenantMembership $membership The membership check.
 	 *
 	 * @return ContainerInterface The container.
 	 */
-	private function container(FlowMapper $flowMapper): ContainerInterface {
+	private function container(FlowMapper $flowMapper, FlowTenantMembership $membership): ContainerInterface {
 		$versions = $this->createMock(FlowVersionMapper::class);
 		$versions->method('findPublished')->willReturnCallback(
 			fn (string $uuid) => isset($this->flows[$uuid]) ? new FlowVersion() : null
@@ -467,9 +468,10 @@ abstract class ManifestScheduleHarness extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id) use ($flowMapper, $versions) {
+			function (string $id) use ($flowMapper, $versions, $membership) {
 				return match ($id) {
 					FlowVersionMapper::class => $versions,
+					FlowTenantMembership::class => $membership,
 					'OCA\OpenRegister\Db\FlowMapper' => $flowMapper,
 					IUserSession::class => $this->createConfiguredMock(IUserSession::class, ['getUser' => $this->user()]),
 					default => throw new DoesNotExistException($id),

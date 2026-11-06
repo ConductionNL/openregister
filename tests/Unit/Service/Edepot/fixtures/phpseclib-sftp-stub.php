@@ -49,6 +49,11 @@ namespace phpseclib3\Net {
 			self::$calls[] = ['connect', $host, $port];
 		}
 
+		public function getServerPublicHostKey(): mixed {
+			self::$calls[] = ['hostKey'];
+			return 'ssh-ed25519 ' . base64_encode('server key');
+		}
+
 		public function login(string $username, mixed $credential): bool {
 			self::$calls[] = ['login', $username, $credential];
 			return self::$loginResult;

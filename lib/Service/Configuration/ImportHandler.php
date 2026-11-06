@@ -208,11 +208,11 @@ class ImportHandler {
 	private array $schemasMap = [];
 
 	/**
-	 * The schema parts the shipped-baseline guard kept local in the running app import.
+	 * Keeps local changes to app-shipped schemas through the import.
 	 *
-	 * @var array<int, array{slug: string, paths: array<int, string>}>
+	 * @var ShippedSchemaBaseline
 	 */
-	private array $keptLocal = [];
+	private ShippedSchemaBaseline $shippedBaseline;
 
 	/**
 	 * Mapping mapper instance for handling mapping operations.
@@ -322,6 +322,13 @@ class ImportHandler {
 	private SeedRelatedItems $relatedItems;
 
 	/**
+	 * Refuses an import on a duplicate slug.
+	 *
+	 * @var ImportDuplicates
+	 */
+	private ImportDuplicates $duplicates;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -360,7 +367,7 @@ class ImportHandler {
 		string $appDataPath,
 		ObjectOperationsInterface $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
-		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
+		?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 		private readonly ?SchemaImportInstaller $schemaInstaller = null,
 	) {
@@ -375,6 +382,8 @@ class ImportHandler {
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
+		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
+		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $shippedGuard, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -870,11 +879,7 @@ class ImportHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $options->appId]
 			);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateRegisterError(
-				slug: $data['slug'],
-				appId: $options->appId ?? 'unknown',
-				version: $options->version ?? 'unknown'
-			);
+			$this->duplicates->refuseRegister(slug: $data['slug'], source: ImportDuplicates::source(appId: $options->appId, version: $options->version));
 		}//end try
 
 		return null;
@@ -1147,190 +1152,6 @@ class ImportHandler {
 	}//end importMapping()
 
 	/**
-	 * Handle duplicate register error during import.
-	 *
-	 * @param string $slug The register slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate register information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateRegisterError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate registers.
-		$duplicateInfo = $this->getDuplicateRegisterInfo(slug: $slug);
-
-		$formatStr = "Duplicate register detected during import from app '%s' (version %s). ";
-		$formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the register ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking registers with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateRegisterError()
-
-	/**
-	 * Get detailed information about duplicate registers.
-	 *
-	 * @param string $slug The register slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate register information.
-	 */
-	private function getDuplicateRegisterInfo(string $slug): string {
-		try {
-			// Try to get all registers with this slug to provide detailed info.
-			$registers = $this->registerMapper->findAll();
-			$duplicates = array_filter(
-				$registers,
-				function ($register) use ($slug) {
-					return strtolower($register->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $register) {
-				// Format created date.
-				$registerCreated = 'unknown';
-				if ($register->getCreated() !== null) {
-					$registerCreated = $register->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$register->getId(),
-					$register->getUuid() ?? '',
-					$register->getTitle() ?? '',
-					$registerCreated
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateRegisterInfo()
-
-	/**
-	 * Handle duplicate schema error during import.
-	 *
-	 * @param string $slug The schema slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate schema information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateSchemaError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate schemas.
-		$duplicateInfo = $this->getDuplicateSchemaInfo(slug: $slug);
-
-		$formatStr = "Duplicate schema detected during import from app '%s' (version %s). ";
-		$formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the schema ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking schemas with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateSchemaError()
-
-	/**
-	 * Get detailed information about duplicate schemas.
-	 *
-	 * @param string $slug The schema slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate schema information.
-	 */
-	private function getDuplicateSchemaInfo(string $slug): string {
-		try {
-			// Try to get all schemas with this slug to provide detailed info.
-			$schemas = $this->schemaMapper->findAll();
-			$duplicates = array_filter(
-				$schemas,
-				function ($schema) use ($slug) {
-					return strtolower($schema->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $schema) {
-				// Format created date.
-				$createdDate = 'unknown';
-				if ($schema->getCreated() !== null) {
-					$createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$schema->getId(),
-					$schema->getUuid() ?? '',
-					$schema->getTitle() ?? '',
-					$createdDate
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateSchemaInfo()
-
-	/**
-	 * Decide whether an incoming schema definition structurally differs from the stored one.
-	 *
-	 * The importer skips updating an existing schema when the incoming version
-	 * is not newer. That gate assumes the `version` field is bumped on every
-	 * change, which apps frequently do not do when they add a property or adjust
-	 * an authorization rule via a register.d fragment. This method lets the
-	 * importer detect that "version-equal but content-changed" case so the
-	 * update is applied anyway (see #2075/#2082).
-	 *
-	 * Only the structural fields that must reach the database are compared:
-	 * `properties` (drives the magic-table columns), `required`, and
-	 * `authorization` (drives read/write access, whose match rules can
-	 * reference newly-added properties). Comparison is order-insensitive so a
-	 * mere reordering is not treated as a change.
-	 *
-	 * @param array $data The incoming schema definition.
-	 * @param Schema $existing The currently-stored schema entity.
-	 *
-	 * @return bool True when a structural field differs and the update must be applied.
-	 */
-	/**
-	 * The keys the shipped-baseline guard compares and resolves.
-	 *
-	 * The same three `schemaContentDiffers()` treats as structural, and the
-	 * ones row 11.36 is written about: a municipality adds a property, or
-	 * tightens a constraint, or widens an authorization rule. Annotations are
-	 * DELIBERATELY not guarded here: `setConfiguration()` drops an unknown
-	 * `x-openregister-*` key, so a guarded annotation would read as removed on
-	 * every import and conflict with itself forever. That narrowing is named in
-	 * the PR body rather than left to be discovered.
-	 *
-	 * @var array<int, string>
-	 */
-	private const SHIPPED_GUARD_KEYS = ['properties', 'required', 'authorization'];
-
-	/**
 	 * The generation of the rules an import writes by; raised when they change, so a stored hash does not skip it.
 	 */
 	private const IMPORT_RULES = 'seed-content-3:';
@@ -1341,158 +1162,6 @@ class ImportHandler {
 	 * @var array<int, string>
 	 */
 	private const COMPARED_CONFIGURATION_KEYS = ['partyKinds', 'linkRoles', 'orphanCleanup'];
-
-	/**
-	 * Resolve an incoming shipped schema against what the instance changed.
-	 *
-	 * Returns the definition to write. When no guard is wired, or no baseline
-	 * has ever been recorded for this schema, the incoming definition comes
-	 * back untouched: that is exactly today's behaviour, and it is what every
-	 * instance gets on the first import after this ships.
-	 *
-	 * The baseline that goes with that definition is returned, NOT recorded:
-	 * the caller records it with recordPendingBaseline() only once the schema
-	 * write has succeeded. Recorded here, a write that then fails (a property
-	 * the validator refuses) leaves a baseline the instance never ran, and the
-	 * next import reads every old live part as a local edit and keeps it,
-	 * while the version still moves on.
-	 *
-	 * @param array<string, mixed> $data       The incoming schema definition.
-	 * @param Schema               $existing   The schema the instance runs.
-	 * @param string|null          $appId      The app shipping it.
-	 * @param string|null          $appVersion The app version.
-	 *
-	 * @return array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string}
-	 *         The definition to write, the baseline to record after it is written
-	 *         (null: nothing to record) and the schema slug.
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	private function applyShippedBaselineGuard(
-		array $data,
-		Schema $existing,
-		?string $appId,
-		?string $appVersion
-	): array {
-		$unguarded = ['data' => $data, 'baseline' => null, 'slug' => ''];
-		if ($this->shippedGuard === null || $appId === null) {
-			return $unguarded;
-		}
-
-		$slug = (string)($data['slug'] ?? $existing->getSlug() ?? '');
-		if ($slug === '') {
-			return $unguarded;
-		}
-
-		$live = [
-			'properties' => $existing->getProperties(),
-			'required' => $existing->getRequired(),
-			'authorization' => ($existing->getAuthorization() ?? []),
-		];
-
-		$incoming = [];
-		foreach (self::SHIPPED_GUARD_KEYS as $key) {
-			if (array_key_exists($key, $data) === true) {
-				$incoming[$key] = $data[$key];
-			}
-		}
-
-		$result = $this->shippedGuard->guardSchemaUpdate(
-			slug: $slug,
-			live: $live,
-			incoming: $incoming,
-			app: $appId,
-			appVersion: ($appVersion ?? ''),
-			record: false
-		);
-
-		$pending = ['data' => $data, 'baseline' => $result['baseline'], 'slug' => $slug];
-		if ($result['guarded'] === false) {
-			return $pending;
-		}
-
-		foreach (self::SHIPPED_GUARD_KEYS as $key) {
-			if (array_key_exists($key, $result['definition']) === true) {
-				$data[$key] = $result['definition'][$key];
-			}
-		}
-
-		if ($result['conflicts'] !== []) {
-			$this->keptLocal[] = ['slug' => $slug, 'paths' => array_column($result['conflicts'], 'path')];
-			$this->logger->warning(
-				message: '[ImportHandler] schema kept its local definition for parts the app also changed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_slug' => $slug,
-					'conflicts' => array_column($result['conflicts'], 'path'),
-				]
-			);
-		}
-
-		$pending['data'] = $data;
-		return $pending;
-	}//end applyShippedBaselineGuard()
-
-	/**
-	 * Record the baseline the guard resolved, now that the schema is written.
-	 *
-	 * @param array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string} $guarded    What applyShippedBaselineGuard() returned.
-	 * @param string|null                                                                          $appId      The app shipping it.
-	 * @param string|null                                                                          $appVersion The app version.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	private function recordPendingBaseline(array $guarded, ?string $appId, ?string $appVersion): void {
-		if ($this->shippedGuard === null || $appId === null || $guarded['baseline'] === null || $guarded['slug'] === '') {
-			return;
-		}
-
-		$this->shippedGuard->recordShipped(
-			slug: $guarded['slug'],
-			definition: $guarded['baseline'],
-			app: $appId,
-			appVersion: ($appVersion ?? '')
-		);
-	}//end recordPendingBaseline()
-
-	/**
-	 * Record what the app shipped for a schema that has just been created.
-	 *
-	 * @param array<string, mixed> $data       The schema definition.
-	 * @param string|null          $appId      The app shipping it.
-	 * @param string|null          $appVersion The app version.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 */
-	private function recordShippedBaseline(array $data, ?string $appId, ?string $appVersion): void {
-		if ($this->shippedGuard === null || $appId === null) {
-			return;
-		}
-
-		$slug = (string)($data['slug'] ?? '');
-		if ($slug === '') {
-			return;
-		}
-
-		$definition = [];
-		foreach (self::SHIPPED_GUARD_KEYS as $key) {
-			if (array_key_exists($key, $data) === true) {
-				$definition[$key] = $data[$key];
-			}
-		}
-
-		$this->shippedGuard->recordShipped(
-			slug: $slug,
-			definition: $definition,
-			app: $appId,
-			appVersion: ($appVersion ?? '')
-		);
-	}//end recordShippedBaseline()
 
 	/**
 	 * Classify the definition an import is about to write against the stored one.
@@ -1918,11 +1587,7 @@ class ImportHandler {
 			$msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
 			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateSchemaError(
-				slug: $data['slug'],
-				appId: $appId ?? 'unknown',
-				version: $version ?? 'unknown'
-			);
+			$this->duplicates->refuseSchema(slug: $data['slug'], source: ImportDuplicates::source(appId: $appId, version: $version));
 		}
 
 		return null;
@@ -2430,14 +2095,9 @@ class ImportHandler {
 			return $existing;
 		}
 
-		$guarded = $this->applyShippedBaselineGuard(
-			data: $update->data,
-			existing: $existing,
-			appId: $options->appId,
-			appVersion: $options->version
-		);
-		$changeSet = $this->classifyImportedSchemaChange(existing: $existing, data: $guarded['data']);
-		$data = $guarded['data'];
+		$guarded = $this->shippedBaseline->resolve(update: $update, options: $options);
+		$changeSet = $this->classifyImportedSchemaChange(existing: $existing, data: $guarded->data);
+		$data = $guarded->data;
 		if (version_compare($update->incomingVersion(), $update->existingVersion(), '>') === false) {
 			$data = $this->withRetainedSchemaVersion(update: new ImportedSchemaUpdate(data: $data, existing: $existing), changeSet: $changeSet);
 		}
@@ -2446,7 +2106,7 @@ class ImportHandler {
 		$schema = $this->schemaMapper->updateFromArray(id: $existing->getId(), object: $data);
 		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
 		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
-		$this->recordPendingBaseline(guarded: $guarded, appId: $options->appId, appVersion: $options->version);
+		$this->shippedBaseline->recordPending(pending: $guarded, options: $options);
 		$this->recordImportedSchemaChange(schema: $schema, changeSet: $changeSet, appId: $options->appId);
 
 		return $schema;
@@ -2529,7 +2189,7 @@ class ImportHandler {
 	 */
 	private function createImportedSchema(array $data, SchemaImportOptions $options): Schema {
 		$schema = $this->schemaMapper->createFromArray($data);
-		$this->recordShippedBaseline(data: $data, appId: $options->appId, appVersion: $options->version);
+		$this->shippedBaseline->recordCreated(data: $data, options: $options);
 
 		return $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
 	}//end createImportedSchema()
@@ -4510,10 +4170,7 @@ class ImportHandler {
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
 	public function takeKeptLocalReport(): array {
-		$report = $this->keptLocal;
-		$this->keptLocal = [];
-
-		return $report;
+		return $this->shippedBaseline->takeKeptLocal();
 	}//end takeKeptLocalReport()
 
 	/**
