@@ -1074,6 +1074,26 @@ with a reason naming it, rather than continuing under any fallback.
 - **AND** the owner of the flow definition is notified
 - **AND** the schedule does not remain enabled while silently firing nothing
 
+### Requirement: A run says how it ended
+
+A run and the `lastRun` of `GET /api/flow-runs/summary` SHALL carry `outcome` beside `status`. `outcome` SHALL equal
+`status`, except that a `stopped` run whose stop came from an End step SHALL read `completed`. A stop from an oversight
+check names itself in the log entry's `checkId` and keeps `stopped`, as does a `stopped` run with no stop in its log.
+`outcome` SHALL be derived from the stored log when read, so runs stored before it existed read the same way.
+`status` SHALL NOT change.
+
+#### Scenario: A run that reached its End step
+
+- **GIVEN** a stored run with status `stopped` whose last log entry is an End step with status `stopped` and no `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `completed` and `status` is `stopped`
+
+#### Scenario: A run an oversight check stopped
+
+- **GIVEN** a stored run with status `stopped` whose log entry has status `stopped` and a `checkId`
+- **WHEN** it is read
+- **THEN** `outcome` is `stopped`
+
 ### Requirement: A flow can be tried against an object without effect
 
 `POST /api/flows/{id}/dry-run` SHALL walk the flow's graph through the engine against the named object and answer the
