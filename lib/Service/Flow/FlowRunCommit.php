@@ -81,6 +81,7 @@ class FlowRunCommit {
 	 * @param FlowClaimMapper $claims The claim rows.
 	 * @param FlowRunStepMapper $steps The step rows.
 	 * @param LoggerInterface $logger Logger for rollbacks.
+	 * @param FlowHopAudit|null $hopAudit Audits each committed firing.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -89,6 +90,7 @@ class FlowRunCommit {
 		private readonly FlowClaimMapper $claims,
 		private readonly FlowRunStepMapper $steps,
 		private readonly LoggerInterface $logger,
+		private readonly ?FlowHopAudit $hopAudit = null,
 	) {
 
 	}//end __construct()
@@ -156,7 +158,7 @@ class FlowRunCommit {
 			// the conditional-UPDATE shape, inside this transaction.
 			$sequence = $this->streams->allocateNextSequence(runUuid: $uuid, streamId: (string)$carrier->getStreamId());
 			$carrier = $this->streams->findByRunAndStream(runUuid: $uuid, streamId: (string)$carrier->getStreamId()) ?? $carrier;
-			$this->insertStep(run: $locked, stream: $carrier, sequence: $sequence, entry: $firing->getLogEntry(), now: $now);
+			$step = $this->insertStep(run: $locked, stream: $carrier, sequence: $sequence, entry: $firing->getLogEntry(), now: $now);
 
 			$this->settleStreams(
 				uuid: $uuid,
@@ -188,6 +190,7 @@ class FlowRunCommit {
 		}//end try
 
 		$this->refresh(run: $run, from: $locked);
+		$this->hopAudit?->record(run: $run, step: $step);
 
 		return new FlowFiringResult(
 			marking: $marking,
@@ -615,9 +618,9 @@ class FlowRunCommit {
 	 * @param array $entry The engine's log entry.
 	 * @param DateTime $now Now.
 	 *
-	 * @return void
+	 * @return FlowRunStep The row as written.
 	 */
-	private function insertStep(FlowRun $run, FlowStream $stream, int $sequence, array $entry, DateTime $now): void {
+	private function insertStep(FlowRun $run, FlowStream $stream, int $sequence, array $entry, DateTime $now): FlowRunStep {
 		$step = new FlowRunStep();
 		$step->setRunUuid((string)$run->getUuid());
 		$step->setFlowId((string)$run->getFlowId());
@@ -642,6 +645,8 @@ class FlowRunCommit {
 			)
 		);
 		$this->steps->insert($step);
+
+		return $step;
 	}//end insertStep()
 
 	/**

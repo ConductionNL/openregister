@@ -341,4 +341,51 @@ class FederationShareServiceTest extends TestCase {
 		$this->assertNull($captured['organisation']);
 	}//end testAFailingOrganisationLookupLeavesNoOrganisation()
 
+	/**
+	 * An incoming share is recorded as pending, and no remote value decides its status.
+	 *
+	 * @return void
+	 */
+	public function testAnIncomingShareIsRecordedAsPending(): void {
+		$captured = [];
+		$this->shareMapper->method('createFromArray')->willReturnCallback(
+			function (array $data) use (&$captured): FederatedShare {
+				$captured = $data;
+				return new FederatedShare();
+			}
+		);
+
+		$this->service->recordIncomingShare(
+			[
+				'remoteInstanceUrl' => 'https://remote.example',
+				'remoteProviderId'  => 'p-1',
+				'shareToken'        => 'tok',
+				'register'          => 2,
+				'schema'            => 3,
+				'objectUri'         => 'u',
+				'sharedWith'        => 'bob',
+				'status'            => 'accepted',
+				'direction'         => 'outgoing',
+			]
+		);
+
+		$this->assertSame(
+			[
+				'direction'         => 'incoming',
+				'remoteInstanceUrl' => 'https://remote.example',
+				'remoteProviderId'  => 'p-1',
+				'shareToken'        => 'tok',
+				'scope'             => 'schema',
+				'register'          => 2,
+				'schema'            => 3,
+				'objectUri'         => 'u',
+				'permissions'       => 'read',
+				'organisation'      => 'org-a',
+				'sharedWith'        => 'bob',
+				'status'            => 'pending',
+			],
+			$captured
+		);
+	}//end testAnIncomingShareIsRecordedAsPending()
+
 }//end class
