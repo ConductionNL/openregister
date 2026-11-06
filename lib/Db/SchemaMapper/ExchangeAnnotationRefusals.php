@@ -53,7 +53,7 @@ final class ExchangeAnnotationRefusals {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-handoff');
 		if ($annotation->isBlock() === true) {
 			$lifecycle = ['x-openregister-lifecycle' => $annotation->configured(key: 'x-openregister-lifecycle')];
-			$annotation->refuseCoded(errors: (new HandoffAnnotationValidator())->validate($annotation->shape() + $lifecycle));
+			$annotation->faults()->refuseCoded(errors: (new HandoffAnnotationValidator())->validate($annotation->shape() + $lifecycle));
 		}
 	}//end checkHandoff()
 
@@ -86,7 +86,7 @@ final class ExchangeAnnotationRefusals {
 			$shape[$key] = $annotation->configured(key: $key);
 		}
 
-		$annotation->refuseCoded(errors: (new HandoffContractBindingValidator())->validate($shape));
+		$annotation->faults()->refuseCoded(errors: (new HandoffContractBindingValidator())->validate($shape));
 	}//end checkHandoffContract()
 
 	/**
@@ -108,7 +108,7 @@ final class ExchangeAnnotationRefusals {
 	public function checkMcp(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-mcp');
 		if ($annotation->isBlock() === true) {
-			$annotation->refuseCoded(errors: (new McpAnnotationValidator())->validate($annotation->shape()));
+			$annotation->faults()->refuseCoded(errors: (new McpAnnotationValidator())->validate($annotation->shape()));
 		}
 	}//end checkMcp()
 }//end class

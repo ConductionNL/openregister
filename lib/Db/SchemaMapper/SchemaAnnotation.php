@@ -20,7 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\SchemaMapper;
 
-use Exception;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -122,92 +121,13 @@ final class SchemaAnnotation {
 	}//end label()
 
 	/**
-	 * Refuse the save with the messages of the given errors, if there are any.
+	 * How this annotation refuses a save and reports what it ignores.
 	 *
-	 * @param array<int, array{message: string}> $errors The validator's errors.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When there is an error.
+	 * @return AnnotationFaults
 	 *
 	 * @spec exclude shared save-time plumbing, not a capability of its own
 	 */
-	public function refuse(array $errors): void {
-		$this->refuseWith(messages: array_map(static fn (array $err): string => $err['message'], $errors));
-	}//end refuse()
-
-	/**
-	 * Refuse the save with the codes and messages of the given errors, if there are any.
-	 *
-	 * @param array<int, array{code: string, message: string}> $errors The validator's errors.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When there is an error.
-	 *
-	 * @spec exclude shared save-time plumbing, not a capability of its own
-	 */
-	public function refuseCoded(array $errors): void {
-		$this->refuseWith(
-			messages: array_map(static fn (array $err): string => $err['code'] . ': ' . $err['message'], $errors)
-		);
-	}//end refuseCoded()
-
-	/**
-	 * Refuse the save as an invalid declaration, if there are errors.
-	 *
-	 * "Invalid" is load-bearing: SchemasController maps the exception to a 400
-	 * by matching that word, and the codes ride along so a client can tell which
-	 * rule refused.
-	 *
-	 * @param array<int, array{code: string, message: string}> $errors The validator's errors.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When there is an error.
-	 *
-	 * @spec exclude shared save-time plumbing, not a capability of its own
-	 */
-	public function refuseInvalid(array $errors): void {
-		if ($errors !== []) {
-			$details = array_map(static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'], $errors);
-			throw new Exception('Invalid ' . $this->key . ' declaration: ' . implode(' ', $details));
-		}
-	}//end refuseInvalid()
-
-	/**
-	 * The log line about keys the block does not know, which are ignored rather than refused.
-	 *
-	 * @param array<int, array{message: string}> $warnings The findings about unknown keys.
-	 *
-	 * @return string
-	 *
-	 * @spec exclude shared save-time plumbing, not a capability of its own
-	 */
-	public function unknownKeysNotice(array $warnings): string {
-		return sprintf(
-			'[OpenRegister.SchemaMapper] Ignored %d unknown %s key(s) on schema "%s": %s',
-			count($warnings),
-			$this->key,
-			(string)($this->schema->getSlug() ?? ''),
-			implode(' ', array_map(static fn (array $finding) => $finding['message'], $warnings))
-		);
-	}//end unknownKeysNotice()
-
-	/**
-	 * Refuse the save with the given messages, if there are any.
-	 *
-	 * @param array<int, string> $messages The reasons.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When there is a message.
-	 *
-	 * @spec exclude shared save-time plumbing, not a capability of its own
-	 */
-	public function refuseWith(array $messages): void {
-		if ($messages !== []) {
-			throw new Exception($this->key . ': ' . implode(' ', $messages));
-		}
-	}//end refuseWith()
+	public function faults(): AnnotationFaults {
+		return new AnnotationFaults(schema: $this->schema, key: $this->key);
+	}//end faults()
 }//end class

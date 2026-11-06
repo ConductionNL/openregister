@@ -41,6 +41,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  * @uses \OCA\OpenRegister\Exception\UniqueHintException
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator

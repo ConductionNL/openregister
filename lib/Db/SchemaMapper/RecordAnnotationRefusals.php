@@ -74,7 +74,7 @@ final class RecordAnnotationRefusals {
 		$annotation = new SchemaAnnotation(schema: $schema, key: ElementMappingValidator::ANNOTATION_KEY);
 		if ($annotation->isBlock() === true) {
 			$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
-			$annotation->refuseInvalid(
+			$annotation->faults()->refuseInvalid(
 				errors: $validator->validate(mapping: $annotation->value(), properties: $schema->getProperties())
 			);
 		}
@@ -134,7 +134,7 @@ final class RecordAnnotationRefusals {
 	public function checkWidgets(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: 'x-openregister-widgets');
 		if ($annotation->isBlock() === true) {
-			$annotation->refuse(
+			$annotation->faults()->refuse(
 				errors: (new WidgetAnnotationValidator())->validate(['x-openregister-widgets' => $annotation->value()])
 			);
 		}
@@ -170,10 +170,10 @@ final class RecordAnnotationRefusals {
 		$findings = (new ArchivalAnnotationValidator())->validate(schema: ['x-openregister-archival' => $annotation->value()]);
 		$split = ArchivalAnnotationValidator::partition(findings: $findings);
 		if (count($split['warnings']) > 0) {
-			$this->logger->warning($annotation->unknownKeysNotice(warnings: $split['warnings']));
+			$this->logger->warning($annotation->faults()->unknownKeysNotice(warnings: $split['warnings']));
 		}
 
-		$annotation->refuse(errors: $split['errors']);
+		$annotation->faults()->refuse(errors: $split['errors']);
 	}//end checkArchival()
 
 	/**
@@ -199,7 +199,7 @@ final class RecordAnnotationRefusals {
 	public function checkExternalLinks(Schema $schema): void {
 		$annotation = new SchemaAnnotation(schema: $schema, key: ExternalLinkResolver::ANNOTATION);
 		if ($annotation->hasValue() === true) {
-			$annotation->refuseWith(messages: (new ExternalLinkAnnotationValidator())->validate($annotation->shape()));
+			$annotation->faults()->refuseWith(messages: (new ExternalLinkAnnotationValidator())->validate($annotation->shape()));
 		}
 	}//end checkExternalLinks()
 }//end class
