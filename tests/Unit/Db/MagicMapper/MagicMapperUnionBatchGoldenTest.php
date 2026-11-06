@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
