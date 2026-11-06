@@ -20,12 +20,12 @@ import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 
 /**
- * The cancel and save buttons of a vectorization settings modal.
+ * The cancel and save buttons of a settings modal.
  *
- * @spec exclude Presentational dialog actions shared by the vectorization settings modals.
+ * @spec exclude Presentational dialog actions shared by the settings modals.
  */
 export default {
-	name: 'VectorizationSaveActions',
+	name: 'SettingsSaveActions',
 	components: { NcButton, NcLoadingIcon, ContentSave },
 
 	props: {

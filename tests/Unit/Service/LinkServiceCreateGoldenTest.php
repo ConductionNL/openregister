@@ -134,6 +134,26 @@ class LinkServiceCreateGoldenTest extends TestCase {
 	}//end testLinkEmailGolden()
 
 	/**
+	 * The linked mail's RFC `Message-ID` lands on the link, from the Mail row.
+	 */
+	public function testLinkEmailKeepsTheRfcMessageId(): void {
+		$mapper = $this->getMockBuilder(EmailLinkMapper::class)->disableOriginalConstructor()
+			->onlyMethods(['findByObjectAccountMessageUid', 'insert'])->getMock();
+		$mapper->method('insert')->willReturnArgument(0);
+		$apps = $this->createMock(IAppManager::class);
+		$apps->method('isEnabledForUser')->willReturn(true);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(
+			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>'])
+		);
+		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
+
+		$link = $service->linkEmail((new LinkTarget('obj-1', 3))->inSchema(4), (new EmailMessageRef(42, '7'))->withUid('u'));
+
+		$this->assertSame('<a1@x>', $link->getRfcMessageId());
+	}//end testLinkEmailKeepsTheRfcMessageId()
+
+	/**
 	 * Share scenarios: file id, type, recipient, permissions, password, expiration, manager failure.
 	 *
 	 * @return array<string, array{0: int, 1: int, 2: string|null, 3: int, 4: string|null, 5: string|null, 6: bool}>

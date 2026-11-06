@@ -81,12 +81,7 @@
 						'Number of chunks to vectorize in one API call (1-100).',
 					)
 				"
-				:hint="
-					t(
-						'openregister',
-						'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
-					)
-				" />
+				:hint="chunkBatchSizeHint" />
 
 			<VectorizationScope
 				v-model="vectorizeAllTypes"
@@ -147,14 +142,9 @@
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
-import { NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
-import VectorizationActions from './vectorization/VectorizationActions.vue'
-import VectorizationModeChoice from './vectorization/VectorizationModeChoice.vue'
-import VectorizationNumberField from './vectorization/VectorizationNumberField.vue'
-import VectorizationPrediction from './vectorization/VectorizationPrediction.vue'
-import VectorizationProgress from './vectorization/VectorizationProgress.vue'
-import VectorizationScope from './vectorization/VectorizationScope.vue'
+import { vectorizationModalComponents } from './vectorization/vectorizationModalComponents.js'
 import { beginRun, idleRun } from './vectorization/vectorizationRun.js'
+import { chunkBatchSizeHint } from './vectorization/vectorizationSettings.js'
 
 /**
  * Whether a failed request says file vectorization does not exist yet.
@@ -172,16 +162,7 @@ function isNotImplemented(error) {
 export default {
 	name: 'FileVectorizationModal',
 
-	components: {
-		NcCheckboxRadioSwitch,
-		NcDialog,
-		VectorizationActions,
-		VectorizationModeChoice,
-		VectorizationNumberField,
-		VectorizationPrediction,
-		VectorizationProgress,
-		VectorizationScope,
-	},
+	components: vectorizationModalComponents,
 
 	props: {
 		show: { type: Boolean, required: true },
@@ -219,6 +200,8 @@ export default {
 	},
 
 	computed: {
+		chunkBatchSizeHint,
+
 		/**
 		 * @spec exclude computed display helper aggregating vectorization stats
 		 */
@@ -529,8 +512,6 @@ export default {
 }
 
 :deep(.form-group) {
-	margin-bottom: 20px;
-
 	> input {
 		border: 2px solid var(--color-border);
 		border-radius: 8px;

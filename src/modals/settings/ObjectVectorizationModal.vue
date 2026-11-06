@@ -121,19 +121,13 @@
 
 <script>
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { NcCheckboxRadioSwitch, NcDialog } from '@nextcloud/vue'
-import VectorizationActions from './vectorization/VectorizationActions.vue'
-import VectorizationModeChoice from './vectorization/VectorizationModeChoice.vue'
-import VectorizationNumberField from './vectorization/VectorizationNumberField.vue'
-import VectorizationPrediction from './vectorization/VectorizationPrediction.vue'
-import VectorizationProgress from './vectorization/VectorizationProgress.vue'
-import VectorizationScope from './vectorization/VectorizationScope.vue'
 import {
 	countObjects,
 	readVectorizeSettings,
 	readViews,
 	vectorizeObjects,
 } from './vectorization/objectVectorizationApi.js'
+import { vectorizationModalComponents } from './vectorization/vectorizationModalComponents.js'
 import { beginRun, idleRun } from './vectorization/vectorizationRun.js'
 
 /**
@@ -154,16 +148,7 @@ function batchCounts(response) {
 export default {
 	name: 'ObjectVectorizationModal',
 
-	components: {
-		NcCheckboxRadioSwitch,
-		NcDialog,
-		VectorizationActions,
-		VectorizationModeChoice,
-		VectorizationNumberField,
-		VectorizationPrediction,
-		VectorizationProgress,
-		VectorizationScope,
-	},
+	components: vectorizationModalComponents,
 
 	props: {
 		show: { type: Boolean, required: true },
@@ -481,10 +466,6 @@ export default {
 				}
 			}
 		}
-	}
-
-	:deep(.form-group) {
-		margin-bottom: 20px;
 	}
 
 	:deep(.form-group > small) {

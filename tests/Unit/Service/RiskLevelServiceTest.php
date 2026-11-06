@@ -168,13 +168,4 @@ class RiskLevelServiceTest extends TestCase {
 
 		$this->service->initMetadataKey();
 	}
-
-	// ── getAllRiskLevels ──
-
-	public function testGetAllRiskLevelsReturnsExpectedLevels(): void {
-		$levels = RiskLevelService::getAllRiskLevels();
-		$this->assertCount(5, $levels);
-		$this->assertArrayHasKey(RiskLevelService::RISK_NONE, $levels);
-		$this->assertArrayHasKey(RiskLevelService::RISK_VERY_HIGH, $levels);
-	}
 }

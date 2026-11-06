@@ -48,16 +48,11 @@
 				v-if="config.vectorizationEnabled"
 				v-model:batchSize="config.batchSize"
 				v-model:autoRetry="config.autoRetry"
-				:hint="
-					t(
-						'openregister',
-						'Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.',
-					)
-				" />
+				:hint="chunkBatchSizeHint" />
 		</div>
 
 		<template #actions>
-			<VectorizationSaveActions
+			<SettingsSaveActions
 				:saving="saving"
 				@cancel="$emit('closing')"
 				@save="saveConfiguration" />
@@ -70,10 +65,13 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcDialog } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
+import SettingsSaveActions from './SettingsSaveActions.vue'
 import VectorizationBatchSection from './vectorization/VectorizationBatchSection.vue'
-import VectorizationSaveActions from './vectorization/VectorizationSaveActions.vue'
 import VectorizationSwitchField from './vectorization/VectorizationSwitchField.vue'
-import { saveSettings } from './vectorization/vectorizationSettings.js'
+import {
+	chunkBatchSizeHint,
+	saveSettings,
+} from './vectorization/vectorizationSettings.js'
 
 export default {
 	name: 'FileManagementModal',
@@ -82,7 +80,7 @@ export default {
 		NcDialog,
 		InformationOutline,
 		VectorizationBatchSection,
-		VectorizationSaveActions,
+		SettingsSaveActions,
 		VectorizationSwitchField,
 	},
 
@@ -100,6 +98,10 @@ export default {
 				autoRetry: true,
 			},
 		}
+	},
+
+	computed: {
+		chunkBatchSizeHint,
 	},
 
 	methods: {

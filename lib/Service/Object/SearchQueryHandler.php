@@ -822,8 +822,7 @@ class SearchQueryHandler {
 	/**
 	 * Add pagination URLs to search results
 	 *
-	 * Generates next and previous page URLs based on current page and total pages.
-	 * Only adds URLs when pagination is needed (pages > 1).
+	 * Adds the next and previous page URLs {@see PaginationLinks} builds from the request URI.
 	 *
 	 * @param array<string, mixed> $paginatedResults Search results array (passed by reference).
 	 * @param int $page Current page number.
@@ -834,56 +833,9 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void {
-		// **PERFORMANCE OPTIMIZATION**: Only generate URLs if pagination is needed.
-		if ($pages <= 1) {
-			return;
-		}
-
-		$currentUrl = $this->request->getRequestUri();
-
-		// Add next page link if there are more pages.
-		if ($page < $pages) {
-			$nextPage = ($page + 1);
-			$nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-			if (strpos($nextUrl, 'page=') === false) {
-				$nextUrl .= $this->getUrlSeparator(url: $nextUrl) . 'page=' . $nextPage;
-			}
-
-			$paginatedResults['next'] = $nextUrl;
-		}
-
-		// Add previous page link if not on first page.
-		if ($page > 1) {
-			$prevPage = ($page - 1);
-			$prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-			if (strpos($prevUrl, 'page=') === false) {
-				$prevUrl .= $this->getUrlSeparator(url: $prevUrl) . 'page=' . $prevPage;
-			}
-
-			$paginatedResults['prev'] = $prevUrl;
-		}
+		$links = new PaginationLinks(uri: $this->request->getRequestUri());
+		$paginatedResults = array_merge($paginatedResults, $links->around(page: $page, pages: $pages));
 	}//end addPaginationUrls()
-
-	/**
-	 * Get URL separator character (? or &)
-	 *
-	 * Determines whether to use '?' or '&' when adding query parameters to a URL.
-	 *
-	 * @param string $url URL to check.
-	 *
-	 * @return string '?' if URL has no query string, '&' otherwise
-	 *
-	 * @psalm-return '&'|'?'
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function getUrlSeparator(string $url): string {
-		if (strpos($url, '?') === false) {
-			return '?';
-		}
-
-		return '&';
-	}//end getUrlSeparator()
 
 	/**
 	 * Buffer a search trail entry for deferred persistence

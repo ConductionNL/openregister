@@ -10,7 +10,7 @@
  * The implementation lives outside this app (NC Office is an external
  * collaborator); this interface is the seam Path B hooks into. Until the
  * feature flag flips on, no production implementation is wired —
- * {@see NullNcOfficeConverter} is the default no-op.
+ * {@see \OCA\OpenRegister\Service\File\Office\ConversionManagerConverter} is the binding.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

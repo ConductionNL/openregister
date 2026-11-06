@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
 use OCA\OpenRegister\Db\CospendLinkMapper;
 use OCP\App\IAppManager;
@@ -183,7 +184,10 @@ class CospendLinkService {
 			throw new Exception('Project id is required', 400);
 		}
 
-		$existing = $this->cospendLinkMapper->findDuplicate($target->objectUuid, self::ENTRY_PROJECT, $projectId, null);
+		$existing = $this->cospendLinkMapper->findDuplicate(
+			objectUuid: $target->objectUuid,
+			entry: new CospendEntryKey(entryType: self::ENTRY_PROJECT, projectId: $projectId)
+		);
 		if ($existing !== null) {
 			throw new Exception('Project already linked to this object', 409);
 		}
@@ -234,7 +238,10 @@ class CospendLinkService {
 			throw new Exception('Project id and bill id are required', 400);
 		}
 
-		$existing = $this->cospendLinkMapper->findDuplicate($target->objectUuid, self::ENTRY_BILL, $projectId, $billId);
+		$existing = $this->cospendLinkMapper->findDuplicate(
+			objectUuid: $target->objectUuid,
+			entry: (new CospendEntryKey(entryType: self::ENTRY_BILL, projectId: $projectId))->withBill(billId: $billId)
+		);
 		if ($existing !== null) {
 			throw new Exception('Bill already linked to this object', 409);
 		}

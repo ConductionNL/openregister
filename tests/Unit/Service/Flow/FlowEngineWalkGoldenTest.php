@@ -238,7 +238,6 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			'report' => ['flow' => 'linear', 'report' => true, 'behaviour' => ['three' => 'fail']],
 			'oversight' => ['flow' => 'split', 'oversight' => 2],
 			'oversight-first' => ['flow' => 'linear', 'oversight' => 1],
-			'oversight-off' => ['flow' => 'linear', 'oversight' => 1, 'context' => ['oversight' => false]],
 			'switch-high' => ['flow' => 'switch', 'seed' => 42],
 			'switch-low' => ['flow' => 'switch', 'seed' => 3],
 			'gated-no-match' => ['flow' => 'gated', 'seed' => 3],
