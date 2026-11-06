@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -68,7 +69,7 @@ class MetadataFieldPrecedenceTest extends TestCase {
 		$resolver = $this->createMock(GraphQLResolver::class);
 		$resolver->method('resolveSingle')->willReturn(self::ROW);
 
-		$generator = new SchemaGenerator($mapper, $session);
+		$generator = new SchemaGenerator($mapper, $session, $this->createMock(PropertyRbacHandler::class));
 		$generator->setResolver($resolver);
 
 		return $generator;
