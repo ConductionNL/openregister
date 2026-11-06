@@ -71,6 +71,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Flow\MacroActionBinding
  * @uses \OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffKindContracts
  * @uses \OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms
