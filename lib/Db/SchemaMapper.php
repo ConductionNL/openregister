@@ -55,7 +55,7 @@ use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;

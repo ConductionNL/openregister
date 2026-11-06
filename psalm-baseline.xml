@@ -107,7 +107,7 @@
       <code><![CDATA[$vevent->{'X-OPENREGISTER-SCHEMA'}]]></code>
     </UndefinedPropertyFetch>
   </file>
-  <file src="lib/Service/Chat/ResponseGenerationHandler.php">
+  <file src="lib/Mcp/Service/Chat/ResponseGenerationHandler.php">
     <UnusedMethodCall>
       <code><![CDATA[setAccessible]]></code>
     </UnusedMethodCall>

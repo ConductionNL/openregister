@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
 use PHPUnit\Framework\TestCase;
 
 class StreamYieldChannelTest extends TestCase {

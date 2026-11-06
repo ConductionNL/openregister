@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use GuzzleHttp\Client;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\NotificationService;
