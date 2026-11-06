@@ -33,7 +33,9 @@ use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
+use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
@@ -47,6 +49,7 @@ use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
 use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
+use OCA\OpenRegister\Controller\Support\ShownEntity;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
@@ -2881,19 +2884,12 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectService $objectService,
-	): JSONResponse {
+	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
 
 		try {
-			// Resolve slugs to numeric IDs consistently and get register/schema entities.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
@@ -2905,221 +2901,197 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		// Get request parameters for filtering and searching.
-		$requestParams = $this->request->getParams();
+		return $this->shownObject(
+			show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, objectService: $objectService)
+		);
+	}//end show()
 
-		// Extract parameters for rendering.
-		$extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-		$filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-		$fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-		$unset = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+	/**
+	 * Read one object for show().
+	 *
+	 * A denied read answers 404, not 403, so an unauthorized caller cannot tell
+	 * "exists but forbidden" from "does not exist".
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function shownObject(ObjectShow $show): JSONResponse {
+		$read = new ObjectReadOptions(params: $this->request->getParams(), admin: $this->isCurrentUserAdmin());
 
-		// Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
-		$extend = (new ObjectRequestParams())->extend(extend: $extend);
-
-		// Convert fields to array if it's a string.
-		if (is_string($fields) === true) {
-			$fields = explode(',', $fields);
-		}
-
-		// Convert filter to array if it's a string.
-		if (is_string($filter) === true) {
-			$filter = explode(',', $filter);
-		}
-
-		// Convert unset to array if it's a string.
-		if (is_string($unset) === true) {
-			$unset = explode(',', $unset);
-		}
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		// If admin, disable RBAC.
-		$multi = $isAdmin === false;
-		// If admin, disable multitenancy.
-		// Find and validate the object. Rendering is deferred to the single
-		// renderEntity() call below (`_render: false`): find() previously
-		// rendered the entity with the same $extend and the controller then
-		// rendered it AGAIN, repeating file hydration, writeOnly redaction and
-		// the expensive inverse-property resolution on every single read.
-		// Permission checks and read logging inside find() still run.
 		try {
-			$objectEntity = $this->objectService->find(
-				id: $id,
-				_extend: $extend,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				_render: false
-			);
+			$objectEntity = $this->foundForShow(show: $show, read: $read);
 			if ($objectEntity === null) {
-				// THE REFUSAL SAYS WHERE THE OBJECT WENT. A flat "not found" on
-				// a soft-deleted object is the answer that makes a caseworker
-				// think their work is gone, when it is in the trash with a
-				// stated window still open.
-				$registerScope = null;
-				if (is_numeric($resolved['register']) === true) {
-					$registerScope = (int)$resolved['register'];
-				}
-
-				$deletedRefusal = $this->deletedRefusal(
-					id: $id,
-					rbac: $rbac,
-					multitenancy: $multi,
-					registerIdScope: $registerScope
-				);
-				if ($deletedRefusal !== null) {
-					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
-				}
-
-				$errorMsg = "Object with id {$id} not found";
-				return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
+				return $this->absentObject(show: $show, read: $read);
 			}
 
-			// `_reveal` is honoured on this single-object read only, and only for the
-			// object found, by its uuid: an extended or listed object stays masked,
-			// whatever id or slug it shares with the route (property-explicit-reveal).
-			$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-			if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
-				$explicitReveal->grantFor(objectId: (string)$objectEntity->getUuid(), reveal: (string)($requestParams['_reveal'] ?? ''));
-			}
-
-			// Render the object with requested extensions, filters, fields, and unset parameters.
-			// This is the ONLY render on the show() response path: writeOnly
-			// redaction and read-authorization stripping (openregister#385/#386)
-			// are applied here, exactly once, inside renderEntity().
-			$renderedObject = $this->objectService->renderEntity(
-				entity: $objectEntity,
-				_extend: $extend,
-				depth: 0,
-				filter: $filter,
-				fields: $fields,
-				unset: $unset,
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
-
-			// Add registers, schemas, and extended objects to @self for single object responses.
-			// Only include when explicitly requested via _extend parameter.
-			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
-			// No separate view is recorded here any more: the audited read in
-			// GetObject::find() above IS the view (`read-history-on-audit-trail`),
-			// and the `_recent` lens reads it back from the audit trail.
-			$renderedData = $renderedObject;
-			if (isset($renderedData['@self']) === true) {
-				// The tab badges (`object-read-state`). Attached HERE and
-				// nowhere else, because this is the only read path that knows it
-				// is rendering exactly one object: counting a sub-resource looks
-				// at the object's files and its dated arrays, so doing it in
-				// RenderObject would pay that cost per row on every list.
-				$renderedData['@self'] = $this->withUnreadCounts(
-					self: $renderedData['@self'],
-					object: $objectEntity
-				);
-
-				$extendArray = [];
-				if (is_array($extend) === true) {
-					$extendArray = $extend;
-				}
-
-				// Add registers if _registers or _register is in _extend.
-				if (in_array('_registers', $extendArray, true) === true
-					|| in_array('_register', $extendArray, true) === true
-				) {
-					$registerId = $resolved['register'];
-					$registers = [];
-					if ($resolved['registerEntity'] !== null) {
-						$registers[$registerId] = $resolved['registerEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['registers'] = $registers;
-				}
-
-				// Add schemas if _schemas or _schema is in _extend.
-				if (in_array('_schemas', $extendArray, true) === true
-					|| in_array('_schema', $extendArray, true) === true
-				) {
-					$schemaId = $resolved['schema'];
-					$schemas = [];
-					if ($resolved['schemaEntity'] !== null) {
-						$schemas[$schemaId] = $resolved['schemaEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['schemas'] = $schemas;
-				}
-
-				// Get extended objects indexed by UUID (for _extend lookups).
-				// Always include objects if any _extend is requested.
-				if (empty($extendArray) === false) {
-					$extendedObjects = $objectService->getExtendedObjects();
-					$renderedData['@self']['objects'] = $extendedObjects;
-				}
-
-				// Add names mapping if _names is in _extend.
-				// This provides UUID-to-name mappings for all related objects,
-				// reducing frontend calls to the names service.
-				if (in_array('_names', $extendArray, true) === true) {
-					$renderedData['@self']['names'] = $this->collectNamesForResponse(
-						renderedData: $renderedData,
-						cacheHandler: $objectService->getCacheHandler()
-					);
-				}
-			}//end if
-
-			// Strip empty values from response unless _empty=true is set.
-			$includeEmpty = filter_var(
-				value: $requestParams['_empty'] ?? false,
-				filter: FILTER_VALIDATE_BOOLEAN
-			);
-			if ($includeEmpty === false) {
-				$renderedData = (new EmptyValueStripper())->stripped(data: $renderedData);
-			}
-
-			// THE RECORD SAYS WHAT ITS READER MAY DO WITH IT. Resolved in the
-			// same pass that decided this read, from the memoised verdicts, so
-			// it costs the resolutions a client would otherwise provoke by
-			// trying. Without it every client guesses, and the user finds out
-			// by clicking into a 403 (design D-9).
-			//
-			// AFTER the empty strip, deliberately: a caller who may do nothing
-			// on this row has an EMPTY list of actions, and that is an answer.
-			// Stripping it would leave the client unable to tell "no rights" from
-			// "this instance does not report rights".
-			$renderedData = $this->withPermittedActions(
-				renderedData: $renderedData,
-				schema: $resolved['schemaEntity'],
-				object: $objectEntity,
-				objectService: $objectService
-			);
-
-			// Content negotiation: emit JSON-LD when requested. The serializer
-			// wraps the already-rendered array — no second data path — so all
-			// access control above remains applied (json-ld-output).
-			if ($this->wantsJsonLd() === true
-				&& $resolved['registerEntity'] !== null
-				&& $resolved['schemaEntity'] !== null
-			) {
-				return $this->jsonLdObjectResponse(renderedObject: $renderedData, resolved: $resolved);
-			}
-
-			return new JSONResponse(data: $renderedData);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (NotAuthorizedException $exception) {
-			// RBAC denied the read. Return 404 (not 500, and not 403) so an
-			// unauthorized caller cannot distinguish "exists but forbidden"
-			// from "does not exist" — avoids leaking object existence while
-			// still denying access. Previously this exception escaped the
-			// handler and surfaced as an HTTP 500.
+			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
+		} catch (DoesNotExistException|NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}//end try
-	}//end show()
+			return $this->ambiguousIdentifierResponse(id: $show->id);
+		}
+	}//end shownObject()
+
+	/**
+	 * Find the object without rendering it.
+	 *
+	 * Rendering waits for the single renderEntity() call; permission checks and
+	 * read logging inside find() still run.
+	 *
+	 * @param ObjectShow $show The object asked for.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is absent.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
+		return $this->objectService->find(
+			id: $show->id,
+			_extend: $read->extend,
+			files: false,
+			register: $show->path[0],
+			schema: $show->path[1],
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped,
+			_render: false
+		);
+	}//end foundForShow()
+
+	/**
+	 * The 404 for an object find() did not return.
+	 *
+	 * The refusal says where the object went: a flat "not found" on a
+	 * soft-deleted object makes a caseworker think their work is gone, when it
+	 * is in the trash with a stated window still open.
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's scope.
+	 *
+	 * @return JSONResponse The 404.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function absentObject(ObjectShow $show, ObjectReadOptions $read): JSONResponse {
+		$registerScope = null;
+		if (is_numeric($show->resolved['register']) === true) {
+			$registerScope = (int)$show->resolved['register'];
+		}
+
+		$deleted = $this->deletedRefusal(id: $show->id, rbac: $read->scoped, multitenancy: $read->scoped, registerIdScope: $registerScope);
+		if ($deleted !== null) {
+			return new JSONResponse(data: $deleted, statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: ['error' => "Object with id {$show->id} not found"], statusCode: Http::STATUS_NOT_FOUND);
+	}//end absentObject()
+
+	/**
+	 * Render a found object for its reader.
+	 *
+	 * This is the ONLY render on the show() path: writeOnly redaction and
+	 * read-authorization stripping happen here, exactly once, inside
+	 * renderEntity(). The JSON-LD serializer wraps the rendered array, so all
+	 * of that stays applied to it. The permitted actions come AFTER the empty
+	 * strip: an empty list of actions is an answer, not an empty value.
+	 *
+	 * @param ShownEntity $shown The found object and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return JSONResponse The object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedShow(ShownEntity $shown, ObjectReadOptions $read): JSONResponse {
+		$this->grantExplicitReveal(object: $shown->entity);
+		$rendered = $this->withSelfExtras(rendered: $this->renderedEntity(entity: $shown->entity, read: $read), shown: $shown);
+		if ($this->wantsEmptyValues() === false) {
+			$rendered = (new EmptyValueStripper())->stripped(data: $rendered);
+		}
+
+		$rendered = $this->withPermittedActions(renderedData: $rendered, shown: $shown);
+		if ($this->wantsJsonLd() === true && $shown->show->hasEntities() === true) {
+			return $this->jsonLdObjectResponse(renderedObject: $rendered, resolved: $shown->show->resolved);
+		}
+
+		return new JSONResponse(data: $rendered);
+	}//end renderedShow()
+
+	/**
+	 * Honour `_reveal` for the object found, by its uuid.
+	 *
+	 * Only on this single-object read: an extended or listed object stays masked,
+	 * whatever id or slug it shares with the route (property-explicit-reveal).
+	 *
+	 * @param ObjectEntity $object The object found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function grantExplicitReveal(ObjectEntity $object): void {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+			$params = $this->request->getParams();
+			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
+		}
+	}//end grantExplicitReveal()
+
+	/**
+	 * The render of one object.
+	 *
+	 * @param ObjectEntity $entity The object.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return array<string, mixed> The rendered object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedEntity(ObjectEntity $entity, ObjectReadOptions $read): array {
+		return $this->objectService->renderEntity(
+			entity: $entity,
+			_extend: $read->extend,
+			depth: 0,
+			filter: $read->filter,
+			fields: $read->fields,
+			unset: $read->unset,
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped
+		);
+	}//end renderedEntity()
+
+	/**
+	 * Add what `_extend` asked for to `@self`, with the tab badges.
+	 *
+	 * The badges are attached here and nowhere else: this is the only read path
+	 * that knows it renders exactly one object.
+	 *
+	 * @param array<string, mixed> $rendered The rendered object.
+	 * @param ShownEntity $shown The found object and the extensions asked for.
+	 *
+	 * @return array<string, mixed> The object with its extras.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function withSelfExtras(array $rendered, ShownEntity $shown): array {
+		if (isset($rendered['@self']) === false) {
+			return $rendered;
+		}
+
+		$rendered['@self'] = array_merge(
+			$this->withUnreadCounts(self: $rendered['@self'], object: $shown->entity),
+			$shown->resolvedExtras()
+		);
+		if (in_array('_names', $shown->extend, true) === true) {
+			$cacheHandler = $shown->show->objectService->getCacheHandler();
+			$rendered['@self']['names'] = $this->collectNamesForResponse(renderedData: $rendered, cacheHandler: $cacheHandler);
+		}
+
+		return $rendered;
+	}//end withSelfExtras()
 
 	/**
 	 * The 409 answer for an identifier that matches more than one object (#4037).
@@ -3203,41 +3175,25 @@ class ObjectsController extends Controller {
 	 * returned because the read was allowed, and every write is resolved again
 	 * on its own request. A reporting field must never be able to refuse a read.
 	 *
-	 * @param array $renderedData The rendered record.
-	 * @param Schema|null $schema The schema, when it resolved.
-	 * @param ObjectEntity|null $object The row.
-	 * @param ObjectService $objectService The service holding the resolver.
+	 * @param array<string, mixed> $renderedData The rendered object.
+	 * @param ShownEntity $shown The found object and its resolved scope.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function withPermittedActions(
-		array $renderedData,
-		?Schema $schema,
-		?ObjectEntity $object,
-		ObjectService $objectService,
-	): array {
-		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
+	private function withPermittedActions(array $renderedData, ShownEntity $shown): array {
+		$schema = $shown->show->resolved['schemaEntity'];
+		if ($schema === null || isset($renderedData['@self']) === false) {
 			return $renderedData;
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $objectService->getPermissionHandler()->permittedActionsFor(
-				schema: $schema,
-				object: $object
-			);
+			$permissions = $shown->show->objectService->getPermissionHandler();
+			$renderedData['@self']['actions'] = $permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
 		} catch (\Throwable $e) {
-			// See the docblock: reporting never refuses a read.
-			$this->logger->warning(
-				message: '[ObjectsController] Could not resolve the actions for a record; returning it without them',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
+			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
 		}
 
 		return $renderedData;

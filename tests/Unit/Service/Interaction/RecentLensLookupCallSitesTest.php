@@ -48,7 +48,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * @var array<string, array<int, string>>
 	 */
 	private const OPENED = [
-		'lib/Controller/ObjectsController.php' => ['show'],
+		'lib/Controller/ObjectsController.php' => ['foundForShow'],
 		'lib/Controller/TmloController.php' => ['exportSingle'],
 		'lib/Controller/ObjectShareLinkController.php' => ['show'],
 		'lib/Service/CaseTokenService.php' => ['resolve'],
