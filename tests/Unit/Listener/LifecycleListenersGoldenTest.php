@@ -695,6 +695,7 @@ class LifecycleListenersGoldenTest extends TestCase {
 
 		$this->gateListener()->handle($this->update(['status' => 'draft'], ['status' => 'sent', 'amount' => $amount]));
 
+		$this->assertArrayHasKey(3, $captured);
 		if ($role === null) {
 			$this->assertNull($captured[3]);
 			return;
