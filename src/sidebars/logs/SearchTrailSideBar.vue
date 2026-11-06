@@ -487,11 +487,7 @@ import {
 	routeDate,
 } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import {
-	registerSelect,
-	schemaSelect,
-	scopeOption,
-} from '../../services/scopeSelect.js'
+import { scopePickers } from '../../services/scopePickers.js'
 import {
 	addJoinedValues,
 	addPresent,
@@ -594,6 +590,8 @@ export default {
 		FilterOffOutline,
 	},
 
+	mixins: [scopePickers],
+
 	data() {
 		return {
 			successOptions: [
@@ -666,46 +664,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the search-trail filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return registerSelect(registerStore.registerList)
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			return scopeOption(registerStore.registerItem, 'register')
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			return scopeOption(schemaStore.schemaItem, 'schema')
-		},
-
 		/**
 		 * Derive the user filter options from the search-trail list.
 		 *

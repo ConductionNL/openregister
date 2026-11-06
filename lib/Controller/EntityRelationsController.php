@@ -11,7 +11,7 @@
  *
  * Per the `entity-relation-grondslagen` change, the post-hoc system fields
  * `anonymized` and `anonymizedValue` are intentionally NOT in the whitelist;
- * those are written by `EntityRelationMapper::markAsAnonymized` during the
+ * those are written by `EntityRelationMapper::markAsAnonymizedWithPlaceholders` during the
  * redaction code path.
  *
  * The endpoint is a thin wrapper over `EntityRelationMapper::updateDecisionMetadata`

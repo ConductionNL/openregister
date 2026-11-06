@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\SchemaMigrationControllerServices;
+use OCA\OpenRegister\Db\OutcomeFilter;
+use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
@@ -361,12 +363,8 @@ class SchemaMigrationController extends Controller {
 			$outcome = null;
 		}
 
-		$entries = $this->runEntryMapper->findByRun(
-			runId: $run,
-			outcome: $outcome,
-			limit: $this->intParam(name: '_limit'),
-			offset: $this->intParam(name: '_offset')
-		);
+		$page    = new QueryPage(limit: $this->intParam(name: '_limit'), offset: $this->intParam(name: '_offset'));
+		$entries = $this->runEntryMapper->findByRun(runId: $run, filter: new OutcomeFilter(outcome: $outcome, page: $page));
 
 		$payload = $entity->jsonSerialize();
 		$payload['entries'] = array_map(static fn ($e) => $e->jsonSerialize(), $entries);
