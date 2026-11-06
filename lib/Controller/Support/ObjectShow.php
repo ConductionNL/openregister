@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 
-use OCA\OpenRegister\Service\ObjectService;
 
 /**
  * One object read through show(): what was asked and what it resolved to.
@@ -37,7 +36,7 @@ final class ObjectShow {
 	 * @param string               $id            The object identifier.
 	 * @param array{0: string, 1: string} $path  The register and schema in the URL.
 	 * @param array<string, mixed> $resolved      The resolved ids and entities.
-	 * @param ObjectService        $objectService The request's object service.
+	 * @param ShowServices         $services      What is asked of the request's object service.
 	 *
 	 * @return void
 	 *
@@ -47,7 +46,7 @@ final class ObjectShow {
 		public readonly string $id,
 		public readonly array $path,
 		public readonly array $resolved,
-		public readonly ObjectService $objectService,
+		public readonly ShowServices $services,
 	) {
 	}//end __construct()
 
