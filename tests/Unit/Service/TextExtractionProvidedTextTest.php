@@ -86,8 +86,6 @@ final class TextExtractionProvidedTextTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$this->entities,
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
 			$settings,
 			$this->createMock(RiskLevelService::class),
 			$this->createMock(EmlParser::class),
