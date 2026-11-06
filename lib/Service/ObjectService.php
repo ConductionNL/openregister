@@ -115,6 +115,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -4612,7 +4613,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $result = $this->extendSearchResult(result: $result, query: $query);
 
-        $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+        (new SearchTrailRecorder(
+            searchQueryHandler: $this->searchQueryHandler,
+            logger: $this->logger,
+            startTime: $searchStartTime
+        ))->record(query: $query, result: $result);
         $this->logProcessingReadList(objects: ($result['results'] ?? []), query: $query);
 
         return $result;
@@ -4657,22 +4662,48 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function scopeQueryToContext(array $query): array
     {
-        if ($this->currentRegister !== null
-            && array_key_exists('_register', $query) === false
-            && $this->isMultiSchemaSearch(query: $query) === false
-        ) {
+        if ($this->mayScopeToRegister(query: $query) === true) {
             $query['_register'] = $this->currentRegister->getId();
         }
 
-        if ($this->currentSchema !== null
-            && array_key_exists('_schema', $query) === false
-            && array_key_exists('_schemas', $query) === false
-        ) {
+        if ($this->mayScopeToSchema(query: $query) === true) {
             $query['_schema'] = $this->currentSchema->getId();
         }
 
         return $query;
     }//end scopeQueryToContext()
+
+    /**
+     * Whether a search takes the context's register: one is set and the query names none.
+     *
+     * @param array $query The search query.
+     *
+     * @return bool True when the register applies.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function mayScopeToRegister(array $query): bool
+    {
+        return $this->currentRegister !== null
+            && array_key_exists('_register', $query) === false
+            && $this->isMultiSchemaSearch(query: $query) === false;
+    }//end mayScopeToRegister()
+
+    /**
+     * Whether a search takes the context's schema: one is set and the query names none.
+     *
+     * @param array $query The search query.
+     *
+     * @return bool True when the schema applies.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function mayScopeToSchema(array $query): bool
+    {
+        return $this->currentSchema !== null
+            && array_key_exists('_schema', $query) === false
+            && array_key_exists('_schemas', $query) === false;
+    }//end mayScopeToSchema()
 
     /**
      * Whether a query searches many schemas: a non-empty `@self.schema` array, `_schemas` or `@self.schemas`.
@@ -5054,63 +5085,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end objectSourcePageMetadata()
 
     /**
-     * Record a search-trail entry for a paginated search, honouring the
-     * configured recording mode.
-     *
-     * Resolves the effective mode via SearchQueryHandler (memoized per
-     * request): 'none' records nothing; '_search' records only when a
-     * non-empty `_search` term is present; 'all' records every paginated
-     * search. Derives the execution type from the result source (index vs
-     * database) and the response time from the captured start time. The
-     * entry is buffered and persisted after the response (deferred flush in
-     * SearchQueryHandler), so recording adds no write latency to the search.
-     * Never throws — a recording failure must not affect the search response.
-     *
-     * @param array $query     The post-view-merge search query.
-     * @param array $result    The paginated search result (results, total, @self).
-     * @param float $startTime The microtime(true) captured at search entry.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/search-trail-recording/spec.md
-     */
-    private function recordSearchTrail(array $query, array $result, float $startTime): void
-    {
-        try {
-            $mode = $this->searchQueryHandler->getEffectiveRecordingMode();
-            if ($mode === 'none') {
-                return;
-            }
-
-            $searchTerm = trim((string) ($query['_search'] ?? ''));
-            if ($mode === '_search' && $searchTerm === '') {
-                return;
-            }
-
-            $responseTime  = (float) ((microtime(true) - $startTime) * 1000);
-            $source        = $result['@self']['source'] ?? 'database';
-            $executionType = 'database';
-            if ($source === 'index') {
-                $executionType = 'index';
-            }
-
-            $this->searchQueryHandler->logSearchTrail(
-                $query,
-                count($result['results'] ?? []),
-                (int) ($result['total'] ?? 0),
-                $responseTime,
-                $executionType
-            );
-        } catch (\Throwable $e) {
-            // Recording is best-effort and must never fail the search.
-            $this->logger->warning(
-                message: '[ObjectService] recordSearchTrail failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }//end try
-    }//end recordSearchTrail()
-
-    /**
      * Original database search logic - extracted to avoid code duplication.
      *
      * @param array<string, mixed> $query     The search query array
@@ -5171,29 +5145,41 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function getRegisters(): array
     {
-        $registers = $this->registerMapper->findAll(_multitenancy: false);
-        $result    = [];
+        $result = [];
 
-        foreach ($registers as $register) {
-            $registerArr = $register->jsonSerialize();
-            $schemaIds   = $register->getSchemas() ?? [];
-            $schemas     = [];
-
-            foreach ($schemaIds as $schemaId) {
-                try {
-                    $schema    = $this->schemaMapper->find(id: (int) $schemaId, _multitenancy: false);
-                    $schemas[] = $schema->jsonSerialize();
-                } catch (\Exception $e) {
-                    // Skip schemas that cannot be found.
-                }
-            }
-
-            $registerArr['schemas'] = $schemas;
+        foreach ($this->registerMapper->findAll(_multitenancy: false) as $register) {
+            $registerArr            = $register->jsonSerialize();
+            $registerArr['schemas'] = $this->serializedSchemasOf(register: $register);
             $result[] = $registerArr;
         }
 
         return $result;
     }//end getRegisters()
+
+    /**
+     * Serialize the schemas of a register, skipping ids that no longer resolve.
+     *
+     * @param Register $register The register.
+     *
+     * @return array<int, array<string, mixed>> The serialized schemas.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function serializedSchemasOf(Register $register): array
+    {
+        $schemas = [];
+
+        foreach (($register->getSchemas() ?? []) as $schemaId) {
+            try {
+                $schema    = $this->schemaMapper->find(id: (int) $schemaId, _multitenancy: false);
+                $schemas[] = $schema->jsonSerialize();
+            } catch (\Exception $e) {
+                // Skip schemas that cannot be found.
+            }
+        }
+
+        return $schemas;
+    }//end serializedSchemasOf()
 
     /**
      * Renders the rendered object.
