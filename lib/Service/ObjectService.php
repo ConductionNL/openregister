@@ -5824,51 +5824,101 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): array {
         // A BULK SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        $options = [
+            'register'       => $register,
+            'schema'         => $schema,
+            '_rbac'          => $_rbac,
+            '_multitenancy'  => $_multitenancy,
+            '_validation'    => $validation,
+            '_events'        => $events,
+            'deduplicateIds' => $deduplicateIds,
+            'enrich'         => $enrich,
+            '_audit'         => $_audit,
+        ];
 
-        try {
-            $this->discardPendingSchemaRef();
-
-            // Bound the folder-access revalidation cache to this bulk-save call
-            // (see saveObject) so mid-request folder mutations are re-validated.
-            $this->fileService->resetFolderAccessRevalidationCache();
-
-            // Set register and schema context if provided.
-            if ($register !== null) {
-                $this->setRegister(register: $register);
-            }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // Delegate to SaveObjects handler for bulk save operations.
-            $bulkResult = $this->saveObjectsHandler->saveObjects(
-                objects: $objects,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                _validation: $validation,
-                _events: $events,
-                deduplicateIds: $deduplicateIds,
-                enrich: $enrich,
-                _audit: $_audit
-            );
-
-            $this->bulkCacheInvalidator()->afterBulkSave(
-                bulkResult: $bulkResult,
-                scope: new SavedScopeIds(
-                    registerId: $this->currentRegister?->getId(),
-                    schemaId: $this->currentSchema?->getId()
-                )
-            );
-            return $bulkResult;
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        return $this->preservingScope(
+            operation: fn (): array => $this->saveBulkWithinScope(objects: $objects, options: $options)
+        );
     }//end saveObjects()
+
+    /**
+     * Runs one bulk save inside the context saveObjects() keeps.
+     *
+     * @param array $objects The objects to save.
+     * @param array $options The arguments of the saveObjects() call.
+     *
+     * @phpstan-param array<int, array<string, mixed>> $objects
+     * @phpstan-param array<string, mixed>             $options
+     * @psalm-param   array<int, array<string, mixed>> $objects
+     * @psalm-param   array<string, mixed>             $options
+     *
+     * @return array The bulk result of the SaveObjects handler.
+     *
+     * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
+     */
+    private function saveBulkWithinScope(array $objects, array $options): array
+    {
+        $this->openBulkSave(register: $options['register'], schema: $options['schema']);
+
+        $bulkResult = $this->saveObjectsHandler->saveObjects(
+            objects: $objects,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: $options['_rbac'],
+            _multitenancy: $options['_multitenancy'],
+            _validation: $options['_validation'],
+            _events: $options['_events'],
+            deduplicateIds: $options['deduplicateIds'],
+            enrich: $options['enrich'],
+            _audit: $options['_audit']
+        );
+
+        $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
+        return $bulkResult;
+    }//end saveBulkWithinScope()
+
+    /**
+     * Sets the context of one bulk save.
+     *
+     * The folder-access revalidation cache is bound to this bulk-save call (see saveObject)
+     * so mid-request folder mutations are re-validated.
+     *
+     * @param Register|string|int|null $register The register, when the call names one.
+     * @param Schema|string|int|null   $schema   The schema, when the call names one.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObjects(); write behaviour owned by the SaveObjects handler.
+     */
+    private function openBulkSave(Register | string | int | null $register, Schema | string | int | null $schema): void
+    {
+        $this->discardPendingSchemaRef();
+        $this->fileService->resetFolderAccessRevalidationCache();
+        $this->applyScope(register: $register, schema: $schema);
+    }//end openBulkSave()
+
+    /**
+     * Drops the caches a bulk save touched.
+     *
+     * @param array $bulkResult The bulk result of the SaveObjects handler.
+     *
+     * @phpstan-param array<string, mixed> $bulkResult
+     * @psalm-param   array<string, mixed> $bulkResult
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObjects(); invalidation owned by BulkCacheInvalidator.
+     */
+    private function invalidateAfterBulkSave(array $bulkResult): void
+    {
+        $this->bulkCacheInvalidator()->afterBulkSave(
+            bulkResult: $bulkResult,
+            scope: new SavedScopeIds(
+                registerId: $this->currentRegister?->getId(),
+                schemaId: $this->currentSchema?->getId()
+            )
+        );
+    }//end invalidateAfterBulkSave()
 
     /**
      * Save many objects one row at a time, keeping reference checks O(1).
