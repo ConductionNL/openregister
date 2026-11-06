@@ -76,10 +76,11 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWant
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
-
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
@@ -385,11 +386,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			objectEntityMapper:  $plainMapper,
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
 			appConfig:           $appConfig,
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);

@@ -80,12 +80,17 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
+use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\ObjectDateValues;
+use OCA\OpenRegister\Service\Object\PatchDataMerge;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\CrudHandler;
+use OCA\OpenRegister\Service\Object\ObjectSourcePageReader;
+use OCA\OpenRegister\Service\Object\ObjectSourceQuery;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -105,6 +110,7 @@ use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Object\AccessFlags;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -115,9 +121,14 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Service\Object\SearchTrailRecorder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
+use OCA\OpenRegister\Service\Object\SavedObjectScope;
+use OCA\OpenRegister\Service\Object\SavedScopeIds;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -231,6 +242,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var RegisterScopedSchemaResolver
      */
     private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+    /**
+     * Clears the caches that outlive a save, constructed on first use.
+     *
+     * @var ObjectCacheInvalidator|null
+     */
+    private ?ObjectCacheInvalidator $cacheInvalidator = null;
+
+    /**
+     * Clears the collection caches after a bulk write, constructed on first use.
+     *
+     * @var BulkCacheInvalidator|null
+     */
+    private ?BulkCacheInvalidator $bulkCacheInvalidator = null;
 
     /**
      * The current object context.
@@ -764,77 +789,103 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // Re-resolving the pending ref here makes the boundary hold whichever way
         // round the two setters are called, in ONE place, instead of requiring
         // every call site to remember an ordering nothing enforces.
-        if ($this->currentSchemaRef !== null) {
-            // SINGLE USE. The pending ref belongs to the setSchema() call that
-            // created it, and is consumed by the FIRST setRegister() that
-            // follows. Clearing it here is what keeps this instance-level state
-            // from leaking across unrelated operations: ObjectService is reused
-            // for many calls in one process, so a ref left behind by an
-            // operation that set a schema and never set a register would be
-            // re-resolved against the NEXT caller's register and refuse it.
-            // Measured on the shared instance after this scoping landed: a
-            // pipelinq repair step seeding `trustConfiguration` was told
-            // `posJournalEntryOutbound` is not carried by its register — a slug
-            // from an entirely different operation.
-            $pendingRef             = $this->currentSchemaRef;
-            $this->currentSchemaRef = null;
-
-            // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
-            //
-            // Single use bounded the damage to ONE victim. It did not stop the
-            // victim being an app that never touched the ref: the pending slug
-            // is handed to the first setRegister() that follows, whoever that
-            // is, and re-resolving it inside a register that has never heard of
-            // it THREW — out of a method whose caller only asked to name its own
-            // register.
-            //
-            // Measured on the development instance 2026-08-27: every public
-            // read of a portaliq portal failed with `Schema slug "application"
-            // is not carried by register "portaliq"`. The portal served its
-            // shell and answered 404 for its own site, menus, pages and
-            // glossary — a whole app's public surface down, over a slug it does
-            // not own and never asked for. The same failure is recorded above
-            // for openconnector and for a pipelinq repair step, so this is the
-            // third app to be taken out by a fourth app's leftovers.
-            //
-            // So a ref that cannot be resolved inside THIS register is dropped
-            // rather than thrown on. What is NOT dropped is the consequence: the
-            // schema context is cleared with it, so a caller that really did
-            // chain `setSchema('typo')->setRegister($r)` still fails — at its
-            // operation, with "no schema context", instead of silently reading
-            // whichever table a stale context last pointed at. Substituting a
-            // wrong-but-plausible schema is the one outcome worse than throwing.
-            try {
-                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                    register: $register,
-                    schemaRef: $pendingRef
-                );
-            } catch (\Throwable $e) {
-                $this->currentSchema = null;
-
-                // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
-                // `int|string|null` and the null is already excluded above — so
-                // the scalar test could only ever be true and the gettype()
-                // fallback was unreachable. A defaulted read that can never
-                // default reads as a handled edge case that does not exist.
-                $refForLog = (string) $pendingRef;
-
-                $this->logger->warning(
-                    message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
-                    context: [
-                        'pendingSchemaRef' => $refForLog,
-                        'register'         => ($register->getSlug() ?? (string) $register->getId()),
-                        'reason'           => $e->getMessage(),
-                        'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
-                            .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
-                            .'operation will fail with a missing schema context rather than read the wrong table.',
-                    ]
-                );
-            }//end try
-        }
+        $this->consumePendingSchemaRef(register: $register);
 
         return $this;
     }//end setRegister()
+
+    /**
+     * Re-resolve a pending schema ref inside the register that was just set.
+     *
+     * @param Register $register The register now in context.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function consumePendingSchemaRef(Register $register): void
+    {
+        if ($this->currentSchemaRef === null) {
+            return;
+        }
+
+        // SINGLE USE. The pending ref belongs to the setSchema() call that
+        // created it, and is consumed by the FIRST setRegister() that
+        // follows. Clearing it here is what keeps this instance-level state
+        // from leaking across unrelated operations: ObjectService is reused
+        // for many calls in one process, so a ref left behind by an
+        // operation that set a schema and never set a register would be
+        // re-resolved against the NEXT caller's register and refuse it.
+        // Measured on the shared instance after this scoping landed: a
+        // pipelinq repair step seeding `trustConfiguration` was told
+        // `posJournalEntryOutbound` is not carried by its register — a slug
+        // from an entirely different operation.
+        $pendingRef             = $this->currentSchemaRef;
+        $this->currentSchemaRef = null;
+
+        // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
+        //
+        // Single use bounded the damage to ONE victim. It did not stop the
+        // victim being an app that never touched the ref: the pending slug
+        // is handed to the first setRegister() that follows, whoever that
+        // is, and re-resolving it inside a register that has never heard of
+        // it THREW — out of a method whose caller only asked to name its own
+        // register.
+        //
+        // Measured on the development instance 2026-08-27: every public
+        // read of a portaliq portal failed with `Schema slug "application"
+        // is not carried by register "portaliq"`. The portal served its
+        // shell and answered 404 for its own site, menus, pages and
+        // glossary — a whole app's public surface down, over a slug it does
+        // not own and never asked for. The same failure is recorded above
+        // for openconnector and for a pipelinq repair step, so this is the
+        // third app to be taken out by a fourth app's leftovers.
+        //
+        // So a ref that cannot be resolved inside THIS register is dropped
+        // rather than thrown on. What is NOT dropped is the consequence: the
+        // schema context is cleared with it, so a caller that really did
+        // chain `setSchema('typo')->setRegister($r)` still fails — at its
+        // operation, with "no schema context", instead of silently reading
+        // whichever table a stale context last pointed at. Substituting a
+        // wrong-but-plausible schema is the one outcome worse than throwing.
+        try {
+            $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(register: $register, schemaRef: $pendingRef);
+        } catch (\Throwable $e) {
+            $this->currentSchema = null;
+
+            // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
+            // `int|string|null` and the null is already excluded above — so
+            // the scalar test could only ever be true and the gettype()
+            // fallback was unreachable. A defaulted read that can never
+            // default reads as a handled edge case that does not exist.
+            $this->logDiscardedSchemaRef(pendingRef: (string) $pendingRef, reason: $e);
+        }
+    }//end consumePendingSchemaRef()
+
+    /**
+     * Log a pending schema ref that the current register does not carry.
+     *
+     * @param string     $pendingRef The discarded ref.
+     * @param \Throwable $reason     Why it did not resolve.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logDiscardedSchemaRef(string $pendingRef, \Throwable $reason): void
+    {
+        $this->logger->warning(
+            message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
+            context: [
+                'pendingSchemaRef' => $pendingRef,
+                'register'         => ($this->currentRegister?->getSlug() ?? (string) $this->currentRegister?->getId()),
+                'reason'           => $reason->getMessage(),
+                'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
+                    .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
+                    .'operation will fail with a missing schema context rather than read the wrong table.',
+            ]
+        );
+    }//end logDiscardedSchemaRef()
 
 
     /**
@@ -855,100 +906,147 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         if (is_string($schema) === true || is_int($schema) === true) {
             $this->currentSchemaRef = $schema;
-            // REGISTER-SCOPED SLUG RESOLUTION.
-            // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
-            // every register and every app on the instance, returning whichever row
-            // its tie-break orders first. Naming a register makes it a BOUNDARY: a
-            // caller that supplied one must never be served a schema from outside
-            // it, so a scoped miss throws here instead of falling through.
-            //
-            // This used to fall back, and the comment called that "transparent". It
-            // was not. Measured 2026-08-16: register `document` (id 6) carried an
-            // empty schemas list while nine docudesk-owned schemas shared the slug
-            // `anonymizationLink`; the fallback resolved to id 5084, which has no
-            // table under register 6 at all, so slug reads returned EMPTY while four
-            // real rows sat in oc_openregister_table_6_9177. An empty result set is
-            // indistinguishable from "this register has no objects", which is how
-            // the defect survived unnoticed.
-            //
-            // The boundary now holds for EVERY identifier form, via the shared
-            // RegisterScopedSchemaResolver. It used to apply to SLUGS only, letting
-            // a numeric id or a uuid resolve globally — the same silent cross-app
-            // read wearing a different identifier. Measured 2026-08-21 on the
-            // aggregation endpoints: `TimeEntry` resolved to planix's schema 161
-            // instead of hrmq's 9466. Callers with no register still resolve
-            // globally, below.
-            if ($this->currentRegister !== null) {
-                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                    register: $this->currentRegister,
-                    schemaRef: $schema
-                );
-
-                // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
-                //
-                // It exists for exactly one case: `setSchema($s)` called before any
-                // register is known, so that the LATER `setRegister($r)` can
-                // re-resolve $s inside $r. On this branch a register was already
-                // set, the resolution above was scoped by it, and there is nothing
-                // left for a later setRegister() to consume.
-                //
-                // Leaving it set is what makes this instance-level state leak
-                // across unrelated operations. ObjectService is shared for the
-                // whole request, so the ref outlives the chain that created it and
-                // the NEXT caller's setRegister() re-resolves a finished
-                // operation's slug inside a register that has never heard of it —
-                // and refuses that caller.
-                //
-                // Measured 2026-08-27 on a fresh instance: buildiq registers its
-                // navigation entries from Application::boot(), which runs on EVERY
-                // request and calls findAll() -> prepareFindAllConfig(), which calls
-                // setRegister() and then setSchema('application'). Every request
-                // therefore ended with `application` pending. Portaliq's
-                // PortalResolver — typically the first caller afterwards to name its
-                // own register — was told `Schema slug "application" is not carried
-                // by register "portaliq"`. It fails closed by design, so every
-                // public portal page 404'd with no error attributable to portaliq
-                // at all. The same leak reached buildiq (`automation`) and hermiq
-                // (`job_log`) on the cron path.
-                //
-                // #2803 cleared the ref on the save path. This is the read path,
-                // which it did not cover.
-                $this->currentSchemaRef = null;
-
-                return $this;
-            }
-
-            // Resolve the identifier through the mapper. SchemaMapper::find()
-            // already provides request-scoped caching (findCache) and supports
-            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
-            try {
-                $schema = $this->schemaMapper->find(
-                    id: $schema,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Debug logging to understand WHY schema lookup fails.
-                $this->logger->error(
-                    message: '[ObjectService] Schema not found during setSchema()',
-                    context: [
-                        'file'              => __FILE__,
-                        'line'              => __LINE__,
-                        'schema_identifier' => $schema,
-                        'error'             => $e->getMessage(),
-                        'trace'             => $e->getTraceAsString(),
-                    ]
-                );
-                // Rethrow the DoesNotExistException so NC's framework dispatcher
-                // converts it to a 404 response. Wrapping in ValidationException
-                // causes a 500 instead because ValidationException is generic.
-                throw $e;
-            }//end try
-        }//end if
+            $schema = $this->resolveSchemaRef(schemaRef: $schema);
+        }
 
         $this->currentSchema = $schema;
         return $this;
     }//end setSchema()
+
+    /**
+     * Resolve a schema identifier inside the current register, or globally without one.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function resolveSchemaRef(string|int $schemaRef): Schema
+    {
+        // REGISTER-SCOPED SLUG RESOLUTION.
+        // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
+        // every register and every app on the instance, returning whichever row
+        // its tie-break orders first. Naming a register makes it a BOUNDARY: a
+        // caller that supplied one must never be served a schema from outside
+        // it, so a scoped miss throws here instead of falling through.
+        //
+        // This used to fall back, and the comment called that "transparent". It
+        // was not. Measured 2026-08-16: register `document` (id 6) carried an
+        // empty schemas list while nine docudesk-owned schemas shared the slug
+        // `anonymizationLink`; the fallback resolved to id 5084, which has no
+        // table under register 6 at all, so slug reads returned EMPTY while four
+        // real rows sat in oc_openregister_table_6_9177. An empty result set is
+        // indistinguishable from "this register has no objects", which is how
+        // the defect survived unnoticed.
+        //
+        // The boundary now holds for EVERY identifier form, via the shared
+        // RegisterScopedSchemaResolver. It used to apply to SLUGS only, letting
+        // a numeric id or a uuid resolve globally — the same silent cross-app
+        // read wearing a different identifier. Measured 2026-08-21 on the
+        // aggregation endpoints: `TimeEntry` resolved to planix's schema 161
+        // instead of hrmq's 9466. Callers with no register still resolve
+        // globally, below.
+        if ($this->currentRegister === null) {
+            return $this->findSchemaGlobally(schemaRef: $schemaRef);
+        }
+
+        $schema = $this->scopedSchemaResolver->resolveSchemaWithin(
+            register: $this->currentRegister,
+            schemaRef: $schemaRef
+        );
+
+        // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
+        //
+        // It exists for exactly one case: `setSchema($s)` called before any
+        // register is known, so that the LATER `setRegister($r)` can
+        // re-resolve $s inside $r. On this branch a register was already
+        // set, the resolution above was scoped by it, and there is nothing
+        // left for a later setRegister() to consume.
+        //
+        // Leaving it set is what makes this instance-level state leak
+        // across unrelated operations. ObjectService is shared for the
+        // whole request, so the ref outlives the chain that created it and
+        // the NEXT caller's setRegister() re-resolves a finished
+        // operation's slug inside a register that has never heard of it —
+        // and refuses that caller.
+        //
+        // Measured 2026-08-27 on a fresh instance: buildiq registers its
+        // navigation entries from Application::boot(), which runs on EVERY
+        // request and calls findAll() -> prepareFindAllConfig(), which calls
+        // setRegister() and then setSchema('application'). Every request
+        // therefore ended with `application` pending. Portaliq's
+        // PortalResolver — typically the first caller afterwards to name its
+        // own register — was told `Schema slug "application" is not carried
+        // by register "portaliq"`. It fails closed by design, so every
+        // public portal page 404'd with no error attributable to portaliq
+        // at all. The same leak reached buildiq (`automation`) and hermiq
+        // (`job_log`) on the cron path.
+        //
+        // #2803 cleared the ref on the save path. This is the read path,
+        // which it did not cover.
+        $this->currentSchemaRef = null;
+
+        return $schema;
+    }//end resolveSchemaRef()
+
+    /**
+     * Resolve a schema identifier across the whole instance.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function findSchemaGlobally(string|int $schemaRef): Schema
+    {
+        // Resolve the identifier through the mapper. SchemaMapper::find()
+        // already provides request-scoped caching (findCache) and supports
+        // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
+        try {
+            return $this->schemaMapper->find(
+                id: $schemaRef,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            $this->logSchemaNotFound(schemaRef: $schemaRef, reason: $e);
+
+            // Rethrow the DoesNotExistException so NC's framework dispatcher
+            // converts it to a 404 response. Wrapping in ValidationException
+            // causes a 500 instead because ValidationException is generic.
+            throw $e;
+        }//end try
+    }//end findSchemaGlobally()
+
+    /**
+     * Log a schema identifier that resolves to nothing.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     * @param \Throwable $reason    The lookup failure.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logSchemaNotFound(string|int $schemaRef, \Throwable $reason): void
+    {
+        $this->logger->error(
+            message: '[ObjectService] Schema not found during setSchema()',
+            context: [
+                'file'              => __FILE__,
+                'line'              => __LINE__,
+                'schema_identifier' => $schemaRef,
+                'error'             => $reason->getMessage(),
+                'trace'             => $reason->getTraceAsString(),
+            ]
+        );
+    }//end logSchemaNotFound()
 
     /**
      * Drop any schema ref still pending from an earlier, unrelated call.
@@ -1037,6 +1135,48 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // unrelated to re-resolve.
         $this->currentSchemaRef = null;
     }//end restoreScopeContext()
+
+    /**
+     * Run an operation and put the caller's register and schema back afterwards.
+     *
+     * @param callable $operation The operation to run.
+     *
+     * @return mixed Whatever the operation returns.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function preservingScope(callable $operation): mixed
+    {
+        $previousRegister = $this->currentRegister;
+        $previousSchema   = $this->currentSchema;
+
+        try {
+            return $operation();
+        } finally {
+            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
+        }
+    }//end preservingScope()
+
+    /**
+     * Set whichever half of the register and schema context the caller named.
+     *
+     * @param Register|string|int|null $register The register, if named.
+     * @param Schema|string|int|null   $schema   The schema, if named.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function applyScope(Register | string | int | null $register, Schema | string | int | null $schema): void
+    {
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+    }//end applyScope()
 
     /**
      * Get the register entity resolved by the last setRegister() call.
@@ -1575,34 +1715,23 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // BUG-OBJ-13. findSilent() differs from find() only in skipping the
         // audit row; there is no reason for it to differ in what it leaves
         // behind. See restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        return $this->preservingScope(
+            operation: function () use ($id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy): ObjectEntity {
+                $this->discardPendingSchemaRef();
+                $this->applyScope(register: $register, schema: $schema);
 
-        try {
-            $this->discardPendingSchemaRef();
-            // Check if a register is provided and set the current register context.
-            if ($register !== null) {
-                $this->setRegister(register: $register);
+                // Use the silent find method from the GetObject handler.
+                return $this->getHandler->findSilent(
+                    id: $id,
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema,
+                    _extend: $_extend,
+                    files: $files,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
             }
-
-            // Check if a schema is provided and set the current schema context.
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // Use the silent find method from the GetObject handler.
-            return $this->getHandler->findSilent(
-                id: $id,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _extend: $_extend,
-                files: $files,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end findSilent()
 
     /**
@@ -1643,24 +1772,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
 
-        // Delegate the findAll operation to the handler.
-        // Pass the resolved register/schema context so MagicMapper::findAll
-        // does not bail out with "called without register/schema context".
-        $objects = $this->getHandler->findAll(
-            limit: $config['limit'] ?? null,
-            offset: $config['offset'] ?? null,
-            filters: $config['filters'] ?? [],
-            sort: $config['sort'] ?? [],
-            search: $config['search'] ?? null,
-            files: $config['files'] ?? false,
-            uses: $config['uses'] ?? null,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            ids: $config['ids'] ?? null,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
         // A previous code path pre-resolved registers/schemas and looped
@@ -1669,8 +1780,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()
         // reproduces internally, not a correctness input.
+        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+
         return $this->renderHandler->renderEntities(
-            entities: $objects,
+            entities: $this->loadFindAllRows(config: $config, access: $access),
             _extend: ($config['extend'] ?? []),
             _filter: ($config['unset'] ?? null),
             _fields: ($config['fields'] ?? null),
@@ -1678,6 +1791,53 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+    /**
+     * Load the rows of a findAll() call through the handler.
+     *
+     * The resolved register and schema go along so MagicMapper::findAll does not
+     * bail out with "called without register/schema context".
+     *
+     * @param array       $config The prepared findAll() configuration.
+     * @param AccessFlags $access Whether RBAC and multitenancy apply.
+     *
+     * @return array The object entities.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function loadFindAllRows(array $config, AccessFlags $access): array
+    {
+        return $this->getHandler->findAll(
+            ...$this->findAllSelection(config: $config),
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
+        );
+    }//end loadFindAllRows()
+
+    /**
+     * The selection arguments of a findAll() configuration, by handler parameter name.
+     *
+     * @param array $config The prepared findAll() configuration.
+     *
+     * @return array<string, mixed> The handler arguments.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function findAllSelection(array $config): array
+    {
+        return [
+            'limit'   => ($config['limit'] ?? null),
+            'offset'  => ($config['offset'] ?? null),
+            'filters' => ($config['filters'] ?? []),
+            'sort'    => ($config['sort'] ?? []),
+            'search'  => ($config['search'] ?? null),
+            'files'   => ($config['files'] ?? false),
+            'uses'    => ($config['uses'] ?? null),
+            'ids'     => ($config['ids'] ?? null),
+        ];
+    }//end findAllSelection()
 
     /**
      * Prepare findAll configuration and set context.
@@ -1693,24 +1853,33 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['register']) === true
-            && is_array($config['filters']['register']) === false
-            && empty($config['filters']['register']) === false
-        ) {
-            $this->setRegister(register: $config['filters']['register']);
-        }
-
-        // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['schema']) === true
-            && is_array($config['filters']['schema']) === false
-            && empty($config['filters']['schema']) === false
-        ) {
-            $this->setSchema(schema: $config['filters']['schema']);
-        }
+        $this->applyScope(
+            register: $this->scalarFilter(config: $config, key: 'register'),
+            schema: $this->scalarFilter(config: $config, key: 'schema')
+        );
 
         return $config;
     }//end prepareFindAllConfig()
+
+    /**
+     * Read a filter that names one register or schema, not a list and not empty.
+     *
+     * @param array  $config The findAll() configuration.
+     * @param string $key    The filter name.
+     *
+     * @return mixed The filter value, or null when it names nothing.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function scalarFilter(array $config, string $key): mixed
+    {
+        $value = ($config['filters'][$key] ?? null);
+        if (is_array($value) === true || empty($value) === true) {
+            return null;
+        }
+
+        return $value;
+    }//end scalarFilter()
 
     /**
      * Counts the number of objects matching the given criteria.
@@ -2019,10 +2188,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->saveHandler->leaveCascadeScope();
         }
 
-        if ($uuidWasNull === true && $uuid !== null) {
-            $object = $this->markAutoGeneratedUuid(object: $object, uuid: $uuid);
-        }
-
         $object = $this->prepareObjectForSave(object: $object, write: ['uuid' => $uuid, 'isCreate' => $uuidWasNull]);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
@@ -2035,8 +2200,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
 
         $savedObject = $this->persistObject(object: $object, options: ['uuid' => $uuid] + $options);
-        $this->invalidateContactMatchCache(savedObject: $savedObject);
-        $this->invalidateReferenceCaches(savedObject: $savedObject);
+        $this->cacheInvalidator()->afterSave(
+            saved: new SavedObjectScope(
+                object: $savedObject,
+                registerId: $this->currentRegister?->getId(),
+                schemaId: $this->currentSchema?->getId()
+            )
+        );
 
         // Lazy folder creation: no file-storage folder is created here. The
         // folder is created on demand on the first upload, which keeps empty
@@ -2104,39 +2274,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return true;
     }//end guardWriteTarget()
-
-    /**
-     * Mark a uuid the cascading handler generated, so SaveObject treats the write as a CREATE.
-     *
-     * SaveObject tells a user-provided uuid (UPDATE) from an auto-generated one
-     * (CREATE) by this flag in @self.
-     *
-     * @param array  $object The object data.
-     * @param string $uuid   The generated uuid.
-     *
-     * @return array The object data with the flag in @self.
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function markAutoGeneratedUuid(array $object, string $uuid): array
-    {
-        if (isset($object['@self']) === false || is_array($object['@self']) === false) {
-            $object['@self'] = [];
-        }
-
-        $object['@self']['_autoGeneratedUuid'] = true;
-        $this->logger->debug(
-            message: '[ObjectService] UUID auto-generated by CascadingHandler, marking as CREATE operation',
-            context: [
-                'file'     => __FILE__,
-                'line'     => __LINE__,
-                'uuid'     => $uuid,
-                'register' => $this->currentRegister?->getId(),
-                'schema'   => $this->currentSchema?->getId(),
-            ]
-        );
-        return $object;
-    }//end markAutoGeneratedUuid()
 
     /**
      * Apply defaults and run every check that comes before the write.
@@ -2235,110 +2372,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end persistObject()
 
     /**
-     * Invalidate the contact matching cache against the SAVED object's data.
+     * The cache invalidator of this service.
      *
-     * The saved data carries the final uuid and applied defaults, so an email
-     * value injected by a default is invalidated too. Resolved through the
-     * injected app container, never `\OC::$server`: outside a booted Nextcloud
-     * the global container autowires this app's services from scratch and
-     * recurses until memory runs out. A non-essential side effect: a failure
-     * (also a runtime Error) is logged with the object's context and never
-     * fails the save.
-     *
-     * @param ObjectEntity $savedObject The saved object.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @return ObjectCacheInvalidator
      */
-    private function invalidateContactMatchCache(ObjectEntity $savedObject): void
+    private function cacheInvalidator(): ObjectCacheInvalidator
     {
-        try {
-            $contactMatchingService = $this->container->get(
-                \OCA\OpenRegister\Service\ContactMatchingService::class
-            );
-            $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e->getMessage(),
-                    'uuid'      => $savedObject->getUuid(),
-                    'register'  => $this->currentRegister?->getId(),
-                    'schema'    => $this->currentSchema?->getId(),
-                ]
-            );
-        }//end try
-    }//end invalidateContactMatchCache()
+        $this->cacheInvalidator ??= new ObjectCacheInvalidator(
+            container: $this->container,
+            logger: $this->logger
+        );
+
+        return $this->cacheInvalidator;
+    }//end cacheInvalidator()
 
     /**
-     * Invalidate the Smart Picker and reference-provider preview caches of the saved object.
+     * The bulk cache invalidator of this service.
      *
-     * Every canonical URL shape comes from ObjectPreviewFormatter::buildCanonicalUrls(),
-     * the same pattern list the providers match against, and each cache prefix
-     * is invalidated once; the object's deep link is invalidated too. The
-     * deep link data is the object's own fields plus the identity triple, as
-     * the preview and search formatters build it. A non-essential side effect:
-     * a failure is logged with the object's context and never fails the save.
-     *
-     * @param ObjectEntity $savedObject The saved object.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @return BulkCacheInvalidator
      */
-    private function invalidateReferenceCaches(ObjectEntity $savedObject): void
+    private function bulkCacheInvalidator(): BulkCacheInvalidator
     {
-        try {
-            $referenceManager = $this->container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-            $formatter        = $this->container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-            $deepLinkRegistry = $this->container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+        $this->bulkCacheInvalidator ??= new BulkCacheInvalidator(
+            cacheHandler: $this->cacheHandler,
+            logger: $this->logger
+        );
 
-            $invalidationRegisterId = (int) $this->currentRegister?->getId();
-            $invalidationSchemaId   = (int) $this->currentSchema?->getId();
-            $invalidationUuid       = (string) $savedObject->getUuid();
-
-            $invalidatedPrefixes = [];
-            $canonicalUrls       = $formatter->buildCanonicalUrls(
-                registerId: $invalidationRegisterId,
-                schemaId: $invalidationSchemaId,
-                uuid: $invalidationUuid
-            );
-            foreach ($canonicalUrls as $canonicalUrl) {
-                $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                if (isset($invalidatedPrefixes[$prefix]) === false) {
-                    $referenceManager->invalidateCache(cachePrefix: $prefix);
-                    $invalidatedPrefixes[$prefix] = true;
-                }
-            }
-
-            $deepLinkUrl = $deepLinkRegistry->resolveUrl(
-                registerId: $invalidationRegisterId,
-                schemaId: $invalidationSchemaId,
-                objectData: array_merge(
-                    $savedObject->getObject(),
-                    ['uuid' => $invalidationUuid, 'register' => $invalidationRegisterId, 'schema' => $invalidationSchemaId]
-                )
-            );
-            if ($deepLinkUrl !== null) {
-                $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
-            }
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e->getMessage(),
-                    'uuid'      => $savedObject->getUuid(),
-                    'register'  => $this->currentRegister?->getId(),
-                    'schema'    => $this->currentSchema?->getId(),
-                ]
-            );
-        }//end try
-    }//end invalidateReferenceCaches()
+        return $this->bulkCacheInvalidator;
+    }//end bulkCacheInvalidator()
 
     /**
      * Set register and schema context from parameters.
@@ -2384,15 +2445,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->clearPendingSchemaRef();
         }
 
-        // Set the current register context if provided.
-        if ($register !== null) {
-            $this->setRegister(register: $register);
-        }
-
-        // Set the current schema context if provided.
-        if ($schema !== null) {
-            $this->setSchema(schema: $schema);
-        }
+        $this->applyScope(register: $register, schema: $schema);
     }//end setContextFromParameters()
 
     /**
@@ -3185,8 +3238,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param array $object The object data to normalize.
      *
      * @return array The normalized object data.
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function normalizeDateValues(array $object): array
     {
@@ -3194,48 +3245,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        $properties = $this->currentSchema->getProperties() ?? [];
-
-        foreach ($properties as $propertyName => $propertyDef) {
-            if (isset($object[$propertyName]) === false || is_string($object[$propertyName]) === false) {
-                continue;
-            }
-
-            $format = $propertyDef['format'] ?? null;
-            if ($format !== 'date' && $format !== 'date-time') {
-                continue;
-            }
-
-            // Empty / whitespace-only strings normalise to null instead of silently
-            // becoming the current datetime via PHP's "new DateTime('')" footgun.
-            if (trim($object[$propertyName]) === '') {
-                $object[$propertyName] = null;
-                continue;
-            }
-
-            if ($format === 'date') {
-                // If already a valid date (Y-m-d), skip.
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
-                    continue;
-                }
-
-                $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
-                if ($parsed !== null) {
-                    $object[$propertyName] = $parsed->format('Y-m-d');
-                }
-
-                continue;
-            }
-
-            // For date-time: accept valid input; invalid/empty input → null.
-            // Leave otherwise-valid strings untouched so downstream validation runs.
-            $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
-            if ($parsed === null) {
-                $object[$propertyName] = null;
-            }
-        }//end foreach
-
-        return $object;
+        return (new ObjectDateValues(dates: $this->dateTimeNormalizer))->normalize(
+            object: $object,
+            properties: ($this->currentSchema->getProperties() ?? [])
+        );
     }//end normalizeDateValues()
 
     /**
@@ -4054,32 +4067,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         return true;
     }//end appendOnlyTargetExists()
 
-        /**
-         * Get the active organization for the current user
-         *
-         * This method determines the active organization using the same logic as SaveObject
-         * to ensure consistency between save and retrieval operations.
-         *
-         * @return string|null The active organization UUID or null if none found
-         */
-    private function getActiveOrganisationForContext(): ?string
-    {
-        try {
-            $activeOrganisation = $this->organisationService->getActiveOrganisation();
-
-            if ($activeOrganisation !== null) {
-                return $activeOrganisation->getUuid();
-            }
-
-            return null;
-        } catch (Exception $e) {
-            // Log error but continue without organization context.
-            return null;
-        }
-
-        return null;
-    }//end getActiveOrganisationForContext()
-
     /**
      * Build a search query from request parameters for faceting-enabled methods
      *
@@ -4283,23 +4270,66 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array|int {
+        $access   = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+        $register = $this->registerForSlugSearch(slug: $registerSlug, access: $access);
+        $schema   = $this->schemaWithinRegister(slug: $schemaSlug, register: $register);
+
+        // Merge resolved numeric IDs into the @self block of the filters.
+        // Direct keys (status, etc.) stay at the top level so they hit the
+        // object JSON filter path, not the metadata filter path.
+        $target           = ['register' => $register->getId(), 'schema' => $schema->getId()];
+        $filters['@self'] = array_merge(($filters['@self'] ?? []), $target);
+
+        // Delegate to the numeric-ID searchObjects on the documented fast path.
+        return $this->searchObjects(query: $filters, _rbac: $_rbac, _multitenancy: $_multitenancy);
+    }//end searchObjectsBySlug()
+
+    /**
+     * Find the register of a slug search.
+     *
+     * @param string      $slug   The register slug.
+     * @param AccessFlags $access Whether RBAC and multitenancy apply.
+     *
+     * @return Register The register.
+     *
+     * @throws OcpDoesNotExistException When the slug is missing or belongs to a foreign organisation.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function registerForSlugSearch(string $slug, AccessFlags $access): Register
+    {
         // Resolve register slug → numeric ID via the existing mapper find()
         // which already accepts slug strings and applies the standard
         // organisation filter. Throws DoesNotExistException if the slug is
         // missing or belongs to a foreign organisation — same contract as
         // every other lookup in OR.
         try {
-            $register = $this->registerMapper->find(
-                id: $registerSlug,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+            return $this->registerMapper->find(
+                id: $slug,
+                _rbac: $access->rbac,
+                _multitenancy: $access->multitenancy
             );
         } catch (OcpDoesNotExistException $e) {
             throw new OcpDoesNotExistException(
-                'searchObjectsBySlug: register slug not found in caller organisation: '.$registerSlug
+                'searchObjectsBySlug: register slug not found in caller organisation: '.$slug
             );
         }
+    }//end registerForSlugSearch()
 
+    /**
+     * Find the schema of a slug search inside its register.
+     *
+     * @param string   $slug     The schema slug.
+     * @param Register $register The register that bounds the lookup.
+     *
+     * @return Schema The schema.
+     *
+     * @throws SchemaNotInRegisterException When the register does not carry the slug.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function schemaWithinRegister(string $slug, Register $register): Schema
+    {
         // Resolve schema slug → numeric ID, REGISTER-SCOPED and nothing else. The
         // caller named a register, so the register is the boundary.
         //
@@ -4308,36 +4338,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // measured on 2026-08-16 are owned by the SAME application, so an
         // organisation filter still selects the wrong one. Only the register
         // disambiguates them.
-        $registerSchemaIds = ($register->getSchemas() ?? []);
-        $schema            = $this->schemaMapper->findBySlugInIds(
-            slug: $schemaSlug,
-            schemaIds: $registerSchemaIds
-        );
-        if ($schema === null) {
-            throw new SchemaNotInRegisterException(
-                schemaSlug: $schemaSlug,
-                registerId: $register->getId(),
-                registerSlug: $register->getSlug(),
-                candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schemaSlug),
-                registerSchemaCount: count($registerSchemaIds)
-            );
+        $schemaIds = ($register->getSchemas() ?? []);
+        $schema    = $this->schemaMapper->findBySlugInIds(slug: $slug, schemaIds: $schemaIds);
+        if ($schema !== null) {
+            return $schema;
         }
 
-        // Merge resolved numeric IDs into the @self block of the filters.
-        // Direct keys (status, etc.) stay at the top level so they hit the
-        // object JSON filter path, not the metadata filter path.
-        $selfBlock = $filters['@self'] ?? [];
-        $selfBlock['register'] = $register->getId();
-        $selfBlock['schema']   = $schema->getId();
-        $filters['@self']      = $selfBlock;
-
-        // Delegate to the numeric-ID searchObjects on the documented fast path.
-        return $this->searchObjects(
-            query: $filters,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+        throw new SchemaNotInRegisterException(
+            schemaSlug: $slug,
+            registerId: $register->getId(),
+            registerSlug: $register->getSlug(),
+            candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $slug),
+            registerSchemaCount: count($schemaIds)
         );
-    }//end searchObjectsBySlug()
+    }//end schemaWithinRegister()
 
     /**
      * Count objects using clean query structure
@@ -4375,16 +4389,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?array $ids=null,
         ?string $uses=null
     ): int {
-        // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->getActiveOrganisationForContext();
-        }
-
-        // Use the optimized countSearchObjects method from MagicMapper with organization context.
-        return $this->objectMapper->countSearchObjects(
+        return $this->queryHandler->countSearchObjects(
             query: $query,
-            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -4612,7 +4618,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $result = $this->extendSearchResult(result: $result, query: $query);
 
-        $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+        (new SearchTrailRecorder(
+            searchQueryHandler: $this->searchQueryHandler,
+            logger: $this->logger,
+            startTime: $searchStartTime
+        ))->record(query: $query, result: $result);
         $this->logProcessingReadList(objects: ($result['results'] ?? []), query: $query);
 
         return $result;
@@ -4657,22 +4667,48 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function scopeQueryToContext(array $query): array
     {
-        if ($this->currentRegister !== null
-            && array_key_exists('_register', $query) === false
-            && $this->isMultiSchemaSearch(query: $query) === false
-        ) {
+        if ($this->mayScopeToRegister(query: $query) === true) {
             $query['_register'] = $this->currentRegister->getId();
         }
 
-        if ($this->currentSchema !== null
-            && array_key_exists('_schema', $query) === false
-            && array_key_exists('_schemas', $query) === false
-        ) {
+        if ($this->mayScopeToSchema(query: $query) === true) {
             $query['_schema'] = $this->currentSchema->getId();
         }
 
         return $query;
     }//end scopeQueryToContext()
+
+    /**
+     * Whether a search takes the context's register: one is set and the query names none.
+     *
+     * @param array $query The search query.
+     *
+     * @return bool True when the register applies.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function mayScopeToRegister(array $query): bool
+    {
+        return $this->currentRegister !== null
+            && array_key_exists('_register', $query) === false
+            && $this->isMultiSchemaSearch(query: $query) === false;
+    }//end mayScopeToRegister()
+
+    /**
+     * Whether a search takes the context's schema: one is set and the query names none.
+     *
+     * @param array $query The search query.
+     *
+     * @return bool True when the schema applies.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function mayScopeToSchema(array $query): bool
+    {
+        return $this->currentSchema !== null
+            && array_key_exists('_schema', $query) === false
+            && array_key_exists('_schemas', $query) === false;
+    }//end mayScopeToSchema()
 
     /**
      * Whether a query searches many schemas: a non-empty `@self.schema` array, `_schemas` or `@self.schemas`.
@@ -4772,7 +4808,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
+            $result['@self']['names'] = (new ResultNameCollector(cacheHandler: $this->cacheHandler))->namesFor(
+                results: $resultsToProcess
+            );
         } catch (\Throwable $e) {
             $errFile = $e->getFile();
             $errLine = $e->getLine();
@@ -4830,285 +4868,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             _rbac: $_rbac
         );
 
-        // The canonical search query keeps object-field filters as TOP-LEVEL
-        // keys and paging as `_limit`/`_page`/`_offset`, while the provider
-        // contract reads `filters`, `limit` and `offset`. Normalise additively
-        // (existing keys are never overwritten) so providers written against
-        // either shape keep working.
         $read = new ObjectSourceRead(
             schema: $schema,
-            query: $this->normaliseObjectSourceQuery(query: $query),
+            query: (new ObjectSourceQuery())->forProvider(query: $query),
             config: ($source['config'] ?? []),
             provider: $this->objectSourceRegistry->get($source['provider'])
         );
 
-        return $this->readObjectSourcePage(read: $read, providerId: $source['provider']);
+        return (new ObjectSourcePageReader(logger: $this->logger))->read(read: $read, register: $this->currentRegister);
     }//end paginateObjectSource()
-
-    /**
-     * Read one page from an object-source provider and shape it like a native search result.
-     *
-     * A missing or disabled provider, or a missing register context, yields an empty list.
-     *
-     * @param ObjectSourceRead $read       The provider, schema, query and config.
-     * @param string           $providerId The provider id the schema declares.
-     *
-     * @return array{results: array, total: int, '@self': array} The paginated result.
-     */
-    private function readObjectSourcePage(ObjectSourceRead $read, string $providerId): array
-    {
-        $provider = $read->provider;
-        $active   = ($provider !== null && $provider->isEnabled() === true && $this->currentRegister !== null);
-        $results  = [];
-        if ($active === false) {
-            $this->logger->warning(
-                sprintf(
-                    '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
-                    (string) $read->schema->getSlug(),
-                    $providerId
-                )
-            );
-        } else {
-            $results = $provider->findAll(
-                register: $this->currentRegister,
-                schema: $read->schema,
-                query: $read->query,
-                config: $read->config
-            );
-        }
-
-        $limit  = (int) ($read->query['limit'] ?? 0);
-        $offset = max(0, (int) ($read->query['offset'] ?? 0));
-
-        // D4b: consult the provider's count() for the TRUE total and compute
-        // page metadata, passing limit/offset through (findAll already received
-        // them). A provider that cannot report a real total — count() throws or
-        // returns a value inconsistent with the returned window — falls back to
-        // the pre-existing in-memory behaviour so the native providers are
-        // unaffected.
-        $trueTotal = null;
-        if ($active === true) {
-            $trueTotal = $this->objectSourceTrueTotal(read: $read, windowEnd: ($offset + count($results)));
-        }
-
-        $total = ($trueTotal ?? count($results));
-        return [
-            'results' => $results,
-            'total'   => $total,
-            '@self'   => $this->objectSourcePageMetadata(
-                total: $total,
-                limit: $limit,
-                offset: $offset,
-                realCount: ($trueTotal !== null)
-            ),
-        ];
-    }//end readObjectSourcePage()
-
-    /**
-     * Adapt a canonical search query to the object-source provider contract.
-     *
-     * The canonical shape (SearchQueryHandler::buildSearchQuery) carries object
-     * field filters as top-level keys, paging as `_limit`/`_page`/`_offset`,
-     * and sorting as `_order`. Providers read `filters`, `limit`, `offset` and
-     * `sort`. Mapping is ADDITIVE: a key the caller already set is never
-     * overwritten, so provider behaviour under the old shape is unchanged.
-     *
-     * @param array<string, mixed> $query The canonical search query.
-     *
-     * @return array<string, mixed> The query with provider-contract keys added.
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design, one guard per provider key
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function normaliseObjectSourceQuery(array $query): array
-    {
-        if (isset($query['limit']) === false && isset($query['_limit']) === true) {
-            $query['limit'] = (int) $query['_limit'];
-        }
-
-        if (isset($query['offset']) === false) {
-            $offset = (int) ($query['_offset'] ?? 0);
-            $page   = (int) ($query['_page'] ?? 0);
-            $limit  = (int) ($query['limit'] ?? 0);
-            if ($offset === 0 && $page > 1 && $limit > 0) {
-                $offset = (($page - 1) * $limit);
-            }
-
-            if ($offset > 0) {
-                $query['offset'] = $offset;
-            }
-        }
-
-        if (isset($query['sort']) === false && isset($query['_order']) === true) {
-            $query['sort'] = $query['_order'];
-        }
-
-        if (isset($query['filters']) === false) {
-            $filters = [];
-            foreach ($query as $key => $value) {
-                $key = (string) $key;
-                if ($key === '' || $key[0] === '_' || $key[0] === '@') {
-                    continue;
-                }
-
-                if (in_array($key, ['limit', 'offset', 'sort', 'filters', 'extend', 'fields'], true) === true) {
-                    continue;
-                }
-
-                if (is_scalar($value) === true) {
-                    $filters[$key] = $value;
-                }
-            }
-
-            if ($filters !== []) {
-                $query['filters'] = $filters;
-            }
-        }//end if
-
-        return $query;
-    }//end normaliseObjectSourceQuery()
-
-    /**
-     * Consult an object-source provider's count() for the true total (D4b).
-     *
-     * Returns null — signalling the in-memory fallback — when count() throws or
-     * reports a value inconsistent with the returned window (smaller than
-     * offset + returned results), so providers without real count support keep
-     * their pre-existing single-page behaviour.
-     *
-     * @param ObjectSourceRead $read      The provider (enabled), schema, query and config.
-     * @param int              $windowEnd The requested offset plus the returned window size.
-     *
-     * @return int|null The true total, or null when the provider has no real count.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function objectSourceTrueTotal(ObjectSourceRead $read, int $windowEnd): ?int
-    {
-        try {
-            $counted = $read->provider->count(
-                register: $this->currentRegister,
-                schema: $read->schema,
-                query: $read->query,
-                config: $read->config
-            );
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[ObjectSource] provider "'.$read->provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
-            );
-            return null;
-        }
-
-        if ($counted >= $windowEnd) {
-            return $counted;
-        }
-
-        return null;
-    }//end objectSourceTrueTotal()
-
-    /**
-     * Compute the `@self` pagination block for an object-source result (D4b).
-     *
-     * @param int  $total     The (true or fallback) total.
-     * @param int  $limit     The requested limit (0 = none).
-     * @param int  $offset    The requested offset.
-     * @param bool $realCount Whether the total came from a real provider count.
-     *
-     * @return array The `@self` pagination metadata.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function objectSourcePageMetadata(int $total, int $limit, int $offset, bool $realCount): array
-    {
-        $page  = 1;
-        $pages = 1;
-        $next  = null;
-        $prev  = null;
-
-        if ($realCount === true && $limit > 0) {
-            $pages = max(1, (int) ceil($total / $limit));
-            $page  = ((int) floor($offset / $limit) + 1);
-            if ($page < $pages) {
-                $next = ($page + 1);
-            }
-
-            if ($page > 1) {
-                $prev = ($page - 1);
-            }
-        }
-
-        $effectiveLimit = $total;
-        if ($limit > 0) {
-            $effectiveLimit = $limit;
-        }
-
-        return [
-            'total' => $total,
-            'page'  => $page,
-            'pages' => $pages,
-            'limit' => $effectiveLimit,
-            'next'  => $next,
-            'prev'  => $prev,
-        ];
-    }//end objectSourcePageMetadata()
-
-    /**
-     * Record a search-trail entry for a paginated search, honouring the
-     * configured recording mode.
-     *
-     * Resolves the effective mode via SearchQueryHandler (memoized per
-     * request): 'none' records nothing; '_search' records only when a
-     * non-empty `_search` term is present; 'all' records every paginated
-     * search. Derives the execution type from the result source (index vs
-     * database) and the response time from the captured start time. The
-     * entry is buffered and persisted after the response (deferred flush in
-     * SearchQueryHandler), so recording adds no write latency to the search.
-     * Never throws — a recording failure must not affect the search response.
-     *
-     * @param array $query     The post-view-merge search query.
-     * @param array $result    The paginated search result (results, total, @self).
-     * @param float $startTime The microtime(true) captured at search entry.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/search-trail-recording/spec.md
-     */
-    private function recordSearchTrail(array $query, array $result, float $startTime): void
-    {
-        try {
-            $mode = $this->searchQueryHandler->getEffectiveRecordingMode();
-            if ($mode === 'none') {
-                return;
-            }
-
-            $searchTerm = trim((string) ($query['_search'] ?? ''));
-            if ($mode === '_search' && $searchTerm === '') {
-                return;
-            }
-
-            $responseTime  = (float) ((microtime(true) - $startTime) * 1000);
-            $source        = $result['@self']['source'] ?? 'database';
-            $executionType = 'database';
-            if ($source === 'index') {
-                $executionType = 'index';
-            }
-
-            $this->searchQueryHandler->logSearchTrail(
-                $query,
-                count($result['results'] ?? []),
-                (int) ($result['total'] ?? 0),
-                $responseTime,
-                $executionType
-            );
-        } catch (\Throwable $e) {
-            // Recording is best-effort and must never fail the search.
-            $this->logger->warning(
-                message: '[ObjectService] recordSearchTrail failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }//end try
-    }//end recordSearchTrail()
 
     /**
      * Original database search logic - extracted to avoid code duplication.
@@ -5171,29 +4939,41 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     public function getRegisters(): array
     {
-        $registers = $this->registerMapper->findAll(_multitenancy: false);
-        $result    = [];
+        $result = [];
 
-        foreach ($registers as $register) {
-            $registerArr = $register->jsonSerialize();
-            $schemaIds   = $register->getSchemas() ?? [];
-            $schemas     = [];
-
-            foreach ($schemaIds as $schemaId) {
-                try {
-                    $schema    = $this->schemaMapper->find(id: (int) $schemaId, _multitenancy: false);
-                    $schemas[] = $schema->jsonSerialize();
-                } catch (\Exception $e) {
-                    // Skip schemas that cannot be found.
-                }
-            }
-
-            $registerArr['schemas'] = $schemas;
+        foreach ($this->registerMapper->findAll(_multitenancy: false) as $register) {
+            $registerArr            = $register->jsonSerialize();
+            $registerArr['schemas'] = $this->serializedSchemasOf(register: $register);
             $result[] = $registerArr;
         }
 
         return $result;
     }//end getRegisters()
+
+    /**
+     * Serialize the schemas of a register, skipping ids that no longer resolve.
+     *
+     * @param Register $register The register.
+     *
+     * @return array<int, array<string, mixed>> The serialized schemas.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function serializedSchemasOf(Register $register): array
+    {
+        $schemas = [];
+
+        foreach (($register->getSchemas() ?? []) as $schemaId) {
+            try {
+                $schema    = $this->schemaMapper->find(id: (int) $schemaId, _multitenancy: false);
+                $schemas[] = $schema->jsonSerialize();
+            } catch (\Exception $e) {
+                // Skip schemas that cannot be found.
+            }
+        }
+
+        return $schemas;
+    }//end serializedSchemasOf()
 
     /**
      * Renders the rendered object.
@@ -5314,198 +5094,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         return $this->permissionHandler;
     }//end getPermissionHandler()
-
-    /**
-     * Collect UUID-to-name mappings for all related objects in search results.
-     *
-     * This method extracts all UUIDs from the search results (relations, object properties)
-     * and resolves them to human-readable names using the CacheHandler.
-     *
-     * @param array $results Array of rendered objects or ObjectEntity instances from search.
-     *
-     * @return array<string, string> Map of UUID to name.
-     *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     */
-    private function collectNamesForResults(array $results): array
-    {
-        $uuids = [];
-
-        $count = 0;
-        foreach ($results as $result) {
-            $count++;
-
-            // For ObjectEntity instances, access relations directly without full serialization.
-            // This avoids triggering expensive render operations.
-            if ($result instanceof \OCA\OpenRegister\Db\ObjectEntity) {
-                $this->collectUuidsFromEntity(entity: $result, uuids: $uuids);
-                continue;
-            }//end if
-
-            // Handle already-serialized arrays.
-            if (is_array($result) === false) {
-                continue;
-            }
-
-            $this->collectUuidsFromArrayResult(resultData: $result, uuids: $uuids);
-        }//end foreach
-
-        // Remove duplicates.
-        $uuids = array_unique($uuids);
-
-        if (empty($uuids) === true) {
-            return [];
-        }
-
-        // Resolve all UUIDs to names using CacheHandler.
-        $names = $this->cacheHandler->getMultipleObjectNames($uuids);
-        return $names;
-    }//end collectNamesForResults()
-
-    /**
-     * Collect UUIDs from an ObjectEntity instance.
-     *
-     * Extracts UUIDs from the entity's relations, metadata fields (organisation, owner),
-     * and object data without triggering full serialization.
-     *
-     * @param \OCA\OpenRegister\Db\ObjectEntity $entity The object entity to extract UUIDs from.
-     * @param array                             $uuids  Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromEntity(\OCA\OpenRegister\Db\ObjectEntity $entity, array &$uuids): void
-    {
-        // Get relations directly from entity.
-        $relations = $entity->getRelations();
-        if (is_array($relations) === true) {
-            $this->collectUuidsFromRelations(relations: $relations, uuids: $uuids);
-        }
-
-        // Collect from metadata fields (organisation, owner).
-        // These are UUID references to related objects that the frontend needs names for.
-        $organisation = $entity->getOrganisation();
-        if (is_string($organisation) === true && $this->isUuidFormat(value: $organisation) === true) {
-            $uuids[] = $organisation;
-        }
-
-        $owner = $entity->getOwner();
-        if (is_string($owner) === true && $this->isUuidFormat(value: $owner) === true) {
-            $uuids[] = $owner;
-        }
-
-        // Get object data directly without triggering full serialization.
-        $objectData = $entity->getObject();
-        if (is_array($objectData) === true) {
-            $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-        }
-    }//end collectUuidsFromEntity()
-
-    /**
-     * Collect UUIDs from an already-serialized array result.
-     *
-     * Handles the nested @self structure, extracting UUIDs from relations,
-     * metadata fields, and object data properties.
-     *
-     * @param array $resultData The serialized result array.
-     * @param array $uuids      Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromArrayResult(array $resultData, array &$uuids): void
-    {
-        // Get the actual object data - handle nested @self structure.
-        $objectData = $resultData;
-        if (isset($resultData['@self']) === true && is_array($resultData['@self']) === true) {
-            // Collect from relations in @self.
-            $relations = $resultData['@self']['relations'] ?? [];
-            if (is_array($relations) === true) {
-                $this->collectUuidsFromRelations(relations: $relations, uuids: $uuids);
-            }
-
-            // Collect from metadata fields in @self (organisation, owner).
-            // These are UUID references to related objects that the frontend needs names for.
-            $metadataFields = ['organisation', 'owner'];
-            foreach ($metadataFields as $field) {
-                $value = $resultData['@self'][$field] ?? null;
-                if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
-                    $uuids[] = $value;
-                }
-            }
-
-            // Use the object data from @self if present.
-            if (isset($resultData['@self']['object']) === true && is_array($resultData['@self']['object']) === true) {
-                $objectData = $resultData['@self']['object'];
-            }
-        }//end if
-
-        // Collect UUIDs from object properties. $objectData is always an array
-        // by this point, so the old is_array() guard could never skip the call.
-        $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-    }//end collectUuidsFromArrayResult()
-
-    /**
-     * Collect UUIDs from a relations array.
-     *
-     * Relations can be either direct UUID strings or arrays of UUID strings.
-     * This method handles both formats and appends found UUIDs to the collection.
-     *
-     * @param array $relations The relations array to scan for UUIDs.
-     * @param array $uuids     Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromRelations(array $relations, array &$uuids): void
-    {
-        foreach ($relations as $relation) {
-            if (is_string($relation) === true && $this->isUuidFormat(value: $relation) === true) {
-                $uuids[] = $relation;
-            } else if (is_array($relation) === true) {
-                foreach ($relation as $uuid) {
-                    if (is_string($uuid) === true && $this->isUuidFormat(value: $uuid) === true) {
-                        $uuids[] = $uuid;
-                    }
-                }
-            }
-        }//end foreach
-    }//end collectUuidsFromRelations()
-
-    /**
-     * Recursively collect UUIDs from object data.
-     *
-     * @param array $data  The object data to scan.
-     * @param array $uuids Reference to array collecting UUIDs.
-     * @param int   $depth Current recursion depth.
-     *
-     * @return void
-     */
-    private function collectUuidsFromObjectData(array $data, array &$uuids, int $depth=0): void
-    {
-        // Only process top-level to avoid recursion issues.
-        if ($depth > 0) {
-            return;
-        }
-
-        foreach ($data as $key => $value) {
-            // Skip metadata keys.
-            if ($key === '@self' || $key === 'id' || $key === '_id' || $key === 'object') {
-                continue;
-            }
-
-            // Only look at top-level string UUIDs.
-            if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
-                $uuids[] = $value;
-            } else if (is_array($value) === true) {
-                // Only look at arrays of UUIDs (not nested objects).
-                foreach ($value as $item) {
-                    if (is_string($item) === true && $this->isUuidFormat(value: $item) === true) {
-                        $uuids[] = $item;
-                    }
-
-                    // Skip nested arrays completely.
-                }
-            }
-        }
-    }//end collectUuidsFromObjectData()
 
     /**
      * Check if a string is in UUID format.
@@ -5746,50 +5334,18 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 _audit: $_audit
             );
 
-            $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
+            $this->bulkCacheInvalidator()->afterBulkSave(
+                bulkResult: $bulkResult,
+                scope: new SavedScopeIds(
+                    registerId: $this->currentRegister?->getId(),
+                    schemaId: $this->currentSchema?->getId()
+                )
+            );
             return $bulkResult;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end saveObjects()
-
-    /**
-     * Invalidate the collection caches of the current register and schema after a bulk save
-     * that created or updated objects. A failing invalidation is logged, not thrown.
-     *
-     * @param array $bulkResult The bulk save result with its statistics.
-     *
-     * @return void
-     */
-    private function invalidateAfterBulkSave(array $bulkResult): void
-    {
-        $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
-        $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
-        $totalAffected = $createdCount + $updatedCount;
-        if ($totalAffected <= 0) {
-            return;
-        }
-
-        try {
-            $this->cacheHandler->invalidateForObjectChange(
-                object: null,
-                operation: 'bulk_save',
-                registerId: $this->currentRegister?->getId(),
-                schemaId: $this->currentSchema?->getId()
-            );
-        } catch (\Exception $e) {
-            // BUG-OBJ-14: include register/schema context in the warning.
-            $this->logger->warning(
-                message: '[ObjectService] Bulk save cache invalidation failed',
-                context: [
-                    'error'         => $e->getMessage(),
-                    'totalAffected' => $totalAffected,
-                    'registerId'    => $this->currentRegister?->getId(),
-                    'schemaId'      => $this->currentSchema?->getId(),
-                ]
-            );
-        }
-    }//end invalidateAfterBulkSave()
 
     /**
      * Save many objects one row at a time, keeping reference checks O(1).
@@ -5831,32 +5387,35 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): BatchOperationStatus {
         // A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
-
-        try {
-            if ($register !== null) {
-                $this->setRegister(register: $register);
+        return $this->preservingScope(
+            operation: function () use ($objects, $register, $schema): BatchOperationStatus {
+                $this->applyScope(register: $register, schema: $schema);
+                return $this->streamIntoContext(objects: $objects);
             }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // The reference cache is request-scoped and this call is a logical
-            // boundary: verdicts from an earlier batch must not decide this one.
-            $this->saveHandler->clearReferenceValidationCache();
-
-            return $this->saveHandler->saveObjectsStreaming(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                rows: $objects
-            );
-
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end saveObjectsStreaming()
+
+    /**
+     * Stream rows into the current register and schema.
+     *
+     * @param array $objects The rows to save.
+     *
+     * @return BatchOperationStatus The status of the run.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function streamIntoContext(array $objects): BatchOperationStatus
+    {
+        // The reference cache is request-scoped and this call is a logical
+        // boundary: verdicts from an earlier batch must not decide this one.
+        $this->saveHandler->clearReferenceValidationCache();
+
+        return $this->saveHandler->saveObjectsStreaming(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            rows: $objects
+        );
+    }//end streamIntoContext()
 
 
     /**
@@ -6295,7 +5854,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->deleteBulkRow(uuid: $uuid, run: $run);
         }
 
-        $this->invalidateBulkDeleteCaches(run: $run);
+        $this->bulkCacheInvalidator()->afterBulkDelete(run: $run);
 
         return [
             'deleted_uuids'   => $run['deleted'],
@@ -6586,53 +6145,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             'schemaId'   => $schemaIdInt,
         ];
     }//end recordBulkDeleted()
-
-    /**
-     * Invalidate the collection caches of every (register, schema) pair a bulk delete touched.
-     *
-     * CacheHandler::clearSchemaRelatedCaches() only clears the per-schema query
-     * cache when schemaId is not null, so the pairs come from the deleted rows;
-     * a broad null/null invalidation is the fallback when no pair was resolved.
-     * A failed invalidation is logged with its scope, not swallowed.
-     *
-     * @param array $run The bulk delete run.
-     *
-     * @return void
-     *
-     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
-     */
-    private function invalidateBulkDeleteCaches(array $run): void
-    {
-        if (empty($run['deleted']) === true) {
-            return;
-        }
-
-        $pairsToInvalidate = $run['pairs'];
-        if (empty($pairsToInvalidate) === true) {
-            $pairsToInvalidate = [['registerId' => null, 'schemaId' => null]];
-        }
-
-        foreach ($pairsToInvalidate as $pair) {
-            try {
-                $this->cacheHandler->invalidateForObjectChange(
-                    object: null,
-                    operation: 'bulk_delete',
-                    registerId: $pair['registerId'],
-                    schemaId: $pair['schemaId']
-                );
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[ObjectService] Bulk delete cache invalidation failed',
-                    context: [
-                        'error'        => $e->getMessage(),
-                        'deletedCount' => count($run['deleted']),
-                        'registerId'   => $pair['registerId'],
-                        'schemaId'     => $pair['schemaId'],
-                    ]
-                );
-            }
-        }//end foreach
-    }//end invalidateBulkDeleteCaches()
 
     /**
      * Batch-resolve the entities (and thus register/schema scopes) for a set of UUIDs.
@@ -7156,7 +6668,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 schema: $scopedSchema
             );
 
-            $merged = $this->mergePatchData(
+            $merged = (new PatchDataMerge())->merge(
                 stored: (array) $existing->getObject(),
                 patch: $data
             );
@@ -7189,48 +6701,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end patchObject()
-
-    /**
-     * Merge a partial payload onto stored data, PATCH-semantically.
-     *
-     * See `patchObject()` for the rules this implements and why each is what it
-     * is. Kept private because the merge is only meaningful as part of the
-     * read-merge-save cycle; exposing it alone would invite callers to merge and
-     * then save PUT-semantically, which is the trap the method exists to close.
-     *
-     * @param array $stored The stored object data.
-     * @param array $patch  The partial payload.
-     *
-     * @return array The merged data.
-     */
-    private function mergePatchData(array $stored, array $patch): array
-    {
-        foreach ($patch as $key => $value) {
-            // An explicit null clears. Without this there is no way to unset a
-            // property through PATCH at all.
-            if ($value === null) {
-                $stored[$key] = null;
-                continue;
-            }
-
-            $storedValue = ($stored[$key] ?? null);
-
-            // Two associative arrays merge recursively. Lists — on either side —
-            // replace wholesale.
-            if (is_array($value) === true
-                && array_is_list($value) === false
-                && is_array($storedValue) === true
-                && array_is_list($storedValue) === false
-            ) {
-                $stored[$key] = $this->mergePatchData(stored: $storedValue, patch: $value);
-                continue;
-            }
-
-            $stored[$key] = $value;
-        }//end foreach
-
-        return $stored;
-    }//end mergePatchData()
 
     /**
      * Restore the stored form of string-typed properties the read path decoded.
@@ -7300,24 +6770,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             suppliedKeys: $suppliedKeys
         );
     }//end restoreStringTypedValues()
-
-    /**
-     * Build search query from request parameters
-     *
-     * @param array $params Request parameters
-     *
-     * @return array Normalized search query
-     *
-     * @psalm-return array<string, mixed>
-     *
-     * @spec exclude Facade alias delegating to buildSearchQuery(); query-building owned by zoeken-filteren.
-     */
-    public function buildObjectSearchQuery(array $params): array
-    {
-        // REFACTORED: Removed CrudHandler (caused circular dependency - called back to ObjectService).
-        // Call buildSearchQuery() directly (already exists in ObjectService).
-        return $this->buildSearchQuery(requestParams: $params);
-    }//end buildObjectSearchQuery()
 
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS

@@ -42,6 +42,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Configuration\ImportReferenceMap
  * @uses   \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 
@@ -119,11 +121,9 @@ class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 		$user = $this->createMock(IUser::class);

@@ -58,6 +58,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  */
 class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 
@@ -275,11 +277,9 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $mappingMapper,
-			client: $this->createMock(Client::class),
 			appConfig: $appConfig,
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $objectService
 		);
 

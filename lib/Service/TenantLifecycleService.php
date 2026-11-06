@@ -38,7 +38,6 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -128,7 +127,6 @@ class TenantLifecycleService {
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
 	 * @param IGroupManager $groupManager Nextcloud group manager
 	 * @param IUserManager $userManager Nextcloud user manager, to look up the org admin
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher
 	 * @param LoggerInterface $logger Logger
 	 * @param OrganisationLifecycleAuditor|null $auditor Writes each status change to the audit trail. Null only in legacy fixtures.
 	 */
@@ -136,7 +134,6 @@ class TenantLifecycleService {
 		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IGroupManager $groupManager,
 		private readonly IUserManager $userManager,
-		private readonly IEventDispatcher $eventDispatcher,
 		private readonly LoggerInterface $logger,
 		private readonly ?OrganisationLifecycleAuditor $auditor = null,
 	) {

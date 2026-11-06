@@ -151,6 +151,13 @@ class Flow extends Entity implements JsonSerializable {
 	public const TRIGGER_SCHEDULE = 'schedule';
 
 	/**
+	 * The `app` of a flow compiled from a manifest schedule.
+	 *
+	 * @var string
+	 */
+	public const APP_MANIFEST_SCHEDULE = 'apphost-schedule';
+
+	/**
 	 * The flow is runnable as far as anything has judged.
 	 *
 	 * Only ever written when a run is ACCEPTED. It is not a default: a flow
@@ -533,6 +540,23 @@ class Flow extends Entity implements JsonSerializable {
 
 		return $this->owner !== null && trim($this->owner) !== '';
 	}//end canDispatch()
+
+	/**
+	 * The identity this flow's schedule trigger declares.
+	 *
+	 * @return string|null The `runAs`, or null when no schedule trigger names one.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function scheduledRunAs(): ?string {
+		foreach (($this->nodes ?? []) as $node) {
+			if (($node['type'] ?? null) === 'openregister.trigger-schedule') {
+				return ($node['config']['runAs'] ?? null);
+			}
+		}
+
+		return null;
+	}//end scheduledRunAs()
 
 	/**
 	 * Whether this flow belongs to the given organisation.
