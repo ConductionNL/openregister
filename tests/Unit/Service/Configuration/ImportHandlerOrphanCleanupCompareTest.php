@@ -48,6 +48,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
  * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
+ * @uses \OCA\OpenRegister\Service\Configuration\RejectedSchemaReport
+ * @uses \OCA\OpenRegister\Service\Configuration\ArrayStructure
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 
