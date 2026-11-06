@@ -24,6 +24,12 @@ use ReflectionMethod;
  * The seed channel (a stored seed follows a higher shipped version) must not be steerable from the object API.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @covers \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */

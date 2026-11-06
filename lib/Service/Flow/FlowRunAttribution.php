@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\Flow;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -96,6 +97,14 @@ class FlowRunAttribution {
 	private const CONFIG_RUN_AS = 'runAs';
 
 	/**
+	 * Why a compiled schedule whose identity left its tenant is stopped.
+	 *
+	 * @var string
+	 */
+	private const OUTSIDE_TENANT = 'Its acting identity "%s" is not a member of the flow\'s organisation. '
+		. 'Publishing the application again sets a new one.';
+
+	/**
 	 * Constructor.
 	 *
 	 * Both collaborators are resolved lazily through the container, matching
@@ -155,8 +164,9 @@ class FlowRunAttribution {
 	 * @param string      $trigger What started the run — `manual`, `schedule`, an
 	 *                             event id, `sub-flow`, `nc-flow`.
 	 *
-	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null}
-	 *         The attribution. A null `user` means REFUSE.
+	 * @return array{user: string|null, organisation: string|null, declaredBy: string|null, refusal?: string}
+	 *         The attribution. A null `user` means REFUSE; `refusal` says why when
+	 *         someone was named.
 	 *
 	 * @spec openspec/specs/delegated-identity/spec.md
 	 * @spec openspec/specs/flow-engine/spec.md
@@ -179,12 +189,41 @@ class FlowRunAttribution {
 			$declaredBy = $declared['declaredBy'];
 		}
 
-		return [
+		$attribution = [
 			'user' => ($caller ?? $declared['user']),
 			'organisation' => ($organisation ?? $this->orNull(value: $flow?->getOrganisation())),
 			'declaredBy' => $declaredBy,
 		];
+
+		if ($caller === null && $this->leftItsTenant(flow: $flow, runAs: $declared['user']) === true) {
+			return ['user' => null, 'refusal' => sprintf(self::OUTSIDE_TENANT, (string)$declared['user'])] + $attribution;
+		}
+
+		return $attribution;
 	}//end resolve()
+
+	/**
+	 * Whether a flow compiled from a manifest declares an identity outside its tenant.
+	 *
+	 * A flow an author drew is not asked: this rule is the compiled flow's.
+	 *
+	 * @param object|null $flow  The flow entity, or null when unreadable.
+	 * @param string|null $runAs The declared identity.
+	 *
+	 * @return boolean True when the run may not act as that identity.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	private function leftItsTenant(?object $flow, ?string $runAs): bool {
+		if (($flow instanceof Flow) === false || $runAs === null || $flow->getApp() !== Flow::APP_MANIFEST_SCHEDULE) {
+			return false;
+		}
+
+		return $this->container->get(FlowTenantMembership::class)->isMember(
+			uid: $runAs,
+			organisation: (string)$flow->getOrganisation()
+		) === false;
+	}//end leftItsTenant()
 
 	/**
 	 * The identity declared by the trigger that started this run.

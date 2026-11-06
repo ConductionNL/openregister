@@ -13,11 +13,11 @@ There is no apply event, and buildiq sets `productionVersion` on an ordinary obj
 - an `application` object's `productionVersion` changes, or
 - the `schedules` of the `applicationVersion` that is currently production change. buildiq's automation compiler writes straight onto that version, so this is also a publish.
 
-Any other save does nothing, which is what keeps re-saving an application from changing an identity. A listener sees the session of the person who saved, which is the identity D-3 needs. A sweep would not. Deleting the application, or clearing its production version, removes its compiled flows.
+A production version that cannot be read, or that belongs to another application, is refused and removes nothing. Any other save does nothing, which is what keeps re-saving an application from changing an identity. A listener sees the session of the person who saved, which is the identity D-3 needs. A sweep would not. Deleting the application, or clearing its production version, removes its compiled flows.
 
 ### D-2: One flow per schedule, keyed by application and schedule id
 
-The flow's uuid is derived from `applicationSlug` and the schedule `id`, so the same schedule always lands on the same row. The `app` column holds `apphost-schedule`, which marks the flow as compiled; a flow an author drew for the same application is never touched. The application slug is the key: buildiq treats it as stable.
+The flow's uuid is derived from the application's object uuid and the schedule `id`, so the same schedule always lands on the same row. The flow's `applicationSlug` column holds that uuid too: a slug is a data property two organisations may share, and keying on it let one tenant take over or delete another's flow. It also means a renamed application keeps its flows. The `app` column holds `apphost-schedule`, which marks the flow as compiled; a flow an author drew for the same application is never touched.
 
 Applying compares each desired flow with the stored one:
 
@@ -28,7 +28,7 @@ Applying compares each desired flow with the stored one:
 | different | schedule | draft, write, validate, publish the next version |
 | flow | schedule gone | delete with its runs and versions (`FlowService::deleteStored`) |
 
-`enabled: false` keeps the flow and switches it off. A schedule refused for its own reason (bad cadence, action not allowed) is logged and leaves any earlier flow for that id alone: the manifest does still name it.
+`enabled: false` keeps the flow and switches it off. A schedule refused for its interval or action is logged and leaves any earlier flow for that id alone: the manifest does still name it. An entry that does not parse has no reliable id, so it counts as gone.
 
 Because `runAs` is in the graph, a publish by someone else writes a new flow version, and that version names them in `publishedBy`.
 
@@ -36,9 +36,9 @@ Because `runAs` is in the graph, a publish by someone else writes a new flow ver
 
 `runAs` on the trigger node is the session user at publish time. Acting as yourself needs no grant (ADR-099 section 4), so `FlowTriggerValidator` stamps nothing, and the fire path re-resolves the identity like any other schedule. `flow.owner` is the publisher too, since someone has to be able to edit and be told. The manifest still cannot name an identity: a `runAs` or `owner` key on a schedule is ignored.
 
-No session means no publisher. That save refuses and logs, and earlier flows stay as they were. A write in that state would count as code-initiated in `FlowTriggerValidator`, which skips the delegation check, so it must not happen.
+No session means no publisher. That save refuses, and earlier flows stay as they were. Every refusal is logged and also named in the response of the request that caused it, in the header `X-OpenRegister-Schedule-Refused` (a JSON array of reasons), so a publish that succeeded with a refused schedule says so. The middleware is global because a publish can arrive through any app's controller, buildiq's promote among them. A write in that state would count as code-initiated in `FlowTriggerValidator`, which skips the delegation check, so it must not happen.
 
-Publishing again as another user changes the identity of every schedule of that app. Each change writes an entry with action `schedule.run_as_changed` on the application's audit trail: the schedule, the previous and new user, and when.
+Publishing again as another user changes the identity of every schedule of that app. Each change writes an entry with action `schedule.run_as_changed` on the application's audit trail: the schedule, the previous and new user, and when. The entry is written before the flow: a failed audit changes no identity, and a failed write leaves an entry that the next publish repeats.
 
 ### D-4: Tenancy comes from the application
 
@@ -46,7 +46,7 @@ Publishing again as another user changes the identity of every schedule of that 
 
 The publisher must be a member of that organisation (`Organisation::hasUser`). An administrator is not exempted: administrator access to an organisation is a right to manage it, not membership, and a schedule runs with its identity's rights in that tenant. No organisation, or no membership: the save refuses and logs.
 
-Membership can end after publishing, so `FlowLocator` asks again before it offers a compiled flow to the scheduler. A flow whose `runAs` left the organisation is disabled with the reason in `status_message`, as for a flow that names nobody, until someone publishes again. This check covers compiled flows only; hand-drawn flows keep today's rule.
+Membership can end after publishing, so `FlowRunAttribution` asks again each time a compiled flow fires. A `runAs` that left the organisation counts as no identity: the queue refuses it, and the flow is disabled with the reason in `status_message`, as for a flow that names nobody, until someone publishes again. This check covers compiled flows only; hand-drawn flows keep today's rule.
 
 ### D-5: On-disk apps
 

@@ -29,8 +29,6 @@ use OCA\OpenRegister\Service\Search\SearchDictionaryProvider;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\IAppContainer;
-use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 
 /**
  * Handles all query and search operations for ObjectService.
@@ -82,15 +80,12 @@ class QueryHandler {
 	 * Constructor for QueryHandler.
 	 *
 	 * @param MagicMapperInterface $objectMapper Unified mapper for objects.
-	 * @param GetObject $getHandler Get handler.
 	 * @param RenderObject $renderHandler Render handler.
 	 * @param SearchQueryHandler $searchQueryHandler Search handler.
 	 * @param FacetHandler $facetHandler Facet handler.
 	 * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
 	 * @param ContentSearchHandler $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
 	 * @param IAppContainer $container App container.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IRequest $request Request object.
 	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
 	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
 	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
@@ -101,15 +96,12 @@ class QueryHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly GetObject $getHandler,
 		private readonly RenderObject $renderHandler,
 		private readonly SearchQueryHandler $searchQueryHandler,
 		private readonly FacetHandler $facetHandler,
 		private readonly PerformanceOptimizationHandler $performanceHandler,
 		private readonly ContentSearchHandler $contentSearchHandler,
 		private readonly IAppContainer $container,
-		private readonly LoggerInterface $logger,
-		private readonly IRequest $request,
 		// LAST AND NULLABLE on purpose: every existing construction of this
 		// handler, in production wiring and in tests, keeps working unchanged.
 		private readonly ?HistoryNarrowing $historyNarrowing = null,
