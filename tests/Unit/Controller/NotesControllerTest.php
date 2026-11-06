@@ -188,6 +188,16 @@ class NotesControllerTest extends TestCase {
 		$this->assertSame(404, $this->controller->update('reg', 'schema', 'obj-id', '1')->getStatus());
 	}
 
+	public function testTheHistoryOfANoteOfAnotherObjectIsNotFound(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('requireNoteOf')->willThrowException(new Exception('Note not found', 404));
+		$this->noteService->expects($this->never())->method('getNote');
+		$this->noteService->expects($this->never())->method('noteVersions');
+
+		$this->assertSame(404, $this->controller->versions('reg', 'schema', 'obj-id', '1')->getStatus());
+	}
+
 	public function testDestroyReturns404WhenObjectNotFound(): void {
 		$this->objectService->method('getObject')->willReturn(null);
 

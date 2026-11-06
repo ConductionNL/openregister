@@ -406,6 +406,7 @@ class NotesController extends Controller {
 			}
 
 			try {
+				$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
 				$note = $this->noteService->getNote(noteId: (int)$noteId);
 			} catch (Exception $e) {
 				// A note that is not there is a 404, not the 400 a generic
