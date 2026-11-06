@@ -71,7 +71,7 @@ class ReportSubjectRenderer extends SubjectRenderer {
 		if (($parameters['mode'] ?? 'files') !== 'email') {
 			$folder = '/' . trim((string)($parameters['folder'] ?? 'Reports/'), '/');
 			$filesUrl = $this->urlGenerator->linkToRouteAbsolute(routeName: 'files.view.index') . '?dir=' . rawurlencode($folder);
-			$notification->addAction(
+			$notification->addParsedAction(
 				$this->primaryAction(notification: $notification, label: $l->t('Open Files'))->setLink(link: $filesUrl, requestType: 'GET')
 			);
 		}
