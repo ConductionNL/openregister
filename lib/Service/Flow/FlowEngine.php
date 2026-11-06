@@ -218,6 +218,10 @@ class FlowEngine {
 	 * opinion and could not form one. "Nobody registered an opinion" is not
 	 * that case.
 	 *
+	 * Nothing switches this off: not a flow, not the run's context, not an
+	 * instance setting. It is what stops a running flow when the kill switch is
+	 * thrown, so an exemption would be a way past it.
+	 *
 	 * A refusal is raised as a FlowStop, so a veto ends the run the way an
 	 * author's Stop step does, with the refusing check's id on it.
 	 *
@@ -230,14 +234,13 @@ class FlowEngine {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
 	 */
 	private function assertOversightAllows(FlowWalkHop|FlowStreamHop $hop): void {
-		$context = $hop->pass->context;
-		if (($context['oversight'] ?? true) === false || $this->oversight === null) {
+		if ($this->oversight === null) {
 			return;
 		}
 
 		$refusal = $this->oversight->firstRefusal(
 			context: array_merge(
-				$context,
+				$hop->pass->context,
 				['transition' => $hop->name(), 'nodeType' => $hop->stepType()]
 			)
 		);

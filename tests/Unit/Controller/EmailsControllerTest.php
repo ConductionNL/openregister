@@ -226,4 +226,33 @@ class EmailsControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
 	}
+
+	public function testResolveHandsTheTwoHeadersToTheServiceAndAnswersWhatItSays(): void {
+		$threads = $this->createMock(\OCA\OpenRegister\Notifications\Service\ReplyThreadService::class);
+		$threads->expects($this->once())->method('resolve')
+			->with(['In-Reply-To' => '<a@x>', 'References' => ['<b@x>']])
+			->willReturn(['state' => 'threaded', 'objectUuid' => 'case-1', 'scope' => 'user']);
+		$this->request->method('getParam')->willReturnMap(
+			[['inReplyTo', '', '<a@x>'], ['references', '', ['<b@x>']]]
+		);
+		$controller = new EmailsController(
+			'openregister',
+			$this->request,
+			$this->emailService,
+			$this->objectService,
+			$this->userSession,
+			$this->logger,
+			$this->emailLinkService,
+			$threads
+		);
+
+		$response = $controller->resolve();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('case-1', $response->getData()['objectUuid']);
+	}
+
+	public function testResolveWithoutTheServiceIs501(): void {
+		$this->assertSame(501, $this->controller->resolve()->getStatus());
+	}
 }

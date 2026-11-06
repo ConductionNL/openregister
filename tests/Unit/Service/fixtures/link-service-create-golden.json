@@ -408,7 +408,8 @@
             "mailDate": "2026-01-01T00:00:00+00:00",
             "metadata": null,
             "linkedBy": "alice",
-            "linkedAt": "string"
+            "linkedAt": "string",
+            "rfcMessageId": null
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden no user": {
@@ -434,7 +435,8 @@
             "mailDate": null,
             "metadata": null,
             "linkedBy": "alice",
-            "linkedAt": "string"
+            "linkedAt": "string",
+            "rfcMessageId": null
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden uid from row": {
@@ -452,7 +454,8 @@
             "mailDate": "2026-01-01T00:00:00+00:00",
             "metadata": null,
             "linkedBy": "alice",
-            "linkedAt": "string"
+            "linkedAt": "string",
+            "rfcMessageId": null
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden uid given": {
@@ -470,7 +473,8 @@
             "mailDate": "2026-01-01T00:00:00+00:00",
             "metadata": null,
             "linkedBy": "alice",
-            "linkedAt": "string"
+            "linkedAt": "string",
+            "rfcMessageId": null
         }
     }
 }
