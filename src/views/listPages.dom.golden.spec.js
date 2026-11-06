@@ -23,29 +23,53 @@ jest.mock('@nextcloud/dialogs', () => ({
 	showSuccess: jest.fn(),
 }))
 jest.mock('@nextcloud/l10n', () => ({
-	t: (app, text, vars) => (vars ? `t:${text} ${JSON.stringify(vars)}` : `t:${text}`),
+	t: (app, text, vars) =>
+		vars ? `t:${text} ${JSON.stringify(vars)}` : `t:${text}`,
 	translate: (app, text) => `t:${text}`,
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
-jest.mock('vue-material-design-icons/AccountOutline.vue', () => mockModule('AccountOutline'))
-jest.mock('vue-material-design-icons/AlertCircleOutline.vue', () => mockModule('AlertCircleOutline'))
+jest.mock('vue-material-design-icons/AccountOutline.vue', () =>
+	mockModule('AccountOutline'),
+)
+jest.mock('vue-material-design-icons/AlertCircleOutline.vue', () =>
+	mockModule('AlertCircleOutline'),
+)
 jest.mock('vue-material-design-icons/ArrowLeft.vue', () => mockModule('ArrowLeft'))
-jest.mock('vue-material-design-icons/DeleteOutline.vue', () => mockModule('DeleteOutline'))
-jest.mock('vue-material-design-icons/DotsHorizontal.vue', () => mockModule('DotsHorizontal'))
+jest.mock('vue-material-design-icons/DeleteOutline.vue', () =>
+	mockModule('DeleteOutline'),
+)
+jest.mock('vue-material-design-icons/DotsHorizontal.vue', () =>
+	mockModule('DotsHorizontal'),
+)
 jest.mock('vue-material-design-icons/Eye.vue', () => mockModule('Eye'))
 jest.mock('vue-material-design-icons/EyeOutline.vue', () => mockModule('EyeOutline'))
-jest.mock('vue-material-design-icons/FileDocumentOutline.vue', () => mockModule('FileDocumentOutline'))
-jest.mock('vue-material-design-icons/FileOutline.vue', () => mockModule('FileOutline'))
-jest.mock('vue-material-design-icons/FilterVariant.vue', () => mockModule('FilterVariant'))
-jest.mock('vue-material-design-icons/PauseCircleOutline.vue', () => mockModule('PauseCircleOutline'))
+jest.mock('vue-material-design-icons/FileDocumentOutline.vue', () =>
+	mockModule('FileDocumentOutline'),
+)
+jest.mock('vue-material-design-icons/FileOutline.vue', () =>
+	mockModule('FileOutline'),
+)
+jest.mock('vue-material-design-icons/FilterVariant.vue', () =>
+	mockModule('FilterVariant'),
+)
+jest.mock('vue-material-design-icons/PauseCircleOutline.vue', () =>
+	mockModule('PauseCircleOutline'),
+)
 jest.mock('vue-material-design-icons/Pencil.vue', () => mockModule('Pencil'))
-jest.mock('vue-material-design-icons/PlayOutline.vue', () => mockModule('PlayOutline'))
+jest.mock('vue-material-design-icons/PlayOutline.vue', () =>
+	mockModule('PlayOutline'),
+)
 jest.mock('vue-material-design-icons/Plus.vue', () => mockModule('Plus'))
 jest.mock('vue-material-design-icons/Refresh.vue', () => mockModule('Refresh'))
+jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
+	mockModule('TrashCanOutline'),
+)
 jest.mock('vue-material-design-icons/Webhook.vue', () => mockModule('Webhook'))
 jest.mock('../components/FilesSidebar.vue', () => mockModule('FilesSidebar'))
-jest.mock('../components/PaginationComponent.vue', () => mockModule('PaginationComponent'))
+jest.mock('../components/PaginationComponent.vue', () =>
+	mockModule('PaginationComponent'),
+)
 jest.mock('../components/WebhooksSidebar.vue', () => mockModule('WebhooksSidebar'))
 jest.mock('../eventBus.js', () => ({
 	__esModule: true,
@@ -114,7 +138,9 @@ function mockStub(name) {
 				attrs,
 				Object.keys(this.$slots)
 					.sort()
-					.map((slot) => render(`slot-${slot}`, this.$slots[slot]({ option: {} }))),
+					.map((slot) =>
+						render(`slot-${slot}`, this.$slots[slot]({ option: {} })),
+					),
 			)
 		},
 	}
@@ -126,6 +152,7 @@ const PAGES = {
 		rows: {
 			entitiesList: [{ id: 1, type: 'person', value: 'Jan', category: 'pii' }],
 			totalEntities: 1,
+			selectedEntities: [1],
 		},
 	},
 	files: {
@@ -134,7 +161,12 @@ const PAGES = {
 		load: 'loadFiles',
 		rows: {
 			filesList: [
-				{ id: 1, fileName: 'a.pdf', extractionStatus: 'failed', extractionError: 'bad' },
+				{
+					id: 1,
+					fileName: 'a.pdf',
+					extractionStatus: 'failed',
+					extractionError: 'bad',
+				},
 				{ id: 2, fileName: 'b.pdf', extractionStatus: 'completed' },
 			],
 			totalFiles: 2,
@@ -144,14 +176,29 @@ const PAGES = {
 		component: TemplatesIndex,
 		total: 'totalTemplates',
 		load: 'loadTemplates',
-		rows: { templatesList: [{ id: 1, name: 'Letter', type: 'docx' }], totalTemplates: 1 },
+		rows: {
+			templatesList: [{ id: 1, name: 'Letter', type: 'docx' }],
+			totalTemplates: 1,
+		},
 	},
 	webhooks: {
 		component: WebhooksIndex,
 		total: 'totalWebhooks',
 		webhooks: [
-			{ id: 1, name: 'On', url: 'https://a.example', method: 'POST', enabled: true },
-			{ id: 2, name: 'Off', url: 'https://b.example', method: 'POST', enabled: false },
+			{
+				id: 1,
+				name: 'On',
+				url: 'https://a.example',
+				method: 'POST',
+				enabled: true,
+			},
+			{
+				id: 2,
+				name: 'Off',
+				url: 'https://b.example',
+				method: 'POST',
+				enabled: false,
+			},
 		],
 	},
 	webhookLogs: {
@@ -162,7 +209,8 @@ const PAGES = {
 	},
 }
 
-const RECORDED = /^(refresh|retry|show|view|edit|test|toggle(?!Sidebar|Sort)|delete)/
+const RECORDED =
+	/^(refresh(?!Action)|retry|show|view|edit|test|toggle(?!Sidebar|Sort)|delete)/
 const calls = []
 
 /**
@@ -238,10 +286,13 @@ function part(wrapper, selector) {
 function body(wrapper) {
 	return part(wrapper, '.viewContainer')
 		.replace(/<x-ncactions[^>]*>/g, '<x-ncactions>')
-		.replace(/<slot-icon>\s*<x-dotshorizontal[^>]*><\/x-dotshorizontal>\s*<\/slot-icon>/g, '')
-		.split('\n')
-		.filter((line) => line.trim() !== '')
-		.join('\n')
+		.replace(
+			/<slot-icon>\s*<x-dotshorizontal[^>]*><\/x-dotshorizontal>\s*<\/slot-icon>/g,
+			'',
+		)
+		.replace(/ class=""/g, '')
+		.replace(/\s+/g, ' ')
+		.replace(/> ?</g, '>\n<')
 }
 
 /**
