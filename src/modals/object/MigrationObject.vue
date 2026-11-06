@@ -553,7 +553,7 @@ export default {
 			this.loading = true
 			try {
 				const response = await fetch(
-					'/index.php/apps/openregister/api/registers',
+					'/index.php/apps/openregister/api/registers?_extend[]=schemas',
 				)
 				const data = await response.json()
 				this.availableRegisters = data.results || []
@@ -566,28 +566,11 @@ export default {
 		},
 
 		/**
-		 * @spec exclude Reloads target schemas when the register select changes; UI reactivity plumbing.
+		 * @spec exclude Offers the schemas of the chosen register; UI reactivity plumbing.
 		 */
-		async onRegisterChange() {
-			if (!this.targetRegister) {
-				this.availableSchemas = []
-				this.targetSchema = null
-				return
-			}
-
-			this.loading = true
-			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/schemas?register=${this.targetRegister.id}`,
-				)
-				const data = await response.json()
-				this.availableSchemas = data.results || []
-			} catch (error) {
-				console.error('Error loading schemas:', error)
-				this.availableSchemas = []
-			} finally {
-				this.loading = false
-			}
+		onRegisterChange() {
+			this.availableSchemas = this.targetRegister?.schemas || []
+			this.targetSchema = null
 		},
 
 		/**

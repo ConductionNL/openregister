@@ -242,6 +242,22 @@ describe('MigrationObject', () => {
 		expect(globalThis.fetch).toHaveBeenCalledTimes(1)
 	})
 
+	it('offers only the schemas of the chosen register', () => {
+		const vm = dialog()
+		vm.targetRegister = { id: 3, schemas: [{ id: 4 }] }
+		vm.onRegisterChange()
+		expect(vm.availableSchemas).toEqual([{ id: 4 }])
+		expect(vm.targetSchema).toBe(null)
+	})
+
+	it('offers no schemas without a register', () => {
+		const vm = dialog()
+		vm.availableSchemas = [{ id: 4 }]
+		vm.targetRegister = null
+		vm.onRegisterChange()
+		expect(vm.availableSchemas).toEqual([])
+	})
+
 	it('closes without loading anything on an empty selection', () => {
 		answer(true, { results: [] })
 		const vm = dialog()
