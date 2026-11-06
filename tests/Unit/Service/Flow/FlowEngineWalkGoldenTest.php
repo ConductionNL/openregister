@@ -116,6 +116,10 @@ class GoldenWalkLogger extends AbstractLogger {
  * The golden master.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowEngine
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopAdvance
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopRouting
+ * @uses \OCA\OpenRegister\Service\Flow\FlowHopPlan
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunStart
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamHop
  * @covers \OCA\OpenRegister\Service\Flow\FlowStreamPass
  * @uses   \OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder
@@ -346,10 +350,8 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			new FlowDefinitionBuilder(),
 			new GoldenWalkLogger(trace: $trace),
 			$this->oversight(refuseFrom: ($case['oversight'] ?? null), trace: $trace),
-			null,
-			null,
-			$this->runContext(trace: $trace),
-			$this->mootness(trace: $trace)
+			runContext: $this->runContext(trace: $trace),
+			mootness: $this->mootness(trace: $trace)
 		);
 
 		$streams = null;
