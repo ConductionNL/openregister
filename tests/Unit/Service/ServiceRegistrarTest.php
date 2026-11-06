@@ -53,7 +53,6 @@ class ServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Object\CacheHandler',
 				'OCA\OpenRegister\Service\File\FolderManagementHandler',
 				'OCA\OpenRegister\Service\TaskService',
-				'OCA\OpenRegister\Service\Integration\TimeProvider',
 			],
 			actual: $context->services
 		);

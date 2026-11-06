@@ -83,6 +83,7 @@ final class ListenerRegistrar {
 		Registrar\WorkListenerRegistrar::register(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
 		self::registerFlowAndTaskListeners(context: $context);
+		self::registerPublishListener(context: $context);
 		self::registerSaveRuleListeners(context: $context);
 		self::registerSideEffectListeners(context: $context);
 		self::registerDeliveryListeners(context: $context);
@@ -301,6 +302,22 @@ final class ListenerRegistrar {
 			\OCA\OpenRegister\Listener\FlowTimerSubjectTerminalListener::class
 		);
 	}//end registerFlowAndTaskListeners()
+
+	/**
+	 * Register the hook that applies a published manifest's schedules as scheduled flows.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	private static function registerPublishListener(IRegistrationContext $context): void {
+		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
+		$context->registerEventListener(ObjectCreatedEvent::class, $publish);
+		$context->registerEventListener(ObjectUpdatedEvent::class, $publish);
+		$context->registerEventListener(ObjectDeletedEvent::class, $publish);
+	}//end registerPublishListener()
 
 	/**
 	 * The rules a save passes: lifecycle annotations, identifiers, field rules, validations, calculations, constraints and quotas.
