@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCP\Share\IShare;
 use Throwable;
 
@@ -181,7 +182,7 @@ class ShareGrantAttributes {
 		// Only accept something UUID-shaped. Register and schema folders sit in
 		// the same tree, and admitting one of those by name would turn a share
 		// of a CONTAINER into a grant on an object that merely shares its name.
-		if (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $name) !== 1) {
+		if (UuidFormat::isCanonical(value: $name) === false) {
 			return null;
 		}
 

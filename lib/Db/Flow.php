@@ -364,9 +364,8 @@ class Flow extends Entity implements JsonSerializable {
 	protected ?bool $auditEnabled = null;
 
 	/**
-	 * Whether the oversight gate runs before each hop.
-	 *
-	 * NULL means "follow the administrator setting".
+	 * A stored preference with no effect: the oversight gate runs before every
+	 * hop of every flow.
 	 *
 	 * @var boolean|null
 	 */
@@ -619,31 +618,6 @@ class Flow extends Entity implements JsonSerializable {
 
 		return $instanceDefault;
 	}//end auditsEachHop()
-
-	/**
-	 * Whether the oversight gate runs before each hop of this flow.
-	 *
-	 * On by default, and deliberately the opposite default to auditing: this is
-	 * the check that stops a running flow when the kill switch is thrown or a
-	 * registered budget is exhausted. A safety rail that defaults to off
-	 * protects only the flows someone remembered to configure.
-	 *
-	 * An explicit `false` is a real opt-out and is honoured — a flow may be
-	 * exempted — but it has to be chosen, not inherited from an unset column.
-	 *
-	 * @param boolean $instanceDefault The administrator-configured default.
-	 *
-	 * @return boolean True when oversight checks should gate each hop.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-	 */
-	public function gatesEachHop(bool $instanceDefault): bool {
-		if ($this->oversightEnabled !== null) {
-			return $this->oversightEnabled;
-		}
-
-		return $instanceDefault;
-	}//end gatesEachHop()
 
 	/**
 	 * Serialise for the API.
