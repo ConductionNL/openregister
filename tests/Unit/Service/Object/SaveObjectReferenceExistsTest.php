@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -47,6 +48,12 @@ use RuntimeException;
  * which events it sends, and when it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
@@ -209,8 +216,8 @@ final class SaveObjectReferenceExistsTest extends TestCase {
 
 	public function testAReferenceOntoAnObjectBeingSavedIsACycle(): void {
 		$handler = $this->handler(lookup: 'found');
-		$push = (new ReflectionClass(SaveObject::class))->getMethod('pushSaveCallFrame');
-		$push->invoke($handler, 'note', self::UUID, 'r1');
+		$calls = (new ReflectionClass(SaveObject::class))->getMethod('saveCalls')->invoke($handler);
+		$calls->push(new SaveCallFrame('note', self::UUID, 'r1'));
 
 		try {
 			(new ReflectionClass(SaveObject::class))->getMethod('validateReferenceExists')->invoke($handler, 'author', self::UUID, '2', null);
