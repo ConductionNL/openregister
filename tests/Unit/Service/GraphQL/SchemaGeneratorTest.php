@@ -241,6 +241,20 @@ class SchemaGeneratorTest extends TestCase {
 		$this->assertInstanceOf(ObjectType::class, $fields['klant']->getType());
 	}
 
+	public function testRefPropertyResolvesBySchemaUri(): void {
+		$personSchema = $this->createSchema(1, 'personen', []);
+		$personSchema->setUri('https://example.org/personen');
+		$orderSchema = $this->createSchema(2, 'orders', [
+			'klant' => ['type' => 'object', '$ref' => 'https://example.org/personen'],
+		]);
+
+		$this->schemaMapper->method('findAll')->willReturn([$personSchema, $orderSchema]);
+
+		$this->generator->generate();
+
+		$this->assertSame('Personen', $this->generator->getObjectType($orderSchema)->getField('klant')->getType()->name);
+	}
+
 	// ── Empty schema ──
 
 	public function testEmptySchemaGeneratesValidGraphQL(): void {
