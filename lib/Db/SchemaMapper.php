@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
@@ -1207,7 +1208,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$advisory->checkSurvivorship(schema: $schema);
 		$advisory->checkMerge(schema: $schema);
 		$advisory->checkParty(schema: $schema);
-		$advisory->checkNotifications(schema: $schema);
+		(new NotificationAnnotationCheck(logger: $this->logger))->check(schema: $schema);
 		$records->checkWidgets(schema: $schema);
 		$records->checkArchival(schema: $schema);
 	}//end checkDataDeclarations()

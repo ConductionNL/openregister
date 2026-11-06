@@ -24,6 +24,7 @@ use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -81,6 +82,7 @@ class SchemasControllerWriteGoldenTest extends TestCase {
 			'calculation' => new CalculationDeclarationException($errors),
 			'consent' => new ConsentDeclarationException($errors),
 			'dependent value' => new DependentValueDeclarationException($errors),
+			'notification' => new NotificationDeclarationException($errors),
 			'invalid authorization rule' => new InvalidAuthorizationRuleException('Rule read.x has no operator'),
 			'db exception' => new DBException('Duplicate entry for key unique_slug'),
 			'database constraint' => new DatabaseConstraintException('Slug taken', 0, 418),
