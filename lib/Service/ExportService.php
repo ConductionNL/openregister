@@ -120,12 +120,6 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	private readonly PropertyRbacHandler $propertyRbacHandler;
 
-	/**
-	 * Translation handler for column projection during export.
-	 *
-	 * @var \OCA\OpenRegister\Service\Object\TranslationHandler
-	 */
-	private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
 
 	/**
 	 * Optional register context used during sheet population.
@@ -150,7 +144,6 @@ class ExportService implements ObjectExporterInterface {
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
 	 * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler.
-	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler The translation handler.
 	 * @param NcOfficeConverterInterface|null $officeConverter Office server conversion; PDF output needs it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -162,7 +155,6 @@ class ExportService implements ObjectExporterInterface {
 		ObjectOperationsInterface $objectService,
 		CacheHandlerInterface $cacheHandler,
 		PropertyRbacHandler $propertyRbacHandler,
-		\OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly ?NcOfficeConverterInterface $officeConverter = null,
 	) {
 		$this->registerMapper = $registerMapper;
@@ -170,7 +162,6 @@ class ExportService implements ObjectExporterInterface {
 		$this->objectService = $objectService;
 		$this->cacheHandler = $cacheHandler;
 		$this->propertyRbacHandler = $propertyRbacHandler;
-		$this->translationHandler = $translationHandler;
 	}//end __construct()
 
 	/**

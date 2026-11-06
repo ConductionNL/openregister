@@ -95,7 +95,6 @@ class DestructionListCreatorTest extends TestCase {
 			$registerMapper,
 			$this->createMock(AuditTrailMapper::class),
 			$settings,
-			$this->createMock(IAppConfig::class),
 			$session,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(RetentionRowScanner::class),

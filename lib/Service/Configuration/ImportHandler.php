@@ -33,8 +33,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use DateTime;
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -58,7 +56,6 @@ use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -67,7 +64,6 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportHandler
@@ -170,13 +166,6 @@ class ImportHandler {
 	private readonly ConfigurationMapper $configurationMapper;
 
 	/**
-	 * HTTP client for fetching JSON from URLs.
-	 *
-	 * @var Client The Guzzle HTTP client instance.
-	 */
-	private readonly Client $client;
-
-	/**
 	 * App config for storing version information.
 	 *
 	 * @var IAppConfig The app config instance.
@@ -196,13 +185,6 @@ class ImportHandler {
 	 * @var string The app data path.
 	 */
 	private readonly string $appDataPath;
-
-	/**
-	 * Upload handler for processing uploaded JSON data.
-	 *
-	 * @var UploadHandler The upload handler instance.
-	 */
-	private readonly UploadHandler $uploadHandler;
 
 	/**
 	 * Object service for object CRUD operations.
@@ -249,33 +231,12 @@ class ImportHandler {
 
 
 	/**
-	 * Optional task service for seeding related VTODO items.
-	 *
-	 * @var TaskService|null
-	 */
-	private ?TaskService $taskService = null;
-
-	/**
-	 * Optional note service for seeding related comments.
-	 *
-	 * @var NoteService|null
-	 */
-	private ?NoteService $noteService = null;
-
-	/**
 	 * Decides the slug of a seed object so it cannot take a slug another live
 	 * object holds (#4037); null sets the seed slug as sent.
 	 *
 	 * @var \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler|null
 	 */
 	private ?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler = null;
-
-	/**
-	 * Optional file service for seeding related attachments.
-	 *
-	 * @var FileService|null
-	 */
-	private ?FileService $fileService = null;
 
 	/**
 	 * Optional provisioner that gives every register an app import returns its Files folder.
@@ -354,6 +315,20 @@ class ImportHandler {
 	private ShippedSeedContent $shippedContent;
 
 	/**
+	 * Creates the files, notes and tasks of a seed object.
+	 *
+	 * @var SeedRelatedItems
+	 */
+	private SeedRelatedItems $relatedItems;
+
+	/**
+	 * Refuses an import on a duplicate slug.
+	 *
+	 * @var ImportDuplicates
+	 */
+	private ImportDuplicates $duplicates;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -369,11 +344,9 @@ class ImportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param Client $client The HTTP client for URL fetching.
 	 * @param IAppConfig $appConfig The app config.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
-	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
@@ -389,11 +362,9 @@ class ImportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
-		Client $client,
 		IAppConfig $appConfig,
 		LoggerInterface $logger,
 		string $appDataPath,
-		UploadHandler $uploadHandler,
 		ObjectOperationsInterface $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
@@ -405,13 +376,13 @@ class ImportHandler {
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->mappingMapper = $mappingMapper;
-		$this->client = $client;
 		$this->appConfig = $appConfig;
 		$this->logger = $logger;
 		$this->appDataPath = $appDataPath;
-		$this->uploadHandler = $uploadHandler;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
+		$this->relatedItems = new SeedRelatedItems(logger: $logger);
+		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -440,7 +411,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setTaskService(?TaskService $taskService): void {
-		$this->taskService = $taskService;
+		$this->relatedItems->useTaskService($taskService);
 	}//end setTaskService()
 
 	/**
@@ -451,7 +422,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setNoteService(?NoteService $noteService): void {
-		$this->noteService = $noteService;
+		$this->relatedItems->useNoteService($noteService);
 	}//end setNoteService()
 
 	/**
@@ -475,7 +446,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setFileService(?FileService $fileService): void {
-		$this->fileService = $fileService;
+		$this->relatedItems->useFileService($fileService);
 	}//end setFileService()
 
 	/**
@@ -744,46 +715,6 @@ class ImportHandler {
 	}//end setObjectMapper()
 
 	/**
-	 * Decode JSON or YAML string data into PHP array.
-	 *
-	 * @param string $data The string data to decode.
-	 * @param string|null $type The content type.
-	 *
-	 * @return array|null The decoded array or null if decoding fails.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function decode(string $data, ?string $type): ?array {
-		switch ($type) {
-			case 'application/json':
-				$phpArray = json_decode(json: $data, associative: true);
-				break;
-			case 'application/yaml':
-				$phpArray = Yaml::parse(input: $data);
-				break;
-			default:
-				$phpArray = json_decode(json: $data, associative: true);
-				if ($phpArray === null || $phpArray === false) {
-					try {
-						$phpArray = Yaml::parse(input: $data);
-					} catch (Exception $exception) {
-						$phpArray = null;
-					}
-				}
-				break;
-		}
-
-		if ($phpArray === null || $phpArray === false) {
-			return null;
-		}
-
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
-		return $phpArray;
-	}//end decode()
-
-	/**
 	 * Recursively converts stdClass objects to arrays.
 	 *
 	 * @param mixed $data The data to convert.
@@ -807,101 +738,6 @@ class ImportHandler {
 
 		return $data;
 	}//end ensureArrayStructure()
-
-	/**
-	 * Get JSON data from uploaded file.
-	 *
-	 * @param array $uploadedFile The uploaded file data.
-	 * @param string|null $_type Unused parameter.
-	 *
-	 * @return JSONResponse|array The decoded array or error response.
-	 *
-	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-	 *
-	 * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse {
-		if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-			return new JSONResponse(data: ['error' => 'File upload error: ' . $uploadedFile['error']], statusCode: 400);
-		}
-
-		$fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
-		$fileContent = file_get_contents(filename: $uploadedFile['tmp_name']);
-
-		$phpArray = $this->decode(data: $fileContent, type: $fileExtension);
-		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
-				statusCode: 400
-			);
-		}
-
-		return $phpArray;
-	}//end getJSONfromFile()
-
-	/**
-	 * Fetch JSON from URL using HTTP GET.
-	 *
-	 * @param string $url The URL to fetch.
-	 *
-	 * @return JSONResponse|array
-	 *
-	 * @throws GuzzleException
-	 *
-	 * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromURL(string $url): array|JSONResponse {
-		try {
-			$response = $this->client->request('GET', $url);
-		} catch (GuzzleException $e) {
-			$errorMessage = 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage();
-			return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
-		}
-
-		$responseBody = $response->getBody()->getContents();
-		$contentType = $response->getHeaderLine('Content-Type');
-		$phpArray = $this->decode(data: $responseBody, type: $contentType);
-
-		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
-				statusCode: 400
-			);
-		}
-
-		return $phpArray;
-	}//end getJSONfromURL()
-
-	/**
-	 * Get JSON data from request body.
-	 *
-	 * @param array|string $phpArray The request body data.
-	 *
-	 * @return JSONResponse|array The processed array or error response.
-	 *
-	 * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromBody(array|string $phpArray): array|JSONResponse {
-		if (is_string($phpArray) === true) {
-			$phpArray = json_decode($phpArray, associative: true);
-		}
-
-		if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode JSON input'],
-				statusCode: 400
-			);
-		}
-
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
-		return $phpArray;
-	}//end getJSONfromBody()
 
 	/**
 	 * Import a register from configuration data.
@@ -1042,11 +878,7 @@ class ImportHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $options->appId]
 			);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateRegisterError(
-				slug: $data['slug'],
-				appId: $options->appId ?? 'unknown',
-				version: $options->version ?? 'unknown'
-			);
+			$this->duplicates->refuseRegister(slug: $data['slug'], source: ImportDuplicates::source(appId: $options->appId, version: $options->version));
 		}//end try
 
 		return null;
@@ -1317,154 +1149,6 @@ class ImportHandler {
 
 		return $this->mappingMapper->createFromArray(data: $data);
 	}//end importMapping()
-
-	/**
-	 * Handle duplicate register error during import.
-	 *
-	 * @param string $slug The register slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate register information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateRegisterError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate registers.
-		$duplicateInfo = $this->getDuplicateRegisterInfo(slug: $slug);
-
-		$formatStr = "Duplicate register detected during import from app '%s' (version %s). ";
-		$formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the register ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking registers with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateRegisterError()
-
-	/**
-	 * Get detailed information about duplicate registers.
-	 *
-	 * @param string $slug The register slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate register information.
-	 */
-	private function getDuplicateRegisterInfo(string $slug): string {
-		try {
-			// Try to get all registers with this slug to provide detailed info.
-			$registers = $this->registerMapper->findAll();
-			$duplicates = array_filter(
-				$registers,
-				function ($register) use ($slug) {
-					return strtolower($register->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $register) {
-				// Format created date.
-				$registerCreated = 'unknown';
-				if ($register->getCreated() !== null) {
-					$registerCreated = $register->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$register->getId(),
-					$register->getUuid() ?? '',
-					$register->getTitle() ?? '',
-					$registerCreated
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateRegisterInfo()
-
-	/**
-	 * Handle duplicate schema error during import.
-	 *
-	 * @param string $slug The schema slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate schema information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateSchemaError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate schemas.
-		$duplicateInfo = $this->getDuplicateSchemaInfo(slug: $slug);
-
-		$formatStr = "Duplicate schema detected during import from app '%s' (version %s). ";
-		$formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the schema ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking schemas with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateSchemaError()
-
-	/**
-	 * Get detailed information about duplicate schemas.
-	 *
-	 * @param string $slug The schema slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate schema information.
-	 */
-	private function getDuplicateSchemaInfo(string $slug): string {
-		try {
-			// Try to get all schemas with this slug to provide detailed info.
-			$schemas = $this->schemaMapper->findAll();
-			$duplicates = array_filter(
-				$schemas,
-				function ($schema) use ($slug) {
-					return strtolower($schema->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $schema) {
-				// Format created date.
-				$createdDate = 'unknown';
-				if ($schema->getCreated() !== null) {
-					$createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$schema->getId(),
-					$schema->getUuid() ?? '',
-					$schema->getTitle() ?? '',
-					$createdDate
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateSchemaInfo()
 
 	/**
 	 * Decide whether an incoming schema definition structurally differs from the stored one.
@@ -2090,11 +1774,7 @@ class ImportHandler {
 			$msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
 			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateSchemaError(
-				slug: $data['slug'],
-				appId: $appId ?? 'unknown',
-				version: $version ?? 'unknown'
-			);
+			$this->duplicates->refuseSchema(slug: $data['slug'], source: ImportDuplicates::source(appId: $appId, version: $version));
 		}
 
 		return null;
@@ -6450,17 +6130,28 @@ class ImportHandler {
 		);
 
 		if (is_array($object->relatedItems) === true && count($object->relatedItems) > 0) {
-			$this->processRelatedItems(
-				object: $createdObject,
-				relatedItems: $object->relatedItems,
-				registerId: (int)$object->registerId,
-				schemaId: (int)$object->schema->getId(),
-				objectTitle: (string)($object->data['title'] ?? $object->slug),
-				hasUserContext: $seed->hasUserContext,
-				result: $seed->result
-			);
+			$target = $this->relatedTarget(object: $object, created: $createdObject);
+			$target->hasUserContext = $seed->hasUserContext;
+			$this->relatedItems->create(target: $target, result: $seed->result);
 		}
 	}//end insertSeedObject()
+
+	/**
+	 * Where a seed object's related items go.
+	 *
+	 * @param SeedDataObject $object  The seed object.
+	 * @param ObjectEntity   $created The object as inserted.
+	 *
+	 * @return SeedRelatedTarget The target, still without its user context.
+	 */
+	private function relatedTarget(SeedDataObject $object, ObjectEntity $created): SeedRelatedTarget {
+		$target = new SeedRelatedTarget(object: $created);
+		$target->items = $object->relatedItems;
+		$target->registerId = (int)$object->registerId;
+		$target->schemaId = (int)$object->schema->getId();
+		$target->title = (string)($object->data['title'] ?? $object->slug);
+		return $target;
+	}//end relatedTarget()
 
 	/**
 	 * The entity a new seed object is inserted as.
@@ -6487,249 +6178,6 @@ class ImportHandler {
 		$objectEntity->setUpdated($now);
 		return $objectEntity;
 	}//end newSeedEntity()
-
-	/**
-	 * Create related Nextcloud items (files, notes, tasks) for a freshly
-	 * seeded object. Each item type is attempted independently so a
-	 * failure in one doesn't block the others.
-	 *
-	 * @param ObjectEntity $object The freshly seeded object the related items belong to.
-	 * @param array<string, mixed> $relatedItems The `_relatedItems` payload — keys: files, notes, tasks.
-	 * @param int $registerId Register ID the object lives in.
-	 * @param int $schemaId Schema ID of the object.
-	 * @param string $objectTitle Human-readable title used in note/task subjects.
-	 * @param bool $hasUserContext Whether a logged-in user exists (gates note/task creation).
-	 * @param array<string, mixed> $result Result accumulator updated in place with related-item counts.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function processRelatedItems(
-		ObjectEntity $object,
-		array $relatedItems,
-		int $registerId,
-		int $schemaId,
-		string $objectTitle,
-		bool $hasUserContext,
-		array &$result,
-	): void {
-		$files = (array)($relatedItems['files'] ?? []);
-		$notes = (array)($relatedItems['notes'] ?? []);
-		$tasks = (array)($relatedItems['tasks'] ?? []);
-
-		$this->logger->debug(
-			message: '[ImportHandler] Processing related items for seed object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_uuid' => $object->getUuid(),
-				'files_count' => count($files),
-				'notes_count' => count($notes),
-				'tasks_count' => count($tasks),
-			]
-		);
-
-		$filesCreated = 0;
-		if (count($files) > 0 && $this->fileService !== null) {
-			$filesCreated = $this->seedRelatedFiles(object: $object, files: $files);
-		}
-
-		// Notes and tasks are written as the logged-in user, so without one they are skipped.
-		$notesCreated = 0;
-		if (count($notes) > 0 && $this->noteService !== null) {
-			$notesCreated = $this->seedRelatedNotes(
-				object: $object,
-				notes: $this->itemsForUser(items: $notes, context: ['kind' => 'notes', 'object' => $object, 'user' => $hasUserContext])
-			);
-		}
-
-		$tasksCreated = 0;
-		if (count($tasks) > 0 && $this->taskService !== null) {
-			$tasksCreated = $this->seedRelatedTasks(
-				tasks: $this->itemsForUser(items: $tasks, context: ['kind' => 'tasks', 'object' => $object, 'user' => $hasUserContext]),
-				owner: ['object' => $object, 'registerId' => $registerId, 'schemaId' => $schemaId, 'title' => $objectTitle]
-			);
-		}
-
-		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
-		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
-		$result['relatedTasks'] = ($result['relatedTasks'] ?? 0) + $tasksCreated;
-
-		$this->logger->debug(
-			message: '[ImportHandler] Related items processed for seed object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_uuid' => $object->getUuid(),
-				'files_created' => $filesCreated,
-				'notes_created' => $notesCreated,
-				'tasks_created' => $tasksCreated,
-			]
-		);
-	}//end processRelatedItems()
-
-	/**
-	 * The seed notes or tasks to create: all of them with a user session, none without one.
-	 *
-	 * @param array                $items   The seed notes or tasks.
-	 * @param array<string, mixed> $context The `kind` (notes or tasks), the `object` and whether a `user` is logged in.
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function itemsForUser(array $items, array $context): array {
-		if ($context['user'] === true) {
-			return $items;
-		}
-
-		$this->logger->warning(
-			message: "[ImportHandler] Skipping seed {$context['kind']} - no user session available",
-			context: ['object_uuid' => $context['object']->getUuid(), 'count' => count($items)]
-		);
-
-		return [];
-	}//end itemsForUser()
-
-	/**
-	 * Attach a seed object's files; a `base64:` prefix marks encoded content.
-	 *
-	 * A file without a name or with non-string content is skipped, and so is
-	 * one whose base64 does not decode; a failed write is logged and skipped.
-	 *
-	 * @param ObjectEntity $object The seed object.
-	 * @param array        $files  The file specs: name, content, tags, share.
-	 *
-	 * @return int The number of files created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedFiles(ObjectEntity $object, array $files): int {
-		$created = 0;
-		foreach ($files as $fileSpec) {
-			$name = (string)($fileSpec['name'] ?? '');
-			$content = ($fileSpec['content'] ?? null);
-			if ($name === '' || is_string($content) === false) {
-				continue;
-			}
-
-			if (str_starts_with($content, 'base64:') === true) {
-				$content = base64_decode(substr($content, 7), strict: true);
-			}
-
-			if ($content === false) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed file base64 decode failed - skipping',
-					context: ['object_uuid' => $object->getUuid(), 'name' => $name]
-				);
-				continue;
-			}
-
-			try {
-				$this->fileService->addFile($object, $name, $content, (bool)($fileSpec['share'] ?? false), (array)($fileSpec['tags'] ?? []));
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed file creation failed',
-					context: [
-						'object_uuid' => $object->getUuid(),
-						'name' => $name,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		return $created;
-	}//end seedRelatedFiles()
-
-	/**
-	 * Add a seed object's notes; one without a message is skipped, a failed one logged.
-	 *
-	 * @param ObjectEntity $object The seed object.
-	 * @param array        $notes  The note specs: message.
-	 *
-	 * @return int The number of notes created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedNotes(ObjectEntity $object, array $notes): int {
-		$created = 0;
-		foreach ($notes as $noteSpec) {
-			$message = (string)($noteSpec['message'] ?? '');
-			if ($message === '') {
-				continue;
-			}
-
-			try {
-				$this->noteService->createNote((string)$object->getUuid(), $message);
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed note creation failed',
-					context: [
-						'object_uuid' => $object->getUuid(),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
-
-		return $created;
-	}//end seedRelatedNotes()
-
-	/**
-	 * Add a seed object's tasks; one without a summary is skipped, a failed one logged.
-	 *
-	 * @param array                $tasks The task specs: summary, description, status, priority, due.
-	 * @param array<string, mixed> $owner The seed `object`, its `registerId`, `schemaId` and `title`.
-	 *
-	 * @return int The number of tasks created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedTasks(array $tasks, array $owner): int {
-		$created = 0;
-		foreach ($tasks as $taskSpec) {
-			$summary = (string)($taskSpec['summary'] ?? '');
-			if ($summary === '') {
-				continue;
-			}
-
-			$taskData = [
-				'summary' => $summary,
-				'description' => (string)($taskSpec['description'] ?? ''),
-				'status' => (string)($taskSpec['status'] ?? 'needs-action'),
-				'priority' => (int)($taskSpec['priority'] ?? 0),
-				'due' => $taskSpec['due'] ?? null,
-			];
-			try {
-				$this->taskService->createTask(
-					$owner['registerId'],
-					$owner['schemaId'],
-					(string)$owner['object']->getUuid(),
-					$owner['title'],
-					$taskData
-				);
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed task creation failed',
-					context: [
-						'object_uuid' => $owner['object']->getUuid(),
-						'summary' => $summary,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		return $created;
-	}//end seedRelatedTasks()
 
 	/**
 	 * Minimal meta-schema describing the structural shape an OR schema
