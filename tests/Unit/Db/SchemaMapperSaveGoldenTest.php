@@ -104,6 +104,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
