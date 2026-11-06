@@ -24,9 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
-use OCP\IUserSession;
 
 /**
  * Whether the current user skips reference validation.
@@ -52,14 +51,12 @@ final class ReferenceAdminBypass {
 	private const CONFIG_KEY = 'reference_validation_admin_bypass';
 
 	/**
-	 * @param IGroupManager|null $groupManager Says who is an administrator.
-	 * @param IAppConfig|null    $appConfig    Holds the flag.
-	 * @param IUserSession       $userSession  Names the current user.
+	 * @param AdminGate       $adminGate Answers whether the current user is an administrator.
+	 * @param IAppConfig|null $appConfig Holds the flag.
 	 */
 	public function __construct(
-		private readonly ?IGroupManager $groupManager,
+		private readonly AdminGate $adminGate,
 		private readonly ?IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 
@@ -71,31 +68,15 @@ final class ReferenceAdminBypass {
 	 * @spec openspec/specs/reference-existence-validation/spec.md
 	 */
 	public function applies(): bool {
-		if ($this->isSwitchedOn() === false) {
+		if ($this->appConfig === null) {
 			return false;
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager?->isAdmin($user->getUID()) === true;
-	}//end applies()
-
-	/**
-	 * Whether the bypass can apply at all on this instance.
-	 *
-	 * @return bool True when both collaborators exist and the flag is on.
-	 */
-	private function isSwitchedOn(): bool {
-		if ($this->groupManager === null || $this->appConfig === null) {
-			return false;
-		}
-
-		return filter_var(
+		$enabled = filter_var(
 			$this->appConfig->getValueString(app: self::APP_ID, key: self::CONFIG_KEY, default: 'true'),
 			FILTER_VALIDATE_BOOLEAN
 		);
-	}//end isSwitchedOn()
+
+		return $enabled === true && $this->adminGate->isAdmin() === true;
+	}//end applies()
 }//end class

@@ -78,6 +78,7 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectUpdatePathTest extends TestCase {
 

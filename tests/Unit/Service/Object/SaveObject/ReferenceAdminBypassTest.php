@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -33,6 +34,7 @@ use PHPUnit\Framework\TestCase;
  * Every condition of the bypass, one at a time.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses   \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class ReferenceAdminBypassTest extends TestCase {
 
@@ -88,7 +90,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAdministratorSkipsValidation(): void {
-		$bypass = new ReferenceAdminBypass($this->admins(), $this->config('true'), $this->session('admin'));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session('admin'), $this->admins()), $this->config('true'));
 
 		$this->assertTrue($bypass->applies());
 	}//end testAnAdministratorSkipsValidation()
@@ -99,7 +101,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnotherUserIsValidated(): void {
-		$bypass = new ReferenceAdminBypass($this->admins(), $this->config('true'), $this->session('alice'));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session('alice'), $this->admins()), $this->config('true'));
 
 		$this->assertFalse($bypass->applies());
 	}//end testAnotherUserIsValidated()
@@ -110,7 +112,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheFlagOffValidatesAnAdministrator(): void {
-		$bypass = new ReferenceAdminBypass($this->admins(), $this->config('false'), $this->session('admin'));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session('admin'), $this->admins()), $this->config('false'));
 
 		$this->assertFalse($bypass->applies());
 	}//end testTheFlagOffValidatesAnAdministrator()
@@ -121,7 +123,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoUserIsValidated(): void {
-		$bypass = new ReferenceAdminBypass($this->admins(), $this->config('true'), $this->session(null));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session(null), $this->admins()), $this->config('true'));
 
 		$this->assertFalse($bypass->applies());
 	}//end testNoUserIsValidated()
@@ -132,7 +134,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoGroupManagerValidates(): void {
-		$bypass = new ReferenceAdminBypass(null, $this->config('true'), $this->session('admin'));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session('admin'), null), $this->config('true'));
 
 		$this->assertFalse($bypass->applies());
 	}//end testNoGroupManagerValidates()
@@ -143,7 +145,7 @@ final class ReferenceAdminBypassTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoAppConfigValidates(): void {
-		$bypass = new ReferenceAdminBypass($this->admins(), null, $this->session('admin'));
+		$bypass = new ReferenceAdminBypass(new AdminGate($this->session('admin'), $this->admins()), null);
 
 		$this->assertFalse($bypass->applies());
 	}//end testNoAppConfigValidates()

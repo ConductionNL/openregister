@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
@@ -5467,9 +5468,8 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function referenceAdminBypass(): ReferenceAdminBypass {
 		return new ReferenceAdminBypass(
-			groupManager: $this->groupManager,
-			appConfig: $this->appConfig,
-			userSession: $this->userSession
+			adminGate: new AdminGate(userSession: $this->userSession, groupManager: $this->groupManager),
+			appConfig: $this->appConfig
 		);
 	}//end referenceAdminBypass()
 

@@ -74,6 +74,7 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 class SaveObjectSharedMasterDataContextTest extends TestCase {
 
