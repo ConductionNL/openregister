@@ -38,14 +38,27 @@ Open Register SHALL verify RS256/384/512 and PS256/384/512 tokens against the co
 - **AND** a token signed with another key, or an HS256 token using the public key as secret, is refused
 - @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest}
 
-#### Scenario: an HS256 token is verified with the shared secret, and a short secret is refused
+#### Scenario: an HS256 token is verified with the shared secret
 
 - **GIVEN** a consumer configured for HS256 with a shared secret of at least 32 bytes
 - **WHEN** a token signed with that secret is presented
 - **THEN** it is authenticated
-- **AND** a token signed with another secret, or a token whose header names HS512, is refused
-- **AND** when the consumer's secret is shorter than 32 bytes, every token is refused with the reason that the HMAC secret is shorter than the hash output
-- @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest and HmacJwsVerifierTest}
+- **AND** a token signed with another secret is refused
+- @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest}
+
+#### Scenario: an HS token whose header names another algorithm than the pin is refused
+
+- **GIVEN** a consumer configured for HS256
+- **WHEN** a token whose header names HS512 is presented, signed with the consumer's secret
+- **THEN** it is refused with the reason that the token algorithm does not match the issuer configuration
+- @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest}
+
+#### Scenario: a shared secret shorter than the hash output is refused
+
+- **GIVEN** a consumer configured for HS256 with a shared secret shorter than 32 bytes
+- **WHEN** a token signed with that secret is presented
+- **THEN** it is refused with the reason that the HMAC secret is shorter than the algorithm's hash output
+- @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest}
 
 #### Scenario: a replayed or pre-dated token is refused
 

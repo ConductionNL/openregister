@@ -353,6 +353,25 @@ PEM;
 		}
 	}//end testAnHmacTokenSignedWithAnotherSecretIsRefused()
 
+
+	/**
+	 * A token whose header names another HS algorithm than the consumer's pin is refused before its signature is checked.
+	 *
+	 * @return void
+	 */
+	public function testAnHmacTokenOfAnotherHmacAlgorithmIsRefused(): void {
+		$secret = str_repeat('k', 64);
+		$this->consumer(algorithm: 'HS256', publicKey: $secret);
+
+		try {
+			$this->service()->authorizeJwt(authorization: 'Bearer ' . $this->hmacToken(algorithm: 'HS512', secret: $secret));
+			$this->fail(message: 'an HS512 token against an HS256 consumer must be refused');
+		} catch (AuthenticationException $e) {
+			$this->assertStringContainsString(needle: 'Token algorithm does not match issuer configuration', haystack: (string)json_encode($e->getDetails()));
+			$this->assertSame(expected: [], actual: $this->volatileUsers);
+		}
+	}//end testAnHmacTokenOfAnotherHmacAlgorithmIsRefused()
+
 	public function testAReusedJtiIsRefused(): void {
 		$secret = str_repeat('k', 32);
 		$this->consumer('HS256', $secret);
