@@ -490,6 +490,25 @@
             }
         }
     },
+    "name dotted from nothing": {
+        "thrown": "Exception: The value for objectNameField ('.nl') does not exist as a property in the schema.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [],
+            "properties": {
+                "": {
+                    "type": "string"
+                }
+            },
+            "configuration": {
+                "objectNameField": ".nl"
+            }
+        }
+    },
     "name dotted unknown": {
         "thrown": "Exception: The value for objectNameField ('nope.nl') does not exist as a property in the schema.",
         "logs": [],

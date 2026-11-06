@@ -62,7 +62,7 @@ final class FacetConfiguration {
 
 	private const DATE_TYPES = ['date', 'datetime', 'date-time'];
 
-	private const DATE_FIELD_WORDS = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
+	private const DATE_FIELD_WORDS = ['created', 'updated', 'modified', 'date', 'time'];
 
 	/**
 	 * Generate the facet configuration from the schema properties.
@@ -184,7 +184,7 @@ final class FacetConfiguration {
 	 * @psalm-return 'date_histogram'|'terms'|null
 	 */
 	private function detectedType(array $property, string $lowerFieldName): ?string {
-		if (empty(($property['enum'] ?? null)) === false && is_array($property['enum']) === true) {
+		if ($this->hasEnum(property: $property) === true) {
 			return 'terms';
 		}
 
@@ -200,6 +200,19 @@ final class FacetConfiguration {
 	}//end detectedType()
 
 	/**
+	 * Whether a property lists its values.
+	 *
+	 * @param array<string, mixed> $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private function hasEnum(array $property): bool {
+		$enum = ($property['enum'] ?? null);
+
+		return is_array($enum) === true && count($enum) > 0;
+	}//end hasEnum()
+
+	/**
 	 * Whether a field name reads as a date.
 	 *
 	 * @param string $lowerFieldName The lowercased field name.
@@ -207,12 +220,11 @@ final class FacetConfiguration {
 	 * @return bool
 	 */
 	private function hasDateName(string $lowerFieldName): bool {
-		foreach (self::DATE_FIELD_WORDS as $dateField) {
-			if (str_contains($lowerFieldName, $dateField) === true) {
-				return true;
-			}
-		}
+		$matches = array_filter(
+			self::DATE_FIELD_WORDS,
+			static fn (string $word): bool => str_contains($lowerFieldName, $word)
+		);
 
-		return false;
+		return $matches !== [];
 	}//end hasDateName()
 }//end class
