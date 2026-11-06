@@ -67,6 +67,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
