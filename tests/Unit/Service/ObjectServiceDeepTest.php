@@ -16,7 +16,6 @@
  * - count
  * - findByRelations
  * - deleteObject
- * - getActiveOrganisationForContext
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -735,54 +734,5 @@ class ObjectServiceDeepTest extends TestCase {
 	// =========================================================================
 	// getActiveOrganisationForContext (private)
 	// =========================================================================
-
-	/**
-	 * Test getActiveOrganisationForContext returns UUID
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsUuid(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$org = new \OCA\OpenRegister\Db\Organisation();
-		$org->setUuid('org-uuid');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($org);
-
-		$result = $method->invoke($this->service);
-		$this->assertEquals('org-uuid', $result);
-
-	}//end testGetActiveOrganisationForContextReturnsUuid()
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when no org
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextReturnsNull(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextReturnsNull()
-
-	/**
-	 * Test getActiveOrganisationForContext handles exception
-	 *
-	 * @return void
-	 */
-	public function testGetActiveOrganisationForContextException(): void {
-		$method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
-
-		$this->organisationService->method('getActiveOrganisation')
-			->willThrowException(new \Exception('Service error'));
-
-		$result = $method->invoke($this->service);
-		$this->assertNull($result);
-
-	}//end testGetActiveOrganisationForContextException()
 
 }//end class

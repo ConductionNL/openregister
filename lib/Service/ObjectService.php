@@ -4053,32 +4053,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         return true;
     }//end appendOnlyTargetExists()
 
-        /**
-         * Get the active organization for the current user
-         *
-         * This method determines the active organization using the same logic as SaveObject
-         * to ensure consistency between save and retrieval operations.
-         *
-         * @return string|null The active organization UUID or null if none found
-         */
-    private function getActiveOrganisationForContext(): ?string
-    {
-        try {
-            $activeOrganisation = $this->organisationService->getActiveOrganisation();
-
-            if ($activeOrganisation !== null) {
-                return $activeOrganisation->getUuid();
-            }
-
-            return null;
-        } catch (Exception $e) {
-            // Log error but continue without organization context.
-            return null;
-        }
-
-        return null;
-    }//end getActiveOrganisationForContext()
-
     /**
      * Build a search query from request parameters for faceting-enabled methods
      *
@@ -4374,16 +4348,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?array $ids=null,
         ?string $uses=null
     ): int {
-        // Get active organization context for multi-tenancy (only if multi is enabled).
-        $activeOrgUuid = null;
-        if ($_multitenancy === true) {
-            $activeOrgUuid = $this->getActiveOrganisationForContext();
-        }
-
-        // Use the optimized countSearchObjects method from MagicMapper with organization context.
-        return $this->objectMapper->countSearchObjects(
+        return $this->queryHandler->countSearchObjects(
             query: $query,
-            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
