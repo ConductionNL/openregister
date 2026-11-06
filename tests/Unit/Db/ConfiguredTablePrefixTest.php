@@ -58,6 +58,9 @@ use ReflectionProperty;
  * @covers \OCA\OpenRegister\Service\Object\CacheHandler
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
  * @covers \OCA\OpenRegister\Service\SettingsService
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\DateTimeNormalizer
  */
 class ConfiguredTablePrefixTest extends TestCase {
 	private const TABLE = 'nc_openregister_table_1_7';
