@@ -42,6 +42,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Configuration\ImportReferenceMap
  * @uses   \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 
