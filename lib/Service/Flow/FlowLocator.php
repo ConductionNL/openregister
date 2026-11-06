@@ -69,7 +69,6 @@ class FlowLocator {
 	 * @param ObjectOperationsInterface $objectService Loads the object a run is about.
 	 * @param LoggerInterface $logger Records refusals and failures.
 	 * @param FlowVersionMapper $versions Answers whether a fallback-matched flow has a published version.
-	 * @param FlowTenantMembership $membership Answers whether a compiled schedule's identity is still in its tenant.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
@@ -77,7 +76,6 @@ class FlowLocator {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly LoggerInterface $logger,
 		private readonly FlowVersionMapper $versions,
-		private readonly FlowTenantMembership $membership,
 	) {
 
 	}//end __construct()
@@ -406,11 +404,6 @@ class FlowLocator {
 				continue;
 			}
 
-			if ($this->leftItsTenant(flow: $flow) === true) {
-				$this->disableForTenant(flow: $flow);
-				continue;
-			}
-
 			$candidates[] = [
 				'id' => (string)$flow->getUuid(),
 				'enabled' => (bool)$flow->getEnabled(),
@@ -423,54 +416,6 @@ class FlowLocator {
 
 		return $candidates;
 	}//end scheduledFlows()
-
-	/**
-	 * Whether a flow compiled from a manifest names an identity outside its tenant.
-	 *
-	 * A flow an author drew is not asked: this rule is the compiled flow's.
-	 *
-	 * @param Flow $flow The flow.
-	 *
-	 * @return boolean True when it may not run as that identity.
-	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
-	 */
-	private function leftItsTenant(Flow $flow): bool {
-		if ($flow->getApp() !== Flow::APP_MANIFEST_SCHEDULE) {
-			return false;
-		}
-
-		return $this->membership->isMember(
-			uid: (string)$flow->scheduledRunAs(),
-			organisation: (string)$flow->getOrganisation()
-		) === false;
-	}//end leftItsTenant()
-
-	/**
-	 * Switch a compiled flow off, with the reason on the flow.
-	 *
-	 * A schedule that stays on while firing nothing would read as healthy.
-	 *
-	 * @param Flow $flow The flow.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
-	 */
-	private function disableForTenant(Flow $flow): void {
-		$reason = 'Its acting identity "' . (string)$flow->scheduledRunAs()
-			. '" is not a member of the flow\'s organisation. Publishing the application again sets a new one.';
-
-		$flow->setEnabled(false);
-		$flow->setStatus(Flow::STATUS_ERROR);
-		$flow->setStatusMessage($reason);
-		$this->mapper->update($flow);
-
-		$this->logger->warning(
-			message: '[FlowLocator] Disabled scheduled flow "' . $flow->getUuid() . '": ' . $reason,
-			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
-		);
-	}//end disableForTenant()
 
 	/**
 	 * When a flow was last saved, as an ATOM timestamp, or the empty string.
