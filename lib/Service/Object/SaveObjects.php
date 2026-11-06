@@ -2152,7 +2152,6 @@ class SaveObjects {
 				'has_@self' => isset($object['@self']),
 				'@self_keys' => $selfKeys,
 				'has_object_property' => isset($object['object']),
-				'sample_data' => array_slice($object, 0, 3, true),
 			]
 		);
 	}//end logBulkObjectStructure()
@@ -2172,7 +2171,6 @@ class SaveObjects {
 				'uuid' => $selfData['uuid'] ?? 'unknown',
 				'relationCount' => count($selfData['relations']),
 				'businessDataKeys' => array_keys($businessData),
-				'relationsPreview' => array_slice($selfData['relations'], 0, 5, true),
 			]
 		);
 	}//end logBulkRelationScan()
@@ -3504,7 +3502,6 @@ class SaveObjects {
 				[
 					'available_keys' => array_keys($object),
 					'has_object_property' => isset($object['object']),
-					'sample_data' => array_slice($object, 0, 3, true),
 				]
 			);
 
@@ -3535,7 +3532,6 @@ class SaveObjects {
 					[
 						'uuid' => $selfData['uuid'] ?? 'unknown',
 						'relationCount' => count($relations),
-						'relations' => array_slice($relations, 0, 3, true),
 					]
 				);
 			}//end if
@@ -3752,7 +3748,6 @@ class SaveObjects {
 				),
 				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
 				'remaining_keys' => array_keys($businessData),
-				'business_data_sample' => array_slice($businessData, 0, 3, true),
 			]
 		);
 
@@ -3792,7 +3787,7 @@ class SaveObjects {
 				$this->logger->error(
 					'Object reconstruction failed: Missing UUID after bulk save operation',
 					[
-						'objectData' => $objData,
+						'objectKeys' => array_keys($objData),
 						'error' => 'UUID missing in saved object data',
 						'context' => 'reconstructSavedObjects',
 					]

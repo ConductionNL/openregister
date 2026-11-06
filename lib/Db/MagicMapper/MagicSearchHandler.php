@@ -4475,7 +4475,7 @@ class MagicSearchHandler {
 					'line' => __LINE__,
 					'error' => $e->getMessage(),
 					'tableName' => $tableName,
-					'row' => $row,
+					'columns' => array_keys($row),
 				]
 			);
 
