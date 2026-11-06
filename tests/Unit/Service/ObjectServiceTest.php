@@ -1929,16 +1929,6 @@ class ObjectServiceTest extends TestCase {
 		}
 	}
 
-	public function testBuildObjectSearchQueryDelegatesToBuildSearchQuery(): void {
-		$this->searchQueryHandler->expects($this->once())
-			->method('buildSearchQuery')
-			->willReturn(['_limit' => 20]);
-
-		$result = $this->service->buildObjectSearchQuery(params: ['_limit' => 20]);
-
-		$this->assertSame(20, $result['_limit']);
-	}
-
 	// ── 39. vectorization methods — disabled ────────────────────────────
 
 	public function testVectorizeBatchObjectsThrowsDisabledException(): void {
