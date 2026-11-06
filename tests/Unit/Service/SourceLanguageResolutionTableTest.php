@@ -28,6 +28,7 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\TranslationProjectionService
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
