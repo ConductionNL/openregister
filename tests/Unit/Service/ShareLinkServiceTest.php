@@ -384,8 +384,8 @@ class ShareLinkServiceTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->buildUserSession('alice'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $this->buildFolderHandler($folder),
-				'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $this->buildObjectMapper(),
+				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
 			]
 		);
 
@@ -406,8 +406,8 @@ class ShareLinkServiceTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->buildUserSession('carol'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $this->buildFolderHandler($folder),
-				'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $this->buildObjectMapper(),
+				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
 			]
 		);
 
