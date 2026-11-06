@@ -77,6 +77,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -265,6 +266,52 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 
 		$this->assertGolden($actual, 'schema-mapper-extended-by-golden.json');
 	}//end testExtendedByMatchesGolden()
+
+	public function testFlagReadsMatchGolden(): void {
+		$actual = [];
+		foreach (['findNonSearchableIds', 'findSearchableIds', 'findSmartPickerEnabledIds'] as $read) {
+			$this->queryLog = [];
+			$this->builderCount = 0;
+			$this->parameterCount = 0;
+			$this->queuedRows = [[['id' => '3'], ['other' => 1], ['id' => 4]]];
+			$actual[$read] = ['ids' => $this->makeMapper()->$read(), 'queries' => $this->queryLog];
+		}
+
+		$this->assertGolden($actual, 'schema-mapper-flag-reads-golden.json');
+	}//end testFlagReadsMatchGolden()
+
+	public function testReferenceSearchMatchesGolden(): void {
+		$target = ['12', 'a0b1-uuid', 'zaak'];
+		$cases = [
+			'no properties' => [],
+			'scalar property' => ['a' => 'x'],
+			'no ref' => ['a' => ['type' => 'string']],
+			'other ref' => ['a' => ['$ref' => 'besluit']],
+			'exact id' => ['a' => ['$ref' => '12']],
+			'integer id' => ['a' => ['$ref' => 12]],
+			'other integer' => ['a' => ['$ref' => 13]],
+			'exact uuid' => ['a' => ['$ref' => 'a0b1-uuid']],
+			'exact slug' => ['a' => ['$ref' => 'zaak']],
+			'component path' => ['a' => ['$ref' => '#/components/schemas/zaak']],
+			'bare schemas path' => ['a' => ['$ref' => 'schemas/zaak']],
+			'ends in slug' => ['a' => ['$ref' => 'https://example.org/x/zaak']],
+			'uuid in url' => ['a' => ['$ref' => 'https://example.org/a0b1-uuid/x']],
+			'ref is a list' => ['a' => ['$ref' => ['zaak']]],
+			'nested' => ['a' => ['properties' => ['b' => ['$ref' => 'zaak']]]],
+			'nested scalar' => ['a' => ['properties' => 'zaak']],
+			'items' => ['a' => ['items' => ['$ref' => 'zaak']]],
+			'items nested' => ['a' => ['items' => ['properties' => ['b' => ['$ref' => 'zaak']]]]],
+			'items scalar' => ['a' => ['items' => 'zaak']],
+			'second property' => ['a' => ['$ref' => 'x'], 'b' => ['$ref' => 'zaak']],
+		];
+		$actual = [];
+		foreach ($cases as $name => $properties) {
+			$actual[$name] = $this->makeMapper()->hasReferenceToSchema($properties, ...$target);
+		}
+
+		$actual['empty slug and uuid'] = $this->makeMapper()->hasReferenceToSchema(['a' => ['$ref' => 'schemas/anything']], '12', '', '');
+		$this->assertGolden($actual, 'schema-mapper-reference-search-golden.json');
+	}//end testReferenceSearchMatchesGolden()
 
 	/**
 	 * Run an action against queued rows, one single-row answer per query.
