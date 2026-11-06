@@ -18,7 +18,7 @@
  * @link      https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Search\Service\DashboardScope;

@@ -45,10 +45,10 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Command/ReconcileMagicTablesCommand.php" method="execute"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/ContextChat/ContentProvider.php" method="resolveOptedInPairs"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Controller/AggregationController.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/AggregationController.php" method="grouped"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/AggregationController.php" method="grouped"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/AggregationController.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Search/Controller/AggregationController.php"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Search/Controller/AggregationController.php" method="grouped"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Search/Controller/AggregationController.php" method="grouped"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Search/Controller/AggregationController.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/BulkController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/BulkController.php" method="save"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Controller/ChatController.php" method="getChatStats"/>
@@ -100,10 +100,10 @@
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/Trait/HandlesExceptionsTrait.php"/>
   <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/TransferController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Controller/TranslationController.php"/>
-  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Controller/ViewsController.php"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ViewsController.php" method="create"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ViewsController.php" method="update"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/ViewsController.php" method="patch"/>
+  <violation rule="PHPMD\Rule\Naming\LongVariable" file="lib/Search/Controller/ViewsController.php"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Search/Controller/ViewsController.php" method="create"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Search/Controller/ViewsController.php" method="update"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Search/Controller/ViewsController.php" method="patch"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/WebhooksController.php" method="test"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/BackgroundJob/FlowScheduleWorker.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/BackgroundJob/SyncDataJob.php"/>
@@ -477,7 +477,7 @@
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Vocabulary/ConceptLifecycle.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Rbac/ProvenanceResolver.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/Schemas/UniqueConstraintEvaluator.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/ViewsController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Search/Controller/ViewsController.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/MagicMapper/MagicBulkSaveGroup.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Rbac/DepartmentMatrixValidator.php"/>
 </phpmd-baseline>

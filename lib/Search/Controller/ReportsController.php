@@ -32,7 +32,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
