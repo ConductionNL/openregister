@@ -32,8 +32,6 @@ namespace OCA\OpenRegister\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Exception\RegisterNotFoundException;
-use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -470,16 +468,15 @@ class SearchQueryHandler {
 		?array $ids = null,
 	): array {
 		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
-		$parts = $this->splitSearchParams(params: $params, self: (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema));
+		$scope = (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema);
+		$parts = $this->splitSearchParams(params: $params, self: $scope);
 		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
 
 		if ($ids !== null) {
 			$query['_ids'] = $ids;
 		}
 
-		$query = $this->mergeSpecialParams(query: $query, special: $parts->special);
-
-		return $this->applyLenses(query: $query);
+		return $this->applyLenses(query: $this->mergeSpecialParams(query: $query, special: $parts->special));
 	}//end buildSearchQuery()
 
 	/**
