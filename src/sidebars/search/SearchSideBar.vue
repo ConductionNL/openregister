@@ -571,11 +571,6 @@ import {
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-	viewsStore,
 	activeTab: 'search-tab', // Active tab tracker
 	registerLoading: false,
 	schemaLoading: false,
@@ -637,7 +632,14 @@ export default {
 	},
 
 	data() {
-		return freshState(INITIAL_STATE)
+		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
+			...freshState(INITIAL_STATE),
+		}
 	},
 
 	computed: {
