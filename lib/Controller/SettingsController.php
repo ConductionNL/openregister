@@ -866,6 +866,9 @@ class SettingsController extends Controller {
 	/**
 	 * Debug endpoint for type filtering issue
 	 *
+	 * Admin-only: no `@NoAdminRequired` here, so Nextcloud's middleware refuses an
+	 * ordinary account before the method runs.
+	 *
 	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with type filtering debug information
@@ -892,8 +895,6 @@ class SettingsController extends Controller {
 	 * @spec exclude Debug/test scaffolding endpoint ("Debug endpoint for type filtering issue"): dumps
 	 *              organisation/object data; not a product contract (see proposal Notes — routed debug surface,
 	 *              information-disclosure risk).
-	 *
-	 * @NoAdminRequired
 	 */
 	public function debugTypeFiltering(): JSONResponse {
 		try {
