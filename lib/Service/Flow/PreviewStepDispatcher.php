@@ -61,6 +61,8 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items: the node's for a performed step, the input otherwise.
 	 *
+	 * @throws \UnexpectedValueException When the step refuses its configuration.
+	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dispatch(array $step, array $items, array $context): array {
@@ -77,6 +79,10 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 			$this->previews[$nodeId] = ['performed' => true, 'summary' => $node->getDisplayName()];
 			return $node->execute(items: $items, config: $config, context: $context);
 		}
+
+		// A described step is never executed, so its own check has to run here
+		// for a configuration the real run refuses to fail in the dry run too.
+		$node->validateConfig($config);
 
 		if ($node instanceof IFlowNodePreview) {
 			$this->previews[$nodeId] = array_merge(
