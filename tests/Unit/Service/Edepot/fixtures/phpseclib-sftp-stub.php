@@ -1,8 +1,7 @@
 <?php
 
 /**
- * Stand-ins for phpseclib3, which is not a dependency of this app, for tests that
- * run in a separate process.
+ * Stand-ins for phpseclib3, for tests that run in a separate process.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -60,8 +59,8 @@ namespace phpseclib3\Net {
 			return self::$putResult;
 		}
 
-		public function size(string $remote): mixed {
-			self::$calls[] = ['size', $remote];
+		public function filesize(string $remote): mixed {
+			self::$calls[] = ['filesize', $remote];
 			return self::$size;
 		}
 
