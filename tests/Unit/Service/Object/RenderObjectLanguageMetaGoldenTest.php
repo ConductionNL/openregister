@@ -49,6 +49,7 @@ use ReflectionMethod;
  * Pins the served language, source language, isSource flag and sidecar status per translatable property.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
