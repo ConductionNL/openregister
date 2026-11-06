@@ -67,6 +67,7 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 			'limit zero'             => ['count' => 5, 'limit' => 0],
 			'offset past the end'    => ['count' => 5, 'offset' => 9],
 			'saved and updated'      => ['count' => 3, 'stats' => ['saved' => 1, 'updated' => 2, 'failed' => 4]],
+			'refused rows'           => ['count' => 3, 'stats' => ['saved' => 1, 'invalid' => 2]],
 			'no statistics'          => ['count' => 3, 'stats' => null],
 			'empty statistics'       => ['count' => 3, 'stats' => []],
 			'bulk save throws'       => ['count' => 3, 'saveFails' => [1]],

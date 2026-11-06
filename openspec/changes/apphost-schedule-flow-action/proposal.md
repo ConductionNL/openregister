@@ -25,6 +25,6 @@ The earlier plan also took the acting user from the application's owner. ADR-099
 
 ## Impact
 
-- `lib/AppHost/Scheduling/`, `lib/AppHost/Listener/`, `lib/Service/Flow/FlowLocator.php`.
+- `lib/AppHost/Scheduling/`, `lib/AppHost/Listener/`, `lib/Service/Flow/FlowRunAttribution.php`.
 - No migration: compiled flows are ordinary rows in `openregister_flows`, marked by their `app` column.
 - buildiq: no change. Schedules published before this change start running when the app is next published, because no publisher is known for them.
