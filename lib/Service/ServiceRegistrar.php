@@ -427,7 +427,6 @@ final class ServiceRegistrar {
 				commentsManager: $container->get('OCP\Comments\ICommentsManager'),
 				userSession: $container->get('OCP\IUserSession'),
 				userManager: $container->get('OCP\IUserManager'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
 				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
 				versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
 			);

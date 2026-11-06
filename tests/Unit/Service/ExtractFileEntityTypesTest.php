@@ -101,8 +101,6 @@ class ExtractFileEntityTypesTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$entityHandler,
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
 			$settings,
 			$this->createMock(RiskLevelService::class),
 			$this->createMock(EmlParser::class),
