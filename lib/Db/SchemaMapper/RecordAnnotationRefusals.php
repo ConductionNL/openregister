@@ -167,8 +167,9 @@ final class RecordAnnotationRefusals {
 			return;
 		}
 
-		$findings = (new ArchivalAnnotationValidator())->validate(schema: ['x-openregister-archival' => $annotation->value()]);
-		$split = ArchivalAnnotationValidator::partition(findings: $findings);
+		$validator = new ArchivalAnnotationValidator();
+		$findings = $validator->validate(schema: ['x-openregister-archival' => $annotation->value()]);
+		$split = $validator->partition(findings: $findings);
 		if (count($split['warnings']) > 0) {
 			$this->logger->warning($annotation->unknownKeysNotice(warnings: $split['warnings']));
 		}
