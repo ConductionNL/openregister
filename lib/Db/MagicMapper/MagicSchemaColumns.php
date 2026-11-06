@@ -88,7 +88,8 @@ final class MagicSchemaColumns {
 		$claims = new MagicColumnNameClaims(columns: $columns, logger: $this->logger);
 
 		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
-			if ($this->isProperty(name: $propertyName, config: $propertyConfig) === false) {
+			// A planned column keeps its definition: a property of that name is never written (REQ-MTR-001).
+			if ($this->isProperty(name: $propertyName, config: $propertyConfig) === false || isset($columns[$propertyName]) === true) {
 				continue;
 			}
 
