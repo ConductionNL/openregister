@@ -30,6 +30,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -101,6 +102,80 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testStatisticsMatchGolden()
+
+	/**
+	 * The grouped read, a read without a limit, and every read on a failing database.
+	 */
+	public function testGroupedAndFailingReadsMatchGolden(): void {
+		$rows = [['schema' => '5', 'total' => '2', 'size' => '7'], ['schema' => '6', 'total' => null, 'size' => null]];
+		$actual = [];
+		foreach (['rows' => $rows, 'empty' => []] as $rowName => $served) {
+			$this->queryLog = [];
+			$this->builderCount = 0;
+			$this->parameterCount = 0;
+			$this->queuedRows = [$served];
+			$result = $this->mapper()->getStatisticsGroupedBySchema([5, 9]);
+			$actual["grouped $rowName"] = ['result' => $result, 'queries' => $this->queryLog];
+		}
+
+		$actual['grouped no ids'] = $this->mapper()->getStatisticsGroupedBySchema([]);
+
+		$this->queryLog = [];
+		$this->builderCount = 0;
+		$this->parameterCount = 0;
+		$this->queuedRows = [[]];
+		$this->mapper()->getMostActiveObjects(null, null, null, 6);
+		$actual['most active without limit'] = preg_grep('/setMaxResults/', $this->queryLog);
+
+		$failing = [
+			'getStatistics' => fn (AuditTrailMapper $m) => $m->getStatistics(),
+			'getActionChartData' => fn (AuditTrailMapper $m) => $m->getActionChartData(),
+			'getDetailedStatistics' => fn (AuditTrailMapper $m) => $m->getDetailedStatistics(),
+			'getActionCounts' => fn (AuditTrailMapper $m) => $m->getActionCounts(5, 9),
+			'getActionDistribution' => fn (AuditTrailMapper $m) => $m->getActionDistribution(),
+			'getMostActiveObjects' => fn (AuditTrailMapper $m) => $m->getMostActiveObjects(),
+			'getStatisticsGroupedBySchema' => fn (AuditTrailMapper $m) => $m->getStatisticsGroupedBySchema([5, 9]),
+		];
+		foreach ($failing as $name => $call) {
+			$logged = [];
+			$actual["failing $name"] = ['result' => $call($this->failingMapper($logged)), 'logged' => $logged];
+		}
+
+		$fixture = __DIR__ . '/fixtures/audit-trail-statistics-failures-golden.json';
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents($fixture, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$this->assertSame(json_decode((string) file_get_contents($fixture), true), json_decode((string) json_encode($actual), true));
+	}//end testGroupedAndFailingReadsMatchGolden()
+
+	/**
+	 * A mapper whose database refuses every query, logging into $logged.
+	 *
+	 * @param array<int, array<string, mixed>> $logged The log lines.
+	 */
+	private function failingMapper(array &$logged): AuditTrailMapper {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willThrowException(new \Exception('database down'));
+
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context = []) use (&$logged): void {
+				unset($context['exception']);
+				$logged[] = ['message' => $message, 'context' => $context];
+			}
+		);
+
+		return new AuditTrailMapper(
+			$db,
+			$this->createMock(ContainerInterface::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IRequest::class),
+			$logger
+		);
+	}//end failingMapper()
 
 	private function mapper(): AuditTrailMapper {
 		$db = $this->createMock(IDBConnection::class);
