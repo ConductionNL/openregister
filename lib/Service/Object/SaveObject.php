@@ -1431,7 +1431,6 @@ class SaveObject implements SaveObjectInterface {
 			schema: $schemaId,
 			data: $object,
 			uuid: null,
-			folderId: null,
 			_rbac: true,
 			_multitenancy: true,
 			persist: true,
@@ -2000,7 +1999,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @param Schema|int|string $schema The schema to validate against.
 	 * @param array $data The object data to save.
 	 * @param string|null $uuid The UUID of the object to update (if updating).
-	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
 	 * @param bool $persist Whether to persist the object to database (default: true).
@@ -2030,7 +2028,6 @@ class SaveObject implements SaveObjectInterface {
 		Schema|int|string $schema,
 		array $data,
 		?string $uuid = null,
-		?int $folderId = null,
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		bool $persist = true,
@@ -2055,7 +2052,6 @@ class SaveObject implements SaveObjectInterface {
 		$call->data = $data;
 		$call->selfData = $selfData;
 		$call->uuid = $uuid;
-		$call->folderId = $folderId;
 		$call->flags->rbac = $_rbac;
 		$call->flags->multitenancy = $_multitenancy;
 		$call->flags->persist = $persist;
@@ -2891,7 +2887,6 @@ class SaveObject implements SaveObjectInterface {
 			schema: $call->schema,
 			data: $call->data,
 			existingObject: $preparedObject,
-			folderId: $call->folderId,
 			silent: $call->flags->silent,
 			oldObject: $oldObject
 		);
@@ -2987,7 +2982,6 @@ class SaveObject implements SaveObjectInterface {
 			schema: $call->schema,
 			data: $call->data,
 			selfData: $call->selfData,
-			folderId: $call->folderId,
 			currentUser: $call->flags->currentUser
 		);
 	}//end prepareUpdatedObject()
@@ -3093,10 +3087,6 @@ class SaveObject implements SaveObjectInterface {
 
 		if ($call->uuid !== null) {
 			$objectEntity->setUuid($call->uuid);
-		}
-
-		if ($call->folderId !== null) {
-			$objectEntity->setFolder((string)$call->folderId);
 		}
 
 		// Prepare the object for creation (WITHOUT file processing yet).
@@ -3553,7 +3543,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @param Schema $schema The schema of the object.
 	 * @param array $data The updated object data.
 	 * @param array $selfData The @self metadata.
-	 * @param int|null $folderId The folder ID to set on the object.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
 	 *
 	 * @return ObjectEntity The prepared object entity.
@@ -3567,7 +3556,6 @@ class SaveObject implements SaveObjectInterface {
 		Schema $schema,
 		array $data,
 		array $selfData,
-		?int $folderId,
 		?IUser $currentUser = null,
 	): ObjectEntity {
 		// The stored record as property rules see it, taken before this request's
@@ -3590,10 +3578,6 @@ class SaveObject implements SaveObjectInterface {
 		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
-		if ($folderId !== null) {
-			$existingObject->setFolder((string)$folderId);
-		}
-
 		// Snapshot the object's pre-update data BEFORE prepareObjectData runs.
 		// prepareObjectData calls preCacheParentName which writes the incoming
 		// data back into $existingObject via setObject() so cascade descendants
@@ -4553,7 +4537,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @param Schema|int|string $schema The schema to validate against.
 	 * @param array $data The updated object data.
 	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
 	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
 	 *
@@ -4570,13 +4553,11 @@ class SaveObject implements SaveObjectInterface {
 		Schema|int|string $schema,
 		array $data,
 		ObjectEntity $existingObject,
-		?int $folderId = null,
 		bool $silent = false,
 		?ObjectEntity $oldObject = null,
 	): ObjectEntity {
 		$run = new ObjectUpdateRun();
 		$run->silent = $silent;
-		$run->folderId = $folderId;
 
 		// Prefer the caller's oldObject (handleObjectUpdate): a clone taken here may
 		// already hold data prepareObjectForUpdate changed in place.
@@ -4633,8 +4614,7 @@ class SaveObject implements SaveObjectInterface {
 			existingObject: $existingObject,
 			schema: $run->schema,
 			data: $run->data,
-			selfData: $run->selfData,
-			folderId: $run->folderId
+			selfData: $run->selfData
 		);
 		$preparedObject = $this->recalculateArchiveDate(run: $run, preparedObject: $preparedObject);
 

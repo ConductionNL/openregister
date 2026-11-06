@@ -132,7 +132,6 @@ class DestructionListCreator {
 			$schemaId,
 			$listData,
 			null,
-			null,
 			false,
 			false,
 			true,

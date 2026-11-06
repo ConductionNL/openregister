@@ -254,7 +254,6 @@ interface SaveObjectInterface {
 	 * @param Schema|int|string $schema The schema to validate against.
 	 * @param array $data The object data to save.
 	 * @param string|null $uuid The UUID of the object to update (if updating).
-	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering (default: true).
 	 * @param bool $persist Whether to persist the object to database (default: true).
@@ -280,7 +279,7 @@ interface SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function saveObject(
-		Register|int|string|null $register, Schema|int|string $schema, array $data, ?string $uuid = null, ?int $folderId = null,
+		Register|int|string|null $register, Schema|int|string $schema, array $data, ?string $uuid = null,
 		bool $_rbac = true, bool $_multitenancy = true, bool $persist = true, bool $silent = false, bool $_validation = true,
 		?array $uploadedFiles = null, ?IUser $currentUser = null, bool $failIfExists = false, bool $_unowned = false,
 		bool $_dedupOverride = false, ?string $_owner = null
@@ -405,7 +404,6 @@ interface SaveObjectInterface {
 	 * @param Schema|int|string $schema The schema to validate against.
 	 * @param array $data The updated object data.
 	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
 	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
 	 *
@@ -418,7 +416,7 @@ interface SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register, Schema|int|string $schema, array $data, ObjectEntity $existingObject, ?int $folderId = null,
+		Register|int|string $register, Schema|int|string $schema, array $data, ObjectEntity $existingObject,
 		bool $silent = false, ?ObjectEntity $oldObject = null
 	): ObjectEntity;
 }//end interface

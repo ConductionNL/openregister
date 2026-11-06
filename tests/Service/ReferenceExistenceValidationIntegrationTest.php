@@ -309,7 +309,6 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase {
 			$this->referrerSchema,
 			['title' => 'V2 (updated)', 'targetUuid' => $target->getUuid()],
 			$referrer->getUuid(),
-			null,
 			false,
 			false
 		);
@@ -323,7 +322,6 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase {
 			$this->targetSchema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);
@@ -336,7 +334,6 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->referrerSchema,
 			$data,
-			null,
 			null,
 			false,
 			false

@@ -160,7 +160,6 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 			$this->targetSchema,
 			['title' => 'Single target'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -202,7 +201,6 @@ class StreamingBulkUpsertIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->targetSchema,
 			['title' => 'Valid target'],
-			null,
 			null,
 			false,
 			false

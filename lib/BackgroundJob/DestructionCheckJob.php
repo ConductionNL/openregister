@@ -149,7 +149,6 @@ class DestructionCheckJob extends TimedJob {
 				$settings['destructionListSchema'],
 				$listData,
 				null,
-				null,
 				false,
 				false,
 				true,

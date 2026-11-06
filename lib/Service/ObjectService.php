@@ -2235,7 +2235,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $object = $this->prepareObjectForSave(object: $object, write: ['uuid' => $uuid, 'isCreate' => $uuidWasNull]);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-        $options['folderId'] = $this->ensureObjectFolder(uuid: $uuid, currentUser: $options['currentUser']);
+        $this->ensureObjectFolder(uuid: $uuid, currentUser: $options['currentUser']);
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
 
         // Clear request-scoped caches before starting a new top-level save operation.
@@ -2400,7 +2400,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema,
             data: $object,
             uuid: $options['uuid'],
-            folderId: $options['folderId'],
             _rbac: $options['_rbac'],
             _multitenancy: $options['_multitenancy'],
             persist: true,
@@ -3446,12 +3445,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                 Non-HTTP callers (cron, import
      *                                 pipelines) MUST pass an explicit user.
      *
-     * @return int|null Folder ID if created/exists, null otherwise
+     * @return void
      */
-    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
+    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): void
     {
         if ($uuid === null) {
-            return null;
+            return;
         }
 
         $this->revalidateFolderBinding(uuid: $uuid, currentUser: $currentUser);
@@ -3466,7 +3465,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // folder_access_denied. The folder is created on demand the
         // first time a file is actually uploaded to the object
         // (CreateFileHandler → getObjectFolder, which creates-if-missing).
-        return null;
     }//end ensureObjectFolder()
 
     /**

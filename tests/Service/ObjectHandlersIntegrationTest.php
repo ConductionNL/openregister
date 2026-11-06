@@ -276,7 +276,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$useSchema,
 			$data,
 			null,
-			null,
 			$rbac,
 			$multitenancy
 		);

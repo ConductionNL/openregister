@@ -242,7 +242,6 @@ class EmptyStringDateConversionIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			false, // _rbac
 			false  // _multitenancy
 		);
