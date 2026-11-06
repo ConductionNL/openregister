@@ -67,6 +67,9 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
@@ -204,6 +207,13 @@ class SaveObject implements SaveObjectInterface {
 	private ObjectVersionHandler $versionHandler;
 
 	/**
+	 * The saves in flight, for the cycle check on references; built on first use.
+	 *
+	 * @var SaveCallStack|null
+	 */
+	private ?SaveCallStack $saveCalls = null;
+
+	/**
 	 * Finds and keeps the schemas and registers of a save; built on first use.
 	 *
 	 * @var SaveLookups|null
@@ -293,35 +303,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @var OrphanDeletionGuard|null
 	 */
 	private ?OrphanDeletionGuard $orphanGuard = null;
-
-	/**
-	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
-	 *
-	 * Pushed when `saveObject()` enters, popped when it exits. Each
-	 * entry is keyed on `<targetSchemaSlug>:<uuid>` for fast O(1)
-	 * membership lookup. Used by `validateReferences()` to detect
-	 * circular reference chains (A->B->A) — when the value of a
-	 * `validateReference` property equals one of the in-flight
-	 * UUIDs, we throw `CircularReferenceException` instead of a
-	 * regular reference-existence check.
-	 *
-	 * Closes the `reference-existence-validation` spec's
-	 * "Circular reference chains detected during validation"
-	 * requirement.
-	 *
-	 * @var array<int, array{schemaSlug:string,uuid:string,register:string|null}>
-	 */
-	private array $saveCallStack = [];
-
-	/**
-	 * Fast membership index for `$saveCallStack`. Keys are
-	 * `<schemaSlug>:<uuid>`; values are integers (the depth at which
-	 * the entry was pushed) so we can detect re-entries without
-	 * iterating the stack.
-	 *
-	 * @var array<string, int>
-	 */
-	private array $saveCallStackIndex = [];
 
 	/**
 	 * Constructor for SaveObject handler.
@@ -657,6 +638,15 @@ class SaveObject implements SaveObjectInterface {
 		$this->createdSubObjects = [];
 		$this->lookups()->clear();
 	}//end clearAllCaches()
+
+	/**
+	 * The saves in flight on this handler.
+	 *
+	 * @return SaveCallStack
+	 */
+	private function saveCalls(): SaveCallStack {
+		return $this->saveCalls ??= new SaveCallStack();
+	}//end saveCalls()
 
 	/**
 	 * The schema and register lookups of this save handler.
@@ -3489,10 +3479,12 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function enterSaveFrame(ObjectSaveCall $call): ?string {
-		$frameKey = $this->pushSaveCallFrame(
-			schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
-			uuid: (string)$call->uuid,
-			register: self::frameRegister(register: $call->register)
+		$frameKey = $this->saveCalls()->push(
+			frame: new SaveCallFrame(
+				schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
+				uuid: (string)$call->uuid,
+				register: self::frameRegister(register: $call->register)
+			)
 		);
 		$this->enterCascadeScope(_rbac: $call->flags->rbac);
 
@@ -3517,7 +3509,7 @@ class SaveObject implements SaveObjectInterface {
 			return $this->handleObjectUpdate(call: $call, existingObject: $existingObject);
 		} finally {
 			$this->leaveCascadeScope();
-			$this->popSaveCallFrame(key: $frameKey);
+			$this->saveCalls()->pop(key: $frameKey);
 		}
 	}//end updateExistingForSave()
 
@@ -3566,7 +3558,7 @@ class SaveObject implements SaveObjectInterface {
 			return $created;
 		} finally {
 			$this->leaveCascadeScope();
-			$this->popSaveCallFrame(key: $frameKey);
+			$this->saveCalls()->pop(key: $frameKey);
 		}
 	}//end createNewForSave()
 
@@ -5254,7 +5246,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function validatePropertyReferences(ReferencePropertyRun $run): void {
 		$property = $run->property;
-		$run->strictness = $this->resolveReferenceStrictness(property: $property);
+		$run->strictness = ReferenceStrictness::forProperty(property: $property);
 		$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
 		$value = $run->data[$run->propertyName] ?? null;
 		if ($run->strictness === null || $ref === null || $value === null || $value === '') {
@@ -5372,81 +5364,6 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}//end try
 	}//end validateOneReference()
-
-	/**
-	 * Resolve the configured strictness level for a schema property.
-	 *
-	 * Schema authors declare reference validation in two related fields:
-	 *
-	 * - `validateReference` — the on/off toggle (boolean) or a shorthand
-	 *   string carrying both the on/off bit AND the severity:
-	 *   `true` / `'error'` / `'strict'` / `'block'` enable strict
-	 *   validation; `'warn'` enables warn-only mode; `false` or
-	 *   `'off'` disables validation entirely.
-	 * - `validationStrictness` — optional explicit severity field
-	 *   (`'strict'`, `'warn'`, `'off'`) that overrides the default
-	 *   strict severity when `validateReference` is just the boolean
-	 *   `true`. Matches the spec's documented schema shape.
-	 *
-	 * Returns `'error'` when validation is strict, `'warn'` when
-	 * warn-only, and `null` when validation is disabled — the caller
-	 * uses `null` as the short-circuit signal to skip the property
-	 * without paying for the database round trip.
-	 *
-	 * @param array $property The schema property definition.
-	 *
-	 * @return string|null Returns `'error'` for strict mode, `'warn'` for
-	 *                     warn-only, `null` when validation is disabled.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function resolveReferenceStrictness(array $property): ?string {
-		$configured = ($property['validateReference'] ?? false);
-		$explicit = ($property['validationStrictness'] ?? null);
-
-		// Explicit strictness field can disable validation outright,
-		// mirroring the spec's "off" level even when the boolean toggle
-		// is true.
-		if (is_string($explicit) === true && strtolower($explicit) === 'off') {
-			return null;
-		}
-
-		// Map the optional explicit strictness onto our internal verdict.
-		$explicitNormalized = null;
-		if (is_string($explicit) === true) {
-			$candidate = strtolower($explicit);
-			if ($candidate === 'strict' || $candidate === 'error' || $candidate === 'block') {
-				$explicitNormalized = 'error';
-			} elseif ($candidate === 'warn') {
-				$explicitNormalized = 'warn';
-			}
-		}
-
-		// Boolean true: validation enabled, default strict, but defer
-		// to explicit strictness when present.
-		if ($configured === true) {
-			return $explicitNormalized ?? 'error';
-		}
-
-		// String shorthand on `validateReference` carries both the
-		// on/off bit and the severity.
-		if (is_string($configured) === true) {
-			$normalized = strtolower($configured);
-			if ($normalized === 'off' || $normalized === 'false') {
-				return null;
-			}
-
-			if ($normalized === 'error' || $normalized === 'block' || $normalized === 'strict') {
-				return $explicitNormalized ?? 'error';
-			}
-
-			if ($normalized === 'warn') {
-				return $explicitNormalized ?? 'warn';
-			}
-		}
-
-		return null;
-	}//end resolveReferenceStrictness()
 
 	/**
 	 * Detect whether a reference value expresses HTTP(S) URL intent.
@@ -5803,7 +5720,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function refuseCircularReference(ReferenceCheck $check): void {
-		$cycle = $this->detectCircularReference(uuid: $check->uuid);
+		$cycle = $this->saveCalls()->cycleThrough(uuid: $check->uuid);
 		if ($cycle === null) {
 			return;
 		}
@@ -5824,10 +5741,10 @@ class SaveObject implements SaveObjectInterface {
 			referencedUuid: $check->uuid,
 			targetSchemaSlug: $check->schemaRef,
 			cycle: array_map(
-				static fn (array $frame): array => [
-					'schema' => $frame['schemaSlug'],
-					'uuid' => $frame['uuid'],
-					'register' => $frame['register'],
+				static fn (SaveCallFrame $frame): array => [
+					'schema' => $frame->schemaSlug,
+					'uuid' => $frame->uuid,
+					'register' => $frame->register,
 				],
 				$cycle
 			),
@@ -6218,126 +6135,6 @@ class SaveObject implements SaveObjectInterface {
 			$status->recordReferenceCacheMiss();
 		}
 	}//end recordReferenceCacheUse()
-
-	/**
-	 * Push an in-flight save onto the call stack used for circular
-	 * reference detection.
-	 *
-	 * Returns the unique key under which the frame is recorded so
-	 * `popSaveCallFrame()` can remove it cleanly even when the caller
-	 * is in a nested cascade (we may have multiple frames on the stack
-	 * at once). Empty UUIDs are skipped — pre-persist creates have no
-	 * stable identifier yet, so they cannot be re-encountered as a
-	 * back-reference within the same chain.
-	 *
-	 * @param string $schemaSlug Schema slug (or id when slug is null).
-	 * @param string $uuid Object UUID. Empty string when not yet known.
-	 * @param string|null $register Register identifier.
-	 *
-	 * @return string|null The stack frame key, or null when nothing was pushed.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string {
-		if ($uuid === '') {
-			return null;
-		}
-
-		$key = $schemaSlug . ':' . $uuid;
-		if (array_key_exists($key, $this->saveCallStackIndex) === true) {
-			// Already on the stack — re-entry without going through
-			// a child save. This is unusual but harmless; just refuse
-			// to double-push so pop semantics stay balanced.
-			return null;
-		}
-
-		$this->saveCallStack[] = [
-			'schemaSlug' => $schemaSlug,
-			'uuid' => $uuid,
-			'register' => $register,
-		];
-		$this->saveCallStackIndex[$key] = (count($this->saveCallStack) - 1);
-
-		return $key;
-	}//end pushSaveCallFrame()
-
-	/**
-	 * Pop a frame previously pushed by `pushSaveCallFrame()`.
-	 *
-	 * Tolerant of null keys (pushSaveCallFrame returns null when the
-	 * frame couldn't be pushed) so callers can wrap unconditional
-	 * `try { … } finally { popSaveCallFrame($key); }` without checking.
-	 *
-	 * @param string|null $key The frame key returned by pushSaveCallFrame, or null.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function popSaveCallFrame(?string $key): void {
-		if ($key === null) {
-			return;
-		}
-
-		if (array_key_exists($key, $this->saveCallStackIndex) === false) {
-			return;
-		}
-
-		$depth = $this->saveCallStackIndex[$key];
-		unset($this->saveCallStackIndex[$key]);
-
-		// Pop only the frames at or above the recorded depth so
-		// unbalanced finallys (e.g. an exception that skipped a pop
-		// somewhere) self-heal instead of leaking entries forever.
-		$stackSize = count($this->saveCallStack);
-		while ($stackSize > $depth) {
-			$frame = array_pop($this->saveCallStack);
-			if ($frame === null) {
-				break;
-			}
-
-			$stackSize--;
-
-			$existing = $frame['schemaSlug'] . ':' . $frame['uuid'];
-			if ($existing !== $key) {
-				unset($this->saveCallStackIndex[$existing]);
-			}
-		}
-
-	}//end popSaveCallFrame()
-
-	/**
-	 * Detect whether the supplied UUID is currently being saved
-	 * higher up the cascade chain.
-	 *
-	 * Returns the cycle path (the visited stack) when re-entry is
-	 * detected, otherwise null. Schema match is loose — if any frame
-	 * on the stack carries the same UUID (regardless of schema), we
-	 * consider it a cycle. This is the right shape for the spec's
-	 * "A->B->A" example: the schema may legitimately differ between
-	 * the parent and child cascades but the UUID is what closes the
-	 * loop.
-	 *
-	 * @param string $uuid Candidate UUID being referenced.
-	 *
-	 * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
-	 *                                                                                    Cycle path when detected, null otherwise.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function detectCircularReference(string $uuid): ?array {
-		if ($uuid === '') {
-			return null;
-		}
-
-		foreach ($this->saveCallStack as $frame) {
-			if ($frame['uuid'] === $uuid) {
-				return $this->saveCallStack;
-			}
-		}
-
-		return null;
-	}//end detectCircularReference()
 
 	/**
 	 * Decide whether the current user should bypass reference validation.
