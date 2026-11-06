@@ -59,6 +59,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\Mapping
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  */
 class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 

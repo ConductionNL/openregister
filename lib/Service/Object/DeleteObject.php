@@ -1126,6 +1126,14 @@ class DeleteObject {
 			);
 		}
 
+		// The batched write dispatches update events only, so a guard on the deleting
+		// event answers here: one refused child refuses the whole cascade.
+		foreach ($targets as $target) {
+			if (empty($target->getDeleted()) === true) {
+				$this->objectEntityMapper->assertDeletable(entity: $target);
+			}
+		}
+
 		$handledIds = $this->batchCascadeSoftDelete(targets: $targets);
 
 		// Legacy per-id pipeline for ids the batch lookup did not resolve.

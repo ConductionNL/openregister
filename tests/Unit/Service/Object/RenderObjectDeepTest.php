@@ -107,7 +107,6 @@ class RenderObjectDeepTest extends TestCase {
 			$this->schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,

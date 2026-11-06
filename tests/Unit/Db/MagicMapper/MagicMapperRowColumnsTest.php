@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +38,8 @@ use Stringable;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicPropertyDate
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnprocessedUploads
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -136,4 +139,12 @@ class MagicMapperRowColumnsTest extends TestCase {
 
 		$this->assertSame('x', $prepared['bare']);
 	}//end testAPropertyWithoutADefinitionIsStillWritten()
+
+	public function testClientAuthorizationRulesAreNotCarried(): void {
+		$rowMetadata = new MagicRowMetadata($this->createMock(ContainerInterface::class));
+
+		$metadata = $rowMetadata->authoritative(['@self' => ['authorization' => ['read' => ['x']]]], ['register' => 3, 'schema' => 4]);
+
+		$this->assertArrayNotHasKey('authorization', $metadata);
+	}//end testClientAuthorizationRulesAreNotCarried()
 }//end class

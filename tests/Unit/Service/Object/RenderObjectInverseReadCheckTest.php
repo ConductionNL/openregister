@@ -173,7 +173,6 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 			schemaMapper: $schemas,
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
 			objectCacheService: $this->createMock(CacheHandler::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: new NullLogger(),

@@ -57,6 +57,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 
