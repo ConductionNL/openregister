@@ -17,7 +17,6 @@ import {
 				: t('openregister', 'New Configuration')
 		"
 		size="large"
-		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">

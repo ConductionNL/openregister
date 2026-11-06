@@ -1415,17 +1415,21 @@ class ObjectServiceTest extends TestCase {
 	// ── 22. countSearchObjects() tests ──────────────────────────────────
 
 	/**
-	 * Test countSearchObjects delegates to objectEntityMapper.
+	 * Test countSearchObjects goes through the query handler, which resolves references.
 	 */
-	public function testCountSearchObjectsDelegatesToMapper(): void {
-		$this->objectEntityMapper
-			->expects($this->once())
+	public function testCountSearchObjectsDelegatesToTheQueryHandler(): void {
+		$this->objectEntityMapper->expects($this->never())->method('countSearchObjects');
+		$this->queryHandler->expects($this->once())
 			->method('countSearchObjects')
+			->with(['@self' => ['schema' => 'a-slug']], false, false, ['a'], 'u-1')
 			->willReturn(15);
 
 		$result = $this->service->countSearchObjects(
-			query: ['@self' => ['schema' => 2]],
-			_multitenancy: false
+			query: ['@self' => ['schema' => 'a-slug']],
+			_rbac: false,
+			_multitenancy: false,
+			ids: ['a'],
+			uses: 'u-1'
 		);
 
 		$this->assertSame(15, $result);
@@ -1799,37 +1803,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertInstanceOf(ObjectService::class, $result);
 		$this->assertSame($this->register, $this->getProperty('currentRegister'));
 		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
-	}
-
-	// ── 34. countSearchObjects tests ────────────────────────────────────
-
-	public function testCountSearchObjectsDelegatesToMapperWithOrgContext(): void {
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->willReturn(42);
-
-		$result = $this->service->countSearchObjects(
-			query: ['_register' => 1],
-			_rbac: true,
-			_multitenancy: true
-		);
-
-		$this->assertSame(42, $result);
-	}
-
-	public function testCountSearchObjectsSkipsOrgWhenMultitenancyDisabled(): void {
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->willReturn(10);
-
-		$result = $this->service->countSearchObjects(
-			query: [],
-			_rbac: false,
-			_multitenancy: false
-		);
-
-		$this->assertSame(10, $result);
 	}
 
 	// ── 35. searchObjectsPaginated — database path ──────────────────────
@@ -2249,48 +2222,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertArrayHasKey('objects', $result['@self']);
 	}
 
-	// ── 55b. getActiveOrganisationForContext (private) ───────────────────
-
-	/**
-	 * Test getActiveOrganisationForContext returns UUID when org is found.
-	 */
-	public function testGetActiveOrganisationReturnsUuidWhenOrgFound(): void {
-		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
-			->disableOriginalConstructor()
-			->addMethods(['getUuid'])
-			->getMock();
-		$orgMock->method('getUuid')->willReturn('org-uuid-abc');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertSame('org-uuid-abc', $result);
-	}
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when no org found.
-	 */
-	public function testGetActiveOrganisationReturnsNullWhenNoOrg(): void {
-		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test getActiveOrganisationForContext returns null when exception thrown.
-	 */
-	public function testGetActiveOrganisationReturnsNullOnException(): void {
-		$this->organisationService->method('getActiveOrganisation')
-			->willThrowException(new Exception('Organisation service unavailable'));
-
-		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
-
-		$this->assertNull($result);
-	}
-
 	// ── 55c. validateObjectIfRequired (private) ─────────────────────────
 
 	/**
@@ -2391,37 +2322,6 @@ class ObjectServiceTest extends TestCase {
 		$this->service->setSchema(schema: 2);
 
 		$this->assertSame($this->schema, $this->service->getCurrentSchemaEntity());
-	}
-
-	// ── 55h. countSearchObjects with active organisation ─────────────────
-
-	/**
-	 * Test countSearchObjects passes org UUID when multitenancy enabled and org found.
-	 */
-	public function testCountSearchObjectsPassesOrgUuidWhenFound(): void {
-		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
-			->disableOriginalConstructor()
-			->addMethods(['getUuid'])
-			->getMock();
-		$orgMock->method('getUuid')->willReturn('org-uuid-123');
-
-		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
-
-		$this->objectEntityMapper->expects($this->once())
-			->method('countSearchObjects')
-			->with(
-				$this->anything(),
-				'org-uuid-123',
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything()
-			)
-			->willReturn(7);
-
-		$result = $this->service->countSearchObjects(query: [], _multitenancy: true);
-
-		$this->assertSame(7, $result);
 	}
 
 	// ── 55i. searchObjectsPaginated bypasses multitenancy for public schema ──

@@ -40,11 +40,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use DateTimeImmutable;
-use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
+use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
@@ -72,6 +74,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -90,9 +93,6 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Service\Rbac\RuleColumns;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -100,6 +100,7 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -217,97 +218,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
-
-	/**
-	 * Schema-and-property pairs already warned about as named like a metadata column.
-	 *
-	 * @var array<string, true>
-	 */
-	private static array $warnedMetadataNamedProperties = [];
-
-	/**
-	 * The metadata fields every object write names, in column order.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_WRITE_FIELDS = [
-		'uuid',
-		'slug',
-		'uri',
-		'version',
-		'register',
-		'schema',
-		'owner',
-		'organisation',
-		'application',
-		'folder',
-		'name',
-		'description',
-		'summary',
-		'image',
-		'size',
-		'schema_version',
-		'files',
-		'relations',
-		'locked',
-		// `authorization` is DELIBERATELY absent from this list.
-		//
-		// authoritativeMetadata() strips it because per-object RBAC must not be
-		// writable by ordinary create/update calls. Listing it here would resolve
-		// the stripped key to an explicit NULL, and the UPDATE would write it,
-		// destroying the stored rules on the next save of that object: a private
-		// object would silently become visible again, and the per-object action
-		// overrides would be wiped the same way.
-		//
-		// Omitting the field means the column is never named in the INSERT or
-		// UPDATE at all (`updateObjectInRegisterSchemaTable()` only sets keys that
-		// are PRESENT), so the stored value is carried forward untouched. Writes go
-		// through the dedicated authorization-management path.
-		'validation',
-		'quality',
-		'deleted',
-		// Listed, and therefore carried forward on every ordinary update, for the
-		// same reason `locked` is: the value comes from the ENTITY, and
-		// `setSelfMetadata()` never accepts either key from a client `@self`
-		// payload, so no write path can archive or freeze an object without the
-		// endpoint. Omitting them would make `updateObjectEntity()` stop naming the
-		// column, and the dedicated archive write would be the only write that
-		// could ever clear it.
-		'archived',
-		'frozen',
-		// Carried forward like `frozen`: setSelfMetadata() lets a client set
-		// `draft` on create only, and only the submit leaves it.
-		'status',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-		'created',
-		'updated',
-		'last_user_activity',
-		'expires',
-	];
-
-	/**
-	 * The metadata fields stored as JSON; the schema's active linked types are added per write.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_JSON_FIELDS = [
-		'files',
-		'relations',
-		'locked',
-		'authorization',
-		'validation',
-		'quality',
-		'deleted',
-		'archived',
-		'frozen',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-	];
 
 	/**
 	 * Whether the last single-object write INSERTED or UPDATED.
@@ -597,14 +507,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicPgTrgmProbe $pgTrgmProbe = null;
 
 	/**
-	 * Undeclared properties already reported as discarded, by schema id then property name.
+	 * Remembers the undeclared properties reported as discarded.
 	 *
 	 * MagicMapper is one shared service per process, so this lives for one
-	 * request (or one occ/cron run): see reportDroppedProperties().
+	 * request (or one occ/cron run).
 	 *
-	 * @var array<string, array<string, true>>
+	 * @var MagicDroppedProperties|null
 	 */
-	private array $reportedDrops = [];
+	private ?MagicDroppedProperties $droppedProperties = null;
 
 	/**
 	 * Constructor for MagicMapper service.
@@ -1653,6 +1563,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
+		$query = (new MagicUnionOrder(isPostgres: false))->orderable(
+			query: $query,
+			columns: $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs)
+		);
+
 		// OPTIMIZATION: Use UNION ALL for multi-table search in a single query.
 		// This is MUCH faster than looping through tables individually.
 		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
@@ -1921,7 +1836,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $query) . $this->unionLimitClause(query: $query);
+		// The batch orders on what it projects: a column of another batch is null in all of its rows.
+		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
+		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionLimitClause(query: $query);
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -2100,117 +2017,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$orderParams = $query['_order'] ?? [];
-		$uuidColumn = self::METADATA_PREFIX . 'uuid';
-
-		$keys = [];
-		if (empty($orderParams) === false && is_array($orderParams) === true) {
-			foreach ($orderParams as $field => $direction) {
-				$dir = 'ASC';
-				if (strtoupper((string)$direction) === 'DESC') {
-					$dir = 'DESC';
-				}
-
-				// Special handling for _relevance: map to _search_score in UNION queries.
-				// The _relevance column is used by MagicSearchHandler for single-table
-				// queries, but UNION queries use _search_score for relevance scoring.
-				if ($field === '_relevance') {
-					// Skip _relevance ordering if no search term (nothing to order by).
-					if ($hasSearch === true) {
-						$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => $dir];
-					}
-
-					continue;
-				}
-
-				// Translate field name to column name.
-				$rowKey = $this->sanitizeColumnName(name: $field);
-				$columnName = $rowKey;
-				if (str_starts_with($field, '@self.') === true) {
-					// Metadata fields: sanitize the bare name, then validate against
-					// the known METADATA_PREFIX column allowlist before quoting.
-					// Without this allowlist, raw user input was concatenated into
-					// the UNION SQL (SQL injection via ORDER BY).
-					$sanitizedMeta = $this->sanitizeColumnName(name: substr($field, 6));
-					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
-					if (in_array($candidateColumn, array_keys(MagicMetadataColumns::ALL), true) === false) {
-						// Unknown metadata column - skip this ORDER BY clause entirely.
-						continue;
-					}
-
-					$rowKey = $candidateColumn;
-					$columnName = $this->quoteIdentifier(name: $candidateColumn, isPostgres: $isPostgres);
-				} elseif (str_starts_with($field, '_') === false) {
-					// Non-metadata fields - property columns are included in UNION queries.
-					// The column must exist in the SELECT for ordering to work.
-					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
-					$columnName = $this->quoteIdentifier(name: $rowKey, isPostgres: $isPostgres);
-				}//end if
-
-				$keys[] = ['row' => $rowKey, 'sql' => $columnName, 'dir' => $dir];
-			}//end foreach
-		} elseif ($hasSearch === true) {
-			// Default to search score ordering when no _order specified but search is present.
-			$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => 'DESC'];
-		}//end if
-
-		// BUG-DB-4: a stable tiebreaker so rows that compare equal on the
-		// requested order keep a deterministic order across pages, and so a
-		// query with no usable order still pages deterministically.
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
-
-		return $keys;
+		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
 	}//end buildUnionOrderKeys()
-
-	/**
-	 * Sort merged rows from several UNION batches on the SQL's own order keys.
-	 *
-	 * Each batch is already ordered by its own statement; merging them is not.
-	 * A row that a batch did not project (a property column another schema
-	 * owns) sorts as null, which is what the UNION's `NULL AS alias` arm would
-	 * have produced.
-	 *
-	 * @param array $rows      Merged raw rows.
-	 * @param array $orderKeys Keys from buildUnionOrderKeys().
-	 *
-	 * @return array Rows in the merged order.
-	 */
-	private function sortUnionRows(array $rows, array $orderKeys): array {
-		usort(
-			$rows,
-			static function (array $left, array $right) use ($orderKeys): int {
-				foreach ($orderKeys as $key) {
-					$leftValue = ($left[$key['row']] ?? null);
-					$rightValue = ($right[$key['row']] ?? null);
-
-					// Cast to string and let the spaceship operator decide: PHP
-					// compares two NUMERIC strings numerically, so a score of
-					// "0.9" still beats "0.75" and "1.0E-5" still loses to
-					// "0.0001", while a missing column (null, cast to "") is
-					// compared as text instead of silently becoming zero.
-					$comparison = ((string)$leftValue <=> (string)$rightValue);
-
-					if ($comparison !== 0) {
-						if ($key['dir'] === 'DESC') {
-							return -$comparison;
-						}
-
-						return $comparison;
-					}
-				}
-
-				return 0;
-			}
-		);
-
-		return $rows;
-	}//end sortUnionRows()
 
 	/**
 	 * The per-batch query: page one, wide enough to cover the caller's page.
@@ -2255,10 +2065,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array The merged page.
 	 */
 	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$rows = $this->sortUnionRows(
-			rows: $rows,
-			orderKeys: $this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres)
-		);
+		$order = new MagicUnionOrder(isPostgres: $isPostgres);
+		$rows = $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query));
 
 		$offset = max(0, (int)($query['_offset'] ?? 0));
 		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
@@ -2758,13 +2566,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function orderedPropertyFields(array $query): array {
-		$orderParams = ($query['_order'] ?? []);
-		if (is_array($orderParams) === false) {
-			return [];
-		}
-
 		$fields = [];
-		foreach (array_keys($orderParams) as $field) {
+		foreach (array_keys((new OrderParameter(order: $query['_order'] ?? []))->fields()) as $field) {
 			$field = (string) $field;
 			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
 				continue;
@@ -2815,7 +2618,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Order merged entities on the UNION path's keys with its comparator.
 	 *
 	 * Each entity is projected onto the row keys the UNION statement would
-	 * have produced, sorted with sortUnionRows(), and put back in that order.
+	 * have produced, sorted as a union is, and put back in that order.
 	 *
 	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
 	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
@@ -2842,7 +2645,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$results = array_values($results);
 		$sorted = [];
-		foreach ($this->sortUnionRows(rows: $rows, orderKeys: $orderKeys) as $row) {
+		foreach ((new MagicUnionOrder(isPostgres: false))->sorted(rows: $rows, orderKeys: $orderKeys) as $row) {
 			$sorted[] = $results[$row['__index']];
 		}
 
@@ -3389,543 +3192,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		unset($data['@self']);
 
 		// An encrypted property is written only as an envelope, whichever path
-		// got here (see encryptFlaggedProperties()).
-		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
+		// got here (see MagicFlaggedEncryption).
+		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
-		$metadata = $this->authoritativeMetadata(
+		$rowMetadata = new MagicRowMetadata(container: $this->container);
+		$metadata = $rowMetadata->authoritative(
 			objectData: $objectData,
 			ids: ['register' => $register->getId(), 'schema' => $schema->getId()]
 		);
 		$metadata['created'] ??= $now;
 		$metadata['updated'] ??= $now;
 
-		$preparedData = $this->prepareMetadataColumns(metadata: $metadata, schema: $schema);
-		$preparedData = array_replace($preparedData, $this->preparePropertyColumns(data: $data, schema: $schema));
+		$preparedData = $rowMetadata->columns(metadata: $metadata, schema: $schema);
+		$propertyColumns = new MagicPropertyColumns(container: $this->container, logger: $this->logger);
+		$preparedData = array_replace($preparedData, $propertyColumns->forObject(data: $data, schema: $schema));
 
-		$this->reportDroppedProperties(data: $data, schemaProperties: $schema->getProperties(), schema: $schema);
+		$this->droppedProperties ??= new MagicDroppedProperties(logger: $this->logger);
+		$this->droppedProperties->report(data: $data, schema: $schema);
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
-
-	/**
-	 * The `@self` metadata of an object with the server-controlled fields made authoritative.
-	 *
-	 * SECURITY (wave-7 CRITICAL C2, @self allowlist enforcement): clients must not be able
-	 * to overwrite server-controlled fields via the @self block. The primary defence lives
-	 * in SaveObject::setSelfMetadata (which strips owner/authorization from raw client
-	 * $selfData). This is defence in depth at the DB write boundary, for fields that any
-	 * code path can reach, not just the REST request path.
-	 *
-	 * - owner: the server-stamped owner (a scalar UID string set by
-	 *   SaveObject::applyOwnerAttribution before jsonSerialize()) MUST be persisted,
-	 *   otherwise rows land with an empty `_owner` column: the creator can never equal the
-	 *   owner, so the update lock-guard 403s the owner's own update and ownership-based
-	 *   RBAC and owner notifications are neutered. A non-string owner, the shape a
-	 *   forged `@self` payload would take, is dropped.
-	 * - authorization: per-object RBAC rules are not writable by ordinary create/update
-	 *   calls; they are managed through the dedicated authorization endpoint.
-	 * - register / schema: always the authoritative method parameters, never a client value.
-	 *
-	 * Not stripped here, because the server sets them before this point: version, created,
-	 * updated, deleted, locked, retention, uuid, slug, uri. Client injection of any of
-	 * those must be fixed at the SaveObject/controller level.
-	 *
-	 * @param array                                $objectData The object data, with its optional `@self` block
-	 * @param array{register: mixed, schema: mixed} $ids        The authoritative register and schema ids
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function authoritativeMetadata(array $objectData, array $ids): array {
-		$metadata = $objectData['@self'] ?? [];
-		unset($metadata['authorization']);
-
-		if (isset($metadata['owner']) === true && is_string($metadata['owner']) === false) {
-			unset($metadata['owner']);
-		}
-
-		$metadata['register'] = $ids['register'];
-		$metadata['schema']   = $ids['schema'];
-
-		// The entity serialises `schemaVersion` and `lastUserActivity`; the columns are snake_case.
-		$metadata['schema_version']     = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
-		$metadata['last_user_activity'] = $metadata['lastUserActivity'] ?? null;
-
-		return $metadata;
-	}//end authoritativeMetadata()
-
-	/**
-	 * The `_`-prefixed metadata columns written for one object, in column order.
-	 *
-	 * @param array<string, mixed> $metadata The authoritative metadata, `created` and `updated` filled in
-	 * @param Schema               $schema   The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function prepareMetadataColumns(array $metadata, Schema $schema): array {
-		// RuleColumns::LINKED_TYPES values carry the column prefix; the loop below adds its own,
-		// so the linked type key itself is the field.
-		$fields     = self::METADATA_WRITE_FIELDS;
-		$jsonFields = self::METADATA_JSON_FIELDS;
-		foreach ($schema->getLinkedTypes() as $linkedType) {
-			if (isset(RuleColumns::LINKED_TYPES[$linkedType]) === true) {
-				$fields[]     = $linkedType;
-				$jsonFields[] = $linkedType;
-			}
-		}
-
-		$columns = [];
-		foreach ($fields as $field) {
-			$value = $this->prepareMetadataValue(field: $field, value: ($metadata[$field] ?? null));
-			if (in_array($field, $jsonFields) === true) {
-				$value = $this->jsonColumnValue(value: $value);
-			}
-
-			$columns[self::METADATA_PREFIX.$field] = $value;
-		}
-
-		return $columns;
-	}//end prepareMetadataColumns()
-
-	/**
-	 * A metadata value as its column stores it; datetime fields become UTC 'Y-m-d H:i:s'.
-	 *
-	 * A DateTime is converted to the column's
-	 * timezone before formatting, because format() renders in the instance's own timezone
-	 * and a non-UTC value would be read back as UTC (WOO-567). This is done inline rather
-	 * than through DateTimeNormalizer so the path works without a resolvable container. A
-	 * string goes through DateTimeNormalizer, so empty input becomes null rather than now
-	 * and a non-UTC offset is converted rather than dropped.
-	 *
-	 * @param string $field The metadata field
-	 * @param mixed  $value The value from `@self`
-	 *
-	 * @return mixed
-	 */
-	private function prepareMetadataValue(string $field, mixed $value): mixed {
-		if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires']) === false) {
-			return $value;
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return DateTimeImmutable::createFromInterface($value)
-				->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
-				->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === true) {
-			return $this->container
-				->get(DateTimeNormalizer::class)
-				->formatForDatabase($value);
-		}
-
-		return $value;
-	}//end prepareMetadataValue()
-
-	/**
-	 * A value for a JSON metadata column: an empty array is NULL so IS NULL checks hold,
-	 * a string is kept, anything else is JSON-encoded.
-	 *
-	 * An empty string becomes NULL at the final insert/update stage, not here.
-	 *
-	 * @param mixed $value The value
-	 *
-	 * @return mixed
-	 */
-	private function jsonColumnValue(mixed $value): mixed {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_array($value) === true && empty($value) === true) {
-			return null;
-		}
-
-		if (is_string($value) === false) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end jsonColumnValue()
-
-	/**
-	 * The property columns written for one object, keyed by sanitised column name.
-	 *
-	 * A property absent from the data is skipped, so its column is left unchanged; a
-	 * property present with a null value is written as null.
-	 *
-	 * A property whose column is a metadata column (`_owner`, `_authorization`, `_status`,
-	 * ...) never writes it: the metadata columns are stamped from server-side values and
-	 * the client's value must not replace them. The read side treats such a column as
-	 * metadata too.
-	 *
-	 * @param array  $data   The object's property values, without `@self`
-	 * @param Schema $schema The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function preparePropertyColumns(array $data, Schema $schema): array {
-		$schemaProperties = $schema->getProperties();
-		if (is_array($schemaProperties) === false) {
-			return [];
-		}
-
-		$columns     = [];
-		$columnRoles = new MagicMetadataColumn();
-		foreach (array_keys($schemaProperties) as $propertyName) {
-			if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
-				$this->warnMetadataNamedProperty(schema: $schema, propertyName: $propertyName);
-				continue;
-			}
-
-			if (array_key_exists($propertyName, $data) === true) {
-				$value = $this->preparePropertyValue(
-					property: ['name' => $propertyName, 'config' => ($schemaProperties[$propertyName] ?? [])],
-					value: $data[$propertyName]
-				);
-				$columns[$this->sanitizeColumnName(name: $propertyName)] = $value;
-			}
-		}
-
-		return $columns;
-	}//end preparePropertyColumns()
-
-	/**
-	 * Warn, once per schema and property per request, that a property named like a
-	 * metadata column is not written.
-	 *
-	 * @param Schema $schema       The schema
-	 * @param string $propertyName The property
-	 *
-	 * @return void
-	 */
-	private function warnMetadataNamedProperty(Schema $schema, string $propertyName): void {
-		$warnedKey = $schema->getId().':'.$propertyName;
-		if (isset(self::$warnedMetadataNamedProperties[$warnedKey]) === true) {
-			return;
-		}
-
-		self::$warnedMetadataNamedProperties[$warnedKey] = true;
-		$this->logger->warning(
-			message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'propertyName' => $propertyName,
-				'schema' => $schema->getId(),
-			]
-		);
-	}//end warnMetadataNamedProperty()
-
-	/**
-	 * A property value as its column stores it.
-	 *
-	 * Booleans become 0/1, because some drivers turn PHP's false into an empty string.
-	 * Arrays and objects become JSON. An empty string becomes NULL at the final
-	 * insert/update stage, not here.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function preparePropertyValue(array $property, mixed $value): mixed {
-		$value = $this->dropUnprocessedUploads(property: $property, value: $value);
-		$value = $this->normalisePropertyDate(value: $value, format: ($property['config']['format'] ?? null));
-
-		if (is_bool($value) === true) {
-			$value = (int)$value;
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
-			$value = json_encode($value);
-		}
-
-		return $value;
-	}//end preparePropertyValue()
-
-	/**
-	 * A file property value without the base64 data URLs FilePropertyHandler did not process.
-	 *
-	 * Such a value would fail PostgreSQL with "invalid input syntax for type json". A file
-	 * property holding one becomes null; an array of files loses those items, and becomes
-	 * null when none is left. Each is logged as a warning.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function dropUnprocessedUploads(array $property, mixed $value): mixed {
-		$propertyConfig = $property['config'];
-		$propertyType   = $propertyConfig['type'] ?? 'string';
-
-		if ($propertyType === 'file' && is_string($value) === true && strpos($value, 'data:') === 0) {
-			$msg = '[MagicMapper] File property contains unprocessed';
-			$msg .= ' base64 data URL - setting to null to prevent DB error';
-			$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $property['name'], 'valueLength' => strlen($value)]);
-			return null;
-		}
-
-		$isArrayOfFiles = $propertyType === 'array' && (($propertyConfig['items']['type'] ?? '') === 'file');
-		if ($isArrayOfFiles === false || is_array($value) === false) {
-			return $value;
-		}
-
-		return $this->withoutUnprocessedUploads(propertyName: $property['name'], items: $value);
-	}//end dropUnprocessedUploads()
-
-	/**
-	 * An array of files without its unprocessed base64 data URLs, or null when none is left.
-	 *
-	 * @param int|string $propertyName The property
-	 * @param array      $items        The files
-	 *
-	 * @return array|null
-	 */
-	private function withoutUnprocessedUploads(int|string $propertyName, array $items): ?array {
-		$cleanedArray = [];
-		foreach ($items as $item) {
-			if (is_string($item) === true && strpos($item, 'data:') === 0) {
-				$msg = '[MagicMapper] Array file item contains';
-				$msg .= ' unprocessed base64 data URL - skipping item';
-				$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $propertyName, 'valueLength' => strlen($item)]);
-				continue;
-			}
-
-			$cleanedArray[] = $item;
-		}
-
-		if (empty($cleanedArray) === true) {
-			return null;
-		}
-
-		return $cleanedArray;
-	}//end withoutUnprocessedUploads()
-
-	/**
-	 * Log an unprocessed base64 upload that is not written.
-	 *
-	 * @param string                                                 $message The message
-	 * @param array{propertyName: int|string, valueLength: int} $context The property and the data URL's length
-	 *
-	 * @return void
-	 */
-	private function logUnprocessedUpload(string $message, array $context): void {
-		$this->logger->warning(
-			message: $message,
-			context: ['file' => __FILE__, 'line' => __LINE__] + $context
-		);
-	}//end logUnprocessedUpload()
-
-	/**
-	 * A `date` or `date-time` property value as 'Y-m-d H:i:s' for a DATETIME column.
-	 *
-	 * The two differ. A date-time names an instant, so a non-UTC offset is applied before
-	 * storing (WOO-567). A date names a calendar day and has no instant, so converting it
-	 * through a timezone could move it: `2026-10-20T00:00:00+02:00` would become 2026-10-19
-	 * in UTC. A due date must survive being submitted from a client that sends an offset.
-	 *
-	 * @param mixed $value  The value
-	 * @param mixed $format The property's format
-	 *
-	 * @return mixed
-	 */
-	private function normalisePropertyDate(mixed $value, mixed $format): mixed {
-		if (in_array($format, ['date-time', 'date'], true) === false || $value === null) {
-			return $value;
-		}
-
-		$isCalendarDate = ($format === 'date');
-		if ($value instanceof \DateTimeInterface) {
-			$moment = DateTimeImmutable::createFromInterface($value);
-			if ($isCalendarDate === false) {
-				$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
-			}
-
-			return $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === false) {
-			return $value;
-		}
-
-		$normalizer = $this->container->get(DateTimeNormalizer::class);
-		if ($isCalendarDate === true) {
-			return $normalizer->formatDateForDatabase($value);
-		}
-
-		return $normalizer->formatForDatabase($value);
-	}//end normalisePropertyDate()
-
-	/**
-	 * Replace every `x-openregister-encrypted` property value with its envelope.
-	 *
-	 * SaveObject encrypts on the single-object path, but the table is the one
-	 * place every write passes through. Encrypting here as well means no path
-	 * (bulk, import, a service writing an entity back) can put plaintext in an
-	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
-	 * that is already an envelope, so the second pass never double-encrypts.
-	 *
-	 * Fails closed: if the schema has encrypted properties and the handler
-	 * cannot be resolved, the write is refused rather than stored in the clear.
-	 *
-	 * @param array<string, mixed> $data   Property values, without `@self`.
-	 * @param Schema               $schema The schema being written to.
-	 *
-	 * @return array<string, mixed> The data with encrypted properties as envelopes.
-	 *
-	 * @throws RuntimeException When the schema needs encryption and no handler is available.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedProperties(array $data, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $data;
-		}
-
-		$handler = $this->container->get(FieldEncryptionHandler::class);
-		if ($handler instanceof FieldEncryptionHandler === false) {
-			throw new RuntimeException(
-				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
-				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
-			);
-		}
-
-		return $handler->encryptProperties(data: $data, schema: $schema);
-	}//end encryptFlaggedProperties()
-
-	/**
-	 * Apply encryptFlaggedProperties() to every row of a bulk write.
-	 *
-	 * A bulk row carries its properties either under `object` or at the top
-	 * level beside `@self`, the two shapes MagicBulkHandler reads.
-	 *
-	 * @param array<int|string, mixed> $objects The rows.
-	 * @param Schema                   $schema  The schema being written to.
-	 *
-	 * @return array<int|string, mixed> The rows with encrypted properties as envelopes.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedPropertiesInRows(array $objects, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $objects;
-		}
-
-		foreach ($objects as $key => $object) {
-			if (is_array($object) === false) {
-				continue;
-			}
-
-			if (isset($object['object']) === true && is_array($object['object']) === true) {
-				$object['object'] = $this->encryptFlaggedProperties(data: $object['object'], schema: $schema);
-			} else {
-				$object = $this->encryptFlaggedProperties(data: $object, schema: $schema);
-			}
-
-			$objects[$key] = $object;
-		}
-
-		return $objects;
-	}//end encryptFlaggedPropertiesInRows()
-
-	/**
-	 * Say so when a property the caller sent is about to be thrown away.
-	 *
-	 * The loop above is a whitelist BY OMISSION: it walks the schema's declared
-	 * properties and copies those out of `$data`. Anything the caller sent that
-	 * the schema does not declare is simply never read — and there is no `object`
-	 * JSON blob column to fall back on, so it is gone. No error, no warning, no
-	 * trace: the write succeeds and the field is missing.
-	 *
-	 * Measured 2026-08-02: the hydra flow documents carry `description`, the
-	 * agentflow schema had no such property, and every flow's description was
-	 * discarded on save. The graphs table then showed "—" for all ten, which
-	 * reads exactly like ten flows that were never given a description.
-	 *
-	 * This does not reject — rejecting at the DB write boundary is far too late
-	 * for a clean 400 (the entity is built, folders may exist, cascades have
-	 * run) and would break every caller that harmlessly posts an extra key. It
-	 * makes the loss VISIBLE, which is the whole difference between a schema
-	 * that needs a property added and a field that quietly evaporates.
-	 *
-	 * @param array<string, mixed> $data The caller's data, minus `@self`.
-	 * @param mixed $schemaProperties The schema's declared properties.
-	 * @param Schema $schema The schema being written to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
-	 */
-	private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void {
-		if (is_array($schemaProperties) === false) {
-			return;
-		}
-
-		$dropped = [];
-		foreach (array_keys($data) as $key) {
-			$name = (string)$key;
-			if (array_key_exists($name, $schemaProperties) === true) {
-				continue;
-			}
-
-			// `@`-prefixed keys are envelope/metadata (`@self` is already gone),
-			// `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
-			// and `uuid` are the caller echoing back an identifier. None of these
-			// are user data the schema was ever supposed to declare, so warning
-			// about them would drown the signal in noise on literally every save.
-			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
-				continue;
-			}
-
-			$dropped[] = $name;
-		}
-
-		// Once per schema and property per process. One import or bulk write of
-		// thousands of objects with the same undeclared key logged one warning
-		// per object (a throwaway instance wrote a 28 GB log). The first
-		// discard of each property is still a warning, so schema drift stays
-		// visible; a NEW undeclared property on the same schema warns again.
-		$schemaKey = (string)($schema->getId() ?? $schema->getSlug() ?? '');
-		$dropped   = array_values(
-			array_filter(
-				$dropped,
-				fn (string $name): bool => isset($this->reportedDrops[$schemaKey][$name]) === false
-			)
-		);
-
-		if ($dropped === []) {
-			return;
-		}
-
-		foreach ($dropped as $name) {
-			$this->reportedDrops[$schemaKey][$name] = true;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		$this->logger->warning(
-			message: sprintf(
-				'[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
-				. 'They are NOT stored anywhere — add them to the schema or stop sending them. '
-				. 'Reported once per property per request.',
-				count($dropped),
-				$plural,
-				(string)($schema->getTitle() ?? $schema->getSlug() ?? (string)$schema->getId()),
-				implode(', ', $dropped)
-			),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema' => $schema->getId(),
-				'schemaSlug' => $schema->getSlug(),
-				'dropped' => $dropped,
-			]
-		);
-	}//end reportDroppedProperties()
 
 	/**
 	 * Convert database row to ObjectEntity.
@@ -8205,7 +7491,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = $this->encryptFlaggedPropertiesInRows(objects: $objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->bulkUpsert(
@@ -10248,14 +9534,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					_multitenancy: false,
 					_rbac: false
 				);
-				$register = $result['register'];
-				$schema = $result['schema'];
-				$key = $register->getId() . '-' . $schema->getId();
-				$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
-				$grouped[$key]['uuids'][] = $uuid;
 			} catch (\Exception $e) {
 				// Skip UUIDs that can't be found.
+				continue;
 			}
+
+			$this->assertDeletable(entity: $result['object']);
+			$register = $result['register'];
+			$schema = $result['schema'];
+			$key = $register->getId() . '-' . $schema->getId();
+			$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
+			$grouped[$key]['uuids'][] = $uuid;
 		}
 
 		foreach ($grouped as $group) {

@@ -56,30 +56,6 @@ use PHPUnit\Framework\TestCase;
  */
 class AuthorizationServiceHardeningTest extends TestCase {
 
-	/**
-	 * The RSA public key of the PS256 fixture.
-	 *
-	 * @var string
-	 */
-	private const PS256_PUBLIC_KEY = <<<'PEM'
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7T0ZiN3R/9WQI49CqBQW
-y3VlhZ6749tt3fOw5krZ4PuDaohgPZng7VLBEiqYDlb0OGzbJgnQzVLHOTeHSgus
-uT70SLpQoftyfvVCk6djSby9TpnYTaVD6Ofk7S9lAGAB5od+3PE5Ry1JDg+mfE3g
-z4ugYYBWVf60SE8hHiA95yxJTFpCsQK9JXzwmoU+n+GcDHpk0Dy4puNFI73hqYh5
-e/7kCyCvikOVRVRvhTyNYy5j+/A3ayaHdlNqcBcR+RWxvjFibWMbswukpDx/p0vl
-MltxFpnGncGb+q6lHVm8SySxWTagvjG/JiCpKwybYAHvEKlo1sCrhXeJTOS1CDuV
-kQIDAQAB
------END PUBLIC KEY-----
-PEM;
-
-	/**
-	 * A PS256 token for issuer zaaksysteem, signed by the fixture key outside PHP.
-	 *
-	 * @var string
-	 */
-	private const PS256_TOKEN = 'eyJhbGciOiJQUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ6YWFrc3lzdGVlbSIsImlhdCI6MTc1OTYyMjQwMCwiZXhwIjo0MTAyNDQ0ODAwfQ.t64NPJ6Grr8-n4syEr6r-1Fr8W9tVWXgC3vQNZ5JAMfMeoQLARudI1i0Fuga6E3Y2Uh-YDihZgXTZ3vWlrcBhy98MVGFvxqd80u9O4QyFdF0ReM5zXYBXtcSGGw2F2_eGzcxwV7pAxy5Ko3IOLHkCZdffqCQMDc11sB5ZGdxe7blqZUQtKQj5zPlILz-FHrvYBRfwoqbpk71gWNBBVhJR5roTfRv41V4AUz_ANPAxN_wY9Htxoz86bwhBJ4VDWBkO_RNaxazCj7ZB9RW4YWs4Rm7UQxTzyzf5DdPGuicFKU9yFOu17nVf57NR5cvKiPJVxroiJSVWdJDysA3lvkqpQ';
-
 	/** @var array<string, mixed> What the jti cache holds. */
 	private array $cache = [];
 
@@ -236,6 +212,43 @@ PEM;
 		return [JWKFactory::createFromKey($privatePem), $publicPem];
 	}//end rsa()
 
+	/**
+	 * A PS256 token for issuer zaaksysteem. The library signs PSS in pure PHP, which takes minutes without gmp, so the
+	 * padding is built here and only the raw RSA step goes through openssl.
+	 *
+	 * @param \OpenSSLAsymmetricKey $key A 2048-bit private key.
+	 *
+	 * @return string
+	 */
+	private function ps256Token(\OpenSSLAsymmetricKey $key): string {
+		$encode = static fn (string $data): string => rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+		$input  = $encode('{"alg":"PS256","typ":"JWT"}') . '.' . $encode((string)json_encode(['iss' => 'zaaksysteem', 'iat' => time()]));
+		openssl_private_encrypt($this->pssPadded($input), $signature, $key, OPENSSL_NO_PADDING);
+		return $input . '.' . $encode($signature);
+	}//end ps256Token()
+
+	/**
+	 * EMSA-PSS encoding of a message (RFC 8017, 9.1.1) for a 2048-bit key: SHA-256, 32 bytes of salt.
+	 *
+	 * @param string $message The message.
+	 *
+	 * @return string The 256-byte encoded message.
+	 */
+	private function pssPadded(string $message): string {
+		$salt = random_bytes(32);
+		$hash = hash('sha256', str_repeat("\0", 8) . hash('sha256', $message, true) . $salt, true);
+		$data = str_repeat("\0", 190) . "\x01" . $salt;
+
+		$mask = '';
+		for ($counter = 0; strlen($mask) < 223; $counter++) {
+			$mask .= hash('sha256', $hash . pack('N', $counter), true);
+		}
+
+		$masked    = $data ^ substr($mask, 0, 223);
+		$masked[0] = chr(ord($masked[0]) & 0x7F);
+		return $masked . $hash . "\xBC";
+	}//end pssPadded()
+
 	public function testAnRs256TokenIsVerifiedWithThePublicKey(): void {
 		[$private, $pem] = $this->rsa();
 		$this->consumer('RS256', $pem);
@@ -246,12 +259,10 @@ PEM;
 	}//end testAnRs256TokenIsVerifiedWithThePublicKey()
 
 	public function testAPs256TokenIsVerifiedAndABase64PemIsAccepted(): void {
-		// A fixed token made with `openssl dgst -sha256 -sigopt rsa_padding_mode:pss
-		// -sigopt rsa_pss_saltlen:32`: PSS signing in pure PHP (no gmp) takes
-		// minutes, verifying is quick. iat 2025-10-05, exp 2100 (no lifetime cap, Q4).
-		$this->consumer('PS256', base64_encode(self::PS256_PUBLIC_KEY));
+		$key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+		$this->consumer('PS256', base64_encode(openssl_pkey_get_details($key)['key']));
 
-		$this->service()->authorizeJwt('Bearer ' . self::PS256_TOKEN);
+		$this->service()->authorizeJwt('Bearer ' . $this->ps256Token($key));
 
 		$this->assertCount(1, $this->volatileUsers);
 	}//end testAPs256TokenIsVerifiedAndABase64PemIsAccepted()

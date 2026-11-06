@@ -27,6 +27,8 @@ use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
@@ -90,15 +92,35 @@ class SaveObjectCircularReferenceTest extends TestCase {
 	}
 
 	private function invoke(SaveObject $handler, string $methodName, array $args): mixed {
-		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
-		$reflection->setAccessible(true);
-		return $reflection->invokeArgs($handler, array_values($args));
+		$args = array_values($args);
+		$calls = $this->saveCalls(handler: $handler);
+		return match ($methodName) {
+			'validateReferences', 'validateReferenceExists' => ReferenceValidationCalls::{$methodName}($handler, $args),
+			'pushSaveCallFrame' => $calls->push(new SaveCallFrame($args[0], $args[1], $args[2])),
+			'popSaveCallFrame' => $calls->pop($args[0]),
+			'detectCircularReference' => self::frameArrays(frames: $calls->cycleThrough($args[0])),
+			default => (new ReflectionMethod(SaveObject::class, $methodName))->invokeArgs($handler, $args),
+		};
+	}
+
+	private function saveCalls(SaveObject $handler): SaveCallStack {
+		return (new ReflectionMethod(SaveObject::class, 'saveCalls'))->invoke($handler);
+	}
+
+	private static function frameArrays(?array $frames): ?array {
+		if ($frames === null) {
+			return null;
+		}
+
+		return array_map(
+			static fn (SaveCallFrame $frame): array => ['schemaSlug' => $frame->schemaSlug, 'uuid' => $frame->uuid, 'register' => $frame->register],
+			$frames
+		);
 	}
 
 	private function readStack(SaveObject $handler): array {
-		$reflection = new ReflectionProperty(SaveObject::class, 'saveCallStack');
-		$reflection->setAccessible(true);
-		return (array)$reflection->getValue($handler);
+		$frames = (new ReflectionProperty(SaveCallStack::class, 'frames'))->getValue($this->saveCalls(handler: $handler));
+		return (array)self::frameArrays(frames: $frames);
 	}
 
 	private function buildSchemaWithReference(): Schema {
@@ -237,6 +259,17 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		} finally {
 			$this->invoke($handler, 'popSaveCallFrame', [$key]);
 		}
+	}
+
+	public function testAFramePoppedWithItsParentCanBePushedAgain(): void {
+		$handler = $this->buildHandler();
+		$parent = $this->invoke($handler, 'pushSaveCallFrame', ['parent', 'p-1', null]);
+		$this->invoke($handler, 'pushSaveCallFrame', ['child', 'c-1', null]);
+
+		$this->invoke($handler, 'popSaveCallFrame', [$parent]);
+
+		$this->assertSame([], $this->readStack($handler));
+		$this->assertSame('child:c-1', $this->invoke($handler, 'pushSaveCallFrame', ['child', 'c-1', null]));
 	}
 
 	public function testCircularExceptionIsValidationButNotReferenceValidationSubclass(): void {

@@ -56,7 +56,6 @@ use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
-use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -118,7 +117,6 @@ class RetentionService implements RetentionServiceInterface {
 	 * @param RegisterMapperInterface $registerMapper Register mapper for lookups
 	 * @param AuditTrailMapperInterface $auditMapper Audit trail mapper
 	 * @param ObjectRetentionHandler $settingsHandler Retention settings handler
-	 * @param IAppConfig $appConfig App configuration
 	 * @param IUserSession $userSession Current user session
 	 * @param LoggerInterface $logger Logger
 	 * @param RetentionRowScanner $rowScanner Walks every table a retention decision can live in
@@ -136,7 +134,6 @@ class RetentionService implements RetentionServiceInterface {
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly AuditTrailMapperInterface $auditMapper,
 		private readonly ObjectRetentionHandler $settingsHandler,
-		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 		private readonly RetentionRowScanner $rowScanner,

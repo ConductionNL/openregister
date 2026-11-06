@@ -1,0 +1,73 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ExploreSchema analysis results counts the selection in the summary 1`] = `"12t:Objects Analyzed4t:New Properties2t:Existing Improvements1t:Selectedt:Analysis completed:"`;
+
+exports[`ExploreSchema analysis results falls back to the discovered properties and to zero 1`] = `"12t:Objects Analyzed2t:New Properties0t:Existing Improvements0t:Selectedt:Analysis completed:"`;
+
+exports[`ExploreSchema analysis results shows the behaviour switches of a selected property 1`] = `
+"<div class="behaviors-section">
+<h5>t:Property Behaviors</h5>
+<div class="behaviors-grid">
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Required field</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Immutable</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Deprecated</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="true">t:Visible to users</x-nccheckboxradioswitch>
+</div>
+</div>
+<div class="behavior-column">
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in list view</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Hide in forms</x-nccheckboxradioswitch>
+</div>
+<div class="behavior-item">
+<x-nccheckboxradioswitch modelvalue="false">t:Enable faceting</x-nccheckboxradioswitch>
+</div>
+</div>
+</div>
+</div>"
+`;
+
+exports[`ExploreSchema analysis results shows the summary cards 1`] = `"12t:Objects Analyzed4t:New Properties2t:Existing Improvements0t:Selectedt:Analysis completed:"`;
+
+exports[`ExploreSchema analysis results writes each behaviour switch to the property configuration 1`] = `
+[
+  [
+    "required",
+    "on0",
+  ],
+  [
+    "immutable",
+    "on1",
+  ],
+  [
+    "deprecated",
+    "on2",
+  ],
+  [
+    "visible",
+    "on3",
+  ],
+  [
+    "hideOnCollection",
+    "on4",
+  ],
+  [
+    "hideOnForm",
+    "on5",
+  ],
+  [
+    "facetable",
+    "on6",
+  ],
+]
+`;

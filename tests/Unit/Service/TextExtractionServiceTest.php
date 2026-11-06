@@ -78,8 +78,6 @@ class TextExtractionServiceTest extends TestCase {
 			$this->schemaMapper,
 			$this->registerMapper,
 			$this->entityHandler,
-			$this->gdprEntityMapper,
-			$this->entityRelationMapper,
 			$this->settingsService,
 			$this->riskLevelService,
 			$this->emlParser,
