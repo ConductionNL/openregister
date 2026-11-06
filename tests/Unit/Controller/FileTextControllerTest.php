@@ -434,7 +434,7 @@ class FileTextControllerTest extends TestCase {
 			->willReturn($anonymizedFileNode);
 
 		$this->entityRelationMapper->expects($this->never())
-			->method('markAsAnonymized');
+			->method('markAsAnonymizedWithPlaceholders');
 
 		$result = $this->controller->anonymizeFile(10);
 
@@ -532,7 +532,7 @@ class FileTextControllerTest extends TestCase {
 			->willReturn($anonymizedFileNode);
 
 		$this->entityRelationMapper->expects($this->never())
-			->method('markAsAnonymized');
+			->method('markAsAnonymizedWithPlaceholders');
 
 		$result = $this->controller->anonymizeFile(5);
 

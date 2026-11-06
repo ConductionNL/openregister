@@ -20,36 +20,29 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * The link of an object that matches one more column, for link mappers keyed on object_uuid.
  */
 trait ObjectKeyLinkTrait {
+	use SelectByColumnTrait;
 
 	/**
 	 * The link of an object whose key column matches, or null when there is none.
 	 *
 	 * @param string     $objectUuid The object.
-	 * @param LinkColumn $key        The second key.
+	 * @param LinkColumn $key        The further key columns.
 	 *
 	 * @return Entity|null The link.
 	 *
 	 * @spec exclude shared mapper plumbing, not a capability of its own
 	 */
 	private function findObjectLink(string $objectUuid, LinkColumn $key): ?Entity {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($key->equals(qb: $qb));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$key->applyTo(qb: $qb);
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return $this->findOneOrNull(query: $qb);
 	}//end findObjectLink()
 
 	/**

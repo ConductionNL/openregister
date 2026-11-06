@@ -30,6 +30,7 @@ use Throwable;
  * Criterion tokens (`@self.<field>`, `@ref.<path>`, `{ "year": <token> }`) read from a payload.
  */
 trait PayloadTokenReading {
+	use PayloadPathWalking;
 
 	/**
 	 * Resolve a criterion token to a concrete value.
@@ -50,22 +51,31 @@ trait PayloadTokenReading {
 	 */
 	private function resolveToken(array $payload, mixed $token): mixed {
 		if (is_string($token) === true) {
-			if (str_starts_with($token, '@self.') === true || str_starts_with($token, '@ref.') === true) {
-				return $this->readPath(payload: $payload, path: $token);
-			}
-
-			return $token;
+			return $this->stringToken(payload: $payload, token: $token);
 		}
 
-		if (is_array($token) === true && count($token) === 1) {
-			$op = (string)array_key_first($token);
-			if ($op === 'year') {
-				return $this->yearToken(payload: $payload, arg: $token[$op]);
-			}
+		if (is_array($token) === true && count($token) === 1 && array_key_first($token) === 'year') {
+			return $this->yearToken(payload: $payload, arg: $token['year']);
 		}
 
 		return $token;
 	}//end resolveToken()
+
+	/**
+	 * A string token: the payload value for a `@self.` or `@ref.` path, else the literal.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param string               $token   The criterion token.
+	 *
+	 * @return mixed The resolved value.
+	 */
+	private function stringToken(array $payload, string $token): mixed {
+		if (str_starts_with($token, '@self.') === true || str_starts_with($token, '@ref.') === true) {
+			return $this->readPath(payload: $payload, path: $token);
+		}
+
+		return $token;
+	}//end stringToken()
 
 	/**
 	 * Resolve a `{ "year": <token> }` criterion to a four-digit year integer.
@@ -133,25 +143,4 @@ trait PayloadTokenReading {
 
 		return ($payload[$field] ?? null);
 	}//end selfField()
-
-	/**
-	 * Walk the payload key by key.
-	 *
-	 * @param array<string, mixed> $payload Object data.
-	 * @param array<int, string>   $parts   The keys, outermost first.
-	 *
-	 * @return mixed The value, or null when a key is missing.
-	 */
-	private function walkPath(array $payload, array $parts): mixed {
-		$current = $payload;
-		foreach ($parts as $part) {
-			if (is_array($current) === false || array_key_exists($part, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$part];
-		}
-
-		return $current;
-	}//end walkPath()
 }//end trait
