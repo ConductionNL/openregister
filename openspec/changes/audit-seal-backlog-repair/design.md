@@ -143,7 +143,7 @@ Three roles, deliberately separated:
 
 | Mechanism | Role | Bound |
 |---|---|---|
-| Per-insert `sealRow()` | seals the common single-write case immediately | unchanged |
+| Per-insert `sealRow()` | removed since: inline sealing forked the chain, the sweep is the only sealer | n/a |
 | Batched `sealRows()` on bulk paths | seals imports/mass writes at batch granularity | per batch |
 | **New `SealAuditBacklogJob` (TimedJob)** | drains whatever fail-soft left behind | **hard cap per run** |
 
