@@ -58,8 +58,7 @@ class AggregationQueryReadGoldenTest extends TestCase {
 			))],
 			'one metric in list, list groupBy' => [static fn () => self::read(AggregationQuery::create(
 				metric: 'count',
-				// A plain list is an accepted shape that the declared array<string, mixed> type does not spell.
-				groupBy: json_decode('["status", "kind"]', true),
+				groupBy: self::asGroupBy(['status', 'kind']),
 				metrics: [['metric' => 'max', 'field' => 'n', 'extra' => 1]]
 			))],
 			'single field groupBy' => [static fn () => self::read(AggregationQuery::create(metric: 'min', field: 'n', groupBy: ['field' => 'status']))],
@@ -104,6 +103,22 @@ class AggregationQueryReadGoldenTest extends TestCase {
 
 		$this->assertArrayHasKey($case, $golden, 'No golden entry; record with UPDATE_GOLDEN=1.');
 		$this->assertSame($golden[$case], $actual);
+	}
+
+	/**
+	 * Pass a plain list groupBy: an accepted shape that create()'s declared type does not spell.
+	 *
+	 * @param mixed $groupBy The groupBy.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function asGroupBy(mixed $groupBy): array {
+		$typed = [];
+		foreach ((array) $groupBy as $key => $value) {
+			$typed[(string) $key] = $value;
+		}
+
+		return $typed;
 	}
 
 	/**
