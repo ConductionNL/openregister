@@ -83,20 +83,41 @@ final class SchemaReferenceSearch {
 	 * @return bool
 	 */
 	private function matches(mixed $ref): bool {
-		if ($ref === null) {
+		if ($ref === null || $ref === '') {
 			return false;
 		}
 
-		$exact = [$this->target['id'], $this->target['uuid'], $this->target['slug'], (int)$this->target['id']];
-		if (in_array($ref, $exact, true) === true) {
-			return true;
-		}
-
-		return is_string($ref) === true && ($this->pathNamesSlug(ref: $ref) === true || $this->containsUuid(ref: $ref) === true);
+		return $this->equalsTarget(ref: $ref) === true || (is_string($ref) === true && $this->namedIn(ref: $ref) === true);
 	}//end matches()
 
 	/**
+	 * Whether a reference string names the target inside a longer path.
+	 *
+	 * @param string $ref The reference.
+	 *
+	 * @return bool
+	 */
+	private function namedIn(string $ref): bool {
+		return $this->pathNamesSlug(ref: $ref) === true || $this->containsUuid(ref: $ref) === true;
+	}//end namedIn()
+
+	/**
+	 * Whether a `$ref` value is the target's id, uuid or slug.
+	 *
+	 * @param mixed $ref The `$ref` value.
+	 *
+	 * @return bool
+	 */
+	private function equalsTarget(mixed $ref): bool {
+		$exact = [$this->target['id'], $this->target['uuid'], $this->target['slug'], (int)$this->target['id']];
+
+		return in_array($ref, $exact, true);
+	}//end equalsTarget()
+
+	/**
 	 * Whether a reference path holds the target's slug: "#/components/schemas/slug" and the like.
+	 *
+	 * The slug must end there: `zaak` is not a reference to `schemas/zaaktype`.
 	 *
 	 * @param string $ref The reference.
 	 *
@@ -108,7 +129,9 @@ final class SchemaReferenceSearch {
 			return false;
 		}
 
-		return str_contains($ref, 'schemas/' . $slug) === true || str_ends_with($ref, '/' . $slug) === true;
+		$inPath = preg_match('#schemas/' . preg_quote($slug, '#') . '(?![A-Za-z0-9_-])#', $ref) === 1;
+
+		return $inPath === true || str_ends_with($ref, '/' . $slug) === true;
 	}//end pathNamesSlug()
 
 	/**

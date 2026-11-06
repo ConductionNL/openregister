@@ -2054,8 +2054,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			if ($candidate->getId() !== (int)$target->getId() && $this->hasReferenceToSchema(
 				properties: $candidate->getProperties(),
 				targetSchemaId: (string)$target->getId(),
-				targetSchemaUuid: $target->getUuid(),
-				targetSchemaSlug: $target->getSlug()
+				targetSchemaUuid: (string)$target->getUuid(),
+				targetSchemaSlug: (string)$target->getSlug()
 			) === true
 			) {
 				$related[] = $candidate;
