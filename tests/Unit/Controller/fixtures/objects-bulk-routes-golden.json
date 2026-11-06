@@ -47,6 +47,17 @@
                 "getVectorizationStatistics": [
                     null
                 ]
+            },
+            {
+                "error": [
+                    "[ObjectsController] Vectorization route failed",
+                    {
+                        "error": "no way"
+                    },
+                    [
+                        "error"
+                    ]
+                ]
             }
         ],
         "status": 500,
@@ -775,6 +786,17 @@
                         "x"
                     ],
                     25
+                ]
+            },
+            {
+                "error": [
+                    "[ObjectsController] Vectorization route failed",
+                    {
+                        "error": "no way"
+                    },
+                    [
+                        "error"
+                    ]
                 ]
             }
         ],

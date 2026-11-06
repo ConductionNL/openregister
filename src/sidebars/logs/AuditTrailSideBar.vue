@@ -28,33 +28,9 @@ import {
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Audit Trails') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						id="registerSelect"
-						v-bind="registerOptions"
-						:modelValue="selectedRegisterValue"
-						:placeholder="t('openregister', 'All registers')"
-						:inputLabel="t('openregister', 'Register')"
-						:clearable="true"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-bind="schemaOptions"
-						:modelValue="selectedSchemaValue"
-						:placeholder="t('openregister', 'All schemas')"
-						:inputLabel="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
-						:clearable="true"
-						@update:modelValue="handleSchemaChange" />
-				</div>
+				<ScopeFilterFields
+					@registerChange="handleRegisterChange"
+					@schemaChange="handleSchemaChange" />
 				<div class="filterGroup">
 					<label for="actionSelect">{{
 						t('openregister', 'Actions')
@@ -238,6 +214,7 @@ import {
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
+import ScopeFilterFields from '../ScopeFilterFields.vue'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
@@ -261,17 +238,16 @@ import {
 	addDateRange,
 	addScope,
 	csvValues,
-	queriesEqual,
 	routeDate,
 } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import { scopePickers } from '../../services/scopePickers.js'
 import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
 	trailUserOptions,
 } from '../../services/trailFilters.js'
+import { routeBoundFilters } from '../routeBoundFilters.js'
 
 /**
  * The user options a comma-separated route parameter names.
@@ -307,6 +283,7 @@ function actionOption(byValue, value) {
 export default {
 	name: 'AuditTrailSideBar',
 	components: {
+		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
@@ -325,7 +302,7 @@ export default {
 		FilterOffOutline,
 	},
 
-	mixins: [scopePickers],
+	mixins: [routeBoundFilters('/audit-trails')],
 
 	data() {
 		return {
@@ -367,6 +344,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		auditTrailStore: () => auditTrailStore,
+
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
@@ -376,34 +356,11 @@ export default {
 	},
 
 	watch: {
-		// React to query param changes as single source of truth (only on /audit-trails)
-		'$route.query': {
-			/**
-			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-			 */
-			handler() {
-				if (this.$route.path !== '/audit-trails') return
-				this.applyQueryParamsFromRoute()
-			},
-
-			deep: true,
-		},
-
 		'auditTrailStore.auditTrailList': function () {
 			this.updateFilteredCount()
 			this.loadStatistics()
 			this.loadActionDistribution()
 			this.loadTopObjects()
-		},
-
-		// Watch for changes in the global stores
-		'registerStore.registerItem': function () {
-			// Schema should be cleared when register changes, this happens in the change handler
-			this.applyFilters()
-		},
-
-		'schemaStore.schemaItem': function () {
-			this.applyFilters()
 		},
 	},
 
@@ -594,33 +551,6 @@ export default {
 		},
 
 		/**
-		 * Handle register change
-		 *
-		 * @param {object} register - Selected register
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
-			this.applyFilters()
-		},
-
-		/**
-		 * Handle schema change
-		 *
-		 * @param {object} schema - Selected schema
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
-			this.applyFilters()
-		},
-
-		/**
 		 * Build URL query object from current sidebar state
 		 *
 		 * @return {object}
@@ -639,36 +569,6 @@ export default {
 			if (this.objectFilter) query.object = this.objectFilter
 			if (this.showOnlyWithChanges) query.onlyWithChanges = '1'
 			return query
-		},
-
-		/**
-		 * Compare two shallow query objects (keys and stringified values)
-		 *
-		 * @param {object} a - First query object to compare
-		 * @param {object} b - Second query object to compare
-		 * @return {boolean}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		queriesEqual(a, b) {
-			return queriesEqual(a, b)
-		},
-
-		/**
-		 * Write current state to the router query (only on /audit-trails)
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		updateRouteQueryFromState() {
-			if (this.$route.path !== '/audit-trails') return
-			const nextQuery = this.buildQueryFromState()
-			if (this.queriesEqual(nextQuery, this.$route.query || {})) return
-			this.$router.replace({
-				path: this.$route.path,
-				query: nextQuery,
-			})
 		},
 
 		/**

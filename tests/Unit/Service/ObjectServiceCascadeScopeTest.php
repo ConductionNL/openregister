@@ -65,6 +65,7 @@ use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
@@ -111,6 +112,9 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 
 	/** @var ObjectService */
 	private ObjectService $service;
+
+	/** @var array<string, mixed> The data the save handler was given. */
+	private array $savedData = [];
 
 	/** @var MockObject&SaveObject */
 	private MockObject $saveHandler;
@@ -165,8 +169,9 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (): ObjectEntity {
+			function (...$arguments): ObjectEntity {
 				$this->calls[] = 'save';
+				$this->savedData = $arguments[2];
 				$entity = new ObjectEntity();
 				$entity->setUuid('11111111-1111-1111-1111-111111111111');
 				return $entity;
@@ -273,6 +278,33 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 
 		$this->assertSame(expected: ['enter:false', 'cascade', 'leave', 'save'], actual: $this->calls);
 	}
+
+	/**
+	 * The audit row of the created object is written inside the handler, so the
+	 * client-cause mark has to come through the cascade with the object.
+	 */
+	public function testTheClientCauseMarkReachesTheSaveHandlerPastTheCascade(): void {
+		$this->cascade();
+		foreach (['applyAlwaysDefaults', 'applyExpressionDefaults', 'seedLifecycleFieldOnCreate'] as $step) {
+			$this->saveHandler->method($step)->willReturnArgument(1);
+		}
+
+		$register = new Register();
+		$register->setId(7);
+		$schema = new Schema();
+		$schema->setId(99);
+		$schema->setSlug('ticket');
+
+		$this->service->saveObject(
+			object: ['subject' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			register: $register,
+			schema: $schema,
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertTrue($this->savedData['@self'][WriteCause::CLIENT_ATTEMPT_KEY]);
+	}//end testTheClientCauseMarkReachesTheSaveHandlerPastTheCascade()
 
 	public function testARefusedCascadeClosesItsScopeAndSavesNothing(): void {
 		$this->cascade(refuse: true);
