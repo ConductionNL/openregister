@@ -24,7 +24,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Db\TimelineEntryMapper;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
 use OCA\OpenRegister\Notifications\Service\Timeline\LanguageDetector;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceSource;
 use OCA\OpenRegister\Notifications\Service\Timeline\TextBlockService;
@@ -137,11 +140,11 @@ class TimelineEntryGoldenTest extends TestCase {
 	}//end testARecordIgnoresWhatIsNoList()
 
 	private function syncFromNote(TimelineEntryService $service, ?string $message, ?string $visibility): ?TimelineEntry {
-		return $service->syncFromNote(41, $message, $visibility);
+		return $service->syncFromNote(new NoteRewrite(41, $message, $visibility));
 	}//end syncFromNote()
 
 	private function pin(TimelineEntryService $service, TimelineEntry $entry, bool $pinned): TimelineEntry {
-		return $service->pin($this->object(), $entry, $pinned);
+		return $service->pin($this->object(), new EntryPin($entry, $pinned));
 	}//end pin()
 
 	public function testSyncingTouchesOnlyWhatChanged(): void {
@@ -358,11 +361,11 @@ class TimelineEntryGoldenTest extends TestCase {
 	}//end testFailingDerivedStepsNeverCostTheEntry()
 
 	private function projectNote(TimelineWriteService $service, array $note): ?TimelineEntry {
-		return $service->projectNote($this->object(), $note, ' r ', 's');
+		return $service->projectNote($this->object(), new NoteProjection($note, ' r ', 's'));
 	}//end projectNote()
 
 	private function rewrite(TimelineWriteService $service, ?string $message, ?string $visibility): ?TimelineEntry {
-		return $service->rewrite($this->object(), 41, $message, $visibility);
+		return $service->rewrite($this->object(), new NoteRewrite(41, $message, $visibility));
 	}//end rewrite()
 
 	public function testAProjectedNoteGetsARecordAndItsDerivedSteps(): void {

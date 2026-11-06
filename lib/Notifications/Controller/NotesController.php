@@ -29,6 +29,8 @@ use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\AppFramework\Controller;
@@ -226,9 +228,7 @@ class NotesController extends Controller {
 			// worse than none. The projection never throws.
 			$entry = $this->services->timeline->projectNote(
 				object: $object,
-				note: $note,
-				register: $register,
-				schema: $schema
+				note: new NoteProjection(note: $note, register: $register, schema: $schema)
 			);
 			if ($entry !== null) {
 				$note['entryId'] = $entry->getUuid();
@@ -304,9 +304,11 @@ class NotesController extends Controller {
 			// is worse than no index, because it looks like a hit.
 			$this->services->timeline->rewrite(
 				object: $object,
-				commentId: (int)$noteId,
-				message: $write['message'],
-				visibility: $write['visibility']
+				rewrite: new NoteRewrite(
+					commentId: (int)$noteId,
+					message: $write['message'],
+					visibility: $write['visibility']
+				)
 			);
 
 			if ($write['previous'] !== null) {
