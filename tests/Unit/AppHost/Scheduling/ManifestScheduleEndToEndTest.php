@@ -55,6 +55,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunRow
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunService
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunVersionPin
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowStateBinding
  * @uses   \OCA\OpenRegister\Service\Flow\FlowScheduleService
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTriggerValidator
  * @uses   \OCA\OpenRegister\Service\WriteCause

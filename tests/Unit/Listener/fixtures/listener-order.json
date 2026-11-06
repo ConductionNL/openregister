@@ -55,6 +55,7 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
 		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener",
@@ -89,6 +90,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
 		"OCA\\OpenRegister\\Listener\\ContentReportRemovalListener",
@@ -139,6 +141,7 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\CaseObjectEventListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarChangedListener",
 		"OCA\\OpenRegister\\Listener\\ReferencedCalculationListener",
