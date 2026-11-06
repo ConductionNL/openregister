@@ -22,7 +22,7 @@
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-dutch-language-search-support-i18n
  */
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;

@@ -37,7 +37,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Controller;

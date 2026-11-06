@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Search\Controller\Support;
 
 use OCA\OpenRegister\Search\Db\View;
 

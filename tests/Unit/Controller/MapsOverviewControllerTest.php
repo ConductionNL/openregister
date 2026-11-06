@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Contract tests for {@see \OCA\OpenRegister\Controller\MapsOverviewController}.
+ * Contract tests for {@see \OCA\OpenRegister\Search\Controller\MapsOverviewController}.
  *
  * Covers the RBAC-scoped marker query. The point set comes from
  * {@see \OCA\OpenRegister\Search\Service\MapsOverviewService::ensureReadablePoints()},
@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\MapsOverviewController;
+use OCA\OpenRegister\Search\Controller\MapsOverviewController;
 use OCA\OpenRegister\Search\Service\MapsOverviewService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;

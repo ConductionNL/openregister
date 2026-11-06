@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
 use OCA\OpenRegister\Search\Service\Integration\ContactSearch;
 use OCP\AppFramework\Controller;
