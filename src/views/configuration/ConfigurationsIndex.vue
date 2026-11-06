@@ -463,7 +463,11 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
-import { checkConfigurationVersion, sourceTypeLabel, syncStatusText } from '../../services/configurationDisplay.js'
+import {
+	checkConfigurationVersion,
+	sourceTypeLabel,
+	syncStatusText,
+} from '../../services/configurationDisplay.js'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -741,7 +745,6 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
-
 	},
 }
 </script>

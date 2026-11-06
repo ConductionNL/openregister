@@ -1004,7 +1004,6 @@ export default {
 
 			return response.data
 		},
-
 	},
 }
 </script>

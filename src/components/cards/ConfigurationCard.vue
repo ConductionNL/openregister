@@ -270,7 +270,10 @@ import Sync from 'vue-material-design-icons/Sync.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
-import { sourceTypeLabel, syncStatusText } from '../../services/configurationDisplay.js'
+import {
+	sourceTypeLabel,
+	syncStatusText,
+} from '../../services/configurationDisplay.js'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
