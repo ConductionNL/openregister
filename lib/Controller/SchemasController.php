@@ -39,6 +39,8 @@ use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaImportException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -1788,6 +1790,10 @@ class SchemasController extends Controller {
 			// authorization boundary a request cannot cross. Caught ahead of the generic
 			// handler, which would have reported a deliberate refusal as a 500.
 			return new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
+		} catch (ObjectStateWriteException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+		} catch (LockedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: LockedException::HTTP_STATUS);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);

@@ -29,11 +29,15 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -64,6 +68,10 @@ use Throwable;
  * {@see self::rejectIfArchivalImmutable()} for why the audit trail is not a substitute
  * for the record.
  *
+ * KEPT ROWS: a frozen, archived or locked row refuses every whole-table delete. The
+ * cascade reads the magic tables first and refuses before any row is touched, unless
+ * an operator forces it from the CLI, and a forced teardown leaves its own audit entry.
+ *
  * KNOWN LIMIT: the cascade is synchronous, and its audit writes are inherently
  * sequential (hash-chained, ADR-003). A schema with far more than ~10k objects will
  * make the request slow and may hit the PHP time limit. Because phase 1 is
@@ -80,6 +88,20 @@ class SchemaDeletionService {
 	 * @var string
 	 */
 	public const ACTION_CASCADE_DELETE = 'schema.cascade_delete';
+
+	/**
+	 * Audit action recorded once for a teardown an operator forced.
+	 *
+	 * @var string
+	 */
+	public const ACTION_FORCED_TEARDOWN = 'schema.teardown_forced';
+
+	/**
+	 * Actor of a forced teardown: only the command line can force one.
+	 *
+	 * @var string
+	 */
+	private const FORCED_TEARDOWN_ACTOR = 'occ';
 
 	/**
 	 * Trigger context for objects removed because their schema is being deleted.
@@ -314,6 +336,12 @@ class SchemaDeletionService {
 	 * still succeeds, because the caller's intent is already satisfied and DDL is not
 	 * rollbackable on MySQL/MariaDB.
 	 *
+	 * KEPT ROWS ARE REFUSED THE SAME WAY: a frozen, archived or locked row stops the
+	 * teardown before any row is touched, and so does a non-empty table nothing can
+	 * read. `occ openregister:schemas:prune-retired --force-kept-rows` lifts that. Any
+	 * lift that removes something protected writes one
+	 * {@see self::ACTION_FORCED_TEARDOWN} entry inside phase 1.
+	 *
 	 * ARCHIVAL SCHEMAS ARE REFUSED UNLESS THE CALLER OVERRIDES EXPLICITLY, and the
 	 * override is an argument rather than a default because the two callers do not
 	 * carry the same authority. `DELETE /api/schemas/{id}?deleteObjects=true` never
@@ -326,23 +354,29 @@ class SchemaDeletionService {
 	 * they passed for another reason.
 	 *
 	 * @param Schema $schema The schema to tear down.
-	 * @param bool $archivalOverride True only when an operator has explicitly authorised
-	 *                               destroying a legally retained record from the CLI.
+	 * @param SchemaTeardownOverride $override What an operator lifted from the CLI; nothing by default.
 	 *
 	 * @throws ArchivalImmutableException If the schema is archival and no override was given.
+	 * @throws ObjectStateWriteException If a row is frozen or archived and no override was given.
+	 * @throws LockedException If a row is locked and no override was given.
+	 * @throws ValidationException If a table nothing can read holds rows and no override was given.
 	 * @throws \Exception If phase 1 fails (nothing is deleted).
 	 *
 	 * @return array{deletedCount: int, deletedUuids: array<int, string>, tableDropped: bool} The cascade result.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The override is the caller's authority, and it has to be stated per call site.
-	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
-	public function cascadeDeleteSchema(Schema $schema, bool $archivalOverride = false): array {
-		if ($archivalOverride === false) {
+	public function cascadeDeleteSchema(
+		Schema $schema,
+		SchemaTeardownOverride $override = new SchemaTeardownOverride(),
+	): array {
+		if ($override->archivalSchema === false) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 		}
+
+		$forcedRows = $this->keptRowsLifted(schema: $schema, override: $override);
 
 		$schemaId = (int)$schema->getId();
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
@@ -353,6 +387,8 @@ class SchemaDeletionService {
 		// ---- Phase 1: one transaction. ----
 		$this->db->beginTransaction();
 		try {
+			$this->recordForcedTeardown(schema: $schema, keptRows: $forcedRows);
+
 			foreach ($tables as $entry) {
 				if ($entry['register'] === null) {
 					// The magic table outlives its register (stale pair). There is no
@@ -417,6 +453,130 @@ class SchemaDeletionService {
 		];
 
 	}//end cascadeDeleteSchema()
+
+	/**
+	 * How many rows of the schema refuse a teardown unless it is forced.
+	 *
+	 * A table nothing can read counts in full, or as one row when it cannot even be
+	 * counted: the guard stays on the side of the data, as in
+	 * {@see self::countObjectsCascadeWouldDelete()}.
+	 *
+	 * @param Schema $schema The schema to count for.
+	 *
+	 * @return int The number of frozen, archived, locked or unreadable rows.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function countKeptRows(Schema $schema): int {
+		$total = 0;
+
+		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
+			$total += $this->keptRowsOfTable(entry: $entry, schema: $schema);
+		}
+
+		return $total;
+	}//end countKeptRows()
+
+	/**
+	 * The kept rows of one magic table.
+	 *
+	 * @param array{registerId: int, register: Register|null, tableName: string} $entry  The table.
+	 * @param Schema                                                             $schema The schema.
+	 *
+	 * @return int The number of kept rows in that table.
+	 */
+	private function keptRowsOfTable(array $entry, Schema $schema): int {
+		try {
+			if ($entry['register'] === null) {
+				return $this->countAllRows(tableName: $entry['tableName']);
+			}
+
+			return $this->tableRows()->countKept(register: $entry['register'], schema: $schema);
+		} catch (Throwable $e) {
+			return 1;
+		}
+	}//end keptRowsOfTable()
+
+	/**
+	 * Refuse the teardown, or report how many kept rows the override lifts.
+	 *
+	 * @param Schema                 $schema   The schema to tear down.
+	 * @param SchemaTeardownOverride $override What the operator lifted.
+	 *
+	 * @return int The kept rows that will be destroyed, 0 when none are lifted.
+	 *
+	 * @throws ObjectStateWriteException If a row is frozen or archived.
+	 * @throws LockedException If a row is locked.
+	 * @throws ValidationException If a table nothing can read holds rows.
+	 */
+	private function keptRowsLifted(Schema $schema, SchemaTeardownOverride $override): int {
+		if ($override->keptRows === true) {
+			return $this->countKeptRows(schema: $schema);
+		}
+
+		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
+			if ($entry['register'] === null) {
+				$this->rejectUnreadableRows(tableName: $entry['tableName']);
+				continue;
+			}
+
+			$this->tableRows()->assertNoneKept(register: $entry['register'], schema: $schema);
+		}
+
+		return 0;
+	}//end keptRowsLifted()
+
+	/**
+	 * Refuse a table that outlives its register and still holds rows.
+	 *
+	 * Its rows cannot be read through a Register, so nothing can say they are not frozen.
+	 *
+	 * @param string $tableName The magic table.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException If the table holds rows.
+	 */
+	private function rejectUnreadableRows(string $tableName): void {
+		if ($this->countAllRows(tableName: $tableName) === 0) {
+			return;
+		}
+
+		throw new ValidationException(
+			message: 'Cannot remove this schema: magic table ' . $tableName . ' holds rows of a register that '
+				. 'no longer exists, so they cannot be checked for a freeze, an archive or a lock.'
+		);
+	}//end rejectUnreadableRows()
+
+	/**
+	 * Write the one audit entry of a forced teardown, when it removes something protected.
+	 *
+	 * The entry is about the schema, so it carries the schema's uuid and no object id.
+	 * Under `occ` there is no session; the actor says so instead of reading as `system`.
+	 *
+	 * @param Schema $schema   The schema being torn down.
+	 * @param int    $keptRows The kept rows that will be destroyed.
+	 *
+	 * @return void
+	 */
+	private function recordForcedTeardown(Schema $schema, int $keptRows): void {
+		$archival = $schema->hasArchivalAnnotation();
+		if ($keptRows === 0 && $archival === false) {
+			return;
+		}
+
+		$subject = new ObjectEntity();
+		$subject->setUuid($schema->getUuid());
+		$subject->setSchema((string)$schema->getId());
+
+		$this->auditTrailMapper->createAuditTrailEntry(
+			object: $subject,
+			action: self::ACTION_FORCED_TEARDOWN,
+			context: ['schemaSlug' => $schema->getSlug(), 'keptRows' => $keptRows, 'archivalSchema' => $archival],
+			actorId: self::FORCED_TEARDOWN_ACTOR,
+			actorName: self::FORCED_TEARDOWN_ACTOR
+		);
+	}//end recordForcedTeardown()
 
 	/**
 	 * How many objects `cascadeDeleteSchema()` would destroy.

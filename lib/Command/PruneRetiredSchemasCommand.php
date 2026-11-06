@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -126,6 +127,14 @@ class PruneRetiredSchemasCommand extends Command {
 				. 'an operator pruning a retired schema that happens to hold a few leftover rows has '
 				. 'said nothing about retained records, and this flag is where they say it. Requires '
 				. '--force and --apply.'
+			)
+			->addOption(
+				'force-kept-rows',
+				null,
+				InputOption::VALUE_NONE,
+				'Also delete a schema holding frozen, archived or locked rows, or rows of a register '
+				. 'that no longer exists. Deliberately separate from --force, and written to the audit '
+				. 'trail as a forced removal. Requires --force and --apply.'
 			);
 	}//end configure()
 
@@ -149,6 +158,7 @@ class PruneRetiredSchemasCommand extends Command {
 		$apply = (bool)$input->getOption('apply');
 		$force = (bool)$input->getOption('force');
 		$forceArchival = (bool)$input->getOption('force-archival');
+		$forceKeptRows = (bool)$input->getOption('force-kept-rows');
 		$dryRun = ($apply === false);
 
 		if ($appId === '') {
@@ -254,14 +264,33 @@ class PruneRetiredSchemasCommand extends Command {
 				continue;
 			}
 
-			$archivalNote = '';
+			// Asked before the unlink below: a refusal from the service would come after
+			// the registers already lost the schema.
+			$keptRows = $this->deletionService->countKeptRows(schema: $schema);
+			if ($keptRows > 0 && $forceKeptRows === false) {
+				$skipped++;
+				$output->writeln(
+					sprintf(
+						'  <comment>SKIP: holds %d frozen, archived, locked or unreadable row(s). '
+						. 'Re-run with --force-kept-rows to destroy them.</comment>',
+						$keptRows
+					)
+				);
+				continue;
+			}
+
+			$forcedNote = '';
 			if ($isArchival === true) {
-				$archivalNote = ' <comment>(ARCHIVAL RECORDS)</comment>';
+				$forcedNote = ' <comment>(ARCHIVAL RECORDS)</comment>';
+			}
+
+			if ($keptRows > 0) {
+				$forcedNote .= sprintf(' <comment>(%d KEPT ROWS)</comment>', $keptRows);
 			}
 
 			if ($dryRun === true) {
 				$output->writeln(
-					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $archivalNote)
+					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $forcedNote)
 				);
 				continue;
 			}
@@ -281,7 +310,7 @@ class PruneRetiredSchemasCommand extends Command {
 			try {
 				$result = $this->deletionService->cascadeDeleteSchema(
 					schema: $schema,
-					archivalOverride: $forceArchival
+					override: new SchemaTeardownOverride(archivalSchema: $forceArchival, keptRows: $forceKeptRows)
 				);
 			} catch (\Throwable $e) {
 				$skipped++;
@@ -300,7 +329,7 @@ class PruneRetiredSchemasCommand extends Command {
 					'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
 					(int)$result['deletedCount'],
 					$tableDropped,
-					$archivalNote
+					$forcedNote
 				)
 			);
 

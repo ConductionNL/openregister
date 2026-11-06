@@ -84,6 +84,31 @@ final class WholeTableRows {
 	}//end assertNoneKept()
 
 	/**
+	 * How many rows of the table are frozen, archived or locked.
+	 *
+	 * @param Register $register The register context.
+	 * @param Schema   $schema   The schema context.
+	 *
+	 * @return int The number of rows a whole-table delete must not take unasked.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function countKept(Register $register, Schema $schema): int {
+		if ($this->mapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			return 0;
+		}
+
+		$kept = 0;
+		foreach ($this->all(register: $register, schema: $schema) as $object) {
+			if ($object->isArchived() === true || $object->isFrozen() === true || $object->isLocked() === true) {
+				$kept++;
+			}
+		}
+
+		return $kept;
+	}//end countKept()
+
+	/**
 	 * Every row of one table, soft-deleted ones included, chunk by chunk.
 	 *
 	 * RBAC and multitenancy filters are off: the delete that follows removes EVERY
