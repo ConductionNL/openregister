@@ -85,7 +85,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// The entity and its persistence. They hold property definitions; they
 		// never summarise a value.
 		'lib/Db/Schema.php' => 'entity holding definitions, summarises nothing',
-		'lib/Db/SchemaMapper.php' => 'persistence, summarises nothing',
+		'lib/Db/SchemaMapper/FacetConfiguration.php' => 'derives the stored facet block from property definitions, reads no value',
 		'lib/Kernel/Contracts/SchemaInterface.php' => 'the entity\'s interface, declares accessors, summarises nothing',
 		'lib/Service/Schemas/SchemaCacheHandler.php' => 'caches definitions, summarises nothing',
 	];
