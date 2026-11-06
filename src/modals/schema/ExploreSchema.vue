@@ -1540,6 +1540,8 @@ export default {
 </script>
 
 <style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .summary-cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1569,8 +1571,6 @@ export default {
 	text-transform: uppercase;
 	font-weight: 600;
 }
-
-@use '../../styles/modals.scss' as *;
 
 .exploitation-header {
 	margin-bottom: 2rem;
