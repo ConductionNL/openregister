@@ -14,7 +14,7 @@ import {
 		name="importConfiguration"
 		:title="t('openregister', 'Import Configuration')"
 		size="large"
-		:canClose="!loading"
+		:noClose="loading"
 		@update:open="closeModal">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ successMessage }}</p>

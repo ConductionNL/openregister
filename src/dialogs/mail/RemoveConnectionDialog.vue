@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		:name="t('openregister', 'Remove connection')"
-		:canClose="!removing"
+		:noClose="removing"
 		class="or-remove-connection-dialog"
 		@closing="$emit('cancel')">
 		<p>

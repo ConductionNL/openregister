@@ -7,7 +7,6 @@
 				: t('openregister', 'Create Webhook')
 		"
 		size="large"
-		:canClose="true"
 		:open="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="error" type="error">

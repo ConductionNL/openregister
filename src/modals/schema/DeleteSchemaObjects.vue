@@ -9,7 +9,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>

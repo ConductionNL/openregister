@@ -12,7 +12,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 				: t('openregister', 'Add Source')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'Source successfully updated') }}</p>
 		</NcNoteCard>
