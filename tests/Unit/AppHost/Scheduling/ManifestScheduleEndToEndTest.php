@@ -133,6 +133,16 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 
 		$this->assertFalse($this->flow()->getEnabled());
 		$this->assertCount(1, $this->published);
+		$this->assertCount(1, $this->audit);
+	}
+
+	public function testPublishingClearsAnEarlierErrorOnTheFlow(): void {
+		$this->publish([$this->schedule()]);
+		$this->flow()->setStatus(Flow::STATUS_ERROR);
+
+		$this->publish([$this->schedule()]);
+
+		$this->assertNull($this->flow()->getStatus());
 	}
 
 	public function testARemovedScheduleLosesItsFlowWithAnyoneSignedIn(): void {
@@ -168,6 +178,7 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 
 		$same = ['slug' => 'crm', 'productionVersion' => self::VERSION];
 		$after = $this->object($same + ['title' => 'New'], 'app-1');
+		$after->setOrganisation(self::ORGANISATION);
 		$this->listener->handle(new ObjectUpdatedEvent($after, $this->object($same, 'app-1')));
 
 		$this->assertSame('pieter', $this->flow()->scheduledRunAs());
@@ -189,6 +200,7 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 	public function testChangedSchedulesOnAVersionNotInProductionApplyNothing(): void {
 		$this->publish([$this->schedule()]);
 		$application = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-1');
+		$application->setOrganisation(self::ORGANISATION);
 		$prior = $this->object(['manifest' => []], 'version-2');
 		$this->version = $application;
 
