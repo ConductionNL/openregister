@@ -57,7 +57,6 @@ use OCA\OpenRegister\Service\ShareDraft;
 use OCP\Files\FileInfo;
 use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Share\IManager;
@@ -78,11 +77,6 @@ use RuntimeException;
 class ShareLinkServiceTest extends TestCase {
 
 	private GrantChangeAuditor&MockObject $auditor;
-	private function buildL10n(): IL10N {
-		$mock = $this->createMock(IL10N::class);
-		$mock->method('t')->willReturnArgument(0);
-		return $mock;
-	}//end buildL10n()
 
 	private function buildLogger(): LoggerInterface {
 		return $this->createMock(LoggerInterface::class);
@@ -231,7 +225,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$rows = $service->getLinkedShares('uuid-1');
 
 		$this->assertCount(1, $rows);
@@ -252,7 +246,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$this->assertSame([], $service->getLinkedShares('uuid-1'));
 	}//end testGetLinkedSharesNoFolderReturnsEmpty()
 
@@ -277,7 +271,7 @@ class ShareLinkServiceTest extends TestCase {
 			] + $this->managedShareServices(folder: $folder, mayUpdate: true)
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$result = $service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 
 		$this->assertSame('s99', $result->getId());
@@ -351,7 +345,7 @@ class ShareLinkServiceTest extends TestCase {
 			] + $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: false)
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService($this->buildLogger(), $container);
 
 		$this->expectExceptionCode(403);
 		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
@@ -371,7 +365,7 @@ class ShareLinkServiceTest extends TestCase {
 			['OCP\\Share\\IManager' => $manager, 'OCP\\IUserSession' => $this->buildUserSession('alice')] + $services
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService($this->buildLogger(), $container);
 		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 	}//end testCreateShareIsOnTheAuditTrail()
 
@@ -396,7 +390,7 @@ class ShareLinkServiceTest extends TestCase {
 			+ $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: $mayUpdate)
 		);
 
-		(new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container))->revokeShare('uuid-1', 's5');
+		(new ShareLinkService($this->buildLogger(), $container))->revokeShare('uuid-1', 's5');
 	}//end revokeManagedShare()
 
 	public function testAShareOfTheAppAccountIsRevokedWithTheUpdateRight(): void {
@@ -421,7 +415,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
@@ -444,7 +438,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
@@ -469,7 +463,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$service->revokeShare('uuid-1', 's1');
 		// No exception == pass; deleteShare expectation asserts the call.
 		$this->addToAssertionCount(1);
@@ -495,7 +489,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
@@ -521,7 +515,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService($this->buildLogger(), $container);
 		$service->revokeShare('uuid-1', 's9');
 	}//end testRevokeShareByTheOwnerOfASharedNodeIsAllowed()
 
@@ -543,7 +537,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService($this->buildLogger(), $container);
 
 		$this->expectExceptionCode(404);
 		$service->revokeShare('uuid-1', 's8');
@@ -568,7 +562,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		return new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		return new ShareLinkService($this->buildLogger(), $container);
 	}//end serviceOverARestrictedFile()
 
 	public function testARestrictedFileIsNotListedAsShareable(): void {
@@ -611,7 +605,7 @@ class ShareLinkServiceTest extends TestCase {
 			}
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService($this->buildLogger(), $container);
 
 		$this->assertSame([], $service->getShareableFiles('uuid-1'));
 	}//end testWithoutTheGuardNothingIsListed()
@@ -630,7 +624,7 @@ class ShareLinkServiceTest extends TestCase {
 			]
 		);
 
-		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service = new ShareLinkService( $this->buildLogger(), $container);
 		$files = $service->getShareableFiles('uuid-1');
 
 		$this->assertCount(1, $files);

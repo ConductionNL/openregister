@@ -116,14 +116,12 @@ class ShareLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface|null $container Optional server-container override (tests only).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 		?ContainerInterface $container = null,
 	) {

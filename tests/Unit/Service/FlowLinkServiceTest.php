@@ -82,7 +82,6 @@ class FlowLinkServiceTest extends TestCase {
 		$this->service = new FlowLinkService(
 			$this->mapper,
 			$this->db,
-			$this->container,
 			$this->appManager,
 			$this->userSession,
 			$this->groupManager,

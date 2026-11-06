@@ -88,7 +88,6 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 			schemaMapper: $this->createMock(SchemaMapperInterface::class),
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandlerInterface::class),
 			objectCacheService: $this->createMock(CacheHandlerInterface::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: $this->logger,

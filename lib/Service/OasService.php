@@ -413,7 +413,7 @@ class OasService {
 		// LAST AND NULLABLE so every existing construction keeps working. The
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;

@@ -31,7 +31,6 @@ use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException as CommentsNotFoundException;
 use OCP\IUserManager;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**
@@ -66,12 +65,6 @@ class NoteService {
 	 */
 	private readonly IUserManager $userManager;
 
-	/**
-	 * Logger for error reporting.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * The objectType used for OpenRegister comments.
@@ -121,7 +114,6 @@ class NoteService {
 	 * @param ICommentsManager $commentsManager Comments manager for CRUD operations
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IUserManager $userManager User manager for display name resolution
-	 * @param LoggerInterface $logger Logger for error reporting
 	 * @param TimelineVisibilityServiceInterface $visibility Normalises the internal/public flag
 	 * @param NoteVersionService $versions Keeps and reads what a note said before
 	 *
@@ -131,14 +123,12 @@ class NoteService {
 		ICommentsManager $commentsManager,
 		IUserSession $userSession,
 		IUserManager $userManager,
-		LoggerInterface $logger,
 		private readonly TimelineVisibilityServiceInterface $visibility,
 		private readonly NoteVersionService $versions,
 	) {
 		$this->commentsManager = $commentsManager;
 		$this->userSession = $userSession;
 		$this->userManager = $userManager;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
