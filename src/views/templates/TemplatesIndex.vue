@@ -2,29 +2,11 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Templates') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{ t('openregister', 'Manage document templates and themes') }}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Templates')"
+				:description="t('openregister', 'Manage document templates and themes')"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
@@ -127,24 +109,12 @@
 				</table>
 
 				<!-- Pagination -->
-				<div v-if="totalTemplates > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalTemplates"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<OffsetPager
+					:offset="offset"
+					:limit="limit"
+					:total="totalTemplates"
+					@previous="previousPage"
+					@next="nextPage" />
 			</div>
 		</div>
 	</NcAppContent>
@@ -156,14 +126,15 @@ import {
 	NcActionButton,
 	NcActions,
 	NcAppContent,
-	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing templates
@@ -171,17 +142,19 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 export default {
 	name: 'TemplatesIndex',
 	components: {
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileOutline,
 		Refresh,
-		FilterVariant,
 		EyeOutline,
 	},
+
+	mixins: [offsetPaging('totalTemplates', 'loadTemplates')],
 
 	data() {
 		return {
@@ -195,25 +168,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Get current page number
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalTemplates / this.limit)
-		},
 	},
 
 	mounted() {
@@ -282,32 +236,6 @@ export default {
 		},
 
 		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadTemplates()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalTemplates) {
-				this.offset += this.limit
-				this.loadTemplates()
-			}
-		},
-
-		/**
 		 * View template details
 		 *
 		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
@@ -338,11 +266,9 @@ export default {
 
 @include view-container-2;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
 
-@include view-header-title-rules;
+@include view-actions-bar;
+@include view-info;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -402,5 +328,4 @@ export default {
 	width: 50px;
 }
 
-@include pagination-rules;
 </style>
