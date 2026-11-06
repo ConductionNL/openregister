@@ -4,11 +4,22 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteAuditTrail'"
 		:name="t('openregister', 'Delete Audit Trail')"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="t('openregister', 'Audit trail successfully deleted')"
+		:closeLabel="
+			success === null
+				? t('openregister', 'Cancel')
+				: t('openregister', 'Close')
+		"
+		:confirmLabel="t('openregister', 'Delete')"
+		@cancel="closeDialog"
+		@confirm="deleteAuditTrail()">
 		<p v-if="success === null">
 			{{
 				t(
@@ -42,85 +53,25 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				{{ formatDate(auditTrailStore.auditTrailItem.created) }}
 			</p>
 		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'Audit trail successfully deleted') }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="deleteAuditTrail()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Delete') }}
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'DeleteAuditTrail',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: null,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(null)],
 
 	methods: {
-		/**
-		 * Close the dialog and reset state
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * Delete the audit trail entry
 		 *

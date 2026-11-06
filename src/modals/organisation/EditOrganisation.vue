@@ -419,6 +419,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		organisationStore: () => organisationStore,
+
 		/**
 		 * @spec exclude Names the form item for the quota fields; UI plumbing.
 		 */

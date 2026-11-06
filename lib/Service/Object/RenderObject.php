@@ -573,7 +573,7 @@ class RenderObject {
 		$uniqueUuids = array_values(array_unique(array_filter($uuidByIndex, static fn ($uid) => $uid !== null)));
 		$idsByUuid = [];
 		if (empty($uniqueUuids) === false) {
-			$idsByUuid = $this->fileMapper->getFileIdsForObjects($uniqueUuids);
+			$idsByUuid = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
 		}
 
 		foreach ($rows as $index => &$row) {
@@ -1299,7 +1299,7 @@ class RenderObject {
 			return $entity;
 		}
 
-		$idsByUuid = $this->fileMapper->getFileIdsForObjects([$uuid]);
+		$idsByUuid = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects([$uuid]));
 		$entity->setFiles($idsByUuid[$uuid] ?? []);
 		return $entity;
 	}//end setLightweightFileIds()
@@ -1644,6 +1644,10 @@ class RenderObject {
 				return null;
 			}
 
+			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileIdInt]]) === []) {
+				return null;
+			}
+
 			// Get the file using FileService.
 			$file = $this->fileService->getFileById($fileIdInt);
 			if ($file === null) {
@@ -1861,6 +1865,32 @@ class RenderObject {
 			)
 		);
 	}//end withoutRestrictedFiles()
+
+	/**
+	 * The file ids per object without the restricted files the caller is not admitted to.
+	 *
+	 * All objects are judged in one lookup, so a page costs one guard call.
+	 *
+	 * @param array<string, array<int, int>> $idsByUuid The file ids, by object UUID.
+	 *
+	 * @return array<string, array<int, int>> The readable file ids, by object UUID.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function readableFileIds(array $idsByUuid): array {
+		$records = array_map(
+			static fn (int $fileId): array => ['fileid' => $fileId],
+			array_merge(...array_values($idsByUuid))
+		);
+		$readable = array_flip(array_column($this->withoutRestrictedFiles(fileRecords: $records), 'fileid'));
+
+		return array_map(
+			static fn (array $fileIds): array => array_values(
+				array_filter($fileIds, static fn (int $fileId): bool => isset($readable[$fileId]))
+			),
+			$idsByUuid
+		);
+	}//end readableFileIds()
 
 	/**
 	 * Format a raw FileMapper file record into the rendered file object shape (PERF-1).
@@ -5497,7 +5527,7 @@ class RenderObject {
 		}
 
 		if (empty($uuids) === false) {
-			$this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
+			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
 		}
 	}//end prefetchPageFileIds()
 

@@ -103,6 +103,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+
 		/**
 		 * @spec exclude computed display helper for default copy name
 		 */
