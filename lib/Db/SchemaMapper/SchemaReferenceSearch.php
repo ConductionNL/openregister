@@ -88,7 +88,7 @@ final class SchemaReferenceSearch {
 		}
 
 		$exact = [$this->target['id'], $this->target['uuid'], $this->target['slug'], (int)$this->target['id']];
-		if (in_array($ref, $exact, true) === true) {
+		if ($ref !== '' && in_array($ref, $exact, true) === true) {
 			return true;
 		}
 
@@ -97,6 +97,8 @@ final class SchemaReferenceSearch {
 
 	/**
 	 * Whether a reference path holds the target's slug: "#/components/schemas/slug" and the like.
+	 *
+	 * The slug must end there: `zaak` is not a reference to `schemas/zaaktype`.
 	 *
 	 * @param string $ref The reference.
 	 *
@@ -108,7 +110,9 @@ final class SchemaReferenceSearch {
 			return false;
 		}
 
-		return str_contains($ref, 'schemas/' . $slug) === true || str_ends_with($ref, '/' . $slug) === true;
+		$inPath = preg_match('#schemas/' . preg_quote($slug, '#') . '(?![A-Za-z0-9_-])#', $ref) === 1;
+
+		return $inPath === true || str_ends_with($ref, '/' . $slug) === true;
 	}//end pathNamesSlug()
 
 	/**
