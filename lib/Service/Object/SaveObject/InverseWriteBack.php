@@ -133,13 +133,29 @@ final class InverseWriteBack {
 			return [];
 		}
 
-		$flags = (($items['writeBack'] ?? null) === true) ? $items : $definition;
+		$flags = self::flagLevel(definition: $definition, items: $items);
 		if (($flags['writeBack'] ?? null) !== true) {
 			return [];
 		}
 
 		return [$items, $flags];
 	}//end levels()
+
+	/**
+	 * The level that holds the writeBack flag of an items relation: the items when they set it.
+	 *
+	 * @param array $definition The property definition.
+	 * @param array $items      Its items definition.
+	 *
+	 * @return array The level.
+	 */
+	private static function flagLevel(array $definition, array $items): array {
+		if (($items['writeBack'] ?? null) === true) {
+			return $items;
+		}
+
+		return $definition;
+	}//end flagLevel()
 
 	/**
 	 * Write the parent into every target the run's property names, and drop the property when configured.
