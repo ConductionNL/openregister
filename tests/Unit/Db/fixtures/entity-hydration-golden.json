@@ -1767,6 +1767,7 @@
             "agents",
             "sources",
             "mappings",
+            "flows",
             "applications"
         ]
     },

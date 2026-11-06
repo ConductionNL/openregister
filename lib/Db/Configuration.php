@@ -89,6 +89,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSources(?array $sources)
  * @method array|null getMappings()
  * @method void setMappings(?array $mappings)
+ * @method array|null getFlows()
+ * @method void setFlows(?array $flows)
  * @method array|null getApplications()
  * @method void setApplications(?array $applications)
  * @method string|null getOrganisation()
@@ -318,6 +320,13 @@ class Configuration extends Entity implements JsonSerializable {
 	protected ?array $mappings = [];
 
 	/**
+	 * Array of Flow uuids managed by this configuration
+	 *
+	 * @var array|null
+	 */
+	protected ?array $flows = [];
+
+	/**
 	 * Array of application IDs managed by this configuration
 	 *
 	 * @var array|null
@@ -386,6 +395,7 @@ class Configuration extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'agents', type: 'json');
 		$this->addType(fieldName: 'sources', type: 'json');
 		$this->addType(fieldName: 'mappings', type: 'json');
+		$this->addType(fieldName: 'flows', type: 'json');
 		$this->addType(fieldName: 'applications', type: 'json');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'owner', type: 'string');
@@ -512,6 +522,7 @@ class Configuration extends Entity implements JsonSerializable {
 			'agents' => $this->agents,
 			'sources' => $this->sources,
 			'mappings' => $this->mappings,
+			'flows' => $this->flows,
 			'applications' => $this->applications,
 			'created' => $this->getCreatedFormatted(),
 			'updated' => $this->getUpdatedFormatted(),

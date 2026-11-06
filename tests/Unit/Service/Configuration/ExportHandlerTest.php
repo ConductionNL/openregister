@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -54,6 +55,9 @@ class ExportHandlerTest extends TestCase {
 	/** @var MappingMapper&MockObject */
 	private MappingMapper $mappingMapper;
 
+	/** @var FlowMapper&MockObject */
+	private FlowMapper $flowMapper;
+
 	/** @var LoggerInterface&MockObject */
 	private LoggerInterface $logger;
 
@@ -65,6 +69,7 @@ class ExportHandlerTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
+		$this->flowMapper = $this->createMock(FlowMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new ExportHandler(
@@ -73,6 +78,7 @@ class ExportHandlerTest extends TestCase {
 			$this->objectEntityMapper,
 			$this->configurationMapper,
 			$this->mappingMapper,
+			$this->flowMapper,
 			$this->logger
 		);
 	}
@@ -310,6 +316,63 @@ class ExportHandlerTest extends TestCase {
 		$result = $this->handler->exportConfig($config);
 
 		$this->assertEmpty($result['components']['mappings']);
+	}
+
+	// =========================================================================
+	// exportConfig with flows
+	// =========================================================================
+
+	#[Test]
+	public function testExportConfigExportsFlowsKeyedByUuidWithEnvironmentFieldsStripped(): void {
+		$config = new Configuration();
+		$config->setTitle('Config With Flows');
+		$config->setDescription('Has flows');
+		$config->setVersion('1.0.0');
+		$config->setRegisters([]);
+		$config->setFlows(['flow-uuid-1']);
+
+		$flow = new \OCA\OpenRegister\Db\Flow();
+		$flow->setUuid('flow-uuid-1');
+		$flow->setName('My Flow');
+		$flow->setOwner('alice');
+		$flow->setOrganisation('org-1');
+
+		$this->flowMapper->method('findByUuid')
+			->with('flow-uuid-1')
+			->willReturn($flow);
+
+		$result = $this->handler->exportConfig($config);
+
+		$this->assertArrayHasKey('flow-uuid-1', $result['components']['flows']);
+		$exported = $result['components']['flows']['flow-uuid-1'];
+		// The one deliberate divergence from exportMappings(): uuid is KEPT,
+		// because a flow has no slug to match on at import time.
+		$this->assertSame('flow-uuid-1', $exported['uuid']);
+		$this->assertArrayNotHasKey('id', $exported);
+		$this->assertArrayNotHasKey('owner', $exported);
+		$this->assertArrayNotHasKey('organisation', $exported);
+	}
+
+	#[Test]
+	public function testExportConfigHandlesFlowNotFound(): void {
+		$config = new Configuration();
+		$config->setTitle('Config');
+		$config->setDescription('Desc');
+		$config->setVersion('1.0.0');
+		$config->setRegisters([]);
+		$config->setFlows(['missing-uuid']);
+
+		$this->flowMapper->method('findByUuid')
+			->with('missing-uuid')
+			->willThrowException(new Exception('Flow not found'));
+
+		// Should log warning but not throw
+		$this->logger->expects($this->once())
+			->method('warning');
+
+		$result = $this->handler->exportConfig($config);
+
+		$this->assertEmpty($result['components']['flows']);
 	}
 
 }
