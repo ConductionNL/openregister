@@ -30,6 +30,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  */
 class MagicMapperUnionOrderKeysTest extends TestCase {
@@ -64,6 +65,24 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 	public function testAPropertyFieldIsQuotedOnItsColumn(): void {
 		$this->assertSame(['row' => 'first_name', 'sql' => '"first_name"', 'dir' => 'ASC'], $this->keys(['_order' => ['firstName' => 'up']])[0]);
 	}//end testAPropertyFieldIsQuotedOnItsColumn()
+
+	public function testEveryFormOfOrderGivesTheSameKeys(): void {
+		$expected = [['row' => 'title', 'sql' => '"title"', 'dir' => 'DESC'], ['row' => '_uuid', 'sql' => '_uuid', 'dir' => 'ASC']];
+
+		foreach ([['title' => 'desc'], '{"title":"desc"}', '[{"field":"title","direction":"DESC"}]', ['title:desc'], 'title:desc'] as $order) {
+			$this->assertSame($expected, $this->keys(['_order' => $order]), json_encode($order));
+		}
+	}//end testEveryFormOfOrderGivesTheSameKeys()
+
+	public function testADigitOnlyFieldIsAColumn(): void {
+		$this->assertSame('"7"', $this->keys(['_order' => [7 => 'asc']])[0]['sql']);
+	}//end testADigitOnlyFieldIsAColumn()
+
+	public function testASequentialSearchReadsTheFieldsOfEveryForm(): void {
+		$fields = $this->call('orderedPropertyFields', ['query' => ['_order' => '[{"field":"firstName","direction":"DESC"}]']]);
+
+		$this->assertSame(['first_name' => 'firstName'], $fields);
+	}//end testASequentialSearchReadsTheFieldsOfEveryForm()
 
 	public function testAMissingColumnSortsBeforeAZero(): void {
 		$rows = [['_uuid' => 'a', 'rank' => 0], ['_uuid' => 'b']];
