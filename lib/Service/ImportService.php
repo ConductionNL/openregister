@@ -41,8 +41,11 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
 use OCA\OpenRegister\Service\Import\ImportValueCaster;
+use OCA\OpenRegister\Service\Import\JsonImportRows;
+use OCA\OpenRegister\Service\Import\MappingErrorRow;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -701,32 +704,38 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function importJsonObjects(array $objects, array $job): array {
 		$schema = $job['schema'];
-
-		// Phase 1: resolve every row to an (uuid, body) pair.
-		$resolution = $this->resolveJsonImportRows(
-			objects: $objects,
-			run: ['pack' => $job['pack'], 'propertyKeys' => array_flip(array_keys($schema->getProperties()))]
+		$rows = new JsonImportRows(
+			mappingEngine: $this->mappingEngine,
+			pack: $job['pack'],
+			propertyKeys: array_flip(array_keys($schema->getProperties()))
 		);
 
-		// Phase 2: a dry run validates every resolved row and saves nothing.
-		$summary = $resolution['summary'];
-		if ($job['dryRun'] === true) {
-			$summary = $this->buildDryRunSummary(
-				summary: $summary,
-				objects: array_column($resolution['rows'], 'body'),
-				schema: $schema,
-				startTime: $job['startTime']
-			);
-		}
-
-		if ($job['dryRun'] === false) {
-			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
-		}
-
+		$summary = $this->applyJsonImportRows(resolution: $rows->resolve(objects: $objects), job: $job);
 		$summary['schema'] = self::schemaSummary(schema: $schema);
 
 		return $summary;
 	}//end importJsonObjects()
+
+	/**
+	 * Save resolved rows; a dry run validates them and saves nothing.
+	 *
+	 * @param array{rows: list<array<string, mixed>>, summary: array<string, mixed>} $resolution The resolved rows.
+	 * @param array<string, mixed>                                                   $job        The import job.
+	 *
+	 * @return array<string, mixed> The summary.
+	 */
+	private function applyJsonImportRows(array $resolution, array $job): array {
+		if ($job['dryRun'] === true) {
+			return $this->buildDryRunSummary(
+				summary: $resolution['summary'],
+				objects: array_column($resolution['rows'], 'body'),
+				schema: $job['schema'],
+				startTime: $job['startTime']
+			);
+		}
+
+		return $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $resolution['summary']] + $job);
+	}//end applyJsonImportRows()
 
 	/**
 	 * Read and decode a JSON import file.
@@ -805,174 +814,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end jsonImportObjects()
 
 	/**
-	 * Resolve every JSON import row to an upsert uuid and a body, and start the summary.
-	 *
-	 * With a pack each object is mapped through it; a row with mapping errors is
-	 * reported and excluded, never partially mapped or saved. Without a pack the
-	 * body is the object reduced to the schema's own properties.
-	 *
-	 * @param array<mixed>         $objects The objects to import
-	 * @param array<string, mixed> $run     The pack (or null) and the schema property keys as a set
-	 *
-	 * @return array{rows: list<array<string, mixed>>, summary: array<string, mixed>} The rows and the summary so far
-	 */
-	private function resolveJsonImportRows(array $objects, array $run): array {
-		$summary = [
-			'found' => count($objects),
-			'created' => [],
-			'updated' => [],
-			'unchanged' => [],
-			'errors' => [],
-			// Non-fatal findings, such as a dropped undeclared property.
-			'warnings' => [],
-		];
-
-		$rows = [];
-		foreach ($objects as $rowIndex => $raw) {
-			if (is_array($raw) === false) {
-				continue;
-			}
-
-			// Keys are list indexes for a JSON array export; the cast guards an object-with-string-keys envelope.
-			$run['rowNumber'] = ((int)$rowIndex + 1);
-			$resolved = $this->resolveJsonImportRow(raw: $raw, run: $run);
-			array_push($summary['errors'], ...$resolved['errors']);
-			if ($resolved['warning'] !== null) {
-				$summary['warnings'][] = $resolved['warning'];
-			}
-
-			if ($resolved['row'] !== null) {
-				$rows[] = $resolved['row'];
-			}
-		}//end foreach
-
-		return ['rows' => $rows, 'summary' => $summary];
-	}//end resolveJsonImportRows()
-
-	/**
-	 * Resolve one JSON import row.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The pack, the schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>|null, errors: list<array<string, mixed>>, warning: string|null}
-	 *     The resolved row (null when skipped or refused), its errors and its warning
-	 */
-	private function resolveJsonImportRow(array $raw, array $run): array {
-		$pack = $run['pack'];
-		if ($pack === null) {
-			return $this->resolvePlainJsonImportRow(raw: $raw, run: $run);
-		}
-
-		$outcome = ['row' => null, 'errors' => [], 'warning' => null];
-		if ($this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $run['rowNumber']) === true) {
-			return $outcome;
-		}
-
-		$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $run['rowNumber']);
-		if (empty($mapped['errors']) === false) {
-			$outcome['errors'] = array_values(
-				array_map(fn (array $error): array => $this->formatMappingError(error: $error), $mapped['errors'])
-			);
-			return $outcome;
-		}
-
-		$body = $mapped['data'];
-		$uuid = $body['id'] ?? null;
-		unset($body['id']);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$outcome['row'] = ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)];
-		return $outcome;
-	}//end resolveJsonImportRow()
-
-	/**
-	 * Resolve one JSON import row without a pack.
-	 *
-	 * The upsert key is `@self.id`, then a top-level `id` or `uuid`. The body is
-	 * the object reduced to the schema's properties, with empty strings as null.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return array{row: array<string, mixed>, errors: list<never>, warning: string|null}
-	 *     The resolved row and the dropped-property warning, if any
-	 */
-	private function resolvePlainJsonImportRow(array $raw, array $run): array {
-		$uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-		if ($uuid !== null) {
-			$uuid = (string)$uuid;
-		}
-
-		$body = array_intersect_key($raw, $run['propertyKeys']);
-		foreach ($body as $key => $value) {
-			if ($value === '') {
-				$body[$key] = null;
-			}
-		}
-
-		return [
-			'row' => ['uuid' => $uuid, 'body' => $body, 'name' => ($raw['name'] ?? $uuid)],
-			'errors' => [],
-			'warning' => $this->droppedPropertiesWarning(raw: $raw, run: $run),
-		];
-	}//end resolvePlainJsonImportRow()
-
-	/**
-	 * The warning for properties a row carries that the schema does not declare.
-	 *
-	 * An import drops undeclared keys before the save, so the warning at the
-	 * database write never sees them. `@`/`_` keys, `id` and `uuid` are envelope
-	 * and metadata, never user data, so they are not reported.
-	 *
-	 * @param array<string, mixed> $raw The source object
-	 * @param array<string, mixed> $run The schema property keys and the row number
-	 *
-	 * @return string|null The warning, or null when nothing was dropped
-	 */
-	private function droppedPropertiesWarning(array $raw, array $run): ?string {
-		$dropped = [];
-		foreach (array_keys($raw) as $rawKey) {
-			$rawName = (string)$rawKey;
-			if (array_key_exists($rawName, $run['propertyKeys']) === false && $this->isUserDataKey(key: $rawName) === true) {
-				$dropped[] = $rawName;
-			}
-		}
-
-		if ($dropped === []) {
-			return null;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		return sprintf(
-			'Row %d: dropped %d propert%s the schema does not declare: %s.',
-			$run['rowNumber'],
-			count($dropped),
-			$plural,
-			implode(', ', $dropped)
-		);
-	}//end droppedPropertiesWarning()
-
-	/**
-	 * Whether an object key holds user data rather than envelope or metadata.
-	 *
-	 * `@`/`_` keys, `id` and `uuid` are envelope and metadata.
-	 *
-	 * @param string $key The object key
-	 *
-	 * @return bool True for a user data key
-	 */
-	private function isUserDataKey(string $key): bool {
-		return $key !== '' && $key !== 'id' && $key !== 'uuid' && $key[0] !== '@' && $key[0] !== '_';
-	}//end isUserDataKey()
-
-	/**
 	 * Save every resolved JSON import row and record the outcome in the summary.
 	 *
 	 * Rows go through the single-object saveObject() path the REST create/update
@@ -988,33 +829,39 @@ class ImportService implements ObjectImporterInterface {
 		$summary = $target['summary'];
 		foreach ($rows as $row) {
 			try {
-				$saved = $this->objectService->saveObject(
-					object: $row['body'],
-					register: $target['register'],
-					schema: $target['schema'],
-					uuid: $row['uuid'],
-					_rbac: $target['_rbac'],
-					_multitenancy: $target['_multitenancy'],
-					currentUser: $target['currentUser']
-				);
-
 				$outcome = 'created';
 				if ($row['uuid'] !== null) {
 					$outcome = 'updated';
 				}
 
-				$summary[$outcome][] = $saved->getUuid();
+				$summary[$outcome][] = $this->saveJsonImportRow(row: $row, target: $target)->getUuid();
 			} catch (\Throwable $e) {
-				$summary['errors'][] = [
-					'object' => $row['name'],
-					'error' => $e->getMessage(),
-					'type' => get_class($e),
-				];
-			}//end try
-		}//end foreach
+				$summary['errors'][] = ['object' => $row['name'], 'error' => $e->getMessage(), 'type' => get_class($e)];
+			}
+		}
 
 		return $summary;
 	}//end saveJsonImportRows()
+
+	/**
+	 * Save one resolved row.
+	 *
+	 * @param array<string, mixed> $row    The row.
+	 * @param array<string, mixed> $target The register, schema and access flags of the import.
+	 *
+	 * @return ObjectEntity The saved object.
+	 */
+	private function saveJsonImportRow(array $row, array $target): ObjectEntity {
+		return $this->objectService->saveObject(
+			object: $row['body'],
+			register: $target['register'],
+			schema: $target['schema'],
+			uuid: $row['uuid'],
+			_rbac: $target['_rbac'],
+			_multitenancy: $target['_multitenancy'],
+			currentUser: $target['currentUser']
+		);
+	}//end saveJsonImportRow()
 
 	/**
 	 * Resolve or auto-create a register (and its schemas) from a register-bundle
@@ -1467,7 +1314,7 @@ class ImportService implements ObjectImporterInterface {
 				$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
 				if (empty($mapped['errors']) === false) {
 					foreach ($mapped['errors'] as $mappingError) {
-						$parsed['errors'][] = $this->formatMappingError(error: $mappingError);
+						$parsed['errors'][] = (new MappingErrorRow())->format(error: $mappingError);
 					}
 
 					continue;
@@ -1667,34 +1514,6 @@ class ImportService implements ObjectImporterInterface {
 			'efficiency' => $efficiency,
 		];
 	}//end importPerformance()
-
-	/**
-	 * Format one MappingEngine row error into the shape `serializeErrorsToCsv()`
-	 * and the controller's `summary['errors']` contract already expect
-	 * (`row`/`field`/`error`/`type`), so migration-pack mapping failures show
-	 * up in the same per-row error report as any other import error —
-	 * clearly labeled with the source column and transform that failed.
-	 *
-	 * @param array{row: int, source: string, target: ?string, transform: ?string, message: string} $error One MappingEngine error entry.
-	 *
-	 * @return array{row: int, field: string, error: string, type: string, original_value: string}
-	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
-	 */
-	private function formatMappingError(array $error): array {
-		$label = 'source column "' . $error['source'] . '"';
-		if ($error['transform'] !== null) {
-			$label .= ' (transform: ' . $error['transform'] . ')';
-		}
-
-		return [
-			'row' => $error['row'],
-			'field' => $error['target'] ?? $error['source'],
-			'error' => '[migration-pack] ' . $error['message'] . ' — ' . $label,
-			'type' => 'MigrationPackMappingError',
-			'original_value' => $error['source'],
-		];
-	}//end formatMappingError()
 
 	/**
 	 * Build a dry-run summary: every mapped row is validated against the
