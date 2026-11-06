@@ -27,6 +27,7 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\IPreparedStatement;
@@ -96,9 +97,7 @@ class MagicMapperCreateTableIndexesGoldenTest extends TestCase {
 			$actual[$name] = $this->events;
 		}
 
-		$columns = new ReflectionMethod(MagicMapper::class, 'getMetadataColumns');
-		$columns->setAccessible(true);
-		$actual['metadata columns'] = $columns->invoke((new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor());
+		$actual['metadata columns'] = MagicMetadataColumns::ALL;
 
 		if (getenv('UPDATE_GOLDEN') === '1') {
 			file_put_contents(self::FIXTURE, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
