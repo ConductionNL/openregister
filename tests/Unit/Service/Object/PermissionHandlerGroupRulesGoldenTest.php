@@ -88,6 +88,7 @@ class PermissionHandlerGroupRulesGoldenTest extends TestCase {
 			'mcp then group'    => ['mcp', ['group' => 'mcp', 'match' => $pass], 'editors'],
 			'user string'       => ['user:alice'],
 			'user blank'        => ['user:'],
+			'tail equals a uid' => ['groupalice'],
 			'user complex'      => [['user' => 'alice']],
 			'user blank uid'    => [['user' => '']],
 			'user int uid'      => [['user' => 7]],
