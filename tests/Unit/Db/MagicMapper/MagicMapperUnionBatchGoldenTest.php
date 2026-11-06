@@ -27,6 +27,7 @@ use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -67,6 +68,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses   \OCA\OpenRegister\Support\OrderParameter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RecentLensOrder
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
@@ -92,6 +94,20 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 
 	private array $events = [];
 
+	/**
+	 * What a union statement answers, when not the default two rows.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	private ?array $unionRows = null;
+
+	/**
+	 * The uuids of the rows converted to objects, in order.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $converted = [];
+
 	private static function queries(): array {
 		return [
 			'empty' => [],
@@ -103,6 +119,9 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 			'unlimited' => ['_limit' => false],
 			'over max' => ['_limit' => 5000, '_offset' => -4],
 			'zero limit' => ['_limit' => 0],
+			'a property under another spelling' => ['_order' => ['Title' => 'asc']],
+			'unknown fields' => ['_order' => ['_foo' => 'asc', 'nope' => 'desc', 'title' => 'asc']],
+			'only unknown fields, searching' => ['_search' => 'zaak', '_order' => ['_foo' => 'asc']],
 		];
 	}//end queries()
 
@@ -140,6 +159,18 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testRunUnionBatchMatchesGolden()
+
+	public function testTheMergeOfManyBatchesLeavesOutAPropertyUnderAnotherSpelling(): void {
+		$this->unionRows = [
+			['_uuid' => 'u-1', 'title' => 'z', '_union_register_id' => 1, '_union_schema_id' => 2],
+			['_uuid' => 'u-2', 'title' => 'a', '_union_register_id' => 1, '_union_schema_id' => 2],
+		];
+		$pairs = array_map(fn (int $index): array => $this->pair(name: 'a'), range(1, 51));
+
+		$this->makeMapper(platform: 'postgres')->searchAcrossMultipleTables(query: ['_order' => ['Title' => 'asc']], registerSchemaPairs: $pairs);
+
+		$this->assertSame(['u-1', 'u-1', 'u-2', 'u-2'], $this->converted);
+	}//end testTheMergeOfManyBatchesLeavesOutAPropertyUnderAnotherSpelling()
 
 	private function runBatch(string $platform, array $pairNames, array $query): array {
 		$this->events = [];
@@ -243,8 +274,15 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 					$this->container(),
 				]
 			)
-			->onlyMethods(['existsTableForRegisterSchema', 'ensureTableForRegisterSchema', 'getTableNameForRegisterSchema'])
+			->onlyMethods(['existsTableForRegisterSchema', 'ensureTableForRegisterSchema', 'getTableNameForRegisterSchema', 'convertRowToObjectEntity'])
 			->getMock();
+
+		$mapper->method('convertRowToObjectEntity')->willReturnCallback(
+			function (array $row): ?ObjectEntity {
+				$this->converted[] = $row['_uuid'];
+				return null;
+			}
+		);
 
 		$mapper->method('existsTableForRegisterSchema')->willReturnCallback(
 			function (Register $register, Schema $schema): bool {
@@ -271,7 +309,7 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 			$this->events[] = ['prepare' => $sql];
 		}
 
-		$rows = [['_uuid' => 'u-1', '_schema' => 2], ['_uuid' => 'u-2', '_schema' => 3]];
+		$rows = $this->unionRows ?? [['_uuid' => 'u-1', '_schema' => 2], ['_uuid' => 'u-2', '_schema' => 3]];
 		if ($isColumns === true) {
 			$rows = [];
 			foreach (['_id', '_uuid', '_name', '_description', '_summary', '_register', '_schema', '_created', '_updated', '_deleted', '_owner', '_organisation', 'title', 'count', 'status', 'p7'] as $column) {
