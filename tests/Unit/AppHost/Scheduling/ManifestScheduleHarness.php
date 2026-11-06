@@ -173,7 +173,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 			new ScheduleAuditTrail($this->auditMapper()),
 			$this->logger
 		);
-		$this->listener = new ApplicationPublishListener($this->reader($session), $sync, $this->logger);
+		$listenerContainer = $this->createConfiguredMock(ContainerInterface::class, ['get' => $sync]);
+		$this->listener = new ApplicationPublishListener($this->reader($session), $listenerContainer, $this->logger);
 
 		$this->locator = $this->flowLocator(flowMapper: $flowMapper);
 		$this->scheduler = new FlowScheduleService(
