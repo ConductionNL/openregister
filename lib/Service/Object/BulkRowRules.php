@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 
 /**
@@ -45,11 +46,13 @@ final class BulkRowRules {
 	 * @param DecisionTableBulkGuard|null $decisionTables  Applies the decision-table save rules to a bulk save.
 	 * @param PropertyRbacHandler|null    $propertyRbac    Applies property authorization per row, as SaveObject does.
 	 * @param BulkWriteEvents|null        $bulkWriteEvents Runs the save events per row where they are switched on.
+	 * @param FlowRunContext|null         $runContext      The ambient flow-run stack, so a lock a run took admits that run.
 	 */
 	public function __construct(
 		public readonly ?DecisionTableBulkGuard $decisionTables = null,
 		public readonly ?PropertyRbacHandler $propertyRbac = null,
 		public readonly ?BulkWriteEvents $bulkWriteEvents = null,
+		public readonly ?FlowRunContext $runContext = null,
 	) {
 	}//end __construct()
 }//end class

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\DashboardController;
+use OCA\OpenRegister\Search\Controller\DashboardController;
 use DateTime;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardAuditReads;

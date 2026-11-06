@@ -72,21 +72,22 @@ jest.mock('../store/store.js', () => {
 const stores = jest.requireMock('../store/store.js')
 
 /**
- * Mounts a component with its real setup and without its lifecycle hooks.
+ * Mounts a component with its real setup, by default without its mounted hook.
  * Its render is left out: only its watchers matter here.
  *
  * @param {object} component The component
  * @param {string[]} names The methods to log
+ * @param {Function} [mounted] The mounted hook to keep
  * @return {object} The instance and the log
  */
-function watched(component, names) {
+function watched(component, names, mounted) {
 	const log = []
 	const methods = { ...component.methods }
 	names.forEach((name) => {
 		methods[name] = () => log.push(name)
 	})
 	const wrapper = mount(
-		{ ...component, methods, mounted: undefined, render: () => null },
+		{ ...component, methods, mounted, render: () => null },
 		{
 			global: {
 				mocks: { $route: { path: '/', query: {} }, $router: { replace: jest.fn() } },
@@ -121,14 +122,22 @@ describe('watchers on a store', () => {
 	it.each([
 		['DeleteSchemaObjects', DeleteSchemaObjects, 'deleteSchemaObjects'],
 		['ValidateSchema', ValidateSchema, 'validateSchema'],
-	])('%s counts on a schema and on opening', async (name, component, dialog) => {
+	])('%s counts once when it opens', async (name, component, dialog) => {
+		stores.schemaStore.schemaItem = { id: 1 }
+		stores.navigationStore.dialog = dialog
+		const { log } = watched(component, ['loadObjectCount'], component.mounted)
+		await flushPromises()
+		expect(log).toHaveLength(1)
+	})
+
+	it.each([
+		['DeleteSchemaObjects', DeleteSchemaObjects],
+		['ValidateSchema', ValidateSchema],
+	])('%s counts on a schema that arrives later', async (name, component) => {
 		const { log } = watched(component, ['loadObjectCount'])
 		stores.schemaStore.schemaItem = { id: 1 }
 		await flushPromises()
 		expect(log).toHaveLength(1)
-		stores.navigationStore.dialog = dialog
-		await flushPromises()
-		expect(log).toHaveLength(2)
 	})
 
 	it('EditOrganisation takes another organisation', async () => {

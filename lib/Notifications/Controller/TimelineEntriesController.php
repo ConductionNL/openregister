@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
@@ -316,8 +317,7 @@ class TimelineEntriesController extends Controller {
 			if (array_key_exists('pinned', $data) === true) {
 				$entry = $this->entries->pin(
 					object: $object,
-					entry: $entry,
-					pinned: ($data['pinned'] !== false && $data['pinned'] !== 'false')
+					pin: new EntryPin(entry: $entry, pinned: ($data['pinned'] !== false && $data['pinned'] !== 'false'))
 				);
 			}
 
