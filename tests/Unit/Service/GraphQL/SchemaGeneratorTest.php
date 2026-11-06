@@ -19,7 +19,11 @@ class SchemaGeneratorTest extends TestCase {
 	protected function setUp(): void {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->generator = new SchemaGenerator($this->schemaMapper, $this->createMock(\OCP\IUserSession::class));
+		$this->generator = new SchemaGenerator(
+			$this->schemaMapper,
+			$this->createMock(\OCP\IUserSession::class),
+			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class)
+		);
 	}
 
 	/**

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -93,7 +94,7 @@ class SchemaGeneratorGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new SchemaGenerator($schemas, $session);
+		return new SchemaGenerator($schemas, $session, $this->createMock(PropertyRbacHandler::class));
 	}//end generator()
 
 	private function resolver(): GraphQLResolver {
