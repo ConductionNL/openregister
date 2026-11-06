@@ -27,8 +27,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\GraphQL;
 
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Utils\SchemaPrinter;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
@@ -85,15 +83,6 @@ class SchemaGeneratorGoldenTest extends TestCase {
 	}//end schemas()
 
 	private function generator(?IUser $user): SchemaGenerator {
-		$register = new Register();
-		$register->setId(1);
-		$registers = $this->createMock(RegisterMapper::class);
-		$registers->method('findAll')->willReturnCallback(
-			function (mixed ...$args) use ($register): array {
-				$this->log[] = 'registers.findAll ' . json_encode($args);
-				return [$register];
-			}
-		);
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('findAll')->willReturnCallback(
 			function (mixed ...$args): array {
@@ -104,7 +93,7 @@ class SchemaGeneratorGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new SchemaGenerator($registers, $schemas, $session);
+		return new SchemaGenerator($schemas, $session);
 	}//end generator()
 
 	private function resolver(): GraphQLResolver {

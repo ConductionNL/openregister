@@ -1616,7 +1616,6 @@
         ""
     ],
     "mapper calls": [
-        "registers.findAll [null,null,[],[],[],false,false]",
         "schemas.findAll [null,null,[],[],[],[],false,false]"
     ],
     "metadata anonymous": {
