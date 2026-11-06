@@ -94,7 +94,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			'calculate no schema'   => $this->runCase(fn (DashboardService $s) => $s->sizes()->calculate(null, 404)),
 			'listing all'           => $this->runCase(fn (DashboardService $s) => $s->getRegistersWithSchemas()),
 			'listing narrowed'      => $this->runCase(fn (DashboardService $s) => $s->getRegistersWithSchemas(1, 11)),
-			'listing error thrown'  => $this->runCase(
+			'listing with an Error' => $this->runCase(
 				function (DashboardService $s): array {
 					$this->schemaConflict = \TypeError::class;
 					return $s->getRegistersWithSchemas();
