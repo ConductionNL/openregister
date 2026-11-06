@@ -5,7 +5,7 @@
  *
  * Enforces the create-time half of `x-openregister-dedup`: `onCreate`
  * (`warn` by default, or `block`) and `overrideGroups`. The endpoint in
- * {@see \OCA\OpenRegister\Controller\DuplicateController::check()} answers the
+ * {@see \OCA\OpenRegister\Search\Controller\DuplicateController::check()} answers the
  * question; this enforces the answer on the save path, so a client that never
  * asks is still stopped.
  *

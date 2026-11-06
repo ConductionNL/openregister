@@ -63,7 +63,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// Delegate to a guarded path and compute nothing themselves. The gate
 		// belongs where the values are produced, not at every layer that passes
 		// a request along; repeating it would multiply the places it can drift.
-		'lib/Controller/AggregationController.php' => 'delegates to AggregationRunner',
+		'lib/Search/Controller/AggregationController.php' => 'delegates to AggregationRunner',
 		'lib/Service/Aggregation/NamedAggregationRun.php' => 'holds the state of AggregationRunner::run(), which asks; computes nothing',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
@@ -76,6 +76,10 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// value to anybody.
 		'lib/Db/MagicMapper/MagicSearchHandler.php' => 'filters rows; property reads are stripped by the render path',
 
+		// Reads a property's `facetable` flag to create its index. An index
+		// returns no value to anybody.
+		'lib/Db/MagicMapper/MagicTableIndexer.php' => 'creates indexes from property definitions, reads no value',
+
 		// Validate or persist a CONFIGURATION that names a property. They never
 		// read a value. `ViewService` checks a kanban groupByField exists;
 		// `TimeseriesRequestValidator` checks a request's shape.
@@ -85,7 +89,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// The entity and its persistence. They hold property definitions; they
 		// never summarise a value.
 		'lib/Db/Schema.php' => 'entity holding definitions, summarises nothing',
-		'lib/Db/SchemaMapper.php' => 'persistence, summarises nothing',
+		'lib/Db/SchemaMapper/FacetConfiguration.php' => 'derives the stored facet block from property definitions, reads no value',
 		'lib/Kernel/Contracts/SchemaInterface.php' => 'the entity\'s interface, declares accessors, summarises nothing',
 		'lib/Service/Schemas/SchemaCacheHandler.php' => 'caches definitions, summarises nothing',
 	];

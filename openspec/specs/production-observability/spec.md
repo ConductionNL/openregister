@@ -341,7 +341,7 @@ Since PHP is a request-scoped runtime without persistent in-memory state, the sy
 The system MUST expose metrics from the `PerformanceHandler` (`lib/Service/Object/PerformanceHandler.php`) and `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
 
 #### Scenario: Fast-path detection rate
-- **GIVEN** the `PerformanceHandler.optimizeRequestForPerformance()` classifies requests as simple or complex
+- **GIVEN** `PerformanceHandler::isSimpleRequest()` classifies requests as simple or complex
 - **WHEN** the metrics endpoint is scraped
 - **THEN** `openregister_fast_path_requests_total` and `openregister_slow_path_requests_total` counters MUST be present
 

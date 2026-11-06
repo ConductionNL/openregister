@@ -27,6 +27,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<CalendarLink>
  */
 class CalendarLinkMapper extends QBMapper {
+	use SelectByColumnTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;
 	/**
@@ -46,11 +47,8 @@ class CalendarLinkMapper extends QBMapper {
 	 * @return CalendarLink[] Array of calendar links.
 	 */
 	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('dtstart', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$qb->orderBy('dtstart', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUuid()
@@ -66,11 +64,8 @@ class CalendarLinkMapper extends QBMapper {
 	 * @throws DoesNotExistException When no row matches.
 	 */
 	public function findByObjectAndEvent(string $objectUuid, string $eventUid): CalendarLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'object_uuid', value: $objectUuid));
+		$qb->andWhere($qb->expr()->eq('event_uid', $qb->createNamedParameter($eventUid)));
 
 		return $this->findEntity(query: $qb);
 	}//end findByObjectAndEvent()
