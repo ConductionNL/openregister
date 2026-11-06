@@ -38,6 +38,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
@@ -93,7 +95,6 @@ class RenderObjectLensRowsTest extends TestCase {
 			schemaMapper: $schemaMapper,
 			systemTagManager: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagManager::class),
 			systemTagMapper: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class),
 			objectCacheService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class),
 			propertyRbacHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\PropertyRbacHandler::class),
 			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),

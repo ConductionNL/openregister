@@ -48,6 +48,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Deep coverage tests for SaveObject
@@ -155,6 +157,11 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	private function setPrivateProperty(string $property, $value): void {
+		if (in_array($property, SaveLookupsAccess::CACHES, true) === true) {
+			SaveLookupsAccess::set($this->handler, $property, $value);
+			return;
+		}
+
 		$ref = new ReflectionClass(SaveObject::class);
 		$prop = $ref->getProperty($property);
 		$prop->setAccessible(true);
@@ -162,6 +169,10 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	private function getPrivateProperty(string $property) {
+		if (in_array($property, SaveLookupsAccess::CACHES, true) === true) {
+			return SaveLookupsAccess::get($this->handler, $property);
+		}
+
 		$ref = new ReflectionClass(SaveObject::class);
 		$prop = $ref->getProperty($property);
 		$prop->setAccessible(true);
@@ -324,7 +335,7 @@ class SaveObjectDeepTest extends TestCase {
 	// ── resolveRegisterReference tests ──────────────────────────────────
 
 	public function testResolveRegisterReferenceEmpty(): void {
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '');
 		$this->assertNull($result);
 	}
 
@@ -334,7 +345,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['5']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: '5');
 		$this->assertSame('5', $result);
 	}
 
@@ -346,7 +357,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', [$uuid]);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: $uuid);
 		$this->assertNull($result);
 	}
 
@@ -356,7 +367,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['publication']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'publication');
 		$this->assertSame('3', $result);
 	}
 
@@ -366,9 +377,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', [
-			'http://example.com/api/registers/voorzieningen',
-		]);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'http://example.com/api/registers/voorzieningen');
 		$this->assertSame('8', $result);
 	}
 
@@ -378,7 +387,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new Exception('not found'));
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['broken-slug']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'broken-slug');
 		$this->assertNull($result);
 	}
 
@@ -390,19 +399,19 @@ class SaveObjectDeepTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willReturn($register);
 
-		$result = $this->invokePrivateMethod('resolveRegisterReference', ['custom-register']);
+		$result = SaveLookupsAccess::of($this->handler)->registerId(reference: 'custom-register');
 		$this->assertSame('11', $result);
 	}
 
 	// ── removeQueryParameters tests ─────────────────────────────────────
 
 	public function testRemoveQueryParametersNoParams(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['simple-ref']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'simple-ref');
 		$this->assertSame('simple-ref', $result);
 	}
 
 	public function testRemoveQueryParametersStrips(): void {
-		$result = $this->invokePrivateMethod('removeQueryParameters', ['schema?key=val']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?key=val');
 		$this->assertSame('schema', $result);
 	}
 

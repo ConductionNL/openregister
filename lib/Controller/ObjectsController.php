@@ -29,16 +29,29 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
+use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Controller\Support\ValidationWindow;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
+use OCA\OpenRegister\Controller\Support\MagicMappedTable;
+use OCA\OpenRegister\Controller\Support\ObjectsRouteScope;
+use OCA\OpenRegister\Controller\Support\ObjectsTableRead;
+use OCA\OpenRegister\Controller\Support\ObjectVersionGuard;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
+use OCA\OpenRegister\Controller\Support\SentWrite;
+use OCA\OpenRegister\Controller\Support\ShowServices;
+use OCA\OpenRegister\Controller\Support\ShownEntity;
+use OCA\OpenRegister\Controller\Support\VersionClaim;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
@@ -79,8 +92,6 @@ use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
-use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -227,6 +238,22 @@ class ObjectsController extends Controller {
 		$this->groupManager = $session->groupManager;
 		$this->logger = $session->logger;
 	}//end __construct()
+
+	/**
+	 * The version check every write path asks before it writes.
+	 *
+	 * @return ObjectVersionGuard The guard for this request.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function versionGuard(): ObjectVersionGuard {
+		return new ObjectVersionGuard(
+			claim: new VersionClaim(request: $this->request),
+			container: $this->container,
+			trail: new ConflictTrail(auditTrail: $this->services->store->auditTrailMapper, logger: $this->logger),
+			logger: $this->logger
+		);
+	}//end versionGuard()
 
 	/**
 	 * The refusal body for an object that is in the trash rather than absent.
@@ -1456,52 +1483,54 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function serializeMagicResults(array $results, array $listing): array {
-		$query = $listing['query'];
-		$extend = $this->rowExtensions(query: $query);
+		$extend = $this->rowExtensions(query: $listing['query']);
+		if ($this->needsFullRender(query: $listing['query'], extend: $extend) === true && empty($results) === false) {
+			return $this->fullyRenderedRows(results: $results, listing: $listing + ['extend' => $extend]);
+		}
 
-		$hasComplexRendering = empty($extend) === false
+		return $this->renderedMagicRows(results: $results, rbac: $listing['rbac']);
+	}//end serializeMagicResults()
+
+	/**
+	 * Rows through the full render, for a listing that asks for more than plain rows.
+	 *
+	 * @param array<int, ObjectEntity> $results The rows.
+	 * @param array<string, mixed> $listing The listing scope, with its `extend`.
+	 *
+	 * @return array<int, array<string, mixed>> The rendered rows.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function fullyRenderedRows(array $results, array $listing): array {
+		$query = $listing['query'];
+
+		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class)->renderEntities(
+			entities: $results,
+			_extend: $listing['extend'],
+			_filter: ($query['_filter'] ?? null),
+			_fields: ($query['_fields'] ?? null),
+			_unset: ($query['_unset'] ?? null),
+			_rbac: $listing['rbac'],
+			_multitenancy: $listing['multi']
+		);
+	}//end fullyRenderedRows()
+
+	/**
+	 * Whether a listing asks for more than the plain rows.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 * @param array<int, mixed> $extend The row extensions.
+	 *
+	 * @return bool True when extensions or a field filter apply.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function needsFullRender(array $query, array $extend): bool {
+		return empty($extend) === false
 			|| empty($query['_fields'] ?? null) === false
 			|| empty($query['_filter'] ?? null) === false
 			|| empty($query['_unset'] ?? null) === false;
-
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		if ($hasComplexRendering === true && empty($results) === false) {
-			return $renderHandler->renderEntities(
-				entities: $results,
-				_extend: $extend,
-				_filter: $query['_filter'] ?? null,
-				_fields: $query['_fields'] ?? null,
-				_unset: $query['_unset'] ?? null,
-				_rbac: $listing['rbac'],
-				_multitenancy: $listing['multi']
-			);
-		}
-
-		// This fast path bypasses renderEntity, where write-only secrets are
-		// stripped (openregister#380, ocon#147); without the redaction below a
-		// plain list read returns every write-only field in cleartext. `_rbac`
-		// gates ONLY the property `authorization.read` strip; writeOnly strips
-		// unconditionally, admin included (#389/#460).
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $listing['rbac']);
-
-		// Same bypass, same gap for lenses: renderEntity is where a schema's
-		// declared lenses are resolved.
-		$renderHandler->applyLensesToRows(rows: $results, _rbac: $listing['rbac']);
-
-		// Same bypass, same gap for translatable properties: renderEntity is
-		// where a `{"nl":...}` map projects to the negotiated language.
-		$renderHandler->resolveTranslationsForRows(rows: $results);
-
-		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
-		$renderHandler->attachLightweightFilesToRows(rows: $results);
-
-		$serializedResults = [];
-		foreach ($results as $entity) {
-			$serializedResults[] = $entity->jsonSerialize();
-		}
-
-		return $serializedResults;
-	}//end serializeMagicResults()
+	}//end needsFullRender()
 
 	/**
 	 * Work out limit, page, page count and total of a magic-table listing.
@@ -2555,210 +2584,167 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function objects(ObjectOperationsInterface $objectService): JSONResponse {
-		// Check for register/schema in query parameters for magic mapper routing.
-		$params = $this->request->getParams();
-		$registerParam = $params['register'] ?? $params['_register'] ?? null;
-		$schemaParam = $params['schema'] ?? $params['_schema'] ?? null;
-		$schemasParam = $params['schemas'] ?? null;
-		$registersParam = $params['registers'] ?? null;
-
-		// If multiple schemas or registers specified, use cross-table search.
-		$schemasList = [];
-		$registersList = [];
-
-		if ($schemasParam !== null) {
-			$schemasList = (new ObjectRequestParams())->multiValue(param: $schemasParam, defaultValue: $schemaParam ?? '');
-		} elseif ($schemaParam !== null) {
-			$schemasList = [$schemaParam];
+		$scope = new ObjectsRouteScope(params: $this->request->getParams());
+		if ($scope->spansTables() === true) {
+			return $this->crossTableSearch(registers: $scope->registers, schemas: $scope->schemas, objectService: $objectService);
 		}
 
-		if ($registersParam !== null) {
-			$registersList = (new ObjectRequestParams())->multiValue(param: $registersParam, defaultValue: $registerParam ?? '');
-		} elseif ($registerParam !== null) {
-			$registersList = [$registerParam];
+		$answer = ['register' => null, 'schema' => null];
+		if ($scope->namesOneTable() === true) {
+			$answer = $this->oneTableListing(scope: $scope, objectService: $objectService);
 		}
 
-		// Multi-table search: multiple schemas or registers.
-		if ((count($schemasList) > 1) || (count($registersList) > 1)) {
-			return $this->crossTableSearch(
-				registers: $registersList,
-				schemas: $schemasList,
-				objectService: $objectService
-			);
+		if ($answer instanceof JSONResponse) {
+			return $answer;
 		}
 
-		// Single register+schema: resolve slugs/IDs to numeric IDs (same
-		// resolution semantics as the path-style index() route) and check
-		// whether magic mapping is enabled. The resolved numeric IDs are
-		// captured in $resolvedRegisterId/$resolvedSchemaId so the fallback
-		// buildSearchQuery() call below can filter correctly instead of
-		// silently matching zero rows against an unresolved slug string.
-		$resolvedRegisterId = null;
-		$resolvedSchemaId = null;
-		if ($registerParam !== null && $schemaParam !== null) {
-			try {
-				$resolved = $this->resolveRegisterSchemaIds(
-					register: $registerParam,
-					schema: $schemaParam,
-					objectService: $objectService
-				);
+		return $this->searchedListing(resolved: $answer, objectService: $objectService);
+	}//end objects()
 
-				$resolvedRegisterId = $resolved['register'];
-				$resolvedSchemaId = $resolved['schema'];
+	/**
+	 * The answer for one named table, or its resolved ids when the search should answer.
+	 *
+	 * The purpose guard sits on the resolution rather than per branch: this
+	 * endpoint is a public page, and both branches below descend from here.
+	 *
+	 * @param ObjectsRouteScope $scope The register and schema the request named.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return array<string, mixed>|JSONResponse The resolved ids, or the response.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function oneTableListing(ObjectsRouteScope $scope, ObjectOperationsInterface $objectService): array|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(register: $scope->register, schema: $scope->schema, objectService: $objectService);
 
-				// DOELBINDING. This endpoint is @PublicPage and reads the same
-				// data as index(), which has guarded its single-schema branch
-				// since PurposeGuard landed - this one guarded nothing, on any
-				// branch. A schema that refuses show() for want of a declared
-				// purpose answered here in full, without authentication.
-				//
-				// Placed on the resolution rather than per branch: both branches
-				// below (magic-mapper and the searchObjectsPaginated fallback)
-				// descend from this point, and the multi-schema branch above is
-				// guarded inside crossTableSearch() itself. A per-branch check
-				// would reproduce the gap the next time a branch is added.
-				$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
-				if ($refusal !== null) {
-					return $refusal;
-				}
+			$answer = $this->refuseUnboundPurpose(resolved: $resolved);
+			if ($answer === null && (new MagicMappedTable(resolved: $resolved))->isMapped() === true) {
+				$answer = $this->magicTableListing(table: new ObjectsTableRead(scope: $scope, resolved: $resolved), objectService: $objectService);
+			}
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
 
-				// Check if magic mapping is enabled for this register+schema.
-				$registerEntity = $resolved['registerEntity'] ?? null;
-				$schemaEntity = $resolved['schemaEntity'] ?? null;
+		return ($answer ?? $resolved);
+	}//end oneTableListing()
 
-				if ($registerEntity !== null && $schemaEntity !== null) {
-					// Get register configuration.
-					$registerConfig = $registerEntity->getConfiguration() ?? [];
-					$enableMagicMapping = ($registerConfig['enableMagicMapping'] ?? false) === true;
-					$magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-					$schemaId = (string)$schemaEntity->getId();
-					$schemaSlug = $schemaEntity->getSlug();
-
-					// Check if this specific schema is magic-mapped.
-					if ($enableMagicMapping === true
-						&& (in_array($schemaId, $magicMappingSchemas, true) === true
-						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
-					) {
-						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
-
-						// Build search query with resolved numeric IDs.
-						$query = $objectService->buildSearchQuery(
-							requestParams: $this->request->getParams(),
-							register: $resolved['register'],
-							schema: $resolved['schema']
-						);
-
-						// Use MagicMapper search directly.
-						$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-							query: $query,
-							register: $registerEntity,
-							schema: $schemaEntity
-						);
-
-						// Redact write-only secrets before serialising (openregister#380,
-						// ocon#147) — this direct-magic-mapper path bypasses renderEntity.
-						// `_rbac` (false for an admin) gates only the property
-						// `authorization.read` strip; writeOnly strips unconditionally (#460).
-						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
-
-						// Same bypass, same gap for lenses: renderEntity is where a schema's
-						// declared lenses are resolved.
-						$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac'] ?? true);
-
-						// Same bypass, same gap for translatable properties: renderEntity is
-						// where a `{"nl":...}` map projects to the negotiated language.
-						$renderHandler->resolveTranslationsForRows(rows: $results);
-
-						// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
-						$renderHandler->attachLightweightFilesToRows(rows: $results);
-
-						// Convert ObjectEntity array to JSON-serializable format.
-						$serializedResults = [];
-						foreach ($results as $entity) {
-							$serializedResults[] = $entity->jsonSerialize();
-						}
-
-						// Calculate pagination.
-						$limit = $query['_limit'] ?? 20;
-						$offset = $query['_offset'] ?? 0;
-						$total = count($serializedResults);
-						$pages = 1;
-						$page = 1;
-						if ($limit > 0) {
-							$pages = (int)ceil($total / $limit);
-							$page = (int)floor($offset / $limit) + 1;
-						}
-
-						// Strip empty values from results unless _empty=true is set.
-						$includeEmpty = filter_var(
-							value: $params['_empty'] ?? false,
-							filter: FILTER_VALIDATE_BOOLEAN
-						);
-						if ($includeEmpty === false) {
-							$serializedResults = array_map(
-								callback: [new EmptyValueStripper(), 'stripped'],
-								array: $serializedResults
-							);
-						}
-
-						// Return in expected format with magic_mapper source indicator.
-						return new JSONResponse(
-							data: [
-								'results' => $serializedResults,
-								'total' => $total,
-								'pages' => $pages,
-								'page' => $page,
-								'limit' => $limit,
-								'@self' => [
-									'source' => 'magic_mapper',
-									'register' => $registerParam,
-									'schema' => $schemaParam,
-								],
-							]
-						);
-					}//end if
-				}//end if
-			} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-				return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
-			}//end try
-		}//end if
-
-		// Build search query and execute via the normal route (magic tables).
-		// Pass the already-resolved numeric register/schema IDs (when a
-		// register/schema query parameter was supplied) so the query filters
-		// on '@self.register' / '@self.schema' the same way the path-style
-		// index() route does. Without this, buildSearchQuery() falls back to
-		// treating the raw 'register'/'schema' query-string values (slugs)
-		// as the metadata filter, which never matches the numeric register
-		// ID column and silently returns zero results.
+	/**
+	 * The rows of a magic-mapped table, straight from its mapper.
+	 *
+	 * @param ObjectsTableRead $table The scope and its resolved ids and entities.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The rows and their paging, marked with their source.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicTableListing(ObjectsTableRead $table, ObjectOperationsInterface $objectService): JSONResponse {
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$query = $objectService->buildSearchQuery(
 			requestParams: $this->request->getParams(),
-			register: $resolvedRegisterId,
-			schema: $resolvedSchemaId
+			register: $table->resolved['register'],
+			schema: $table->resolved['schema']
 		);
+		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $table->resolved['registerEntity'],
+			schema: $table->resolved['schemaEntity']
+		);
+		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 
-		// **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
+		return new JSONResponse(data: $this->magicTablePage(rows: $rows, table: $table->withQuery(query: $query)));
+	}//end magicTableListing()
+
+	/**
+	 * Rows from a mapper as a reader may see them.
+	 *
+	 * The direct mapper path bypasses renderEntity, which is where write-only
+	 * secrets are redacted, lenses resolved, translations projected and files
+	 * listed, so each of those is asked for here. `_rbac` (false for an admin)
+	 * gates only the `authorization.read` strip; writeOnly strips unconditionally.
+	 *
+	 * @param array<int, ObjectEntity> $results The rows.
+	 * @param bool $rbac Whether the reader is held to `authorization.read`.
+	 *
+	 * @return array<int, array<string, mixed>> The serialised rows.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedMagicRows(array $results, bool $rbac): array {
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $rbac);
+		$renderHandler->resolveTranslationsForRows(rows: $results);
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
+		return array_values(array_map(static fn ($entity) => $entity->jsonSerialize(), $results));
+	}//end renderedMagicRows()
+
+	/**
+	 * The envelope of a magic-mapped listing.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The serialised rows.
+	 * @param ObjectsTableRead $table The scope and the search query.
+	 *
+	 * @return array<string, mixed> The envelope, with `@self.source` naming the mapper.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicTablePage(array $rows, ObjectsTableRead $table): array {
+		if ($this->wantsEmptyValues() === false) {
+			$stripped = array_map(callback: [new EmptyValueStripper(), 'stripped'], array: $rows);
+		}
+
+		return array_merge(
+			['results' => ($stripped ?? $rows)],
+			$table->paging(total: count($rows)),
+			['@self' => ['source' => 'magic_mapper', 'register' => $table->scope->register, 'schema' => $table->scope->schema]]
+		);
+	}//end magicTablePage()
+
+	/**
+	 * Whether the caller asked to keep null, empty string and empty array values.
+	 *
+	 * @return bool True for a truthy `_empty`.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function wantsEmptyValues(): bool {
+		$params = $this->request->getParams();
+
+		return filter_var(value: ($params['_empty'] ?? false), filter: FILTER_VALIDATE_BOOLEAN);
+	}//end wantsEmptyValues()
+
+	/**
+	 * The listing through the object search.
+	 *
+	 * The resolved numeric ids go into the query, so it filters on
+	 * `@self.register` and `@self.schema` the way the path-style index() does;
+	 * a raw slug never matches those columns.
+	 *
+	 * @param array<string, mixed> $resolved The resolved ids, null when none were named.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The search result; a 404 when a schema-level read is denied, as in show().
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function searchedListing(array $resolved, ObjectOperationsInterface $objectService): JSONResponse {
+		$query = $objectService->buildSearchQuery(requestParams: $this->request->getParams(), register: $resolved['register'], schema: $resolved['schema']);
+
 		try {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
-			// Schema-level list read denied (object-source parity check).
-			// Mirror show(): 404 so denial reveals nothing.
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		}
 
-		// Strip empty values from results unless _empty=true is set.
-		$includeEmpty = filter_var(
-			value: $params['_empty'] ?? false,
-			filter: FILTER_VALIDATE_BOOLEAN
-		);
-		if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
+		if ($this->wantsEmptyValues() === false && is_array(($result['results'] ?? null)) === true) {
 			$result['results'] = $this->stripEmptyFromResults(results: $result['results']);
 		}
 
 		return new JSONResponse(data: $result);
-	}//end objects()
+	}//end searchedListing()
 
 	/**
 	 * The options a filtered reference property may offer for this record.
@@ -2795,26 +2781,75 @@ class ObjectsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 600, period: 60)]
-	public function referenceOptions(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function referenceOptions(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		$property = (string)($this->request->getParam('property') ?? '');
 		if (trim($property) === '') {
-			return new JSONResponse(
-				data: ['message' => 'Name the property whose options you want, with ?property=<name>.'],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['message' => 'Name the property whose options you want, with ?property=<name>.'], statusCode: 400);
 		}
 
+		return $this->optionsFor(
+			ask: new ReferenceOptionsAsk(id: $id, register: $register, schema: $schema, property: $property),
+			objectService: $objectService
+		);
+	}//end referenceOptions()
+
+	/**
+	 * The options once the property is known.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record and property.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The options, or why there are none.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsFor(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): JSONResponse {
+		$schemaEntity = $this->optionsSchema(ask: $ask, objectService: $objectService);
+		if ($schemaEntity instanceof JSONResponse) {
+			return $schemaEntity;
+		}
+
+		$answer = new ReferenceOptionsAnswer(request: $this->request, logger: $this->logger, lookup: $this->storedForOptions(...), search: $objectService);
+
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
-			);
+			return $answer->answer(ask: $ask, schema: $schemaEntity);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ask->id);
+		}
+	}//end optionsFor()
+
+	/**
+	 * The record as it stands, read as a lookup in the caller's scope.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record.
+	 *
+	 * @return ObjectEntity|null The stored record.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
+		return WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ask->id,
+			files: false,
+			register: $ask->register,
+			schema: $ask->schema,
+			_render: false
+		));
+	}//end storedForOptions()
+
+	/**
+	 * The schema of the record a reference-options read is about.
+	 *
+	 * @param ReferenceOptionsAsk $ask The register and schema in the URL.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return Schema|JSONResponse The schema, or a 404.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -2824,102 +2859,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['message' => 'Schema not found.'], statusCode: 404);
 		}
 
-		// The record as it stands. A read the caller may not make answers the
-		// same 404 it would anywhere else, so this endpoint cannot be used to
-		// confirm an object exists.
-		$record = [];
-		try {
-			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_render: false
-			));
-			if ($stored !== null) {
-				$record = $stored->getObject();
-			}
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
-			);
-		}
-
-		if (is_array($record) === false) {
-			$record = [];
-		}
-
-		$draft = $this->request->getParam('_draft');
-		if (is_array($draft) === true) {
-			$record = array_merge($record, $draft);
-		}
-
-		$reader = new ReferenceOptionsReader();
-
-		try {
-			$plan = $reader->plan(schema: $schemaEntity, property: $property, record: $record);
-		} catch (ReferenceFilterException $e) {
-			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
-		}
-
-		if ($reader->isAnswerable(plan: $plan) === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'needs' => $plan['needs'],
-					'filter' => $plan['filter'],
-					'message' => sprintf(
-						'Choose %s first; there are no options until then.',
-						implode(' and ', $plan['needs'])
-					),
-				]
-			);
-		}
-
-		$target = ($plan['target'] ?? []);
-		if (is_string(($target['schema'] ?? null)) === false) {
-			return new JSONResponse(
-				data: ['message' => sprintf('\'%s\' does not name a schema to read options from.', $property)],
-				statusCode: 422
-			);
-		}
-
-		$limit = $reader->limitFor(requested: $this->request->getParam('_limit'));
-		$offset = (int)($this->request->getParam('_offset') ?? 0);
-		$query = $reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
-
-		try {
-			// Point the service at the REFERENCED register and schema. Without
-			// this the search would run against the record's own schema and
-			// answer a confidently wrong list.
-			$objectService->setRegister(($target['register'] ?? $register));
-			$objectService->setSchema($target['schema']);
-
-			// `_rbac` stays on. The options a picker offers are objects, and a
-			// picker is not a way to see objects you may not see.
-			$options = $objectService->searchObjectsPaginated(query: $query);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectsController] A reference-options read failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['message' => 'The options for this field could not be read.'],
-				statusCode: 500
-			);
-		}
-
-		$options['filtered'] = $plan['filtered'];
-		$options['filter'] = $plan['filter'];
-		$options['needs'] = [];
-
-		return new JSONResponse(data: $options);
-	}//end referenceOptions()
+		return $schemaEntity;
+	}//end optionsSchema()
 
 	/**
 	 * Shows a specific object from a register and schema
@@ -2948,19 +2889,12 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectService $objectService,
-	): JSONResponse {
+	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
 
 		try {
-			// Resolve slugs to numeric IDs consistently and get register/schema entities.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
@@ -2972,221 +2906,213 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		// Get request parameters for filtering and searching.
-		$requestParams = $this->request->getParams();
+		$services = $this->showServices(objectService: $objectService);
 
-		// Extract parameters for rendering.
-		$extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-		$filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-		$fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-		$unset = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+	}//end show()
 
-		// Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
-		$extend = (new ObjectRequestParams())->extend(extend: $extend);
+	/**
+	 * What show() asks of the request's object service.
+	 *
+	 * @param ObjectService $objectService The object service.
+	 *
+	 * @return ShowServices The services.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function showServices(ObjectService $objectService): ShowServices {
+		return new ShowServices(
+			objects: $objectService,
+			permissions: $objectService->getPermissionHandler(),
+			names: $objectService->getCacheHandler()
+		);
+	}//end showServices()
 
-		// Convert fields to array if it's a string.
-		if (is_string($fields) === true) {
-			$fields = explode(',', $fields);
-		}
+	/**
+	 * Read one object for show().
+	 *
+	 * A denied read answers 404, not 403, so an unauthorized caller cannot tell
+	 * "exists but forbidden" from "does not exist".
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function shownObject(ObjectShow $show): JSONResponse {
+		$read = new ObjectReadOptions(params: $this->request->getParams(), admin: $this->isCurrentUserAdmin());
 
-		// Convert filter to array if it's a string.
-		if (is_string($filter) === true) {
-			$filter = explode(',', $filter);
-		}
-
-		// Convert unset to array if it's a string.
-		if (is_string($unset) === true) {
-			$unset = explode(',', $unset);
-		}
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		// If admin, disable RBAC.
-		$multi = $isAdmin === false;
-		// If admin, disable multitenancy.
-		// Find and validate the object. Rendering is deferred to the single
-		// renderEntity() call below (`_render: false`): find() previously
-		// rendered the entity with the same $extend and the controller then
-		// rendered it AGAIN, repeating file hydration, writeOnly redaction and
-		// the expensive inverse-property resolution on every single read.
-		// Permission checks and read logging inside find() still run.
 		try {
-			$objectEntity = $this->objectService->find(
-				id: $id,
-				_extend: $extend,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				_render: false
-			);
+			$objectEntity = $this->foundForShow(show: $show, read: $read);
 			if ($objectEntity === null) {
-				// THE REFUSAL SAYS WHERE THE OBJECT WENT. A flat "not found" on
-				// a soft-deleted object is the answer that makes a caseworker
-				// think their work is gone, when it is in the trash with a
-				// stated window still open.
-				$registerScope = null;
-				if (is_numeric($resolved['register']) === true) {
-					$registerScope = (int)$resolved['register'];
-				}
-
-				$deletedRefusal = $this->deletedRefusal(
-					id: $id,
-					rbac: $rbac,
-					multitenancy: $multi,
-					registerIdScope: $registerScope
-				);
-				if ($deletedRefusal !== null) {
-					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
-				}
-
-				$errorMsg = "Object with id {$id} not found";
-				return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
+				return $this->absentObject(show: $show, read: $read);
 			}
 
-			// `_reveal` is honoured on this single-object read only, and only for the
-			// object found, by its uuid: an extended or listed object stays masked,
-			// whatever id or slug it shares with the route (property-explicit-reveal).
-			$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-			if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
-				$explicitReveal->grantFor(objectId: (string)$objectEntity->getUuid(), reveal: (string)($requestParams['_reveal'] ?? ''));
-			}
-
-			// Render the object with requested extensions, filters, fields, and unset parameters.
-			// This is the ONLY render on the show() response path: writeOnly
-			// redaction and read-authorization stripping (openregister#385/#386)
-			// are applied here, exactly once, inside renderEntity().
-			$renderedObject = $this->objectService->renderEntity(
-				entity: $objectEntity,
-				_extend: $extend,
-				depth: 0,
-				filter: $filter,
-				fields: $fields,
-				unset: $unset,
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
-
-			// Add registers, schemas, and extended objects to @self for single object responses.
-			// Only include when explicitly requested via _extend parameter.
-			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
-			// No separate view is recorded here any more: the audited read in
-			// GetObject::find() above IS the view (`read-history-on-audit-trail`),
-			// and the `_recent` lens reads it back from the audit trail.
-			$renderedData = $renderedObject;
-			if (isset($renderedData['@self']) === true) {
-				// The tab badges (`object-read-state`). Attached HERE and
-				// nowhere else, because this is the only read path that knows it
-				// is rendering exactly one object: counting a sub-resource looks
-				// at the object's files and its dated arrays, so doing it in
-				// RenderObject would pay that cost per row on every list.
-				$renderedData['@self'] = $this->withUnreadCounts(
-					self: $renderedData['@self'],
-					object: $objectEntity
-				);
-
-				$extendArray = [];
-				if (is_array($extend) === true) {
-					$extendArray = $extend;
-				}
-
-				// Add registers if _registers or _register is in _extend.
-				if (in_array('_registers', $extendArray, true) === true
-					|| in_array('_register', $extendArray, true) === true
-				) {
-					$registerId = $resolved['register'];
-					$registers = [];
-					if ($resolved['registerEntity'] !== null) {
-						$registers[$registerId] = $resolved['registerEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['registers'] = $registers;
-				}
-
-				// Add schemas if _schemas or _schema is in _extend.
-				if (in_array('_schemas', $extendArray, true) === true
-					|| in_array('_schema', $extendArray, true) === true
-				) {
-					$schemaId = $resolved['schema'];
-					$schemas = [];
-					if ($resolved['schemaEntity'] !== null) {
-						$schemas[$schemaId] = $resolved['schemaEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['schemas'] = $schemas;
-				}
-
-				// Get extended objects indexed by UUID (for _extend lookups).
-				// Always include objects if any _extend is requested.
-				if (empty($extendArray) === false) {
-					$extendedObjects = $objectService->getExtendedObjects();
-					$renderedData['@self']['objects'] = $extendedObjects;
-				}
-
-				// Add names mapping if _names is in _extend.
-				// This provides UUID-to-name mappings for all related objects,
-				// reducing frontend calls to the names service.
-				if (in_array('_names', $extendArray, true) === true) {
-					$renderedData['@self']['names'] = $this->collectNamesForResponse(
-						renderedData: $renderedData,
-						cacheHandler: $objectService->getCacheHandler()
-					);
-				}
-			}//end if
-
-			// Strip empty values from response unless _empty=true is set.
-			$includeEmpty = filter_var(
-				value: $requestParams['_empty'] ?? false,
-				filter: FILTER_VALIDATE_BOOLEAN
-			);
-			if ($includeEmpty === false) {
-				$renderedData = (new EmptyValueStripper())->stripped(data: $renderedData);
-			}
-
-			// THE RECORD SAYS WHAT ITS READER MAY DO WITH IT. Resolved in the
-			// same pass that decided this read, from the memoised verdicts, so
-			// it costs the resolutions a client would otherwise provoke by
-			// trying. Without it every client guesses, and the user finds out
-			// by clicking into a 403 (design D-9).
-			//
-			// AFTER the empty strip, deliberately: a caller who may do nothing
-			// on this row has an EMPTY list of actions, and that is an answer.
-			// Stripping it would leave the client unable to tell "no rights" from
-			// "this instance does not report rights".
-			$renderedData = $this->withPermittedActions(
-				renderedData: $renderedData,
-				schema: $resolved['schemaEntity'],
-				object: $objectEntity,
-				objectService: $objectService
-			);
-
-			// Content negotiation: emit JSON-LD when requested. The serializer
-			// wraps the already-rendered array — no second data path — so all
-			// access control above remains applied (json-ld-output).
-			if ($this->wantsJsonLd() === true
-				&& $resolved['registerEntity'] !== null
-				&& $resolved['schemaEntity'] !== null
-			) {
-				return $this->jsonLdObjectResponse(renderedObject: $renderedData, resolved: $resolved);
-			}
-
-			return new JSONResponse(data: $renderedData);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (NotAuthorizedException $exception) {
-			// RBAC denied the read. Return 404 (not 500, and not 403) so an
-			// unauthorized caller cannot distinguish "exists but forbidden"
-			// from "does not exist" — avoids leaking object existence while
-			// still denying access. Previously this exception escaped the
-			// handler and surfaced as an HTTP 500.
+			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
+		} catch (DoesNotExistException|NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}//end try
-	}//end show()
+			return $this->ambiguousIdentifierResponse(id: $show->id);
+		}
+	}//end shownObject()
+
+	/**
+	 * Find the object without rendering it.
+	 *
+	 * Rendering waits for the single renderEntity() call; permission checks and
+	 * read logging inside find() still run.
+	 *
+	 * @param ObjectShow $show The object asked for.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is absent.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
+		return $this->objectService->find(
+			id: $show->id,
+			_extend: $read->extend,
+			files: false,
+			register: $show->path[0],
+			schema: $show->path[1],
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped,
+			_render: false
+		);
+	}//end foundForShow()
+
+	/**
+	 * The 404 for an object find() did not return.
+	 *
+	 * The refusal says where the object went: a flat "not found" on a
+	 * soft-deleted object makes a caseworker think their work is gone, when it
+	 * is in the trash with a stated window still open.
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's scope.
+	 *
+	 * @return JSONResponse The 404.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function absentObject(ObjectShow $show, ObjectReadOptions $read): JSONResponse {
+		$registerScope = null;
+		if (is_numeric($show->resolved['register']) === true) {
+			$registerScope = (int)$show->resolved['register'];
+		}
+
+		$deleted = $this->deletedRefusal(id: $show->id, rbac: $read->scoped, multitenancy: $read->scoped, registerIdScope: $registerScope);
+		if ($deleted !== null) {
+			return new JSONResponse(data: $deleted, statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: ['error' => "Object with id {$show->id} not found"], statusCode: Http::STATUS_NOT_FOUND);
+	}//end absentObject()
+
+	/**
+	 * Render a found object for its reader.
+	 *
+	 * This is the ONLY render on the show() path: writeOnly redaction and
+	 * read-authorization stripping happen here, exactly once, inside
+	 * renderEntity(). The JSON-LD serializer wraps the rendered array, so all
+	 * of that stays applied to it. The permitted actions come AFTER the empty
+	 * strip: an empty list of actions is an answer, not an empty value.
+	 *
+	 * @param ShownEntity $shown The found object and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return JSONResponse The object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedShow(ShownEntity $shown, ObjectReadOptions $read): JSONResponse {
+		$this->grantExplicitReveal(object: $shown->entity);
+		$rendered = $this->withSelfExtras(rendered: $this->renderedEntity(entity: $shown->entity, read: $read), shown: $shown);
+		if ($this->wantsEmptyValues() === false) {
+			$rendered = (new EmptyValueStripper())->stripped(data: $rendered);
+		}
+
+		$rendered = $this->withPermittedActions(renderedData: $rendered, shown: $shown);
+		if ($this->wantsJsonLd() === true && $shown->show->hasEntities() === true) {
+			return $this->jsonLdObjectResponse(renderedObject: $rendered, resolved: $shown->show->resolved);
+		}
+
+		return new JSONResponse(data: $rendered);
+	}//end renderedShow()
+
+	/**
+	 * Honour `_reveal` for the object found, by its uuid.
+	 *
+	 * Only on this single-object read: an extended or listed object stays masked,
+	 * whatever id or slug it shares with the route (property-explicit-reveal).
+	 *
+	 * @param ObjectEntity $object The object found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function grantExplicitReveal(ObjectEntity $object): void {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+			$params = $this->request->getParams();
+			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
+		}
+	}//end grantExplicitReveal()
+
+	/**
+	 * The render of one object.
+	 *
+	 * @param ObjectEntity $entity The object.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return array<string, mixed> The rendered object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedEntity(ObjectEntity $entity, ObjectReadOptions $read): array {
+		return $this->objectService->renderEntity(
+			entity: $entity,
+			_extend: $read->extend,
+			depth: 0,
+			filter: $read->filter,
+			fields: $read->fields,
+			unset: $read->unset,
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped
+		);
+	}//end renderedEntity()
+
+	/**
+	 * Add what `_extend` asked for to `@self`, with the tab badges.
+	 *
+	 * The badges are attached here and nowhere else: this is the only read path
+	 * that knows it renders exactly one object.
+	 *
+	 * @param array<string, mixed> $rendered The rendered object.
+	 * @param ShownEntity $shown The found object and the extensions asked for.
+	 *
+	 * @return array<string, mixed> The object with its extras.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function withSelfExtras(array $rendered, ShownEntity $shown): array {
+		if (isset($rendered['@self']) === false) {
+			return $rendered;
+		}
+
+		$rendered['@self'] = array_merge(
+			$this->withUnreadCounts(self: $rendered['@self'], object: $shown->entity),
+			$shown->resolvedExtras()
+		);
+		if (in_array('_names', $shown->extend, true) === true) {
+			$rendered['@self']['names'] = $this->collectNamesForResponse(renderedData: $rendered, cacheHandler: $shown->show->services->names);
+		}
+
+		return $rendered;
+	}//end withSelfExtras()
 
 	/**
 	 * The 409 answer for an identifier that matches more than one object (#4037).
@@ -3270,41 +3196,24 @@ class ObjectsController extends Controller {
 	 * returned because the read was allowed, and every write is resolved again
 	 * on its own request. A reporting field must never be able to refuse a read.
 	 *
-	 * @param array $renderedData The rendered record.
-	 * @param Schema|null $schema The schema, when it resolved.
-	 * @param ObjectEntity|null $object The row.
-	 * @param ObjectService $objectService The service holding the resolver.
+	 * @param array<string, mixed> $renderedData The rendered object.
+	 * @param ShownEntity $shown The found object and its resolved scope.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function withPermittedActions(
-		array $renderedData,
-		?Schema $schema,
-		?ObjectEntity $object,
-		ObjectService $objectService,
-	): array {
-		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
+	private function withPermittedActions(array $renderedData, ShownEntity $shown): array {
+		$schema = $shown->show->resolved['schemaEntity'];
+		if ($schema === null || isset($renderedData['@self']) === false) {
 			return $renderedData;
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $objectService->getPermissionHandler()->permittedActionsFor(
-				schema: $schema,
-				object: $object
-			);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
 		} catch (\Throwable $e) {
-			// See the docblock: reporting never refuses a read.
-			$this->logger->warning(
-				message: '[ObjectsController] Could not resolve the actions for a record; returning it without them',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
+			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
 		}
 
 		return $renderedData;
@@ -3867,10 +3776,9 @@ class ObjectsController extends Controller {
 			// two doors now call one method, so they cannot answer differently.
 			$this->noteClientSuppliedCause(object: $existingObject);
 
-			$conflict = $this->versionConflictResponse(
-				existingObject: $existingObject,
-				sent: $object,
-				schemaEntity: $resolved['schemaEntity']
+			$conflict = $this->versionGuard()->refusal(
+				stored: $existingObject,
+				write: new SentWrite(data: $object, schema: $resolved['schemaEntity'])
 			);
 			if ($conflict !== null) {
 				return $conflict;
@@ -4082,10 +3990,9 @@ class ObjectsController extends Controller {
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
 			$this->noteClientSuppliedCause(object: $existingObject);
 
-			$conflict = $this->versionConflictResponse(
-				existingObject: $existingObject,
-				sent: $patchData,
-				schemaEntity: $resolved['schemaEntity']
+			$conflict = $this->versionGuard()->refusal(
+				stored: $existingObject,
+				write: new SentWrite(data: $patchData, schema: $resolved['schemaEntity'])
 			);
 			if ($conflict !== null) {
 				return $conflict;
@@ -5140,211 +5047,6 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $answer);
 	}//end exists()
-
-	/**
-	 * Refuse a write made from a stale read, and say what the other value is.
-	 *
-	 * 🔴 OPT-IN, EXACTLY AS BEFORE (REQ-CSO-003). A caller that sends neither
-	 * `_expectedUpdated` nor `If-Match` behaves as it does today: no assertion,
-	 * last write wins. Nothing that works now starts failing; a write that
-	 * asks for the guarantee gets it.
-	 *
-	 * 🔴 THE BODY CARRIES THE ANSWER, NOT JUST THE VERDICT. Two timestamps tell
-	 * a machine to retry and tell a person nothing. {@see ConflictReport} adds
-	 * what was sent, what was read and what is stored, per conflicting
-	 * property, so a client can render the choice without a second request and
-	 * without racing the reload.
-	 *
-	 * @param ObjectEntity $existingObject The object as stored.
-	 * @param array<string, mixed> $sent What the caller is writing.
-	 * @param mixed $schemaEntity The schema, for the field filter.
-	 *
-	 * @return JSONResponse|null The 409, or null when the caller may write.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function versionConflictResponse(
-		ObjectEntity $existingObject,
-		array $sent,
-		mixed $schemaEntity = null,
-	): ?JSONResponse {
-		// Read from the RAW request: the payload filters strip `_`-prefixed
-		// keys, so by the time a handler sees the body this is gone.
-		$expected = $this->request->getParam('_expectedUpdated');
-		if ($expected === null || trim((string)$expected) === '') {
-			// 🔴 `If-Match` IS ACCEPTED ONLY WHEN IT IS SHAPED LIKE THE THING IT
-			// IS COMPARED AGAINST. `getHeader()` answers a string for any
-			// header name, and a caller sending an ordinary etag, or a test
-			// stubbing the method blanket-wise, would otherwise have every
-			// write refused 409 against a value that was never a version.
-			// Measured: taking the header unconditionally reddened 28 existing
-			// controller tests, all of which stub `getHeader` once for
-			// `Content-Type`. Comparing like with like is the fix, not
-			// loosening the assertion.
-			$expected = $this->asExpectedVersion(value: $this->request->getHeader('If-Match'));
-		}
-
-		if ($expected === null || trim((string)$expected) === '') {
-			return null;
-		}
-
-		$current = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
-		if ((string)$current === (string)$expected) {
-			return null;
-		}
-
-		$body = [
-			'error' => \OCA\OpenRegister\Service\Object\ConflictReport::ERROR,
-			'code' => \OCA\OpenRegister\Service\Object\ConflictReport::CODE,
-			'message' => 'This object changed since you read it. Re-read it and try again.',
-			'conflicts' => [],
-			'changedBy' => null,
-			'changedAt' => null,
-		];
-
-		if ($schemaEntity instanceof Schema === true) {
-			try {
-				$body = $this->container->get(\OCA\OpenRegister\Service\Object\ConflictReport::class)->build(
-					stored: $existingObject,
-					schema: $schemaEntity,
-					sent: $sent,
-					intervening: $this->interveningChanges(object: $existingObject, since: (string)$expected)
-				);
-			} catch (\Throwable $e) {
-				// A report that could not be built must not turn a 409 into a
-				// 500: the refusal is still correct and still the right status,
-				// it simply says less. Reporting less is a degraded answer;
-				// letting the write through would be a lost update.
-				$this->logger->warning(
-					message: '[ObjectsController] a conflict body could not be built: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		// The two timestamps stay on the body beside the new block: every
-		// existing client branches on them, and removing them to make room for
-		// a better answer would break the clients this is meant to help.
-		$body['expectedUpdated'] = (string)$expected;
-		$body['currentUpdated'] = (string)$current;
-
-		$this->recordRefusedWrite(object: $existingObject, expected: (string)$expected, current: (string)$current, body: $body);
-
-		return new JSONResponse(data: $body, statusCode: 409);
-	}//end versionConflictResponse()
-
-	/**
-	 * An `If-Match` value, when it is an instant rather than any old header.
-	 *
-	 * The object's concurrency token IS its `updated` timestamp, so an
-	 * `If-Match` that does not parse as one cannot be a version of it and is
-	 * ignored rather than refused: a caller sending a content etag is not
-	 * making a concurrency assertion, and answering 409 would break them for
-	 * asking a different question.
-	 *
-	 * @param string|null $value The header value.
-	 *
-	 * @return string|null The instant, or null.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function asExpectedVersion(?string $value): ?string {
-		$value = trim(trim((string)$value), '"');
-		if ($value === '') {
-			return null;
-		}
-
-		try {
-			$parsed = new DateTimeImmutable($value);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		// A bare word like `application/json` can still parse on some builds,
-		// so the round trip has to look like the input rather than merely
-		// succeeding: an instant this app wrote always carries a date.
-		if (preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) {
-			return $parsed->format(\DateTimeInterface::ATOM);
-		}
-
-		return null;
-	}//end asExpectedVersion()
-
-	/**
-	 * The changes made to this object since the caller read it, newest first.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $since The caller's `updated`, ISO-8601.
-	 *
-	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The entries.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
-	 */
-	private function interveningChanges(ObjectEntity $object, string $since): array {
-		try {
-			$read = new DateTime($since);
-		} catch (\Throwable $e) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($this->services->store->auditTrailMapper->findAll(filters: ['object_uuid' => $object->getUuid()], limit: 25) as $entry) {
-			if ($entry instanceof \OCA\OpenRegister\Db\AuditTrail === false) {
-				continue;
-			}
-
-			$created = $entry->getCreated();
-			if ($created !== null && $created->getTimestamp() > $read->getTimestamp()) {
-				$entries[] = $entry;
-			}
-		}
-
-		return $entries;
-	}//end interveningChanges()
-
-	/**
-	 * Leave a trail that a write was refused, and why.
-	 *
-	 * 🔑 A REFUSAL IS A FACT ABOUT THE OBJECT. Without it, the only record of a
-	 * lost-update collision is in the client that was refused, so nobody
-	 * investigating "two people keep overwriting each other on this case" can
-	 * see that the guard is working, or how often.
-	 *
-	 * Never throws: a trail that cannot be written must not turn a correct
-	 * refusal into a 500.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $expected The version the caller held.
-	 * @param string $current The version stored.
-	 * @param array<string, mixed> $body The conflict body.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function recordRefusedWrite(ObjectEntity $object, string $expected, string $current, array $body): void {
-		try {
-			$this->services->store->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'refused',
-				context: [
-					'reason' => 'version-conflict',
-					'expectedUpdated' => $expected,
-					'currentUpdated' => $current,
-					// The NAMES only. The values are in the response the caller
-					// got, filtered for them; the trail is read by OTHER people
-					// and must not become a way to read a restricted property
-					// out of somebody else's refusal.
-					'properties' => array_keys(($body['conflicts'] ?? [])),
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectsController] a refused write could not be recorded: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-	}//end recordRefusedWrite()
 
 	/**
 	 * Move an object to another register and schema, keeping who it is.
@@ -6578,7 +6280,7 @@ class ObjectsController extends Controller {
 		);
 
 		return new JSONResponse(
-			data: ['success' => false, 'error' => $failure->getMessage(), 'message' => 'Validation failed'],
+			data: ['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'],
 			statusCode: 500
 		);
 	}//end validationFailureResponse()

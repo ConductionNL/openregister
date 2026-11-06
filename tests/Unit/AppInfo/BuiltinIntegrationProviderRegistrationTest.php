@@ -150,7 +150,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\ShareLinkService' => [
-			'OCP\IL10N',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\CaseTokenService' => [

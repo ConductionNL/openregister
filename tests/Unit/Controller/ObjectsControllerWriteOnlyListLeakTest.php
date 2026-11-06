@@ -77,6 +77,8 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
@@ -242,7 +244,6 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			$schemaMapper,
 			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
 			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$propertyRbacHandler,
 			$this->createMock(LoggerInterface::class),

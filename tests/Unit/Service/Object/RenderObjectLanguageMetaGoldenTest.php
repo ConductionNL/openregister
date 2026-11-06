@@ -49,6 +49,8 @@ use ReflectionMethod;
  * Pins the served language, source language, isSource flag and sidecar status per translatable property.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
+ * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
@@ -97,7 +99,6 @@ class RenderObjectLanguageMetaGoldenTest extends TestCase {
 			schemaMapper: $this->createMock(SchemaMapperInterface::class),
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandlerInterface::class),
 			objectCacheService: $this->createMock(CacheHandlerInterface::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: $this->logger,

@@ -81,6 +81,8 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
  * @uses   \OCA\OpenRegister\Db\MapLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class LinkServiceCreateGoldenTest extends TestCase {
 
@@ -237,7 +239,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
-		$service = new ShareLinkService($l10n, $this->createMock(LoggerInterface::class), $container);
+		$service = new ShareLinkService( $this->createMock(LoggerInterface::class), $container);
 
 		$this->assertGolden(
 			function () use ($service, &$calls, $fileId, $shareType, $shareWith, $permissions, $password, $expiration) {
