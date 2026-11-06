@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -83,6 +84,60 @@ class MagicMapperUnionOrderKeysTest extends TestCase {
 
 		$this->assertSame(['first_name' => 'firstName'], $fields);
 	}//end testASequentialSearchReadsTheFieldsOfEveryForm()
+
+	private function orderable(mixed $order, array $columns): array {
+		return (new MagicUnionOrder(isPostgres: false))->orderable(query: ['_order' => $order], columns: $columns)['_order'];
+	}//end orderable()
+
+	public function testAQueryWithoutAnOrderStaysAsItIs(): void {
+		$query = ['_search' => 'x'];
+
+		$this->assertSame($query, (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: []));
+	}//end testAQueryWithoutAnOrderStaysAsItIs()
+
+	public function testAnUnknownFieldIsLeftOut(): void {
+		$order = ['_foo' => 'desc', 'nope' => 'asc', '.name' => 'asc', 'firstName' => 'desc'];
+
+		$this->assertSame(['firstName' => 'DESC'], $this->orderable(order: $order, columns: ['first_name' => 'firstName']));
+	}//end testAnUnknownFieldIsLeftOut()
+
+	public function testWhatAUnionKnowsStays(): void {
+		$order = ['_name' => 'asc', '@self.created' => 'desc', '_relevance' => 'desc', '_search_score' => 'asc'];
+
+		$this->assertSame(
+			['_name' => 'ASC', '@self.created' => 'DESC', '_relevance' => 'DESC', '_search_score' => 'ASC'],
+			$this->orderable(order: $order, columns: [])
+		);
+	}//end testWhatAUnionKnowsStays()
+
+	public function testAPropertyCountsUnderItsExactNameOnly(): void {
+		$columns = ['first_name' => 'firstName'];
+
+		$this->assertSame(['_uuid' => 'ASC'], $this->orderable(order: ['first_name' => 'asc'], columns: $columns));
+		$this->assertSame(['_uuid' => 'ASC'], $this->orderable(order: ['FirstName' => 'asc'], columns: $columns));
+	}//end testAPropertyCountsUnderItsExactNameOnly()
+
+	public function testAPropertyThatStartsWithAnUnderscoreStays(): void {
+		$this->assertSame(['_own' => 'ASC'], $this->orderable(order: ['_own' => 'asc'], columns: ['_own' => '_own']));
+	}//end testAPropertyThatStartsWithAnUnderscoreStays()
+
+	public function testADigitOnlyPropertyStays(): void {
+		$this->assertSame([7 => 'DESC'], $this->orderable(order: [7 => 'desc'], columns: ['7' => 7]));
+	}//end testADigitOnlyPropertyStays()
+
+	public function testARequestLeftWithNothingOrdersOnTheUuidNotTheScore(): void {
+		$query = (new MagicUnionOrder(isPostgres: false))->orderable(query: ['_search' => 'x', '_order' => ['nope' => 'asc']], columns: []);
+
+		$this->assertSame(['_uuid'], array_column($this->keys($query), 'row'));
+	}//end testARequestLeftWithNothingOrdersOnTheUuidNotTheScore()
+
+	public function testNoOrderAskedStaysNoOrder(): void {
+		$this->assertSame([], $this->orderable(order: [], columns: []));
+	}//end testNoOrderAskedStaysNoOrder()
+
+	public function testAnOrderOnTheUuidIsNotClosedTwice(): void {
+		$this->assertSame([['row' => '_uuid', 'sql' => '_uuid', 'dir' => 'DESC']], $this->keys(['_order' => ['_uuid' => 'desc']]));
+	}//end testAnOrderOnTheUuidIsNotClosedTwice()
 
 	public function testAMissingColumnSortsBeforeAZero(): void {
 		$rows = [['_uuid' => 'a', 'rank' => 0], ['_uuid' => 'b']];
