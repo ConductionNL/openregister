@@ -478,7 +478,61 @@ class RenderObjectDeepTest extends TestCase {
 		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['field'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
-		$this->assertCount(0, $cache['parent-uuid-1_items']);
+		$this->assertSame(['parent-uuid-1_items' => []], $cache);
+		$this->assertArrayNotHasKey('other-ref', $this->getPrivateProperty('objectsCache'));
+	}
+
+	/**
+	 * A schema with one inverse property, answered for every find.
+	 */
+	private function stubInverseSchema(string $ref): void {
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setProperties(['children' => ['type' => 'array', 'items' => ['$ref' => $ref, 'inversedBy' => 'parent']]]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+	}
+
+	/**
+	 * Test the batch preload queries for an entity in a register.
+	 */
+	public function testPreloadQueriesWithARegisterAndNumericSchema(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->once())->method('findByRelationBatchInSchema')->willReturn([]);
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query without a register.
+	 */
+	public function testPreloadDoesNotQueryWithoutARegister(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1', [], '0')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query for a schema reference that stays non-numeric.
+	 */
+	public function testPreloadDoesNotQueryWithoutANumericSchema(): void {
+		$this->stubInverseSchema('unknown-slug');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$this->createObjectEntity(1, 'uuid-1')], ['children']]);
+	}
+
+	/**
+	 * Test the batch preload does not query for entities without a UUID.
+	 */
+	public function testPreloadDoesNotQueryWithoutEntityUuids(): void {
+		$this->stubInverseSchema('42');
+		$this->objectMapper->expects($this->never())->method('findByRelationBatchInSchema');
+		$entity = new ObjectEntity();
+		$entity->setSchema('1');
+		$entity->setRegister('1');
+
+		$this->invokePrivateMethod('preloadInverseRelationships', [[$entity], ['children']]);
 	}
 
 	// ── collectEntityUuids tests ────────────────────────────────────────

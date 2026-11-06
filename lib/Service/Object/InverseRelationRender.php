@@ -184,14 +184,30 @@ class InverseRelationRender {
 			return [];
 		}
 
-		$batch = new InverseBatch();
-		$batch->entityUuids = [$entity->getUuid()];
-		$batch->registerId = (int)$entity->getRegister();
+		$batch = self::entityBatch(entity: $entity, fields: $inversedByValue);
 		$batch->targetSchemaId = $targetSchemaId;
-		$batch->inversedByFields = $inversedByValue;
 
 		return $this->preload->queryReferencingObjects(batch: $batch);
 	}//end findByExtraInverseFields()
+
+	/**
+	 * A batch of one entity.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param array        $fields The fields that may hold the reference back.
+	 *
+	 * @return InverseBatch The batch, without its target schema.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function entityBatch(ObjectEntity $entity, array $fields): InverseBatch {
+		$batch = new InverseBatch();
+		$batch->entityUuids = [$entity->getUuid()];
+		$batch->registerId = (int)$entity->getRegister();
+		$batch->inversedByFields = $fields;
+
+		return $batch;
+	}//end entityBatch()
 
 	/**
 	 * The schema id a property's $ref resolves to.

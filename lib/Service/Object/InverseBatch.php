@@ -38,7 +38,7 @@ final class InverseBatch {
 	/**
 	 * The UUIDs of the entities being rendered.
 	 *
-	 * @var string[]
+	 * @var array<string|null>
 	 */
 	public array $entityUuids = [];
 
