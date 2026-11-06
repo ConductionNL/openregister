@@ -222,7 +222,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $handler,
+				'OCA\\OpenRegister\\Service\\FileService' => $handler,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
