@@ -422,7 +422,7 @@ class TransitionEngineAsSystemTest extends TestCase {
 			}
 		}
 
-		$controllers = array_values(array_filter($callers, static fn (string $path): bool => str_starts_with($path, 'Controller/')));
+		$controllers = array_values(array_filter($callers, static fn (string $path): bool => preg_match('~(^|/)Controller/~', $path) === 1));
 		$this->assertSame([], $controllers, 'A controller calls transitionAsSystem().');
 		$this->assertSame([], $callers, 'OpenRegister itself has no caller of transitionAsSystem(); it is for apps.');
 	}//end testNoControllerCallsTheSystemPath()

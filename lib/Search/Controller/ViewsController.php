@@ -18,9 +18,9 @@
  * @link      https://github.com/ConductionNL/openregister
  */
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Search\Controller;
 
-use OCA\OpenRegister\Controller\Support\ViewPatch;
+use OCA\OpenRegister\Search\Controller\Support\ViewPatch;
 use OCA\OpenRegister\Search\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Search\Service\ViewPresentationService;
