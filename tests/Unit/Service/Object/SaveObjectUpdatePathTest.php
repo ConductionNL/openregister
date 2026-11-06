@@ -50,6 +50,17 @@ use Stringable;
  * re-derivation, the version it keeps or drops, persistence and the outcome.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\ObjectHandling

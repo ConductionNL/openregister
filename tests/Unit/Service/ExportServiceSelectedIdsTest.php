@@ -61,9 +61,7 @@ class ExportServiceSelectedIdsTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),
-			$this->createMock(PropertyRbacHandler::class),
-			$this->createMock(TranslationHandler::class)
-		);
+			$this->createMock(PropertyRbacHandler::class));
 
 		$register = new Register();
 		$register->setId(3);

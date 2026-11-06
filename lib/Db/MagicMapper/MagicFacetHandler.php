@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use LogicException;
@@ -1535,7 +1536,7 @@ class MagicFacetHandler {
 		foreach ($buckets as $bucket) {
 			$key = $bucket['key'];
 			if (is_string($key) === true
-				&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $key) === 1
+				&& UuidFormat::isCanonical(value: $key) === true
 			) {
 				$uuids[] = $key;
 			}
@@ -2539,7 +2540,7 @@ class MagicFacetHandler {
 		// For object fields containing UUIDs, try to resolve to object names.
 		// Note: Using relaxed UUID pattern to match non-standard UUIDs (e.g., version 1 time-based).
 		if (is_string($value) === true
-			&& preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1
+			&& UuidFormat::isCanonical(value: $value) === true
 		) {
 			// Use CacheHandler for dynamic object name lookup.
 			if ($this->cacheHandler !== null) {

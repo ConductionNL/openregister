@@ -23,6 +23,9 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Nextcloud runs PHP in UTC (lib/OC.php); without a live instance the tests must not inherit the host's zone.
+date_default_timezone_set('UTC');
+
 // Breadcrumb: the Doctrine-DBAL / NC-internal / OCP-fallback / Doriath stubs
 // used to be loaded here, before the NC bootstrap. They now live BELOW the
 // real-NC bootstrap block (see lines 132+); each stub is `class_exists()` /

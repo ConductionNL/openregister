@@ -94,8 +94,6 @@ class TmloMdtoExportXsdTest extends TestCase {
 		$preconditions = new MdtoPreconditions($appConfig, $this->createMock(LoggerInterface::class), $sourceReader, $bestandGenerator, $this->createMock(MdtoMappingResolver::class));
 
 		$this->service = new TmloService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
 			$this->createMock(LoggerInterface::class),
 			new MdtoXmlGenerator(
 				$appConfig,
