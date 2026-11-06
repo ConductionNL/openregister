@@ -641,6 +641,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		searchTrailStore: () => searchTrailStore,
+
 		/**
 		 * Derive the user filter options from the search-trail list.
 		 *

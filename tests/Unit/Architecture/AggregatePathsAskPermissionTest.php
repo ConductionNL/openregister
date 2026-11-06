@@ -76,6 +76,10 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// value to anybody.
 		'lib/Db/MagicMapper/MagicSearchHandler.php' => 'filters rows; property reads are stripped by the render path',
 
+		// Reads a property's `facetable` flag to create its index. An index
+		// returns no value to anybody.
+		'lib/Db/MagicMapper/MagicTableIndexer.php' => 'creates indexes from property definitions, reads no value',
+
 		// Validate or persist a CONFIGURATION that names a property. They never
 		// read a value. `ViewService` checks a kanban groupByField exists;
 		// `TimeseriesRequestValidator` checks a request's shape.
