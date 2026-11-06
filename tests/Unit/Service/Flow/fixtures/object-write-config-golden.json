@@ -36,14 +36,15 @@
     },
     "targets": {
         "total": 13500,
-        "digest": "95d0e9f0c56aa10b6e7a494ae190bb5c05da70f181fa0be27d928f577007e385",
+        "digest": "374d391ff62d7fc34a162ddd6090df8fc181a499a3c62ff86ab7b43adf4844ff",
         "outcomes": {
             "UnexpectedValueException: \"maxWrites\" must be a whole number of one or more.": 1296,
+            "UnexpectedValueException: \"onConflict\" must be one of: overwrite, fail.": 144,
             "UnexpectedValueException: \"onMissing\" must be one of: omit, fail.": 432,
             "UnexpectedValueException: \"onNoMatch\" must be one of: error, skip.": 216,
             "UnexpectedValueException: An object-write step needs a register.": 8100,
             "UnexpectedValueException: An object-write step needs a schema.": 3240,
-            "accepted": 216
+            "accepted": 72
         }
     },
     "form": {

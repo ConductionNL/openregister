@@ -67,6 +67,18 @@ final class ObjectWriteConfigValidator {
 		'maxWrites' => 1,
 		'onMissing' => ObjectWriteOptions::ON_MISSING_OMIT,
 		'onNoMatch' => ObjectWriteOptions::ON_NO_MATCH_ERROR,
+		'onConflict' => ObjectWriteOptions::ON_CONFLICT_OVERWRITE,
+	];
+
+	/**
+	 * The options whose value must come from a fixed list.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private const VOCABULARIES = [
+		'onMissing' => ObjectWriteOptions::ON_MISSING,
+		'onNoMatch' => ObjectWriteOptions::ON_NO_MATCH,
+		'onConflict' => ObjectWriteOptions::ON_CONFLICT,
 	];
 
 	/**
@@ -457,7 +469,7 @@ final class ObjectWriteConfigValidator {
 			message: $this->l10n->t('"maxWrites" must be a whole number of one or more.')
 		);
 
-		foreach (['onMissing' => ObjectWriteOptions::ON_MISSING, 'onNoMatch' => ObjectWriteOptions::ON_NO_MATCH] as $key => $allowed) {
+		foreach (self::VOCABULARIES as $key => $allowed) {
 			$this->refuseIf(
 				broken: in_array($options[$key], $allowed, true) === false,
 				message: $this->l10n->t('"%1$s" must be one of: %2$s.', [$key, implode(', ', $allowed)])
