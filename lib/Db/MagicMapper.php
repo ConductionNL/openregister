@@ -74,6 +74,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -99,6 +100,7 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -2008,117 +2010,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$orderParams = $query['_order'] ?? [];
-		$uuidColumn = self::METADATA_PREFIX . 'uuid';
-
-		$keys = [];
-		if (empty($orderParams) === false && is_array($orderParams) === true) {
-			foreach ($orderParams as $field => $direction) {
-				$dir = 'ASC';
-				if (strtoupper((string)$direction) === 'DESC') {
-					$dir = 'DESC';
-				}
-
-				// Special handling for _relevance: map to _search_score in UNION queries.
-				// The _relevance column is used by MagicSearchHandler for single-table
-				// queries, but UNION queries use _search_score for relevance scoring.
-				if ($field === '_relevance') {
-					// Skip _relevance ordering if no search term (nothing to order by).
-					if ($hasSearch === true) {
-						$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => $dir];
-					}
-
-					continue;
-				}
-
-				// Translate field name to column name.
-				$rowKey = $this->sanitizeColumnName(name: $field);
-				$columnName = $rowKey;
-				if (str_starts_with($field, '@self.') === true) {
-					// Metadata fields: sanitize the bare name, then validate against
-					// the known METADATA_PREFIX column allowlist before quoting.
-					// Without this allowlist, raw user input was concatenated into
-					// the UNION SQL (SQL injection via ORDER BY).
-					$sanitizedMeta = $this->sanitizeColumnName(name: substr($field, 6));
-					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
-					if (in_array($candidateColumn, array_keys(MagicMetadataColumns::ALL), true) === false) {
-						// Unknown metadata column - skip this ORDER BY clause entirely.
-						continue;
-					}
-
-					$rowKey = $candidateColumn;
-					$columnName = $this->quoteIdentifier(name: $candidateColumn, isPostgres: $isPostgres);
-				} elseif (str_starts_with($field, '_') === false) {
-					// Non-metadata fields - property columns are included in UNION queries.
-					// The column must exist in the SELECT for ordering to work.
-					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
-					$columnName = $this->quoteIdentifier(name: $rowKey, isPostgres: $isPostgres);
-				}//end if
-
-				$keys[] = ['row' => $rowKey, 'sql' => $columnName, 'dir' => $dir];
-			}//end foreach
-		} elseif ($hasSearch === true) {
-			// Default to search score ordering when no _order specified but search is present.
-			$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => 'DESC'];
-		}//end if
-
-		// BUG-DB-4: a stable tiebreaker so rows that compare equal on the
-		// requested order keep a deterministic order across pages, and so a
-		// query with no usable order still pages deterministically.
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
-
-		return $keys;
+		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
 	}//end buildUnionOrderKeys()
-
-	/**
-	 * Sort merged rows from several UNION batches on the SQL's own order keys.
-	 *
-	 * Each batch is already ordered by its own statement; merging them is not.
-	 * A row that a batch did not project (a property column another schema
-	 * owns) sorts as null, which is what the UNION's `NULL AS alias` arm would
-	 * have produced.
-	 *
-	 * @param array $rows      Merged raw rows.
-	 * @param array $orderKeys Keys from buildUnionOrderKeys().
-	 *
-	 * @return array Rows in the merged order.
-	 */
-	private function sortUnionRows(array $rows, array $orderKeys): array {
-		usort(
-			$rows,
-			static function (array $left, array $right) use ($orderKeys): int {
-				foreach ($orderKeys as $key) {
-					$leftValue = ($left[$key['row']] ?? null);
-					$rightValue = ($right[$key['row']] ?? null);
-
-					// Cast to string and let the spaceship operator decide: PHP
-					// compares two NUMERIC strings numerically, so a score of
-					// "0.9" still beats "0.75" and "1.0E-5" still loses to
-					// "0.0001", while a missing column (null, cast to "") is
-					// compared as text instead of silently becoming zero.
-					$comparison = ((string)$leftValue <=> (string)$rightValue);
-
-					if ($comparison !== 0) {
-						if ($key['dir'] === 'DESC') {
-							return -$comparison;
-						}
-
-						return $comparison;
-					}
-				}
-
-				return 0;
-			}
-		);
-
-		return $rows;
-	}//end sortUnionRows()
 
 	/**
 	 * The per-batch query: page one, wide enough to cover the caller's page.
@@ -2163,10 +2058,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array The merged page.
 	 */
 	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$rows = $this->sortUnionRows(
-			rows: $rows,
-			orderKeys: $this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres)
-		);
+		$order = new MagicUnionOrder(isPostgres: $isPostgres);
+		$rows = $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query));
 
 		$offset = max(0, (int)($query['_offset'] ?? 0));
 		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
@@ -2666,13 +2559,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function orderedPropertyFields(array $query): array {
-		$orderParams = ($query['_order'] ?? []);
-		if (is_array($orderParams) === false) {
-			return [];
-		}
-
 		$fields = [];
-		foreach (array_keys($orderParams) as $field) {
+		foreach (array_keys((new OrderParameter(order: $query['_order'] ?? []))->fields()) as $field) {
 			$field = (string) $field;
 			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
 				continue;
@@ -2723,7 +2611,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Order merged entities on the UNION path's keys with its comparator.
 	 *
 	 * Each entity is projected onto the row keys the UNION statement would
-	 * have produced, sorted with sortUnionRows(), and put back in that order.
+	 * have produced, sorted as a union is, and put back in that order.
 	 *
 	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
 	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
@@ -2750,7 +2638,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$results = array_values($results);
 		$sorted = [];
-		foreach ($this->sortUnionRows(rows: $rows, orderKeys: $orderKeys) as $row) {
+		foreach ((new MagicUnionOrder(isPostgres: false))->sorted(rows: $rows, orderKeys: $orderKeys) as $row) {
 			$sorted[] = $results[$row['__index']];
 		}
 

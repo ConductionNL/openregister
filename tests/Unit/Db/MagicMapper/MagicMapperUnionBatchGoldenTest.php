@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
@@ -65,6 +66,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter

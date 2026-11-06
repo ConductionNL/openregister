@@ -47,7 +47,7 @@ final class ReferenceStrictness {
 	 *
 	 * @spec openspec/specs/reference-existence-validation/spec.md
 	 */
-	public static function forProperty(array $property): ?string {
+	public function forProperty(array $property): ?string {
 		$explicit = ($property['validationStrictness'] ?? null);
 		$configured = self::configured(value: ($property['validateReference'] ?? false));
 		if ($configured === null || (is_string($explicit) === true && strtolower($explicit) === 'off')) {

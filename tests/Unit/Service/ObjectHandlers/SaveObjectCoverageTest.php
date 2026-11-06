@@ -27,6 +27,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
+use OCA\OpenRegister\Tests\Unit\Service\Object\ReferenceValidationCalls;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -223,6 +224,10 @@ class SaveObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
+		if ($method === 'validateReferences' || $method === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$method}($this->saveObject, $args);
+		}
+
 		$m = $this->reflection->getMethod($method);
 		$m->setAccessible(true);
 		return $m->invokeArgs($this->saveObject, $args);
