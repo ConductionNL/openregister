@@ -112,6 +112,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -235,6 +236,22 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 				['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]],
 			],
 			'extends form on property' => [[], ['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]]],
+			'calculation references broken' => [
+				[
+					'x-openregister-calculations' => ['t' => ['expression' => ['+' => [1, 2]]]],
+					'x-openregister-references' => ['r' => 'nonsense'],
+				],
+				self::PROPERTIES,
+			],
+			'calculation aggregate refs broken' => [
+				[
+					'x-openregister-calculations' => ['t' => ['expression' => ['+' => [1, 2]]]],
+					'x-openregister-aggregate-refs' => ['r' => 'nonsense'],
+				],
+				self::PROPERTIES,
+			],
+			'action two bodies' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow', 'steps' => [['id' => 'x']]]]], self::PROPERTIES],
+			'action inputs scalar' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow', 'inputs' => 'x']]], self::PROPERTIES],
 			'hinge with two keys' => [['x-openregister-lenses' => ['bogus' => true], 'x-openregister-list' => 'x'], self::PROPERTIES],
 		];
 		foreach (self::ANNOTATIONS as $key) {
@@ -271,6 +288,50 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testSaveMatchesGolden()
+
+	/**
+	 * The exposure check reads the far schema through the mapper's own lookup.
+	 */
+	public function testFarSchemaLookupMatchesGolden(): void {
+		$far = ['id' => 9, 'uuid' => 'far-uuid', 'slug' => 'besluit', 'title' => 'Besluit', 'properties' => '{"zaaknummer":{"type":"string"}}'];
+		$link = ['type' => 'string', 'x-openregister-relation' => ['type' => 'gerelateerd']];
+		$exposing = ['key' => 'gerelateerd', 'label' => 'related to', 'exposes' => ['zaaknummer', 'zaknummer']];
+		$silent = ['key' => 'gerelateerd', 'label' => 'related to'];
+		$cases = [
+			'ref path' => [$exposing, $link + ['$ref' => '#/components/schemas/besluit'], [[$far]]],
+			'ref bare' => [$exposing, $link + ['$ref' => ' besluit '], [[$far]]],
+			'ref items' => [$exposing, $link + ['items' => ['$ref' => 'schemas/besluit']], [[$far]]],
+			'ref items object' => [$exposing, $link + ['items' => (object) ['$ref' => 'schemas/besluit']], [[$far]]],
+			'ref trailing slash' => [$exposing, $link + ['$ref' => 'schemas/'], [[$far]]],
+			'ref not a string' => [$exposing, $link + ['$ref' => 5], [[$far]]],
+			'ref empty' => [$exposing, $link + ['$ref' => '  '], [[$far]]],
+			'far missing' => [$exposing, $link + ['$ref' => 'besluit'], [[]]],
+			'exposes nothing' => [$silent, $link + ['$ref' => 'besluit'], [[$far]]],
+			'exposes known only' => [['exposes' => ['zaaknummer']] + $silent, $link + ['$ref' => 'besluit'], [[$far]]],
+		];
+		$actual = [];
+		foreach ($cases as $name => [$type, $property, $rows]) {
+			$this->logs = [];
+			$this->queryLog = [];
+			$this->queuedRows = $rows;
+			$schema = new Schema();
+			$schema->setId(7);
+			$schema->setTitle('Golden Schema');
+			$schema->setProperties(['link' => $property]);
+			$schema->setConfiguration(['x-openregister-relation-types' => [$type]]);
+			$outcome = $this->saved($schema);
+			$actual[$name] = ['thrown' => ($outcome['thrown'] ?? null), 'errors' => ($outcome['errors'] ?? null), 'rowsLeft' => count($this->queuedRows)];
+		}
+
+		$fixture = __DIR__ . '/fixtures/schema-mapper-save-far-golden.json';
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents($fixture, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$this->assertSame(json_decode((string) file_get_contents($fixture), true), $actual);
+	}//end testFarSchemaLookupMatchesGolden()
 
 	private function saved(Schema $schema): array {
 		$outcome = [];
