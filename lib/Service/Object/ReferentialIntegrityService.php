@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -465,48 +466,98 @@ class ReferentialIntegrityService {
 		// missed RESTRICT destroys data the user asked the system to protect.
 		$version = $this->schemaCatalogueVersion();
 		$cache = $this->cacheFactory->createDistributed(self::CACHE_PREFIX);
-		if ($version !== null) {
-			$cached = $cache->get(self::CACHE_KEY_INDEX);
-			if (is_array($cached) === true
-				&& ($cached['version'] ?? null) === $version
-				&& is_array($cached['index'] ?? null) === true
-			) {
-				$this->relationIndex = $cached['index'];
-				return;
-			}
+		$this->relationIndex = self::cachedRelationIndex(cached: $this->cachedIndexEntry(cache: $cache, version: $version), version: $version);
+		if ($this->relationIndex !== null) {
+			return;
 		}
 
-		$this->relationIndex = [];
+		if ($this->buildRelationIndex() === true && $version !== null) {
+			$cache->set(self::CACHE_KEY_INDEX, ['version' => $version, 'index' => $this->relationIndex], self::CACHE_TTL);
+		}
+	}//end ensureRelationIndex()
 
-		try {
-			$allSchemas = $this->schemaMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[ReferentialIntegrity] Failed to load schemas for relation index',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			return;
+	/**
+	 * Build the relation index from every schema.
+	 *
+	 * @return bool False when the schemas could not be loaded; the index stays empty.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function buildRelationIndex(): bool {
+		$this->relationIndex = [];
+		$allSchemas = $this->allSchemasOrNull(purpose: 'relation index');
+		if ($allSchemas === null) {
+			return false;
 		}
 
 		foreach ($allSchemas as $schema) {
 			$this->indexRelationsForSchema(schema: $schema, allSchemas: $allSchemas);
 		}
 
+		return true;
+	}//end buildRelationIndex()
+
+	/**
+	 * The stored index entry, when a catalogue version can be trusted.
+	 *
+	 * @param ICache      $cache   The distributed cache.
+	 * @param string|null $version The catalogue version.
+	 *
+	 * @return array The entry, empty when there is none.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function cachedIndexEntry(ICache $cache, ?string $version): array {
+		$entry = null;
 		if ($version !== null) {
-			$cache->set(
-				self::CACHE_KEY_INDEX,
-				[
-					'version' => $version,
-					'index' => $this->relationIndex,
-				],
-				self::CACHE_TTL
-			);
+			$entry = $cache->get(self::CACHE_KEY_INDEX);
 		}
 
-	}//end ensureRelationIndex()
+		if (is_array($entry) === false) {
+			return [];
+		}
+
+		return $entry;
+	}//end cachedIndexEntry()
+
+	/**
+	 * The index in a cache entry, when the entry belongs to this catalogue version.
+	 *
+	 * @param array       $cached  The cache entry.
+	 * @param string|null $version The catalogue version.
+	 *
+	 * @return array|null The index.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function cachedRelationIndex(array $cached, ?string $version): ?array {
+		if (($cached['version'] ?? false) !== $version || is_array($cached['index'] ?? null) === false) {
+			return null;
+		}
+
+		return $cached['index'];
+	}//end cachedRelationIndex()
+
+	/**
+	 * Every schema, or null when they cannot be loaded.
+	 *
+	 * @param string $purpose What they are for, for the warning.
+	 *
+	 * @return array|null The schemas.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function allSchemasOrNull(string $purpose): ?array {
+		try {
+			return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] Failed to load schemas for ' . $purpose,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end allSchemasOrNull()
 
 	/**
 	 * Compute a token that changes whenever any schema definition changes.
@@ -547,47 +598,12 @@ class ReferentialIntegrityService {
 	 */
 	private function schemaCatalogueVersion(): ?string {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'version', 'updated')
-				->from('openregister_schemas');
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-
-			$parts = [];
-			$newest = null;
-			foreach ($rows as $row) {
-				$stamp = (string)($row['updated'] ?? '');
-				$parts[] = ((string)($row['id'] ?? '')) . ':'
-					. ((string)($row['version'] ?? '')) . ':' . $stamp;
-
-				if ($stamp === '') {
-					continue;
-				}
-
-				$epoch = strtotime($stamp);
-				if ($epoch === false) {
-					// An unparseable stamp means the freshness of this row
-					// cannot be established, so the token cannot be trusted.
-					return null;
-				}
-
-				if ($newest === null || $epoch > $newest) {
-					$newest = $epoch;
-				}
-			}
-
-			// Refuse a token that has not settled past the timestamp(0)
-			// truncation boundary. A stamp in the future (clock skew, or a
-			// caller-supplied value) yields a negative age and is refused by
-			// the same comparison.
-			if ($newest !== null && (time() - $newest) < self::VERSION_SETTLE_SECONDS) {
+			$rows = $this->catalogueRows();
+			if (self::catalogueSettled(newest: self::newestStamp(rows: $rows)) === false) {
 				return null;
 			}
 
-			sort($parts);
-
-			return count($parts) . '|' . md5(implode("\n", $parts));
+			return self::catalogueHash(rows: $rows);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[ReferentialIntegrity] Could not compute schema catalogue version',
@@ -597,6 +613,78 @@ class ReferentialIntegrityService {
 		}//end try
 
 	}//end schemaCatalogueVersion()
+
+	/**
+	 * The id, version and update stamp of every schema.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function catalogueRows(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'version', 'updated')->from('openregister_schemas');
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end catalogueRows()
+
+	/**
+	 * The newest update stamp in the rows.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The catalogue rows.
+	 *
+	 * @return int|false|null The epoch, null without stamps, false on a stamp that cannot be read.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function newestStamp(array $rows): int|false|null {
+		$stamps = array_map(static fn (array $row): string => (string)($row['updated'] ?? ''), $rows);
+		$epochs = array_map('strtotime', array_filter($stamps, static fn (string $stamp): bool => $stamp !== ''));
+		if (in_array(false, $epochs, true) === true) {
+			return false;
+		}
+
+		if ($epochs === []) {
+			return null;
+		}
+
+		return max($epochs);
+	}//end newestStamp()
+
+	/**
+	 * Whether the catalogue has been quiet long enough to trust a version.
+	 *
+	 * @param int|false|null $newest The newest stamp, as newestStamp() gives it.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function catalogueSettled(int|false|null $newest): bool {
+		return $newest !== false && ($newest === null || (time() - $newest) >= self::VERSION_SETTLE_SECONDS);
+	}//end catalogueSettled()
+
+	/**
+	 * The version string of the catalogue rows, independent of their order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The catalogue rows.
+	 *
+	 * @return string The version.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function catalogueHash(array $rows): string {
+		$parts = array_map(
+			static fn (array $row): string => ((string)($row['id'] ?? '')) . ':' . ((string)($row['version'] ?? '')) . ':' . ((string)($row['updated'] ?? '')),
+			$rows
+		);
+		sort($parts);
+
+		return count($parts) . '|' . md5(implode("\n", $parts));
+	}//end catalogueHash()
 
 	/**
 	 * Hydrate the schema entities and schema-to-register map on demand.
@@ -619,16 +707,8 @@ class ReferentialIntegrityService {
 		$this->schemaCache = [];
 		$this->schemaRegisterMap = [];
 
-		try {
-			$allSchemas = $this->schemaMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[ReferentialIntegrity] Failed to load schemas for detail cache',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
+		$allSchemas = $this->allSchemasOrNull(purpose: 'detail cache');
+		if ($allSchemas === null) {
 			return;
 		}
 
@@ -651,58 +731,9 @@ class ReferentialIntegrityService {
 	 */
 	private function buildSchemaRegisterMap(): void {
 		try {
-			$allRegisters = $this->registerMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-			$registerCache = [];
-			foreach ($allRegisters as $register) {
-				$registerCache[(string)$register->getId()] = $register;
-			}
-
-			// Raw SQL: QueryBuilder does not target the information_schema metadata
-			// tables. The schema-resolution function differs across platforms —
-			// MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
-			// (mirrors lib/Db/MagicMapper.php:1697-1707). get_debug_type() is used
-			// instead of get_class() so a null platform (e.g. a mocked IDBConnection
-			// in unit tests) degrades to the MySQL syntax rather than fatal-erroring.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-			$schemaFn = 'DATABASE()';
-			if ($isPostgres === true) {
-				$schemaFn = 'current_schema()';
-			}//end if
-
-			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
-			$sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute();
-			$tables = [];
-			while (($row = $stmt->fetch()) !== false) {
-				// If fetch() returns something other than a row array or false
-				// (e.g. null from a mocked statement), stop the loop to avoid
-				// spinning forever on non-advancing iteration.
-				if (is_array($row) === false) {
-					break;
-				}
-
-				if (isset($row['table_name']) === false || is_string($row['table_name']) === false) {
-					continue;
-				}
-
-				$tables[] = substr($row['table_name'], 3);
-			}
-
-			foreach ($tables as $tableName) {
-				if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
-					$regId = $matches[1];
-					$schemaId = $matches[2];
-					if (isset($registerCache[$regId]) === true
-						&& isset($this->schemaRegisterMap[$schemaId]) === false
-					) {
-						$this->schemaRegisterMap[$schemaId] = $registerCache[$regId];
-					}
-				}
+			$registers = $this->registersById();
+			foreach ($this->magicTableNames() as $tableName) {
+				$this->mapTableToRegister(tableName: $tableName, registers: $registers);
 			}
 		} catch (\Exception $e) {
 			$this->logger->debug(
@@ -712,6 +743,79 @@ class ReferentialIntegrityService {
 		}//end try
 
 	}//end buildSchemaRegisterMap()
+
+	/**
+	 * The magic table names in this database, without their table prefix.
+	 *
+	 * @return array<int, string> The table names.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function magicTableNames(): array {
+		$stmt = $this->db->prepare(
+			"SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' "
+			. "AND table_schema = {$this->currentSchemaFunction()}"
+		);
+		$stmt->execute();
+		$tables = [];
+		while (($row = $stmt->fetch()) !== false && is_array($row) === true) {
+			if (is_string($row['table_name'] ?? null) === true) {
+				$tables[] = substr($row['table_name'], 3);
+			}
+		}
+
+		return $tables;
+	}//end magicTableNames()
+
+	/**
+	 * The SQL function that names the current schema on this database.
+	 *
+	 * @return string The function call.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function currentSchemaFunction(): string {
+		if (stripos(get_debug_type($this->db->getDatabasePlatform()), 'PostgreSQL') !== false) {
+			return 'current_schema()';
+		}
+
+		return 'DATABASE()';
+	}//end currentSchemaFunction()
+
+	/**
+	 * Every register, by id.
+	 *
+	 * @return array<int|string, Register> The registers.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function registersById(): array {
+		$registers = [];
+		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			$registers[(string)$register->getId()] = $register;
+		}
+
+		return $registers;
+	}//end registersById()
+
+	/**
+	 * Remember the register of the schema a magic table belongs to; the first table found wins.
+	 *
+	 * @param string     $tableName The table name.
+	 * @param Register[] $registers The registers by id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function mapTableToRegister(string $tableName, array $registers): void {
+		if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1
+			&& isset($registers[$matches[1]]) === true
+			&& isset($this->schemaRegisterMap[$matches[2]]) === false
+		) {
+			$this->schemaRegisterMap[$matches[2]] = $registers[$matches[1]];
+		}
+	}//end mapTableToRegister()
 
 	/**
 	 * Index referential integrity relations for a single schema.
