@@ -124,11 +124,9 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 			objectEntityMapper:  $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $mappingMapper,
-			client:              $this->createMock(Client::class),
 			appConfig:           $this->appConfig,
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->objectService
 		);
 	}//end setUp()

@@ -67,6 +67,10 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
@@ -203,6 +207,20 @@ class SaveObject implements SaveObjectInterface {
 	private ObjectVersionHandler $versionHandler;
 
 	/**
+	 * The saves in flight, for the cycle check on references; built on first use.
+	 *
+	 * @var SaveCallStack|null
+	 */
+	private ?SaveCallStack $saveCalls = null;
+
+	/**
+	 * Finds and keeps the schemas and registers of a save; built on first use.
+	 *
+	 * @var SaveLookups|null
+	 */
+	private ?SaveLookups $lookups = null;
+
+	/**
 	 * Decides object slugs (#4037), built from the mappers already passed in.
 	 *
 	 * @var ObjectSlugHandler
@@ -218,37 +236,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @var array<string, array>
 	 */
 	private array $createdSubObjects = [];
-
-	/**
-	 * Request-scoped cache for resolved schemas.
-	 *
-	 * Caches Schema entities by their ID to avoid repeated database lookups
-	 * when creating multiple sub-objects of the same type during cascade operations.
-	 * This significantly improves POST performance for objects with many sub-objects.
-	 *
-	 * @var array<int|string, Schema>
-	 */
-	private array $schemaCache = [];
-
-	/**
-	 * Request-scoped cache for resolved registers.
-	 *
-	 * Caches Register entities by their ID to avoid repeated database lookups
-	 * during cascade operations.
-	 *
-	 * @var array<int|string, Register>
-	 */
-	private array $registerCache = [];
-
-	/**
-	 * Request-scoped cache for resolved schema references (slug -> ID).
-	 *
-	 * Caches the mapping from schema slugs/references to their numeric IDs
-	 * to avoid repeated findAll() calls during cascade operations.
-	 *
-	 * @var array<string, string|null>
-	 */
-	private array $schemaReferenceCache = [];
 
 	/**
 	 * Request-scoped cache for reference-existence verdicts.
@@ -316,35 +303,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @var OrphanDeletionGuard|null
 	 */
 	private ?OrphanDeletionGuard $orphanGuard = null;
-
-	/**
-	 * Stack of `(targetSchemaSlug, uuid)` entries currently being saved.
-	 *
-	 * Pushed when `saveObject()` enters, popped when it exits. Each
-	 * entry is keyed on `<targetSchemaSlug>:<uuid>` for fast O(1)
-	 * membership lookup. Used by `validateReferences()` to detect
-	 * circular reference chains (A->B->A) — when the value of a
-	 * `validateReference` property equals one of the in-flight
-	 * UUIDs, we throw `CircularReferenceException` instead of a
-	 * regular reference-existence check.
-	 *
-	 * Closes the `reference-existence-validation` spec's
-	 * "Circular reference chains detected during validation"
-	 * requirement.
-	 *
-	 * @var array<int, array{schemaSlug:string,uuid:string,register:string|null}>
-	 */
-	private array $saveCallStack = [];
-
-	/**
-	 * Fast membership index for `$saveCallStack`. Keys are
-	 * `<schemaSlug>:<uuid>`; values are integers (the depth at which
-	 * the entry was pushed) so we can detect re-entries without
-	 * iterating the stack.
-	 *
-	 * @var array<string, int>
-	 */
-	private array $saveCallStackIndex = [];
 
 	/**
 	 * Constructor for SaveObject handler.
@@ -678,10 +636,26 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	public function clearAllCaches(): void {
 		$this->createdSubObjects = [];
-		$this->schemaCache = [];
-		$this->registerCache = [];
-		$this->schemaReferenceCache = [];
+		$this->lookups()->clear();
 	}//end clearAllCaches()
+
+	/**
+	 * The saves in flight on this handler.
+	 *
+	 * @return SaveCallStack
+	 */
+	private function saveCalls(): SaveCallStack {
+		return $this->saveCalls ??= new SaveCallStack();
+	}//end saveCalls()
+
+	/**
+	 * The schema and register lookups of this save handler.
+	 *
+	 * @return SaveLookups
+	 */
+	private function lookups(): SaveLookups {
+		return $this->lookups ??= new SaveLookups(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper);
+	}//end lookups()
 
 	/**
 	 * Get a cached schema by ID, or fetch and cache it.
@@ -695,12 +669,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedSchema(int|string $schemaId): Schema {
-		$cacheKey = (string)$schemaId;
-		if (isset($this->schemaCache[$cacheKey]) === false) {
-			$this->schemaCache[$cacheKey] = $this->schemaMapper->find(id: $schemaId);
-		}
-
-		return $this->schemaCache[$cacheKey];
+		return $this->lookups()->schema(schemaId: $schemaId);
 	}//end getCachedSchema()
 
 	/**
@@ -715,12 +684,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedRegister(int|string $registerId): Register {
-		$cacheKey = (string)$registerId;
-		if (isset($this->registerCache[$cacheKey]) === false) {
-			$this->registerCache[$cacheKey] = $this->registerMapper->find(id: $registerId);
-		}
-
-		return $this->registerCache[$cacheKey];
+		return $this->lookups()->register(registerId: $registerId);
 	}//end getCachedRegister()
 
 	/**
@@ -755,181 +719,11 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// Check the reference cache first (performance optimization for cascade operations).
-		// When creating many sub-objects of the same type, this avoids repeated lookups.
-		if (isset($this->schemaReferenceCache[$reference]) === true) {
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-
-		// Also check cache with cleaned reference.
-		if ($cleanReference !== $reference && isset($this->schemaReferenceCache[$cleanReference]) === true) {
-			$this->schemaReferenceCache[$reference] = $this->schemaReferenceCache[$cleanReference];
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($cleanReference) === true || UuidFormat::isCanonical(value: $cleanReference) === true) {
-			try {
-				$schema = $this->getCachedSchema(schemaId: $cleanReference);
-				$schemaId = (string)$schema->getId();
-				$this->schemaReferenceCache[$reference] = $schemaId;
-				return $schemaId;
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $cleanReference;
-		if (str_contains($cleanReference, '/') === true) {
-			// For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens".
-			$slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-		}
-
-		// Try to find schema by slug (case-insensitive).
-		// Use findAll() once and cache the results for subsequent lookups.
-		try {
-			$schemas = $this->schemaMapper->findAll();
-			// Cache all schemas by slug for future lookups.
-			foreach ($schemas as $schema) {
-				// A schema with no slug cannot be found BY slug, and feeding
-				// the null on to strtolower()/strcasecmp() is deprecated in
-				// PHP 8.1 and a TypeError in PHP 9. Skipping it is what the
-				// loop was already doing in effect, just noisily.
-				if ($schema->getSlug() === null) {
-					continue;
-				}
-
-				$schemaSlug = strtolower($schema->getSlug());
-				$schemaId = (string)$schema->getId();
-				// Cache the schema entity.
-				$this->schemaCache[$schemaId] = $schema;
-				// Cache the slug -> ID mapping.
-				$this->schemaReferenceCache['#/components/schemas/' . $schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schemaSlug] = $schemaId;
-
-				if (strcasecmp($schema->getSlug(), $slug) === 0) {
-					$this->schemaReferenceCache[$reference] = $schemaId;
-					return $schemaId;
-				}
-			}
-		} catch (Exception $e) {
-			// Schema not found.
-		}//end try
-
-		// Try direct slug match as last resort.
-		try {
-			// SchemaMapper->find() supports id, uuid, and slug via orX().
-			// find() throws when there is no match; the catch below is the
-			// "not found" path, so no null test is needed here.
-			$schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			$schemaId = (string)$schema->getId();
-			$this->schemaCache[$schemaId] = $schema;
-			$this->schemaReferenceCache[$reference] = $schemaId;
-			return $schemaId;
-		} catch (Exception $e) {
-			// Schema not found.
-		}
-
-		// Cache the null result too to avoid repeated lookups for invalid references.
-		$this->schemaReferenceCache[$reference] = null;
-		return null;
+		return $this->lookups()->schemaId(reference: $reference);
 	}//end resolveSchemaReference()
-
-	/**
-	 * Removes query parameters from a reference string.
-	 *
-	 * @param string $reference The reference string that may contain query parameters
-	 *
-	 * @return string The reference string without query parameters
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function removeQueryParameters(string $reference): string {
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		if (str_contains($reference, '?') === true) {
-			return substr($reference, 0, strpos($reference, '?'));
-		}
-
-		return $reference;
-	}//end removeQueryParameters()
-
-	/**
-	 * Resolves a register reference to a register ID.
-	 *
-	 * This method handles various types of register references:
-	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
-	 * - Slug references: "publication", "voorzieningen"
-	 * - URL references: "http://example.com/api/registers/34"
-	 *
-	 * For path and URL references, it extracts the last part and matches against register slugs (case-insensitive).
-	 *
-	 * @param string $reference The register reference to resolve
-	 *
-	 * @return null|numeric-string The resolved register ID or null if not found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveRegisterReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($reference) === true || UuidFormat::isCanonical(value: $reference) === true) {
-			try {
-				$register = $this->registerMapper->find($reference);
-				return (string)$register->getId();
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $reference;
-		if (str_contains($reference, '/') === true) {
-			// For references like "http://example.com/registers/publication".
-			$slug = substr($reference, strrpos($reference, '/') + 1);
-		}
-
-		// Try to find register by slug (case-insensitive).
-		try {
-			$registers = $this->registerMapper->findAll();
-			foreach ($registers as $register) {
-				if (strcasecmp($register->getSlug(), $slug) === 0) {
-					return (string)$register->getId();
-				}
-			}
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		// Try direct slug match as last resort.
-		try {
-			// RegisterMapper->find() supports id, uuid, and slug via orX().
-			$register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			return (string)$register->getId();
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		return null;
-	}//end resolveRegisterReference()
 
 	/**
 	 * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
@@ -3677,10 +3471,12 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function enterSaveFrame(ObjectSaveCall $call): ?string {
-		$frameKey = $this->pushSaveCallFrame(
-			schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
-			uuid: (string)$call->uuid,
-			register: self::frameRegister(register: $call->register)
+		$frameKey = $this->saveCalls()->push(
+			frame: new SaveCallFrame(
+				schemaSlug: ((string)($call->schema->getSlug() ?? $call->schema->getId())),
+				uuid: (string)$call->uuid,
+				register: self::frameRegister(register: $call->register)
+			)
 		);
 		$this->enterCascadeScope(_rbac: $call->flags->rbac);
 
@@ -3705,7 +3501,7 @@ class SaveObject implements SaveObjectInterface {
 			return $this->handleObjectUpdate(call: $call, existingObject: $existingObject);
 		} finally {
 			$this->leaveCascadeScope();
-			$this->popSaveCallFrame(key: $frameKey);
+			$this->saveCalls()->pop(key: $frameKey);
 		}
 	}//end updateExistingForSave()
 
@@ -3754,7 +3550,7 @@ class SaveObject implements SaveObjectInterface {
 			return $created;
 		} finally {
 			$this->leaveCascadeScope();
-			$this->popSaveCallFrame(key: $frameKey);
+			$this->saveCalls()->pop(key: $frameKey);
 		}
 	}//end createNewForSave()
 
@@ -3982,62 +3778,14 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @throws Exception If schema or register cannot be resolved
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaAndRegister(
 		Schema|int|string $schema,
 		Register|int|string|null $register,
 	): array {
-		// Initialize IDs before conditional assignment.
-		$schemaId = null;
-		$registerId = null;
-
-		// Resolve schema using request-scoped cache for performance.
-		// This avoids repeated database lookups when creating multiple sub-objects of the same type.
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-			// Cache the schema entity for potential reuse.
-			$this->schemaCache[(string)$schemaId] = $schema;
-		} elseif (is_string($schema) === true) {
-			// Resolve schema reference if it's a string (uses cached reference lookup).
-			$schemaId = $this->resolveSchemaReference(reference: $schema);
-			if ($schemaId === null) {
-				throw new Exception("Could not resolve schema reference: $schema");
-			}
-
-			// Use cached schema lookup instead of direct mapper call.
-			$schema = $this->getCachedSchema(schemaId: $schemaId);
-		} else {
-			// Only the integer-ID case is left after the Schema and string arms
-			// above, so no is_int() re-test — use the cached lookup.
-			$schemaId = $schema;
-			$schema = $this->getCachedSchema(schemaId: $schema);
-		}
-
-		// Resolve register using request-scoped cache for performance.
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-			// Cache the register entity for potential reuse.
-			$this->registerCache[(string)$registerId] = $register;
-		} elseif (is_string($register) === true) {
-			// Resolve register reference if it's a string.
-			$registerId = $this->resolveRegisterReference(reference: $register);
-			if ($registerId === null) {
-				throw new Exception("Could not resolve register reference: $register");
-			}
-
-			// Use cached register lookup instead of direct mapper call.
-			$register = $this->getCachedRegister(registerId: $registerId);
-		} elseif (is_int($register) === true) {
-			// It's an integer ID - use cached lookup.
-			$registerId = $register;
-			$register = $this->getCachedRegister(registerId: $register);
-		} elseif ($register === null) {
-			// Register is NULL (e.g., for seedData objects) - leave as NULL.
-			$registerId = null;
-		}//end if
+		[$schema, $schemaId] = $this->lookups()->schemaWithId(schema: $schema);
+		[$register, $registerId] = $this->lookups()->registerWithId(register: $register);
 
 		return [$schema, $schemaId, $register, $registerId];
 	}//end resolveSchemaAndRegister()
@@ -5490,7 +5238,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function validatePropertyReferences(ReferencePropertyRun $run): void {
 		$property = $run->property;
-		$run->strictness = $this->resolveReferenceStrictness(property: $property);
+		$run->strictness = ReferenceStrictness::forProperty(property: $property);
 		$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
 		$value = $run->data[$run->propertyName] ?? null;
 		if ($run->strictness === null || $ref === null || $value === null || $value === '') {
@@ -5608,81 +5356,6 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}//end try
 	}//end validateOneReference()
-
-	/**
-	 * Resolve the configured strictness level for a schema property.
-	 *
-	 * Schema authors declare reference validation in two related fields:
-	 *
-	 * - `validateReference` — the on/off toggle (boolean) or a shorthand
-	 *   string carrying both the on/off bit AND the severity:
-	 *   `true` / `'error'` / `'strict'` / `'block'` enable strict
-	 *   validation; `'warn'` enables warn-only mode; `false` or
-	 *   `'off'` disables validation entirely.
-	 * - `validationStrictness` — optional explicit severity field
-	 *   (`'strict'`, `'warn'`, `'off'`) that overrides the default
-	 *   strict severity when `validateReference` is just the boolean
-	 *   `true`. Matches the spec's documented schema shape.
-	 *
-	 * Returns `'error'` when validation is strict, `'warn'` when
-	 * warn-only, and `null` when validation is disabled — the caller
-	 * uses `null` as the short-circuit signal to skip the property
-	 * without paying for the database round trip.
-	 *
-	 * @param array $property The schema property definition.
-	 *
-	 * @return string|null Returns `'error'` for strict mode, `'warn'` for
-	 *                     warn-only, `null` when validation is disabled.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function resolveReferenceStrictness(array $property): ?string {
-		$configured = ($property['validateReference'] ?? false);
-		$explicit = ($property['validationStrictness'] ?? null);
-
-		// Explicit strictness field can disable validation outright,
-		// mirroring the spec's "off" level even when the boolean toggle
-		// is true.
-		if (is_string($explicit) === true && strtolower($explicit) === 'off') {
-			return null;
-		}
-
-		// Map the optional explicit strictness onto our internal verdict.
-		$explicitNormalized = null;
-		if (is_string($explicit) === true) {
-			$candidate = strtolower($explicit);
-			if ($candidate === 'strict' || $candidate === 'error' || $candidate === 'block') {
-				$explicitNormalized = 'error';
-			} elseif ($candidate === 'warn') {
-				$explicitNormalized = 'warn';
-			}
-		}
-
-		// Boolean true: validation enabled, default strict, but defer
-		// to explicit strictness when present.
-		if ($configured === true) {
-			return $explicitNormalized ?? 'error';
-		}
-
-		// String shorthand on `validateReference` carries both the
-		// on/off bit and the severity.
-		if (is_string($configured) === true) {
-			$normalized = strtolower($configured);
-			if ($normalized === 'off' || $normalized === 'false') {
-				return null;
-			}
-
-			if ($normalized === 'error' || $normalized === 'block' || $normalized === 'strict') {
-				return $explicitNormalized ?? 'error';
-			}
-
-			if ($normalized === 'warn') {
-				return $explicitNormalized ?? 'warn';
-			}
-		}
-
-		return null;
-	}//end resolveReferenceStrictness()
 
 	/**
 	 * Detect whether a reference value expresses HTTP(S) URL intent.
@@ -6039,7 +5712,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function refuseCircularReference(ReferenceCheck $check): void {
-		$cycle = $this->detectCircularReference(uuid: $check->uuid);
+		$cycle = $this->saveCalls()->cycleThrough(uuid: $check->uuid);
 		if ($cycle === null) {
 			return;
 		}
@@ -6060,10 +5733,10 @@ class SaveObject implements SaveObjectInterface {
 			referencedUuid: $check->uuid,
 			targetSchemaSlug: $check->schemaRef,
 			cycle: array_map(
-				static fn (array $frame): array => [
-					'schema' => $frame['schemaSlug'],
-					'uuid' => $frame['uuid'],
-					'register' => $frame['register'],
+				static fn (SaveCallFrame $frame): array => [
+					'schema' => $frame->schemaSlug,
+					'uuid' => $frame->uuid,
+					'register' => $frame->register,
 				],
 				$cycle
 			),
@@ -6454,126 +6127,6 @@ class SaveObject implements SaveObjectInterface {
 			$status->recordReferenceCacheMiss();
 		}
 	}//end recordReferenceCacheUse()
-
-	/**
-	 * Push an in-flight save onto the call stack used for circular
-	 * reference detection.
-	 *
-	 * Returns the unique key under which the frame is recorded so
-	 * `popSaveCallFrame()` can remove it cleanly even when the caller
-	 * is in a nested cascade (we may have multiple frames on the stack
-	 * at once). Empty UUIDs are skipped — pre-persist creates have no
-	 * stable identifier yet, so they cannot be re-encountered as a
-	 * back-reference within the same chain.
-	 *
-	 * @param string $schemaSlug Schema slug (or id when slug is null).
-	 * @param string $uuid Object UUID. Empty string when not yet known.
-	 * @param string|null $register Register identifier.
-	 *
-	 * @return string|null The stack frame key, or null when nothing was pushed.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string {
-		if ($uuid === '') {
-			return null;
-		}
-
-		$key = $schemaSlug . ':' . $uuid;
-		if (array_key_exists($key, $this->saveCallStackIndex) === true) {
-			// Already on the stack — re-entry without going through
-			// a child save. This is unusual but harmless; just refuse
-			// to double-push so pop semantics stay balanced.
-			return null;
-		}
-
-		$this->saveCallStack[] = [
-			'schemaSlug' => $schemaSlug,
-			'uuid' => $uuid,
-			'register' => $register,
-		];
-		$this->saveCallStackIndex[$key] = (count($this->saveCallStack) - 1);
-
-		return $key;
-	}//end pushSaveCallFrame()
-
-	/**
-	 * Pop a frame previously pushed by `pushSaveCallFrame()`.
-	 *
-	 * Tolerant of null keys (pushSaveCallFrame returns null when the
-	 * frame couldn't be pushed) so callers can wrap unconditional
-	 * `try { … } finally { popSaveCallFrame($key); }` without checking.
-	 *
-	 * @param string|null $key The frame key returned by pushSaveCallFrame, or null.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function popSaveCallFrame(?string $key): void {
-		if ($key === null) {
-			return;
-		}
-
-		if (array_key_exists($key, $this->saveCallStackIndex) === false) {
-			return;
-		}
-
-		$depth = $this->saveCallStackIndex[$key];
-		unset($this->saveCallStackIndex[$key]);
-
-		// Pop only the frames at or above the recorded depth so
-		// unbalanced finallys (e.g. an exception that skipped a pop
-		// somewhere) self-heal instead of leaking entries forever.
-		$stackSize = count($this->saveCallStack);
-		while ($stackSize > $depth) {
-			$frame = array_pop($this->saveCallStack);
-			if ($frame === null) {
-				break;
-			}
-
-			$stackSize--;
-
-			$existing = $frame['schemaSlug'] . ':' . $frame['uuid'];
-			if ($existing !== $key) {
-				unset($this->saveCallStackIndex[$existing]);
-			}
-		}
-
-	}//end popSaveCallFrame()
-
-	/**
-	 * Detect whether the supplied UUID is currently being saved
-	 * higher up the cascade chain.
-	 *
-	 * Returns the cycle path (the visited stack) when re-entry is
-	 * detected, otherwise null. Schema match is loose — if any frame
-	 * on the stack carries the same UUID (regardless of schema), we
-	 * consider it a cycle. This is the right shape for the spec's
-	 * "A->B->A" example: the schema may legitimately differ between
-	 * the parent and child cascades but the UUID is what closes the
-	 * loop.
-	 *
-	 * @param string $uuid Candidate UUID being referenced.
-	 *
-	 * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
-	 *                                                                                    Cycle path when detected, null otherwise.
-	 *
-	 * @spec openspec/specs/reference-existence-validation/spec.md
-	 */
-	private function detectCircularReference(string $uuid): ?array {
-		if ($uuid === '') {
-			return null;
-		}
-
-		foreach ($this->saveCallStack as $frame) {
-			if ($frame['uuid'] === $uuid) {
-				return $this->saveCallStack;
-			}
-		}
-
-		return null;
-	}//end detectCircularReference()
 
 	/**
 	 * Decide whether the current user should bypass reference validation.
