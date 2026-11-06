@@ -39,7 +39,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Kernel\Contracts\ChatStreamChannelInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
 
@@ -183,7 +183,7 @@ class ChatService implements ChatServiceInterface {
 	 * @param array $context CnAiContext snapshot the frontend sent
 	 *                       (orchestrator §8). Persisted on the
 	 *                       user-authored Message row when non-empty.
-	 * @param StreamYieldChannel|null $channel Streaming channel forwarded to the response
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel forwarded to the response
 	 *                                         handler so SSE consumers (ChatStreamController)
 	 *                                         can interleave `token` / `tool_call` /
 	 *                                         `tool_result` frames as the LLM yields. Null
@@ -208,7 +208,7 @@ class ChatService implements ChatServiceInterface {
 		array $selectedTools = [],
 		array $ragSettings = [],
 		array $context = [],
-		?StreamYieldChannel $channel = null,
+		?ChatStreamChannelInterface $channel = null,
 	): array {
 		$request = new ChatMessageRequest(conversationId: $conversationId, userId: $userId, userMessage: $userMessage);
 		$request->selectedViews = $selectedViews;

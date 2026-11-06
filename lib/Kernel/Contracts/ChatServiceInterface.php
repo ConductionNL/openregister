@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
-
 /**
  * Every public method of ChatService. Callers depend on this interface, not on the class.
  */
@@ -43,7 +41,7 @@ interface ChatServiceInterface {
 	 * @param array $context CnAiContext snapshot the frontend sent
 	 *                       (orchestrator §8). Persisted on the
 	 *                       user-authored Message row when non-empty.
-	 * @param StreamYieldChannel|null $channel Streaming channel forwarded to the response
+	 * @param ChatStreamChannelInterface|null $channel Streaming channel forwarded to the response
 	 *                                         handler so SSE consumers (ChatStreamController)
 	 *                                         can interleave `token` / `tool_call` /
 	 *                                         `tool_result` frames as the LLM yields. Null
@@ -68,7 +66,7 @@ interface ChatServiceInterface {
 		array $selectedTools = [],
 		array $ragSettings = [],
 		array $context = [],
-		?StreamYieldChannel $channel = null,
+		?ChatStreamChannelInterface $channel = null,
 	): array;
 
 	/**

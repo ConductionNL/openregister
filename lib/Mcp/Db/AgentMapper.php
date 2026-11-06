@@ -57,7 +57,6 @@ use OCA\OpenRegister\Db\QueryPage;
  * @method Agent delete(Entity $entity)
  * @method Agent find(int|string $id)
  * @method Agent findEntity(IQueryBuilder $query)
- * @method Agent[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Agent> findEntities(IQueryBuilder $query)
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
