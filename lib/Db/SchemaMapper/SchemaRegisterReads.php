@@ -109,6 +109,24 @@ final class SchemaRegisterReads {
 	 * @return array<int, array<mixed>> Register id => schema ids.
 	 */
 	private function schemaLists(): array {
+		$lists = [];
+		foreach ($this->registerRows() as $row) {
+			$schemas = json_decode(($row['schemas'] ?? '[]'), true);
+			$lists[(int) $row['id']] = [];
+			if (is_array($schemas) === true) {
+				$lists[(int) $row['id']] = $schemas;
+			}
+		}
+
+		return $lists;
+	}//end schemaLists()
+
+	/**
+	 * The id and schema list column of every register.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function registerRows(): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id', 'schemas')
 			->from('openregister_registers');
@@ -117,17 +135,8 @@ final class SchemaRegisterReads {
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		$lists = [];
-		foreach ($rows as $row) {
-			$lists[(int) $row['id']] = [];
-			$schemas = json_decode(($row['schemas'] ?? '[]'), true);
-			if (is_array($schemas) === true) {
-				$lists[(int) $row['id']] = $schemas;
-			}
-		}
-
-		return $lists;
-	}//end schemaLists()
+		return $rows;
+	}//end registerRows()
 
 	/**
 	 * Count the rows of a magic table that are not soft-deleted.
