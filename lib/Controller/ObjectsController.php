@@ -4091,7 +4091,7 @@ class ObjectsController extends Controller {
 			return $existing;
 		}
 
-		$refusal = $this->lockRefusalResponse(existingObject: $existing);
+		$refusal = ($this->lockRefusalResponse(existingObject: $existing) ?? $this->versionRefusal(patch: $patch, existing: $existing));
 		if ($refusal !== null) {
 			return $refusal;
 		}

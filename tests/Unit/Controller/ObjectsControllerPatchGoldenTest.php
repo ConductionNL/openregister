@@ -183,6 +183,15 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 		$this->compareRoute('patch stale version', 'patch', ['title' => 'x', '_expectedUpdated' => '2026-01-01T00:00:00+00:00'], []);
 	}
 
+	public function testPostPatchRefusesAStaleVersionBeforeItSaves(): void {
+		$params = ['title' => 'x', '_expectedUpdated' => '2026-01-01T00:00:00+00:00'];
+		$response = $this->controller($params, [])->postPatch('reg', 'sch', 'object-1', $this->routeService([]));
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('2026-01-01T00:00:00+00:00', $response->getData()['expectedUpdated']);
+		$this->assertSame([], array_filter($this->calls, static fn ($call): bool => isset($call['saveObject'])));
+	}
+
 	private function compareAnswer(string $key, array $params, array $setup): void {
 		foreach (['patch', 'postPatch'] as $route) {
 			$this->calls = [];
