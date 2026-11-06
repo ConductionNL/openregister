@@ -3360,7 +3360,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function hasFolderBinding(mixed $folder): bool
     {
-        return $folder !== null && $folder !== '' && (is_string($folder) === false || is_numeric($folder) === true);
+        return $folder !== null && (is_string($folder) === false || is_numeric($folder) === true);
     }//end hasFolderBinding()
 
     /**
