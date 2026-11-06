@@ -21,7 +21,6 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
-use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Repair\ReportUnpublishedSchedules;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
@@ -33,25 +32,24 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Repair\ReportUnpublishedSchedules
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest
- * @uses   \OCA\OpenRegister\Db\Flow
  */
 class ReportUnpublishedSchedulesTest extends TestCase {
 	/**
 	 * Run the step against one app with one schedule.
 	 *
-	 * @param array<string, Flow> $flows The app's compiled flows.
+	 * @param bool $published Whether a compiled flow carries the app's name.
 	 * @param int $warnings The warnings expected.
 	 *
 	 * @return void
 	 */
-	private function runWith(array $flows, int $warnings): void {
+	private function runWith(bool $published, int $warnings): void {
 		$schedule = new ScheduleDescriptor('nightly', null, '0 3 * * *', 'a');
 
 		$manifests = $this->createMock(ScheduleManifestLoader::class);
 		$manifests->method('loadAllOnDisk')->willReturn([new ScheduleManifest('crm', [$schedule])]);
 
 		$store = $this->createMock(ScheduleFlowStore::class);
-		$store->method('ofApplication')->with('crm')->willReturn($flows);
+		$store->method('hasFlowsNamedFor')->with('crm')->willReturn($published);
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->exactly($warnings))->method('warning')
@@ -64,10 +62,10 @@ class ReportUnpublishedSchedulesTest extends TestCase {
 	}
 
 	public function testTheSchedulesOfAnAppNobodyPublishedAreLogged(): void {
-		$this->runWith([], 1);
+		$this->runWith(false, 1);
 	}
 
 	public function testAnAppWithCompiledFlowsIsNotReported(): void {
-		$this->runWith(['uuid' => new Flow()], 0);
+		$this->runWith(true, 0);
 	}
 }

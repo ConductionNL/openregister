@@ -76,7 +76,7 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		foreach ($this->manifests->loadAllOnDisk() as $manifest) {
-			if ($this->flows->ofApplication(slug: $manifest->applicationId) === []) {
+			if ($this->flows->hasFlowsNamedFor(slug: $manifest->applicationId) === false) {
 				$this->refuse(manifest: $manifest, output: $output);
 			}
 		}
