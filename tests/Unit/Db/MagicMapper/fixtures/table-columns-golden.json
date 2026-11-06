@@ -904,9 +904,12 @@
                 "primary": true
             },
             "_uuid": {
-                "name": "_uuid_1",
-                "type": "text",
-                "nullable": true
+                "name": "_uuid",
+                "type": "string",
+                "length": 40,
+                "nullable": false,
+                "unique": true,
+                "index": true
             },
             "_slug": {
                 "name": "_slug",
@@ -967,9 +970,11 @@
                 "nullable": true
             },
             "_name": {
-                "name": "_name_1",
-                "type": "text",
-                "nullable": true
+                "name": "_name",
+                "type": "string",
+                "length": 255,
+                "nullable": true,
+                "index": true
             },
             "_description": {
                 "name": "_description",
@@ -1100,26 +1105,7 @@
                 "nullable": true
             }
         },
-        "events": [
-            {
-                "log": "warning",
-                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
-                "context": {
-                    "propertyName": "_uuid",
-                    "collidingColumn": "_uuid",
-                    "resolvedColumn": "_uuid_1"
-                }
-            },
-            {
-                "log": "warning",
-                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
-                "context": {
-                    "propertyName": "_name",
-                    "collidingColumn": "_name",
-                    "resolvedColumn": "_name_1"
-                }
-            }
-        ]
+        "events": []
     },
     "collision with linked type": {
         "columns": {
@@ -1327,22 +1313,13 @@
                 "nullable": true
             },
             "_mail": {
-                "name": "_mail_1",
-                "type": "text",
-                "nullable": true
+                "name": "_mail",
+                "type": "json",
+                "nullable": true,
+                "index": true
             }
         },
-        "events": [
-            {
-                "log": "warning",
-                "message": "[MagicMapper] Column name collision after sanitisation; disambiguating",
-                "context": {
-                    "propertyName": "_mail",
-                    "collidingColumn": "_mail",
-                    "resolvedColumn": "_mail_1"
-                }
-            }
-        ]
+        "events": []
     },
     "encrypted": {
         "columns": {
