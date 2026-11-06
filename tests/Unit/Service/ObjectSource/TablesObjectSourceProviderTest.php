@@ -159,6 +159,11 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 		$provider = $this->provider(false);
 
+		$this->reader->expects($this->never())->method('findRows');
+		$this->reader->expects($this->never())->method('findRow');
+		$this->reader->expects($this->never())->method('countRows');
+		$this->reader->expects($this->never())->method('listColumns');
+
 		$this->assertSame([], $provider->findAll($register, $schema, [], ['tableId' => 5]));
 		$this->assertSame(0, $provider->count($register, $schema, [], ['tableId' => 5]));
 		$this->assertNull($provider->find($register, $schema, '1', ['tableId' => 5]));
