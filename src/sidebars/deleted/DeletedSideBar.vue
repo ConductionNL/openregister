@@ -414,13 +414,7 @@ export default {
 
 @include filter-group-rules;
 
-.filter-hint {
-	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
+@include filter-hint-rules;
 
 .loading-stats {
 	display: flex;

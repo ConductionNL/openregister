@@ -179,27 +179,11 @@ export default {
 <style scoped lang="scss">
 @use '../../styles/modals.scss' as *;
 
-.codeMirrorContainer {
-	margin-block-start: 6px;
-}
-
-.prettifyButton {
-	margin-block-start: 10px;
-}
+@include code-mirror-frame;
 
 @include code-mirror-container-deep-cm-content;
 
-.codeMirrorContainer :deep(.cm-editor) {
-	outline: none !important;
-}
-
-.codeMirrorContainer.light > .vue-codemirror {
-	border: 1px dotted silver;
-}
-
-.codeMirrorContainer.dark > .vue-codemirror {
-	border: 1px dotted grey;
-}
+@include code-mirror-editor;
 
 @include code-mirror-theme;
 </style>
