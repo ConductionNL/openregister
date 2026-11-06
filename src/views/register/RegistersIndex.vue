@@ -151,114 +151,7 @@ import {
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						:title="
-							isManagedByExternalConfig(row)
-								? t(
-										'openregister',
-										'Cannot edit: This register is managed by external configuration {title}',
-										{
-											title: getManagingConfiguration(row)
-												?.title,
-										},
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="isManagedByExternalConfig(row)"
-						@click="$refs.indexPage.openFormDialog(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('publishRegister')
-							}
-						">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Publish OAS') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setModal('importRegister')
-							}
-						">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						{{ t('openregister', 'Import') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								viewOasDoc(row)
-							}
-						">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						{{ t('openregister', 'View API Documentation') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								downloadOas(row)
-							}
-						">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						{{ t('openregister', 'Download API Specification') }}
-					</NcActionButton>
-					<NcActionButton
-						:title="
-							row.stats?.total > 0
-								? t(
-										'openregister',
-										'Cannot delete: objects are still attached',
-									)
-								: ''
-						"
-						closeAfterClick
-						:disabled="row.stats?.total > 0"
-						@click="
-							() => {
-								registerStore.setRegisterItem(row)
-								navigationStore.setDialog('deleteRegister')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="viewRegisterDetails(row)">
-						<template #icon>
-							<InformationOutline :size="20" />
-						</template>
-						{{ t('openregister', 'View Details') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="registerActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -268,15 +161,10 @@ import {
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-} from '@nextcloud/vue'
+import { NcActionButton, NcAppContent } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -284,6 +172,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
 import {
@@ -350,20 +239,15 @@ function failureText(error) {
 export default {
 	name: 'RegistersIndex',
 	components: {
+		ActionMenu,
+		NcActionButton,
+		Upload,
+		ApiIcon,
+		CloudUploadOutline,
 		RegisterFormFields,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		Upload,
-		ApiIcon,
-		Download,
-		InformationOutline,
 		CogOutline,
-		CloudUploadOutline,
 		RegisterSchemaCard,
 	},
 
@@ -508,6 +392,67 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The menu of one register.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} register - list row
+		 * @return {Array<object>}
+		 */
+		registerActions(register) {
+			const selected = (action) => () => {
+				registerStore.setRegisterItem(register)
+				action()
+			}
+			return [
+				this.editAction(register),
+				{ label: t('openregister', 'Publish OAS'), icon: CloudUploadOutline, run: selected(() => navigationStore.setModal('publishRegister')) },
+				{ label: t('openregister', 'Import'), icon: Upload, run: selected(() => navigationStore.setModal('importRegister')) },
+				{ label: t('openregister', 'View API Documentation'), icon: ApiIcon, run: selected(() => this.viewOasDoc(register)) },
+				{ label: t('openregister', 'Download API Specification'), icon: Download, run: selected(() => this.downloadOas(register)) },
+				this.deleteAction(register, selected(() => navigationStore.setDialog('deleteRegister'))),
+				{ label: t('openregister', 'View Details'), icon: InformationOutline, run: () => this.viewRegisterDetails(register) },
+			]
+		},
+
+		/**
+		 * The edit entry, locked while an external configuration manages the register.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		editAction(register) {
+			const locked = this.isManagedByExternalConfig(register)
+			const title = this.getManagingConfiguration(register)?.title
+			return {
+				label: t('openregister', 'Edit'),
+				icon: Pencil,
+				title: locked ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title }) : '',
+				disabled: locked,
+				run: () => this.$refs.indexPage.openFormDialog(register),
+			}
+		},
+
+		/**
+		 * The delete entry, locked while objects are attached.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} register - register row
+		 * @param {() => void} run - what the entry does
+		 * @return {object}
+		 */
+		deleteAction(register, run) {
+			const locked = register.stats?.total > 0
+			return {
+				label: t('openregister', 'Delete'),
+				icon: TrashCanOutline,
+				title: locked ? t('openregister', 'Cannot delete: objects are still attached') : '',
+				disabled: locked,
+				run,
+			}
+		},
+
 		/**
 		 * @spec exclude list-view manual refresh plumbing
 		 */
