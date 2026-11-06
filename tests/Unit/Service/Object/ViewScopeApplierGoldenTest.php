@@ -255,7 +255,11 @@ final class ViewScopeApplierGoldenTest extends TestCase {
 	 * @return array<string, mixed> The merged query.
 	 */
 	private function scope(array $query, array $views, bool $required): array {
-		return $this->applier()->apply($query, $views, $required);
+		if ($required === true) {
+			return $this->applier()->applyRequired($query, $views);
+		}
+
+		return $this->applier()->apply($query, $views);
 	}//end scope()
 
 	/**
