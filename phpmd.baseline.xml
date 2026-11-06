@@ -147,7 +147,7 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Listener/ApprovalChainGateListener.php" method="handle"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Listener/ApprovalChainGateListener.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Listener/ApprovalChainGateListener.php" method="resolveStepsOverride"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Listener/ContextChatSubmissionListener.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Mcp/Listener/ContextChatSubmissionListener.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Listener/FlowNodePreflightListener.php"/>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Listener/FlowNodeRegistrationListener.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Listener/FlowNodeRegistrationListener.php" method="__construct"/>
@@ -193,7 +193,7 @@
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/AuditQueryService.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Service/AuthorizationService.php" method="authorizeJwt"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/CaseTokenService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Service/Chat/ToolManagementHandler.php"/>
+  <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Mcp/Service/Chat/ToolManagementHandler.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ConditionMatcher.php" method="resolveDynamicValue"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/ConditionMatcher.php" method="resolveDynamicValue"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/Config/FederatedConfigService.php"/>

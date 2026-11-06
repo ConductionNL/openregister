@@ -1590,6 +1590,181 @@
 			"class": "OCA\\OpenRegister\\Files\\Service\\UploadService",
 			"eager": false,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Command\\ContextChatReindexCommand": {
+			"class": "OCA\\OpenRegister\\Mcp\\Command\\ContextChatReindexCommand",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\McpServerController": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\McpServerController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerControllerServices": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerDomain": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\McpServerPlatform": {
+			"class": "OCA\\OpenRegister\\Mcp\\Controller\\Support\\McpServerPlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Agent": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\Agent",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\AgentMapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\AgentMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\Conversation": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\Conversation",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Db\\ConversationMapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Db\\ConversationMapper",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\Registrar\\McpListenerRegistrar": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\Registrar\\McpListenerRegistrar",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Listener\\ToolRegistrationListener": {
+			"class": "OCA\\OpenRegister\\Mcp\\Listener\\ToolRegistrationListener",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ChatMessageRequest": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ChatMessageRequest",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ChatService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ChatService",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ContextRetrievalHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ConversationManagementHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\MessageHistoryHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\MessageHistoryHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ResponseGenerationHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ResponseGenerationHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\StreamYieldChannel": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\StreamYieldChannel",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Chat\\ToolManagementHandler": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ToolManagementHandler",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpAnnotationValidator": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpAnnotationValidator",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpProtocolService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpProtocolService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpResourcesService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpResourcesService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\McpToolsService": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\McpToolsService",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\Mcp\\ToolRegistryFacade": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\Mcp\\ToolRegistryFacade",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Service\\ToolRegistry": {
+			"class": "OCA\\OpenRegister\\Mcp\\Service\\ToolRegistry",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\AbstractTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\AbstractTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\AgentTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\AgentTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ApplicationTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ApplicationTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\McpProviderBridge": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\McpProviderBridge",
+			"eager": true,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ObjectsTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ObjectsTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\RegisterTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\RegisterTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\SchemaTool": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\SchemaTool",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\StreamingToolInstanceWrapper": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\StreamingToolInstanceWrapper",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Tool\\ToolInterface": {
+			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ToolInterface",
+			"eager": true,
+			"service": true
 		}
 	}
 }

@@ -136,12 +136,12 @@ parameters:
 			path: lib/Command/ReconcileMagicTablesCommand.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AgentsController.php
 
@@ -2161,17 +2161,17 @@ parameters:
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
-			path: lib/Db/AgentMapper.php
+			path: lib/Mcp/Db/AgentMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setOrganisation\\(\\)\\.$#"
 			count: 2
-			path: lib/Db/AgentMapper.php
+			path: lib/Mcp/Db/AgentMapper.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AgentMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Agent\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\AgentMapper\\:\\:findAll\\(\\) should return array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Agent\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Agent\\>\\.$#"
 			count: 1
-			path: lib/Db/AgentMapper.php
+			path: lib/Mcp/Db/AgentMapper.php
 
 		-
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Files\\\\Db\\\\AnonymisationLog\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Files\\\\Db\\\\AnonymisationLog, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
@@ -2299,19 +2299,19 @@ parameters:
 			path: lib/Db/ConfigurationMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Conversation\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ConversationMapper.php
+			path: lib/Mcp/Db/ConversationMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Conversation\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ConversationMapper.php
+			path: lib/Mcp/Db/ConversationMapper.php
 
 		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Conversation\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Mcp\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
-			path: lib/Db/ConversationMapper.php
+			path: lib/Mcp/Db/ConversationMapper.php
 
 		-
 			message: "#^Unknown PHPDoc tag\\: @phpstan\\-api$#"
@@ -3008,7 +3008,7 @@ parameters:
 		-
 			message: "#^Parameter \\#1 \\$callback of method OCP\\\\IUserManager\\:\\:callForSeenUsers\\(\\) expects Closure\\(OCP\\\\IUser\\)\\: \\(bool\\|null\\), Closure\\(mixed\\)\\: void given\\.$#"
 			count: 1
-			path: lib/Listener/ContextChatSubmissionListener.php
+			path: lib/Mcp/Listener/ContextChatSubmissionListener.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\EventDispatcher\\\\Event\\:\\:getObject\\(\\)\\.$#"
@@ -3342,67 +3342,67 @@ parameters:
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
 			count: 2
-			path: lib/Service/Chat/ConversationManagementHandler.php
+			path: lib/Mcp/Service/Chat/ConversationManagementHandler.php
 
 		-
 			message: "#^Variable \\$config might not be defined\\.$#"
 			count: 4
-			path: lib/Service/Chat/ConversationManagementHandler.php
+			path: lib/Mcp/Service/Chat/ConversationManagementHandler.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\Message\\:\\:setMetadata\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/Chat/MessageHistoryHandler.php
+			path: lib/Mcp/Service/Chat/MessageHistoryHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Chat\\\\MessageHistoryHandler\\:\\:\\$conversationMapper is never read, only written\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Mcp\\\\Service\\\\Chat\\\\MessageHistoryHandler\\:\\:\\$conversationMapper is never read, only written\\.$#"
 			count: 1
-			path: lib/Service/Chat/MessageHistoryHandler.php
+			path: lib/Mcp/Service/Chat/MessageHistoryHandler.php
 
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$organizationId\\.$#"
 			count: 1
-			path: lib/Service/Chat/ResponseGenerationHandler.php
+			path: lib/Mcp/Service/Chat/ResponseGenerationHandler.php
 
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
 			count: 2
-			path: lib/Service/Chat/ResponseGenerationHandler.php
+			path: lib/Mcp/Service/Chat/ResponseGenerationHandler.php
 
 		-
 			message: "#^Variable \\$chatProvider on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Chat/ResponseGenerationHandler.php
+			path: lib/Mcp/Service/Chat/ResponseGenerationHandler.php
 
 		-
 			message: "#^Variable \\$config might not be defined\\.$#"
 			count: 5
-			path: lib/Service/Chat/ResponseGenerationHandler.php
+			path: lib/Mcp/Service/Chat/ResponseGenerationHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Chat\\\\ToolManagementHandler\\:\\:\\$agentMapper is never read, only written\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Mcp\\\\Service\\\\Chat\\\\ToolManagementHandler\\:\\:\\$agentMapper is never read, only written\\.$#"
 			count: 1
-			path: lib/Service/Chat/ToolManagementHandler.php
+			path: lib/Mcp/Service/Chat/ToolManagementHandler.php
 
 		-
-			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\ChatService\\:\\:RECENT_MESSAGES_COUNT is unused\\.$#"
+			message: "#^Constant OCA\\\\OpenRegister\\\\Mcp\\\\Service\\\\ChatService\\:\\:RECENT_MESSAGES_COUNT is unused\\.$#"
 			count: 1
-			path: lib/Service/ChatService.php
+			path: lib/Mcp/Service/ChatService.php
 
 		-
 			message: "#^Dead catch \\- Exception is never thrown in the try block\\.$#"
 			count: 1
-			path: lib/Service/ChatService.php
+			path: lib/Mcp/Service/ChatService.php
 
 		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
 			count: 1
-			path: lib/Service/ChatService.php
+			path: lib/Mcp/Service/ChatService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ChatService\\:\\:\\$toolHandler is never read, only written\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Mcp\\\\Service\\\\ChatService\\:\\:\\$toolHandler is never read, only written\\.$#"
 			count: 1
-			path: lib/Service/ChatService.php
+			path: lib/Mcp/Service/ChatService.php
 
 		-
 			message: "#^Offset 'body' on array\\{status\\: int, headers\\: array\\<string, mixed\\>, body\\: string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -4451,17 +4451,17 @@ parameters:
 		-
 			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 2
-			path: lib/Service/Mcp/McpToolsService.php
+			path: lib/Mcp/Service/Mcp/McpToolsService.php
 
 		-
 			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Mcp/McpToolsService.php
+			path: lib/Mcp/Service/Mcp/McpToolsService.php
 
 		-
 			message: "#^Offset 'name' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Service/Mcp/McpToolsService.php
+			path: lib/Mcp/Service/Mcp/McpToolsService.php
 
 		-
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
@@ -5531,34 +5531,34 @@ parameters:
 		-
 			message: "#^Offset 'description' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
 			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 2
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
 			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
 			message: "#^Offset 'name' on \\*NEVER\\* on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Tool\\\\McpProviderBridge\\:\\:\\$agent is never read, only written\\.$#"
+			message: "#^Property OCA\\\\OpenRegister\\\\Mcp\\\\Tool\\\\McpProviderBridge\\:\\:\\$agent is never read, only written\\.$#"
 			count: 1
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Tool/McpProviderBridge.php
+			path: lib/Mcp/Tool/McpProviderBridge.php
 
 		-
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Tool/SchemaTool.php
+			path: lib/Mcp/Tool/SchemaTool.php
