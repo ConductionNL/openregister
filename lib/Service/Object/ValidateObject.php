@@ -686,14 +686,6 @@ class ValidateObject implements ValidateObjectInterface {
 	 * keeps one fails every write with `Unresolved reference: schema:///<slug>#`, which names neither the
 	 * property nor the schema.
 	 *
-	 * OpenRegister uses `$ref` to denote schema relationships (relation tracking, onDelete),
-	 * but Opis JSON Schema tries to resolve it as a URI. `{"$ref": "besluit"}` with no type
-	 * at all is the shape every other branch misses: the slug survived into Opis and every
-	 * object write of that schema failed with `Unresolved reference: schema:///besluit#`, a
-	 * message that names neither the property nor the schema. A ref that could genuinely be
-	 * a JSON Schema reference (a fragment or a URI) is left alone: dropping something that
-	 * resolves would change validation rather than restore it.
-	 *
 	 * @param object $propertySchema The property schema to transform
 	 *
 	 * @return void
