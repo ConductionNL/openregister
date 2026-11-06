@@ -4,7 +4,7 @@
  * ShareLinkService — Tier-2 shares integration service.
  *
  * Composes `OCP\Share\IManager` (NC core sharing — the single source of
- * truth) with the OR `ObjectEntityMapper` + `FolderManagementHandler`
+ * truth) with the OR `MagicMapper` + `FileService`
  * so the registry "Shares" leaf can list, create and revoke shares on
  * the files inside an object's NC folder.
  *
@@ -25,7 +25,7 @@
  *   - getShareableFiles(objectUuid)                     — files in the object's folder
  *
  * Lazy-resolution policy mirrors {@see SharesProvider}: `IManager`,
- * `FolderManagementHandler`, `ObjectEntityMapper` and `IUserSession`
+ * `FileService`, `MagicMapper` and `IUserSession`
  * are pulled from the server container on demand so the ctor stays a
  * plain `(IL10N, LoggerInterface, ?ContainerInterface)` and unit tests
  * inject a mock container.
@@ -132,7 +132,7 @@ class ShareLinkService {
 	 * List shares linked to an OR object.
 	 *
 	 * Walks the object's NC folder (resolved via the H-1 entity-input
-	 * branch of {@see FolderManagementHandler::getObjectFolder()}) and
+	 * branch of {@see FileService::getObjectFolder()}) and
 	 * unions shares across the object's files for every relevant share
 	 * type, deduplicated by share id.
 	 *
@@ -379,7 +379,7 @@ class ShareLinkService {
 	}//end getShareManager()
 
 	/**
-	 * Resolve the object's NC folder via FolderManagementHandler,
+	 * Resolve the object's NC folder via FileService,
 	 * passing the resolved ObjectEntity so the handler uses its
 	 * entity-input branch (the H-1 fix — string input throws "no
 	 * objectEntity or registerId given").
@@ -391,7 +391,7 @@ class ShareLinkService {
 	private function resolveObjectFolder(string $objectUuid): ?Folder {
 		try {
 			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'
+				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
 			);
 			if ($handler === null) {
 				return null;
@@ -485,7 +485,7 @@ class ShareLinkService {
 	private function resolveObjectEntity(string $objectUuid): ?object {
 		try {
 			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
 			);
 			if ($mapper === null) {
 				return null;
