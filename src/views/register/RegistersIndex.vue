@@ -1,5 +1,6 @@
 <script setup>
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
+import { listDateTime } from '../../services/listDateTime.js'
 import {
 	configurationStore,
 	navigationStore,
@@ -55,35 +56,11 @@ import {
 			@select="onSelect"
 			@rowClick="viewRegisterDetails">
 			<!-- Custom form fields for the built-in CnFormDialog -->
-			<template #form-fields="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:modelValue="formData.title || ''"
-						:error="!!errors.title"
-						:helperText="errors.title"
-						@update:modelValue="(v) => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:modelValue="formData.slug || ''"
-						:error="!!errors.slug"
-						:helperText="errors.slug"
-						@update:modelValue="(v) => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:modelValue="formData.description || ''"
-						@update:modelValue="(v) => updateField('description', v)" />
-					<NcSelect
-						:inputLabel="t('openregister', 'Schemas')"
-						:options="schemaSelectOptions"
-						:modelValue="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:closeOnSelect="false"
-						:loading="schemasLoading"
-						@update:modelValue="
-							(vals) => updateField('schemas', vals)
-						" />
-				</div>
+			<template #form-fields="form">
+				<RegisterFormFields
+					v-bind="form"
+					:schemaOptions="schemaSelectOptions"
+					:schemasLoading="schemasLoading" />
 			</template>
 
 			<!-- Custom action items in actions bar -->
@@ -164,40 +141,12 @@ import {
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{
-					row.created
-						? new Date(row.created).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.created).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+				{{ listDateTime(row.created) }}
 			</template>
 
 			<!-- Custom column: updated date -->
 			<template #column-updated="{ row }">
-				{{
-					row.updated
-						? new Date(row.updated).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.updated).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+				{{ listDateTime(row.updated) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
@@ -323,9 +272,6 @@ import {
 	NcActionButton,
 	NcActions,
 	NcAppContent,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
 } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
@@ -337,8 +283,14 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+import {
+	registerFormSchema,
+	registerPayload,
+	schemaOptionsOf,
+} from '../../services/registerForm.js'
 
 /**
  * How the names cache changed in size, in words.
@@ -398,13 +350,11 @@ function failureText(error) {
 export default {
 	name: 'RegistersIndex',
 	components: {
+		RegisterFormFields,
 		NcAppContent,
 		CnIndexPage,
 		NcActions,
 		NcActionButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -443,56 +393,23 @@ export default {
 		 * @spec exclude list-view inline form-schema definition for the register editor (computed)
 		 */
 		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
-
-					// Read-only, so the form leaves them out; they tell the
-					// Created and Updated header filters to filter by date.
-					created: {
-						type: 'string',
-						format: 'date-time',
-						title: t('openregister', 'Created'),
-						readOnly: true,
-					},
-
-					updated: {
-						type: 'string',
-						format: 'date-time',
-						title: t('openregister', 'Updated'),
-						readOnly: true,
-					},
+			return registerFormSchema({
+				// Read-only, so the form leaves them out; they tell the
+				// Created and Updated header filters to filter by date.
+				created: {
+					type: 'string',
+					format: 'date-time',
+					title: t('openregister', 'Created'),
+					readOnly: true,
 				},
 
-				required: ['title', 'slug'],
-			}
+				updated: {
+					type: 'string',
+					format: 'date-time',
+					title: t('openregister', 'Updated'),
+					readOnly: true,
+				},
+			})
 		},
 
 		/**
@@ -582,10 +499,7 @@ export default {
 				configurationStore.refreshConfigurationList(),
 				schemaStore.refreshSchemaList(),
 			])
-			this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-				id: s.id,
-				label: s.title,
-			}))
+			this.schemaSelectOptions = schemaOptionsOf(schemaStore.schemaList)
 		} catch (error) {
 			console.error('Failed to load data:', error)
 		} finally {
@@ -712,33 +626,12 @@ export default {
 		},
 
 		/**
-		 * @param {Array<object|string|number>} schemas
-		 * @spec exclude list-view form-control mapping helper; resolves schema ids to select options
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
 		 * @param {object} formData
 		 * @spec exclude list-view form-submit wiring; delegates to registerStore.saveRegister (registers-management contract)
 		 */
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
+				await registerStore.saveRegister(registerPayload(formData))
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({ error: error.message })
