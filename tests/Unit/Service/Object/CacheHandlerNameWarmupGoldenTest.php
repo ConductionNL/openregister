@@ -140,6 +140,7 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			'warm-up with a table outside magic mapping' => $warm(['findAll' => $objects, 'rows' => $rows, 'magicOff' => true]),
 			'warm-up with an unknown schema' => $warm(['findAll' => [], 'rows' => $rows, 'schemaMissing' => true]),
 			'warm-up with failing registers' => $warm(['findAll' => $objects, 'registers' => new RuntimeException('no registers')]),
+			'warm-up with a register failing halfway' => $warm(['findAll' => [], 'rows' => $rows, 'brokenSecondRegister' => true]),
 			'warm-up with failing organisations' => $warm(['organisations' => new RuntimeException('no organisations')]),
 			'warm-up, distributed store failing' => $warm(['findAll' => $objects, 'noMagic' => true, 'setFails' => 'all']),
 			'warm-up, distributed store failing after the first' => $warm(['findAll' => $objects, 'noMagic' => true, 'setFails' => 'second']),
@@ -423,8 +424,23 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 				return ($this->magic)($schemaId, $schemaSlug);
 			}
 		};
+		$broken = new class extends Register {
+			/**
+			 * A register that cannot list its schemas.
+			 *
+			 * @return array
+			 */
+			public function getSchemas(): array {
+				throw new RuntimeException('no schemas');
+			}
+		};
+		$all = [$register];
+		if (($setup['brokenSecondRegister'] ?? false) === true) {
+			$all[] = $broken;
+		}
+
 		$registers = $this->createMock(RegisterMapperInterface::class);
-		$registers->method('findAll')->willReturnCallback(fn () => self::answer($setup['registers'] ?? [$register]));
+		$registers->method('findAll')->willReturnCallback(fn () => self::answer($setup['registers'] ?? $all));
 
 		$schema = new Schema();
 		$schema->setSlug('person');

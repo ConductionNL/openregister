@@ -644,6 +644,110 @@
             }
         ]
     },
+    "warm-up with a register failing halfway": {
+        "answer": [
+            3,
+            {
+                "hits": 0,
+                "misses": 0,
+                "preloads": 0,
+                "query_hits": 0,
+                "query_misses": 0,
+                "name_hits": 0,
+                "name_misses": 0,
+                "name_warmups": 1,
+                "warmup_breakdown": {
+                    "organisations": 0,
+                    "objects_table": 0,
+                    "magic_tables": 3,
+                    "total_unique": 3
+                },
+                "hit_rate": 0,
+                "query_hit_rate": 0,
+                "name_hit_rate": 0,
+                "cache_size": 0,
+                "query_cache_size": 0,
+                "name_cache_size": 3,
+                "distributed_name_cache_size": 0
+            },
+            {
+                "nameCache": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "Named",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "cccccccc-0000-0000-0000-000000000003": "cccccccc-0000-0000-0000-000000000003"
+                },
+                "nameOrganisations": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "dddddddd-0000-0000-0000-000000000004",
+                    "bbbbbbbb-0000-0000-0000-000000000002": null,
+                    "cccccccc-0000-0000-0000-000000000003": null
+                },
+                "nameSources": {
+                    "aaaaaaaa-0000-0000-0000-000000000001": "1:5",
+                    "bbbbbbbb-0000-0000-0000-000000000002": "1:5",
+                    "cccccccc-0000-0000-0000-000000000003": "1:5"
+                }
+            }
+        ],
+        "calls": [
+            {
+                "magic": 5,
+                "slug": "person"
+            },
+            {
+                "sql": "SELECT \"_uuid\", \"_name\", \"_organisation\" FROM *PREFIX*openregister_table_1_5 WHERE \"_deleted\" IS NULL"
+            },
+            {
+                "log": "warning",
+                "message": "[CacheHandler] Failed to load names from magic tables",
+                "context": {
+                    "error": "no schemas"
+                }
+            },
+            {
+                "set": "name_aaaaaaaa-0000-0000-0000-000000000001",
+                "value": {
+                    "n": "Named",
+                    "o": "dddddddd-0000-0000-0000-000000000004",
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_bbbbbbbb-0000-0000-0000-000000000002",
+                "value": {
+                    "n": "bbbbbbbb-0000-0000-0000-000000000002",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "name_cccccccc-0000-0000-0000-000000000003",
+                "value": {
+                    "n": "cccccccc-0000-0000-0000-000000000003",
+                    "o": null,
+                    "s": "1:5"
+                },
+                "ttl": 86400
+            },
+            {
+                "set": "_metadata_count",
+                "value": 3,
+                "ttl": 86400
+            },
+            {
+                "log": "debug",
+                "message": "[CacheHandler] Name cache warmed up",
+                "context": {
+                    "distributed_cache_stored": 3,
+                    "magic_names_loaded": 3,
+                    "objects_processed": 0,
+                    "organisations_processed": 0,
+                    "total_names_cached": 3
+                }
+            }
+        ]
+    },
     "warm-up with failing organisations": {
         "answer": [
             0,
