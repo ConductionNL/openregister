@@ -374,4 +374,23 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
 		self::assertSame('unverifiable', $this->service->canDelete($this->label(code: 'A1'))->blockers[0]['reason']);
 	}//end testAPropertyWithoutAColumnFailsClosed()
+
+	/**
+	 * A relation's own `$ref` goes first, then the one on its items, then `referenceSchema`.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetOfARelationIsReadInOrder(): void {
+		$read = new \ReflectionMethod(ReferentialIntegrityService::class, 'extractTargetRef');
+		$service = (new \ReflectionClass(ReferentialIntegrityService::class))->newInstanceWithoutConstructor();
+
+		$all = ['$ref' => 'own', 'referenceSchema' => 'key', 'items' => ['$ref' => 'items', 'referenceSchema' => 'itemKey']];
+		self::assertSame('own', $read->invoke($service, $all));
+		self::assertSame('items', $read->invoke($service, array_diff_key($all, ['$ref' => true])));
+
+		$noRef = ['referenceSchema' => 'key', 'items' => ['referenceSchema' => 'itemKey']];
+		self::assertSame('key', $read->invoke($service, $noRef));
+		self::assertSame('itemKey', $read->invoke($service, ['items' => ['referenceSchema' => 'itemKey']]));
+		self::assertNull($read->invoke($service, ['items' => 'string']));
+	}
 }//end class
