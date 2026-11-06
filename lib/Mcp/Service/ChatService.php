@@ -27,6 +27,7 @@
 namespace OCA\OpenRegister\Mcp\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
  * separate concern extracted per SOLID, and removing any would lose a capability.
  */
-class ChatService {
+class ChatService implements ChatServiceInterface {
 	/**
 	 * Number of recent messages to keep in context
 	 *
