@@ -503,6 +503,12 @@ exports[`list page action menus golden configurations 1`] = `
 </div>
 <div class="viewActions">
 <div class="viewModeSwitchContainer">
+<x-nccheckboxradioswitch modelvalue="table" title="See configurations as cards" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="cards">
+<slot-default> Cards</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="table" title="See configurations as a table" buttonvariant="true" name="view_mode_radio" type="radio" buttonvariantgrouped="horizontal" value="table">
+<slot-default> Table</slot-default>
+</x-nccheckboxradioswitch>
 </div>
 <x-ncactions>
 <slot-default>
@@ -537,6 +543,8 @@ exports[`list page action menus golden configurations 1`] = `
 <thead>
 <tr>
 <th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
 </th>
 <th scope="col">t:Title</th>
 <th scope="col">t:Source</th>
@@ -550,6 +558,8 @@ exports[`list page action menus golden configurations 1`] = `
 <tbody>
 <tr class="viewTableRow">
 <td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-1">
+</x-nccheckboxradioswitch>
 </td>
 <td id="configuration-row-title-1" class="tableColumnTitle">
 <div class="titleContent">
@@ -604,6 +614,8 @@ exports[`list page action menus golden configurations 1`] = `
 </tr>
 <tr class="viewTableRow">
 <td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="configuration-row-title-2">
+</x-nccheckboxradioswitch>
 </td>
 <td id="configuration-row-title-2" class="tableColumnTitle">
 <div class="titleContent">
@@ -866,6 +878,8 @@ exports[`list page action menus golden deleted 1`] = `
 <thead>
 <tr>
 <th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
 </th>
 <th scope="col">t:Title</th>
 <th scope="col" class="tableColumnConstrained">t:Register</th>
@@ -880,6 +894,8 @@ exports[`list page action menus golden deleted 1`] = `
 <tbody>
 <tr class="viewTableRow itemRow table-row-selectable">
 <td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="deleted-row-title-1">
+</x-nccheckboxradioswitch>
 </td>
 <td id="deleted-row-title-1" class="tableColumnTitle">
 <div class="titleContent">
@@ -1963,6 +1979,8 @@ exports[`list page action menus golden searchTrails 1`] = `
 <thead>
 <tr>
 <th class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" indeterminate="false" aria-label="t:Select All">
+</x-nccheckboxradioswitch>
 </th>
 <th scope="col" class="searchTermColumn">t:Search Term</th>
 <th scope="col" class="timestampColumn">t:Timestamp</th>
@@ -1977,6 +1995,8 @@ exports[`list page action menus golden searchTrails 1`] = `
 <tbody>
 <tr class="viewTableRow searchTrailRow">
 <td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="search-trail-row-term-1">
+</x-nccheckboxradioswitch>
 </td>
 <td id="search-trail-row-term-1" class="searchTermColumn">
 <span class="searchTermText">a</span>
@@ -2022,6 +2042,8 @@ exports[`list page action menus golden searchTrails 1`] = `
 </tr>
 <tr class="viewTableRow searchTrailRow">
 <td class="tableColumnCheckbox">
+<x-nccheckboxradioswitch modelvalue="false" aria-labelledby="search-trail-row-term-2">
+</x-nccheckboxradioswitch>
 </td>
 <td id="search-trail-row-term-2" class="searchTermColumn">
 <span class="searchTermText">-</span>

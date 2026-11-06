@@ -35,6 +35,9 @@ jest.mock('vue', () => ({
 	NcActions: mockLibrary().NcActions,
 	NcAppContent: mockLibrary().NcAppContent,
 	NcButton: mockLibrary().NcButton,
+	NcCheckboxRadioSwitch: mockLibrary().NcCheckboxRadioSwitch,
+	NcEmptyContent: mockLibrary().NcEmptyContent,
+	NcLoadingIcon: mockLibrary().NcLoadingIcon,
 }))
 jest.mock('@conduction/nextcloud-vue', () => ({
 	__esModule: true,
