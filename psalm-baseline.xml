@@ -10,7 +10,7 @@
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
   </file>
-  <file src="lib/Controller/GraphQLController.php">
+  <file src="lib/Search/Controller/GraphQLController.php">
     <UndefinedClass>
       <code><![CDATA[$this->csrfManager]]></code>
       <code><![CDATA[$this->nonceManager]]></code>
@@ -129,15 +129,6 @@
       <code><![CDATA[$this->cardDavBackend]]></code>
       <code><![CDATA[CardDavBackend]]></code>
       <code><![CDATA[CardDavBackend]]></code>
-    </UndefinedClass>
-  </file>
-  <file src="lib/Service/Edepot/Transport/SftpTransport.php">
-    <UndefinedClass>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[\phpseclib3\Net\SFTP]]></code>
     </UndefinedClass>
   </file>
   <file src="lib/Service/ExportService.php">

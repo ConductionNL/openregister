@@ -9,7 +9,7 @@
  * Storage strategy is `query-time` — share state mutates outside OR
  * (users click the Files share panel), so any link-table snapshot would
  * desync immediately. The provider walks the object's NC folder
- * (resolved lazily via `FolderManagementHandler`) and unions shares
+ * (resolved lazily via `FileService`) and unions shares
  * across files of every relevant share type (user / group / link /
  * federated), then deduplicates by share id.
  *
@@ -19,7 +19,7 @@
  * pivot is what the proposal acceptance criteria assume; see
  * `openspec/changes/integration-shares/proposal.md` for the rationale.
  *
- * Lazy-resolution policy: `IManager`, `FolderManagementHandler`, and
+ * Lazy-resolution policy: `IManager`, `FileService`, and
  * `IUserSession` are pulled from the server container on demand rather
  * than constructor-injected, so the ctor signature
  * `(IDBConnection, IAppManager, IL10N)` stays compatible with the
@@ -106,7 +106,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	/**
 	 * Optional server container override. Defaults to NC's global
 	 * `\OCP\Server` container; tests inject a mock so the IManager /
-	 * FolderManagementHandler / IUserSession lookups are exerciseable
+	 * FileService / IUserSession lookups are exerciseable
 	 * without spinning up the full container.
 	 *
 	 * @var ContainerInterface|null
@@ -186,7 +186,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	 * List shares linked to an OR object.
 	 *
 	 * Flow:
-	 *   1. Resolve `IManager`, `FolderManagementHandler`, and the
+	 *   1. Resolve `IManager`, `FileService`, and the
 	 *      current user's UID through the lazy container.
 	 *   2. Resolve the object's NC folder via the handler.
 	 *   3. Walk the folder's first {@see MAX_NODES} children and call
@@ -436,7 +436,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 		if (str_starts_with($entityId, 'token:') === true) {
 			$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 			if ($service !== null && method_exists($service, 'revoke') === true) {
-				$service->revoke(substr($entityId, strlen('token:')));
+				$service->revoke($objectId, substr($entityId, strlen('token:')));
 				return;
 			}
 
@@ -444,18 +444,13 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return;
 		}
 
-		try {
-			$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
-			if ($shareManager === null) {
-				parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
-				return;
-			}
-
-			$share = $shareManager->getShareById($entityId);
-			$shareManager->deleteShare($share);
-		} catch (Throwable $e) {
+		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		if ($service === null || method_exists($service, 'revokeShare') === false) {
 			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			return;
 		}
+
+		$service->revokeShare($objectId, $entityId);
 	}//end delete()
 
 	/**
@@ -512,10 +507,10 @@ class SharesProvider extends AbstractIntegrationProvider {
 	}//end health()
 
 	/**
-	 * Resolve the object's NC folder via the FolderManagementHandler.
+	 * Resolve the object's NC folder via the FileService.
 	 *
-	 * Looks up the ObjectEntity via ObjectEntityMapper::find() first so
-	 * `FolderManagementHandler::getObjectFolder()` is invoked on its
+	 * Looks up the ObjectEntity via MagicMapper::find() first so
+	 * `FileService::getObjectFolder()` is invoked on its
 	 * entity-input branch (which knows how to resolve the register from
 	 * the entity itself). The string-input branch in the handler routes
 	 * to `createObjectFolderById(string, registerId: null)` which throws
@@ -531,7 +526,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	private function resolveObjectFolder(string $objectId): ?Folder {
 		try {
 			$handler = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler'
+				serviceName: 'OCA\\OpenRegister\\Service\\FileService'
 			);
 			if ($handler === null) {
 				return null;
@@ -565,7 +560,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 	private function resolveObjectEntity(string $objectId): ?object {
 		try {
 			$mapper = $this->lookup(
-				serviceName: 'OCA\\OpenRegister\\Db\\ObjectEntityMapper'
+				serviceName: 'OCA\\OpenRegister\\Db\\MagicMapper'
 			);
 			if ($mapper === null) {
 				return null;
