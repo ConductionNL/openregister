@@ -177,9 +177,13 @@ class ScheduleReleaseReader {
 		}
 
 		try {
-			return WriteCause::asLookup(
-				fn () => $this->objects->find(id: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
-			);
+			return WriteCause::asLookup(fn () => $this->objects->find(
+				id: $uuid,
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false
+			));
 		} catch (Throwable $e) {
 			return null;
 		}
