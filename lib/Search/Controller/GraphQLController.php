@@ -117,17 +117,10 @@ class GraphQLController extends Controller {
 
 		$result = $this->graphQLService->execute($query, $variables, $operationName);
 
-		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
-		$status = 200;
+		$status = $this->statusOf(result: $result);
 		$headers = [];
-		if (isset($result['data']) === false && isset($result['errors']) === true) {
-			$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
-			$status = 400;
-			if ($firstCode === 'RATE_LIMITED') {
-				$status = 429;
-				$retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);
-				$headers['Retry-After'] = (string)$retryAfter;
-			}
+		if ($status === 429) {
+			$headers['Retry-After'] = (string)($result['errors'][0]['extensions']['retryAfter'] ?? 60);
 		}
 
 		$response = new JSONResponse($result, $status);
@@ -137,6 +130,35 @@ class GraphQLController extends Controller {
 
 		return $response;
 	}//end execute()
+
+	/**
+	 * The HTTP status of a GraphQL result.
+	 *
+	 * 200 for data, even with partial errors. 400 for errors without data, or for a
+	 * request the first error refuses. 429 when that error is a rate limit.
+	 *
+	 * @param array<string, mixed> $result The GraphQL result.
+	 *
+	 * @return int The status.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function statusOf(array $result): int {
+		$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
+		if (isset($result['data']) === true && $firstCode !== 'BAD_REQUEST') {
+			return 200;
+		}
+
+		if (isset($result['errors']) === false) {
+			return 200;
+		}
+
+		if ($firstCode === 'RATE_LIMITED') {
+			return 429;
+		}
+
+		return 400;
+	}//end statusOf()
 
 	/**
 	 * Serve the GraphiQL interactive explorer.
