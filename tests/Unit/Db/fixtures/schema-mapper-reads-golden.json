@@ -166,6 +166,142 @@
             "#2 executeQuery()"
         ]
     },
+    "slug page": {
+        "outcome": [
+            "schema 7",
+            "schema 9"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 setFirstResult(4)",
+            "#1 executeQuery()"
+        ]
+    },
+    "slug without tenancy": {
+        "outcome": [
+            "schema 7"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "slug none": {
+        "outcome": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(slug, :p1, NULL)",
+            "#1 where(eq(slug, :p1, NULL))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(10)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all defaults": {
+        "outcome": [
+            "schema 7",
+            "schema 9"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "all without tenancy": {
+        "outcome": [
+            "schema 7"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all filtered and searched": {
+        "outcome": [
+            "schema 7"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(3)",
+            "#1 setFirstResult(6)",
+            "#1 expr.isNull(a)",
+            "#1 andWhere(isNull(a))",
+            "#1 expr.isNotNull(b)",
+            "#1 andWhere(isNotNull(b))",
+            "#1 param :p1 = 1, 2",
+            "#1 expr.eq(c, :p1, NULL)",
+            "#1 andWhere(eq(c, :p1, NULL))",
+            "#1 andWhere((x LIKE :q OR y LIKE :q))",
+            "#1 setParameter(q, %s%, NULL)",
+            "#1 setParameter(r, 2, NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "all conditions without params": {
+        "outcome": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 andWhere((x = 1))",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "all params without conditions": {
+        "outcome": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 executeQuery()"
+        ]
+    },
+    "related": {
+        "outcome": [
+            "schema 7"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 setMaxResults(NULL)",
+            "#1 setFirstResult(NULL)",
+            "#1 executeQuery()"
+        ]
+    },
     "register counts": {
         "outcome": {
             "7": 2,
