@@ -299,7 +299,7 @@ class HiddenDecisionTest extends TestCase {
 	public function testEveryRelationEndpointMasks(): void {
 		$serialisers = [];
 		$unfiltered = [];
-		foreach (glob(__DIR__ . '/../../../../lib/Controller/{,*/}*Controller.php', GLOB_BRACE) as $path) {
+		foreach (glob(__DIR__ . '/../../../../lib/{,*/}Controller/{,*/}*Controller.php', GLOB_BRACE) as $path) {
 			$source = (string)file_get_contents($path);
 			if (str_contains($source, 'EntityRelationMapper') === false
 				|| preg_match('/(\$r|\$relation\w*|\[\'relation\'\])->jsonSerialize\(\)|decisionVisibility->present/', $source) !== 1
