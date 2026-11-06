@@ -217,10 +217,9 @@ class ObjectTypes {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function fieldsOf(RegisterSchema $schema): array {
-		$fields = array_merge(
-			$this->metadataFields->leading(auditTrailType: $this->typeMapper->getAuditTrailType()),
-			$this->propertyFields->forSchema(schema: $schema)
-		);
+		// Union, not merge: a property whose name maps onto a metadata field must not replace it.
+		$fields = $this->metadataFields->leading(auditTrailType: $this->typeMapper->getAuditTrailType())
+			+ $this->propertyFields->forSchema(schema: $schema);
 
 		$this->compositionHandler->applyComposition(schema: $schema, fields: $fields);
 

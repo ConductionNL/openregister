@@ -83,6 +83,7 @@ use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\ObjectDateValues;
 use OCA\OpenRegister\Service\Object\PatchDataMerge;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -3651,6 +3652,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
 
             $this->applyDeleteScope(register: $register, schema: $schema);
+
+            if ($_retentionSweep === true) {
+                return (new RetentionDestruction())->run(fn (): bool => $this->deleteWithinScope(request: $request, permanent: $permanent));
+            }
 
             return $this->deleteWithinScope(request: $request, permanent: $permanent);
         } finally {

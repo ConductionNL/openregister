@@ -445,7 +445,7 @@ class CacheHandlerTenantScopeTest extends TestCase {
 	 * organisation's objects and organisations in one call, keyed by UUID.
 	 *
 	 * This is the exact return shape ObjectsController::collectNamesForResponse,
-	 * ObjectService::collectNamesForResults, ExportService, PerformanceHandler,
+	 * ObjectService::collectNamesForResults, ExportService,
 	 * MetadataHydrationHandler and MagicFacetHandler consume.
 	 *
 	 * @return void
@@ -500,7 +500,6 @@ class CacheHandlerTenantScopeTest extends TestCase {
 	 *   pre-seeded map.
 	 * - Service\Object\SaveObject\MetadataHydrationHandler tests
 	 *   `empty($names[$uuid]) === false` and falls back to the UUID.
-	 * - Service\Object\PerformanceHandler assigns the map to `relatedNames`.
 	 * - Db\MagicMapper\MagicFacetHandler tests `isset($names[$value])` at both of
 	 *   its single-value sites and falls back to a shortened UUID, and its batch
 	 *   site foreach()es over exactly what came back.
