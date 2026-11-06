@@ -35,16 +35,16 @@ use Opis\JsonSchema\Parsers\SchemaParser;
  */
 final class RefLoopGuardParser extends KeywordValidatorParser {
 	/**
-	 * A schema parser with every reference keyword guarded.
+	 * A schema parser with this keyword and the other reference keywords guarded.
 	 *
 	 * @return SchemaParser The parser.
 	 *
 	 * @spec openspec/specs/object-validation/spec.md
 	 */
-	public static function schemaParser(): SchemaParser {
-		$guards = [new self('$ref'), new self('$recursiveRef'), new self('$dynamicRef')];
+	public function schemaParser(): SchemaParser {
+		$guards = [$this, new self(keyword: '$recursiveRef'), new self(keyword: '$dynamicRef')];
 
-		return new SchemaParser([], [], new DefaultVocabulary([], $guards));
+		return new SchemaParser(extraVocabulary: new DefaultVocabulary(keywordValidators: $guards));
 	}//end schemaParser()
 
 	/**
@@ -61,7 +61,7 @@ final class RefLoopGuardParser extends KeywordValidatorParser {
 	 * @spec openspec/specs/object-validation/spec.md
 	 */
 	public function parse(SchemaInfo $info, SchemaParser $parser, object $shared): ?KeywordValidator {
-		if ($this->keywordExists($info) === false) {
+		if ($this->keywordExists(schema: $info) === false) {
 			return null;
 		}
 
