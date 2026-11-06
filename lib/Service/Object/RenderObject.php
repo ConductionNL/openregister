@@ -486,29 +486,31 @@ class RenderObject {
 		}
 
 		// Collect UUIDs from heterogeneous row shapes.
-		$uuidByIndex = [];
-		foreach ($rows as $index => $row) {
-			$uuidByIndex[$index] = self::extractRowUuid(row: $row);
-		}
-
-		$uniqueUuids = array_values(array_unique(array_filter($uuidByIndex, static fn ($uid) => $uid !== null)));
-		$idsByUuid = [];
-		if (empty($uniqueUuids) === false) {
-			$idsByUuid = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
-		}
+		$uuidByIndex = array_map(static fn ($row) => self::extractRowUuid(row: $row), $rows);
+		$idsByUuid = $this->readableFileIdsOf(uuids: $uuidByIndex);
 
 		foreach ($rows as $index => &$row) {
-			$uuid = $uuidByIndex[$index] ?? null;
-			$ids = [];
-			if ($uuid !== null) {
-				$ids = ($idsByUuid[$uuid] ?? []);
-			}
-
-			self::writeFilesToRow(row: $row, ids: $ids);
+			self::writeFilesToRow(row: $row, ids: ($idsByUuid[$uuidByIndex[$index] ?? ''] ?? []));
 		}
 
 		unset($row);
 	}//end attachLightweightFilesToRows()
+
+	/**
+	 * The readable file IDs of objects, per UUID.
+	 *
+	 * @param array<int|string, string|null> $uuids The UUIDs; null entries are skipped.
+	 *
+	 * @return array<string, array<int, int>>
+	 */
+	private function readableFileIdsOf(array $uuids): array {
+		$uniqueUuids = array_values(array_unique(array_filter($uuids, static fn ($uid) => $uid !== null)));
+		if (empty($uniqueUuids) === true) {
+			return [];
+		}
+
+		return $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uniqueUuids));
+	}//end readableFileIdsOf()
 
 	/**
 	 * Resolve translatable properties on a batch of un-rendered list rows.
@@ -856,6 +858,13 @@ class RenderObject {
 	}//end redactArrayRow()
 
 	/**
+	 * The largest file embedded as base64, in bytes.
+	 *
+	 * @var int
+	 */
+	private const MAX_BASE64_BYTES = (10 * 1024 * 1024);
+
+	/**
 	 * The schema configuration keys that copy a property into `@self` metadata.
 	 *
 	 * @var array<string, string> configuration key => `@self` field
@@ -1194,18 +1203,12 @@ class RenderObject {
 	 * @return bool True when full file metadata should be rendered.
 	 */
 	private static function shouldExtendFiles(array|string|null $extend): bool {
-		if ($extend === null || $extend === '' || $extend === []) {
-			return false;
-		}
-
 		if (is_string($extend) === true) {
 			$extend = array_filter(array_map('trim', explode(',', $extend)));
 		}
 
-		// Type-system invariant: by here, $extend is `array` (the null/empty cases
-		// already returned, and string was converted above).
-		return in_array('@self.files', $extend, true) === true
-			|| in_array('_files', $extend, true) === true;
+		$requested = ($extend ?? []);
+		return in_array('@self.files', $requested, true) === true || in_array('_files', $requested, true) === true;
 	}//end shouldExtendFiles()
 
 	/**
@@ -1326,43 +1329,30 @@ class RenderObject {
 			return $this->fileTagsCache[$fileId];
 		}
 
-		// File tag type constant (same as in FileService).
-		$fileTagType = 'files';
+		$tagIds = $this->systemTagMapper->getTagIdsForObjects(objIds: [$fileId], objectType: 'files');
 
-		// Get tag IDs for the file.
-		$tagIds = $this->systemTagMapper->getTagIdsForObjects(
-			objIds: [$fileId],
-			objectType: $fileTagType
-		);
+		// PERF-1: back-fill the request cache.
+		$this->fileTagsCache[$fileId] = $this->fileTagNames(tagIds: ($tagIds[$fileId] ?? []));
+		return $this->fileTagsCache[$fileId];
+	}//end getFileTags()
 
-		// Check if file has any tags.
-		if (isset($tagIds[$fileId]) === false || empty($tagIds[$fileId]) === true) {
-			$this->fileTagsCache[$fileId] = [];
+	/**
+	 * The names of tags, without the internal `object:` tags.
+	 *
+	 * @param array<int, string> $tagIds The tag IDs.
+	 *
+	 * @return list<string> The names.
+	 */
+	private function fileTagNames(array $tagIds): array {
+		if ($tagIds === []) {
 			return [];
 		}
 
-		// Get the actual tag objects by their IDs.
-		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds[$fileId]);
+		$tags = $this->systemTagManager->getTagsByIds(tagIds: $tagIds);
+		$names = array_map(static fn ($tag) => $tag->getName(), $tags);
 
-		// Extract tag names from tag objects and filter out 'object:' tags.
-		$tagNames = array_filter(
-			array_map(
-				static function ($tag) {
-					return $tag->getName();
-				},
-				$tags
-			),
-			static function ($tagName) {
-				// Filter out internal object tags.
-				return !str_starts_with($tagName, 'object:');
-			}
-		);
-
-		// Return array of filtered tag names (PERF-1: back-fill request cache).
-		$result = array_values($tagNames);
-		$this->fileTagsCache[$fileId] = $result;
-		return $result;
-	}//end getFileTags()
+		return array_values(array_filter($names, static fn ($name) => !str_starts_with($name, 'object:')));
+	}//end fileTagNames()
 
 	/**
 	 * Hydrates file properties by replacing file IDs with actual file objects.
@@ -1389,61 +1379,85 @@ class RenderObject {
 	 */
 	private function renderFileProperties(ObjectEntity $entity): ObjectEntity {
 		try {
-			// Get the schema for this object to understand property configurations.
-			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				// If no schema found, return entity unchanged.
-				return $entity;
-			}
-
-			$schemaProperties = $schema->getProperties() ?? [];
-			$objectData = $entity->getObject();
-
-			// First, ensure all file array properties exist in objectData (even if empty).
-			// This is important for properties that have been set to empty arrays.
-			foreach ($schemaProperties as $propertyName => $propertyConfig) {
-				if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
-					$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-
-					// If it's an array property and not set, initialize it as empty array.
-					if (($isArrayProperty === true) && (($objectData[$propertyName] ?? null) === null) === true) {
-						$objectData[$propertyName] = [];
-					}
-				}
-			}
-
-			// Process each property in the object data.
-			foreach ($objectData ?? [] as $propertyName => $propertyValue) {
-				// Skip metadata properties.
-				if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
-					continue;
-				}
-
-				// Check if this property is configured in the schema.
-				if (isset($schemaProperties[$propertyName]) === false) {
-					continue;
-				}
-
-				$propertyConfig = $schemaProperties[$propertyName];
-
-				// Check if this is a file property (direct or array[file]).
-				if ($this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true) {
-					$objectData[$propertyName] = $this->hydrateFileProperty(
-						propertyValue: $propertyValue,
-						propertyConfig: $propertyConfig,
-						_propertyName: $propertyName
-					);
-				}
-			}//end foreach
-
-			// Update the entity with hydrated data.
-			$entity->setObject($objectData);
+			$this->hydrateFilesOf(entity: $entity);
 		} catch (Exception $e) {
 			// Log error but don't break rendering - just return original entity.
 		}//end try
 
 		return $entity;
 	}//end renderFileProperties()
+
+	/**
+	 * Hydrate the file properties of an entity; without a schema the entity stays as it is.
+	 *
+	 * @param ObjectEntity $entity The entity.
+	 *
+	 * @return void
+	 */
+	private function hydrateFilesOf(ObjectEntity $entity): void {
+		$schema = $this->getSchema(id: $entity->getSchema());
+		if ($schema === null) {
+			return;
+		}
+
+		$fileProperties = array_filter(
+			$schema->getProperties() ?? [],
+			fn (array $config): bool => $this->isFilePropertyConfig(propertyConfig: $config)
+		);
+		$objectData = self::withEmptyFileArrays(objectData: $entity->getObject(), fileProperties: $fileProperties);
+		$entity->setObject($this->hydrateFileValues(objectData: $objectData, fileProperties: $fileProperties));
+	}//end hydrateFilesOf()
+
+	/**
+	 * Object data in which every unset file array property is an empty array.
+	 *
+	 * @param array|null                          $objectData     The object data.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return array|null The object data.
+	 */
+	private static function withEmptyFileArrays(?array $objectData, array $fileProperties): ?array {
+		foreach ($fileProperties as $propertyName => $propertyConfig) {
+			if (($propertyConfig['type'] ?? '') === 'array') {
+				$objectData[$propertyName] ??= [];
+			}
+		}
+
+		return $objectData;
+	}//end withEmptyFileArrays()
+
+	/**
+	 * Object data with its file properties hydrated; `@` properties and `id` stay as they are.
+	 *
+	 * @param array|null                          $objectData     The object data.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return array|null The object data.
+	 */
+	private function hydrateFileValues(?array $objectData, array $fileProperties): ?array {
+		foreach ($objectData ?? [] as $propertyName => $propertyValue) {
+			if (self::isFileKey(key: $propertyName, fileProperties: $fileProperties) === true) {
+				$objectData[$propertyName] = $this->hydrateFileProperty(
+					propertyValue: $propertyValue,
+					propertyConfig: $fileProperties[$propertyName]
+				);
+			}
+		}
+
+		return $objectData;
+	}//end hydrateFileValues()
+
+	/**
+	 * Whether an object data key names a file property, and is not metadata.
+	 *
+	 * @param string                              $key            The key.
+	 * @param array<string, array<string, mixed>> $fileProperties The file properties of the schema.
+	 *
+	 * @return bool
+	 */
+	private static function isFileKey(string $key, array $fileProperties): bool {
+		return str_starts_with($key, '@') === false && $key !== 'id' && isset($fileProperties[$key]) === true;
+	}//end isFileKey()
 
 	/**
 	 * Checks if a property configuration indicates a file property.
@@ -1461,20 +1475,8 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function isFilePropertyConfig(array $propertyConfig): bool {
-		// Direct file property.
-		if (($propertyConfig['type'] ?? '') === 'file') {
-			return true;
-		}
-
-		// Array of files.
-		if (($propertyConfig['type'] ?? '') === 'array'
-			&& (($propertyConfig['items'] ?? null) !== null)
-			&& ($propertyConfig['items']['type'] ?? '') === 'file'
-		) {
-			return true;
-		}
-
-		return false;
+		$type = ($propertyConfig['type'] ?? '');
+		return $type === 'file' || ($type === 'array' && ($propertyConfig['items']['type'] ?? '') === 'file');
 	}//end isFilePropertyConfig()
 
 	/**
@@ -1485,14 +1487,11 @@ class RenderObject {
 	 *
 	 * @param mixed $propertyValue The property value (file ID or array of file IDs).
 	 * @param array $propertyConfig The property configuration from schema.
-	 * @param string $_propertyName The property name (for error reporting).
 	 *
 	 * @psalm-param   mixed $propertyValue
 	 * @psalm-param   array<string, mixed> $propertyConfig
-	 * @psalm-param   string $_propertyName
 	 * @phpstan-param mixed $propertyValue
 	 * @phpstan-param array<string, mixed> $propertyConfig
-	 * @phpstan-param string $_propertyName
 	 *
 	 * @return mixed The hydrated property value (file object, base64 string, or array).
 	 *
@@ -1504,66 +1503,74 @@ class RenderObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName) {
-		$isArrayProperty = ($propertyConfig['type'] ?? '') === 'array';
-
-		// Determine if base64 format is requested.
-		// Check both the property config and items config (for arrays).
-		$fileConfig = $propertyConfig;
-		if ($isArrayProperty === true) {
-			$fileConfig = ($propertyConfig['items'] ?? []);
+	private function hydrateFileProperty($propertyValue, array $propertyConfig) {
+		if (($propertyConfig['type'] ?? '') === 'array') {
+			return $this->hydrateFileArray(
+				propertyValue: $propertyValue,
+				base64: $this->embedsBase64(fileConfig: ($propertyConfig['items'] ?? []))
+			);
 		}
 
-		$returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
-
-		// PERF-11: never embed base64 file content on a list/collection (page) render —
-		// reading whole files into memory per file per row blows up peak memory. On a
-		// page render, fall back to the lightweight file reference instead; the full
-		// base64 content is still produced on single-object GETs (size-capped below).
-		if ($returnBase64 === true && $this->pageRenderActive === true) {
-			$returnBase64 = false;
+		if (is_numeric($propertyValue) === false) {
+			// Not a file ID.
+			return $propertyValue;
 		}
 
-		if ($isArrayProperty === true) {
-			// Handle array of files.
-			if (is_array($propertyValue) === false) {
-				return $propertyValue;
-				// Return unchanged if not an array.
-			}
-
-			$hydratedFiles = [];
-			foreach ($propertyValue as $fileId) {
-				if ($returnBase64 === true) {
-					$base64Content = $this->getFileAsBase64(fileId: $fileId);
-					if ($base64Content !== null) {
-						$hydratedFiles[] = $base64Content;
-					}
-
-					continue;
-				}
-
-				$fileObject = $this->getFileObject(fileId: $fileId);
-				if ($fileObject !== null) {
-					$hydratedFiles[] = $fileObject;
-				}
-			}
-
-			return $hydratedFiles;
-		}//end if
-
-		// Handle single file.
-		$isDigitString = is_string($propertyValue) === true && ctype_digit($propertyValue) === true;
-		if (is_numeric($propertyValue) === true || $isDigitString === true) {
-			if ($returnBase64 === true) {
-				return $this->getFileAsBase64(fileId: $propertyValue);
-			}
-
-			return $this->getFileObject(fileId: $propertyValue);
-		}
-
-		return $propertyValue;
-		// Return unchanged if not a file ID.
+		return $this->hydrateFileId(fileId: $propertyValue, base64: $this->embedsBase64(fileConfig: $propertyConfig));
 	}//end hydrateFileProperty()
+
+	/**
+	 * Whether a file property renders as base64 content.
+	 *
+	 * PERF-11: never embed base64 file content on a list/collection (page) render:
+	 * reading whole files into memory per file per row blows up peak memory. On a
+	 * page render the lightweight file reference is used instead; the full base64
+	 * content is still produced on single-object GETs (size-capped).
+	 *
+	 * @param array<string, mixed> $fileConfig The configuration of the file itself.
+	 *
+	 * @return bool
+	 */
+	private function embedsBase64(array $fileConfig): bool {
+		return ($fileConfig['format'] ?? '') === 'base64' && $this->pageRenderActive === false;
+	}//end embedsBase64()
+
+	/**
+	 * The files of an array property; a value that is not an array stays as it is.
+	 *
+	 * @param mixed $propertyValue The file IDs.
+	 * @param bool  $base64        Whether to render base64 content.
+	 *
+	 * @return mixed The readable files.
+	 */
+	private function hydrateFileArray($propertyValue, bool $base64) {
+		if (is_array($propertyValue) === false) {
+			return $propertyValue;
+		}
+
+		$hydrated = array_map(
+			fn ($fileId) => $this->hydrateFileId(fileId: $fileId, base64: $base64),
+			array_values($propertyValue)
+		);
+
+		return array_values(array_filter($hydrated, static fn ($file): bool => $file !== null));
+	}//end hydrateFileArray()
+
+	/**
+	 * One file as base64 content or as a file object.
+	 *
+	 * @param mixed $fileId The file ID.
+	 * @param bool  $base64 Whether to render base64 content.
+	 *
+	 * @return array|string|null The file, or null when it cannot be read.
+	 */
+	private function hydrateFileId($fileId, bool $base64): array|string|null {
+		if ($base64 === true) {
+			return $this->getFileAsBase64(fileId: $fileId);
+		}
+
+		return $this->getFileObject(fileId: $fileId);
+	}//end hydrateFileId()
 
 	/**
 	 * Gets a file's content as a base64 data URI string.
@@ -1576,64 +1583,91 @@ class RenderObject {
 	 */
 	private function getFileAsBase64($fileId): ?string {
 		try {
-			// Convert to int.
-			$fileIdInt = (int)$fileId;
-			if ($fileIdInt <= 0) {
+			$file = $this->readableFile(fileId: (int)$fileId);
+			if ($file === null || $this->exceedsBase64Cap(file: $file, fileId: (int)$fileId) === true) {
 				return null;
 			}
 
-			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileIdInt]]) === []) {
-				return null;
-			}
-
-			// Get the file using FileService.
-			$file = $this->fileService->getFileById($fileIdInt);
-			if ($file === null) {
-				return null;
-			}
-
-			// PERF-11: cap the size of files we are willing to base64-embed even on the
-			// single-object path, so a single oversized attachment cannot exhaust memory.
-			// Oversized files return null (the caller still has the file reference via the
-			// non-base64 path / @self.files).
-			$maxBase64Bytes = (10 * 1024 * 1024);
-			try {
-				$fileSize = (int)$file->getSize();
-				if ($fileSize > $maxBase64Bytes) {
-					$this->logger->warning(
-						message: '[RenderObject] Refusing to base64-embed oversized file',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'fileId' => $fileIdInt,
-							'size' => $fileSize,
-							'cap' => $maxBase64Bytes,
-						]
-					);
-					return null;
-				}
-			} catch (\Throwable $sizeError) {
-				// If size can't be determined, fall through and let getContent() decide.
-				$this->logger->debug(
-					'[RenderObject] Could not determine file size for base64 cap: ' . $sizeError->getMessage()
-				);
-			}//end try
-
-			// Get file content.
-			$fileContent = $file->getContent();
-			if ($fileContent === null || $fileContent === '') {
-				return null;
-			}
-
-			// Get MIME type.
-			$mimeType = $file->getMimeType() ?? 'application/octet-stream';
-
-			// Return as data URI.
-			return 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+			return self::dataUriOf(file: $file);
 		} catch (Exception $e) {
 			return null;
 		}//end try
 	}//end getFileAsBase64()
+
+	/**
+	 * A file's content as a data URI.
+	 *
+	 * @param mixed $file The file.
+	 *
+	 * @return string|null The data URI, or null for a file without content.
+	 */
+	private static function dataUriOf($file): ?string {
+		$fileContent = $file->getContent();
+		if ($fileContent === null || $fileContent === '') {
+			return null;
+		}
+
+		return 'data:' . ($file->getMimeType() ?? 'application/octet-stream') . ';base64,' . base64_encode($fileContent);
+	}//end dataUriOf()
+
+	/**
+	 * The file behind an ID, when the reader may read it.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return mixed The file, or null.
+	 */
+	private function readableFile(int $fileId) {
+		if ($fileId <= 0 || $this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileId]]) === []) {
+			return null;
+		}
+
+		return $this->fileService->getFileById($fileId);
+	}//end readableFile()
+
+	/**
+	 * Whether a file is over the size embedded as base64.
+	 *
+	 * PERF-11: a single oversized attachment must not exhaust memory, also on the
+	 * single-object path. The caller still has the file reference through the
+	 * non-base64 path and @self.files. A size that cannot be read counts as under
+	 * the cap, and getContent() decides.
+	 *
+	 * @param mixed $file   The file.
+	 * @param int   $fileId The file ID.
+	 *
+	 * @return bool
+	 */
+	private function exceedsBase64Cap($file, int $fileId): bool {
+		$fileSize = $this->fileSizeOf(file: $file);
+		if ($fileSize <= self::MAX_BASE64_BYTES) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[RenderObject] Refusing to base64-embed oversized file',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'size' => $fileSize, 'cap' => self::MAX_BASE64_BYTES]
+		);
+		return true;
+	}//end exceedsBase64Cap()
+
+	/**
+	 * The size of a file.
+	 *
+	 * @param mixed $file The file.
+	 *
+	 * @return int The size in bytes, 0 when it cannot be read.
+	 */
+	private function fileSizeOf($file): int {
+		try {
+			return (int)$file->getSize();
+		} catch (\Throwable $sizeError) {
+			$this->logger->debug(
+				'[RenderObject] Could not determine file size for base64 cap: ' . $sizeError->getMessage()
+			);
+			return 0;
+		}
+	}//end fileSizeOf()
 
 	/**
 	 * Hydrates metadata (@self) from file properties after they've been converted to file objects.
@@ -1651,43 +1685,33 @@ class RenderObject {
 	 */
 	private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity {
 		try {
-			// Get the schema for this object to understand property configurations.
 			$schema = $this->getSchema(id: $entity->getSchema());
-			if ($schema === null) {
-				return $entity;
+			$imageField = ($schema?->getConfiguration()['objectImageField'] ?? null);
+			if (empty($imageField) === false) {
+				$value = $this->getValueFromPath(data: $entity->getObject(), path: $imageField);
+				$entity->setImage(self::fileUrlOf(value: $value));
 			}
-
-			$config = $schema->getConfiguration();
-			$objectData = $entity->getObject();
-
-			// Check if objectImageField is configured.
-			if (empty($config['objectImageField']) === false) {
-				$imageField = $config['objectImageField'];
-
-				// Get the value from the configured field.
-				$value = $this->getValueFromPath(data: $objectData, path: $imageField);
-
-				// Check if the value is a file object (has downloadUrl or accessUrl).
-				$hasNoDownloadUrl = ($value['downloadUrl'] ?? null) === null;
-				$hasNoAccessUrl = ($value['accessUrl'] ?? null) === null;
-				if (is_array($value) === false || ($hasNoDownloadUrl === true && $hasNoAccessUrl === true)) {
-					// If the file property is null/empty, set image to null.
-					$entity->setImage(null);
-				}
-
-				if (is_array($value) === true && ($hasNoDownloadUrl === false || $hasNoAccessUrl === false)) {
-					// Set the image URL on the entity itself (not in object data).
-					// This will be serialized to @self.image in jsonSerialize().
-					// Prefer downloadUrl, fallback to accessUrl.
-					$entity->setImage($value['downloadUrl'] ?? $value['accessUrl']);
-				}
-			}//end if
 		} catch (\Exception $e) {
 			// Log error but don't break rendering - just return original entity.
 		}//end try
 
 		return $entity;
 	}//end hydrateMetadataFromFileProperties()
+
+	/**
+	 * The URL of a file object, preferring its download URL.
+	 *
+	 * @param mixed $value The value of the image field.
+	 *
+	 * @return mixed The URL, or null for a value that is not a file object.
+	 */
+	private static function fileUrlOf($value): mixed {
+		if (is_array($value) === false) {
+			return null;
+		}
+
+		return ($value['downloadUrl'] ?? $value['accessUrl'] ?? null);
+	}//end fileUrlOf()
 
 	/**
 	 * Helper method to get a value from a nested path in an array.
@@ -1735,46 +1759,63 @@ class RenderObject {
 	 */
 	private function getFileObject($fileId): ?array {
 		try {
-			// Convert to string/int as needed.
-			$fileIdStr = $fileId;
-			if (is_numeric($fileId) === true) {
-				$fileIdStr = (string)$fileId;
-			}
-
-			if (is_string($fileIdStr) === false && is_int($fileIdStr) === false) {
+			if ($this->mayServeFile(fileId: $fileId) === false) {
 				return null;
 			}
 
-			$cacheKey = (string)$fileIdStr;
-
-			// The batch cache is the same for every caller; the restriction is not.
-			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $cacheKey]]) === []) {
-				return null;
-			}
-
-			// PERF-1: serve from the request-scoped batch cache when present.
-			if (array_key_exists($cacheKey, $this->fileObjectCache) === true) {
-				return $this->fileObjectCache[$cacheKey];
-			}
-
-			// Use FileMapper to get file information directly.
-			$fileRecord = $this->fileMapper->getFile((int)$fileIdStr);
-
-			if (empty($fileRecord) === true) {
-				$this->fileObjectCache[$cacheKey] = null;
-				return null;
-			}
-
-			$formatted = $this->formatFileRecord(fileRecord: $fileRecord);
-
-			// PERF-1: back-fill the request cache so repeated refs reuse it.
-			$this->fileObjectCache[$cacheKey] = $formatted;
-
-			return $formatted;
+			return $this->cachedFileObject(fileId: (string)$fileId);
 		} catch (Exception $e) {
 			return null;
 		}//end try
 	}//end getFileObject()
+
+	/**
+	 * Whether a value is a file ID the reader may read.
+	 *
+	 * The batch cache is the same for every caller; the restriction is not.
+	 *
+	 * @param mixed $fileId The value.
+	 *
+	 * @return bool
+	 */
+	private function mayServeFile(mixed $fileId): bool {
+		if (is_numeric($fileId) === false && is_string($fileId) === false) {
+			return false;
+		}
+
+		return $this->withoutRestrictedFiles(fileRecords: [['fileid' => (string)$fileId]]) !== [];
+	}//end mayServeFile()
+
+	/**
+	 * A file object from the request-scoped batch cache, back-filling it on a miss (PERF-1).
+	 *
+	 * @param string $fileId The file ID.
+	 *
+	 * @return array|null The file object, or null when there is no such file.
+	 */
+	private function cachedFileObject(string $fileId): ?array {
+		if (array_key_exists($fileId, $this->fileObjectCache) === false) {
+			$this->fileObjectCache[$fileId] = $this->loadFileObject(fileId: $fileId);
+		}
+
+		return $this->fileObjectCache[$fileId];
+	}//end cachedFileObject()
+
+	/**
+	 * A file's record, formatted.
+	 *
+	 * @param string $fileId The file ID.
+	 *
+	 * @return array|null The file object, or null when there is no such file.
+	 */
+	private function loadFileObject(string $fileId): ?array {
+		$fileRecord = $this->fileMapper->getFile((int)$fileId);
+		if (empty($fileRecord) === true) {
+			return null;
+		}
+
+		return $this->formatFileRecord(fileRecord: $fileRecord);
+	}//end loadFileObject()
 
 	/**
 	 * The file records without the restricted files the caller is not admitted to.
@@ -1861,15 +1902,28 @@ class RenderObject {
 			'title' => $fileRecord['name'],
 			'accessUrl' => $fileRecord['accessUrl'] ?? null,
 			'downloadUrl' => $fileRecord['downloadUrl'] ?? null,
+			...self::fileProperties(fileRecord: $fileRecord),
+			'labels' => $labels,
+		];
+	}//end fileShape()
+
+	/**
+	 * The content properties of a file record.
+	 *
+	 * @param array<string, mixed> $fileRecord The file record.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function fileProperties(array $fileRecord): array {
+		return [
 			'type' => $fileRecord['mimetype'] ?? 'application/octet-stream',
 			'extension' => pathinfo($fileRecord['name'], PATHINFO_EXTENSION),
 			'size' => (int)$fileRecord['size'],
 			'hash' => $fileRecord['etag'] ?? '',
 			'published' => $fileRecord['published'] ?? null,
 			'modified' => $fileRecord['mtime'] ?? null,
-			'labels' => $labels,
 		];
-	}//end fileShape()
+	}//end fileProperties()
 
 	/**
 	 * Renders an entity with optional extensions and filters.
@@ -4497,6 +4551,20 @@ class RenderObject {
 			return;
 		}
 
+		$uuids = self::pageUuids(entities: $entities);
+		if (empty($uuids) === false) {
+			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
+		}
+	}//end prefetchPageFileIds()
+
+	/**
+	 * The UUIDs of the object entities of a page.
+	 *
+	 * @param array<int|string, mixed> $entities The page.
+	 *
+	 * @return list<string>
+	 */
+	private static function pageUuids(array $entities): array {
 		$uuids = [];
 		foreach ($entities as $entity) {
 			if ($entity instanceof ObjectEntity === true && $entity->getUuid() !== null) {
@@ -4504,10 +4572,8 @@ class RenderObject {
 			}
 		}
 
-		if (empty($uuids) === false) {
-			$this->batchFileIdsCache = $this->readableFileIds(idsByUuid: $this->fileMapper->getFileIdsForObjects($uuids));
-		}
-	}//end prefetchPageFileIds()
+		return $uuids;
+	}//end pageUuids()
 
 	/**
 	 * Render every row of a page with warm caches, then drop the page's request-scoped caches.
@@ -4573,33 +4639,15 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function batchPreloadFileObjects(array $entities): void {
-		// 1) Collect all file ids referenced by file-typed properties across the page.
-		$allFileIds = [];
-		foreach ($entities as $entity) {
-			if ($entity instanceof ObjectEntity === true) {
-				$allFileIds += $this->referencedFileIds(entity: $entity);
-			}
-		}
-
-		if (empty($allFileIds) === true) {
+		$fileIds = $this->pageFileIds(entities: $entities);
+		if (empty($fileIds) === true) {
 			return;
 		}
 
-		$fileIds = array_values($allFileIds);
-
 		try {
-			// 2) Batch-load all files in one query.
-			$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
-
-			// 3) and 4) Batch-load and cache the tags of every requested file.
-			$this->cacheFileTags(fileIds: $fileIds);
-
-			// 5) Populate the request-scoped file-object cache (null for missing files).
-			foreach ($fileIds as $fileId) {
-				$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
-			}
+			$this->preloadFiles(fileIds: $fileIds);
 		} catch (Exception $e) {
-			// A prefetch failure must never break rendering — per-row paths will simply
+			// A prefetch failure must never break rendering: per-row paths will simply
 			// fall back to individual lookups (the pre-PERF-1 behaviour).
 			$this->logger->warning(
 				message: '[RenderObject] Batch file prefetch failed; falling back to per-row lookups',
@@ -4607,6 +4655,41 @@ class RenderObject {
 			);
 		}//end try
 	}//end batchPreloadFileObjects()
+
+	/**
+	 * The file IDs referenced by file properties across a page.
+	 *
+	 * @param array<int|string, mixed> $entities The page.
+	 *
+	 * @return list<int>
+	 */
+	private function pageFileIds(array $entities): array {
+		$fileIds = [];
+		foreach ($entities as $entity) {
+			if ($entity instanceof ObjectEntity === true) {
+				$fileIds += $this->referencedFileIds(entity: $entity);
+			}
+		}
+
+		return array_values($fileIds);
+	}//end pageFileIds()
+
+	/**
+	 * Load files and their tags in one query each, into the request-scoped caches.
+	 *
+	 * @param array<int, int> $fileIds The file IDs.
+	 *
+	 * @return void
+	 */
+	private function preloadFiles(array $fileIds): void {
+		$filesById = $this->fileMapper->getFilesByIds(fileIds: $fileIds);
+		$this->cacheFileTags(fileIds: $fileIds);
+
+		// Null for a missing file.
+		foreach ($fileIds as $fileId) {
+			$this->cacheFileObject(fileIdStr: (string)$fileId, record: ($filesById[(string)$fileId] ?? null));
+		}
+	}//end preloadFiles()
 
 	/**
 	 * The file ids an entity references through its file-typed properties, keyed by id.
@@ -4626,15 +4709,24 @@ class RenderObject {
 
 		$fileIds = [];
 		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& $this->isFilePropertyConfig(propertyConfig: $propertyConfig) === true
-			) {
+			if ($this->isFileConfigValue(config: $propertyConfig) === true) {
 				$fileIds += self::fileIdsOfValue(propertyConfig: $propertyConfig, value: ($objectData[$propertyName] ?? null));
 			}
 		}
 
 		return $fileIds;
 	}//end referencedFileIds()
+
+	/**
+	 * Whether a schema property value is the configuration of a file property.
+	 *
+	 * @param mixed $config The value.
+	 *
+	 * @return bool
+	 */
+	private function isFileConfigValue(mixed $config): bool {
+		return is_array($config) === true && $this->isFilePropertyConfig(propertyConfig: $config) === true;
+	}//end isFileConfigValue()
 
 	/**
 	 * The numeric file ids in one file property's value, keyed by id.
@@ -4659,21 +4751,13 @@ class RenderObject {
 			return [];
 		}
 
-		$candidates = $value;
 		if (is_array($value) === false) {
-			$candidates = [$value];
+			$value = [$value];
 		}
 
-		$fileIds = [];
-		foreach ($candidates as $candidate) {
-			if (is_numeric($candidate) === true
-				|| (is_string($candidate) === true && ctype_digit($candidate) === true)
-			) {
-				$fileIds[(int)$candidate] = (int)$candidate;
-			}
-		}
-
-		return $fileIds;
+		$numeric = array_filter($value, static fn ($candidate): bool => is_numeric($candidate) === true);
+		$fileIds = array_map('intval', $numeric);
+		return array_combine($fileIds, $fileIds);
 	}//end fileIdsOfValue()
 
 	/**
@@ -4703,19 +4787,13 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function visibleTagNames(array $tagIdsPerFile): array {
-		$uniqueTagIds = [];
-		foreach ($tagIdsPerFile as $fileTagIds) {
-			foreach ($fileTagIds as $tagId) {
-				$uniqueTagIds[$tagId] = true;
-			}
-		}
-
+		$uniqueTagIds = array_keys(array_flip(array_merge(...array_values($tagIdsPerFile))));
 		if (empty($uniqueTagIds) === true) {
 			return [];
 		}
 
 		$tagNameMap = [];
-		foreach ($this->systemTagManager->getTagsByIds(tagIds: array_keys($uniqueTagIds)) as $tag) {
+		foreach ($this->systemTagManager->getTagsByIds(tagIds: $uniqueTagIds) as $tag) {
 			$name = $tag->getName();
 			if (str_starts_with($name, 'object:') === false) {
 				$tagNameMap[$tag->getId()] = $name;
