@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
@@ -42,6 +42,8 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class EmailsController extends Controller {
+	use ChecksObjectUpdateRight;
+
 
 	/**
 	 * Email service.
@@ -298,27 +300,6 @@ class EmailsController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
 	}//end destroy()
-
-	/**
-	 * Whether the caller holds the `update` right editing the object requires.
-	 *
-	 * @param ObjectEntity $object The object.
-	 *
-	 * @return bool True when they do; false too when the schema cannot be read.
-	 */
-	private function mayUpdate(ObjectEntity $object): bool {
-		$schema = $this->objectService->getCurrentSchemaEntity();
-		if ($schema === null) {
-			return false;
-		}
-
-		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			objectOwner: $object->getOwner(),
-			object: $object
-		);
-	}//end mayUpdate()
 
 	/**
 	 * Search email links by sender.
