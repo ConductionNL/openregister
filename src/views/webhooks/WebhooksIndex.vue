@@ -2,34 +2,11 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Webhooks') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage webhooks for event-driven integrations',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Webhooks')"
+				:description="t('openregister', 'Manage webhooks for event-driven integrations')"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
@@ -204,24 +181,12 @@
 				</table>
 
 				<!-- Pagination -->
-				<div v-if="totalWebhooks > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalWebhooks"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<OffsetPager
+					:offset="offset"
+					:limit="limit"
+					:total="totalWebhooks"
+					@previous="previousPage"
+					@next="nextPage" />
 			</div>
 		</div>
 
@@ -254,15 +219,17 @@ import {
 } from '@nextcloud/vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import PauseCircleOutline from 'vue-material-design-icons/PauseCircleOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlayOutline from 'vue-material-design-icons/PlayOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
 import { navigationStore, webhookStore } from '../../store/store.js'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing webhooks
@@ -270,6 +237,8 @@ import { navigationStore, webhookStore } from '../../store/store.js'
 export default {
 	name: 'WebhooksIndex',
 	components: {
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
@@ -278,7 +247,6 @@ export default {
 		NcEmptyContent,
 		Webhook,
 		Refresh,
-		FilterVariant,
 		PlayOutline,
 		PauseCircleOutline,
 		Pencil,
@@ -287,6 +255,8 @@ export default {
 		FileDocumentOutline,
 		WebhooksSidebar,
 	},
+
+	mixins: [offsetPaging('totalWebhooks')],
 
 	data() {
 		return {
@@ -354,26 +324,6 @@ export default {
 		 */
 		webhooksList() {
 			return this.filteredWebhooks.slice(this.offset, this.offset + this.limit)
-		},
-
-		/**
-		 * Get current page number
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalWebhooks / this.limit)
 		},
 
 		/**
@@ -472,32 +422,6 @@ export default {
 		 */
 		refreshWebhooks() {
 			this.loadWebhooks()
-		},
-
-		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				// Paging is a computed slice over the store list — no refetch needed.
-				this.offset = Math.max(0, this.offset - this.limit)
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalWebhooks) {
-				// Paging is a computed slice over the store list — no refetch needed.
-				this.offset += this.limit
-			}
 		},
 
 		/**
@@ -654,11 +578,9 @@ export default {
 
 @include view-container-2;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
 
-@include view-header-title-rules;
+@include view-actions-bar;
+@include view-info;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -764,5 +686,4 @@ export default {
 	text-align: right;
 }
 
-@include pagination-rules;
 </style>
