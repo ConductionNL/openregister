@@ -9,7 +9,10 @@ import {
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
@@ -45,8 +48,11 @@ export default {
 		CnIndexPage,
 		CnObjectKanban,
 		CnObjectCalendar,
-		Pencil,
+		CheckCircle,
 		ContentCopy,
+		DatabaseExport,
+		Merge,
+		Pencil,
 		TrashCanOutline,
 		EditableCell,
 	},
@@ -324,6 +330,8 @@ export default {
 	},
 
 	methods: {
+		t,
+
 		/**
 		 * Ask the list for the reader's update right on each row
 		 * (`_extend[]=@self.can`), which decides where a cell is editable.
@@ -452,6 +460,18 @@ export default {
 		},
 
 		/**
+		 * Open the merge dialog with a row as the source.
+		 *
+		 * @param {object} row The object row to merge into another.
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		handleMergeRow(row) {
+			objectStore.setObjectItem(row)
+			navigationStore.setModal('mergeObject')
+		},
+
+		/**
 		 * Open the copy-object dialog for a row.
 		 *
 		 * @param {object} row The object row to copy.
@@ -476,6 +496,20 @@ export default {
 		},
 
 		/**
+		 * Stage the selected rows in the store for a bulk dialog.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec exclude UI plumbing: selection state delegates to the store
+		 * @return {void}
+		 */
+		stageSelection(ids) {
+			const rows = this.normalizedObjects.filter((r) =>
+				ids.includes(String(r.id)),
+			)
+			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+		},
+
+		/**
 		 * Open the mass-delete dialog for the selected ids.
 		 *
 		 * @param {Array} ids The selected row ids.
@@ -483,10 +517,7 @@ export default {
 		 * @return {void}
 		 */
 		handleMassDelete(ids) {
-			const rows = this.normalizedObjects.filter((r) =>
-				ids.includes(String(r.id)),
-			)
-			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+			this.stageSelection(ids)
 			navigationStore.setDialog('massDeleteObject')
 		},
 
@@ -498,12 +529,32 @@ export default {
 		 * @return {void}
 		 */
 		handleMassCopy(payload) {
-			const ids = payload?.ids || []
-			const rows = this.normalizedObjects.filter((r) =>
-				ids.includes(String(r.id)),
-			)
-			objectStore.setSelectedObjects(rows.map((r) => r['@self']?.id ?? r.id))
+			this.stageSelection(payload?.ids || [])
 			navigationStore.setDialog('massCopyObjects')
+		},
+
+		/**
+		 * Open the mass-validate dialog for the selected ids.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		handleMassValidate(ids) {
+			this.stageSelection(ids)
+			navigationStore.setDialog('massValidateObjects')
+		},
+
+		/**
+		 * Open the migration dialog for the selected ids.
+		 *
+		 * @param {Array} ids The selected row ids.
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 * @return {void}
+		 */
+		handleMassMigrate(ids) {
+			this.stageSelection(ids)
+			navigationStore.setModal('migrationObject')
 		},
 
 		/**
@@ -712,25 +763,51 @@ export default {
 					@open="handleRowClick"
 					@saved="handleCellSaved" />
 			</template>
+			<template #mass-actions="{ count, selectedIds }">
+				<NcActionButton
+					:disabled="count === 0"
+					closeAfterClick
+					@click="handleMassMigrate(selectedIds)">
+					<template #icon>
+						<DatabaseExport :size="20" />
+					</template>
+					{{ t('openregister', 'Migrate') }}
+				</NcActionButton>
+				<NcActionButton
+					:disabled="count === 0"
+					closeAfterClick
+					@click="handleMassValidate(selectedIds)">
+					<template #icon>
+						<CheckCircle :size="20" />
+					</template>
+					{{ t('openregister', 'Validate') }}
+				</NcActionButton>
+			</template>
 			<template #row-actions="{ row }">
 				<NcActions>
 					<NcActionButton closeAfterClick @click="handleRowClick(row)">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
-						Edit
+						{{ t('openregister', 'Edit') }}
+					</NcActionButton>
+					<NcActionButton closeAfterClick @click="handleMergeRow(row)">
+						<template #icon>
+							<Merge :size="20" />
+						</template>
+						{{ t('openregister', 'Merge') }}
 					</NcActionButton>
 					<NcActionButton closeAfterClick @click="handleCopyRow(row)">
 						<template #icon>
 							<ContentCopy :size="20" />
 						</template>
-						Copy
+						{{ t('openregister', 'Copy') }}
 					</NcActionButton>
 					<NcActionButton closeAfterClick @click="handleDeleteRow(row)">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
-						Delete
+						{{ t('openregister', 'Delete') }}
 					</NcActionButton>
 				</NcActions>
 			</template>
