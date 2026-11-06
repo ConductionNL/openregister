@@ -29,7 +29,6 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -104,17 +103,6 @@ class SchemaDeletionService {
 	public const TRIGGER_BULK_REGISTER_DELETE = 'bulk_register_delete';
 
 	/**
-	 * Objects snapshotted + audited per batch.
-	 *
-	 * ADR-009 (bounded per-object work): the object set is read and audited in
-	 * fixed-size chunks so a schema with many objects never materialises its
-	 * entire object set in memory at once.
-	 *
-	 * @var int
-	 */
-	private const CHUNK_SIZE = 500;
-
-	/**
 	 * SchemaDeletionService constructor.
 	 *
 	 * @param IDBConnection $db Database connection, for phase-1 transaction control.
@@ -174,6 +162,7 @@ class SchemaDeletionService {
 		$schema = $this->schemaMapper->find(id: $schemaId);
 
 		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
+		$this->tableRows()->assertNoneFrozen(register: $register, schema: $schema);
 
 		$result = $this->deleteObjectsOfPair(
 			register: $register,
@@ -268,6 +257,7 @@ class SchemaDeletionService {
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
+			$this->tableRows()->assertNoneFrozen(register: $register, schema: $schema);
 		}
 
 		$deletedCount = 0;
@@ -601,6 +591,15 @@ class SchemaDeletionService {
 	}//end rejectIfArchivalImmutable()
 
 	/**
+	 * The rows of the magic tables this service empties.
+	 *
+	 * @return WholeTableRows
+	 */
+	private function tableRows(): WholeTableRows {
+		return new WholeTableRows(mapper: $this->magicMapper);
+	}//end tableRows()
+
+	/**
 	 * Audit and delete every object of one register/schema magic table.
 	 *
 	 * @param Register $register The register context.
@@ -650,12 +649,10 @@ class SchemaDeletionService {
 	/**
 	 * Write one hash-chained audit entry per object, capturing its full pre-delete state.
 	 *
-	 * Reads the objects in chunks (ADR-009) and resolves the schema-derived audit
-	 * context once for the whole operation rather than once per object. RBAC and
-	 * multitenancy filters are switched off for the read: the caller is already gated
-	 * on `checkSchemaManagePermission()`, and the delete that follows removes EVERY
-	 * row, so an RBAC-narrowed read would audit fewer objects than it destroys.
-	 * Soft-deleted rows are included for the same reason.
+	 * Resolves the schema-derived audit context once for the whole operation rather
+	 * than once per object. Written through AuditTrailMapper so ADR-003's SHA-256
+	 * hash-chaining is applied at insert time, and inside the caller's transaction so
+	 * a rollback discards it.
 	 *
 	 * @param Register $register The register context.
 	 * @param Schema $schema The schema context.
@@ -683,74 +680,20 @@ class SchemaDeletionService {
 			],
 		];
 
-		$filters = [
-			// See the docblock: audit exactly the set that is about to be deleted.
-			'_includeDeleted' => true,
-			'_rbac' => false,
-			'_multitenancy' => false,
-		];
-
 		$uuids = [];
-		$offset = 0;
-
-		while (true) {
-			$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $schema,
-				limit: self::CHUNK_SIZE,
-				offset: $offset,
-				filters: $filters
+		foreach ($this->tableRows()->all(register: $register, schema: $schema) as $object) {
+			$this->auditTrailMapper->createAuditTrailEntry(
+				object: $object,
+				action: self::ACTION_CASCADE_DELETE,
+				context: (['snapshot' => $object->jsonSerialize()] + $baseContext)
 			);
-
-			if (empty($objects) === true) {
-				break;
+			if ($object->getUuid() !== null) {
+				$uuids[] = (string)$object->getUuid();
 			}
-
-			foreach ($objects as $object) {
-				$uuid = $this->auditObject(object: $object, baseContext: $baseContext);
-				if ($uuid !== null) {
-					$uuids[] = $uuid;
-				}
-			}
-
-			if (count($objects) < self::CHUNK_SIZE) {
-				break;
-			}
-
-			$offset += self::CHUNK_SIZE;
-		}//end while
+		}
 
 		return $uuids;
 	}//end auditObjectsBeforeDeletion()
-
-	/**
-	 * Write a single object's pre-deletion snapshot to the audit trail.
-	 *
-	 * Written through AuditTrailMapper so ADR-003's SHA-256 hash-chaining is applied
-	 * at insert time, and inside the caller's transaction so a rollback discards it.
-	 *
-	 * @param ObjectEntity $object The object about to be deleted.
-	 * @param array $baseContext Operation-wide audit context.
-	 *
-	 * @return string|null The object's UUID, or null when it has none.
-	 */
-	private function auditObject(ObjectEntity $object, array $baseContext): ?string {
-		$context = $baseContext;
-		$context['snapshot'] = $object->jsonSerialize();
-
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $object,
-			action: self::ACTION_CASCADE_DELETE,
-			context: $context
-		);
-
-		$uuid = $object->getUuid();
-		if ($uuid === null) {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end auditObject()
 
 	/**
 	 * Resolve every magic table that belongs to this schema.
