@@ -1874,7 +1874,11 @@ class ValidateObject implements ValidateObjectInterface {
 			return in_array(null, $propertySchema->enum, true) === true;
 		}
 
-		return ($value === [] ? $this->constrainsItems(propertySchema: $propertySchema) : $value !== '');
+		if ($value === []) {
+			return $this->constrainsItems(propertySchema: $propertySchema);
+		}
+
+		return $value !== '';
 	}//end isSignificantForValidation()
 
 	/**
@@ -1911,10 +1915,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 */
 	private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array {
 		// Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-		$schemaObject = $this->transformSchemaForValidation(
-			schemaObject: $schemaObject,
-			currentSchemaSlug: ($schema instanceof Schema ? $schema->getSlug() : '')
-		);
+		$schemaObject = $this->transformSchemaForValidation(schemaObject: $schemaObject, currentSchemaSlug: ($schema?->getSlug() ?? ''));
 
 		// Collect computed property names BEFORE cleaning: the cleaning step
 		// strips the per-property `computed` marker.
@@ -2178,7 +2179,11 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		$items = ($schema->items ?? null);
-		$lists = [(is_object($items) === true ? [$items] : $items), ($schema->oneOf ?? null), ($schema->anyOf ?? null), ($schema->allOf ?? null)];
+		if (is_object($items) === true) {
+			$items = [$items];
+		}
+
+		$lists = [$items, ($schema->oneOf ?? null), ($schema->anyOf ?? null), ($schema->allOf ?? null)];
 
 		return array_merge($children, ...array_filter($lists, 'is_array'));
 	}//end childSchemas()
@@ -2218,7 +2223,11 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return void
 	 */
 	private static function addNullBranch(object $schema): void {
-		$keyword = (is_array($schema->oneOf ?? null) === true ? 'oneOf' : 'anyOf');
+		$keyword = 'anyOf';
+		if (is_array($schema->oneOf ?? null) === true) {
+			$keyword = 'oneOf';
+		}
+
 		if (is_array($schema->{$keyword} ?? null) === false) {
 			return;
 		}

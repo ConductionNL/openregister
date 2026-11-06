@@ -80,7 +80,11 @@ final class ExtendedFieldCheck {
 			return get_object_vars($propertySchema);
 		}
 
-		return (is_array($propertySchema) === true ? $propertySchema : []);
+		if (is_array($propertySchema) === true) {
+			return $propertySchema;
+		}
+
+		return [];
 	}//end declaration()
 
 	/**
