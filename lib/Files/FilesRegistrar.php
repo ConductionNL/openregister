@@ -28,6 +28,13 @@ use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\UploadService;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -42,8 +49,12 @@ final class FilesRegistrar
      * conversion API, so whichever office server registered a provider does the work.
      */
     public const BINDINGS = [
-        FileMapperInterface::class        => FileMapper::class,
-        NcOfficeConverterInterface::class => ConversionManagerConverter::class,
+        AccessLinkReaderInterface::class      => AccessLinkReader::class,
+        FileMapperInterface::class            => FileMapper::class,
+        NcOfficeConverterInterface::class     => ConversionManagerConverter::class,
+        NoteServiceInterface::class           => NoteService::class,
+        TextExtractionServiceInterface::class => TextExtractionService::class,
+        UploadServiceInterface::class         => UploadService::class,
     ];
 
     /**
@@ -69,9 +80,9 @@ final class FilesRegistrar
      *
      * @param ContainerInterface $container The container.
      *
-     * @return NoteService
+     * @return NoteServiceInterface
      */
-    private static function buildNoteService(ContainerInterface $container): NoteService
+    private static function buildNoteService(ContainerInterface $container): NoteServiceInterface
     {
         return new NoteService(
             commentsManager: $container->get('OCP\Comments\ICommentsManager'),

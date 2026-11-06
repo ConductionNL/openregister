@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
-use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
@@ -258,9 +258,9 @@ class ImportHandler {
 	/**
 	 * Optional note service for seeding related comments.
 	 *
-	 * @var NoteService|null
+	 * @var NoteServiceInterface|null
 	 */
-	private ?NoteService $noteService = null;
+	private ?NoteServiceInterface $noteService = null;
 
 	/**
 	 * Decides the slug of a seed object so it cannot take a slug another live
@@ -446,11 +446,11 @@ class ImportHandler {
 	/**
 	 * Inject the NoteService used by seed-related-items to attach comments.
 	 *
-	 * @param NoteService|null $noteService Optional note service.
+	 * @param NoteServiceInterface|null $noteService Optional note service.
 	 *
 	 * @return void
 	 */
-	public function setNoteService(?NoteService $noteService): void {
+	public function setNoteService(?NoteServiceInterface $noteService): void {
 		$this->noteService = $noteService;
 	}//end setNoteService()
 

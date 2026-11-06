@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
@@ -43,7 +44,7 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
-class NoteService {
+class NoteService implements NoteServiceInterface {
 
 	/**
 	 * Comments manager for note operations.
