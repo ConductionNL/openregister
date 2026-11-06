@@ -103,6 +103,7 @@ import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
+import { relationTab } from './relationTab.js'
 
 /**
  * Fallback counter for the timeline row key below.
@@ -173,28 +174,11 @@ export default {
 		TableLargePlus,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			relations: [],
 			selectedTypes: ['email', 'event', 'contact', 'deck'],
 			typeLabels: {
@@ -233,34 +217,16 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId
-			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchRelations()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * Fetch the unified relations payload (view=timeline) for the current object.
 		 *
 		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
 		 * @return {Promise<void>}
 		 */
-		async fetchRelations() {
+		async load() {
 			this.loading = true
-			this.error = false
-			this.errorMessage = ''
+			this.clearFailure()
 
 			const url = generateUrl(
 				'/apps/openregister/api/objects/{register}/{schema}/{id}/relations',
@@ -277,8 +243,7 @@ export default {
 				})
 				this.relations = this.normaliseResponse(response.data)
 			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
+				this.showFailure(err)
 			} finally {
 				this.loading = false
 			}
@@ -363,27 +328,6 @@ export default {
 				this.selectedTypes = this.selectedTypes.filter((t) => t !== type)
 			} else {
 				this.selectedTypes = [...this.selectedTypes, type]
-			}
-		},
-
-		/**
-		 * @param {string} value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch {
-				return value
 			}
 		},
 	},
