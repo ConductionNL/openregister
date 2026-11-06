@@ -343,7 +343,7 @@ class ShareLinkServiceTest extends TestCase {
 		$this->addToAssertionCount(1);
 	}//end testRevokeShareHappyPath()
 
-	public function testRevokeShareOutsideFolderThrows403(): void {
+	public function testRevokeShareOutsideFolderIsNotFound(): void {
 		$folderNode = $this->buildNode(10, 'doc.txt');
 		$folder = $this->buildFolder([$folderNode]);
 		// Share backed by a node id (999) NOT present in the folder.
@@ -366,9 +366,56 @@ class ShareLinkServiceTest extends TestCase {
 		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionCode(403);
+		$this->expectExceptionCode(404);
 		$service->revokeShare('uuid-1', 's7');
-	}//end testRevokeShareOutsideFolderThrows403()
+	}//end testRevokeShareOutsideFolderIsNotFound()
+
+	public function testRevokeShareByTheOwnerOfASharedNodeIsAllowed(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$folder = $this->buildFolder([$node]);
+		$share = $this->buildShare('s9', IShare::TYPE_USER, 'dave', 1, 'bob', $node);
+		$share->method('getShareOwner')->willReturn('alice');
+
+		$manager = $this->createMock(IManager::class);
+		$manager->method('getShareById')->with('s9')->willReturn($share);
+		$manager->expects($this->once())->method('deleteShare')->with($share);
+
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('alice'),
+				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
+			]
+		);
+
+		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+		$service->revokeShare('uuid-1', 's9');
+	}//end testRevokeShareByTheOwnerOfASharedNodeIsAllowed()
+
+	public function testRevokeShareOfSomebodyElseIsNotFound(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$folder = $this->buildFolder([$node]);
+		$share = $this->buildShare('s8', IShare::TYPE_USER, 'bob', 1, 'alice', $node);
+
+		$manager = $this->createMock(IManager::class);
+		$manager->method('getShareById')->with('s8')->willReturn($share);
+		$manager->expects($this->never())->method('deleteShare');
+
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('carol'),
+				'OCA\\OpenRegister\\Service\\FileService' => $this->buildFolderHandler($folder),
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $this->buildObjectMapper(),
+			]
+		);
+
+		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+
+		$this->expectExceptionCode(404);
+		$service->revokeShare('uuid-1', 's8');
+	}//end testRevokeShareOfSomebodyElseIsNotFound()
 
 	/**
 	 * A service over a folder holding file 10 and file 11, with file 11 restricted.

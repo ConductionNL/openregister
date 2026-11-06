@@ -436,7 +436,7 @@ class SharesProvider extends AbstractIntegrationProvider {
 		if (str_starts_with($entityId, 'token:') === true) {
 			$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
 			if ($service !== null && method_exists($service, 'revoke') === true) {
-				$service->revoke(substr($entityId, strlen('token:')));
+				$service->revoke($objectId, substr($entityId, strlen('token:')));
 				return;
 			}
 
@@ -444,18 +444,13 @@ class SharesProvider extends AbstractIntegrationProvider {
 			return;
 		}
 
-		try {
-			$shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
-			if ($shareManager === null) {
-				parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
-				return;
-			}
-
-			$share = $shareManager->getShareById($entityId);
-			$shareManager->deleteShare($share);
-		} catch (Throwable $e) {
+		$service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\ShareLinkService');
+		if ($service === null || method_exists($service, 'revokeShare') === false) {
 			parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+			return;
 		}
+
+		$service->revokeShare($objectId, $entityId);
 	}//end delete()
 
 	/**
