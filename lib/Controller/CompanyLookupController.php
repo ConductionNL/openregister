@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\AppFramework\Controller;
@@ -126,7 +127,8 @@ class CompanyLookupController extends Controller {
 			}
 		}
 
-		$result = $this->kvkProvider->searchCompanies($query, $criteria, $limit, $page);
+		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: $criteria);
+		$result = $this->kvkProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'kvk');
 	}//end kvkSearch()
@@ -158,7 +160,8 @@ class CompanyLookupController extends Controller {
 		$limit = (int)$this->request->getParam('limit', 30);
 		$page = (int)$this->request->getParam('page', 1);
 
-		$result = $this->openCorporatesProvider->searchCompanies($query, $jurisdiction, $limit, $page);
+		$search = (new CompanySearch(query: $query, limit: $limit, page: $page))->narrowedBy(criteria: ['jurisdiction' => $jurisdiction]);
+		$result = $this->openCorporatesProvider->searchCompanies($search);
 
 		return $this->relay(result: $result, sourceLabel: 'opencorporates');
 	}//end openCorporatesSearch()
