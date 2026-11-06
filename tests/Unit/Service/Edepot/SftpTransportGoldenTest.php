@@ -174,6 +174,25 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end testKeyLoginAndPort()
 
 	/**
+	 * A key alone is enough; neither key nor password is refused before connecting.
+	 *
+	 * @return void
+	 */
+	public function testCredentialsRequired(): void {
+		$transport = $this->transport();
+
+		$this->assertTrue($transport->send($this->sip, ['host' => 'h', 'username' => 'u', 'keyPath' => $this->key])->isSuccess());
+		$this->assertSame(['login', 'u', 'loaded:KEY'], SFTP::$calls[1]);
+
+		SFTP::$calls = [];
+		$this->assertSame(
+			'SFTP requires either password or keyPath for authentication',
+			$transport->send($this->sip, ['host' => 'h', 'username' => 'u'])->getErrorMessage()
+		);
+		$this->assertSame([], SFTP::$calls);
+	}//end testCredentialsRequired()
+
+	/**
 	 * A refused login stops before the upload.
 	 *
 	 * @return void
