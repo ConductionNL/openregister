@@ -45,6 +45,8 @@ use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
+use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
@@ -217,13 +219,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
-
-	/**
-	 * Schema-and-property pairs already warned about as named like a metadata column.
-	 *
-	 * @var array<string, true>
-	 */
-	private static array $warnedMetadataNamedProperties = [];
 
 	/**
 	 * The metadata fields every object write names, in column order.
@@ -597,14 +592,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicPgTrgmProbe $pgTrgmProbe = null;
 
 	/**
-	 * Undeclared properties already reported as discarded, by schema id then property name.
+	 * Remembers the undeclared properties reported as discarded.
 	 *
 	 * MagicMapper is one shared service per process, so this lives for one
-	 * request (or one occ/cron run): see reportDroppedProperties().
+	 * request (or one occ/cron run).
 	 *
-	 * @var array<string, array<string, true>>
+	 * @var MagicDroppedProperties|null
 	 */
-	private array $reportedDrops = [];
+	private ?MagicDroppedProperties $droppedProperties = null;
 
 	/**
 	 * Constructor for MagicMapper service.
@@ -3400,9 +3395,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$metadata['updated'] ??= $now;
 
 		$preparedData = $this->prepareMetadataColumns(metadata: $metadata, schema: $schema);
-		$preparedData = array_replace($preparedData, $this->preparePropertyColumns(data: $data, schema: $schema));
+		$propertyColumns = new MagicPropertyColumns(container: $this->container, logger: $this->logger);
+		$preparedData = array_replace($preparedData, $propertyColumns->forObject(data: $data, schema: $schema));
 
-		$this->reportDroppedProperties(data: $data, schemaProperties: $schema->getProperties(), schema: $schema);
+		$this->droppedProperties ??= new MagicDroppedProperties(logger: $this->logger);
+		$this->droppedProperties->report(data: $data, schema: $schema);
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
@@ -3548,216 +3545,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end jsonColumnValue()
 
 	/**
-	 * The property columns written for one object, keyed by sanitised column name.
-	 *
-	 * A property absent from the data is skipped, so its column is left unchanged; a
-	 * property present with a null value is written as null.
-	 *
-	 * A property whose column is a metadata column (`_owner`, `_authorization`, `_status`,
-	 * ...) never writes it: the metadata columns are stamped from server-side values and
-	 * the client's value must not replace them. The read side treats such a column as
-	 * metadata too.
-	 *
-	 * @param array  $data   The object's property values, without `@self`
-	 * @param Schema $schema The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function preparePropertyColumns(array $data, Schema $schema): array {
-		$schemaProperties = $schema->getProperties();
-		if (is_array($schemaProperties) === false) {
-			return [];
-		}
-
-		$columns     = [];
-		$columnRoles = new MagicMetadataColumn();
-		foreach (array_keys($schemaProperties) as $propertyName) {
-			if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
-				$this->warnMetadataNamedProperty(schema: $schema, propertyName: $propertyName);
-				continue;
-			}
-
-			if (array_key_exists($propertyName, $data) === true) {
-				$value = $this->preparePropertyValue(
-					property: ['name' => $propertyName, 'config' => ($schemaProperties[$propertyName] ?? [])],
-					value: $data[$propertyName]
-				);
-				$columns[$this->sanitizeColumnName(name: $propertyName)] = $value;
-			}
-		}
-
-		return $columns;
-	}//end preparePropertyColumns()
-
-	/**
-	 * Warn, once per schema and property per request, that a property named like a
-	 * metadata column is not written.
-	 *
-	 * @param Schema $schema       The schema
-	 * @param string $propertyName The property
-	 *
-	 * @return void
-	 */
-	private function warnMetadataNamedProperty(Schema $schema, string $propertyName): void {
-		$warnedKey = $schema->getId().':'.$propertyName;
-		if (isset(self::$warnedMetadataNamedProperties[$warnedKey]) === true) {
-			return;
-		}
-
-		self::$warnedMetadataNamedProperties[$warnedKey] = true;
-		$this->logger->warning(
-			message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'propertyName' => $propertyName,
-				'schema' => $schema->getId(),
-			]
-		);
-	}//end warnMetadataNamedProperty()
-
-	/**
-	 * A property value as its column stores it.
-	 *
-	 * Booleans become 0/1, because some drivers turn PHP's false into an empty string.
-	 * Arrays and objects become JSON. An empty string becomes NULL at the final
-	 * insert/update stage, not here.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function preparePropertyValue(array $property, mixed $value): mixed {
-		$value = $this->dropUnprocessedUploads(property: $property, value: $value);
-		$value = $this->normalisePropertyDate(value: $value, format: ($property['config']['format'] ?? null));
-
-		if (is_bool($value) === true) {
-			$value = (int)$value;
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
-			$value = json_encode($value);
-		}
-
-		return $value;
-	}//end preparePropertyValue()
-
-	/**
-	 * A file property value without the base64 data URLs FilePropertyHandler did not process.
-	 *
-	 * Such a value would fail PostgreSQL with "invalid input syntax for type json". A file
-	 * property holding one becomes null; an array of files loses those items, and becomes
-	 * null when none is left. Each is logged as a warning.
-	 *
-	 * @param array{name: int|string, config: mixed} $property The property's name and schema definition
-	 * @param mixed                                  $value    The value
-	 *
-	 * @return mixed
-	 */
-	private function dropUnprocessedUploads(array $property, mixed $value): mixed {
-		$propertyConfig = $property['config'];
-		$propertyType   = $propertyConfig['type'] ?? 'string';
-
-		if ($propertyType === 'file' && is_string($value) === true && strpos($value, 'data:') === 0) {
-			$msg = '[MagicMapper] File property contains unprocessed';
-			$msg .= ' base64 data URL - setting to null to prevent DB error';
-			$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $property['name'], 'valueLength' => strlen($value)]);
-			return null;
-		}
-
-		$isArrayOfFiles = $propertyType === 'array' && (($propertyConfig['items']['type'] ?? '') === 'file');
-		if ($isArrayOfFiles === false || is_array($value) === false) {
-			return $value;
-		}
-
-		return $this->withoutUnprocessedUploads(propertyName: $property['name'], items: $value);
-	}//end dropUnprocessedUploads()
-
-	/**
-	 * An array of files without its unprocessed base64 data URLs, or null when none is left.
-	 *
-	 * @param int|string $propertyName The property
-	 * @param array      $items        The files
-	 *
-	 * @return array|null
-	 */
-	private function withoutUnprocessedUploads(int|string $propertyName, array $items): ?array {
-		$cleanedArray = [];
-		foreach ($items as $item) {
-			if (is_string($item) === true && strpos($item, 'data:') === 0) {
-				$msg = '[MagicMapper] Array file item contains';
-				$msg .= ' unprocessed base64 data URL - skipping item';
-				$this->logUnprocessedUpload(message: $msg, context: ['propertyName' => $propertyName, 'valueLength' => strlen($item)]);
-				continue;
-			}
-
-			$cleanedArray[] = $item;
-		}
-
-		if (empty($cleanedArray) === true) {
-			return null;
-		}
-
-		return $cleanedArray;
-	}//end withoutUnprocessedUploads()
-
-	/**
-	 * Log an unprocessed base64 upload that is not written.
-	 *
-	 * @param string                                                 $message The message
-	 * @param array{propertyName: int|string, valueLength: int} $context The property and the data URL's length
-	 *
-	 * @return void
-	 */
-	private function logUnprocessedUpload(string $message, array $context): void {
-		$this->logger->warning(
-			message: $message,
-			context: ['file' => __FILE__, 'line' => __LINE__] + $context
-		);
-	}//end logUnprocessedUpload()
-
-	/**
-	 * A `date` or `date-time` property value as 'Y-m-d H:i:s' for a DATETIME column.
-	 *
-	 * The two differ. A date-time names an instant, so a non-UTC offset is applied before
-	 * storing (WOO-567). A date names a calendar day and has no instant, so converting it
-	 * through a timezone could move it: `2026-10-20T00:00:00+02:00` would become 2026-10-19
-	 * in UTC. A due date must survive being submitted from a client that sends an offset.
-	 *
-	 * @param mixed $value  The value
-	 * @param mixed $format The property's format
-	 *
-	 * @return mixed
-	 */
-	private function normalisePropertyDate(mixed $value, mixed $format): mixed {
-		if (in_array($format, ['date-time', 'date'], true) === false || $value === null) {
-			return $value;
-		}
-
-		$isCalendarDate = ($format === 'date');
-		if ($value instanceof \DateTimeInterface) {
-			$moment = DateTimeImmutable::createFromInterface($value);
-			if ($isCalendarDate === false) {
-				$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
-			}
-
-			return $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === false) {
-			return $value;
-		}
-
-		$normalizer = $this->container->get(DateTimeNormalizer::class);
-		if ($isCalendarDate === true) {
-			return $normalizer->formatDateForDatabase($value);
-		}
-
-		return $normalizer->formatForDatabase($value);
-	}//end normalisePropertyDate()
-
-	/**
 	 * Replace every `x-openregister-encrypted` property value with its envelope.
 	 *
 	 * SaveObject encrypts on the single-object path, but the table is the one
@@ -3828,104 +3615,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $objects;
 	}//end encryptFlaggedPropertiesInRows()
-
-	/**
-	 * Say so when a property the caller sent is about to be thrown away.
-	 *
-	 * The loop above is a whitelist BY OMISSION: it walks the schema's declared
-	 * properties and copies those out of `$data`. Anything the caller sent that
-	 * the schema does not declare is simply never read — and there is no `object`
-	 * JSON blob column to fall back on, so it is gone. No error, no warning, no
-	 * trace: the write succeeds and the field is missing.
-	 *
-	 * Measured 2026-08-02: the hydra flow documents carry `description`, the
-	 * agentflow schema had no such property, and every flow's description was
-	 * discarded on save. The graphs table then showed "—" for all ten, which
-	 * reads exactly like ten flows that were never given a description.
-	 *
-	 * This does not reject — rejecting at the DB write boundary is far too late
-	 * for a clean 400 (the entity is built, folders may exist, cascades have
-	 * run) and would break every caller that harmlessly posts an extra key. It
-	 * makes the loss VISIBLE, which is the whole difference between a schema
-	 * that needs a property added and a field that quietly evaporates.
-	 *
-	 * @param array<string, mixed> $data The caller's data, minus `@self`.
-	 * @param mixed $schemaProperties The schema's declared properties.
-	 * @param Schema $schema The schema being written to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
-	 */
-	private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void {
-		if (is_array($schemaProperties) === false) {
-			return;
-		}
-
-		$dropped = [];
-		foreach (array_keys($data) as $key) {
-			$name = (string)$key;
-			if (array_key_exists($name, $schemaProperties) === true) {
-				continue;
-			}
-
-			// `@`-prefixed keys are envelope/metadata (`@self` is already gone),
-			// `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
-			// and `uuid` are the caller echoing back an identifier. None of these
-			// are user data the schema was ever supposed to declare, so warning
-			// about them would drown the signal in noise on literally every save.
-			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
-				continue;
-			}
-
-			$dropped[] = $name;
-		}
-
-		// Once per schema and property per process. One import or bulk write of
-		// thousands of objects with the same undeclared key logged one warning
-		// per object (a throwaway instance wrote a 28 GB log). The first
-		// discard of each property is still a warning, so schema drift stays
-		// visible; a NEW undeclared property on the same schema warns again.
-		$schemaKey = (string)($schema->getId() ?? $schema->getSlug() ?? '');
-		$dropped   = array_values(
-			array_filter(
-				$dropped,
-				fn (string $name): bool => isset($this->reportedDrops[$schemaKey][$name]) === false
-			)
-		);
-
-		if ($dropped === []) {
-			return;
-		}
-
-		foreach ($dropped as $name) {
-			$this->reportedDrops[$schemaKey][$name] = true;
-		}
-
-		$plural = 'ies';
-		if (count($dropped) === 1) {
-			$plural = 'y';
-		}
-
-		$this->logger->warning(
-			message: sprintf(
-				'[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
-				. 'They are NOT stored anywhere — add them to the schema or stop sending them. '
-				. 'Reported once per property per request.',
-				count($dropped),
-				$plural,
-				(string)($schema->getTitle() ?? $schema->getSlug() ?? (string)$schema->getId()),
-				implode(', ', $dropped)
-			),
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schema' => $schema->getId(),
-				'schemaSlug' => $schema->getSlug(),
-				'dropped' => $dropped,
-			]
-		);
-	}//end reportDroppedProperties()
 
 	/**
 	 * Convert database row to ObjectEntity.

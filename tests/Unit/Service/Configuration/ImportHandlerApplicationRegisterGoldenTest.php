@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Configuration
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  */
 class ImportHandlerApplicationRegisterGoldenTest extends TestCase {
 
@@ -246,11 +247,9 @@ class ImportHandlerApplicationRegisterGoldenTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $configurationMapper,
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 
