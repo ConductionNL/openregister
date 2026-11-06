@@ -121,8 +121,14 @@ describe('AuditTrail Store', () => {
 			const second = store.refreshAuditTrailList()
 			store.setAuditTrailFilters({ action: 'read' })
 			const third = store.refreshAuditTrailList()
-			expect(await Promise.all([first, second, third])).toEqual(['done', 'done', 'done'])
-			expect(seen).toEqual([{ limit: 50, page: 1, filters: { action: 'read' } }])
+			expect(await Promise.all([first, second, third])).toEqual([
+				'done',
+				'done',
+				'done',
+			])
+			expect(seen).toEqual([
+				{ limit: 50, page: 1, filters: { action: 'read' } },
+			])
 		})
 
 		it('sends a new request for a refresh after that tick', async () => {
@@ -136,7 +142,10 @@ describe('AuditTrail Store', () => {
 			store.fetchAuditTrails = jest.fn(async () => {
 				throw new Error('down')
 			})
-			const calls = [store.refreshAuditTrailList(), store.refreshAuditTrailList()]
+			const calls = [
+				store.refreshAuditTrailList(),
+				store.refreshAuditTrailList(),
+			]
 			await expect(calls[0]).rejects.toThrow('down')
 			await expect(calls[1]).rejects.toThrow('down')
 			expect(store.fetchAuditTrails).toHaveBeenCalledTimes(1)
