@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -49,15 +50,21 @@ final class SchemaTeardownGuard {
 	private const ACTOR = 'occ';
 
 	/**
-	 * @param WholeTableRows            $rows  Reads the rows of a table with a register.
-	 * @param IDBConnection             $db    Counts the rows of a table without one.
-	 * @param AuditTrailMapperInterface $audit Writes the forced entry.
+	 * Reads the rows of a table with a register.
+	 */
+	public readonly WholeTableRows $rows;
+
+	/**
+	 * @param MagicMapperInterface      $mapper Reads the magic tables.
+	 * @param IDBConnection             $db     Counts the rows of a table without a register.
+	 * @param AuditTrailMapperInterface $audit  Writes the forced entry.
 	 */
 	public function __construct(
-		private readonly WholeTableRows $rows,
+		MagicMapperInterface $mapper,
 		private readonly IDBConnection $db,
 		private readonly AuditTrailMapperInterface $audit,
 	) {
+		$this->rows = new WholeTableRows(mapper: $mapper);
 	}//end __construct()
 
 	/**

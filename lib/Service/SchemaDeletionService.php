@@ -173,7 +173,7 @@ class SchemaDeletionService {
 		$schema = $this->schemaMapper->find(id: $schemaId);
 
 		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-		$this->tableRows()->assertNoneKept(register: $register, schema: $schema);
+		$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
 
 		$result = $this->deleteObjectsOfPair(
 			register: $register,
@@ -268,7 +268,7 @@ class SchemaDeletionService {
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-			$this->tableRows()->assertNoneKept(register: $register, schema: $schema);
+			$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
 		}
 
 		$deletedCount = 0;
@@ -655,17 +655,8 @@ class SchemaDeletionService {
 	 * @return SchemaTeardownGuard
 	 */
 	private function teardownGuard(): SchemaTeardownGuard {
-		return new SchemaTeardownGuard(rows: $this->tableRows(), db: $this->db, audit: $this->auditTrailMapper);
+		return new SchemaTeardownGuard(mapper: $this->magicMapper, db: $this->db, audit: $this->auditTrailMapper);
 	}//end teardownGuard()
-
-	/**
-	 * The rows of the magic tables this service empties.
-	 *
-	 * @return WholeTableRows
-	 */
-	private function tableRows(): WholeTableRows {
-		return new WholeTableRows(mapper: $this->magicMapper);
-	}//end tableRows()
 
 	/**
 	 * Audit and delete every object of one register/schema magic table.
@@ -749,7 +740,7 @@ class SchemaDeletionService {
 		];
 
 		$uuids = [];
-		foreach ($this->tableRows()->all(register: $register, schema: $schema) as $object) {
+		foreach ($this->teardownGuard()->rows->all(register: $register, schema: $schema) as $object) {
 			$this->auditTrailMapper->createAuditTrailEntry(
 				object: $object,
 				action: self::ACTION_CASCADE_DELETE,
