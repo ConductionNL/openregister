@@ -286,6 +286,10 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+		schemaStore: () => schemaStore,
+
 		/**
 		 * @spec exclude UI display helper — flattens/filters validation results for the table.
 		 */
