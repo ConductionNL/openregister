@@ -109,6 +109,23 @@ class CalendarProviderTest extends TestCase {
 		$provider->delete('r', 's', 'obj-1', '7/event.ics');
 	}
 
+	public function testDeleteLegacyShapeOfAnotherObjectIsRefused(): void {
+		$eventSvc = $this->createMock(CalendarEventService::class);
+		$eventSvc->method('requireEventOf')->with('obj-1', '7', 'event.ics')->willThrowException(new \Exception('Calendar event not found', 404));
+		$eventSvc->expects($this->never())->method('unlinkEvent');
+
+		$provider = new CalendarProvider(
+			$eventSvc,
+			$this->createMock(CalendarLinkService::class),
+			$this->createMock(IAppManager::class),
+			$this->buildL10n(),
+			$this->buildLogger(),
+		);
+
+		$this->expectExceptionCode(404);
+		$provider->delete('r', 's', 'obj-1', '7/event.ics');
+	}
+
 	public function testDeleteBareUidUsesLinkService(): void {
 		$eventSvc = $this->createMock(CalendarEventService::class);
 		$eventSvc->expects($this->never())->method('unlinkEvent');
