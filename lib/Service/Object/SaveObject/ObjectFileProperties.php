@@ -53,7 +53,7 @@ final class ObjectFileProperties {
 	 *
 	 * @return ObjectEntity The object, updated when a file property was processed.
 	 *
-	 * @throws Exception When a file cannot be stored.
+	 * @throws \Exception When a file cannot be stored.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -77,7 +77,7 @@ final class ObjectFileProperties {
 	 * Delete an object whose files could not be stored.
 	 *
 	 * @param ObjectFileWrite $write The file write.
-	 * @param Exception       $error What failed.
+	 * @param \Exception      $error What failed.
 	 *
 	 * @return void
 	 */
