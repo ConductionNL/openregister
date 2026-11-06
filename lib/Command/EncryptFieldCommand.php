@@ -31,13 +31,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
-use OCP\DB\Exception as DbException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Console\Command\Command;
@@ -52,6 +52,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class EncryptFieldCommand extends Command {
+	use MagicColumnNameTrait;
+
 	/**
 	 * Wire the mappers, encryption handler and database connection used by the command.
 	 *
@@ -256,13 +258,9 @@ class EncryptFieldCommand extends Command {
 	/**
 	 * Encrypt the plaintext values of one property across one magic table.
 	 *
-	 * Row-by-row (ICrypto::encrypt() is not batchable in SQL): SELECT id + the
-	 * JSON `object` blob, decode, check the property value, encrypt if it is a
-	 * non-empty string that is not already an envelope, re-encode, UPDATE.
-	 * Also NULLs out any legacy dedicated column matching the property name
-	 * (pre-existing from before the property was flagged encrypted) so no
-	 * plaintext mirror survives outside the blob — best-effort: the column may
-	 * not exist, which is expected and not an error.
+	 * Row-by-row (ICrypto::encrypt() is not batchable in SQL): a property lives in
+	 * its own column, which holds the envelope afterwards. A value that is not a
+	 * non-empty string, or already an envelope, is left alone.
 	 *
 	 * @param string $tableName Fully qualified magic table name.
 	 * @param string $property The property name to encrypt.
@@ -275,10 +273,12 @@ class EncryptFieldCommand extends Command {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function encryptTable(string $tableName, string $property, bool $dryRun, OutputInterface $output): array {
-		$columnName = preg_replace('/[^a-zA-Z0-9_]/', '', $property);
+		$columnName = $this->sanitizeColumnName(name: $property);
 
 		$select = $this->db->getQueryBuilder();
-		$select->select('id', 'object')->from($tableName);
+		$select->select('_id', $columnName)
+			->from($tableName)
+			->where($select->expr()->isNotNull($columnName));
 		$result = $select->executeQuery();
 
 		$scanned = 0;
@@ -286,18 +286,8 @@ class EncryptFieldCommand extends Command {
 		$failed = 0;
 
 		while (($row = $result->fetch()) !== false) {
-			$objectJson = $row['object'] ?? null;
-			if (is_string($objectJson) === false || $objectJson === '') {
-				continue;
-			}
-
-			$objectData = json_decode($objectJson, true);
-			if (is_array($objectData) === false || array_key_exists($property, $objectData) === false) {
-				continue;
-			}
-
-			$value = $objectData[$property];
-			if ($value === null || $value === '' || is_string($value) === false) {
+			$value = $row[$columnName] ?? null;
+			if ($value === '' || is_string($value) === false) {
 				continue;
 			}
 
@@ -314,13 +304,17 @@ class EncryptFieldCommand extends Command {
 			}
 
 			try {
-				$objectData[$property] = $this->fieldEncryptionHandler->encryptValue($value);
+				$update = $this->db->getQueryBuilder();
+				$update->update($tableName)
+					->set($columnName, $update->createNamedParameter($this->fieldEncryptionHandler->encryptValue($value)))
+					->where($update->expr()->eq('_id', $update->createNamedParameter($row['_id'], IQueryBuilder::PARAM_INT)));
+				$update->executeStatement();
 			} catch (\Throwable $e) {
 				$failed++;
 				$output->writeln(
 					sprintf(
 						'  <error>row id=%s: failed to encrypt \'%s\': %s</error>',
-						(string)($row['id'] ?? '?'),
+						(string)($row['_id'] ?? '?'),
 						$property,
 						$e->getMessage()
 					)
@@ -328,36 +322,10 @@ class EncryptFieldCommand extends Command {
 				continue;
 			}
 
-			$update = $this->db->getQueryBuilder();
-			$update->update($tableName)
-				->set('object', $update->createNamedParameter(json_encode($objectData)))
-				->where($update->expr()->eq('id', $update->createNamedParameter($row['id'], IQueryBuilder::PARAM_INT)));
-			$update->executeStatement();
-
 			$encrypted++;
 		}//end while
 
 		$result->closeCursor();
-
-		// Best-effort: null out a legacy dedicated column for this property, if
-		// one still exists from before it was flagged encrypted. The column may
-		// not exist (the common case going forward — buildTableColumnsFromSchema()
-		// no longer creates one for an encrypted property) which is expected, not
-		// an error, so an "unknown column" failure here is swallowed deliberately
-		// (unlike decryption failures, which are never swallowed) — it is not
-		// itself a source of data loss, only a no-op when there was nothing to null.
-		if ($dryRun === false && $encrypted > 0) {
-			try {
-				$nullify = $this->db->getQueryBuilder();
-				$nullify->update($tableName)
-					->set($columnName, $nullify->createNamedParameter(null))
-					->where($nullify->expr()->isNotNull($columnName));
-				$nullify->executeStatement();
-			} catch (DbException $e) {
-				// Column does not exist (or is not nullable) — nothing to clean up.
-				unset($e);
-			}
-		}
 
 		return [$scanned, $encrypted, $failed];
 	}//end encryptTable()
