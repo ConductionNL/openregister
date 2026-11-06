@@ -138,6 +138,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
  * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
