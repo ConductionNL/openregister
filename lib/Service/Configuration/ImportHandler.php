@@ -322,6 +322,13 @@ class ImportHandler {
 	private SeedRelatedItems $relatedItems;
 
 	/**
+	 * Refuses an import on a duplicate slug.
+	 *
+	 * @var ImportDuplicates
+	 */
+	private ImportDuplicates $duplicates;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -375,6 +382,7 @@ class ImportHandler {
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
+		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -870,11 +878,7 @@ class ImportHandler {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $options->appId]
 			);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateRegisterError(
-				slug: $data['slug'],
-				appId: $options->appId ?? 'unknown',
-				version: $options->version ?? 'unknown'
-			);
+			$this->duplicates->refuseRegister(slug: $data['slug'], source: ImportDuplicates::source(appId: $options->appId, version: $options->version));
 		}//end try
 
 		return null;
@@ -1145,154 +1149,6 @@ class ImportHandler {
 
 		return $this->mappingMapper->createFromArray(data: $data);
 	}//end importMapping()
-
-	/**
-	 * Handle duplicate register error during import.
-	 *
-	 * @param string $slug The register slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate register information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateRegisterError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate registers.
-		$duplicateInfo = $this->getDuplicateRegisterInfo(slug: $slug);
-
-		$formatStr = "Duplicate register detected during import from app '%s' (version %s). ";
-		$formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the register ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking registers with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateRegisterError()
-
-	/**
-	 * Get detailed information about duplicate registers.
-	 *
-	 * @param string $slug The register slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate register information.
-	 */
-	private function getDuplicateRegisterInfo(string $slug): string {
-		try {
-			// Try to get all registers with this slug to provide detailed info.
-			$registers = $this->registerMapper->findAll();
-			$duplicates = array_filter(
-				$registers,
-				function ($register) use ($slug) {
-					return strtolower($register->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $register) {
-				// Format created date.
-				$registerCreated = 'unknown';
-				if ($register->getCreated() !== null) {
-					$registerCreated = $register->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$register->getId(),
-					$register->getUuid() ?? '',
-					$register->getTitle() ?? '',
-					$registerCreated
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateRegisterInfo()
-
-	/**
-	 * Handle duplicate schema error during import.
-	 *
-	 * @param string $slug The schema slug that has duplicates.
-	 * @param string $appId The application ID attempting the import.
-	 * @param string $version The version being imported.
-	 *
-	 * @return never
-	 *
-	 * @throws Exception Always throws with duplicate schema information.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function handleDuplicateSchemaError(string $slug, string $appId, string $version) {
-		// Get details about the duplicate schemas.
-		$duplicateInfo = $this->getDuplicateSchemaInfo(slug: $slug);
-
-		$formatStr = "Duplicate schema detected during import from app '%s' (version %s). ";
-		$formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
-		$formatStr .= 'Please resolve this by removing duplicate entries or updating the schema ';
-		$formatStr .= 'slugs to be unique. You can identify duplicates by checking schemas with ';
-		$formatStr .= 'the same slug, uuid, or id.';
-
-		$errorMessage = sprintf($formatStr, $appId, $version, $slug, $duplicateInfo);
-
-		$this->logger->error(message: '[ImportHandler] ' . $errorMessage, context: ['file' => __FILE__, 'line' => __LINE__]);
-		throw new Exception($errorMessage);
-	}//end handleDuplicateSchemaError()
-
-	/**
-	 * Get detailed information about duplicate schemas.
-	 *
-	 * @param string $slug The schema slug to check for duplicates.
-	 *
-	 * @return string Formatted string with duplicate schema information.
-	 */
-	private function getDuplicateSchemaInfo(string $slug): string {
-		try {
-			// Try to get all schemas with this slug to provide detailed info.
-			$schemas = $this->schemaMapper->findAll();
-			$duplicates = array_filter(
-				$schemas,
-				function ($schema) use ($slug) {
-					return strtolower($schema->getSlug() ?? '') === strtolower($slug);
-				}
-			);
-
-			if (count($duplicates) <= 1) {
-				return 'Unable to retrieve detailed duplicate information';
-			}
-
-			$info = [];
-			foreach ($duplicates as $schema) {
-				// Format created date.
-				$createdDate = 'unknown';
-				if ($schema->getCreated() !== null) {
-					$createdDate = $schema->getCreated()->format('Y-m-d H:i:s');
-				}
-
-				$info[] = sprintf(
-					"ID: %s, UUID: %s, Title: '%s', Created: %s",
-					$schema->getId(),
-					$schema->getUuid() ?? '',
-					$schema->getTitle() ?? '',
-					$createdDate
-				);
-			}
-
-			return implode('; ', $info);
-		} catch (Exception $e) {
-			return 'Unable to retrieve duplicate information: ' . $e->getMessage();
-		}//end try
-	}//end getDuplicateSchemaInfo()
 
 	/**
 	 * Decide whether an incoming schema definition structurally differs from the stored one.
@@ -1918,11 +1774,7 @@ class ImportHandler {
 			$msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
 			$this->logger->debug(message: '[ImportHandler] ' . $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$this->handleDuplicateSchemaError(
-				slug: $data['slug'],
-				appId: $appId ?? 'unknown',
-				version: $version ?? 'unknown'
-			);
+			$this->duplicates->refuseSchema(slug: $data['slug'], source: ImportDuplicates::source(appId: $appId, version: $version));
 		}
 
 		return null;
