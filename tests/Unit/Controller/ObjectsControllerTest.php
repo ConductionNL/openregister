@@ -6474,6 +6474,29 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * An administrator's object log reads through the explicit-reveal masker.
+	 *
+	 * @return void
+	 */
+	public function testLogsAreMaskedForAnAdministrator(): void {
+		$this->setupAdminUser();
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+		$this->objectService->method('find')->willReturn($object);
+		$this->objectService->method('getLogs')->willReturn(['plain']);
+		$this->request->method('getParams')->willReturn([]);
+
+		$masker = $this->createMock(\OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker::class);
+		$masker->expects($this->once())->method('mask')->with(['plain'])->willReturn(['masked']);
+		$this->container->method('get')->willReturn($masker);
+
+		$result = $this->controller->logs('uuid', '1', '2', $this->objectService);
+
+		$this->assertSame(['masked'], $result->getData()['results']);
+	}
+
+	/**
 	 * A JSON export drops the route from its filters and answers a named JSON file.
 	 *
 	 * @return void
