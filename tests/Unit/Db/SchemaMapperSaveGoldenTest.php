@@ -114,6 +114,11 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\EntityChangeDetector
+ * @uses \OCA\OpenRegister\Db\SchemaPropertyInheritance
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
