@@ -1977,6 +1977,8 @@ class ImportService implements ObjectImporterInterface {
 				continue;
 			}
 
+			// PHP turns a numeric column header into an integer key.
+			$key = (string)$key;
 			if (str_starts_with($key, '_') === true) {
 				// REQUIREMENT: Columns starting with _ are completely ignored.
 				continue;
