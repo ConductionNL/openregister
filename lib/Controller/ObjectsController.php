@@ -30,11 +30,13 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
+use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -923,7 +925,7 @@ class ObjectsController extends Controller {
 		);
 		if ($includeEmpty === false) {
 			$serializedResults = array_map(
-				callback: [$this, 'stripEmptyValues'],
+				callback: [new EmptyValueStripper(), 'stripped'],
 				array: $serializedResults
 			);
 		}
@@ -1813,22 +1815,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function stripEmptyFromResults(array $results): array {
-		return array_map(
-			callback: function ($item) {
-				if (is_array($item) === false
-					&& method_exists(object_or_class: $item, method: 'jsonSerialize') === true
-				) {
-					$item = $item->jsonSerialize();
-				}
-
-				if (is_array($item) === true) {
-					return $this->stripEmptyValues(data: $item);
-				}
-
-				return $item;
-			},
-			array: $results
-		);
+		return (new EmptyValueStripper())->strippedRows(results: $results);
 	}//end stripEmptyFromResults()
 
 	/**
@@ -2671,7 +2658,7 @@ class ObjectsController extends Controller {
 						);
 						if ($includeEmpty === false) {
 							$serializedResults = array_map(
-								callback: [$this, 'stripEmptyValues'],
+								callback: [new EmptyValueStripper(), 'stripped'],
 								array: $serializedResults
 							);
 						}
@@ -2727,23 +2714,7 @@ class ObjectsController extends Controller {
 			filter: FILTER_VALIDATE_BOOLEAN
 		);
 		if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
-			$result['results'] = array_map(
-				callback: function ($item) {
-					// Serialize ObjectEntity instances to arrays before stripping.
-					if (is_array($item) === false
-						&& method_exists(object_or_class: $item, method: 'jsonSerialize') === true
-					) {
-						$item = $item->jsonSerialize();
-					}
-
-					if (is_array($item) === true) {
-						return $this->stripEmptyValues(data: $item);
-					}
-
-					return $item;
-				},
-				array: $result['results']
-			);
+			$result['results'] = $this->stripEmptyFromResults(results: $result['results']);
 		}
 
 		return new JSONResponse(data: $result);
@@ -3132,7 +3103,7 @@ class ObjectsController extends Controller {
 				filter: FILTER_VALIDATE_BOOLEAN
 			);
 			if ($includeEmpty === false) {
-				$renderedData = $this->stripEmptyValues(data: $renderedData);
+				$renderedData = (new EmptyValueStripper())->stripped(data: $renderedData);
 			}
 
 			// THE RECORD SAYS WHAT ITS READER MAY DO WITH IT. Resolved in the
@@ -6641,144 +6612,13 @@ class ObjectsController extends Controller {
 			return [];
 		}
 
-		$uuids = [];
-
-		// Collect UUIDs from @self.relations.
-		$relations = $renderedData['@self']['relations'] ?? [];
-		if (is_array($relations) === true) {
-			foreach ($relations as $relation) {
-				if (is_string($relation) === true && $this->isUuid(value: $relation) === true) {
-					$uuids[] = $relation;
-				} elseif (is_array($relation) === true) {
-					// Handle nested relation arrays.
-					foreach ($relation as $uuid) {
-						if (is_string($uuid) === true && $this->isUuid(value: $uuid) === true) {
-							$uuids[] = $uuid;
-						}
-					}
-				}
-			}
-		}
-
-		// Collect UUIDs from object properties (for extended relations).
-		$objectData = $renderedData['@self']['object'] ?? $renderedData;
-		if (is_array($objectData) === true) {
-			$this->collectUuidsFromArray(data: $objectData, uuids: $uuids);
-		}
-
-		// Remove duplicates.
-		$uuids = array_unique($uuids);
-
-		if (empty($uuids) === true) {
+		$uuids = array_unique((new RenderedObjectUuids())->inRendered(rendered: $renderedData));
+		if ($uuids === []) {
 			return [];
 		}
 
-		// Resolve all UUIDs to names using CacheHandler.
 		return $cacheHandler->getMultipleObjectNames($uuids);
 	}//end collectNamesForResponse()
-
-	/**
-	 * Recursively collect UUIDs from an array structure.
-	 *
-	 * @param array $data The array to scan for UUIDs.
-	 * @param array $uuids Reference to array collecting UUIDs.
-	 *
-	 * @return void
-	 */
-	private function collectUuidsFromArray(array $data, array &$uuids): void {
-		foreach ($data as $key => $value) {
-			// Skip metadata keys.
-			if ($key === '@self' || $key === 'id' || $key === '_id') {
-				continue;
-			}
-
-			if (is_string($value) === true && $this->isUuid(value: $value) === true) {
-				$uuids[] = $value;
-			} elseif (is_array($value) === true) {
-				// Check if it's an array of UUIDs.
-				foreach ($value as $item) {
-					if (is_string($item) === true && $this->isUuid(value: $item) === true) {
-						$uuids[] = $item;
-					} elseif (is_array($item) === true) {
-						// Recurse into nested arrays.
-						$this->collectUuidsFromArray(data: $item, uuids: $uuids);
-					}
-				}
-			}
-		}
-	}//end collectUuidsFromArray()
-
-	/**
-	 * Check if a string is a valid UUID format.
-	 *
-	 * @param string $value The value to check.
-	 *
-	 * @return bool True if the value is a UUID format.
-	 */
-	private function isUuid(string $value): bool {
-		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
-	}//end isUuid()
-
-	/**
-	 * Recursively strips empty values (null, empty string, empty array) from an array.
-	 *
-	 * Used to reduce API response payload by omitting properties that have no value.
-	 * Values of 0, false, and "0" are preserved as they are meaningful.
-	 *
-	 * By default, responses are stripped. Pass _empty=true in the query to include
-	 * empty values in the response for debugging or schema-aware consumers.
-	 *
-	 * @param array $data The data array to strip empty values from.
-	 *
-	 * @return array The data with empty values removed.
-	 */
-	private function stripEmptyValues(array $data): array {
-		$result = [];
-		foreach ($data as $key => $value) {
-			// Recursively strip nested arrays (but not sequential arrays like relations/files).
-			if (is_array($value) === true) {
-				// Check if this is a sequential (indexed) array.
-				$isSequential = array_is_list($value);
-
-				if ($isSequential === true) {
-					// For sequential arrays, strip each element if it's an associative array.
-					$stripped = [];
-					foreach ($value as $item) {
-						if (is_array($item) === true) {
-							$stripped[] = $this->stripEmptyValues(data: $item);
-						} else {
-							$stripped[] = $item;
-						}
-					}
-
-					// Only include non-empty sequential arrays.
-					if (empty($stripped) === false) {
-						$result[$key] = $stripped;
-					}
-
-					continue;
-				}
-
-				// For associative arrays, recurse.
-				$stripped = $this->stripEmptyValues(data: $value);
-				if (empty($stripped) === false) {
-					$result[$key] = $stripped;
-				}
-
-				continue;
-			}//end if
-
-			// Skip null and empty strings.
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// Keep everything else (including 0, false, "0").
-			$result[$key] = $value;
-		}//end foreach
-
-		return $result;
-	}//end stripEmptyValues()
 
 	/**
 	 * Build the structured HTTP 403 response for a folder-access denial.

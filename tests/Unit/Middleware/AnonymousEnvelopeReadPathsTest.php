@@ -77,6 +77,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  * @uses   \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Controller\Support\EmptyValueStripper
  * @uses \OCA\OpenRegister\Controller\Support\FederationControllerServices
  * @uses   \OCA\OpenRegister\Controller\ObjectsController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession

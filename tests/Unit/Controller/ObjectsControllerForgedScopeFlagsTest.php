@@ -61,6 +61,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsExtensions
+ * @uses \OCA\OpenRegister\Controller\Support\EmptyValueStripper
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @uses   \OCA\OpenRegister\Db\Register
