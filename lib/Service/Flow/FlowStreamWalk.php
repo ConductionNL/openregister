@@ -61,30 +61,6 @@ class FlowStreamWalk {
 	private array $streams = [];
 
 	/**
-	 * Streams parked during this pass (suspended), by id.
-	 *
-	 * @var array<string, true>
-	 */
-	private array $parked = [];
-
-	/**
-	 * Streams that found no enabled transition on their last visit, by id.
-	 * Cleared whenever a commit changes the marking, because a sibling's
-	 * commit may have enabled a join.
-	 *
-	 * @var array<string, true>
-	 */
-	private array $exhausted = [];
-
-	/**
-	 * Streams whose claim was refused this pass, by id. They stay enabled and
-	 * leave the run `queued` for the next pass.
-	 *
-	 * @var array<string, true>
-	 */
-	private array $refused = [];
-
-	/**
 	 * Round-robin cursor over the ordinal-ordered stream list.
 	 *
 	 * @var int
@@ -97,6 +73,13 @@ class FlowStreamWalk {
 	 * @var int
 	 */
 	private int $fired = 0;
+
+	/**
+	 * The streams this pass has set aside, and its scope.
+	 *
+	 * @var FlowStreamVisits
+	 */
+	private readonly FlowStreamVisits $visits;
 
 	/**
 	 * Builds the picture's entries for this run.
@@ -124,10 +107,11 @@ class FlowStreamWalk {
 		private readonly FlowStreamMapper $streamMapper,
 		private readonly string $owner,
 		private readonly ?int $runCap = null,
-		private readonly ?string $onlyStream = null,
+		?string $onlyStream = null,
 		private readonly ?int $budget = null,
 	) {
 		$this->entries = new FlowStreamEntries(runUuid: (string)$run->getUuid());
+		$this->visits = new FlowStreamVisits(onlyStream: $onlyStream);
 	}//end __construct()
 
 	/**
@@ -183,17 +167,7 @@ class FlowStreamWalk {
 	 * @return bool True when advanceable.
 	 */
 	private function isAdvanceable(string $id): bool {
-		if (isset($this->streams[$id]) === false) {
-			return false;
-		}
-
-		if ($this->onlyStream !== null && $id !== $this->onlyStream) {
-			return false;
-		}
-
-		return isset($this->parked[$id]) === false
-			&& isset($this->refused[$id]) === false
-			&& isset($this->exhausted[$id]) === false;
+		return isset($this->streams[$id]) === true && $this->visits->mayVisit(id: $id) === true;
 	}//end isAdvanceable()
 
 	/**
@@ -207,8 +181,8 @@ class FlowStreamWalk {
 	 * not the state the walk still holds in memory. It is called as an
 	 * ARGUMENT to `commitFiring()` and to `park()`, and both of those are what
 	 * move the stream — so at the moment this runs, `$this->streams` still has
-	 * the firing stream on the place the firing just consumed and `$this->parked`
-	 * does not yet know about the stream that is parking. Answering from that
+	 * the firing stream on the place the firing just consumed and the pass's visits
+	 * do not yet know about the stream that is parking. Answering from that
 	 * stale picture said "no work remains" at EVERY ordinary mid-flow firing,
 	 * `FlowRunCommit::applyDerivedStatus()` then derived `completed` for a run
 	 * that was still working, `FlowRunMapper::update()` announced it, and
@@ -226,12 +200,10 @@ class FlowStreamWalk {
 	 */
 	public function workRemains(array $transitions, array $produced = [], ?string $settling = null): bool {
 		$live = $this->livePlacesAfter(produced: $produced, settling: $settling);
-
 		foreach ($transitions as $transition) {
-			foreach ($transition->getFroms() as $from) {
-				if (isset($live[(string)$from]) === true) {
-					return true;
-				}
+			$froms = array_flip(array_map('strval', $transition->getFroms()));
+			if (array_intersect_key($froms, $live) !== []) {
+				return true;
 			}
 		}
 
@@ -251,23 +223,30 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
 	 */
 	private function livePlacesAfter(array $produced, ?string $settling): array {
-		$live = [];
+		$live = array_fill_keys(array_map('strval', $produced), true);
 		foreach ($this->streams as $id => $stream) {
-			if ($id === $settling || isset($this->parked[$id]) === true) {
-				continue;
-			}
-
-			if ($stream['place'] !== null) {
+			if ($stream['place'] !== null && $this->holdsWork(id: $id, settling: $settling) === true) {
 				$live[$stream['place']] = true;
 			}
 		}
 
-		foreach ($produced as $place) {
-			$live[(string)$place] = true;
-		}
-
 		return $live;
 	}//end livePlacesAfter()
+
+	/**
+	 * Whether a stream's place still counts as somewhere work can happen:
+	 * it is neither the settling stream nor parked.
+	 *
+	 * @param int|string  $id       The stream id, as an array key.
+	 * @param string|null $settling A stream whose place stops counting.
+	 *
+	 * @return bool True when the stream's place counts.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-a-runs-status-must-stay-derivable-from-its-streams-with-no-new-value
+	 */
+	private function holdsWork(int|string $id, ?string $settling): bool {
+		return $id !== $settling && $this->visits->isParked(id: $id) === false;
+	}//end holdsWork()
 
 	/**
 	 * The ordinal path of a stream, for a log entry that is not a firing (a
@@ -333,7 +312,7 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	public function exhaust(string $id): void {
-		$this->exhausted[$id] = true;
+		$this->visits->exhaust(id: $id);
 	}//end exhaust()
 
 	/**
@@ -361,7 +340,7 @@ class FlowStreamWalk {
 		);
 
 		if ($claimed === null) {
-			$this->refused[$id] = true;
+			$this->visits->refuse(id: $id);
 		}
 
 		return $claimed;
@@ -408,7 +387,7 @@ class FlowStreamWalk {
 		// refused streams stay so.
 		$this->streams = $this->entries->live(rows: $result->streams);
 		$this->sortStreams();
-		$this->exhausted = [];
+		$this->visits->forgetExhausted();
 
 		return $result;
 	}//end commitFiring()
@@ -428,7 +407,7 @@ class FlowStreamWalk {
 		$closure = $this->closure(halt: $halt, status: FlowRun::STATUS_SUSPENDED);
 		$this->commit->closeStream(run: $this->run, closure: $closure->wakingAt(resumeAt: $resumeAt));
 		$id = $halt->streamId;
-		$this->parked[$id] = true;
+		$this->visits->park(id: $id);
 		if (isset($this->streams[$id]) === true) {
 			$this->streams[$id]['status'] = FlowRun::STATUS_SUSPENDED;
 		}
@@ -460,9 +439,8 @@ class FlowStreamWalk {
 	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
 	 */
 	private function closure(FlowStreamHalt $halt, string $status): FlowStreamClosure {
-		$release = new FlowStreamRelease(claimedPlaces: $halt->claimed, owner: $this->owner, enabled: $halt->enabled);
 		$stream = $this->entries->ref(entries: $this->streams, id: $halt->streamId);
-		$closure = new FlowStreamClosure(stream: $stream, status: $status, release: $release);
+		$closure = new FlowStreamClosure(stream: $stream, status: $status, release: $halt->releaseFor(owner: $this->owner));
 
 		return $closure->because(error: $halt->reason());
 	}//end closure()

@@ -460,7 +460,7 @@ class MetricsService {
 
 		// Build DELETE query for old metrics.
 		$qb->delete('openregister_metrics')
-			->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime)));
+			->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime, IQueryBuilder::PARAM_INT)));
 
 		// Execute delete query.
 		$result = $qb->executeStatement();

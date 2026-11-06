@@ -36,7 +36,10 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OutcomeFilter;
+use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -433,7 +436,7 @@ class BulkJobService {
 			);
 		}
 
-		$remaining = $this->memberMapper->findPendingBatch(jobId: (int)$job->getId(), afterId: 0, limit: 1);
+		$remaining = $this->memberMapper->findPendingBatch(jobId: (int)$job->getId(), cursor: new IdCursor(afterId: 0, limit: 1));
 
 		if ($remaining === []) {
 			throw new BulkJobRefusedException(
@@ -506,9 +509,7 @@ class BulkJobService {
 	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array {
 		return $this->memberMapper->findByJob(
 			jobId: (int)$job->getId(),
-			outcome: $outcome,
-			limit: $limit,
-			offset: $offset
+			filter: new OutcomeFilter(outcome: $outcome, page: new QueryPage(limit: $limit, offset: $offset))
 		);
 	}//end members()
 

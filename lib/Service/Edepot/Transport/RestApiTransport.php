@@ -215,19 +215,18 @@ class RestApiTransport extends HttpSipTransport {
 	 */
 	private function acceptedResult(mixed $body, int $statusCode): TransportResult {
 		$transferRef = ($body['reference'] ?? $body['id'] ?? null);
-		$objectResults = $this->objectResults(body: $body);
-		$hasRejections = $this->hasRejections(objectResults: $objectResults);
+		$result = new TransportResult(transferReference: $transferRef, objectResults: $this->objectResults(body: $body));
 
 		$this->logger->info(
 			message: '[RestApiTransport] REST API transfer completed',
 			context: [
 				'statusCode' => $statusCode,
 				'reference' => $transferRef,
-				'hasRejections' => $hasRejections,
+				'hasRejections' => $result->hasRejections(),
 			]
 		);
 
-		return new TransportResult(success: ($hasRejections === false), objectResults: $objectResults, transferReference: $transferRef);
+		return $result;
 	}//end acceptedResult()
 
 	/**
@@ -254,23 +253,6 @@ class RestApiTransport extends HttpSipTransport {
 
 		return $objectResults;
 	}//end objectResults()
-
-	/**
-	 * Whether any object was rejected.
-	 *
-	 * @param array<string, array{accepted: mixed}> $objectResults The per-object outcomes.
-	 *
-	 * @return bool
-	 */
-	private function hasRejections(array $objectResults): bool {
-		foreach ($objectResults as $result) {
-			if ($result['accepted'] === false) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end hasRejections()
 
 	/**
 	 * Get transport name.
