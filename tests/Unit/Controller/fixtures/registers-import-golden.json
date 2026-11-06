@@ -1860,6 +1860,294 @@
             }
         }
     },
+    "configuration as a manager, inside the register": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor started.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Parent constructor called.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] ConfigurationService assigned.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor completed.",
+                    []
+                ]
+            },
+            {
+                "method": "registerMapper.find",
+                "args": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Import parameters received",
+                    {
+                        "includeObjects": false,
+                        "validation": false,
+                        "events": false,
+                        "publish": false,
+                        "registerId": 1
+                    }
+                ]
+            },
+            {
+                "method": "configurationService.getUploadedJson",
+                "args": [
+                    {
+                        "fromRequest": true
+                    },
+                    [
+                        {
+                            "tmp_name": "<tmp file>",
+                            "size": 10,
+                            "name": "config.json"
+                        }
+                    ]
+                ]
+            },
+            {
+                "method": "configurationService.importFromJson",
+                "args": [
+                    {
+                        "components": {
+                            "schemas": []
+                        }
+                    },
+                    null,
+                    "member",
+                    null,
+                    null,
+                    false
+                ]
+            },
+            {
+                "method": "importService.serializeErrorsToCsv",
+                "args": [
+                    {
+                        "configuration": {
+                            "created": [],
+                            "updated": [],
+                            "unchanged": [],
+                            "errors": []
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "message": "Import successful",
+            "summary": {
+                "configuration": {
+                    "created": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "errors": []
+                }
+            }
+        }
+    },
+    "configuration as a manager, outside the register": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor started.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Parent constructor called.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] ConfigurationService assigned.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor completed.",
+                    []
+                ]
+            },
+            {
+                "method": "registerMapper.find",
+                "args": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Import parameters received",
+                    {
+                        "includeObjects": false,
+                        "validation": false,
+                        "events": false,
+                        "publish": false,
+                        "registerId": 1
+                    }
+                ]
+            },
+            {
+                "method": "configurationService.getUploadedJson",
+                "args": [
+                    {
+                        "fromRequest": true
+                    },
+                    [
+                        {
+                            "tmp_name": "<tmp file>",
+                            "size": 10,
+                            "name": "config.json"
+                        }
+                    ]
+                ]
+            }
+        ],
+        "status": 403,
+        "data": {
+            "error": "A register manager may only import schemas and the register itself"
+        }
+    },
+    "configuration as an admin, outside the register": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor started.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Parent constructor called.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] ConfigurationService assigned.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor completed.",
+                    []
+                ]
+            },
+            {
+                "method": "registerMapper.find",
+                "args": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Import parameters received",
+                    {
+                        "includeObjects": false,
+                        "validation": false,
+                        "events": false,
+                        "publish": false,
+                        "registerId": 1
+                    }
+                ]
+            },
+            {
+                "method": "configurationService.getUploadedJson",
+                "args": [
+                    {
+                        "fromRequest": true
+                    },
+                    [
+                        {
+                            "tmp_name": "<tmp file>",
+                            "size": 10,
+                            "name": "config.json"
+                        }
+                    ]
+                ]
+            },
+            {
+                "method": "configurationService.importFromJson",
+                "args": [
+                    {
+                        "components": {
+                            "mappings": []
+                        }
+                    },
+                    null,
+                    "admin",
+                    null,
+                    null,
+                    false
+                ]
+            },
+            {
+                "method": "importService.serializeErrorsToCsv",
+                "args": [
+                    {
+                        "configuration": {
+                            "created": [],
+                            "updated": [],
+                            "unchanged": [],
+                            "errors": []
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "message": "Import successful",
+            "summary": {
+                "configuration": {
+                    "created": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "errors": []
+                }
+            }
+        }
+    },
     "configuration explicit unknown type": {
         "calls": [
             {
@@ -2317,6 +2605,112 @@
                         "_talk": null,
                         "_deck": null
                     }
+                ]
+            },
+            {
+                "method": "importService.serializeErrorsToCsv",
+                "args": [
+                    {
+                        "configuration": {
+                            "created": [],
+                            "updated": [],
+                            "unchanged": [],
+                            "errors": []
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "message": "Import successful",
+            "summary": {
+                "configuration": {
+                    "created": [],
+                    "updated": [],
+                    "unchanged": [],
+                    "errors": []
+                }
+            }
+        }
+    },
+    "configuration names an app id": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor started.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Parent constructor called.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] ConfigurationService assigned.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor completed.",
+                    []
+                ]
+            },
+            {
+                "method": "registerMapper.find",
+                "args": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Import parameters received",
+                    {
+                        "includeObjects": false,
+                        "validation": false,
+                        "events": false,
+                        "publish": false,
+                        "registerId": 1
+                    }
+                ]
+            },
+            {
+                "method": "configurationService.getUploadedJson",
+                "args": [
+                    {
+                        "fromRequest": true
+                    },
+                    [
+                        {
+                            "tmp_name": "<tmp file>",
+                            "size": 10,
+                            "name": "config.json"
+                        }
+                    ]
+                ]
+            },
+            {
+                "method": "configurationService.importFromJson",
+                "args": [
+                    {
+                        "parsed": true
+                    },
+                    null,
+                    "admin",
+                    null,
+                    null,
+                    false
                 ]
             },
             {
@@ -4495,6 +4889,110 @@
         "status": 400,
         "data": {
             "error": "No file uploaded"
+        }
+    },
+    "register bundle ignores results": {
+        "calls": [
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor started.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Parent constructor called.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] ConfigurationService assigned.",
+                    []
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Constructor completed.",
+                    []
+                ]
+            },
+            {
+                "method": "registerMapper.find",
+                "args": [
+                    1,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[RegistersController] Import parameters received",
+                    {
+                        "includeObjects": false,
+                        "validation": false,
+                        "events": false,
+                        "publish": false,
+                        "registerId": 1
+                    }
+                ]
+            },
+            {
+                "method": "importService.importFromJson",
+                "args": [
+                    "<tmp file>",
+                    {
+                        "register": 1,
+                        "schemas": [
+                            10,
+                            11
+                        ]
+                    },
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                    false,
+                    {
+                        "user": "admin"
+                    },
+                    true,
+                    null,
+                    false,
+                    "1"
+                ]
+            },
+            {
+                "method": "importService.serializeErrorsToCsv",
+                "args": [
+                    {
+                        "Sheet": {
+                            "created": [
+                                1
+                            ],
+                            "errors": []
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "message": "Import successful",
+            "summary": {
+                "Sheet": {
+                    "created": [
+                        1
+                    ],
+                    "errors": []
+                }
+            }
         }
     },
     "row errors become a csv": {

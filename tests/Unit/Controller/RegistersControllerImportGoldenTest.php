@@ -200,6 +200,13 @@ class RegistersControllerImportGoldenTest extends TestCase {
 			'row errors become a csv' => ['file' => $excel, 'summary' => ['Sheet' => ['errors' => [['row' => 2, 'error' => 'bad']]]]],
 			'import service throws' => ['file' => $excel, 'throw' => 'importFromExcel'],
 			'configuration service throws' => ['file' => $jsonConfig, 'throw' => 'importFromJsonConfig'],
+			'configuration as a manager, outside the register' => ['file' => $jsonConfig, 'user' => 'member', 'manage' => ['editors'], 'bundle' => ['components' => ['mappings' => []]]],
+			'configuration as a manager, inside the register' => ['file' => $jsonConfig, 'user' => 'member', 'manage' => ['editors'], 'bundle' => ['components' => ['schemas' => []]]],
+			'configuration as an admin, outside the register' => ['file' => $jsonConfig, 'bundle' => ['components' => ['mappings' => []]]],
+			'configuration names an app id' => ['file' => $jsonConfig, 'bundle' => ['appId' => 'elsewhere', 'parsed' => true]],
+			'register bundle ignores results' => [
+				'file' => ['name' => 'bundle.json', 'content' => json_encode(['results' => [['@self' => ['schema' => '7']]], 'components' => ['registers' => ['r' => ['slug' => 'r']]]])],
+			],
 		];
 
 		$out = [];
@@ -354,7 +361,7 @@ class RegistersControllerImportGoldenTest extends TestCase {
 				return new JSONResponse(data: ['error' => 'Bad upload'], statusCode: 422);
 			}
 
-			return ['parsed' => true];
+			return ($case['bundle'] ?? ['parsed' => true]);
 		});
 		$configurationService->method('importFromJson')->willReturnCallback(function () use ($case) {
 			$this->record(method: 'configurationService.importFromJson', args: func_get_args());
