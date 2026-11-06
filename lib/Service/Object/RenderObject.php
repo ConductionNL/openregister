@@ -68,6 +68,7 @@ use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use WeakMap;
 
 /**
  * Handler class for rendering objects in the OpenRegister application.
@@ -114,13 +115,6 @@ class RenderObject {
 	 * @var array<int|string, ObjectEntity>
 	 */
 	private array $objectsCache = [];
-
-	/**
-	 * Whether inverse results answer to the caller's read right, as the current render says.
-	 *
-	 * @var boolean
-	 */
-	private bool $inverseReadChecked = true;
 
 	/**
 	 * Transient cache of lightweight file IDs keyed by entity UUID.
@@ -205,6 +199,20 @@ class RenderObject {
 	 * @var InverseRenderSupport|null
 	 */
 	private ?InverseRenderSupport $inverseSupport = null;
+
+	/**
+	 * The read rule of the current render, built on first use.
+	 *
+	 * @var ExtendTargetReads|null
+	 */
+	private ?ExtendTargetReads $extendTargetReads = null;
+
+	/**
+	 * The entities that went through a render, so `@self.objects` can tell them from loaded ones.
+	 *
+	 * @var WeakMap<ObjectEntity, true>|null
+	 */
+	private ?WeakMap $renderedEntities = null;
 
 	/**
 	 * The explicit-reveal masker, resolved on first use.
@@ -406,8 +414,17 @@ class RenderObject {
 			return $this->objectsCache[$id];
 		}
 
+		if ($this->extendReads()->refused(id: $id) === true) {
+			return null;
+		}
+
 		// Use cache service for optimized loading (only if not in ultra cache).
+		// Its own cache answers without a read check, so the answer is checked here.
 		$object = $this->objectCacheService->getObject($id);
+		if ($object !== null && $this->readableExtendTargets(objects: [$object]) === []) {
+			$this->extendReads()->refuse(id: $id);
+			return null;
+		}
 
 		// Update local cache for backward compatibility.
 		if ($object !== null) {
@@ -449,7 +466,7 @@ class RenderObject {
 			// Only include entries keyed by UUID (skip numeric IDs).
 			if (is_string($key) === true && UuidFormat::isCanonical(value: $key) === true) {
 				if ($object instanceof ObjectEntity) {
-					$result[$key] = $object->jsonSerialize();
+					$result[$key] = $this->renderedCopy(object: $object);
 				} elseif (is_array($object) === true) {
 					$result[$key] = $object;
 				}
@@ -458,6 +475,23 @@ class RenderObject {
 
 		return $result;
 	}//end getObjectsCache()
+
+	/**
+	 * A cached object as a reader may get it: an object that was only loaded is rendered first.
+	 *
+	 * @param ObjectEntity $object The cached object.
+	 *
+	 * @return array The serialized object.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function renderedCopy(ObjectEntity $object): array {
+		if (isset($this->renderedEntities[$object]) === true) {
+			return $object->jsonSerialize();
+		}
+
+		return $this->renderRelated(object: $object);
+	}//end renderedCopy()
 
 	/**
 	 * Attach the lightweight `\@self.files` ID list to a batch of un-rendered rows.
@@ -1920,6 +1954,10 @@ class RenderObject {
 			return $entity;
 		}
 
+		if ($depth === 0) {
+			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
+		}
+
 		$this->primeRenderCaches(registers: $registers, schemas: $schemas, objects: $objects);
 
 		$context = new RenderContext(
@@ -1927,7 +1965,11 @@ class RenderObject {
 			$registers, $schemas, $objects, self::withVisitedId(entity: $entity, visitedIds: $visitedIds), $_rbac
 		);
 
-		return $this->renderWithContext(entity: $entity, context: $context);
+		$rendered = $this->renderWithContext(entity: $entity, context: $context);
+		$this->renderedEntities ??= new WeakMap();
+		$this->renderedEntities[$rendered] = true;
+
+		return $rendered;
 	}//end renderEntity()
 
 	/**
@@ -2294,29 +2336,87 @@ class RenderObject {
 			return $objectData;
 		}
 
-		$this->checkInverseReads(checked: $context->rbac);
-
 		return $this->inverseRelations()->handleInversedProperties(entity: $entity, objectData: $objectData);
 	}//end applyInversedProperties()
 
 	/**
-	 * Set whether inverse results answer to the caller's read right.
+	 * Set the read rule of a top-level render; what it extends stays under that rule.
 	 *
-	 * The inverse cache holds what one setting admitted, so a change empties it.
+	 * The object caches hold what one rule admitted, so a change empties them.
 	 *
-	 * @param bool $checked False for a trusted read.
+	 * @param bool $rbac         False for a trusted read.
+	 * @param bool $multitenancy False for a read across organisations.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function checkInverseReads(bool $checked): void {
-		if ($checked !== $this->inverseReadChecked) {
+	private function applyReadRule(bool $rbac, bool $multitenancy): void {
+		if ($this->extendReads()->applyRule(rbac: $rbac, multitenancy: $multitenancy) === true) {
 			$this->inverseSupport()->objects->cache->clear();
+			$this->objectsCache = [];
+		}
+	}//end applyReadRule()
+
+	/**
+	 * The read rule of the current render.
+	 *
+	 * @return ExtendTargetReads
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function extendReads(): ExtendTargetReads {
+		$this->extendTargetReads ??= new ExtendTargetReads(
+			mapper: $this->objectEntityMapper,
+			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
+		);
+
+		return $this->extendTargetReads;
+	}//end extendReads()
+
+	/**
+	 * The extend targets the caller may read.
+	 *
+	 * The preload behind an extend applies no access rule. Filtering here, before the
+	 * objects are cached, keeps them out of the extended property and out of
+	 * `@self.objects`. Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param ObjectEntity[] $objects The objects found.
+	 *
+	 * @return ObjectEntity[] The readable objects.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readableExtendTargets(array $objects): array {
+		if ($this->container === null || $this->extendReads()->checked() === false || SystemOperationContext::isActive() === true) {
+			return $objects;
 		}
 
-		$this->inverseReadChecked = $checked;
-	}//end checkInverseReads()
+		return $this->extendReads()->readable(objects: $objects);
+	}//end readableExtendTargets()
+
+	/**
+	 * Keep the readable preloaded objects in the objects cache and note the others as refused.
+	 *
+	 * @param ObjectEntity[] $objects The objects the preload found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function cacheExtendTargets(array $objects): void {
+		$readable = $this->readableExtendTargets(objects: $objects);
+		foreach ($readable as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		foreach ($objects as $object) {
+			if (in_array($object, $readable, true) === false) {
+				$this->extendReads()->refuse(id: (string)$object->getUuid());
+			}
+		}
+	}//end cacheExtendTargets()
 
 	/**
 	 * The inverse results the caller may read.
@@ -2332,7 +2432,7 @@ class RenderObject {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function readableInverseObjects(array $objects): array {
-		if ($this->container === null || $this->inverseReadChecked === false) {
+		if ($this->container === null || $this->extendReads()->checked() === false) {
 			return $objects;
 		}
 
@@ -3703,25 +3803,22 @@ class RenderObject {
 	 * Narrow one extended far record to what its link declares it exposes.
 	 *
 	 * 🔑 THERE IS NO SECOND PERMISSION EVALUATOR HERE, and that is the design
-	 * (D-4). The readable set is whatever survived `renderEntity()`, which has
+	 * (D-4). The record reached this point through the read check of the extend,
+	 * and the readable set is whatever survived `renderEntity()`, which has
 	 * already run the far schema's own property rules through
 	 * `PropertyRbacHandler`. This takes that answer as its argument and
-	 * intersects the declared set with it, so a link can carry a reader to a
-	 * record they could not otherwise open and can never show them a field
-	 * their own rules withhold.
+	 * intersects the declared set with it, so a link never shows more than the
+	 * reader may read on the far record.
 	 *
-	 * 🔴 `@self` AND `id` ARE NOT PROPERTIES AND ARE NEVER WITHHELD. They are
-	 * the render envelope: marking `id` withheld would break every client that
-	 * follows the link it was handed, and it would say "you may not see this
-	 * record's identity" about a record the link exists to point at. The
-	 * exposure decides which FIELDS travel, not whether the link is there.
+	 * `id` is the render envelope and is never withheld. `@self` keeps what
+	 * {@see LinkExposure::envelope()} leaves of it.
 	 *
 	 * @param array<string, mixed>      $rendered   The far record as renderEntity answered it.
 	 * @param array<string, mixed>|null $descriptor The relation descriptor, or null when the link declares none.
 	 *
 	 * @return array<string, mixed> The projection.
 	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
 	 */
 	private function applyLinkExposure(array $rendered, ?array $descriptor): array {
 		if ($descriptor === null) {
@@ -3736,7 +3833,7 @@ class RenderObject {
 		$body = [];
 		foreach ($rendered as $property => $value) {
 			$property = (string)$property;
-			if ($property === '@self' || $property === 'id' || str_starts_with($property, '@') === true) {
+			if ($property === 'id' || str_starts_with($property, '@') === true) {
 				$envelope[$property] = $value;
 				continue;
 			}
@@ -3749,6 +3846,10 @@ class RenderObject {
 			relationType: $descriptor,
 			readable: array_map('strval', array_keys($body))
 		);
+
+		if (is_array($envelope['@self'] ?? null) === true) {
+			$envelope['@self'] = $this->linkExposure->envelope(self: $envelope['@self'], shown: $projected);
+		}
 
 		return array_merge($projected, $envelope);
 	}//end applyLinkExposure()
@@ -3863,11 +3964,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->registerIdOf(entity: $entity)
 		);
-		// Add preloaded objects to local cache for immediate access.
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for extend',
@@ -4370,9 +4467,10 @@ class RenderObject {
 			]
 		);
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
 		if (empty($page->extend) === false && empty($entities) === false) {
-			$this->checkInverseReads(checked: $page->rbac);
 			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
 		}
 
@@ -4460,11 +4558,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->sharedRegisterIdOf(entities: $entities)
 		);
-
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for renderEntities',

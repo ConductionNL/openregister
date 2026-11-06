@@ -121,9 +121,9 @@
       be: a refusal when the far schema IS resolvable and does not declare the
       property.
 - [x] 3.2a The rule: the visible set is the INTERSECTION of what the link
-      declares and what the reader's own property rules allow, so a link can
-      carry a reader to a record they could not otherwise open and can never
-      show them a field their own rules withhold.
+      declares and what the reader may read, object and properties alike. A
+      link never carries a reader to a record they cannot read: the reference
+      stays an identifier, in their own organisation or another.
 - [x] 3.2b Wiring it into the read path beside `PropertyRbacHandler`, which is
       where the readable set comes from. The rule takes that set as an
       argument precisely so there is no second permission evaluator.
@@ -132,9 +132,11 @@
       `renderEntity()` answered it: that call has already run the far schema's
       own property rules through `PropertyRbacHandler`, so the intersection
       takes its answer as an argument and evaluates no permission of its own.
-      🔴 `@self` and `id` are the render envelope and are never withheld. They
-      say WHICH record the link points at, and a link that withheld the
-      identity of the record it exists to name would be unusable.
+      🔴 `id` and the identity in `@self` are never withheld. They say WHICH
+      record the link points at, and a link that withheld the identity of the
+      record it exists to name would be unusable. The rest of `@self` goes: a
+      display field such as `name` stays only when its value is shown anyway,
+      so metadata carries no withheld value.
       The exposure declaration rides the descriptor
       (`RelationTypeResolver::describe()`) rather than being parsed again in
       the render path, so `x-openregister-relation-types` keeps one reader.
