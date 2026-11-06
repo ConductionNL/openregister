@@ -3252,83 +3252,116 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
     {
-        // Handle folder creation for existing objects or new objects with UUIDs.
-        $folderId = null;
+        if ($uuid === null) {
+            return null;
+        }
 
-        if ($uuid !== null) {
-            // For existing objects or objects with specific UUIDs, check if folder needs to be created.
-            try {
-                // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
-                // we are on the save path with both register and schema already
-                // resolved, so there is no reason to fall back to the
-                // cross-table search (openregister#1520). Unscoped, this was the
-                // third full-instance UUID resolution in a single update.
-                $existingObject = $this->objectMapper->find(
-                    $uuid,
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema
-                );
-                $folder         = $existingObject->getFolder();
+        $this->revalidateFolderBinding(uuid: $uuid, currentUser: $currentUser);
 
-                // The `_folder` column is `varchar(255)` — every populated
-                // value is a string. The earlier `is_string($folder) === true`
-                // clause matched ANY non-empty string and so triggered an
-                // auto-create on every update, overwriting valid folder
-                // bindings with freshly-generated auto-folders under the
-                // register's storage tree. The intent of the string branch
-                // was to handle LEGACY non-numeric string paths that
-                // pre-date the integer-id storage convention; restrict the
-                // check to that case.
-                $needsAutoCreate = (
-                    $folder === null
-                    || $folder === ''
-                    || (is_string($folder) === true && is_numeric($folder) === false)
-                );
-
-                if ($needsAutoCreate === false) {
-                    // Defense in depth (PR #1431 review concern): the
-                    // `setSelfMetadata` access check only fires when the
-                    // write payload includes `@self.folder`. Pre-PR
-                    // cross-tenant bindings (or any subsequent save that
-                    // touches other fields) would otherwise pass through
-                    // unchecked. Re-validate the existing binding on every
-                    // save so the check applies uniformly. Throws
-                    // `FolderAccessDeniedException` → HTTP 403 at the
-                    // controller layer when the acting user cannot access
-                    // the bound folder. The existing binding is kept, so no
-                    // folder id is returned (auto-create is not needed).
-                    $this->fileService->assertObjectFolderAccessible(
-                        object: $existingObject,
-                        currentUser: $currentUser
-                    );
-                    return null;
-                }
-
-                // Lazy folder creation: do NOT create a Files folder for an
-                // object that has none. Most objects never get a file attached,
-                // so eagerly creating a per-object folder on every save (a)
-                // clutters the Files tree with thousands of empty folders and
-                // (b) can bind the object to a folder created in a
-                // no-session/system context (e.g. config-import seeding) that a
-                // later editor cannot access — which then denies the edit with
-                // folder_access_denied. The folder is created on demand the
-                // first time a file is actually uploaded to the object
-                // (CreateFileHandler → getObjectFolder, which creates-if-missing).
-                // Leave $folderId null; the object functions fine without one.
-                $folderId = null;
-            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
-                // Propagate folder-access denials up to the controller.
-                throw $e;
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Object not found, will create new one with the specified UUID.
-                // Let SaveObject handle the creation with the provided UUID.
-            } catch (Exception $e) {
-                // Other errors - let SaveObject handle the creation.
-            }//end try
-        }//end if
-
-        return $folderId;
+        // Lazy folder creation: do NOT create a Files folder for an
+        // object that has none. Most objects never get a file attached,
+        // so eagerly creating a per-object folder on every save (a)
+        // clutters the Files tree with thousands of empty folders and
+        // (b) can bind the object to a folder created in a
+        // no-session/system context (e.g. config-import seeding) that a
+        // later editor cannot access — which then denies the edit with
+        // folder_access_denied. The folder is created on demand the
+        // first time a file is actually uploaded to the object
+        // (CreateFileHandler → getObjectFolder, which creates-if-missing).
+        return null;
     }//end ensureObjectFolder()
+
+    /**
+     * Re-validate the folder binding of a stored object for the acting user.
+     *
+     * @param string     $uuid        The object uuid.
+     * @param IUser|null $currentUser The acting user, null to use the session.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function revalidateFolderBinding(string $uuid, ?IUser $currentUser): void
+    {
+        try {
+            $this->assertStoredFolderBinding(uuid: $uuid, currentUser: $currentUser);
+        } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+            // Propagate folder-access denials up to the controller.
+            throw $e;
+        } catch (Exception $e) {
+            // A missing object or any other error: let SaveObject handle the creation.
+        }//end try
+    }//end revalidateFolderBinding()
+
+    /**
+     * Look up a stored object and check its folder binding, when it has one.
+     *
+     * @param string     $uuid        The object uuid.
+     * @param IUser|null $currentUser The acting user, null to use the session.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertStoredFolderBinding(string $uuid, ?IUser $currentUser): void
+    {
+        // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
+        // we are on the save path with both register and schema already
+        // resolved, so there is no reason to fall back to the
+        // cross-table search (openregister#1520). Unscoped, this was the
+        // third full-instance UUID resolution in a single update.
+        $existingObject = $this->objectMapper->find(
+            $uuid,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
+
+        if ($this->hasFolderBinding(folder: $existingObject->getFolder()) === true) {
+            // Defense in depth (PR #1431 review concern): the
+            // `setSelfMetadata` access check only fires when the
+            // write payload includes `@self.folder`. Pre-PR
+            // cross-tenant bindings (or any subsequent save that
+            // touches other fields) would otherwise pass through
+            // unchecked. Re-validate the existing binding on every
+            // save so the check applies uniformly. Throws
+            // `FolderAccessDeniedException` → HTTP 403 at the
+            // controller layer when the acting user cannot access
+            // the bound folder. The existing binding is kept, so no
+            // folder id is returned (auto-create is not needed).
+            $this->fileService->assertObjectFolderAccessible(
+                object: $existingObject,
+                currentUser: $currentUser
+            );
+        }
+    }//end assertStoredFolderBinding()
+
+    /**
+     * Whether an object's folder column holds a binding to a folder id.
+     *
+     * The `_folder` column is `varchar(255)` — every populated
+     * value is a string. The earlier `is_string($folder) === true`
+     * clause matched ANY non-empty string and so triggered an
+     * auto-create on every update, overwriting valid folder
+     * bindings with freshly-generated auto-folders under the
+     * register's storage tree. The intent of the string branch
+     * was to handle LEGACY non-numeric string paths that
+     * pre-date the integer-id storage convention; restrict the
+     * check to that case.
+     *
+     * @param mixed $folder The stored folder value.
+     *
+     * @return bool True for a numeric folder id.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function hasFolderBinding(mixed $folder): bool
+    {
+        return $folder !== null && $folder !== '' && (is_string($folder) === false || is_numeric($folder) === true);
+    }//end hasFolderBinding()
 
     /**
      * Delete an object, optionally scoped to a (register, schema) magic table.
