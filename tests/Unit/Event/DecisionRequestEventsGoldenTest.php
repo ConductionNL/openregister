@@ -30,6 +30,7 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * @covers \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @covers \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @covers \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
  * @uses   \OCA\OpenRegister\Db\Decision

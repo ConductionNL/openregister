@@ -41,6 +41,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Decision\DecisionVisibility
  * @uses \OCA\OpenRegister\Db\Decision
  * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
  * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
  */

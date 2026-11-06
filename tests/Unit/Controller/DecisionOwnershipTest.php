@@ -62,6 +62,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Decision\DecisionService
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicy
  * @uses   \OCA\OpenRegister\Service\Decision\ReviewPolicyResolver
+ * @uses \OCA\OpenRegister\Event\AbstractDecisionRequestEvent
  * @uses   \OCA\OpenRegister\Event\DecisionChangeRequestedEvent
  * @uses   \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  * @uses   \OCA\OpenRegister\Db\Decision
