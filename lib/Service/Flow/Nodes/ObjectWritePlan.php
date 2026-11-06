@@ -223,6 +223,20 @@ final class ObjectWritePlan
 	}//end schemaLabel()
 
 	/**
+	 * The output record of a delete that was attempted.
+	 *
+	 * @param string $uuid    The object's uuid.
+	 * @param bool   $deleted Whether the service confirmed the delete.
+	 *
+	 * @return array{uuid: string, register: string, schema: string, deleted: bool} The record.
+	 *
+	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+	 */
+	public function deleteRecord(string $uuid, bool $deleted): array {
+		return ['uuid' => $uuid, 'register' => $this->registerLabel(), 'schema' => $this->schemaLabel(), 'deleted' => $deleted];
+	}//end deleteRecord()
+
+	/**
 	 * Count one performed save.
 	 *
 	 * @param bool $matched Whether it landed on an existing object.

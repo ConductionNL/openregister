@@ -50,6 +50,8 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatcher
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteMatchFilters
  * @uses   \OCA\OpenRegister\Exception\SchemaNotInRegisterException
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteBulk
