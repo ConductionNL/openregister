@@ -83,6 +83,8 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\ObjectDateValues;
+use OCA\OpenRegister\Service\Object\PatchDataMerge;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -3498,8 +3500,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param array $object The object data to normalize.
      *
      * @return array The normalized object data.
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function normalizeDateValues(array $object): array
     {
@@ -3507,48 +3507,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             return $object;
         }
 
-        $properties = $this->currentSchema->getProperties() ?? [];
-
-        foreach ($properties as $propertyName => $propertyDef) {
-            if (isset($object[$propertyName]) === false || is_string($object[$propertyName]) === false) {
-                continue;
-            }
-
-            $format = $propertyDef['format'] ?? null;
-            if ($format !== 'date' && $format !== 'date-time') {
-                continue;
-            }
-
-            // Empty / whitespace-only strings normalise to null instead of silently
-            // becoming the current datetime via PHP's "new DateTime('')" footgun.
-            if (trim($object[$propertyName]) === '') {
-                $object[$propertyName] = null;
-                continue;
-            }
-
-            if ($format === 'date') {
-                // If already a valid date (Y-m-d), skip.
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
-                    continue;
-                }
-
-                $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
-                if ($parsed !== null) {
-                    $object[$propertyName] = $parsed->format('Y-m-d');
-                }
-
-                continue;
-            }
-
-            // For date-time: accept valid input; invalid/empty input → null.
-            // Leave otherwise-valid strings untouched so downstream validation runs.
-            $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
-            if ($parsed === null) {
-                $object[$propertyName] = null;
-            }
-        }//end foreach
-
-        return $object;
+        return (new ObjectDateValues(dates: $this->dateTimeNormalizer))->normalize(
+            object: $object,
+            properties: ($this->currentSchema->getProperties() ?? [])
+        );
     }//end normalizeDateValues()
 
     /**
@@ -7420,7 +7382,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 schema: $scopedSchema
             );
 
-            $merged = $this->mergePatchData(
+            $merged = (new PatchDataMerge())->merge(
                 stored: (array) $existing->getObject(),
                 patch: $data
             );
@@ -7453,48 +7415,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end patchObject()
-
-    /**
-     * Merge a partial payload onto stored data, PATCH-semantically.
-     *
-     * See `patchObject()` for the rules this implements and why each is what it
-     * is. Kept private because the merge is only meaningful as part of the
-     * read-merge-save cycle; exposing it alone would invite callers to merge and
-     * then save PUT-semantically, which is the trap the method exists to close.
-     *
-     * @param array $stored The stored object data.
-     * @param array $patch  The partial payload.
-     *
-     * @return array The merged data.
-     */
-    private function mergePatchData(array $stored, array $patch): array
-    {
-        foreach ($patch as $key => $value) {
-            // An explicit null clears. Without this there is no way to unset a
-            // property through PATCH at all.
-            if ($value === null) {
-                $stored[$key] = null;
-                continue;
-            }
-
-            $storedValue = ($stored[$key] ?? null);
-
-            // Two associative arrays merge recursively. Lists — on either side —
-            // replace wholesale.
-            if (is_array($value) === true
-                && array_is_list($value) === false
-                && is_array($storedValue) === true
-                && array_is_list($storedValue) === false
-            ) {
-                $stored[$key] = $this->mergePatchData(stored: $storedValue, patch: $value);
-                continue;
-            }
-
-            $stored[$key] = $value;
-        }//end foreach
-
-        return $stored;
-    }//end mergePatchData()
 
     /**
      * Restore the stored form of string-typed properties the read path decoded.
