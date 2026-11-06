@@ -59,6 +59,25 @@ use ReflectionMethod;
 
 /**
  * Save-time survival of the hierarchy annotation and the department matrix.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 
