@@ -23,69 +23,25 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<!-- Display pagination info: showing current page items out of total items -->
-					<span class="viewTotalCount">
-						{{
-							t(
-								'openregister',
-								'Showing {showing} of {total} search trail entries',
-								{
-									showing: paginatedSearchTrails.length,
-									total:
-										searchTrailStore.searchTrailPagination.total
-										|| 0,
-								},
-							)
-						}}
-					</span>
+			<ListActionsBar
+				:summary="
+					t(
+						'openregister',
+						'Showing {showing} of {total} search trail entries',
+						{
+							showing: paginatedSearchTrails.length,
+							total: searchTrailStore.searchTrailPagination.total || 0,
+						},
+					)
+				"
+				:selectedCount="selectedSearchTrails.length"
+				:actions="headerActions">
+				<template #info>
 					<span v-if="hasActiveFilters" class="viewIndicator">
 						({{ t('openregister', 'Filtered') }})
 					</span>
-					<span
-						v-if="selectedSearchTrails.length > 0"
-						class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedSearchTrails.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions
-						:forceName="true"
-						:inline="selectedSearchTrails.length > 0 ? 3 : 2"
-						menuName="Actions">
-						<NcActionButton
-							v-if="selectedSearchTrails.length > 0"
-							closeAfterClick
-							@click="bulkDeleteSearchTrails">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{
-								t('openregister', 'Delete ({count})', {
-									count: selectedSearchTrails.length,
-								})
-							}}
-						</NcActionButton>
-						<NcActionButton closeAfterClick @click="cleanupSearchTrails">
-							<template #icon>
-								<Broom :size="20" />
-							</template>
-							{{ t('openregister', 'Cleanup Old Trails') }}
-						</NcActionButton>
-						<NcActionButton closeAfterClick @click="refreshSearchTrails">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+				</template>
+			</ListActionsBar>
 
 			<!-- Search Trails Table -->
 			<div v-if="searchTrailStore.searchTrailLoading" class="viewLoading">
@@ -217,43 +173,8 @@ import { navigationStore, searchTrailStore } from '../../store/store.js'
 								}}</span>
 							</td>
 							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="viewDetails(searchTrail)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="hasParameters(searchTrail)"
-										closeAfterClick
-										@click="viewParameters(searchTrail)">
-										<template #icon>
-											<Cog :size="20" />
-										</template>
-										{{ t('openregister', 'View Parameters') }}
-									</NcActionButton>
-									<NcActionButton
-										v-if="searchTrail.searchTerm"
-										closeAfterClick
-										@click="rerunSearch(searchTrail)">
-										<template #icon>
-											<Refresh :size="20" />
-										</template>
-										{{ t('openregister', 'Rerun Search') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										class="deleteAction"
-										@click="deleteSearchTrail(searchTrail)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu
+									:actions="searchTrailActions(searchTrail)" />
 							</td>
 						</tr>
 					</tbody>
@@ -294,24 +215,22 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
+import { refreshAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'SearchTrailIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcActions,
-		NcActionButton,
 		NcDateTime,
 		NcCheckboxRadioSwitch,
 		MagnifyPlus,
-		Delete,
-		Broom,
-		Refresh,
-		Eye,
-		Cog,
 		PaginationComponent,
 	},
 
@@ -323,6 +242,33 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The entries of the bar above the list.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		headerActions() {
+			const selected = this.selectedSearchTrails.length
+			return [
+				{
+					label: t('openregister', 'Delete ({count})', {
+						count: selected,
+					}),
+
+					icon: Delete,
+					run: () => this.bulkDeleteSearchTrails(),
+					hidden: selected === 0,
+				},
+				{
+					label: t('openregister', 'Cleanup Old Trails'),
+					icon: Broom,
+					run: () => this.cleanupSearchTrails(),
+				},
+				refreshAction(() => this.refreshSearchTrails()),
+			]
+		},
+
 		/**
 		 * @spec exclude list-view active-filter detection helper (computed)
 		 */
@@ -415,6 +361,41 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The row menu of a search trail.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} searchTrail The search trail
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		searchTrailActions(searchTrail) {
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: Eye,
+					run: () => this.viewDetails(searchTrail),
+				},
+				{
+					label: t('openregister', 'View Parameters'),
+					icon: Cog,
+					run: () => this.viewParameters(searchTrail),
+					hidden: !this.hasParameters(searchTrail),
+				},
+				{
+					label: t('openregister', 'Rerun Search'),
+					icon: Refresh,
+					run: () => this.rerunSearch(searchTrail),
+					hidden: !searchTrail.searchTerm,
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: Delete,
+					run: () => this.deleteSearchTrail(searchTrail),
+					class: 'deleteAction',
+				},
+			]
+		},
+
 		/**
 		 * Load search trails from API
 		 *
