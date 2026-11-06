@@ -41,9 +41,16 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 
 	private string $appPath = '';
 
+	private bool $resolverFails = false;
+
 	protected function tearDown(): void {
 		if ($this->appPath !== '') {
-			unlink($this->appPath . '/lib/Settings/myapp_register.json');
+			array_map('unlink', glob($this->appPath . '/lib/Settings/register.d/*.json'));
+			if (is_dir($this->appPath . '/lib/Settings/register.d') === true) {
+				rmdir($this->appPath . '/lib/Settings/register.d');
+			}
+
+			array_map('unlink', glob($this->appPath . '/lib/Settings/*.json'));
 			rmdir($this->appPath . '/lib/Settings');
 			rmdir($this->appPath . '/lib');
 			rmdir($this->appPath);
@@ -60,9 +67,29 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 	 * @return array<string, mixed> The `changed` block of the one row written.
 	 */
 	private function saveRegisterSetting(array $register, array $hookSecrets = []): array {
+		return $this->saveUnderDocument(json_encode($register), $hookSecrets);
+	}
+
+	/**
+	 * Save `register` from one value to another under the given register document.
+	 *
+	 * @param string|null        $document    The raw register JSON, null for no file at all.
+	 * @param array<int, string> $hookSecrets What the secretConfigKeys() hook answers.
+	 * @param string|null        $fragment    A raw `register.d` fragment.
+	 *
+	 * @return array<string, mixed> The `changed` block of each row, by key.
+	 */
+	private function saveUnderDocument(?string $document, array $hookSecrets = [], ?string $fragment = null): array {
 		$this->appPath = sys_get_temp_dir() . '/apphost-secret-audit-' . uniqid();
 		mkdir($this->appPath . '/lib/Settings', 0777, true);
-		file_put_contents($this->appPath . '/lib/Settings/myapp_register.json', json_encode($register));
+		if ($document !== null) {
+			file_put_contents($this->appPath . '/lib/Settings/myapp_register.json', $document);
+		}
+
+		if ($fragment !== null) {
+			mkdir($this->appPath . '/lib/Settings/register.d');
+			file_put_contents($this->appPath . '/lib/Settings/register.d/secrets.json', $fragment);
+		}
 
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn(true);
@@ -110,7 +137,8 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(LoggerInterface::class),
-			$hookSecrets
+			$hookSecrets,
+			$this->resolverFails
 		) extends AppHostSettingsService {
 			/**
 			 * @param array<int, string> $hookSecrets What the secretConfigKeys() hook answers.
@@ -124,6 +152,7 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 				IUserSession $userSession,
 				LoggerInterface $logger,
 				private readonly array $hookSecrets,
+				private readonly bool $resolverFails,
 			) {
 				parent::__construct($appId, $appConfig, $appManager, $container, $groupManager, $userSession, $logger);
 			}
@@ -134,6 +163,14 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 
 			protected function secretConfigKeys(): array {
 				return $this->hookSecrets;
+			}
+
+			protected function resolveRegisterConfiguration(): array {
+				if ($this->resolverFails === true) {
+					throw new \RuntimeException('unreadable');
+				}
+
+				return parent::resolveRegisterConfiguration();
 			}
 		};
 
@@ -186,5 +223,53 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 
 		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['new']);
 		$this->assertSame('new-token', $changed['register']['new']);
+	}
+
+	/**
+	 * @return array<string, array{0: string|null, 1: string|null}> The register document and fragment.
+	 */
+	public static function unreadableDocuments(): array {
+		return [
+			'no document' => [null, null],
+			'malformed document' => ['{"register": {', null],
+			'malformed fragment' => ['{"info": {"version": "1.0.0"}}', '{"register": {'],
+		];
+	}
+
+	/**
+	 * @dataProvider unreadableDocuments
+	 */
+	public function testAnUnreadableConfigurationRecordsTheChangeWithoutTheValue(?string $document, ?string $fragment): void {
+		$changed = $this->saveUnderDocument($document, [], $fragment);
+
+		foreach (['register', 'apiToken'] as $key) {
+			$this->assertSame($key, $changed[$key]['key'], 'the change itself stays on the trail');
+			$this->assertTrue($changed[$key]['secret']);
+			$this->assertSame(SettingsChangeAuditor::MASK, $changed[$key]['old']);
+			$this->assertSame(SettingsChangeAuditor::MASK, $changed[$key]['new']);
+		}
+
+		$this->assertStringNotContainsString('token', (string)json_encode($changed['register']));
+		$this->assertStringNotContainsString('-key', (string)json_encode($changed['apiToken']));
+	}
+
+	public function testAResolverThatThrowsRecordsTheChangeWithoutTheValue(): void {
+		$this->resolverFails = true;
+
+		$changed = $this->saveRegisterSetting(['info' => ['version' => '1.0.0']]);
+
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['register']['new']);
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['old']);
+	}
+
+	public function testAWellFormedFragmentKeepsTheValuesOfUndeclaredKeys(): void {
+		$changed = $this->saveUnderDocument(
+			'{"info": {"version": "1.0.0"}}',
+			[],
+			json_encode(['apiToken' => [SettingsChangeAuditor::SECRET_KEY => true]])
+		);
+
+		$this->assertSame('new-token', $changed['register']['new']);
+		$this->assertSame(SettingsChangeAuditor::MASK, $changed['apiToken']['new']);
 	}
 }

@@ -11,8 +11,9 @@ overwritten. Keys declared `x-openregister-secret` SHALL be recorded with
 both values masked. A key is declared secret by an entry
 `"<key>": {"x-openregister-secret": true}` at the top level of the app's
 `<app>_register.json` (with its `register.d/` fragments merged), or by the
-app's `secretConfigKeys()` hook; both sets are masked. Per-user preferences
-SHALL NOT be audited.
+app's `secretConfigKeys()` hook; both sets are masked. When the register
+configuration or one of its fragments cannot be read, every changed key SHALL
+be recorded with both values masked. Per-user preferences SHALL NOT be audited.
 
 #### Scenario: a changed key is traceable
 
@@ -25,6 +26,13 @@ SHALL NOT be audited.
 
 - **GIVEN** a key declared secret
 - **WHEN** its value changes
+- **THEN** the entry names the key and shows `***` for both values
+- @e2e exclude {masking, covered by unit tests}
+
+#### Scenario: an unreadable configuration keeps every value off the trail
+
+- **GIVEN** a register configuration or fragment that cannot be read
+- **WHEN** any key changes
 - **THEN** the entry names the key and shows `***` for both values
 - @e2e exclude {masking, covered by unit tests}
 
