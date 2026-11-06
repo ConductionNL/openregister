@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -1275,97 +1276,117 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): ?ObjectEntity {
         // BUG-OBJ-13 (openregister#1520): find() is a read operation and MUST NOT
         // leave the shared `currentRegister` / `currentSchema` instance state
-        // mutated for the next caller. The previous context is snapshotted here
-        // and restored in the `finally` below, so any re-anchoring done for this
-        // call's rendering / RBAC is local to this invocation only. A caller that
-        // omits register/schema gets MagicMapper's cross-table search, never a
-        // previous caller's leftover schema.
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        // mutated for the next caller, so any re-anchoring done for this call's
+        // rendering / RBAC stays local to this invocation. A caller that omits
+        // register/schema gets MagicMapper's cross-table search, never a previous
+        // caller's leftover schema.
+        $request = new ObjectFindRequest(
+            id: $id,
+            extend: $_extend,
+            files: $files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: $_audit
+        );
+        $target  = new ObjectFindTarget(register: $register, schema: $schema);
 
-        // The pending schema ref is the other half of that isolation: setSchema()
-        // remembers its raw ref so a later setRegister() can re-resolve it, and the
-        // next thing this method does is call setRegister(). A ref left behind by an
-        // unrelated earlier caller would be re-resolved inside THIS call's register
-        // and fail on a schema this call never mentioned. find() supplies its own
-        // scope through its arguments, so it never inherits a pending one.
+        return $this->preservingScope(
+            operation: function () use ($request, $target, $_render): ObjectEntity {
+                $object = $this->loadForFind(request: $request, target: $target);
+                $this->assertFindAllowed(object: $object, request: $request);
+
+                // The caller is the render site itself (ObjectsController::show()): the
+                // read path above still ran, but the expensive render pass runs once,
+                // in the caller.
+                if ($_render === false) {
+                    // AVG / GDPR per-access read logging still applies to the read.
+                    $this->logProcessingRead(object: $object);
+                    return $object;
+                }
+
+                return $this->renderFoundObject(object: $object, request: $request);
+            }
+        );
+    }//end find()
+
+    /**
+     * Loads the object for find() and anchors the context to it.
+     *
+     * The pending schema ref is the other half of find()'s isolation: setSchema()
+     * remembers its raw ref so a later setRegister() can re-resolve it, and the next
+     * thing this method does is call setRegister(). A ref left behind by an unrelated
+     * earlier caller would be re-resolved inside THIS call's register and fail on a
+     * schema this call never mentioned. find() supplies its own scope through its
+     * arguments, so it never inherits a pending one.
+     *
+     * @param ObjectFindRequest $request What the find() call asked for.
+     * @param ObjectFindTarget  $target  The register and schema the call names.
+     *
+     * @return ObjectEntity The object as read.
+     *
+     * @spec exclude Private step of find(); read behaviour owned by object-interactions.
+     */
+    private function loadForFind(ObjectFindRequest $request, ObjectFindTarget $target): ObjectEntity
+    {
         $this->discardPendingSchemaRef();
 
-        try {
-            $request = new ObjectFindRequest(
-                id: $id,
-                extend: $_extend,
-                files: $files,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy,
-                audit: $_audit
-            );
-            $scope   = $this->cachedFindScope(
-                id: $id,
-                scope: $this->callFindScope(register: $register, schema: $schema)
-            );
+        $scope = $this->cachedFindScope(
+            id: $request->id,
+            scope: $this->callFindScope(target: $target)
+        );
 
-            [$object, $scope] = $this->retrieveForFind(request: $request, scope: $scope);
+        [$object, $scope] = $this->retrieveForFind(request: $request, scope: $scope);
 
-            $this->anchorToFoundObject(object: $object, scope: $scope);
-            $this->rememberUuidScope(id: $id);
+        $this->anchorToFoundObject(object: $object, scope: $scope);
+        $this->rememberUuidScope(id: $request->id);
 
-            // Check user has permission to read this specific object (includes object owner check).
-            // Publication visibility is handled by RBAC conditional rules with $now variable.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'read',
-                userId: null,
-                objectOwner: $object->getOwner(),
-                _rbac: $_rbac,
-                object: $object
-            );
+        return $object;
+    }//end loadForFind()
 
-            // The caller is the render site itself (ObjectsController::show()): the
-            // read path above still ran, but the expensive render pass runs once,
-            // in the caller.
-            if ($_render === false) {
-                // AVG / GDPR per-access read logging still applies to the read.
-                $this->logProcessingRead(object: $object);
-                return $object;
-            }
-
-            return $this->renderFoundObject(object: $object, request: $request);
-        } finally {
-            // BUG-OBJ-13: restore the caller's context so find() has no
-            // observable side-effect on shared instance state.
-            $this->currentRegister  = $previousRegister;
-            $this->currentSchema    = $previousSchema;
-            // A restored schema is an ENTITY, already resolved. Leaving a stale
-            // pending ref behind would make the next setRegister() re-resolve the
-            // restored context against a register that has nothing to do with it.
-            $this->currentSchemaRef = null;
-        }//end try
-    }//end find()
+    /**
+     * Checks that the user may read this specific object (includes the object owner check).
+     *
+     * Publication visibility is handled by RBAC conditional rules with the $now variable.
+     *
+     * @param ObjectEntity      $object  The object as read.
+     * @param ObjectFindRequest $request What the find() call asked for.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of find(); the read rule itself lives in checkPermission().
+     */
+    private function assertFindAllowed(ObjectEntity $object, ObjectFindRequest $request): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'read',
+            userId: null,
+            objectOwner: $object->getOwner(),
+            _rbac: $request->rbac,
+            object: $object
+        );
+    }//end assertFindAllowed()
 
     /**
      * The register and schema a find() call names, resolved through the setters.
      *
-     * @param Register|string|int|null $register The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param ObjectFindTarget $target The register and schema the call names.
      *
      * @return ObjectFindScope The call's scope; an omitted argument stays null.
      *
      * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
      */
-    private function callFindScope(
-        Register | string | int | null $register,
-        Schema | string | int | null $schema
-    ): ObjectFindScope {
+    private function callFindScope(ObjectFindTarget $target): ObjectFindScope
+    {
         $callRegister = null;
         $callSchema   = null;
-        if ($register !== null) {
-            $this->setRegister(register: $register);
+        if ($target->register !== null) {
+            $this->setRegister(register: $target->register);
             $callRegister = $this->currentRegister;
         }
 
-        if ($schema !== null) {
-            $this->setSchema(schema: $schema);
+        if ($target->schema !== null) {
+            $this->setSchema(schema: $target->schema);
             $callSchema = $this->currentSchema;
         }
 
@@ -1434,17 +1455,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 throw $e;
             }
 
-            // Keep the caller's REGISTER while dropping only the schema. Dropping the
-            // register too turns every legitimate miss into an instance-wide union
-            // across all magic tables (measured 2026-07-29: ~1.9s of a ~3.0s create).
-            $object = $this->getForFind(
-                request: $request,
-                scope: new ObjectFindScope(register: $scope->register, schema: null)
-            );
-
-            return [$object, new ObjectFindScope(register: null, schema: null)];
+            return $this->retryWithoutSchema(request: $request, scope: $scope);
         }//end try
     }//end retrieveForFind()
+
+    /**
+     * Repeats the lookup without the schema, keeping the caller's register.
+     *
+     * Dropping the register too turns every legitimate miss into an instance-wide union
+     * across all magic tables (measured 2026-07-29: ~1.9s of a ~3.0s create).
+     *
+     * @param ObjectFindRequest $request What the find() call asked for.
+     * @param ObjectFindScope   $scope   The scope that missed.
+     *
+     * @return array{0: ObjectEntity, 1: ObjectFindScope} The object and an empty scope to anchor from.
+     *
+     * @throws OcpDoesNotExistException When the object does not exist in the register either.
+     *
+     * @spec exclude Private retry step of find(); read behaviour owned by object-interactions.
+     */
+    private function retryWithoutSchema(ObjectFindRequest $request, ObjectFindScope $scope): array
+    {
+        $object = $this->getForFind(
+            request: $request,
+            scope: new ObjectFindScope(register: $scope->register, schema: null)
+        );
+
+        return [$object, new ObjectFindScope(register: null, schema: null)];
+    }//end retryWithoutSchema()
 
     /**
      * Whether a scoped miss may be retried without the schema.
