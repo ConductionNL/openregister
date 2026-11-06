@@ -163,7 +163,13 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$file->method('getMimeType')->willReturn('application/pdf');
 
 		$fileService = $this->createMock(FileService::class);
-		$fileService->expects($this->once())->method('getFileById')->with(self::OPEN)->willReturn($file);
+		$reads = [];
+		$fileService->method('getFileById')->willReturnCallback(
+			static function (int $id) use (&$reads, $file): \OCP\Files\File {
+				$reads[] = $id;
+				return $file;
+			}
+		);
 		$renderer = $this->renderer($fileService);
 
 		$this->assertNull($this->call($renderer, 'getFileAsBase64', [self::RESTRICTED]));
@@ -171,6 +177,7 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 			'data:application/pdf;base64,' . base64_encode('body'),
 			$this->call($renderer, 'getFileAsBase64', [self::OPEN])
 		);
+		$this->assertSame([self::OPEN], $reads);
 	}//end testABase64PropertyDoesNotReadTheRestrictedFile()
 
 	public function testAnAccessLinkNeverDescribesARestrictedFile(): void {
