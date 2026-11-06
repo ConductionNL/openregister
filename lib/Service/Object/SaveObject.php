@@ -62,6 +62,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
+use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
@@ -1641,101 +1642,11 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return array The data, with the lifecycle field seeded when applicable.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each guard is a distinct fail-soft no-op branch required by the spec.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array {
-		$seed = self::lifecycleSeedSpec(schema: $schema);
-		if ($seed === null) {
-			return $data;
-		}
-
-		$field = $seed['field'];
-
-		// Empty-field-only: never overwrite a client-supplied value.
-		$currentValue = ($data[$field] ?? null);
-		if ($currentValue !== null && $currentValue !== '') {
-			return $data;
-		}
-
-		$parentRef = (string)($data[$seed['from']] ?? '');
-		if ($parentRef === '') {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'from' => $seed['from']]
-			);
-			return $data;
-		}
-
-		$parent = $this->loadLifecycleSeedParent(parentRef: $parentRef, field: $field);
-		if ($parent === null) {
-			return $data;
-		}
-
-		$seedValue = (($parent->getObject() ?? [])[$seed['parentPath']] ?? null);
-		if ($seedValue === null || $seedValue === '') {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'parentPath' => $seed['parentPath']]
-			);
-			return $data;
-		}
-
-		$data[$field] = $seedValue;
-
-		return $data;
+		return (new LifecycleSeed(mapper: $this->unifiedObjectMapper, logger: $this->logger))->apply(schema: $schema, data: $data);
 	}//end seedLifecycleFieldOnCreate()
-
-	/**
-	 * The object-form `initial` of a schema's lifecycle annotation: the payload key naming the parent,
-	 * the parent field to copy and the lifecycle field to seed.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return array{from: string, parentPath: string, field: string}|null Null without a complete object-form `initial`.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private static function lifecycleSeedSpec(Schema $schema): ?array {
-		$annotation = (($schema->getConfiguration() ?? [])['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === false || is_array($annotation['initial'] ?? null) === false) {
-			return null;
-		}
-
-		$seed = [
-			'from' => (string)($annotation['initial']['from'] ?? ''),
-			'parentPath' => (string)($annotation['initial']['field'] ?? ''),
-			'field' => (string)($annotation['field'] ?? ($annotation['property'] ?? '')),
-		];
-		if (in_array('', $seed, true) === true) {
-			return null;
-		}
-
-		return $seed;
-	}//end lifecycleSeedSpec()
-
-	/**
-	 * Load the parent a lifecycle field is seeded from, through the standard read path (RBAC + multitenancy).
-	 *
-	 * @param string $parentRef The parent reference.
-	 * @param string $field     The lifecycle field, for the log.
-	 *
-	 * @return ObjectEntity|null The parent, or null when it cannot be loaded.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function loadLifecycleSeedParent(string $parentRef, string $field): ?ObjectEntity {
-		try {
-			return $this->unifiedObjectMapper->find(identifier: $parentRef);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'parentRef' => $parentRef]
-			);
-			return null;
-		}
-	}//end loadLifecycleSeedParent()
 
 	/**
 	 * Apply property default values to a data array (for use in bulk save paths).
