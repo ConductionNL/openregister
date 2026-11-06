@@ -77,7 +77,6 @@ final class FilesRegistrar
             commentsManager: $container->get('OCP\Comments\ICommentsManager'),
             userSession: $container->get('OCP\IUserSession'),
             userManager: $container->get('OCP\IUserManager'),
-            logger: $container->get('Psr\Log\LoggerInterface'),
             visibility: $container->get(TimelineVisibilityServiceInterface::class),
             versions: $container->get(NoteVersionService::class)
         );

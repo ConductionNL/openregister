@@ -147,7 +147,6 @@ class ChatServiceProcessMessageGoldenTest extends TestCase {
 			$response,
 			$conversationHandler,
 			$history,
-			$this->createMock(ToolManagementHandler::class),
 			$logger
 		);
 	}

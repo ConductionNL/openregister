@@ -83,6 +83,54 @@ class TaskServiceTest extends TestCase {
 		$service->getTasksForObject('some-uuid');
 	}
 
+	// ── requireTaskOf ──
+
+	/**
+	 * A service whose user has calendar 1, holding one task linked to `uuid-mine`.
+	 *
+	 * @return TaskService
+	 */
+	private function serviceWithOneLinkedTask(): TaskService {
+		[$service, $calDavBackend] = $this->createServiceWithBackend();
+		$this->mockUserWithCalendar('testuser', $calDavBackend);
+		$calendarData = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\nSUMMARY:Mine\r\n"
+			. "X-OPENREGISTER-OBJECT:uuid-mine\r\nEND:VTODO\r\nEND:VCALENDAR\r\n";
+		$calDavBackend->method('getCalendarObjects')->willReturn([['uri' => 'task.ics']]);
+		$calDavBackend->method('getCalendarObject')->willReturn(['calendardata' => $calendarData]);
+		return $service;
+	}
+
+	public function testRequireTaskOfAcceptsATaskLinkedToTheObject(): void {
+		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '1', 'task.ics');
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireTaskOfRefusesATaskOfAnotherObject(): void {
+		$this->expectExceptionCode(404);
+		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-other', '1', 'task.ics');
+	}
+
+	public function testRequireTaskOfRefusesACalendarThatIsNotTheCallers(): void {
+		$this->expectExceptionCode(404);
+		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '99', 'task.ics');
+	}
+
+	public function testRequireTaskOfRefusesAnUnknownTask(): void {
+		$this->expectExceptionCode(404);
+		$this->serviceWithOneLinkedTask()->requireTaskOf('uuid-mine', '1', 'other.ics');
+	}
+
+	public function testRequireTaskOfRefusesACallerWithoutACalendar(): void {
+		[$service, $calDavBackend] = $this->createServiceWithBackend();
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('testuser');
+		$this->userSession->method('getUser')->willReturn($user);
+		$calDavBackend->method('getCalendarsForUser')->willReturn([]);
+
+		$this->expectExceptionCode(404);
+		$service->requireTaskOf('uuid-mine', '1', 'task.ics');
+	}
+
 	// ── getTasksForObject (no calendar) ──
 
 	public function testGetTasksForObjectThrowsWhenNoCalendar(): void {

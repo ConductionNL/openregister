@@ -1,0 +1,72 @@
+{
+    "ref path": {
+        "thrown": "OCA\\OpenRegister\\Service\\Relation\\RelationDeclarationException: Invalid relation declaration: relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare",
+        "errors": [
+            {
+                "code": "relation-exposes-unknown-property",
+                "message": "relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare"
+            }
+        ],
+        "rowsLeft": 0
+    },
+    "ref bare": {
+        "thrown": "OCA\\OpenRegister\\Service\\Relation\\RelationDeclarationException: Invalid relation declaration: relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare",
+        "errors": [
+            {
+                "code": "relation-exposes-unknown-property",
+                "message": "relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare"
+            }
+        ],
+        "rowsLeft": 0
+    },
+    "ref items": {
+        "thrown": "OCA\\OpenRegister\\Service\\Relation\\RelationDeclarationException: Invalid relation declaration: relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare",
+        "errors": [
+            {
+                "code": "relation-exposes-unknown-property",
+                "message": "relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare"
+            }
+        ],
+        "rowsLeft": 0
+    },
+    "ref items object": {
+        "thrown": "OCA\\OpenRegister\\Service\\Relation\\RelationDeclarationException: Invalid relation declaration: relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare",
+        "errors": [
+            {
+                "code": "relation-exposes-unknown-property",
+                "message": "relation type \"gerelateerd\" exposes \"zaknummer\", which the linked schema does not declare"
+            }
+        ],
+        "rowsLeft": 0
+    },
+    "ref trailing slash": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 1
+    },
+    "ref not a string": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 1
+    },
+    "ref empty": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 1
+    },
+    "far missing": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 0
+    },
+    "exposes nothing": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 1
+    },
+    "exposes known only": {
+        "thrown": null,
+        "errors": null,
+        "rowsLeft": 0
+    }
+}

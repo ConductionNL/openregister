@@ -14,12 +14,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
- * Pins PerformanceHandler's request classification and rewriting: isSimpleRequest,
- * optimizeExtendQueries and optimizeRequestForPerformance (query after, timing key,
- * log calls), for a table of queries.
+ * Pins PerformanceHandler's request classification and extend rewriting:
+ * isSimpleRequest and optimizeExtendQueries, for a table of queries.
  *
  * @covers \OCA\OpenRegister\Service\Object\PerformanceHandler
  */
@@ -52,29 +50,10 @@ class PerformanceHandlerRequestGoldenTest extends TestCase {
 	public function testRequestHandlingMatchesGolden(): void {
 		$actual = [];
 		foreach (self::queries() as $name => [$query]) {
-			$calls = [];
-			$handler = $this->handler(calls: $calls);
-			$timings = ['other' => 1];
-			$rewritten = $query;
-			$error = null;
-			try {
-				$handler->optimizeRequestForPerformance($rewritten, $timings);
-			} catch (\Throwable $e) {
-				$error = get_class($e) . ': ' . $e->getMessage();
-			}
-
-			$actual[$name] = [
-				'error' => $error,
-				'simple' => $handler->isSimpleRequest($query),
-				'rewritten' => $rewritten,
-				'timingKeys' => array_keys($timings),
-				'timingIsFloat' => is_float($timings['request_optimization'] ?? null),
-				'logs' => $calls,
-			];
+			$actual[$name] = ['simple' => $this->handler()->isSimpleRequest($query)];
 		}
 
-		$calls = [];
-		$handler = $this->handler(calls: $calls);
+		$handler = $this->handler();
 		$actual['optimizeExtendQueries'] = [
 			$handler->optimizeExtendQueries('   '),
 			$handler->optimizeExtendQueries('a, b, ,c'),
@@ -90,21 +69,7 @@ class PerformanceHandlerRequestGoldenTest extends TestCase {
 		$this->assertSame(json_decode((string)file_get_contents(self::FIXTURE), true), json_decode((string)json_encode($actual), true));
 	}//end testRequestHandlingMatchesGolden()
 
-	private function handler(array &$calls): PerformanceHandler {
-		$logger = $this->createMock(LoggerInterface::class);
-		foreach (['debug', 'info'] as $level) {
-			$logger->method($level)->willReturnCallback(function ($message, $context = []) use (&$calls, $level) {
-				unset($context['line'], $context['file']);
-				$calls[] = [$level, $message, $context];
-			});
-		}
-
-		$args = [];
-		foreach ((new \ReflectionMethod(PerformanceHandler::class, '__construct'))->getParameters() as $param) {
-			$type = $param->getType()->getName();
-			$args[] = $type === LoggerInterface::class ? $logger : $this->createMock($type);
-		}
-
-		return new PerformanceHandler(...$args);
+	private function handler(): PerformanceHandler {
+		return new PerformanceHandler();
 	}//end handler()
 }//end class

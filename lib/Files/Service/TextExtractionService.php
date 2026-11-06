@@ -31,9 +31,7 @@ use JsonException;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -146,8 +144,6 @@ class TextExtractionService {
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schemas
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers
 	 * @param EntityRecognitionHandler $entityHandler Handler for entity recognition
-	 * @param GdprEntityMapper $entityMapper Mapper for GDPR entities
-	 * @param EntityRelationMapperInterface $entityRelationMapper Mapper for entity relations
 	 * @param SettingsServiceInterface $settingsService Settings service
 	 * @param RiskLevelService $riskLevelService Risk level computation service
 	 * @param EmlParser $emlParser EML message-parser (used for message/rfc822
@@ -171,8 +167,6 @@ class TextExtractionService {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly EntityRecognitionHandler $entityHandler,
-		private readonly GdprEntityMapper $entityMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly SettingsServiceInterface $settingsService,
 		private readonly RiskLevelService $riskLevelService,
 		private readonly EmlParser $emlParser,

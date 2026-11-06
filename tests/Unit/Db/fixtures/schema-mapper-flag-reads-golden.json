@@ -1,0 +1,44 @@
+{
+    "findNonSearchableIds": {
+        "ids": [
+            3,
+            4
+        ],
+        "queries": [
+            "#1 select(id)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = false, boolean",
+            "#1 expr.eq(searchable, :p1, NULL)",
+            "#1 where(eq(searchable, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findSearchableIds": {
+        "ids": [
+            3,
+            4
+        ],
+        "queries": [
+            "#1 select(id)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(searchable, :p1, NULL)",
+            "#1 where(eq(searchable, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findSmartPickerEnabledIds": {
+        "ids": [
+            3,
+            4
+        ],
+        "queries": [
+            "#1 select(id)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = true, boolean",
+            "#1 expr.eq(smart_picker_enabled, :p1, NULL)",
+            "#1 where(eq(smart_picker_enabled, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}
