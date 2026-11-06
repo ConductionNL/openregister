@@ -52,6 +52,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler

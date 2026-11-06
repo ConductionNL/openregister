@@ -1512,15 +1512,37 @@ class CalculationEvaluator implements CalculationEvaluatorInterface {
 	 *
 	 * @param string $value The date string.
 	 *
-	 * @return DateTimeImmutable|null The date, or null when it does not parse.
+	 * @return DateTimeImmutable|null The date, or null when it does not parse or names only a timezone.
 	 */
 	private function dateFromString(string $value): ?DateTimeImmutable {
+		if ($this->namesOnlyATimezone(value: $value) === true) {
+			return null;
+		}
+
 		try {
 			return new DateTimeImmutable($value);
 		} catch (Throwable) {
 			return null;
 		}
 	}//end dateFromString()
+
+	/**
+	 * Whether a string holds a timezone and no date or time.
+	 *
+	 * PHP reads such a string, like any single letter (a military timezone), as
+	 * the current moment in that zone.
+	 *
+	 * @param string $value The date string.
+	 *
+	 * @return bool
+	 */
+	private function namesOnlyATimezone(string $value): bool {
+		$parsed = date_parse($value);
+
+		return ($parsed['zone_type'] ?? 0) !== 0
+			&& isset($parsed['relative']) === false
+			&& array_filter([$parsed['year'], $parsed['month'], $parsed['day'], $parsed['hour']], 'is_int') === [];
+	}//end namesOnlyATimezone()
 
 	/**
 	 * Resolve a single operand: the first element of a list, or the bare node.
