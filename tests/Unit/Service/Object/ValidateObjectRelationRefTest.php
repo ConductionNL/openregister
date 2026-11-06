@@ -105,14 +105,41 @@ class ValidateObjectRelationRefTest extends TestCase {
 	}
 
 	/**
+	 * References that are no slug and no component schema.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function unknownReferences(): array {
+		return [
+			'a pointer' => ['#/definitions/size'],
+			'an anchor' => ['#size'],
+			'a path' => ['schemas/size'],
+		];
+	}
+
+	/**
 	 * A reference that is neither a relation nor resolvable still names itself in the failure.
+	 *
+	 * @param string $reference The `$ref`.
 	 *
 	 * @return void
 	 */
-	public function testAnUnknownPointerStillFails(): void {
+	#[DataProvider('unknownReferences')]
+	public function testAnUnknownReferenceStillFails(string $reference): void {
 		$this->expectException(UnresolvedReferenceException::class);
 
-		$this->validate(properties: ['other' => ['$ref' => '#/definitions/size']], object: ['other' => 1]);
+		$this->validate(properties: ['other' => ['$ref' => $reference]], object: ['other' => 1]);
+	}
+
+	/**
+	 * A string property drops any `$ref`, as it holds the identifier itself.
+	 *
+	 * @return void
+	 */
+	public function testAStringPropertyDropsAnyReference(): void {
+		$properties = ['other' => ['type' => 'string', '$ref' => '#/definitions/size']];
+
+		$this->assertTrue($this->validate(properties: $properties, object: ['other' => 'a'])->isValid());
 	}
 
 	/**
