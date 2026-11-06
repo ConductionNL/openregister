@@ -87,6 +87,8 @@ use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\CrudHandler;
+use OCA\OpenRegister\Service\Object\ObjectSourcePageReader;
+use OCA\OpenRegister\Service\Object\ObjectSourceQuery;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -4743,228 +4745,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             _rbac: $_rbac
         );
 
-        // The canonical search query keeps object-field filters as TOP-LEVEL
-        // keys and paging as `_limit`/`_page`/`_offset`, while the provider
-        // contract reads `filters`, `limit` and `offset`. Normalise additively
-        // (existing keys are never overwritten) so providers written against
-        // either shape keep working.
         $read = new ObjectSourceRead(
             schema: $schema,
-            query: $this->normaliseObjectSourceQuery(query: $query),
+            query: (new ObjectSourceQuery())->forProvider(query: $query),
             config: ($source['config'] ?? []),
             provider: $this->objectSourceRegistry->get($source['provider'])
         );
 
-        return $this->readObjectSourcePage(read: $read, providerId: $source['provider']);
+        return (new ObjectSourcePageReader(logger: $this->logger))->read(read: $read, register: $this->currentRegister);
     }//end paginateObjectSource()
-
-    /**
-     * Read one page from an object-source provider and shape it like a native search result.
-     *
-     * A missing or disabled provider, or a missing register context, yields an empty list.
-     *
-     * @param ObjectSourceRead $read       The provider, schema, query and config.
-     * @param string           $providerId The provider id the schema declares.
-     *
-     * @return array{results: array, total: int, '@self': array} The paginated result.
-     */
-    private function readObjectSourcePage(ObjectSourceRead $read, string $providerId): array
-    {
-        $provider = $read->provider;
-        $active   = ($provider !== null && $provider->isEnabled() === true && $this->currentRegister !== null);
-        $results  = [];
-        if ($active === false) {
-            $this->logger->warning(
-                sprintf(
-                    '[ObjectSource] schema "%s" declares provider "%s" but it is missing/disabled or has no register context — returning empty list',
-                    (string) $read->schema->getSlug(),
-                    $providerId
-                )
-            );
-        } else {
-            $results = $provider->findAll(
-                register: $this->currentRegister,
-                schema: $read->schema,
-                query: $read->query,
-                config: $read->config
-            );
-        }
-
-        $limit  = (int) ($read->query['limit'] ?? 0);
-        $offset = max(0, (int) ($read->query['offset'] ?? 0));
-
-        // D4b: consult the provider's count() for the TRUE total and compute
-        // page metadata, passing limit/offset through (findAll already received
-        // them). A provider that cannot report a real total — count() throws or
-        // returns a value inconsistent with the returned window — falls back to
-        // the pre-existing in-memory behaviour so the native providers are
-        // unaffected.
-        $trueTotal = null;
-        if ($active === true) {
-            $trueTotal = $this->objectSourceTrueTotal(read: $read, windowEnd: ($offset + count($results)));
-        }
-
-        $total = ($trueTotal ?? count($results));
-        return [
-            'results' => $results,
-            'total'   => $total,
-            '@self'   => $this->objectSourcePageMetadata(
-                total: $total,
-                limit: $limit,
-                offset: $offset,
-                realCount: ($trueTotal !== null)
-            ),
-        ];
-    }//end readObjectSourcePage()
-
-    /**
-     * Adapt a canonical search query to the object-source provider contract.
-     *
-     * The canonical shape (SearchQueryHandler::buildSearchQuery) carries object
-     * field filters as top-level keys, paging as `_limit`/`_page`/`_offset`,
-     * and sorting as `_order`. Providers read `filters`, `limit`, `offset` and
-     * `sort`. Mapping is ADDITIVE: a key the caller already set is never
-     * overwritten, so provider behaviour under the old shape is unchanged.
-     *
-     * @param array<string, mixed> $query The canonical search query.
-     *
-     * @return array<string, mixed> The query with provider-contract keys added.
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design, one guard per provider key
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function normaliseObjectSourceQuery(array $query): array
-    {
-        if (isset($query['limit']) === false && isset($query['_limit']) === true) {
-            $query['limit'] = (int) $query['_limit'];
-        }
-
-        if (isset($query['offset']) === false) {
-            $offset = (int) ($query['_offset'] ?? 0);
-            $page   = (int) ($query['_page'] ?? 0);
-            $limit  = (int) ($query['limit'] ?? 0);
-            if ($offset === 0 && $page > 1 && $limit > 0) {
-                $offset = (($page - 1) * $limit);
-            }
-
-            if ($offset > 0) {
-                $query['offset'] = $offset;
-            }
-        }
-
-        if (isset($query['sort']) === false && isset($query['_order']) === true) {
-            $query['sort'] = $query['_order'];
-        }
-
-        if (isset($query['filters']) === false) {
-            $filters = [];
-            foreach ($query as $key => $value) {
-                $key = (string) $key;
-                if ($key === '' || $key[0] === '_' || $key[0] === '@') {
-                    continue;
-                }
-
-                if (in_array($key, ['limit', 'offset', 'sort', 'filters', 'extend', 'fields'], true) === true) {
-                    continue;
-                }
-
-                if (is_scalar($value) === true) {
-                    $filters[$key] = $value;
-                }
-            }
-
-            if ($filters !== []) {
-                $query['filters'] = $filters;
-            }
-        }//end if
-
-        return $query;
-    }//end normaliseObjectSourceQuery()
-
-    /**
-     * Consult an object-source provider's count() for the true total (D4b).
-     *
-     * Returns null — signalling the in-memory fallback — when count() throws or
-     * reports a value inconsistent with the returned window (smaller than
-     * offset + returned results), so providers without real count support keep
-     * their pre-existing single-page behaviour.
-     *
-     * @param ObjectSourceRead $read      The provider (enabled), schema, query and config.
-     * @param int              $windowEnd The requested offset plus the returned window size.
-     *
-     * @return int|null The true total, or null when the provider has no real count.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function objectSourceTrueTotal(ObjectSourceRead $read, int $windowEnd): ?int
-    {
-        try {
-            $counted = $read->provider->count(
-                register: $this->currentRegister,
-                schema: $read->schema,
-                query: $read->query,
-                config: $read->config
-            );
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                '[ObjectSource] provider "'.$read->provider->getId().'" count() unavailable — falling back to in-memory total: '.$e->getMessage()
-            );
-            return null;
-        }
-
-        if ($counted >= $windowEnd) {
-            return $counted;
-        }
-
-        return null;
-    }//end objectSourceTrueTotal()
-
-    /**
-     * Compute the `@self` pagination block for an object-source result (D4b).
-     *
-     * @param int  $total     The (true or fallback) total.
-     * @param int  $limit     The requested limit (0 = none).
-     * @param int  $offset    The requested offset.
-     * @param bool $realCount Whether the total came from a real provider count.
-     *
-     * @return array The `@self` pagination metadata.
-     *
-     * @spec openspec/specs/dbal-virtual-registers/spec.md
-     */
-    private function objectSourcePageMetadata(int $total, int $limit, int $offset, bool $realCount): array
-    {
-        $page  = 1;
-        $pages = 1;
-        $next  = null;
-        $prev  = null;
-
-        if ($realCount === true && $limit > 0) {
-            $pages = max(1, (int) ceil($total / $limit));
-            $page  = ((int) floor($offset / $limit) + 1);
-            if ($page < $pages) {
-                $next = ($page + 1);
-            }
-
-            if ($page > 1) {
-                $prev = ($page - 1);
-            }
-        }
-
-        $effectiveLimit = $total;
-        if ($limit > 0) {
-            $effectiveLimit = $limit;
-        }
-
-        return [
-            'total' => $total,
-            'page'  => $page,
-            'pages' => $pages,
-            'limit' => $effectiveLimit,
-            'next'  => $next,
-            'prev'  => $prev,
-        ];
-    }//end objectSourcePageMetadata()
 
     /**
      * Record a search-trail entry for a paginated search, honouring the
