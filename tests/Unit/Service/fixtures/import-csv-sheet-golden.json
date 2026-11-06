@@ -430,7 +430,7 @@
             "importJobId": "<uuid>"
         }
     },
-    "invalid ignored without validation": {
+    "invalid reported without validation": {
         "calls": [
             {
                 "method": "audit.setRequestImportJobId",
@@ -529,7 +529,13 @@
                 "created": [],
                 "updated": [],
                 "unchanged": [],
-                "errors": [],
+                "errors": [
+                    {
+                        "object": [],
+                        "error": "bad",
+                        "type": "ValidationException"
+                    }
+                ],
                 "performance": {
                     "totalTime": "<time>",
                     "totalTimeMs": "<time>",

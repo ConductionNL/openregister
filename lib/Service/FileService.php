@@ -53,7 +53,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -86,14 +85,9 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCP\IUserSession;
-use OCP\Share\IManager;
 use OCP\Share\IShare;
-use OCP\SystemTag\ISystemTagManager;
-use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -114,19 +108,7 @@ use Psr\Log\LoggerInterface;
  */
 class FileService {
 
-	/**
-	 * File mapper
-	 *
-	 * @var FileMapperInterface
-	 */
-	private FileMapperInterface $fileMapper;
 
-	/**
-	 * Group manager
-	 *
-	 * @var IGroupManager
-	 */
-	private IGroupManager $groupManager;
 
 	/**
 	 * Logger
@@ -149,26 +131,8 @@ class FileService {
 	 */
 	private IRootFolder $rootFolder;
 
-	/**
-	 * Share manager
-	 *
-	 * @var IManager
-	 */
-	private IManager $shareManager;
 
-	/**
-	 * System tag manager
-	 *
-	 * @var ISystemTagManager
-	 */
-	private ISystemTagManager $systemTagManager;
 
-	/**
-	 * System tag mapper
-	 *
-	 * @var ISystemTagObjectMapper
-	 */
-	private ISystemTagObjectMapper $systemTagMapper;
 
 	/**
 	 * Builds share links for the host the visitor used
@@ -177,12 +141,6 @@ class FileService {
 	 */
 	private ShareUrlBuilder $shareUrls;
 
-	/**
-	 * User manager
-	 *
-	 * @var IUserManager
-	 */
-	private IUserManager $userManager;
 
 	/**
 	 * User session
@@ -384,15 +342,9 @@ class FileService {
 	/**
 	 * Constructor
 	 *
-	 * @param FileMapperInterface $fileMapper File mapper
-	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
 	 * @param IRootFolder $rootFolder Root folder
-	 * @param IManager $shareManager Share manager
-	 * @param ISystemTagManager $systemTagManager System tag manager
-	 * @param ISystemTagObjectMapper $systemTagMapper System tag mapper
 	 * @param ShareUrlBuilder $shareUrls Share link builder
-	 * @param IUserManager $userManager User manager
 	 * @param IUserSession $userSession User session
 	 * @param FileValidationHandler $fileValidHandler File validation handler
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler
@@ -415,15 +367,9 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		FileMapperInterface $fileMapper,
-		IGroupManager $groupManager,
 		LoggerInterface $logger,
 		IRootFolder $rootFolder,
-		IManager $shareManager,
-		ISystemTagManager $systemTagManager,
-		ISystemTagObjectMapper $systemTagMapper,
 		ShareUrlBuilder $shareUrls,
-		IUserManager $userManager,
 		IUserSession $userSession,
 		FileValidationHandler $fileValidHandler,
 		FolderManagementHandler $folderMgmtHandler,
@@ -448,15 +394,9 @@ class FileService {
 			message: '[FileService] FileService constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->fileMapper = $fileMapper;
-		$this->groupManager = $groupManager;
 		// REMOVED: registerMapper assignment (unused, caused circular dependency).
 		$this->rootFolder = $rootFolder;
-		$this->shareManager = $shareManager;
-		$this->systemTagManager = $systemTagManager;
-		$this->systemTagMapper = $systemTagMapper;
 		$this->shareUrls = $shareUrls;
-		$this->userManager = $userManager;
 		$this->userSession = $userSession;
 		$this->fileValidationHandler = $fileValidHandler;
 		$this->folderManagementHandler = $folderMgmtHandler;
@@ -699,21 +639,15 @@ class FileService {
 	}//end createObjectFolderById()
 
 	/**
-	 * Get the OpenRegister user root folder.
+	 * Refuse when the OpenRegister user's root folder cannot be reached.
 	 *
-	 * This method provides a consistent way to access the OpenRegister user's
-	 * root folder across the entire FileService.
-	 *
-	 * @return Folder The OpenRegister user's root folder
+	 * @return void
 	 *
 	 * @throws Exception If the user folder cannot be accessed
-	 *
-	 * @psalm-return   Folder
-	 * @phpstan-return Folder
 	 */
-	private function getOpenRegisterUserFolder(): Folder {
-		return $this->folderManagementHandler->getOpenRegisterUserFolder();
-	}//end getOpenRegisterUserFolder()
+	private function assertOpenRegisterUserFolder(): void {
+		$this->folderManagementHandler->getOpenRegisterUserFolder();
+	}//end assertOpenRegisterUserFolder()
 
 	/**
 	 * Get files for either a Register or ObjectEntity.
@@ -947,22 +881,24 @@ class FileService {
 	}//end getUser()
 
 	/**
-	 * Check file ownership and fix it if needed to prevent "File not found" errors.
+	 * Gate access to a file node on readability.
 	 *
-	 * @param Node $file The file node to check ownership for
+	 * Despite the name this never changes ownership: the delegate checks
+	 * `Node::isReadable()` and throws when the session cannot read the node.
+	 * The former repair path (`ownFile()` → `FileMapper::setFileOwnership()`)
+	 * renamed the whole `home::openregister` storage to the session user and
+	 * is gone (WOO-582).
+	 *
+	 * @param Node $file The file node to check access for
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If ownership check/fix fails
-	 *
-	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
-	 * @TODO: where files exist but can't be accessed due to permission problems.
-	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+	 * @throws NotPermittedException If the session cannot read the node
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @spec exclude Ownership-guard delegation; throws when the current user does not own the node, no standalone business logic.
+	 * @spec exclude Readability-guard delegation; throws when the session cannot read the node, no standalone business logic.
 	 */
 	public function checkOwnership(Node $file): void {
 		$this->fileValidationHandler->checkOwnership(file: $file);
@@ -1192,8 +1128,7 @@ class FileService {
 		}
 
 		try {
-			// Note: userId and userFolder not currently used - file retrieved from rootFolder.
-			$this->getOpenRegisterUserFolder();
+			$this->assertOpenRegisterUserFolder();
 		} catch (Exception) {
 			$msg = "[FileService] Can't create share link for $path because OpenRegister user folder couldn't be found.";
 			$this->logger->error(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);

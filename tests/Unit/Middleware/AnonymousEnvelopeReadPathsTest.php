@@ -73,6 +73,11 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectReadOptions
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectShow
+ * @uses \OCA\OpenRegister\Controller\Support\ShowServices
+ * @uses \OCA\OpenRegister\Controller\Support\ShownEntity
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsRouteScope
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses \OCA\OpenRegister\Controller\Support\ObjectRequestParams
@@ -97,6 +102,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\CompositionHandler
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaCaller
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
@@ -344,7 +350,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			new TimeseriesRequestValidator()
 		);
 
-		$generator = new SchemaGenerator($registerMapper, $schemaMapper, $this->session(signedIn: $signedIn));
+		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn), $rbac);
 		$generator->setResolver($resolver);
 
 		$uuid = (string)$this->record()->getUuid();

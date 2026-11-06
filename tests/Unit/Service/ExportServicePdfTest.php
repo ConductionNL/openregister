@@ -133,7 +133,6 @@ class ExportServicePdfTest extends TestCase {
 			$this->objectService,
 			$this->cacheHandler,
 			$this->propertyRbacHandler,
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
 			$converter
 		);
 	}

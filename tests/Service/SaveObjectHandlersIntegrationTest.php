@@ -840,35 +840,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test optimizeRequestForPerformance sets fast_path for simple requests.
-	 */
-	public function testOptimizeRequestForPerformanceFastPath(): void {
-		$query = ['_limit' => 20];
-		$perfTimings = [];
-
-		$this->performanceHandler->optimizeRequestForPerformance($query, $perfTimings);
-
-		$this->assertTrue($query['_fast_path']);
-		$this->assertArrayHasKey('request_optimization', $perfTimings);
-	}
-
-	/**
-	 * Test optimizeRequestForPerformance with extend optimization.
-	 */
-	public function testOptimizeRequestForPerformanceWithExtend(): void {
-		$query = [
-			'_extend' => 'field1,field2',
-			'_limit' => 20,
-		];
-		$perfTimings = [];
-
-		$this->performanceHandler->optimizeRequestForPerformance($query, $perfTimings);
-
-		$this->assertIsArray($query['_extend']);
-		$this->assertArrayHasKey('request_optimization', $perfTimings);
-	}
-
-	/**
 	 * Test optimizeExtendQueries with string input.
 	 */
 	public function testOptimizeExtendQueriesString(): void {

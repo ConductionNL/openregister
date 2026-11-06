@@ -14,7 +14,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				{ count: selectedObjects.length },
 			)
 		"
-		:canClose="false"
+		noClose
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="delete-step">

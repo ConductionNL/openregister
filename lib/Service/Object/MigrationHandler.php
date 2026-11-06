@@ -23,9 +23,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -52,9 +50,6 @@ class MigrationHandler {
 	 * Constructor for MigrationHandler.
 	 *
 	 * @param MagicMapperInterface $objectMapper Mapper for object entities.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema entities.
-	 * @param RegisterMapperInterface $registerMapper Mapper for register entities.
-	 * @param SaveObjectInterface $saveHandler Handler for saving objects.
 	 * @param UtilityHandler $utilityHandler Handler for utility operations.
 	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
 	 * @param LoggerInterface $logger Logger for logging operations.
@@ -63,9 +58,6 @@ class MigrationHandler {
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObjectInterface $saveHandler,
 		private readonly UtilityHandler $utilityHandler,
 		private readonly DataManipulationHandler $dataManipHandler,
 		private readonly LoggerInterface $logger,

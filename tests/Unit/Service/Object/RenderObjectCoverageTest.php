@@ -117,7 +117,6 @@ class RenderObjectCoverageTest extends TestCase {
 			$this->schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -871,27 +870,36 @@ class RenderObjectCoverageTest extends TestCase {
 	}
 
 	/**
-	 * Test resolveSchemaReference with UUID falls through to slug lookup.
-	 *
-	 * Note: The UUID branch uses preg_match() === true, but preg_match returns int,
-	 * so 1 === true is false. UUID values fall through to the slug lookup path.
+	 * Test resolveSchemaReference answers a UUID with the schema's numeric id.
 	 *
 	 * @return void
 	 */
-	public function testResolveSchemaReferenceByUuidFallsToSlug(): void {
-		$schema = $this->createSchema(5, 'test-schema');
+	public function testResolveSchemaReferenceByUuidReturnsSchemaId(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
-		// UUID branch is dead code (preg_match returns int, not bool).
-		// So it falls through to findAll slug match.
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-		$this->schemaMapper->method('find')
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->with($uuid)
+			->willReturn($this->createSchema(5, 'test-schema'));
+		$this->schemaMapper->expects($this->never())->method('findAll');
+
+		$this->assertSame('5', $this->invokePrivate('resolveSchemaReference', [$uuid]));
+	}
+
+	/**
+	 * Test resolveSchemaReference keeps a UUID no schema answers to.
+	 *
+	 * @return void
+	 */
+	public function testResolveSchemaReferenceByUnknownUuidFallsToSlug(): void {
+		$uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+
+		$this->schemaMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->expects($this->once())
+			->method('find')
 			->willThrowException(new Exception('not found'));
 
-		// Falls through to return the UUID as-is.
-		$result = $this->invokePrivate('resolveSchemaReference', ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee']);
-
-		$this->assertSame('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $result);
+		$this->assertSame($uuid, $this->invokePrivate('resolveSchemaReference', [$uuid]));
 	}
 
 	/**

@@ -9,7 +9,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -189,6 +189,11 @@ export default {
 		}
 	},
 
+	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		schemaStore: () => schemaStore,
+	},
+
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
@@ -201,26 +206,6 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param {string|boolean} newDialog
-			 * @spec exclude watcher loading object count when dialog opens
-			 */
-			handler(newDialog) {
-				if (
-					newDialog === 'deleteSchemaObjects'
-					&& schemaStore.schemaItem?.id
-				) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
 		},
 	},
 

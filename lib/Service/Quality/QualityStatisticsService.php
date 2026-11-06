@@ -52,7 +52,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
 
 /**
  * Computes read-time quality statistics and serves the lowest-quality listing.
@@ -73,7 +72,7 @@ class QualityStatisticsService {
 	/**
 	 * Upper bound on the object set pulled per statistics computation.
 	 *
-	 * Mirrors {@see DuplicateDetectionService::MAX_CANDIDATES} — scopes every
+	 * Mirrors {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::MAX_CANDIDATES} — scopes every
 	 * read to a bounded, RBAC-scoped set rather than the whole schema.
 	 *
 	 * @var int
@@ -350,7 +349,7 @@ class QualityStatisticsService {
 	/**
 	 * Read the `x-openregister-quality` annotation off a schema.
 	 *
-	 * Mirrors {@see DuplicateDetectionService::loadAnnotation()}.
+	 * Mirrors {@see \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService::loadAnnotation()}.
 	 *
 	 * REGISTER-SCOPED. `GET /api/objects/quality/{register}/{schema}` has always
 	 * carried a register, and this lookup used to ignore it and resolve the slug

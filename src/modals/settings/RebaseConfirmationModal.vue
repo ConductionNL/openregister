@@ -2,7 +2,7 @@
 	<NcDialog
 		v-if="show"
 		name="Confirm Rebase Operation"
-		:canClose="!rebasing"
+		:noClose="rebasing"
 		@closing="$emit('close')">
 		<div class="dialog-content">
 			<h3>⚠️ Confirm Rebase Operation</h3>

@@ -149,7 +149,9 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$schemas->method('find')->willReturnCallback(
 			static fn ($id): Schema => in_array((string)$id, ['1'], true) ? $parent : $child
 		);
-		$schemas->method('findAll')->willReturn([$child]);
+		$schemas->method('findAll')->willReturnCallback(
+			static fn (...$args): array => ($args[2]['slug'] ?? null) === 'child' ? [$child] : []
+		);
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
@@ -172,7 +174,6 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 			schemaMapper: $schemas,
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
 			objectCacheService: $this->createMock(CacheHandler::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: new NullLogger(),
@@ -216,6 +217,14 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 	public function testASlugTargetLeavesOutWhatTheCallerMayNotRead(): void {
 		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
 		$renderer = $this->renderer('child');
+
+		$this->assertSame([self::OPEN], $this->renderedChildren($renderer));
+		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
+	}
+
+	public function testAUuidTargetLeavesOutWhatTheCallerMayNotRead(): void {
+		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
+		$renderer = $this->renderer('aaaaaaaa-4444-4444-8444-444444444444');
 
 		$this->assertSame([self::OPEN], $this->renderedChildren($renderer));
 		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());

@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\DuplicateController;
+use OCA\OpenRegister\Search\Controller\DuplicateController;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Quality\DismissedPairStore;
@@ -42,7 +42,7 @@ use ReflectionClass;
 use RuntimeException;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\DuplicateController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\DuplicateController
  */
 class DuplicateControllerTest extends TestCase {
 

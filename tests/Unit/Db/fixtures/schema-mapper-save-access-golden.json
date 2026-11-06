@@ -1,0 +1,54 @@
+{
+    "grant": {
+        "thrown": null,
+        "logs": []
+    },
+    "unknown verb": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException: The schema \"golden\" names \"bogus\", which no app declares. Grantable here: \"read\", \"create\", \"update\", \"delete\", \"destroy\", \"list\", \"export\", \"manage\", \"assign\", \"readFiles\", \"addFiles\", \"deleteFiles\", \"readGrants\".",
+        "logs": []
+    },
+    "grant and deny the same": {
+        "thrown": "OCA\\OpenRegister\\Exception\\AuthorizationBlockException: The authorization of the schema \"golden\" both grants and denies \"read\" to \"team\" at the same level: the rule \"team\" in read and the rule \"team\" in read.deny. Remove one of the two; a deny wins, so leaving both stored would grant nothing and read as a grant.",
+        "logs": []
+    },
+    "matrix on a missing field": {
+        "thrown": "Exception: authorization.matrix: The matrix field \"afdeling\" is not a property of this schema. Row 0 grants no action.",
+        "logs": []
+    },
+    "matrix with no rows": {
+        "thrown": "Exception: authorization.matrix: A matrix must name the object field it keys on. A matrix must declare where a user's own values come from. A matrix must declare at least one row.",
+        "logs": []
+    },
+    "read rule without audit": {
+        "thrown": null,
+        "logs": []
+    },
+    "audit with an empty read": {
+        "thrown": "Exception: authorization.audit is only meaningful on a property with a read rule, and these have none: a",
+        "logs": []
+    },
+    "audit false": {
+        "thrown": null,
+        "logs": []
+    },
+    "hierarchy on itself by uuid": {
+        "thrown": null,
+        "logs": [
+            [
+                "warning",
+                "[OpenRegister.SchemaMapper] Ignored 1 unknown x-openregister-hierarchy key(s) on schema \"golden\": Unknown key \"property\" was ignored.",
+                []
+            ]
+        ]
+    },
+    "hierarchy on another schema": {
+        "thrown": "Exception: x-openregister-hierarchy: The parent property \"up\" references \"other\" rather than this schema; a hierarchy edge must point at the same schema.",
+        "logs": [
+            [
+                "warning",
+                "[OpenRegister.SchemaMapper] Ignored 1 unknown x-openregister-hierarchy key(s) on schema \"golden\": Unknown key \"property\" was ignored.",
+                []
+            ]
+        ]
+    }
+}

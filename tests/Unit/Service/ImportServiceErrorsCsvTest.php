@@ -238,4 +238,34 @@ class ImportServiceErrorsCsvTest extends TestCase {
 
 	}//end testSkipsSheetsWithoutErrors()
 
+	/**
+	 * A bare text error, a structure and a missing value each fill their cells.
+	 *
+	 * @return void
+	 */
+	public function testErrorShapesFillTheirCells(): void {
+		$csv = $this->service->serializeErrorsToCsv(
+			[
+				'Sheet' => [
+					'errors' => [
+						'plain text',
+						['error' => 'bad', 'type' => 'Kind', 'object' => ['a' => 'é/b']],
+						['error' => 'none', 'sheet' => 'Own', 'row' => 7, 'field' => 'f', 'object' => null, 'original_value' => 12],
+						['error' => 'gone', 'original_value' => null],
+					],
+				],
+				'count' => 3,
+				'broken' => ['errors' => 'not a list'],
+			]
+		);
+
+		$this->assertSame(
+			"\xEF\xBB\xBFsheet,row,field,error_message,original_value\n"
+			. "Sheet,,,\"plain text\",\n"
+			. "Sheet,,Kind,bad,\"{\"\"a\"\":\"\"é/b\"\"}\"\n"
+			. "Own,7,f,none,12\n"
+			. "Sheet,,,gone,\n",
+			$csv
+		);
+	}//end testErrorShapesFillTheirCells()
 }//end class
