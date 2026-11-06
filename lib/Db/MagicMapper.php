@@ -8953,7 +8953,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
 						// Skip metadata columns (handled separately above); a schema
 						// property whose name starts with an underscore stays.
-						if (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
+						if (str_starts_with((string)$propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
 							continue;
 						}
 
