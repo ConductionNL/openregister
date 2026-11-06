@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
+use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -333,18 +335,12 @@ class FilesController extends Controller {
 	 * {@see ObjectFileAccessDeniedException}, mapped by {@see self::accessDenied()}.
 	 *
 	 * Anonymous callers are denied by default; read-only published-file
-	 * endpoints pass $allowAnonymous = true to keep their anonymous access.
+	 * endpoints ask {@see FileAccessCheck::forAnyone()} to keep their anonymous access.
 	 *
 	 * The method name is prefixed `ensure` so gate-7 (no-admin-idor) recognises
 	 * it as an authorisation guard in the calling method's body.
 	 *
-	 * @param string $register The register slug or identifier.
-	 * @param string $schema The schema slug or identifier.
-	 * @param string $id The object UUID or identifier.
-	 * @param bool $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
-	 * @param bool $change True (default) for an action that changes files, which needs update on the object.
-	 * @param string $fileVerb The file verb a change needs when the schema names file verbs: addFiles (default) or deleteFiles.
-	 * @param int|null $fileId The file the action is on; a restricted file the caller is not admitted to answers 404.
+	 * @param FileAccessCheck $check What the action needs from the object rule.
 	 *
 	 * @return ObjectEntity|null The object the route names, resolved within its register and
 	 *                           schema (so a slug is this schema's object, #4037); null for an
@@ -355,66 +351,99 @@ class FilesController extends Controller {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
-	 * @throws ObjectStateWriteException When $change is true and the object is frozen or archived (REQ-OAS-007).
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 * @throws ObjectStateWriteException When the check is for a change and the object is frozen or archived (REQ-OAS-007).
 	 */
-	private function ensureObjectAccess(
-		string $register,
-		string $schema,
-		string $id,
-		bool $allowAnonymous = false,
-		bool $change = true,
-		string $fileVerb = ObjectFileAccess::ADD_FILES,
-		?int $fileId = null,
-	): ?ObjectEntity {
+	private function ensureObjectAccess(FileAccessCheck $check): ?ObjectEntity {
 		// A restricted file the caller is not admitted to is not there for them, whatever the object rule says.
-		if ($fileId !== null) {
-			$this->refuseRestrictedFile(fileId: $fileId);
+		if ($check->fileId !== null) {
+			$this->refuseRestrictedFile(fileId: $check->fileId);
 		}
 
-		// Anonymous callers are denied by default. Published-file READ
-		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
-		// existing anonymous access, which is gated on publication.
 		if ($this->isAnonymousRequest() === true) {
-			if ($allowAnonymous === false) {
-				throw new NotAuthorizedException(
-					message: 'Authentication is required for this object action'
-				);
-			}
-
+			$this->refuseAnonymous(check: $check);
 			return null;
 		}
 
 		// The object rule is the only gate: an object's files live in the
 		// openregister account's home, so no Nextcloud mount stops anybody.
-		// Reading needs read on the object (404 otherwise); changing needs
-		// update (403 for a reader who may not update).
 		if ($this->objectFileAccess !== null) {
-			if ($change === true) {
-				$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id, verb: $fileVerb);
-				// REQ-OAS-007: a frozen or archived object's files do not
-				// change either. Asked after the access rule, so a caller
-				// without access still gets 404/403 and learns nothing of the state.
-				$this->fileWriteGuard?->assertWritable(object: $object);
-				return $object;
-			}
-
-			return $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+			return $this->objectUnderRule(check: $check);
 		}
 
-		// Legacy wiring without the guard: the object read check alone.
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
+		return $this->objectUnderReadCheck(check: $check);
+	}//end ensureObjectAccess()
+
+	/**
+	 * Refuse an anonymous caller, unless a published-file read lets them through.
+	 *
+	 * Published-file READ endpoints (e.g. preview) keep their anonymous access,
+	 * which is gated on publication.
+	 *
+	 * @param FileAccessCheck $check What the action needs.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When the check does not let anonymous callers through.
+	 */
+	private function refuseAnonymous(FileAccessCheck $check): void {
+		if ($check->allowAnonymous === false) {
+			throw new NotAuthorizedException(
+				message: 'Authentication is required for this object action'
+			);
+		}
+	}//end refuseAnonymous()
+
+	/**
+	 * The object, once the object rule allows the action.
+	 *
+	 * Reading needs read on the object (404 otherwise); changing needs update
+	 * (403 for a reader who may not update).
+	 *
+	 * @param FileAccessCheck $check What the action needs.
+	 *
+	 * @return ObjectEntity The object the route names.
+	 *
+	 * @throws NotAuthorizedException When the rule refuses the caller.
+	 * @throws ObjectStateWriteException When a change meets a frozen or archived object.
+	 */
+	private function objectUnderRule(FileAccessCheck $check): ObjectEntity {
+		$route = $check->route;
+		if ($check->change === false) {
+			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		}
+
+		$object = $this->objectFileAccess->changeable(register: $route->register, schema: $route->schema, id: $route->id, verb: $check->verb);
+		// REQ-OAS-007: a frozen or archived object's files do not change
+		// either. Asked after the access rule, so a caller without access
+		// still gets 404/403 and learns nothing of the state.
+		$this->fileWriteGuard?->assertWritable(object: $object);
+		return $object;
+	}//end objectUnderRule()
+
+	/**
+	 * The object, for legacy wiring without the guard: the object read check alone.
+	 *
+	 * @param FileAccessCheck $check What the action needs.
+	 *
+	 * @return ObjectEntity|null The object, or null when the read check finds none.
+	 *
+	 * @throws ObjectStateWriteException When a change meets a frozen or archived object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
+		$route = $check->route;
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true));
 		if ($object instanceof ObjectEntity === false) {
 			return null;
 		}
 
-		if ($change === true) {
+		if ($check->change === true) {
 			$this->fileWriteGuard?->assertWritable(object: $object);
 		}
 
 		return $object;
-	}//end ensureObjectAccess()
+	}//end objectUnderReadCheck()
 
 	/**
 	 * Refuse a restricted file, as if it were not there, to a caller the restriction does not admit.
@@ -456,41 +485,35 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$node = $this->callerNode(nodeId: (int)$this->request->getParam('nodeId', 0));
-			if ($node === null) {
-				return new JSONResponse(
-					data: ['error' => (new AttachTargetFilter())->whyRefused(node: ['readable' => false], target: [])],
-					statusCode: 404
-				);
-			}
-
-			$handler = ($this->attachNodeHandler ?? new AttachNodeHandler(fileService: $this->fileService));
-			$result = $handler->attach(object: $object, node: $node);
-
-			return new JSONResponse(
-				data: [
-					'attached' => array_map(fn ($file) => $this->fileService->formatFile($file), $result['attached']),
-					'skipped' => $result['skipped'],
-				]
-			);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			return $this->attachCallerNode(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end attach()
+
+	/**
+	 * Attach the node the request names, from the caller's own Files.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The attached files and how many were left out.
+	 */
+	private function attachCallerNode(ObjectEntity $object): JSONResponse {
+		$node = $this->callerNode(nodeId: (int)$this->request->getParam('nodeId', 0));
+		if ($node === null) {
+			return new JSONResponse(
+				data: ['error' => (new AttachTargetFilter())->whyRefused(node: ['readable' => false], target: [])],
+				statusCode: 404
+			);
+		}
+
+		$handler = ($this->attachNodeHandler ?? new AttachNodeHandler(fileService: $this->fileService));
+		$result = $handler->attach(object: $object, node: $node);
+		$attached = array_map(fn ($file) => $this->fileService->formatFile($file), $result['attached']);
+
+		return new JSONResponse(data: ['attached' => $attached, 'skipped' => $result['skipped']]);
+	}//end attachCallerNode()
 
 	/**
 	 * Save a Talk conversation to this object as a text file.
@@ -514,39 +537,33 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-			if ($object === null) {
-				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-			}
-
-			$user = $this->userSession?->getUser();
-			$transcript = (new TalkChatExporter())->export(
-				conversation: (string)$this->request->getParam('conversation', ''),
-				messages: (array)$this->request->getParam('messages', []),
-				savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
-				savedAt: new DateTimeImmutable()
-			);
-
-			$file = $this->fileService->addFile(
-				objectEntity: $object,
-				fileName: $transcript['filename'],
-				content: $transcript['content']
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($file));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			return $this->savePostedChat(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end saveChat()
+
+	/**
+	 * Attach the transcript of the conversation the request posts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The attached file.
+	 */
+	private function savePostedChat(ObjectEntity $object): JSONResponse {
+		$user = $this->userSession?->getUser();
+		$transcript = (new TalkChatExporter())->export(
+			conversation: (string)$this->request->getParam('conversation', ''),
+			messages: (array)$this->request->getParam('messages', []),
+			savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
+			savedAt: new DateTimeImmutable()
+		);
+
+		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end savePostedChat()
 
 	/**
 	 * A node from the caller's own Files, by id.
@@ -614,6 +631,75 @@ class FilesController extends Controller {
 	private function stateRefused(ObjectStateWriteException $e): JSONResponse {
 		return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
 	}//end stateRefused()
+
+	/**
+	 * The object the route names, within the context already set.
+	 *
+	 * @param string $id The object id.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws FileActionRefusal With 404 when there is none.
+	 */
+	private function routedObject(string $id): ObjectEntity {
+		$this->objectService->setObject($id);
+		$object = $this->objectService->getObject();
+		if ($object === null) {
+			throw new FileActionRefusal(message: 'Object not found', code: 404);
+		}
+
+		return $object;
+	}//end routedObject()
+
+	/**
+	 * The answer to a refusal, which keeps its own status whatever the action does with other failures.
+	 *
+	 * @param Exception $e What stopped the action.
+	 *
+	 * @return JSONResponse|null The answer, or null for any other failure.
+	 */
+	private function refusalAnswer(Exception $e): ?JSONResponse {
+		if ($e instanceof FileActionRefusal) {
+			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getCode());
+		}
+
+		if ($e instanceof NotAuthorizedException) {
+			return $this->accessDenied(e: $e);
+		}
+
+		if ($e instanceof ObjectStateWriteException) {
+			return $this->stateRefused(e: $e);
+		}
+
+		return null;
+	}//end refusalAnswer()
+
+	/**
+	 * Answer a failed action: a refusal as itself, anything else with its message.
+	 *
+	 * @param Exception $e      What stopped the action.
+	 * @param int       $status The status of a failure that is not a refusal.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function actionFailed(Exception $e, int $status = 400): JSONResponse {
+		return ($this->refusalAnswer(e: $e) ?? new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status));
+	}//end actionFailed()
+
+	/**
+	 * Answer a failed action where a missing object answers 404, not its message.
+	 *
+	 * @param Exception $e What stopped the action.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function objectActionFailed(Exception $e): JSONResponse {
+		if ($e instanceof DoesNotExistException) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		}
+
+		return $this->actionFailed(e: $e);
+	}//end objectActionFailed()
 
 	/**
 	 * Record a download event: bump the OR-side download counter and
@@ -695,7 +781,7 @@ class FilesController extends Controller {
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
-			$object = $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
+			$object = $this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading());
 
 			// An anonymous caller has no read check to resolve the object; it is looked
 			// up within this register and schema all the same. Publication still decides
@@ -806,7 +892,7 @@ class FilesController extends Controller {
 			// SEC-CTRL-5: the object read rule decides for authenticated callers
 			// (404 when they may not read it). Anonymous callers are gated
 			// separately by the published-file check below.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			$file = $this->fileService->getFile(object: $object, file: $fileId);
 
@@ -958,68 +1044,51 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function create(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
+	public function create(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'Object not found')],
-					statusCode: 404
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			// Support both 'name' and 'filename' for compatibility.
-			$fileName = $data['name'] ?? $data['filename'] ?? null;
-
-			if (empty($fileName) === true) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File name is required (use "name" or "filename")')],
-					statusCode: 400
-				);
-			}
-
-			if (array_key_exists('content', $data) === false) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File content is required')],
-					statusCode: 400
-				);
-			}
-
-			$share = $this->parseBool(value: $data['share'] ?? false);
-			$tags = $this->normalizeTags(tags: $data['tags'] ?? []);
-
-			$result = $this->fileService->addFile(
-				objectEntity: $object,
-				fileName: $fileName,
-				content: (string)$data['content'],
-				share: $share,
-				tags: $tags
-			);
-			return new JSONResponse(data: $this->fileService->formatFile($result));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			return $this->addPostedFile(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end create()
+
+	/**
+	 * Add the file the request posts.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The added file.
+	 *
+	 * @throws FileActionRefusal With 400 when the name or the content is missing.
+	 */
+	private function addPostedFile(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+
+		// Support both 'name' and 'filename' for compatibility.
+		$fileName = $data['name'] ?? $data['filename'] ?? null;
+		if (empty($fileName) === true) {
+			throw new FileActionRefusal(message: 'File name is required (use "name" or "filename")', code: 400);
+		}
+
+		if (array_key_exists('content', $data) === false) {
+			throw new FileActionRefusal(message: 'File content is required', code: 400);
+		}
+
+		$file = $this->fileService->addFile(
+			objectEntity: $object,
+			fileName: $fileName,
+			content: (string)$data['content'],
+			share: $this->parseBool(value: $data['share'] ?? false),
+			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+		);
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end addPostedFile()
 
 	/**
 	 * Save a file to an object (create new or update existing)
@@ -1042,99 +1111,68 @@ class FilesController extends Controller {
 	 *     array{error?: mixed|string, labels?: list<string>,...},
 	 *     array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function save(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
+	public function save(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
-
-			$this->objectService->setObject($id);
-			$object = $this->objectService->getObject();
-
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'Object not found')],
-					statusCode: 404
-				);
-			}
-
-			$data = $this->request->getParams();
-
-			// Validate required parameters.
-			if (empty($data['name']) === true) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File name is required')],
-					statusCode: 400
-				);
-			}
-
-			$contentExists = array_key_exists('content', $data) === false;
-			$contentEmpty = empty($data['content']) === true;
-
-			if ($contentExists === true || $contentEmpty === true) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File content is required')],
-					statusCode: 400
-				);
-			}
-
-			// Extract parameters with defaults. Support both 'name' and 'filename' for compatibility.
-			$fileName = $data['name'] ?? $data['filename'] ?? null;
-
-			if (empty($fileName) === true) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'File name is required (use "name" or "filename")')],
-					statusCode: 400
-				);
-			}
-
-			$content = (string)$data['content'];
-
-			$share = false;
-			if (isset($data['share']) === true && $data['share'] === true) {
-				$share = true;
-			}
-
-			$tags = $data['tags'] ?? [];
-
-			// Ensure tags is an array.
-			if (is_string($tags) === true) {
-				$tags = explode(',', $tags);
-				$tags = array_map('trim', $tags);
-			}
-
-			$result = $this->fileService->saveFile(
-				objectEntity: $object,
-				fileName: $fileName,
-				content: $content,
-				share: $share,
-				tags: $tags
-			);
-
-			return new JSONResponse(data: $this->fileService->formatFile($result));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			return $this->savePostedFile(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end save()
+
+	/**
+	 * Create the file the request posts, or update the one with that name.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The saved file.
+	 *
+	 * @throws FileActionRefusal With 400 when the name or the content is empty.
+	 */
+	private function savePostedFile(ObjectEntity $object): JSONResponse {
+		$data = $this->request->getParams();
+		if (empty($data['name']) === true) {
+			throw new FileActionRefusal(message: 'File name is required', code: 400);
+		}
+
+		if (empty($data['content']) === true) {
+			throw new FileActionRefusal(message: 'File content is required', code: 400);
+		}
+
+		$file = $this->fileService->saveFile(
+			objectEntity: $object,
+			fileName: $data['name'],
+			content: (string)$data['content'],
+			share: (($data['share'] ?? false) === true),
+			tags: $this->savedTags(tags: $data['tags'] ?? [])
+		);
+
+		return new JSONResponse(data: $this->fileService->formatFile($file));
+	}//end savePostedFile()
+
+	/**
+	 * The tags of a save: comma-separated text is split, anything else stays as sent.
+	 *
+	 * @param mixed $tags The tags as posted.
+	 *
+	 * @return mixed The tags.
+	 */
+	private function savedTags(mixed $tags): mixed {
+		if (is_string($tags) === true) {
+			return array_map('trim', explode(',', $tags));
+		}
+
+		return $tags;
+	}//end savedTags()
 
 	/**
 	 * Add a new file to an object via multipart form upload
@@ -1165,114 +1203,65 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function createMultipart(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
+	public function createMultipart(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
-
-			// Validate object exists.
-			$object = $this->validateAndGetObject(
-				register: $register,
-				schema: $schema,
-				id: $id
-			);
-
-			if ($object === null) {
-				return new JSONResponse(
-					data: ['error' => $this->translate(text: 'Object not found')],
-					statusCode: 404
-				);
-			}
-
-			// Extract and validate uploaded files.
-			$uploadedFiles = $this->extractUploadedFiles();
-
-			if (empty($uploadedFiles) === true) {
-				throw new Exception('No file(s) uploaded');
-			}
-
-			// Process all uploaded files. A per-file rejection is collected, not
-			// thrown — see processUploadedFiles() and openregister#2776.
-			$outcome = $this->processUploadedFiles(
-				object: $object,
-				uploadedFiles: $uploadedFiles
-			);
-
-			$rejected = $outcome['rejected'];
-
-			// Every file was refused — there is nothing to report as stored, so
-			// keep the existing 400 shape and name each rejection.
-			if (empty($outcome['stored']) === true && empty($rejected) === false) {
-				return new JSONResponse(
-					data: [
-						'error' => $rejected[0]['error'],
-						'rejected' => $rejected,
-					],
-					statusCode: 400
-				);
-			}
-
-			// Format and return results.
-			$formattedFiles = $this->fileService->formatFiles(
-				files: $outcome['stored'],
-				requestParams: $this->request->getParams()
-			);
-
-			// Fully successful batch keeps the historical bare-list body and 200,
-			// so existing clients are untouched. A PARTIAL batch is a different
-			// outcome and gets a different status (207 Multi-Status) plus an
-			// envelope naming what was refused — previously this case was a 400
-			// with nothing stored at all.
-			if (empty($rejected) === false) {
-				return new JSONResponse(
-					data: [
-						'results' => $formattedFiles['results'],
-						'rejected' => $rejected,
-						'summary' => [
-							'total' => (count($outcome['stored']) + count($rejected)),
-							'stored' => count($outcome['stored']),
-							'rejected' => count($rejected),
-						],
-					],
-					statusCode: 207
-				);
-			}
-
-			return new JSONResponse($formattedFiles['results']);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
+			$this->setObjectContext(register: $register, schema: $schema);
+			return $this->storeUploads(object: $this->routedObject(id: $id));
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}//end try
+			return $this->actionFailed(e: $e);
+		}
 	}//end createMultipart()
 
 	/**
-	 * Validate and retrieve object entity.
+	 * Store the request's uploads on the object and answer for the whole batch.
 	 *
-	 * @param string $register Register identifier
-	 * @param string $schema Schema identifier
-	 * @param string $id Object ID
+	 * @param ObjectEntity $object The object.
 	 *
-	 * @return ObjectEntity|null Object entity or null if not found
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
+	 * @return JSONResponse See {@see self::createMultipart()}.
 	 */
-	private function validateAndGetObject(string $register, string $schema, string $id): ?ObjectEntity {
-		// Set the schema and register to the object service (forces a check if they are valid).
-		$this->setObjectContext(register: $register, schema: $schema);
-		$this->objectService->setObject($id);
+	private function storeUploads(ObjectEntity $object): JSONResponse {
+		// A per-file rejection is collected, not thrown: see processUploadedFiles() and openregister#2776.
+		$outcome = $this->processUploadedFiles(object: $object, uploadedFiles: $this->extractUploadedFiles());
+		$rejected = $outcome['rejected'];
 
-		return $this->objectService->getObject();
-	}//end validateAndGetObject()
+		// Every file was refused: there is nothing to report as stored, so name each rejection.
+		if (empty($outcome['stored']) === true && empty($rejected) === false) {
+			return new JSONResponse(data: ['error' => $rejected[0]['error'], 'rejected' => $rejected], statusCode: 400);
+		}
+
+		$formattedFiles = $this->fileService->formatFiles(files: $outcome['stored'], requestParams: $this->request->getParams());
+
+		// A fully stored batch keeps the bare-list body and 200, so existing clients are untouched.
+		if (empty($rejected) === true) {
+			return new JSONResponse($formattedFiles['results']);
+		}
+
+		return $this->partialUpload(outcome: $outcome, results: $formattedFiles['results']);
+	}//end storeUploads()
+
+	/**
+	 * The 207 envelope of a batch of which some files were stored and the refused ones are named.
+	 *
+	 * @param array{stored: list<File>, rejected: list<array{name: string, error: string}>} $outcome The batch.
+	 * @param mixed                                                                         $results The stored files, formatted.
+	 *
+	 * @return JSONResponse The 207 response.
+	 */
+	private function partialUpload(array $outcome, mixed $results): JSONResponse {
+		$stored = count($outcome['stored']);
+		$rejected = count($outcome['rejected']);
+
+		return new JSONResponse(
+			data: [
+				'results' => $results,
+				'rejected' => $outcome['rejected'],
+				'summary' => ['total' => ($stored + $rejected), 'stored' => $stored, 'rejected' => $rejected],
+			],
+			statusCode: 207
+		);
+	}//end partialUpload()
 
 	/**
 	 * Extract uploaded files from request.
@@ -1548,46 +1537,23 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function update(
-		string $register,
-		string $schema,
-		string $id,
-		int $fileId,
-	): JSONResponse {
+	public function update(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
-
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
-
 			$data = $this->request->getParams();
 
-			// Ensure tags is set to empty array if not provided.
-			$tags = $data['tags'] ?? [];
-
 			// Content is optional for metadata-only updates.
-			$content = $data['content'] ?? null;
-
-			$result = $this->fileService->updateFile(
-				filePath: $fileId,
-				content: $content,
-				tags: $tags,
-				object: $this->objectService->getObject()
-			);
+			$result = $this->fileService->updateFile(filePath: $fileId, content: $data['content'] ?? null, tags: $data['tags'] ?? [], object: $this->objectService->getObject());
 
 			return new JSONResponse(data: $this->fileService->formatFile($result));
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end update()
 
 	/**
@@ -1613,39 +1579,20 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function delete(
-		string $register,
-		string $schema,
-		string $id,
-		int $fileId,
-	): JSONResponse {
+	public function delete(string $register, string $schema, string $id, int $fileId): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
-
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forRemoving()->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
-
-			$result = $this->fileService->deleteFile(
-				file: $fileId,
-				object: $this->objectService->getObject()
-			);
+			$result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
 
 			return new JSONResponse(data: ['success' => $result]);
-		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return $this->accessDenied(e: $e);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
-		} catch (ObjectStateWriteException $e) {
-			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: 400
-			);
-		}//end try
+			return $this->objectActionFailed(e: $e);
+		}
 	}//end delete()
 
 	/**
@@ -1949,7 +1896,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2021,7 +1968,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forReading()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2056,7 +2003,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forRemoving()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2128,7 +2075,8 @@ class FilesController extends Controller {
 		}
 
 		// ADR-005 / gate-7: the caller must also have access to the target object.
-		$this->ensureObjectAccess(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId);
+		$target = new ObjectLinkRoute(register: $transfer->targetRegister, schema: $transfer->targetSchema, id: $targetObjectId);
+		$this->ensureObjectAccess(check: new FileAccessCheck(route: $target));
 		$this->setObjectContext(register: $transfer->targetRegister, schema: $transfer->targetSchema);
 		$this->objectService->setObject($targetObjectId);
 		$transfer->target = $this->objectService->getObject();
@@ -2233,7 +2181,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forReading()->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2286,7 +2234,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2355,7 +2303,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2419,7 +2367,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2494,12 +2442,12 @@ class FilesController extends Controller {
 			$action = $data['action'] ?? '';
 
 			// ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
-			$fileVerb = ObjectFileAccess::ADD_FILES;
+			$check = new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
 			if ($action === 'delete') {
-				$fileVerb = ObjectFileAccess::DELETE_FILES;
+				$check->forRemoving();
 			}
 
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: $fileVerb);
+			$this->ensureObjectAccess(check: $check);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2577,7 +2525,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: authenticated callers must have object read access.
 			// Anonymous callers were already gated by the published-file check
 			// above, so preview opts out of the write/action anonymous-deny guard.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2648,7 +2596,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies.
 			// Metadata is no less a mutation for being descriptive.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			if ($this->objectService->getObject() === null) {
@@ -2731,7 +2679,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC the per-file
 			// endpoints apply. Editing six files at once is six mutations.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2785,7 +2733,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();

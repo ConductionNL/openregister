@@ -53,6 +53,15 @@ use Throwable;
  * case per line. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Files\Controller\FilesController
+ * @covers \OCA\OpenRegister\Files\Controller\Support\FileAccessCheck
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileActionRefusal
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FilesControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileStore
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FilePlatform
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileGuards
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileEditing
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FilesControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-actions-golden.json';
