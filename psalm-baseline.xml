@@ -158,11 +158,6 @@
       <code><![CDATA[self::$schemaCache]]></code>
     </ImplicitToStringCast>
   </file>
-  <file src="lib/Service/Object/SchemaTypeConverter.php">
-    <UnusedParam>
-      <code><![CDATA[$schemaType]]></code>
-    </UnusedParam>
-  </file>
   <file src="lib/Service/ObjectSource/DbalObjectSourceProvider.php">
     <TooManyArguments>
       <code><![CDATA[select]]></code>
