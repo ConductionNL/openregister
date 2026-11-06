@@ -106,6 +106,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -6417,7 +6418,7 @@ class ObjectsController extends Controller {
 					unlink($zipInfo['path']);
 				}
 
-				throw new \RuntimeException('Failed to read ZIP file content');
+				throw new RuntimeException('Failed to read ZIP file content');
 			}
 
 			// Clean up temporary file after reading.
