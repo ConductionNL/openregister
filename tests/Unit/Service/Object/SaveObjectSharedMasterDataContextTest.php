@@ -73,6 +73,7 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses   \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  */
 class SaveObjectSharedMasterDataContextTest extends TestCase {
 

@@ -94,6 +94,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
  */
 class SaveObjectOrphanCleanupTest extends TestCase {
 
