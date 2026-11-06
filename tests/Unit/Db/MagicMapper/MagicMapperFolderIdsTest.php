@@ -52,6 +52,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
@@ -100,7 +104,7 @@ class MagicMapperFolderIdsTest extends TestCase {
 			$this->db,
 			$this->schemaMapper,
 			$this->registerMapper,
-			$this->createMock(IConfig::class),
+			$this->systemDefaults(),
 			$this->createMock(IEventDispatcher::class),
 			$this->userSession,
 			$this->groupManager,
@@ -230,4 +234,16 @@ class MagicMapperFolderIdsTest extends TestCase {
 		$this->assertCount(1, $logged);
 		$this->assertSame('oc_openregister_table_1_2', $logged[0]['table']);
 	}//end testAFailingTableFailsTheMeasurementAndIsLogged()
+
+	/**
+	 * System config that answers every key with its default.
+	 *
+	 * @return IConfig
+	 */
+	private function systemDefaults(): IConfig {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(static fn (string $key, mixed $default = ''): mixed => $default);
+
+		return $config;
+	}//end systemDefaults()
 }//end class

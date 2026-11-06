@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OC\Security\CSP\ContentSecurityPolicyNonceManager;
 use OC\Security\CSRF\CsrfToken;
 use OC\Security\CSRF\CsrfTokenManager;
-use OCA\OpenRegister\Controller\GraphQLController;
+use OCA\OpenRegister\Search\Controller\GraphQLController;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Response;
