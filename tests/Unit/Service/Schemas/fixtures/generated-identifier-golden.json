@@ -1,0 +1,830 @@
+{
+    "bad reset": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.resetOn at '/p' is 'month'. It must be 'never' or 'year'.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.resetOn at '/p' is 'month'. It must be 'never' or 'year'."
+            }
+        ]
+    },
+    "blank sequence": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string."
+            }
+        ]
+    },
+    "empty placeholder": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.format at '/p' uses unknown placeholder '{}'. It accepts {seq}, {seq:n}, {year} and {month}.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.format at '/p' uses unknown placeholder '{}'. It accepts {seq}, {seq:n}, {year} and {month}."
+            }
+        ]
+    },
+    "integer property": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated at '/p' is declared on a 'integer' property. A generated identifier is a string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated at '/p' is declared on a 'integer' property. A generated identifier is a string."
+            }
+        ]
+    },
+    "list annotation": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string."
+            }
+        ]
+    },
+    "missing format": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.format at '/p' is required and must be a non-empty string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.format at '/p' is required and must be a non-empty string."
+            }
+        ]
+    },
+    "missing sequence": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string."
+            }
+        ]
+    },
+    "month and padded": {
+        "sequence": "m",
+        "format": "{year}/{month}/{seq:3}",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "2026/01/000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "2026/01/001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "2026/01/042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "2026/01/123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "2025/12/000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "2025/12/001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "2025/12/042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "2025/12/123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "no annotation": {
+        "result": null
+    },
+    "no seq": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.format at '/p' has no {seq} placeholder, so every object would get the same identifier.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.format at '/p' has no {seq} placeholder, so every object would get the same identifier."
+            }
+        ]
+    },
+    "null annotation": {
+        "result": null
+    },
+    "null reset": {
+        "sequence": "s",
+        "format": "{seq}",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": {
+                "sequence": 7,
+                "period": ""
+            },
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "number sequence": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.sequence at '/p' is required and must be a non-empty string."
+            }
+        ]
+    },
+    "padded yearly": {
+        "sequence": "zaak",
+        "format": "Z-{year}-{seq:5}",
+        "periods": {
+            "jan": "2026",
+            "dec": "2025"
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "Z-2026-00000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": "2026"
+                }
+            },
+            "jan 1": {
+                "value": "Z-2026-00001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": "2026"
+                }
+            },
+            "jan 42": {
+                "value": "Z-2026-00042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": "2026"
+                }
+            },
+            "jan 123456": {
+                "value": "Z-2026-123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": "2026"
+                }
+            },
+            "dec 0": {
+                "value": "Z-2025-00000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": "2025"
+                }
+            },
+            "dec 1": {
+                "value": "Z-2025-00001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": "2025"
+                }
+            },
+            "dec 42": {
+                "value": "Z-2025-00042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": "2025"
+                }
+            },
+            "dec 123456": {
+                "value": "Z-2025-123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": "2025"
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "plain seq": {
+        "sequence": "zaak",
+        "format": "{seq}",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": {
+                "sequence": 7,
+                "period": ""
+            },
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "regex literals": {
+        "sequence": "r",
+        "format": "A.(+)*{seq}?/",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "A.(+)*0?/",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "A.(+)*1?/",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "A.(+)*42?/",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "A.(+)*123456?/",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "A.(+)*0?/",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "A.(+)*1?/",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "A.(+)*42?/",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "A.(+)*123456?/",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": {
+                "sequence": 12,
+                "period": ""
+            },
+            "1-0002": null,
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "scalar annotation": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated at '/p' must be an object with a sequence and a format.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated at '/p' must be an object with a sequence and a format."
+            }
+        ]
+    },
+    "seq before year": {
+        "sequence": "m",
+        "format": "{seq:2}.{year}",
+        "periods": {
+            "jan": "2026",
+            "dec": "2025"
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "00.2026",
+                "parsed": {
+                    "sequence": 0,
+                    "period": "2026"
+                }
+            },
+            "jan 1": {
+                "value": "01.2026",
+                "parsed": {
+                    "sequence": 1,
+                    "period": "2026"
+                }
+            },
+            "jan 42": {
+                "value": "42.2026",
+                "parsed": {
+                    "sequence": 42,
+                    "period": "2026"
+                }
+            },
+            "jan 123456": {
+                "value": "123456.2026",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": "2026"
+                }
+            },
+            "dec 0": {
+                "value": "00.2025",
+                "parsed": {
+                    "sequence": 0,
+                    "period": "2025"
+                }
+            },
+            "dec 1": {
+                "value": "01.2025",
+                "parsed": {
+                    "sequence": 1,
+                    "period": "2025"
+                }
+            },
+            "dec 42": {
+                "value": "42.2025",
+                "parsed": {
+                    "sequence": 42,
+                    "period": "2025"
+                }
+            },
+            "dec 123456": {
+                "value": "123456.2025",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": "2025"
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": null,
+            "05.2026": {
+                "sequence": 5,
+                "period": "2026"
+            }
+        }
+    },
+    "seq zero pad": {
+        "sequence": "r",
+        "format": "N{seq:0}",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "N0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "N1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "N42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "N123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "N0",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "N1",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "N42",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "N123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": null,
+            "N5": {
+                "sequence": 5,
+                "period": ""
+            },
+            "05.2026": null
+        }
+    },
+    "two seqs": {
+        "sequence": "r",
+        "format": "{seq}-{seq:4}",
+        "periods": {
+            "jan": "",
+            "dec": ""
+        },
+        "rendered": {
+            "jan 0": {
+                "value": "0-0000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "jan 1": {
+                "value": "1-0001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "jan 42": {
+                "value": "42-0042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "jan 123456": {
+                "value": "123456-123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            },
+            "dec 0": {
+                "value": "0-0000",
+                "parsed": {
+                    "sequence": 0,
+                    "period": ""
+                }
+            },
+            "dec 1": {
+                "value": "1-0001",
+                "parsed": {
+                    "sequence": 1,
+                    "period": ""
+                }
+            },
+            "dec 42": {
+                "value": "42-0042",
+                "parsed": {
+                    "sequence": 42,
+                    "period": ""
+                }
+            },
+            "dec 123456": {
+                "value": "123456-123456",
+                "parsed": {
+                    "sequence": 123456,
+                    "period": ""
+                }
+            }
+        },
+        "foreign": {
+            "": null,
+            "x": null,
+            "Z-2026-1": null,
+            "7": null,
+            "Z-26-00001": null,
+            "2026/01/1": null,
+            "A.(+)*12?/": null,
+            "1-0002": {
+                "sequence": 2,
+                "period": ""
+            },
+            "N5": null,
+            "05.2026": null
+        }
+    },
+    "union property": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated at '/p' is declared on a '[\"string\",\"null\"]' property. A generated identifier is a string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated at '/p' is declared on a '[\"string\",\"null\"]' property. A generated identifier is a string."
+            }
+        ]
+    },
+    "unknown keys": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated at '/p' carries unknown key(s) 'reset, 0'. It accepts sequence, format, resetOn."
+            }
+        ]
+    },
+    "unknown placeholder": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.format at '/p' uses unknown placeholder '{day}'. It accepts {seq}, {seq:n}, {year} and {month}.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.format at '/p' uses unknown placeholder '{day}'. It accepts {seq}, {seq:n}, {year} and {month}."
+            }
+        ]
+    },
+    "untyped property": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated at '/p' is declared on a 'null' property. A generated identifier is a string.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated at '/p' is declared on a 'null' property. A generated identifier is a string."
+            }
+        ]
+    },
+    "year reset without year": {
+        "threw": "OCA\\OpenRegister\\Service\\Schemas\\GeneratedIdentifierException",
+        "message": "x-openregister-generated.format at '/p' resets each year but does not render {year}, so next year repeats this year's identifiers.",
+        "errors": [
+            {
+                "code": "generated-identifier-invalid",
+                "key": "x-openregister-generated",
+                "path": "/p",
+                "message": "x-openregister-generated.format at '/p' resets each year but does not render {year}, so next year repeats this year's identifiers."
+            }
+        ]
+    }
+}
