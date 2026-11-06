@@ -40,6 +40,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 					:objectCount="objectCount"
 					:objectStats="objectStats"
 					:loading="countLoading"
+					:failed="countFailed"
 					:title="t('openregister', 'Objects to be validated')" />
 			</div>
 
@@ -281,6 +282,7 @@ export default {
 			validationResults: null,
 			showOnlyInvalid: false,
 			countLoading: true,
+			countFailed: false,
 			objectCount: 0,
 			objectStats: null,
 		}
@@ -342,6 +344,7 @@ export default {
 		 */
 		async loadObjectCount() {
 			this.countLoading = true
+			this.countFailed = false
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
@@ -354,6 +357,7 @@ export default {
 			} catch (err) {
 				console.error('Error in loadObjectCount:', err)
 				this.objectCount = 0
+				this.countFailed = true
 				this.objectStats = null
 			} finally {
 				this.countLoading = false
