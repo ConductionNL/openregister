@@ -67,25 +67,36 @@ class HmacJwsVerifierTest extends TestCase {
 	/**
 	 * A token signed with another secret is refused.
 	 *
+	 * @param string $algorithm The JWT algorithm.
+	 * @param string $hash      The hash_hmac algorithm.
+	 * @param string $secret    The shared secret.
+	 *
+	 * @dataProvider algorithms
+	 *
 	 * @return void
 	 */
-	public function testATokenSignedWithAnotherSecretIsRefused(): void {
-		$token = $this->sign(algorithm: 'HS256', hash: 'sha256', secret: str_repeat('a', 32));
+	public function testATokenSignedWithAnotherSecretIsRefused(string $algorithm, string $hash, string $secret): void {
+		$token = $this->sign(algorithm: $algorithm, hash: $hash, secret: $secret);
 
-		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: $token, algorithm: 'HS256', key: str_repeat('z', 32)));
+		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: str_repeat('z', strlen($secret))));
 	}//end testATokenSignedWithAnotherSecretIsRefused()
 
 	/**
 	 * A token whose payload changed after signing is refused.
 	 *
+	 * @param string $algorithm The JWT algorithm.
+	 * @param string $hash      The hash_hmac algorithm.
+	 * @param string $secret    The shared secret.
+	 *
+	 * @dataProvider algorithms
+	 *
 	 * @return void
 	 */
-	public function testATamperedPayloadIsRefused(): void {
-		$secret = str_repeat('a', 32);
-		$parts = explode('.', $this->sign(algorithm: 'HS256', hash: 'sha256', secret: $secret));
+	public function testATamperedPayloadIsRefused(string $algorithm, string $hash, string $secret): void {
+		$parts = explode('.', $this->sign(algorithm: $algorithm, hash: $hash, secret: $secret));
 		$parts[1] = $this->encode(raw: (string)json_encode(['iss' => 'someone-else', 'iat' => time()]));
 
-		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: implode('.', $parts), algorithm: 'HS256', key: $secret));
+		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: implode('.', $parts), algorithm: $algorithm, key: $secret));
 	}//end testATamperedPayloadIsRefused()
 
 	/**
@@ -135,15 +146,21 @@ class HmacJwsVerifierTest extends TestCase {
 	}//end testATokenOfAnotherHmacAlgorithmIsRefused()
 
 	/**
-	 * A secret shorter than the hash output is refused by the library too, even with a correct signature.
+	 * A secret one byte shorter than the hash output is refused by the library too, even with a correct signature.
+	 *
+	 * @param string $algorithm The JWT algorithm.
+	 * @param string $hash      The hash_hmac algorithm.
+	 * @param string $secret    A secret of exactly the hash output size.
+	 *
+	 * @dataProvider algorithms
 	 *
 	 * @return void
 	 */
-	public function testASecretShorterThanTheHashOutputIsRefused(): void {
-		$secret = str_repeat('a', 31);
-		$token = $this->sign(algorithm: 'HS256', hash: 'sha256', secret: $secret);
+	public function testASecretShorterThanTheHashOutputIsRefused(string $algorithm, string $hash, string $secret): void {
+		$short = substr($secret, 0, -1);
+		$token = $this->sign(algorithm: $algorithm, hash: $hash, secret: $short);
 
-		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: $token, algorithm: 'HS256', key: $secret));
+		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: $short));
 	}//end testASecretShorterThanTheHashOutputIsRefused()
 
 	/**
