@@ -90,13 +90,13 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
+import { relationTab } from './relationTab.js'
 
 /**
  * EmailsTab — display + manage emails linked to an OpenRegister object.
@@ -122,55 +122,21 @@ export default {
 		CloseCircleOutline,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			mailUnavailable: false,
 			emails: [],
 		}
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId
-			 * @spec exclude watcher refetching emails on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchEmails()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * @spec exclude API passthrough loading linked emails; email-relations contract owned by integration-email capability
 		 */
-		async fetchEmails() {
+		async load() {
 			this.loading = true
 			this.error = false
 			this.mailUnavailable = false
@@ -192,9 +158,7 @@ export default {
 				if (err.response && err.response.status === 501) {
 					this.mailUnavailable = true
 				} else {
-					this.error = true
-					this.errorMessage =
-						err.response?.data?.error || err.message || ''
+					this.showFailure(err)
 				}
 			} finally {
 				this.loading = false
@@ -221,29 +185,7 @@ export default {
 				this.emails = this.emails.filter((e) => e.id !== email.id)
 				this.$emit('emails-changed', this.emails.length)
 			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
-		/**
-		 * @param {string} value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch {
-				return value
+				this.showFailure(err)
 			}
 		},
 	},

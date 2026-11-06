@@ -162,56 +162,20 @@ import {
 		</template>
 	</NcDialog>
 
-	<CnFormDialog
+	<EditRegisterFormDialog
 		v-if="showEditRegisterDialog"
-		ref="editRegisterDialog"
-		:schema="registerSchema"
 		:item="editingRegister"
-		:dialogTitle="t('openregister', 'Edit Register')"
-		@confirm="onSaveRegister"
-		@close="showEditRegisterDialog = false">
-		<template #form="{ formData, errors, updateField }">
-			<div class="formContainer">
-				<NcTextField
-					:label="t('openregister', 'Title') + ' *'"
-					:modelValue="formData.title || ''"
-					:error="!!errors.title"
-					:helperText="errors.title"
-					@update:modelValue="(v) => updateField('title', v)" />
-				<NcTextField
-					:label="t('openregister', 'Slug') + ' *'"
-					:modelValue="formData.slug || ''"
-					:error="!!errors.slug"
-					:helperText="errors.slug"
-					@update:modelValue="(v) => updateField('slug', v)" />
-				<NcTextArea
-					:label="t('openregister', 'Description')"
-					:modelValue="formData.description || ''"
-					@update:modelValue="(v) => updateField('description', v)" />
-				<NcSelect
-					:inputLabel="t('openregister', 'Schemas')"
-					:options="schemaSelectOptions"
-					:modelValue="getSchemaSelectValue(formData.schemas)"
-					:multiple="true"
-					:closeOnSelect="false"
-					:loading="schemasLoading"
-					@update:modelValue="(vals) => updateField('schemas', vals)" />
-			</div>
-		</template>
-	</CnFormDialog>
+		:afterSave="() => { fetchRegisters() }"
+		@close="showEditRegisterDialog = false" />
 </template>
 
 <script>
-import { CnFormDialog } from '@conduction/nextcloud-vue'
 import {
 	NcActionButton,
 	NcActions,
 	NcButton,
 	NcDialog,
 	NcEmptyContent,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
 } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
@@ -219,19 +183,17 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PostOutline from 'vue-material-design-icons/PostOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import EditRegisterFormDialog from '../register/EditRegisterFormDialog.vue'
 
 export default {
 	name: 'ViewSource',
 	components: {
+		EditRegisterFormDialog,
 		NcDialog,
 		NcButton,
 		NcActions,
 		NcActionButton,
 		NcEmptyContent,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
-		CnFormDialog,
 		Cancel,
 		Pencil,
 		TrashCanOutline,
@@ -251,52 +213,10 @@ export default {
 			registersLoading: false,
 			showEditRegisterDialog: false,
 			editingRegister: null,
-			schemaSelectOptions: [],
-			schemasLoading: false,
 		}
 	},
 
 	computed: {
-		/**
-		 * @spec exclude UI display helper — inline schema definition for the edit-register dialog.
-		 */
-		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
-				},
-
-				required: ['title', 'slug'],
-			}
-		},
-
 		/**
 		 * @spec exclude UI display helper — filters registers belonging to the current source.
 		 */
@@ -358,60 +278,6 @@ export default {
 		editRegister(register) {
 			this.editingRegister = register
 			this.showEditRegisterDialog = true
-			this.loadSchemaOptions()
-		},
-
-		/**
-		 * @spec exclude Modal data-load plumbing — loads schema options for the register dialog.
-		 */
-		async loadSchemaOptions() {
-			this.schemasLoading = true
-			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-					id: s.id,
-					label: s.title,
-				}))
-			} catch (error) {
-				console.error('Failed to load schemas:', error)
-			} finally {
-				this.schemasLoading = false
-			}
-		},
-
-		/**
-		 * @param {Array<object|string|number>} schemas
-		 * @spec exclude UI display helper — resolves schema ids to select-value objects.
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
-		 * @param {object} formData
-		 * @spec exclude Modal save plumbing — delegates register save to registerStore.saveRegister.
-		 */
-		async onSaveRegister(formData) {
-			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
-				this.$refs.editRegisterDialog.setResult({ success: true })
-				this.fetchRegisters()
-			} catch (error) {
-				this.$refs.editRegisterDialog.setResult({ error: error.message })
-			}
 		},
 
 		/**

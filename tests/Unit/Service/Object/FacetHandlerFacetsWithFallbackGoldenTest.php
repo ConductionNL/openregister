@@ -31,6 +31,12 @@ use Throwable;
  * per-facet metrics and malformed scoped results. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\FacetHandler
+ * @covers \OCA\OpenRegister\Service\Object\FacetCalculation
+ * @covers \OCA\OpenRegister\Service\Object\FacetListing
+ * @covers \OCA\OpenRegister\Service\Object\FacetEntry
+ * @covers \OCA\OpenRegister\Service\Object\FacetableFieldDiscovery
+ * @covers \OCA\OpenRegister\Service\Object\FacetRun
+ * @covers \OCA\OpenRegister\Service\Object\NonAggregatedFacetKey
  */
 class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 
@@ -130,11 +136,7 @@ class FacetHandlerFacetsWithFallbackGoldenTest extends TestCase {
 		foreach (['debug', 'warning', 'info', 'error'] as $level) {
 			$logger->method($level)->willReturnCallback(
 				function ($message, array $context = []) use (&$record, $level): void {
-					unset($context['line']);
-					if (isset($context['file']) === true) {
-						$context['file'] = basename($context['file']);
-					}
-
+					unset($context['line'], $context['file']);
 					$record['logs'][] = [$level, $message, $context];
 				}
 			);

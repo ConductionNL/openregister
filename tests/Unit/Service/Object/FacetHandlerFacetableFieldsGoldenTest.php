@@ -32,6 +32,12 @@ use ReflectionMethod;
  * rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\FacetHandler
+ * @covers \OCA\OpenRegister\Service\Object\FacetCalculation
+ * @covers \OCA\OpenRegister\Service\Object\FacetListing
+ * @covers \OCA\OpenRegister\Service\Object\FacetEntry
+ * @covers \OCA\OpenRegister\Service\Object\FacetableFieldDiscovery
+ * @covers \OCA\OpenRegister\Service\Object\FacetRun
+ * @covers \OCA\OpenRegister\Service\Object\NonAggregatedFacetKey
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -145,11 +151,7 @@ class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 		foreach (['debug', 'warning', 'info', 'error'] as $level) {
 			$logger->method($level)->willReturnCallback(
 				function ($message, array $context = []) use (&$record, $level): void {
-					unset($context['line']);
-					if (isset($context['file']) === true) {
-						$context['file'] = basename($context['file']);
-					}
-
+					unset($context['line'], $context['file']);
 					$record['logs'][] = [$level, $message, $context];
 				}
 			);
