@@ -98,7 +98,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 					$container,
 				]
 			)
-			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable'])
+			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable', 'findMultipleAcrossAllMagicTables'])
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
@@ -204,6 +204,20 @@ class MagicMapperSearchIdsTest extends TestCase {
 
 		$this->assertSame([[]], $this->tableIds());
 	}//end testAnEmptyIdsKeyInTheQueryStaysAsItWas()
+
+	/**
+	 * Without a register and schema a given id list reaches no table.
+	 *
+	 * @return void
+	 */
+	public function testGivenIdsWithoutARegisterAndSchemaSelectNothing(): void {
+		$mapper = $this->mapper();
+		$mapper->expects($this->never())->method('findMultipleAcrossAllMagicTables');
+
+		$page = $mapper->searchObjectsPaginated(searchQuery: [], countQuery: [], ids: ['a']);
+
+		$this->assertSame(['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []], $page);
+	}//end testGivenIdsWithoutARegisterAndSchemaSelectNothing()
 
 	/**
 	 * Without ids the query is left as it came.

@@ -9821,8 +9821,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return ($this->searchMultiSchema(request: $request, scope: $scope)
 			?? $this->searchSingleSchema(request: $request, scope: $scope)
-			?? $this->searchWithoutSchema(request: $request, scope: $scope));
+			?? $this->searchUnresolvedScope(request: $request, scope: $scope));
 	}//end searchObjectsPaginated()
+
+	/**
+	 * A search that resolved no register and schema: a given id list narrows
+	 * a search of those, so alone it selects nothing.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchUnresolvedScope(array $request, array $scope): array {
+		if ($request['ids'] !== null) {
+			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+		}
+
+		return $this->searchWithoutSchema(request: $request, scope: $scope);
+	}//end searchUnresolvedScope()
 
 	/**
 	 * A multi-schema search, or null when the scope does not name a set of schemas.
