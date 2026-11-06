@@ -96,7 +96,6 @@ class ApiCapabilitiesService {
 		'enforceDefaultClosed' => ['enforce_default_closed', false],
 		'rbacInheritFromPublic' => ['rbac.inherit_from_public_default', true],
 		'allowExternalSchemas' => ['allowExternalSchemas', false],
-		'flowOversight' => ['flow_oversight_enabled', true],
 		'flowAudit' => ['flow_audit_enabled', false],
 		'flowKillSwitch' => ['flow_kill_switch', false],
 	];
