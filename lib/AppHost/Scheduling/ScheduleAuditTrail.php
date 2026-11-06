@@ -56,9 +56,9 @@ class ScheduleAuditTrail {
 	}//end __construct()
 
 	/**
-	 * Record that a schedule now runs as its publisher.
+	 * Record that a schedule is about to run as its publisher.
 	 *
-	 * @param CompiledScheduleFlow $compiled The flow just written.
+	 * @param CompiledScheduleFlow $compiled The flow about to be written.
 	 * @param string|null $previous The identity before, or null for a new schedule.
 	 *
 	 * @return void
@@ -77,7 +77,7 @@ class ScheduleAuditTrail {
 	/**
 	 * An audit entry on the application, by the publisher, now.
 	 *
-	 * @param CompiledScheduleFlow $compiled The flow just written.
+	 * @param CompiledScheduleFlow $compiled The flow.
 	 *
 	 * @return AuditTrail The entry.
 	 */

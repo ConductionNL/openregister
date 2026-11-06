@@ -108,7 +108,7 @@ final class CompiledScheduleFlow {
 	public function applyTo(Flow $flow): void {
 		$flow->setName($this->release->slug() . ': ' . $this->schedule->id);
 		$flow->setApp(Flow::APP_MANIFEST_SCHEDULE);
-		$flow->setApplicationSlug($this->release->slug());
+		$flow->setApplicationSlug($this->release->applicationUuid());
 		$flow->setTrigger(Flow::TRIGGER_SCHEDULE);
 		$flow->setCron($this->cron);
 		$flow->setNodes($this->nodes());

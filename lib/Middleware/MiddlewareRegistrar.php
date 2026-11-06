@@ -59,6 +59,9 @@ final class MiddlewareRegistrar {
 		// request actually produced.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RevealAuditMiddleware::class);
 
+		// Global: a publish can arrive through any app's controller.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware::class, true);
+
 		// Register the RateLimitMiddleware to wire SecurityService brute-force
 		// protection into the inbound API auth path (issue #1834). Records
 		// failed Basic/Bearer/session auth on protected endpoints (keyed on
