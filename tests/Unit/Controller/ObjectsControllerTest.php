@@ -6465,6 +6465,10 @@ class ObjectsControllerTest extends TestCase {
 		$object = $this->prepareMove(['targetRegister' => ' r ', 'targetSchema' => 's']);
 		$registers = ['a' => new \OCA\OpenRegister\Db\Register(), 'r' => new \OCA\OpenRegister\Db\Register()];
 		$schemas = ['b' => new \OCA\OpenRegister\Db\Schema(), 's' => new \OCA\OpenRegister\Db\Schema()];
+		$registers['a']->setSlug('a');
+		$registers['r']->setSlug('r');
+		$schemas['b']->setSlug('b');
+		$schemas['s']->setSlug('s');
 		$this->registerMapper->method('find')->willReturnCallback(static fn ($id) => $registers[$id]);
 		$this->schemaMapper->method('find')->willReturnCallback(static fn ($id) => $schemas[$id]);
 
@@ -6584,6 +6588,33 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertSame(400, $result->getStatus());
 		$this->assertSame(['error' => $expected], $result->getData());
+	}
+
+	/**
+	 * A lock passes the process and duration on and answers whether it is held.
+	 *
+	 * @return void
+	 */
+	public function testLockAnswersWhetherItIsHeld(): void {
+		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
+		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+			->willReturn(['uuid' => 'id', 'held' => false]);
+
+		$result = $this->controller->lock('r', 's', 'id');
+
+		$this->assertSame(['uuid' => 'id', 'locked' => false], $result->getData());
+	}
+
+	/**
+	 * Without a report on holding, the lock counts as held and its duration stays open.
+	 *
+	 * @return void
+	 */
+	public function testLockWithoutAHoldReport(): void {
+		$this->request->method('getParams')->willReturn([]);
+		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+
+		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}
 
 	/**
