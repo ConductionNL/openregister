@@ -56,6 +56,7 @@ use Stringable;
  * Expected values live in `fixtures/evaluate-permission.php`, one entry per case.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent

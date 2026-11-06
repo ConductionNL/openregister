@@ -56,6 +56,7 @@ use Stringable;
  * Every call to a collaborator is recorded in order in `$trace`.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent

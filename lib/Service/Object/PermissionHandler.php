@@ -2975,7 +2975,8 @@ class PermissionHandler {
 			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
 
-			$userGroups = $this->groupsOf(userId: $this->callerId(userId: null));
+			$userId = $this->callerId(userId: null);
+			$userGroups = $this->groupsOf(userId: $userId);
 
 			$source = $matrix['userSource'] ?? null;
 			if (is_array($source) === false) {

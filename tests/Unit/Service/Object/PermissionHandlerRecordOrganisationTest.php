@@ -44,6 +44,7 @@ use RuntimeException;
  * Tests that a record's data cannot stand in for its organisation.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses   \OCA\OpenRegister\Service\ConditionMatcher
  * @uses   \OCA\OpenRegister\Service\OperatorEvaluator
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
