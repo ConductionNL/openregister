@@ -58,7 +58,8 @@ final class ExtendedByReads {
 		$qb->select('uuid')
 			->from($this->tableName);
 
-		$conditions = $this->conditions(qb: $qb, identifiers: array_filter($identifiers, static fn (?string $value): bool => $value !== null && $value !== ''));
+		$given = array_filter($identifiers, static fn (?string $value): bool => $value !== null && $value !== '');
+		$conditions = $this->conditions(qb: $qb, identifiers: $given);
 		if ($conditions === []) {
 			return [];
 		}

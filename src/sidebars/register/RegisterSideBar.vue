@@ -183,58 +183,16 @@ import {
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 
-	<CnFormDialog
+	<EditRegisterFormDialog
 		v-if="showEditDialog"
-		ref="formDialog"
-		:schema="registerSchema"
 		:item="register"
-		:dialogTitle="t('openregister', 'Edit Register')"
-		@confirm="onSaveRegister"
-		@close="showEditDialog = false">
-		<template #form="{ formData, errors, updateField }">
-			<div class="formContainer">
-				<NcTextField
-					:label="t('openregister', 'Title') + ' *'"
-					:modelValue="formData.title || ''"
-					:error="!!errors.title"
-					:helperText="errors.title"
-					@update:modelValue="(v) => updateField('title', v)" />
-				<NcTextField
-					:label="t('openregister', 'Slug') + ' *'"
-					:modelValue="formData.slug || ''"
-					:error="!!errors.slug"
-					:helperText="errors.slug"
-					@update:modelValue="(v) => updateField('slug', v)" />
-				<NcTextArea
-					:label="t('openregister', 'Description')"
-					:modelValue="formData.description || ''"
-					@update:modelValue="(v) => updateField('description', v)" />
-				<NcSelect
-					:inputLabel="t('openregister', 'Schemas')"
-					:options="schemaSelectOptions"
-					:modelValue="getSchemaSelectValue(formData.schemas)"
-					:multiple="true"
-					:closeOnSelect="false"
-					:loading="schemasLoading"
-					@update:modelValue="(vals) => updateField('schemas', vals)" />
-				<RegisterLanguagesEditor
-					:value="formData.languages || []"
-					:label="t('openregister', 'Languages')"
-					:helperText="
-						t(
-							'openregister',
-							'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.',
-						)
-					"
-					@input="(vals) => updateField('languages', vals)" />
-			</div>
-		</template>
-	</CnFormDialog>
+		withLanguages
+		:afterSave="() => dashboardStore.fetchRegisters()"
+		@close="showEditDialog = false" />
 </template>
 
 <script>
 import {
-	CnFormDialog,
 	CnItemCard,
 	CnKpiGrid,
 	CnStatsBlock,
@@ -248,9 +206,6 @@ import {
 	NcAppSidebarTab,
 	NcButton,
 	NcEmptyContent,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
 } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import Calculator from 'vue-material-design-icons/Calculator.vue'
@@ -262,26 +217,22 @@ import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.v
 import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import RegisterLanguagesEditor from '../../components/i18n/RegisterLanguagesEditor.vue'
+import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import formatBytes from '../../services/formatBytes.js'
 
 export default {
 	name: 'RegisterSideBar',
 	components: {
+		EditRegisterFormDialog,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcButton,
 		NcEmptyContent,
 		NcActions,
 		NcActionButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
 		CnStatsBlock,
 		CnKpiGrid,
 		CnItemCard,
-		CnFormDialog,
-		RegisterLanguagesEditor,
 		ChartBar,
 		FileCodeOutline,
 		Pencil,
@@ -298,8 +249,6 @@ export default {
 			TextBoxOutline,
 			FileDocumentOutline,
 			showEditDialog: false,
-			schemaSelectOptions: [],
-			schemasLoading: false,
 		}
 	},
 
@@ -356,70 +305,6 @@ export default {
 			}
 			return breakdown
 		},
-
-		/**
-		 * Build the schema definition used by the inline register-edit form dialog.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
-		 * @return {object} JSON-schema-like definition for the edit form
-		 */
-		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
-
-					languages: {
-						type: 'array',
-						title: t('openregister', 'Languages'),
-						order: 5,
-					},
-				},
-
-				required: ['title', 'slug'],
-			}
-		},
-	},
-
-	watch: {
-		/**
-		 * Load schema options when the register-edit dialog opens.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
-		 * @param {boolean} val - Whether the edit dialog is open
-		 * @return {void}
-		 */
-		showEditDialog(val) {
-			if (val) {
-				this.loadSchemaOptions()
-			}
-		},
 	},
 
 	methods: {
@@ -431,68 +316,6 @@ export default {
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }
-		},
-
-		/**
-		 * Load the schema list and build select options for the register-edit form.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
-		 * @return {Promise<void>}
-		 */
-		async loadSchemaOptions() {
-			this.schemasLoading = true
-			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-					id: s.id,
-					label: s.title,
-				}))
-			} catch (error) {
-				console.error('Failed to load schemas:', error)
-			} finally {
-				this.schemasLoading = false
-			}
-		},
-
-		/**
-		 * Resolve persisted schema references into select-option shape for the edit form.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
-		 * @param {Array} schemas - Schema ids or objects
-		 * @return {Array} Select options
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
-		 * Submit the register-edit form through the register store and refresh dashboard stats.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-9
-		 * @param {object} formData - Edited register fields
-		 * @return {Promise<void>}
-		 */
-		async onSaveRegister(formData) {
-			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
-				this.$refs.formDialog.setResult({ success: true })
-				await dashboardStore.fetchRegisters()
-			} catch (error) {
-				this.$refs.formDialog.setResult({ error: error.message })
-			}
 		},
 
 		/**

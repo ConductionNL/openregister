@@ -100,6 +100,8 @@ class ReplyThreadResolver {
 	 *
 	 * @param array<string,mixed>                          $headers The reply's headers.
 	 * @param callable                                     $lookup  `fn(string $messageId): ?array` — the recorded link, or null.
+	 *                                                              A link names `objectUuid`, or `objectUuids` when one
+	 *                                                              message is linked to several objects.
 	 *
 	 * @return array{state:string,objectUuid:string,matchedOn:string,messageId:string,candidates:array<int,string>}
 	 *         What it threads onto, which header decided it, and which objects were in play when nothing could.
@@ -182,18 +184,28 @@ class ReplyThreadResolver {
 				continue;
 			}
 
-			$objectUuid = trim((string)($link['objectUuid'] ?? ''));
-			if ($objectUuid === '') {
-				continue;
-			}
+			foreach ($this->objectUuidsOf(link: $link) as $objectUuid) {
+				$objects[$objectUuid] = true;
 
-			$objects[$objectUuid] = true;
-
-			if ($firstMatch === null) {
-				$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
+				if ($firstMatch === null) {
+					$firstMatch = ['objectUuid' => $objectUuid, 'matchedOn' => $header, 'messageId' => $messageId];
+				}
 			}
 		}
 	}//end scanHeader()
+
+	/**
+	 * The objects a recorded link names.
+	 *
+	 * @param array<string,mixed> $link The link.
+	 *
+	 * @return array<int,string> The uuids, blanks dropped.
+	 */
+	private function objectUuidsOf(array $link): array {
+		$named = (array)($link['objectUuids'] ?? [($link['objectUuid'] ?? '')]);
+
+		return array_filter(array_map(static fn ($uuid): string => trim((string)$uuid), $named), static fn (string $uuid): bool => $uuid !== '');
+	}//end objectUuidsOf()
 
 	/**
 	 * The threaded answer for a match.
