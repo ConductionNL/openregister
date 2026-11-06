@@ -55,6 +55,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
  */
 class SchemaMapperUpdateEventTest extends TestCase {
 	/**

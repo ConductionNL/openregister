@@ -119,6 +119,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
@@ -189,6 +193,7 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 			'name fallback' => [['objectNameField' => 'nope | name'], self::PROPERTIES],
 			'name fallback unknown' => [['objectNameField' => 'nope | gone'], self::PROPERTIES],
 			'name dotted' => [['objectNameField' => 'name.nl.long'], self::PROPERTIES],
+			'name dotted from nothing' => [['objectNameField' => '.nl'], ['' => ['type' => 'string']]],
 			'name dotted unknown' => [['objectNameField' => 'nope.nl'], self::PROPERTIES],
 			'ref as array' => [[], ['a' => ['$ref' => ['id' => 'x']]]],
 			'ref as object' => [[], ['a' => ['$ref' => (object) ['id' => 'x']]]],

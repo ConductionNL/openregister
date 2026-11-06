@@ -29,12 +29,16 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
@@ -71,7 +75,6 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -1141,19 +1144,19 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param Schema $schema The schema object to clean
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	private function cleanObject(Schema $schema): void {
 		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
 		$records = new RecordAnnotationRefusals(logger: $this->logger);
 		$exchange = new ExchangeAnnotationRefusals();
 		$declarations = new PropertyDeclarationRefusals();
-		$this->cleanRefProperties(schema: $schema);
-		$this->ensureSchemaIdentifiers(schema: $schema);
-		$this->validateConfigurationFields(schema: $schema);
-		$this->buildRequiredFieldsArray(schema: $schema);
-		$this->autoPopulateConfigurationFields(schema: $schema);
+		(new ReferenceNormaliser())->normalise(schema: $schema);
+		$defaults = new SchemaDefaults();
+		$defaults->ensureIdentifiers(schema: $schema);
+		$fields = new ConfigurationFields(schema: $schema);
+		$fields->validate();
+		$defaults->buildRequired(schema: $schema);
+		$fields->populate();
 		(new LifecycleAnnotationCheck(logger: $this->logger))->check(schema: $schema);
 		(new DeclaredActionCheck(objectActions: $this->objectActions, logger: $this->logger))->check(schema: $schema);
 		$records->checkMdtoMapping(schema: $schema);
@@ -1557,344 +1560,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end validateRegistryAnnotation()
 
 	/**
-	 * Clean $ref properties to ensure they are strings
-	 *
-	 * @param Schema $schema Schema to clean
-	 *
-	 * @return void
-	 */
-	private function cleanRefProperties(Schema $schema): void {
-		$properties = $schema->getProperties() ?? [];
-		$this->enforceRefIsStringRecursive(properties: $properties);
-		$schema->setProperties($properties);
-	}//end cleanRefProperties()
-
-	/**
-	 * Ensure schema has UUID, slug, version and source
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
-	 */
-	private function ensureSchemaIdentifiers(Schema $schema): void {
-		if ($schema->getUuid() === null) {
-			$schema->setUuid((string)Uuid::v4());
-		}
-
-		if (empty($schema->getSlug()) === true) {
-			$schema->setSlug($this->generateSlug(title: $schema->getTitle() ?? 'schema'));
-		}
-
-		if ($schema->getVersion() === null) {
-			$schema->setVersion('0.0.1');
-		}
-
-		if ($schema->getSource() === null || $schema->getSource() === '') {
-			$schema->setSource('internal');
-		}
-	}//end ensureSchemaIdentifiers()
-
-	/**
-	 * Generate a slug from a title
-	 *
-	 * @param string $title Title to convert
-	 *
-	 * @return string Generated slug
-	 */
-	private function generateSlug(string $title): string {
-		$slug = strtolower(trim($title));
-		$slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-		$slug = preg_replace('/-+/', '-', $slug);
-		return trim($slug, '-');
-	}//end generateSlug()
-
-	/**
-	 * Validate that configuration fields exist in properties
-	 *
-	 * @param Schema $schema Schema to validate
-	 *
-	 * @throws \Exception If field doesn't exist
-	 *
-	 * @return void
-	 */
-	private function validateConfigurationFields(Schema $schema): void {
-		$propertyKeys = array_keys($schema->getProperties() ?? []);
-		$configuration = $schema->getConfiguration() ?? [];
-
-		$objectNameField = $configuration['objectNameField'] ?? '';
-		if (empty($objectNameField) === false) {
-			$this->validateConfigField(
-				fieldValue: $objectNameField,
-				propertyKeys: $propertyKeys,
-				fieldName: 'objectNameField'
-			);
-		}
-
-		$objDescField = $configuration['objectDescriptionField'] ?? '';
-		if (empty($objDescField) === false) {
-			$this->validateConfigField(
-				fieldValue: $objDescField,
-				propertyKeys: $propertyKeys,
-				fieldName: 'objectDescriptionField'
-			);
-		}
-	}//end validateConfigurationFields()
-
-	/**
-	 * Validate a configuration field value against property keys
-	 *
-	 * Supports multiple formats:
-	 * - Simple property names: "name"
-	 * - Twig-style templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
-	 * - Pipe-separated fallbacks: "name | identifier | type" (uses first available)
-	 * - Dot-notation paths into an object property: "description.nl.longDescription",
-	 *   valid when the first segment is a property (the reader walks the rest)
-	 *
-	 * @param string $fieldValue The field value to validate
-	 * @param array $propertyKeys Array of valid property keys
-	 * @param string $fieldName Name of the field for error messages
-	 *
-	 * @throws \Exception If field references non-existent properties
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
-	 */
-	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
-		// Check if it's a Twig-style template (contains {{ ... }}).
-		if (strpos($fieldValue, '{{') !== false && strpos($fieldValue, '}}') !== false) {
-			// Extract property names from template: {{ propName }}.
-			preg_match_all('/\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/', $fieldValue, $matches);
-			// Group 1 is always populated by preg_match_all, so no `?? []` fallback.
-			$templateProps = $matches[1];
-
-			if (empty($templateProps) === true) {
-				// Template syntax but no valid property references found.
-				return;
-			}
-
-			// Validate each property in the template exists.
-			foreach ($templateProps as $prop) {
-				if (in_array($prop, $propertyKeys, true) === false) {
-					throw new Exception(
-						"The template property '{$prop}' in {$fieldName} does not exist."
-					);
-				}
-			}
-
-			return;
-		}//end if
-
-		// Check if it's a pipe-separated fallback list (e.g., "name | identifier | type").
-		if (strpos($fieldValue, '|') !== false) {
-			$fallbackFields = array_map('trim', explode('|', $fieldValue));
-
-			// Validate that at least one fallback field exists in properties.
-			$hasValidField = false;
-			foreach ($fallbackFields as $field) {
-				if ($this->isPropertyPath(path: $field, propertyKeys: $propertyKeys) === true) {
-					$hasValidField = true;
-					break;
-				}
-			}
-
-			if ($hasValidField === false) {
-				throw new Exception(
-					"None of the fallback fields in {$fieldName} ('{$fieldValue}') exist as properties in the schema."
-				);
-			}
-
-			return;
-		}//end if
-
-		// Simple property name or dot-notation path - its first segment must be a property.
-		if ($this->isPropertyPath(path: $fieldValue, propertyKeys: $propertyKeys) === false) {
-			throw new Exception(
-				"The value for {$fieldName} ('{$fieldValue}') does not exist as a property in the schema."
-			);
-		}
-	}//end validateConfigField()
-
-	/**
-	 * Whether a configuration path names a property of the schema.
-	 *
-	 * A plain name must be a property; a dot-notation path must start with one,
-	 * as MetadataHydrationHandler::getValueFromPath() reads it.
-	 *
-	 * @param string            $path         The property name or dot-notation path.
-	 * @param array<int|string> $propertyKeys The schema's property keys.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
-	 */
-	private function isPropertyPath(string $path, array $propertyKeys): bool {
-		if (in_array($path, $propertyKeys, true) === true) {
-			return true;
-		}
-
-		$first = strstr($path, '.', true);
-
-		return $first !== false && $first !== '' && in_array($first, $propertyKeys, true) === true;
-	}//end isPropertyPath()
-
-	/**
-	 * Build required fields array from schema or property flags
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 */
-	private function buildRequiredFieldsArray(Schema $schema): void {
-		$existingRequired = $schema->getRequired();
-
-		if (empty($existingRequired) === false) {
-			return;
-		}
-
-		$requiredFields = [];
-		$properties = $schema->getProperties() ?? [];
-
-		foreach ($properties as $propertyKey => $property) {
-			if ($this->isPropertyRequired(property: $property) === true) {
-				$requiredFields[] = $propertyKey;
-			}
-		}
-
-		$schema->setRequired($requiredFields);
-	}//end buildRequiredFieldsArray()
-
-	/**
-	 * Check if a property is marked as required
-	 *
-	 * @param array $property Property definition
-	 *
-	 * @return bool True if required
-	 */
-	private function isPropertyRequired(array $property): bool {
-		$requiredValue = $property['required'] ?? null;
-
-		if ($requiredValue === null) {
-			return false;
-		}
-
-		if ($requiredValue === true || $requiredValue === 'true') {
-			return true;
-		}
-
-		return is_string($requiredValue) === true && strtolower(trim($requiredValue)) === 'true';
-	}//end isPropertyRequired()
-
-	/**
-	 * Auto-populate configuration name/description fields if empty
-	 *
-	 * @param Schema $schema Schema to update
-	 *
-	 * @return void
-	 */
-	private function autoPopulateConfigurationFields(Schema $schema): void {
-		$propertyKeys = array_keys($schema->getProperties() ?? []);
-		$configuration = $schema->getConfiguration() ?? [];
-
-		$nameFieldKeys = ['name', 'naam', 'title', 'titel'];
-		$descFieldKeys = ['description', 'beschrijving', 'omschrijving', 'summary'];
-
-		$objectNameField = $configuration['objectNameField'] ?? '';
-		if (empty($objectNameField) === true) {
-			$matchedKey = $this->findFirstMatchingKey(
-				propertyKeys: $propertyKeys,
-				candidates: $nameFieldKeys
-			);
-			if ($matchedKey !== null) {
-				$configuration['objectNameField'] = $matchedKey;
-				$schema->setConfiguration($configuration);
-			}
-		}
-
-		$objDescField = $configuration['objectDescriptionField'] ?? '';
-		if (empty($objDescField) === true) {
-			$matchedKey = $this->findFirstMatchingKey(
-				propertyKeys: $propertyKeys,
-				candidates: $descFieldKeys
-			);
-			if ($matchedKey !== null) {
-				$configuration['objectDescriptionField'] = $matchedKey;
-				$schema->setConfiguration($configuration);
-			}
-		}
-	}//end autoPopulateConfigurationFields()
-
-	/**
-	 * Find first key from candidates that exists in property keys
-	 *
-	 * @param array $propertyKeys Property key array
-	 * @param array $candidates Candidate keys to search for
-	 *
-	 * @return string|null Found key or null
-	 */
-	private function findFirstMatchingKey(array $propertyKeys, array $candidates): ?string {
-		foreach ($candidates as $key) {
-			if (in_array($key, $propertyKeys) === true) {
-				return $key;
-			}
-		}
-
-		return null;
-	}//end findFirstMatchingKey()
-
-	/**
-	 * Recursively enforce that $ref is always a string in all properties and array items
-	 *
-	 * @param array $properties The properties array to check (passed by reference)
-	 *
-	 * @return void
-	 *
-	 * @throws \Exception If $ref is not a string or cannot be converted
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 */
-	private function enforceRefIsStringRecursive(array &$properties): void {
-		foreach ($properties as $key => &$property) {
-			// If property is not an array, skip.
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			// Check $ref at this level.
-			if (($property['$ref'] ?? null) !== null) {
-				if (is_array($property['$ref']) === true && (($property['$ref']['id'] ?? null) !== null)) {
-					$property['$ref'] = $property['$ref']['id'];
-				} elseif (is_object($property['$ref']) === true && (($property['$ref']->id ?? null) !== null)) {
-					$property['$ref'] = $property['$ref']->id;
-				} elseif (is_int($property['$ref']) === true) {
-					// The `!== ''` clause that used to sit here was dead: `is_string()
-					// === false` has already excluded every string, so an empty-string
-					// $ref never reaches this branch and is NOT rejected today, despite
-					// what the message below says. Left as-is deliberately — tightening
-					// it would reject schemas that currently import, so it belongs in a
-					// behaviour change, not a lint migration.
-				} elseif (is_string($property['$ref']) === false) {
-					$refValue = json_encode($property['$ref']);
-					$msg = "Schema property '$key' has a \$ref that is not a string or empty: " . $refValue;
-					throw new Exception($msg);
-				}
-			}
-
-			// Check array items recursively.
-			if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-				$this->enforceRefIsStringRecursive(properties: $property['items']);
-			}
-
-			// Check nested properties recursively.
-			if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-				$this->enforceRefIsStringRecursive(properties: $property['properties']);
-			}
-		}//end foreach
-	}//end enforceRefIsStringRecursive()
-
-	/**
 	 * Creates a schema from an array
 	 *
 	 * This method handles schema extension by extracting only the delta
@@ -1927,7 +1592,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$schema = $this->extractSchemaDelta(schema: $schema);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-		$this->generateFacetConfiguration(schema: $schema);
+		(new FacetConfiguration())->generate(schema: $schema);
 
 		$schema = $this->insert(entity: $schema);
 
@@ -1978,7 +1643,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$entity = $this->extractSchemaDelta(schema: $entity);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-		$this->generateFacetConfiguration(schema: $entity);
+		(new FacetConfiguration())->generate(schema: $entity);
 
 		/*
 		 * **MODIFICATION STAMP**: `updated` was never written on an edit. The
@@ -2403,177 +2068,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return false;
 	}//end hasReferenceToSchema()
-
-	/**
-	 * Generate facet configuration from schema properties
-	 *
-	 * @param Schema $schema The schema to generate facets for.
-	 *
-	 * @return void
-	 *
-	 * @deprecated This method is no longer needed since facets are now computed at runtime
-	 *             from property-level `facetable: true` settings. The system automatically
-	 *             reads facetable properties when processing facet requests.
-	 *             This method is kept for backward compatibility only.
-	 */
-	private function generateFacetConfiguration(Schema $schema): void {
-		$properties = $schema->getProperties() ?? [];
-		$facetConfig = [
-			'@self' => [
-				'register' => ['type' => 'terms'],
-				'schema' => ['type' => 'terms'],
-				'created' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'updated' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'published' => ['type' => 'date_histogram', 'interval' => 'month'],
-				'owner' => ['type' => 'terms'],
-			],
-			'object_fields' => [],
-		];
-
-		// Analyze properties for facetable fields.
-		foreach ($properties as $fieldName => $property) {
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			$facetType = $this->determineFacetTypeForProperty(
-				property: $property,
-				fieldName: $fieldName
-			);
-			if ($facetType !== null) {
-				$facetConfig['object_fields'][$fieldName] = ['type' => $facetType];
-
-				// Add interval for date histograms.
-				if ($facetType === 'date_histogram') {
-					$facetConfig['object_fields'][$fieldName]['interval'] = 'month';
-				}
-			}
-		}
-
-		// Store the facet configuration in the schema.
-		// $facetConfig always contains at least '@self', so it's never empty.
-		$schema->setFacets($facetConfig);
-	}//end generateFacetConfiguration()
-
-	/**
-	 * Determine the appropriate facet type for a schema property
-	 *
-	 * PERFORMANCE OPTIMIZATION**: Smart detection of facetable fields based on
-	 * property characteristics, names, and explicit facetable markers.
-	 *
-	 * @param array $property The property definition
-	 * @param string $fieldName The field name
-	 *
-	 * @return null|string The facet type ('terms', 'date_histogram') or null if not facetable
-	 *
-	 * @psalm-return 'date_histogram'|'terms'|null
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 */
-	private function determineFacetTypeForProperty(array $property, string $fieldName): ?string {
-		// Check if explicitly marked as not facetable (facetable: false).
-		// This must be checked first to prevent auto-detection from overriding explicit exclusion.
-		$facetable = $property['facetable'] ?? null;
-		if ($facetable === false || $facetable === 'false'
-			|| (is_string($facetable) === true && strtolower(trim($facetable)) === 'false')
-		) {
-			return null;
-		}
-
-		// Check if explicitly marked as facetable.
-		$isFacetableString = is_string($facetable) === true
-			&& strtolower(trim($facetable)) === 'true';
-		if ($facetable !== null
-			&& ($facetable === true || $facetable === 'true'
-			|| $isFacetableString === true) === true
-		) {
-			return $this->determineFacetTypeFromProperty(property: $property);
-		}
-
-		// Auto-detect common facetable field names.
-		$commonFacetFields = [
-			'type',
-			'status',
-			'category',
-			'tags',
-			'label',
-			'group',
-			'department',
-			'location',
-			'priority',
-			'state',
-			'classification',
-			'genre',
-			'brand',
-			'model',
-			'version',
-			'license',
-			'language',
-		];
-
-		$lowerFieldName = strtolower($fieldName);
-		if (in_array($lowerFieldName, $commonFacetFields) === true) {
-			return $this->determineFacetTypeFromProperty(property: $property);
-		}
-
-		// Auto-detect enum properties (good for faceting).
-		if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true && count($property['enum']) > 0) {
-			return 'terms';
-		}
-
-		// Auto-detect date/datetime fields.
-		$propertyType = $property['type'] ?? '';
-		if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
-			return 'date_histogram';
-		}
-
-		// Check for date-like field names.
-		$dateFields = ['created', 'updated', 'modified', 'date', 'time', 'timestamp'];
-		foreach ($dateFields as $dateField) {
-			if (str_contains($lowerFieldName, $dateField) === true) {
-				return 'date_histogram';
-			}
-		}
-
-		return null;
-	}//end determineFacetTypeForProperty()
-
-	/**
-	 * Determine facet type from property characteristics
-	 *
-	 * @param array $property The property definition
-	 *
-	 * @return string The facet type ('terms' or 'date_histogram')
-	 *
-	 * @psalm-return 'date_histogram'|'terms'
-	 */
-	private function determineFacetTypeFromProperty(array $property): string {
-		$propertyType = $property['type'] ?? 'string';
-		$propertyFormat = $property['format'] ?? '';
-
-		// Date/datetime properties use date_histogram.
-		// Checks both 'type' (e.g. type: date) and 'format' (e.g. type: string, format: date)
-		// because JSON Schema represents dates as type: "string" with format: "date".
-		if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true
-			|| in_array($propertyFormat, ['date', 'date-time', 'datetime']) === true
-		) {
-			return 'date_histogram';
-		}
-
-		// Enum properties use terms.
-		if (($property['enum'] ?? null) !== null && is_array($property['enum']) === true) {
-			return 'terms';
-		}
-
-		// Boolean, integer, number with small ranges use terms.
-		if (in_array($propertyType, ['boolean', 'integer', 'number']) === true) {
-			return 'terms';
-		}
-
-		// Default to terms for other types.
-		return 'terms';
-	}//end determineFacetTypeFromProperty()
 
 	/**
 	 * Resolve schema composition by merging referenced schemas
