@@ -110,6 +110,7 @@ use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Service\Object\AccessFlags;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -787,77 +788,103 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // Re-resolving the pending ref here makes the boundary hold whichever way
         // round the two setters are called, in ONE place, instead of requiring
         // every call site to remember an ordering nothing enforces.
-        if ($this->currentSchemaRef !== null) {
-            // SINGLE USE. The pending ref belongs to the setSchema() call that
-            // created it, and is consumed by the FIRST setRegister() that
-            // follows. Clearing it here is what keeps this instance-level state
-            // from leaking across unrelated operations: ObjectService is reused
-            // for many calls in one process, so a ref left behind by an
-            // operation that set a schema and never set a register would be
-            // re-resolved against the NEXT caller's register and refuse it.
-            // Measured on the shared instance after this scoping landed: a
-            // pipelinq repair step seeding `trustConfiguration` was told
-            // `posJournalEntryOutbound` is not carried by its register — a slug
-            // from an entirely different operation.
-            $pendingRef             = $this->currentSchemaRef;
-            $this->currentSchemaRef = null;
-
-            // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
-            //
-            // Single use bounded the damage to ONE victim. It did not stop the
-            // victim being an app that never touched the ref: the pending slug
-            // is handed to the first setRegister() that follows, whoever that
-            // is, and re-resolving it inside a register that has never heard of
-            // it THREW — out of a method whose caller only asked to name its own
-            // register.
-            //
-            // Measured on the development instance 2026-08-27: every public
-            // read of a portaliq portal failed with `Schema slug "application"
-            // is not carried by register "portaliq"`. The portal served its
-            // shell and answered 404 for its own site, menus, pages and
-            // glossary — a whole app's public surface down, over a slug it does
-            // not own and never asked for. The same failure is recorded above
-            // for openconnector and for a pipelinq repair step, so this is the
-            // third app to be taken out by a fourth app's leftovers.
-            //
-            // So a ref that cannot be resolved inside THIS register is dropped
-            // rather than thrown on. What is NOT dropped is the consequence: the
-            // schema context is cleared with it, so a caller that really did
-            // chain `setSchema('typo')->setRegister($r)` still fails — at its
-            // operation, with "no schema context", instead of silently reading
-            // whichever table a stale context last pointed at. Substituting a
-            // wrong-but-plausible schema is the one outcome worse than throwing.
-            try {
-                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                    register: $register,
-                    schemaRef: $pendingRef
-                );
-            } catch (\Throwable $e) {
-                $this->currentSchema = null;
-
-                // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
-                // `int|string|null` and the null is already excluded above — so
-                // the scalar test could only ever be true and the gettype()
-                // fallback was unreachable. A defaulted read that can never
-                // default reads as a handled edge case that does not exist.
-                $refForLog = (string) $pendingRef;
-
-                $this->logger->warning(
-                    message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
-                    context: [
-                        'pendingSchemaRef' => $refForLog,
-                        'register'         => ($register->getSlug() ?? (string) $register->getId()),
-                        'reason'           => $e->getMessage(),
-                        'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
-                            .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
-                            .'operation will fail with a missing schema context rather than read the wrong table.',
-                    ]
-                );
-            }//end try
-        }
+        $this->consumePendingSchemaRef(register: $register);
 
         return $this;
     }//end setRegister()
+
+    /**
+     * Re-resolve a pending schema ref inside the register that was just set.
+     *
+     * @param Register $register The register now in context.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function consumePendingSchemaRef(Register $register): void
+    {
+        if ($this->currentSchemaRef === null) {
+            return;
+        }
+
+        // SINGLE USE. The pending ref belongs to the setSchema() call that
+        // created it, and is consumed by the FIRST setRegister() that
+        // follows. Clearing it here is what keeps this instance-level state
+        // from leaking across unrelated operations: ObjectService is reused
+        // for many calls in one process, so a ref left behind by an
+        // operation that set a schema and never set a register would be
+        // re-resolved against the NEXT caller's register and refuse it.
+        // Measured on the shared instance after this scoping landed: a
+        // pipelinq repair step seeding `trustConfiguration` was told
+        // `posJournalEntryOutbound` is not carried by its register — a slug
+        // from an entirely different operation.
+        $pendingRef             = $this->currentSchemaRef;
+        $this->currentSchemaRef = null;
+
+        // A REF THAT DOES NOT BELONG HERE MUST NOT TAKE THIS CALLER DOWN.
+        //
+        // Single use bounded the damage to ONE victim. It did not stop the
+        // victim being an app that never touched the ref: the pending slug
+        // is handed to the first setRegister() that follows, whoever that
+        // is, and re-resolving it inside a register that has never heard of
+        // it THREW — out of a method whose caller only asked to name its own
+        // register.
+        //
+        // Measured on the development instance 2026-08-27: every public
+        // read of a portaliq portal failed with `Schema slug "application"
+        // is not carried by register "portaliq"`. The portal served its
+        // shell and answered 404 for its own site, menus, pages and
+        // glossary — a whole app's public surface down, over a slug it does
+        // not own and never asked for. The same failure is recorded above
+        // for openconnector and for a pipelinq repair step, so this is the
+        // third app to be taken out by a fourth app's leftovers.
+        //
+        // So a ref that cannot be resolved inside THIS register is dropped
+        // rather than thrown on. What is NOT dropped is the consequence: the
+        // schema context is cleared with it, so a caller that really did
+        // chain `setSchema('typo')->setRegister($r)` still fails — at its
+        // operation, with "no schema context", instead of silently reading
+        // whichever table a stale context last pointed at. Substituting a
+        // wrong-but-plausible schema is the one outcome worse than throwing.
+        try {
+            $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(register: $register, schemaRef: $pendingRef);
+        } catch (\Throwable $e) {
+            $this->currentSchema = null;
+
+            // `$pendingRef` is `int|string` here — `$currentSchemaRef` is
+            // `int|string|null` and the null is already excluded above — so
+            // the scalar test could only ever be true and the gettype()
+            // fallback was unreachable. A defaulted read that can never
+            // default reads as a handled edge case that does not exist.
+            $this->logDiscardedSchemaRef(pendingRef: (string) $pendingRef, reason: $e);
+        }
+    }//end consumePendingSchemaRef()
+
+    /**
+     * Log a pending schema ref that the current register does not carry.
+     *
+     * @param string     $pendingRef The discarded ref.
+     * @param \Throwable $reason     Why it did not resolve.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logDiscardedSchemaRef(string $pendingRef, \Throwable $reason): void
+    {
+        $this->logger->warning(
+            message: '[ObjectService] Discarded a pending schema ref that this register does not carry',
+            context: [
+                'pendingSchemaRef' => $pendingRef,
+                'register'         => ($this->currentRegister?->getSlug() ?? (string) $this->currentRegister?->getId()),
+                'reason'           => $reason->getMessage(),
+                'note'             => 'The ref was left on this shared service by an earlier, unrelated call. '
+                    .'If YOUR call chained setSchema()->setRegister(), the schema is now unset and your '
+                    .'operation will fail with a missing schema context rather than read the wrong table.',
+            ]
+        );
+    }//end logDiscardedSchemaRef()
 
 
     /**
@@ -878,100 +905,147 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         if (is_string($schema) === true || is_int($schema) === true) {
             $this->currentSchemaRef = $schema;
-            // REGISTER-SCOPED SLUG RESOLUTION.
-            // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
-            // every register and every app on the instance, returning whichever row
-            // its tie-break orders first. Naming a register makes it a BOUNDARY: a
-            // caller that supplied one must never be served a schema from outside
-            // it, so a scoped miss throws here instead of falling through.
-            //
-            // This used to fall back, and the comment called that "transparent". It
-            // was not. Measured 2026-08-16: register `document` (id 6) carried an
-            // empty schemas list while nine docudesk-owned schemas shared the slug
-            // `anonymizationLink`; the fallback resolved to id 5084, which has no
-            // table under register 6 at all, so slug reads returned EMPTY while four
-            // real rows sat in oc_openregister_table_6_9177. An empty result set is
-            // indistinguishable from "this register has no objects", which is how
-            // the defect survived unnoticed.
-            //
-            // The boundary now holds for EVERY identifier form, via the shared
-            // RegisterScopedSchemaResolver. It used to apply to SLUGS only, letting
-            // a numeric id or a uuid resolve globally — the same silent cross-app
-            // read wearing a different identifier. Measured 2026-08-21 on the
-            // aggregation endpoints: `TimeEntry` resolved to planix's schema 161
-            // instead of hrmq's 9466. Callers with no register still resolve
-            // globally, below.
-            if ($this->currentRegister !== null) {
-                $this->currentSchema = $this->scopedSchemaResolver->resolveSchemaWithin(
-                    register: $this->currentRegister,
-                    schemaRef: $schema
-                );
-
-                // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
-                //
-                // It exists for exactly one case: `setSchema($s)` called before any
-                // register is known, so that the LATER `setRegister($r)` can
-                // re-resolve $s inside $r. On this branch a register was already
-                // set, the resolution above was scoped by it, and there is nothing
-                // left for a later setRegister() to consume.
-                //
-                // Leaving it set is what makes this instance-level state leak
-                // across unrelated operations. ObjectService is shared for the
-                // whole request, so the ref outlives the chain that created it and
-                // the NEXT caller's setRegister() re-resolves a finished
-                // operation's slug inside a register that has never heard of it —
-                // and refuses that caller.
-                //
-                // Measured 2026-08-27 on a fresh instance: buildiq registers its
-                // navigation entries from Application::boot(), which runs on EVERY
-                // request and calls findAll() -> prepareFindAllConfig(), which calls
-                // setRegister() and then setSchema('application'). Every request
-                // therefore ended with `application` pending. Portaliq's
-                // PortalResolver — typically the first caller afterwards to name its
-                // own register — was told `Schema slug "application" is not carried
-                // by register "portaliq"`. It fails closed by design, so every
-                // public portal page 404'd with no error attributable to portaliq
-                // at all. The same leak reached buildiq (`automation`) and hermiq
-                // (`job_log`) on the cron path.
-                //
-                // #2803 cleared the ref on the save path. This is the read path,
-                // which it did not cover.
-                $this->currentSchemaRef = null;
-
-                return $this;
-            }
-
-            // Resolve the identifier through the mapper. SchemaMapper::find()
-            // already provides request-scoped caching (findCache) and supports
-            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
-            try {
-                $schema = $this->schemaMapper->find(
-                    id: $schema,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Debug logging to understand WHY schema lookup fails.
-                $this->logger->error(
-                    message: '[ObjectService] Schema not found during setSchema()',
-                    context: [
-                        'file'              => __FILE__,
-                        'line'              => __LINE__,
-                        'schema_identifier' => $schema,
-                        'error'             => $e->getMessage(),
-                        'trace'             => $e->getTraceAsString(),
-                    ]
-                );
-                // Rethrow the DoesNotExistException so NC's framework dispatcher
-                // converts it to a 404 response. Wrapping in ValidationException
-                // causes a 500 instead because ValidationException is generic.
-                throw $e;
-            }//end try
-        }//end if
+            $schema = $this->resolveSchemaRef(schemaRef: $schema);
+        }
 
         $this->currentSchema = $schema;
         return $this;
     }//end setSchema()
+
+    /**
+     * Resolve a schema identifier inside the current register, or globally without one.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function resolveSchemaRef(string|int $schemaRef): Schema
+    {
+        // REGISTER-SCOPED SLUG RESOLUTION.
+        // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
+        // every register and every app on the instance, returning whichever row
+        // its tie-break orders first. Naming a register makes it a BOUNDARY: a
+        // caller that supplied one must never be served a schema from outside
+        // it, so a scoped miss throws here instead of falling through.
+        //
+        // This used to fall back, and the comment called that "transparent". It
+        // was not. Measured 2026-08-16: register `document` (id 6) carried an
+        // empty schemas list while nine docudesk-owned schemas shared the slug
+        // `anonymizationLink`; the fallback resolved to id 5084, which has no
+        // table under register 6 at all, so slug reads returned EMPTY while four
+        // real rows sat in oc_openregister_table_6_9177. An empty result set is
+        // indistinguishable from "this register has no objects", which is how
+        // the defect survived unnoticed.
+        //
+        // The boundary now holds for EVERY identifier form, via the shared
+        // RegisterScopedSchemaResolver. It used to apply to SLUGS only, letting
+        // a numeric id or a uuid resolve globally — the same silent cross-app
+        // read wearing a different identifier. Measured 2026-08-21 on the
+        // aggregation endpoints: `TimeEntry` resolved to planix's schema 161
+        // instead of hrmq's 9466. Callers with no register still resolve
+        // globally, below.
+        if ($this->currentRegister === null) {
+            return $this->findSchemaGlobally(schemaRef: $schemaRef);
+        }
+
+        $schema = $this->scopedSchemaResolver->resolveSchemaWithin(
+            register: $this->currentRegister,
+            schemaRef: $schemaRef
+        );
+
+        // THE PENDING REF HAS ALREADY DONE ITS JOB — DROP IT HERE.
+        //
+        // It exists for exactly one case: `setSchema($s)` called before any
+        // register is known, so that the LATER `setRegister($r)` can
+        // re-resolve $s inside $r. On this branch a register was already
+        // set, the resolution above was scoped by it, and there is nothing
+        // left for a later setRegister() to consume.
+        //
+        // Leaving it set is what makes this instance-level state leak
+        // across unrelated operations. ObjectService is shared for the
+        // whole request, so the ref outlives the chain that created it and
+        // the NEXT caller's setRegister() re-resolves a finished
+        // operation's slug inside a register that has never heard of it —
+        // and refuses that caller.
+        //
+        // Measured 2026-08-27 on a fresh instance: buildiq registers its
+        // navigation entries from Application::boot(), which runs on EVERY
+        // request and calls findAll() -> prepareFindAllConfig(), which calls
+        // setRegister() and then setSchema('application'). Every request
+        // therefore ended with `application` pending. Portaliq's
+        // PortalResolver — typically the first caller afterwards to name its
+        // own register — was told `Schema slug "application" is not carried
+        // by register "portaliq"`. It fails closed by design, so every
+        // public portal page 404'd with no error attributable to portaliq
+        // at all. The same leak reached buildiq (`automation`) and hermiq
+        // (`job_log`) on the cron path.
+        //
+        // #2803 cleared the ref on the save path. This is the read path,
+        // which it did not cover.
+        $this->currentSchemaRef = null;
+
+        return $schema;
+    }//end resolveSchemaRef()
+
+    /**
+     * Resolve a schema identifier across the whole instance.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     *
+     * @return Schema The resolved schema.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the schema does not exist.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function findSchemaGlobally(string|int $schemaRef): Schema
+    {
+        // Resolve the identifier through the mapper. SchemaMapper::find()
+        // already provides request-scoped caching (findCache) and supports
+        // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
+        try {
+            return $this->schemaMapper->find(
+                id: $schemaRef,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            $this->logSchemaNotFound(schemaRef: $schemaRef, reason: $e);
+
+            // Rethrow the DoesNotExistException so NC's framework dispatcher
+            // converts it to a 404 response. Wrapping in ValidationException
+            // causes a 500 instead because ValidationException is generic.
+            throw $e;
+        }//end try
+    }//end findSchemaGlobally()
+
+    /**
+     * Log a schema identifier that resolves to nothing.
+     *
+     * @param string|int $schemaRef The schema's id, uuid or slug.
+     * @param \Throwable $reason    The lookup failure.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logSchemaNotFound(string|int $schemaRef, \Throwable $reason): void
+    {
+        $this->logger->error(
+            message: '[ObjectService] Schema not found during setSchema()',
+            context: [
+                'file'              => __FILE__,
+                'line'              => __LINE__,
+                'schema_identifier' => $schemaRef,
+                'error'             => $reason->getMessage(),
+                'trace'             => $reason->getTraceAsString(),
+            ]
+        );
+    }//end logSchemaNotFound()
 
     /**
      * Drop any schema ref still pending from an earlier, unrelated call.
@@ -1060,6 +1134,48 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // unrelated to re-resolve.
         $this->currentSchemaRef = null;
     }//end restoreScopeContext()
+
+    /**
+     * Run an operation and put the caller's register and schema back afterwards.
+     *
+     * @param callable $operation The operation to run.
+     *
+     * @return mixed Whatever the operation returns.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function preservingScope(callable $operation): mixed
+    {
+        $previousRegister = $this->currentRegister;
+        $previousSchema   = $this->currentSchema;
+
+        try {
+            return $operation();
+        } finally {
+            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
+        }
+    }//end preservingScope()
+
+    /**
+     * Set whichever half of the register and schema context the caller named.
+     *
+     * @param Register|string|int|null $register The register, if named.
+     * @param Schema|string|int|null   $schema   The schema, if named.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function applyScope(Register | string | int | null $register, Schema | string | int | null $schema): void
+    {
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+    }//end applyScope()
 
     /**
      * Get the register entity resolved by the last setRegister() call.
@@ -1598,34 +1714,23 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // BUG-OBJ-13. findSilent() differs from find() only in skipping the
         // audit row; there is no reason for it to differ in what it leaves
         // behind. See restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        return $this->preservingScope(
+            operation: function () use ($id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy): ObjectEntity {
+                $this->discardPendingSchemaRef();
+                $this->applyScope(register: $register, schema: $schema);
 
-        try {
-            $this->discardPendingSchemaRef();
-            // Check if a register is provided and set the current register context.
-            if ($register !== null) {
-                $this->setRegister(register: $register);
+                // Use the silent find method from the GetObject handler.
+                return $this->getHandler->findSilent(
+                    id: $id,
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema,
+                    _extend: $_extend,
+                    files: $files,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
             }
-
-            // Check if a schema is provided and set the current schema context.
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // Use the silent find method from the GetObject handler.
-            return $this->getHandler->findSilent(
-                id: $id,
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                _extend: $_extend,
-                files: $files,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end findSilent()
 
     /**
@@ -1666,24 +1771,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // Prepare configuration and set context.
         $config = $this->prepareFindAllConfig(config: $config);
 
-        // Delegate the findAll operation to the handler.
-        // Pass the resolved register/schema context so MagicMapper::findAll
-        // does not bail out with "called without register/schema context".
-        $objects = $this->getHandler->findAll(
-            limit: $config['limit'] ?? null,
-            offset: $config['offset'] ?? null,
-            filters: $config['filters'] ?? [],
-            sort: $config['sort'] ?? [],
-            search: $config['search'] ?? null,
-            files: $config['files'] ?? false,
-            uses: $config['uses'] ?? null,
-            register: $this->currentRegister,
-            schema: $this->currentSchema,
-            ids: $config['ids'] ?? null,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
-        );
-
         // Render via renderEntities, which batch-preloads ALL related objects in
         // one query before the per-row render (optimize-object-render-hot-path).
         // A previous code path pre-resolved registers/schemas and looped
@@ -1692,8 +1779,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // only with the relation/file caches pre-warmed, so output is unchanged;
         // registers/schemas were a pre-resolution optimization renderEntity()
         // reproduces internally, not a correctness input.
+        $access = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+
         return $this->renderHandler->renderEntities(
-            entities: $objects,
+            entities: $this->loadFindAllRows(config: $config, access: $access),
             _extend: ($config['extend'] ?? []),
             _filter: ($config['unset'] ?? null),
             _fields: ($config['fields'] ?? null),
@@ -1701,6 +1790,53 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             _multitenancy: $_multitenancy
         );
     }//end findAll()
+
+    /**
+     * Load the rows of a findAll() call through the handler.
+     *
+     * The resolved register and schema go along so MagicMapper::findAll does not
+     * bail out with "called without register/schema context".
+     *
+     * @param array       $config The prepared findAll() configuration.
+     * @param AccessFlags $access Whether RBAC and multitenancy apply.
+     *
+     * @return array The object entities.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function loadFindAllRows(array $config, AccessFlags $access): array
+    {
+        return $this->getHandler->findAll(
+            ...$this->findAllSelection(config: $config),
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            _rbac: $access->rbac,
+            _multitenancy: $access->multitenancy
+        );
+    }//end loadFindAllRows()
+
+    /**
+     * The selection arguments of a findAll() configuration, by handler parameter name.
+     *
+     * @param array $config The prepared findAll() configuration.
+     *
+     * @return array<string, mixed> The handler arguments.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function findAllSelection(array $config): array
+    {
+        return [
+            'limit'   => ($config['limit'] ?? null),
+            'offset'  => ($config['offset'] ?? null),
+            'filters' => ($config['filters'] ?? []),
+            'sort'    => ($config['sort'] ?? []),
+            'search'  => ($config['search'] ?? null),
+            'files'   => ($config['files'] ?? false),
+            'uses'    => ($config['uses'] ?? null),
+            'ids'     => ($config['ids'] ?? null),
+        ];
+    }//end findAllSelection()
 
     /**
      * Prepare findAll configuration and set context.
@@ -1716,24 +1852,33 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $config['extend'] = explode(',', $config['extend']);
         }
 
-        // Set the current register context if a register is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['register']) === true
-            && is_array($config['filters']['register']) === false
-            && empty($config['filters']['register']) === false
-        ) {
-            $this->setRegister(register: $config['filters']['register']);
-        }
-
-        // Set the current schema context if a schema is provided, it's not an array, and it's not empty.
-        if (isset($config['filters']['schema']) === true
-            && is_array($config['filters']['schema']) === false
-            && empty($config['filters']['schema']) === false
-        ) {
-            $this->setSchema(schema: $config['filters']['schema']);
-        }
+        $this->applyScope(
+            register: $this->scalarFilter(config: $config, key: 'register'),
+            schema: $this->scalarFilter(config: $config, key: 'schema')
+        );
 
         return $config;
     }//end prepareFindAllConfig()
+
+    /**
+     * Read a filter that names one register or schema, not a list and not empty.
+     *
+     * @param array  $config The findAll() configuration.
+     * @param string $key    The filter name.
+     *
+     * @return mixed The filter value, or null when it names nothing.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function scalarFilter(array $config, string $key): mixed
+    {
+        $value = ($config['filters'][$key] ?? null);
+        if (is_array($value) === true || empty($value) === true) {
+            return null;
+        }
+
+        return $value;
+    }//end scalarFilter()
 
     /**
      * Counts the number of objects matching the given criteria.
@@ -2299,15 +2444,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->clearPendingSchemaRef();
         }
 
-        // Set the current register context if provided.
-        if ($register !== null) {
-            $this->setRegister(register: $register);
-        }
-
-        // Set the current schema context if provided.
-        if ($schema !== null) {
-            $this->setSchema(schema: $schema);
-        }
+        $this->applyScope(register: $register, schema: $schema);
     }//end setContextFromParameters()
 
     /**
@@ -4158,23 +4295,66 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array|int {
+        $access   = new AccessFlags(rbac: $_rbac, multitenancy: $_multitenancy);
+        $register = $this->registerForSlugSearch(slug: $registerSlug, access: $access);
+        $schema   = $this->schemaWithinRegister(slug: $schemaSlug, register: $register);
+
+        // Merge resolved numeric IDs into the @self block of the filters.
+        // Direct keys (status, etc.) stay at the top level so they hit the
+        // object JSON filter path, not the metadata filter path.
+        $target           = ['register' => $register->getId(), 'schema' => $schema->getId()];
+        $filters['@self'] = array_merge(($filters['@self'] ?? []), $target);
+
+        // Delegate to the numeric-ID searchObjects on the documented fast path.
+        return $this->searchObjects(query: $filters, _rbac: $_rbac, _multitenancy: $_multitenancy);
+    }//end searchObjectsBySlug()
+
+    /**
+     * Find the register of a slug search.
+     *
+     * @param string      $slug   The register slug.
+     * @param AccessFlags $access Whether RBAC and multitenancy apply.
+     *
+     * @return Register The register.
+     *
+     * @throws OcpDoesNotExistException When the slug is missing or belongs to a foreign organisation.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function registerForSlugSearch(string $slug, AccessFlags $access): Register
+    {
         // Resolve register slug → numeric ID via the existing mapper find()
         // which already accepts slug strings and applies the standard
         // organisation filter. Throws DoesNotExistException if the slug is
         // missing or belongs to a foreign organisation — same contract as
         // every other lookup in OR.
         try {
-            $register = $this->registerMapper->find(
-                id: $registerSlug,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+            return $this->registerMapper->find(
+                id: $slug,
+                _rbac: $access->rbac,
+                _multitenancy: $access->multitenancy
             );
         } catch (OcpDoesNotExistException $e) {
             throw new OcpDoesNotExistException(
-                'searchObjectsBySlug: register slug not found in caller organisation: '.$registerSlug
+                'searchObjectsBySlug: register slug not found in caller organisation: '.$slug
             );
         }
+    }//end registerForSlugSearch()
 
+    /**
+     * Find the schema of a slug search inside its register.
+     *
+     * @param string   $slug     The schema slug.
+     * @param Register $register The register that bounds the lookup.
+     *
+     * @return Schema The schema.
+     *
+     * @throws SchemaNotInRegisterException When the register does not carry the slug.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function schemaWithinRegister(string $slug, Register $register): Schema
+    {
         // Resolve schema slug → numeric ID, REGISTER-SCOPED and nothing else. The
         // caller named a register, so the register is the boundary.
         //
@@ -4183,36 +4363,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // measured on 2026-08-16 are owned by the SAME application, so an
         // organisation filter still selects the wrong one. Only the register
         // disambiguates them.
-        $registerSchemaIds = ($register->getSchemas() ?? []);
-        $schema            = $this->schemaMapper->findBySlugInIds(
-            slug: $schemaSlug,
-            schemaIds: $registerSchemaIds
-        );
-        if ($schema === null) {
-            throw new SchemaNotInRegisterException(
-                schemaSlug: $schemaSlug,
-                registerId: $register->getId(),
-                registerSlug: $register->getSlug(),
-                candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $schemaSlug),
-                registerSchemaCount: count($registerSchemaIds)
-            );
+        $schemaIds = ($register->getSchemas() ?? []);
+        $schema    = $this->schemaMapper->findBySlugInIds(slug: $slug, schemaIds: $schemaIds);
+        if ($schema !== null) {
+            return $schema;
         }
 
-        // Merge resolved numeric IDs into the @self block of the filters.
-        // Direct keys (status, etc.) stay at the top level so they hit the
-        // object JSON filter path, not the metadata filter path.
-        $selfBlock = $filters['@self'] ?? [];
-        $selfBlock['register'] = $register->getId();
-        $selfBlock['schema']   = $schema->getId();
-        $filters['@self']      = $selfBlock;
-
-        // Delegate to the numeric-ID searchObjects on the documented fast path.
-        return $this->searchObjects(
-            query: $filters,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+        throw new SchemaNotInRegisterException(
+            schemaSlug: $slug,
+            registerId: $register->getId(),
+            registerSlug: $register->getSlug(),
+            candidatesElsewhere: $this->schemaMapper->countBySlug(slug: $slug),
+            registerSchemaCount: count($schemaIds)
         );
-    }//end searchObjectsBySlug()
+    }//end schemaWithinRegister()
 
     /**
      * Count objects using clean query structure
@@ -5271,32 +5435,35 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): BatchOperationStatus {
         // A STREAMING SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         // Same contract as saveObject(); see restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
-
-        try {
-            if ($register !== null) {
-                $this->setRegister(register: $register);
+        return $this->preservingScope(
+            operation: function () use ($objects, $register, $schema): BatchOperationStatus {
+                $this->applyScope(register: $register, schema: $schema);
+                return $this->streamIntoContext(objects: $objects);
             }
-
-            if ($schema !== null) {
-                $this->setSchema(schema: $schema);
-            }
-
-            // The reference cache is request-scoped and this call is a logical
-            // boundary: verdicts from an earlier batch must not decide this one.
-            $this->saveHandler->clearReferenceValidationCache();
-
-            return $this->saveHandler->saveObjectsStreaming(
-                register: $this->currentRegister,
-                schema: $this->currentSchema,
-                rows: $objects
-            );
-
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end saveObjectsStreaming()
+
+    /**
+     * Stream rows into the current register and schema.
+     *
+     * @param array $objects The rows to save.
+     *
+     * @return BatchOperationStatus The status of the run.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function streamIntoContext(array $objects): BatchOperationStatus
+    {
+        // The reference cache is request-scoped and this call is a logical
+        // boundary: verdicts from an earlier batch must not decide this one.
+        $this->saveHandler->clearReferenceValidationCache();
+
+        return $this->saveHandler->saveObjectsStreaming(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            rows: $objects
+        );
+    }//end streamIntoContext()
 
 
     /**
