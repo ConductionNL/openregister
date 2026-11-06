@@ -44,6 +44,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Configuration\SchemaImportOptions
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 

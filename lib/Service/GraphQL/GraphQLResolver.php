@@ -493,38 +493,13 @@ class GraphQLResolver {
 	public function resolveCreate(Schema $schema, array $args): array {
 		$this->checkSchemaPermission(schema: $schema, action: 'create');
 
-		// Check property-level write RBAC.
 		$input = $args['input'];
-		$unauthorizedProps = $this->propertyRbac->getUnauthorizedProperties(
-			$schema,
-			[],
-			$input,
-			true
-		);
-
-		if (empty($unauthorizedProps) === false) {
-			throw new Error(
-				'Not authorized to write fields: ' . implode(separator: ', ', array: $unauthorizedProps),
-				null,
-				null,
-				[],
-				null,
-				null,
-				['code' => 'FIELD_FORBIDDEN']
-			);
-		}
+		$this->refuseForbiddenFields(fields: $this->propertyRbac->getUnauthorizedProperties($schema, [], $input, true));
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			$object = $this->objectService->saveObject(
-				$input,
-				[],
-				$register,
-				$schema
-			);
-
-			return $this->objectToArray(object: $object);
+			return $this->objectToArray(object: $this->objectService->saveObject($input, [], $register, $schema));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -553,34 +528,9 @@ class GraphQLResolver {
 		try {
 			// Check property-level write RBAC against the stored record.
 			$stored = $this->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
-			$unauthorizedProps = $this->propertyRbac->getUnauthorizedProperties(
-				$schema,
-				$stored->getMatchEnvelope(),
-				$input,
-				false
-			);
+			$this->refuseForbiddenFields(fields: $this->propertyRbac->getUnauthorizedProperties($schema, $stored->getMatchEnvelope(), $input, false));
 
-			if (empty($unauthorizedProps) === false) {
-				throw new Error(
-					'Not authorized to write fields: ' . implode(separator: ', ', array: $unauthorizedProps),
-					null,
-					null,
-					[],
-					null,
-					null,
-					['code' => 'FIELD_FORBIDDEN']
-				);
-			}
-
-			$object = $this->objectService->saveObject(
-				$input,
-				[],
-				$register,
-				$schema,
-				$id
-			);
-
-			return $this->objectToArray(object: $object);
+			return $this->objectToArray(object: $this->objectService->saveObject($input, [], $register, $schema, $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
@@ -588,6 +538,33 @@ class GraphQLResolver {
 		}//end try
 
 	}//end resolveUpdate()
+
+	/**
+	 * Refuse a write when the property check named fields the caller may not write.
+	 *
+	 * @param array<int, string> $fields The refused fields.
+	 *
+	 * @return void
+	 *
+	 * @throws Error With code FIELD_FORBIDDEN when any field is refused.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
+	 */
+	private function refuseForbiddenFields(array $fields): void {
+		if (empty($fields) === true) {
+			return;
+		}
+
+		throw new Error(
+			'Not authorized to write fields: ' . implode(separator: ', ', array: $fields),
+			null,
+			null,
+			[],
+			null,
+			null,
+			['code' => 'FIELD_FORBIDDEN']
+		);
+	}//end refuseForbiddenFields()
 
 	/**
 	 * Resolve a delete mutation.
