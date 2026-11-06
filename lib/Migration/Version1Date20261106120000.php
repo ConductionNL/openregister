@@ -41,7 +41,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class Version1Date20261106080000 extends SimpleMigrationStep {
+class Version1Date20261106120000 extends SimpleMigrationStep {
 	private const TABLE = 'openregister_import_preview_rows';
 
 	/**

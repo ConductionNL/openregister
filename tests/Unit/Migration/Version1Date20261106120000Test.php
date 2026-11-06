@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
 use OCA\OpenRegister\Migration\Version1Date20260915050000;
-use OCA\OpenRegister\Migration\Version1Date20261106080000;
+use OCA\OpenRegister\Migration\Version1Date20261106120000;
 use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -21,10 +21,10 @@ use PHPUnit\Framework\TestCase;
  *
  * The rename itself ran on real MariaDB and PostgreSQL; these cases pin when it fires and what it sends.
  *
- * @covers \OCA\OpenRegister\Migration\Version1Date20261106080000
+ * @covers \OCA\OpenRegister\Migration\Version1Date20261106120000
  * @covers \OCA\OpenRegister\Migration\Version1Date20260915050000
  */
-class Version1Date20261106080000Test extends TestCase {
+class Version1Date20261106120000Test extends TestCase {
 	use SchemaTableMockTrait;
 
 	private const TABLE = 'openregister_import_preview_rows';
@@ -38,21 +38,21 @@ class Version1Date20261106080000Test extends TestCase {
 		$connection->expects($this->once())->method('executeStatement')
 			->with('ALTER TABLE `oc_openregister_import_preview_rows` RENAME COLUMN `row_number` TO `source_row`');
 
-		$this->run80000(connection: $connection, schema: $this->schema(hasTable: true, hasOldColumn: true));
+		$this->runRename(connection: $connection, schema: $this->schema(hasTable: true, hasOldColumn: true));
 	}
 
 	public function testAnInstallAlreadyOnTheNewColumnIsLeftAlone(): void {
 		$connection = $this->createMock(IDBConnection::class);
 		$connection->expects($this->never())->method('executeStatement');
 
-		$this->run80000(connection: $connection, schema: $this->schema(hasTable: true, hasOldColumn: false));
+		$this->runRename(connection: $connection, schema: $this->schema(hasTable: true, hasOldColumn: false));
 	}
 
 	public function testAnInstallWithoutTheTableIsLeftAlone(): void {
 		$connection = $this->createMock(IDBConnection::class);
 		$connection->expects($this->never())->method('executeStatement');
 
-		$this->run80000(connection: $connection, schema: $this->schema(hasTable: false, hasOldColumn: false));
+		$this->runRename(connection: $connection, schema: $this->schema(hasTable: false, hasOldColumn: false));
 	}
 
 	public function testAFreshSchemaHoldsNoReservedRowNumberColumn(): void {
@@ -78,8 +78,8 @@ class Version1Date20261106080000Test extends TestCase {
 		$this->assertContains(['preview_id', 'source_row'], $indexes);
 	}
 
-	private function run80000(IDBConnection $connection, ISchemaWrapper $schema): void {
-		(new Version1Date20261106080000($connection))->preSchemaChange($this->createMock(IOutput::class), static fn () => $schema, []);
+	private function runRename(IDBConnection $connection, ISchemaWrapper $schema): void {
+		(new Version1Date20261106120000($connection))->preSchemaChange($this->createMock(IOutput::class), static fn () => $schema, []);
 	}
 
 	private function schema(bool $hasTable, bool $hasOldColumn): ISchemaWrapper {
