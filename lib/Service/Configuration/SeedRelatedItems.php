@@ -66,6 +66,8 @@ final class SeedRelatedItems
 	 * @param FileService|null $fileService The file service.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function useFileService(?FileService $fileService): void
 	{
@@ -78,6 +80,8 @@ final class SeedRelatedItems
 	 * @param NoteService|null $noteService The note service.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function useNoteService(?NoteService $noteService): void
 	{
@@ -90,6 +94,8 @@ final class SeedRelatedItems
 	 * @param TaskService|null $taskService The task service.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function useTaskService(?TaskService $taskService): void
 	{
@@ -211,7 +217,7 @@ final class SeedRelatedItems
 			$this->fileService->addFile($target->object, $name, $content, (bool) ($spec['share'] ?? false), (array) ($spec['tags'] ?? []));
 			return 1;
 		} catch (Throwable $e) {
-			$this->warn(message: '[ImportHandler] Seed file creation failed', context: ['object_uuid' => $target->object->getUuid(), 'name' => $name, 'error' => $e->getMessage()]);
+			$this->failed(target: $target, detail: ['kind' => 'file', 'name' => $name, 'error' => $e->getMessage()]);
 			return 0;
 		}
 	}//end createFile()
@@ -253,7 +259,8 @@ final class SeedRelatedItems
 	{
 		$decoded = base64_decode(substr((string) $spec['content'], 7), strict: true);
 		if ($decoded === false) {
-			$this->warn(message: '[ImportHandler] Seed file base64 decode failed - skipping', context: ['object_uuid' => $target->object->getUuid(), 'name' => (string) $spec['name']]);
+			$context = ['object_uuid' => $target->object->getUuid(), 'name' => (string) $spec['name']];
+			$this->warn(message: '[ImportHandler] Seed file base64 decode failed - skipping', context: $context);
 			return null;
 		}
 
@@ -306,7 +313,7 @@ final class SeedRelatedItems
 			$this->noteService->createNote((string) $target->object->getUuid(), $message);
 			return 1;
 		} catch (Throwable $e) {
-			$this->warn(message: '[ImportHandler] Seed note creation failed', context: ['object_uuid' => $target->object->getUuid(), 'error' => $e->getMessage()]);
+			$this->failed(target: $target, detail: ['kind' => 'note', 'error' => $e->getMessage()]);
 			return 0;
 		}
 	}//end createNote()
@@ -354,11 +361,11 @@ final class SeedRelatedItems
 		}
 
 		try {
-			$uuid = (string) $target->object->getUuid();
-			$this->taskService->createTask($target->registerId, $target->schemaId, $uuid, $target->title, $this->taskData(spec: $spec));
+			$data = $this->taskData(spec: $spec);
+			$this->taskService->createTask($target->registerId, $target->schemaId, (string) $target->object->getUuid(), $target->title, $data);
 			return 1;
 		} catch (Throwable $e) {
-			$this->warn(message: '[ImportHandler] Seed task creation failed', context: ['object_uuid' => $target->object->getUuid(), 'summary' => $summary, 'error' => $e->getMessage()]);
+			$this->failed(target: $target, detail: ['kind' => 'task', 'summary' => $summary, 'error' => $e->getMessage()]);
 			return 0;
 		}
 	}//end createTask()
@@ -393,6 +400,21 @@ final class SeedRelatedItems
 	{
 		$this->warn(message: "[ImportHandler] Skipping seed {$kind} - no user session available", context: $context);
 	}//end warnNoUser()
+
+	/**
+	 * Warn that one item could not be created.
+	 *
+	 * @param SeedRelatedTarget    $target The seeded object.
+	 * @param array<string, mixed> $detail The `kind` of item, and what to log about it.
+	 *
+	 * @return void
+	 */
+	private function failed(SeedRelatedTarget $target, array $detail): void
+	{
+		$kind = $detail['kind'];
+		unset($detail['kind']);
+		$this->warn(message: "[ImportHandler] Seed {$kind} creation failed", context: (['object_uuid' => $target->object->getUuid()] + $detail));
+	}//end failed()
 
 	/**
 	 * Log a warning.
