@@ -2383,15 +2383,19 @@ class RenderObject {
 	private function mayReadInverse(ObjectEntity $object): bool {
 		try {
 			$schema = $this->getSchema(id: $object->getSchema());
-			$owner  = $object->getOwner();
 			if ($schema === null) {
 				return false;
+			}
+
+			$owner = $object->getOwner();
+			if (is_string($owner) === false) {
+				$owner = null;
 			}
 
 			return $this->container->get(PermissionHandler::class)->hasPermission(
 				schema: $schema,
 				action: 'read',
-				objectOwner: is_string($owner) === true ? $owner : null,
+				objectOwner: $owner,
 				object: $object
 			);
 		} catch (\Throwable $e) {
