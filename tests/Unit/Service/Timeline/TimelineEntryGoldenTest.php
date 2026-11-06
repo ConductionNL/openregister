@@ -37,7 +37,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;

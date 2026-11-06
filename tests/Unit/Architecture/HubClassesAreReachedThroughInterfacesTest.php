@@ -22,12 +22,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -105,7 +106,7 @@ final class HubClassesAreReachedThroughInterfacesTest extends TestCase {
 	public function testEveryInterfaceIsImplementedAndBound(): void {
 		foreach (self::HUBS as $class => $interface) {
 			$this->assertTrue(is_subclass_of($class, $interface), $class . ' implements ' . $interface);
-			$this->assertSame($class, ContractBindings::BINDINGS[$interface] ?? null, $interface . ' is bound');
+			$this->assertSame($class, (ContractBindings::BINDINGS + FilesRegistrar::BINDINGS)[$interface] ?? null, $interface . ' is bound');
 		}
 	}//end testEveryInterfaceIsImplementedAndBound()
 

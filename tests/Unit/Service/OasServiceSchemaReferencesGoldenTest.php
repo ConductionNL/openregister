@@ -24,6 +24,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\OasNames
+ * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
  * @uses \OCA\OpenRegister\Service\Oas\OasValidationReport
  *
  * @spec openspec/specs/oas-validation/spec.md

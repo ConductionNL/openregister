@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ContextRetrievalHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use PHPUnit\Framework\MockObject\MockObject;

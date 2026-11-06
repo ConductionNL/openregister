@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use OCA\OpenRegister\Exception\OasValidationException;
+
 /**
  * Collects validation issues for a single OAS generation pass.
  */
@@ -198,6 +200,20 @@ final class OasValidationReport {
 	public function isEmpty(): bool {
 		return $this->issues === [];
 	}//end isEmpty()
+
+	/**
+	 * The refusal of an invalid document in strict mode, carrying this report.
+	 *
+	 * @return OasValidationException The exception to throw
+	 *
+	 * @spec openspec/specs/oas-generation/spec.md
+	 */
+	public function strictFailure(): OasValidationException {
+		return new OasValidationException(
+			message: 'Generated OAS failed strict validation: ' . count($this->getErrors()) . ' error(s)',
+			report: $this,
+		);
+	}//end strictFailure()
 
 	/**
 	 * Compact summary intended for the `x-validation-summary` extension

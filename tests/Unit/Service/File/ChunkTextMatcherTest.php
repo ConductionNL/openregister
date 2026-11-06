@@ -19,9 +19,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\Chunk;
+use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
-use OCA\OpenRegister\Service\File\ChunkTextMatcher;
+use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
 use PHPUnit\Framework\TestCase;
 
 /**

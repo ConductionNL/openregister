@@ -70,6 +70,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
@@ -77,6 +78,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -1841,7 +1843,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionLimitClause(query: $query);
+		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -1967,46 +1969,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end unionOrderByClause()
 
 	/**
-	 * The LIMIT/OFFSET clause of a union.
-	 *
-	 * Both values are cast and clamped here, so raw user input cannot reach
-	 * the interpolated SQL string (SQL injection via _limit / _offset).
-	 *
-	 * Unlimited omits the clause rather than interpolating a large number:
-	 * this SQL is concatenated, not bound, and a sentinel like PHP_INT_MAX
-	 * is a number some databases reject.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return string The clause with a leading space, or an empty string.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
-	 */
-	private function unionLimitClause(array $query): string {
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		if ($normalisedLimit !== null) {
-			// A NUMERIC limit is still clamped to the documented maximum. That
-			// clamp is a deliberate protection (objects-crud: "List page size is
-			// bounded by a hard maximum") against a client loading an
-			// arbitrarily large result set by accident. `_limit=false` is the
-			// explicit opt-in, and the only way past the bound.
-			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
-			return " LIMIT {$limit} OFFSET {$offset}";
-		}
-
-		// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
-		// offset with no limit still needs the clause. The upper bound is
-		// the largest value the syntax accepts, which is the documented
-		// idiom for "everything from here on".
-		if ($offset > 0) {
-			return ' LIMIT 18446744073709551615 OFFSET ' . $offset;
-		}
-
-		return '';
-	}//end unionLimitClause()
-
-	/**
 	 * Resolve the ORDER BY keys for a cross-schema UNION search.
 	 *
 	 * Returns one entry per key, in order, each carrying the SQL expression to
@@ -2028,30 +1990,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * The per-batch query: page one, wide enough to cover the caller's page.
 	 *
-	 * Every batch answers the same question over its own arms, so each has to
-	 * reach as far as `offset + limit` for the merged set to be able to serve
-	 * the requested page. A batch asked for only `limit` rows could not
-	 * contribute the last row of a later page even when it owns it.
-	 *
-	 * An unlimited query stays unlimited: there is nothing to over-fetch to.
-	 *
 	 * @param array $query Search parameters.
 	 *
 	 * @return array The query to run per batch.
 	 */
 	private function buildUnionBatchQuery(array $query): array {
-		$batchQuery = $query;
-		$batchQuery['_offset'] = 0;
-
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit !== null) {
-			// The batch runner clamps this to MAX_PAGE_SIZE, the same bound the
-			// single-statement path applies, so paging past that bound is
-			// truncated identically either way.
-			$batchQuery['_limit'] = (max(0, (int)($query['_offset'] ?? 0)) + $normalisedLimit);
-		}
-
-		return $batchQuery;
+		return $this->unionPage(query: $query)->batchQuery();
 	}//end buildUnionBatchQuery()
 
 	/**
@@ -2069,16 +2013,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
 		$order = new MagicUnionOrder(isPostgres: $isPostgres);
-		$rows = $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query));
 
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit === null) {
-			return array_slice($rows, $offset);
-		}
-
-		return array_slice($rows, $offset, min($normalisedLimit, self::MAX_PAGE_SIZE));
+		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
+
+	/**
+	 * The page of a union search.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return MagicUnionPage The page.
+	 */
+	private function unionPage(array $query): MagicUnionPage {
+		return new MagicUnionPage(query: $query, maxSize: self::MAX_PAGE_SIZE);
+	}//end unionPage()
 
 	/**
 	 * Convert raw UNION rows to ObjectEntity objects.
@@ -2425,15 +2373,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$pageQuery = $query;
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
-		// The UNION path's own order keys, so both paths answer the same
-		// question in the same order. Every table is asked for its rows in
-		// that order, closed by the uuid; on its own default (`_id`) a table's
-		// first `offset + limit` rows are not the ones the merged page needs.
-		// The platform only changes how the SQL is quoted; the row keys read
-		// here are the same on every database.
-		$orderKeys = $this->buildUnionOrderKeys(query: $pageQuery, isPostgres: false);
-		$propertyFields = $this->orderedPropertyFields(query: $pageQuery);
-		$query['_order'] = $this->buildSequentialTableOrder(orderKeys: $orderKeys, propertyFields: $propertyFields);
+		// Every table is asked for its rows in the UNION path's order, closed by
+		// the uuid; on its own default (`_id`) a table's first `offset + limit`
+		// rows are not the ones the merged page needs.
+		$order = new MagicSequentialOrder(query: $pageQuery);
+		$query['_order'] = $order->tableOrder();
 
 		$allResults = [];
 		foreach ($registerSchemaPairs as $pair) {
@@ -2447,11 +2391,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// Order the merged rows on the same keys, with the same comparator, as
 		// the UNION path merges its batches; a search term orders by score.
-		$allResults = $this->sortSequentialResults(
-			results: $allResults,
-			orderKeys: $orderKeys,
-			propertyFields: $propertyFields
-		);
+		$allResults = $order->sorted(results: $allResults);
 
 		// The caller's page, cut once from the merged rows.
 		$allResults = array_slice(
@@ -2554,157 +2494,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $results;
 	}//end searchSequentialTable()
-
-	/**
-	 * The property fields a query orders by, keyed by their column name.
-	 *
-	 * The UNION order keys name a property by its sanitized column; the
-	 * single-table query and the object data both use the property's own
-	 * name. This maps one back to the other.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return array<string, string> Column name => property name.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function orderedPropertyFields(array $query): array {
-		$fields = [];
-		foreach (array_keys((new OrderParameter(order: $query['_order'] ?? []))->fields()) as $field) {
-			$field = (string) $field;
-			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
-				continue;
-			}
-
-			$fields[$this->sanitizeColumnName(name: $field)] = $field;
-		}
-
-		return $fields;
-	}//end orderedPropertyFields()
-
-	/**
-	 * Translate the UNION order keys into the `_order` of one table's query.
-	 *
-	 * The score is `_relevance` there, a metadata column is `@self.<name>`
-	 * and a property is its own name. A key neither form can name is left
-	 * out, as the UNION path leaves out an unknown metadata column.
-	 *
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<string, string> The single-table `_order`.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function buildSequentialTableOrder(array $orderKeys, array $propertyFields): array {
-		$metadataColumns = MagicMetadataColumns::ALL;
-		$order = [];
-		foreach ($orderKeys as $key) {
-			$field = null;
-			if ($key['row'] === '_search_score') {
-				$field = '_relevance';
-			} elseif (isset($propertyFields[$key['row']]) === true) {
-				$field = $propertyFields[$key['row']];
-			} elseif (array_key_exists($key['row'], $metadataColumns) === true) {
-				$field = '@self.' . substr($key['row'], strlen(self::METADATA_PREFIX));
-			}
-
-			if ($field !== null && isset($order[$field]) === false) {
-				$order[$field] = $key['dir'];
-			}
-		}
-
-		return $order;
-	}//end buildSequentialTableOrder()
-
-	/**
-	 * Order merged entities on the UNION path's keys with its comparator.
-	 *
-	 * Each entity is projected onto the row keys the UNION statement would
-	 * have produced, sorted as a union is, and put back in that order.
-	 *
-	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<int, ObjectEntity> The entities in the merged order.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sortSequentialResults(array $results, array $orderKeys, array $propertyFields): array {
-		$rows = [];
-		foreach (array_values($results) as $index => $entity) {
-			$row = ['__index' => $index];
-			foreach ($orderKeys as $key) {
-				$row[$key['row']] = $this->sequentialOrderValue(
-					entity: $entity,
-					rowKey: $key['row'],
-					propertyFields: $propertyFields
-				);
-			}
-
-			$rows[] = $row;
-		}
-
-		$results = array_values($results);
-		$sorted = [];
-		foreach ((new MagicUnionOrder(isPostgres: false))->sorted(rows: $rows, orderKeys: $orderKeys) as $row) {
-			$sorted[] = $results[$row['__index']];
-		}
-
-		return $sorted;
-	}//end sortSequentialResults()
-
-	/**
-	 * The value an entity holds for one UNION order key.
-	 *
-	 * The score is the one the row carries (`_search_score` in its data, else
-	 * its relevance as a fraction), 0 without one. A metadata column reads the
-	 * entity's own field, a property column the object's value; dates compare
-	 * as `Y-m-d H:i:s.u`, arrays as JSON, and a missing value is null, which
-	 * sorts where the UNION's `NULL AS alias` arm puts it.
-	 *
-	 * @param ObjectEntity          $entity         The entity.
-	 * @param string                $rowKey         The UNION row key.
-	 * @param array<string, string> $propertyFields Column name => property name.
-	 *
-	 * @return mixed The comparable value.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sequentialOrderValue(ObjectEntity $entity, string $rowKey, array $propertyFields): mixed {
-		$value = null;
-		if ($rowKey === '_search_score') {
-			$data = $entity->getObject();
-			$value = 0;
-			if (isset($data['_search_score']) === true) {
-				$value = (float) $data['_search_score'];
-			} elseif ($entity->getRelevance() !== null) {
-				$value = ($entity->getRelevance() / 100);
-			}
-		} elseif (isset($propertyFields[$rowKey]) === true) {
-			$value = ($entity->getObject()[$propertyFields[$rowKey]] ?? null);
-		} elseif (str_starts_with($rowKey, self::METADATA_PREFIX) === true) {
-			$field = lcfirst(str_replace('_', '', ucwords(substr($rowKey, strlen(self::METADATA_PREFIX)), '_')));
-			if (property_exists($entity, $field) === true) {
-				$value = $entity->{'get' . ucfirst($field)}();
-			}
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return $value->format('Y-m-d H:i:s.u');
-		}
-
-		if (is_bool($value) === true) {
-			return (int) $value;
-		}
-
-		if (is_array($value) === true) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end sequentialOrderValue()
 
 	/**
 	 * Get cache key for register+schema combination
@@ -10065,8 +9854,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return ($this->searchMultiSchema(request: $request, scope: $scope)
 			?? $this->searchSingleSchema(request: $request, scope: $scope)
-			?? $this->searchWithoutSchema(request: $request, scope: $scope));
+			?? $this->searchUnresolvedScope(request: $request, scope: $scope));
 	}//end searchObjectsPaginated()
+
+	/**
+	 * A search that resolved no register and schema: given ids or `uses` narrow
+	 * a search of those, so alone they select nothing.
+	 *
+	 * @param array $request The search request: queries and flags
+	 * @param array $scope   The search scope
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchUnresolvedScope(array $request, array $scope): array {
+		if ($request['ids'] !== null || ($request['uses'] ?? '') !== '') {
+			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+		}
+
+		return $this->searchWithoutSchema(request: $request, scope: $scope);
+	}//end searchUnresolvedScope()
 
 	/**
 	 * A multi-schema search, or null when the scope does not name a set of schemas.
