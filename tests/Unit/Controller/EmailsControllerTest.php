@@ -149,6 +149,17 @@ class EmailsControllerTest extends TestCase {
 		$this->assertSame(['success' => true], $response->getData());
 	}
 
+	public function testCreateNeedsTheObjectUpdateRight(): void {
+		$this->setupObjectService();
+		$this->emailService->method('isMailAvailable')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['mailAccountId' => 1, 'mailMessageId' => 2]);
+		$this->emailService->expects($this->never())->method('linkEmail');
+		$this->mayUpdate = false;
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->create('reg', 'sch', 'abc-123')->getStatus());
+		$this->assertSame(['update'], $this->askedActions, 'the right asked is update, not read');
+	}
+
 	public function testDestroyNeedsTheObjectUpdateRight(): void {
 		$this->setupObjectService();
 		$this->emailService->method('isMailAvailable')->willReturn(true);
