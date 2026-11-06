@@ -1637,6 +1637,10 @@ class RenderObject {
 				return null;
 			}
 
+			if ($this->withoutRestrictedFiles(fileRecords: [['fileid' => $fileIdInt]]) === []) {
+				return null;
+			}
+
 			// Get the file using FileService.
 			$file = $this->fileService->getFileById($fileIdInt);
 			if ($file === null) {
