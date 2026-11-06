@@ -6,26 +6,12 @@
 		:loadingMessage="t('openregister', 'Loading retention settings...')">
 		<!-- Actions slot -->
 		<template #actions>
-			<NcButton
-				variant="error"
-				:disabled="loading || saving || rebasing"
-				@click="showRebaseDialog">
-				<template #icon>
-					<NcLoadingIcon v-if="rebasing" :size="20" />
-					<Refresh v-else :size="20" />
-				</template>
-				Rebase
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="loading || saving || rebasing"
-				@click="saveSettings">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<Save v-else :size="20" />
-				</template>
-				Save
-			</NcButton>
+			<SectionSaveActions
+				:loading="loading"
+				:saving="saving"
+				:rebasing="rebasing"
+				@rebase="showRebaseDialog"
+				@save="saveSettings" />
 		</template>
 
 		<!-- Section Description -->
@@ -145,19 +131,15 @@
 
 <script>
 import {
-	NcButton,
 	NcCheckboxRadioSwitch,
-	NcLoadingIcon,
 	NcSelect,
 } from '@nextcloud/vue'
 /**
  * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
-import { mapStores } from 'pinia'
-import Save from 'vue-material-design-icons/ContentSave.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { useSettingsStore } from '../../../store/settings.js'
+import SectionSaveActions from './SectionSaveActions.vue'
+import { settingsSectionState } from './settingsSectionState.js'
 
 const RETENTION_ROWS = [
 	{
@@ -222,22 +204,19 @@ export default {
 	name: 'RetentionConfiguration',
 
 	components: {
+		SectionSaveActions,
 		NcSelect,
 		SettingsSection,
-		NcButton,
-		NcLoadingIcon,
 		NcCheckboxRadioSwitch,
-		Refresh,
-		Save,
 	},
+
+	mixins: [settingsSectionState],
 
 	data() {
 		return { retentionRows: RETENTION_ROWS }
 	},
 
 	computed: {
-		...mapStores(useSettingsStore),
-
 		retentionOptions: {
 			/**
 			 * Read retention options from the store.
@@ -373,36 +352,6 @@ export default {
 		},
 
 		/**
-		 * Whether the settings store is loading, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		loading() {
-			return this.settingsStore.loading
-		},
-
-		/**
-		 * Whether retention settings are saving, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		saving() {
-			return this.settingsStore.saving
-		},
-
-		/**
-		 * Whether a rebase is in progress, for display.
-		 *
-		 * @spec exclude UI plumbing — derived view state from the store
-		 * @return {boolean}
-		 */
-		rebasing() {
-			return this.settingsStore.rebasing
-		},
-
-		/**
 		 * Retention status CSS class from the store, for display.
 		 *
 		 * @spec exclude UI plumbing — derived status-styling helper
@@ -434,16 +383,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Show the rebase confirmation dialog.
-		 *
-		 * @spec exclude UI plumbing — dialog visibility toggle via store
-		 * @return {void}
-		 */
-		showRebaseDialog() {
-			this.settingsStore.showRebaseDialog()
-		},
-
 		/**
 		 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 		 */
