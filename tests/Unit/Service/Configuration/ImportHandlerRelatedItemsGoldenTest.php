@@ -48,6 +48,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Configuration\ImportHandler
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedTarget
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  */
 class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 

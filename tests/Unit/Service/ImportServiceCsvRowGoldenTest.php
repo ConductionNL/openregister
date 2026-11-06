@@ -159,4 +159,18 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$prop->setAccessible(true);
 		$prop->setValue($entity, $id);
 	}
+
+	/**
+	 * A sheet column with a numeric header is an ordinary property.
+	 *
+	 * @return void
+	 */
+	public function testASheetColumnWithANumericHeaderIsAProperty(): void {
+		$service = (new \ReflectionClass(ImportService::class))->newInstanceWithoutConstructor();
+		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
+
+		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], null, null, null);
+
+		$this->assertSame([2024 => 'x', 'name' => 'y'], $row);
+	}
 }
