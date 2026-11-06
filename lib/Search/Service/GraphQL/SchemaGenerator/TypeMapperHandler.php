@@ -736,6 +736,10 @@ class TypeMapperHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getPropertyAuthDescriptions(RegisterSchema $schema): array {
+		if ($this->propertyRbac->isAdmin() === false) {
+			return [];
+		}
+
 		$result = [];
 		// Schema declares getPropertiesWithAuthorization(), so the early return
 		// that used to guard this call was unreachable.
@@ -766,6 +770,23 @@ class TypeMapperHandler {
 
 		return $result;
 	}//end getPropertyAuthDescriptions()
+	/**
+	 * Whether the object type of this caller carries a field for a property.
+	 *
+	 * @param RegisterSchema $schema   The schema.
+	 * @param string         $property The property name.
+	 *
+	 * @return bool Whether the field stays.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	public function mayCarryField(RegisterSchema $schema, string $property): bool {
+		return (new AggregateVisibility(rbac: $this->propertyRbac))->mayReadOnSomeRow(
+			schema: $schema,
+			property: $property
+		);
+	}//end mayCarryField()
+
 	/**
 	 * Whether this caller may be told that a property exists.
 	 *
