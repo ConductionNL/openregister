@@ -3687,10 +3687,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
     {
-        if (($request->scoped === true || $sourcedSchema !== null)
-            && $this->deleteAnswersToOrganisation(rbac: $request->rbac, multitenancy: $request->multitenancy) === true
-        ) {
-            $this->rejectSharedMasterDataDelete(registerId: $this->currentRegister?->getId(), schemaId: $this->currentSchema?->getId());
+        if ($request->scoped === true || $sourcedSchema !== null) {
+            $this->rejectSharedDelete(request: $request);
         }
 
         if ($sourcedSchema === null) {
@@ -3701,24 +3699,51 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $this->rejectIfViewBacked(operation: 'delete');
 
-        if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-            throw $this->appendOnlyDeleteRefusal(schema: $this->currentSchema);
-        }
-
-        if ($this->currentSchema !== null
-            && $this->isDeletableDraft(
-                uuid: $request->uuid,
-                retentionSweep: $request->retentionSweep,
-                _rbac: $request->rbac,
-                _multitenancy: $request->multitenancy
-            ) === false
-        ) {
-            $this->rejectIfArchivalImmutable(
-                schema: $this->currentSchema,
-                retentionSweep: $request->retentionSweep
-            );
+        if ($this->currentSchema !== null) {
+            $this->rejectDeleteOnSchema(request: $request, schema: $this->currentSchema);
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * Refuse deleting shared master data when the delete answers to the caller's organisation.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return void
+     */
+    private function rejectSharedDelete(ObjectDeleteRequest $request): void
+    {
+        if ($this->deleteAnswersToOrganisation(rbac: $request->rbac, multitenancy: $request->multitenancy) === true) {
+            $this->rejectSharedMasterDataDelete(registerId: $this->currentRegister?->getId(), schemaId: $this->currentSchema?->getId());
+        }
+    }//end rejectSharedDelete()
+
+    /**
+     * Refuse a delete its schema does not allow: append-only, or archival unless the object is a deletable draft.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param Schema              $schema  The current schema.
+     *
+     * @return void
+     *
+     * @throws AppendOnlyException When the schema is append-only.
+     */
+    private function rejectDeleteOnSchema(ObjectDeleteRequest $request, Schema $schema): void
+    {
+        if ($schema->isAppendOnly() === true) {
+            throw new AppendOnlyException(schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()), operation: 'delete');
+        }
+
+        $draft = $this->isDeletableDraft(
+            uuid: $request->uuid,
+            retentionSweep: $request->retentionSweep,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy
+        );
+        if ($draft === false) {
+            $this->rejectIfArchivalImmutable(schema: $schema, retentionSweep: $request->retentionSweep);
+        }
+    }//end rejectDeleteOnSchema()
 
     /**
      * The refusal of a delete on an append-only schema.
@@ -3855,42 +3880,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function resolvePermittedDeleteTarget(ObjectDeleteRequest $request): ?ObjectEntity
     {
-        $scopedRegister = null;
-        $scopedSchema   = null;
-        if ($request->scoped === true) {
-            $scopedRegister = $this->currentRegister;
-            $scopedSchema   = $this->currentSchema;
-        }
-
         try {
-            $objectToDelete = $this->objectMapper->find(
-                identifier: $request->uuid,
-                register: $scopedRegister,
-                schema: $scopedSchema,
-                includeDeleted: true,
-                _rbac: $request->rbac,
-                _multitenancy: $request->multitenancy
-            );
-
-            // If no schema was provided, derive it from the object.
-            if ($this->currentSchema === null) {
-                $this->setSchema(schema: $objectToDelete->getSchema());
-            }
-
-            $this->scopeUnscopedDeleteToRow(request: $request, row: $objectToDelete);
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
-
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'delete',
-                userId: $request->actingUserId(),
-                objectOwner: $objectToDelete->getOwner(),
-                _rbac: $request->rbac,
-                object: $objectToDelete
-            );
-
-            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+            $objectToDelete = $this->findDeleteTarget(request: $request);
+            $this->assertMayDeleteRow(request: $request, row: $objectToDelete);
 
             return $objectToDelete;
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -3898,20 +3890,124 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 throw $e;
             }
 
-            if ($this->currentSchema !== null) {
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'delete',
-                    userId: $request->actingUserId(),
-                    objectOwner: null,
-                    _rbac: $request->rbac,
-                    register: $this->currentRegisterId()
-                );
-            }
+            $this->assertMayDeleteFromSchema(request: $request);
 
             return null;
-        }//end try
+        }
     }//end resolvePermittedDeleteTarget()
+
+    /**
+     * Check the acting user may delete a found row.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param ObjectEntity        $row     The row.
+     *
+     * @return void
+     *
+     * @throws \Exception When the acting user may not delete.
+     */
+    private function assertMayDeleteRow(ObjectDeleteRequest $request, ObjectEntity $row): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'delete',
+            userId: $request->actingUserId(),
+            objectOwner: $row->getOwner(),
+            _rbac: $request->rbac,
+            object: $row
+        );
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+    }//end assertMayDeleteRow()
+
+    /**
+     * Find the row to delete and settle the scope from it.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return ObjectEntity The object.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the lookup misses.
+     */
+    private function findDeleteTarget(ObjectDeleteRequest $request): ObjectEntity
+    {
+        $objectToDelete = $this->objectMapper->find(
+            identifier: $request->uuid,
+            register: $this->scopedDeleteRegister(request: $request),
+            schema: $this->scopedDeleteSchema(request: $request),
+            includeDeleted: true,
+            _rbac: $request->rbac,
+            _multitenancy: $request->multitenancy
+        );
+
+        // If no schema was provided, derive it from the object.
+        if ($this->currentSchema === null) {
+            $this->setSchema(schema: $objectToDelete->getSchema());
+        }
+
+        $this->scopeUnscopedDeleteToRow(request: $request, row: $objectToDelete);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+
+        return $objectToDelete;
+    }//end findDeleteTarget()
+
+    /**
+     * The register a delete lookup is scoped to.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return Register|null The register, null for an unscoped call.
+     */
+    private function scopedDeleteRegister(ObjectDeleteRequest $request): ?Register
+    {
+        if ($request->scoped === true) {
+            return $this->currentRegister;
+        }
+
+        return null;
+    }//end scopedDeleteRegister()
+
+    /**
+     * The schema a delete lookup is scoped to.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return Schema|null The schema, null for an unscoped call.
+     */
+    private function scopedDeleteSchema(ObjectDeleteRequest $request): ?Schema
+    {
+        if ($request->scoped === true) {
+            return $this->currentSchema;
+        }
+
+        return null;
+    }//end scopedDeleteSchema()
+
+    /**
+     * Check the schema's delete right, without an owner, after an unscoped lookup missed.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     *
+     * @return void
+     *
+     * @throws \Exception When the acting user may not delete.
+     */
+    private function assertMayDeleteFromSchema(ObjectDeleteRequest $request): void
+    {
+        if ($this->currentSchema === null) {
+            return;
+        }
+
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'delete',
+            userId: $request->actingUserId(),
+            objectOwner: null,
+            _rbac: $request->rbac,
+            register: $this->currentRegisterId()
+        );
+    }//end assertMayDeleteFromSchema()
 
     /**
      * Answer "not found" when the object is somebody else's draft, whatever the lookup let through.
