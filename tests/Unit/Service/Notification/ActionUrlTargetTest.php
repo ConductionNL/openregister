@@ -1,7 +1,7 @@
 <?php
 
 /**
- * A `url` action target keeps to web, mail and phone links.
+ * A `url` action target keeps to web and mail links.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -42,15 +42,16 @@ final class ActionUrlTargetTest extends TestCase {
 			'file transfer' => ['ftp://example.test/call', null],
 			'not a url' => ['call', null],
 			'no host' => ['http://', null],
-			'phone' => ['tel:+31201234567', 'tel:+31201234567'],
+			'broken host' => ['http://exa mple.test/call', null],
+			'phone is no url' => ['tel:+31201234567', null],
 		];
 	}//end targets()
 
 	#[DataProvider('targets')]
-	public function testAUrlTargetKeepsToWebMailAndPhoneLinks(string $href, ?string $expected): void {
+	public function testAUrlTargetKeepsToWebAndMailLinks(string $href, ?string $expected): void {
 		$dispatcher = (new ReflectionClass(AnnotationNotificationDispatcher::class))->newInstanceWithoutConstructor();
 		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveActionTarget');
 
 		$this->assertSame($expected, $method->invoke($dispatcher, ['kind' => 'url', 'href' => $href], new ObjectEntity(), [], 'openregister'));
-	}//end testAUrlTargetKeepsToWebMailAndPhoneLinks()
+	}//end testAUrlTargetKeepsToWebAndMailLinks()
 }//end class

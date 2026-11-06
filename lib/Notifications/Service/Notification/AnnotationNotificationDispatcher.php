@@ -84,7 +84,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 *
 	 * @var array<int, string>
 	 */
-	private const LINKABLE_SCHEMES = ['http', 'https', 'mailto', 'tel'];
+	private const LINKABLE_SCHEMES = ['http', 'https', 'mailto'];
 
 	/**
 	 * The nc-notification channel unit — injected, or lazily built.
@@ -2817,7 +2817,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end resolveActionTarget()
 
 	/**
-	 * An action's absolute URL, null unless it is a web, mail or phone link.
+	 * An action's absolute URL, null unless it is a web or mail link.
 	 *
 	 * @param string $href The declared URL.
 	 *
