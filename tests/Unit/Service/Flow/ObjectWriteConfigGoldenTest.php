@@ -47,6 +47,10 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteConfigForm
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteConfigValidator
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteOptions
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteTemplate
  * @uses   \OCA\OpenRegister\Service\Flow\FlowItems
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteItem
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlan
