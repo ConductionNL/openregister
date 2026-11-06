@@ -477,6 +477,7 @@ final class ListenerRegistrar {
 		// A frozen object refuses its delete the way it refuses a write, on
 		// every path that dispatches the deleting event.
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
+		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
 
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one

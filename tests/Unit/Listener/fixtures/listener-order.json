@@ -111,7 +111,8 @@
 	"OCA\\OpenRegister\\Event\\ObjectDeletingEvent": [
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarDeleteGuardListener",
 		"OCA\\OpenRegister\\Listener\\ConceptDeleteGuardListener",
-		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener"
+		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener",
+		"OCA\\OpenRegister\\Listener\\ObjectStateDeleteGuardListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectLockedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
