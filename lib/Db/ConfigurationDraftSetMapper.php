@@ -37,6 +37,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class ConfigurationDraftSetMapper extends QBMapper {
 
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -63,12 +65,7 @@ class ConfigurationDraftSetMapper extends QBMapper {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function findByUuid(string $uuid): ConfigurationDraftSet {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 
 	}//end findByUuid()
 
@@ -110,13 +107,7 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		$set = new ConfigurationDraftSet();
 		$set->hydrate($data);
 
-		if ($set->getUuid() === null) {
-			$set->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($set->getState() === null) {
-			$set->setState(ConfigurationDraftSet::STATE_OPEN);
-		}
+		$this->fillIdentity(set: $set);
 
 		$now = new DateTime();
 		if ($set->getCreated() === null) {
@@ -128,6 +119,23 @@ class ConfigurationDraftSetMapper extends QBMapper {
 		return $this->insert(entity: $set);
 
 	}//end createFromArray()
+
+	/**
+	 * Give a new set a uuid and the open state unless it has them.
+	 *
+	 * @param ConfigurationDraftSet $set The set.
+	 *
+	 * @return void
+	 */
+	private function fillIdentity(ConfigurationDraftSet $set): void {
+		if ($set->getUuid() === null) {
+			$set->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($set->getState() === null) {
+			$set->setState(ConfigurationDraftSet::STATE_OPEN);
+		}
+	}//end fillIdentity()
 
 	/**
 	 * Persist a set, refreshing the updated timestamp.
