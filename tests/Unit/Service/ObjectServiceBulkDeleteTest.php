@@ -302,6 +302,112 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 	}//end testArchivalRowIsRefusedWhileTheRestOfTheBatchProceeds()
 
 	/**
+	 * A row on an append-only schema is refused, as a single delete refuses it.
+	 *
+	 * @return void
+	 */
+	public function testAppendOnlyRowIsRefusedWhileTheRestOfTheBatchProceeds(): void {
+		$logged = $this->givenObject(uuid: 'uuid-logged', schemaId: 13);
+		$this->schemas[13]->setAppendOnly(true);
+		$plain = $this->givenObject(uuid: 'uuid-plain', schemaId: 11);
+		$this->buildService([$logged, $plain]);
+
+		$this->deleteHandler->expects($this->once())
+			->method('deleteObject')
+			->with($this->anything(), $this->anything(), 'uuid-plain')
+			->willReturn(true);
+
+		$result = $this->service->deleteObjects(['uuid-logged', 'uuid-plain']);
+
+		$this->assertSame(['uuid-plain'], $result['deleted_uuids']);
+		$this->assertSame(['uuid-logged'], $result['skipped_uuids']);
+		$this->assertSame(
+			[
+				'error' => 'SCHEMA_APPEND_ONLY',
+				'message' => 'SCHEMA_APPEND_ONLY: Schema "schema-13" is append-only; delete operations are not permitted.',
+				'schema' => 'schema-13',
+				'operation' => 'delete',
+			],
+			$result['skipped_reasons']['uuid-logged']
+		);
+	}//end testAppendOnlyRowIsRefusedWhileTheRestOfTheBatchProceeds()
+
+	/**
+	 * An append-only schema keeps a draft too: the single delete asks before the draft exception.
+	 *
+	 * @return void
+	 */
+	public function testAppendOnlyHoldsForADraft(): void {
+		$draft = $this->givenObject(uuid: 'uuid-draft', schemaId: 13);
+		$this->schemas[13]->setAppendOnly(true);
+		$draft->setStatus('draft');
+		$this->buildService([$draft]);
+		$this->inject('userSession', $this->createMock(IUserSession::class));
+
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$result = $this->service->deleteObjects(uuids: ['uuid-draft'], _rbac: false);
+
+		$this->assertSame('SCHEMA_APPEND_ONLY', $result['skipped_reasons']['uuid-draft']['error'] ?? null);
+	}//end testAppendOnlyHoldsForADraft()
+
+	/**
+	 * A row transferred to the e-Depot is refused under both vocabularies; the rest proceeds.
+	 *
+	 * @param string $status The stored archiefstatus.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider transferredStatuses
+	 */
+	public function testTransferredRowIsRefusedWhileTheRestOfTheBatchProceeds(string $status): void {
+		$transferred = $this->givenObject(uuid: 'uuid-transferred', schemaId: 11);
+		$transferred->setRetention(['archiefstatus' => $status]);
+		$plain = $this->givenObject(uuid: 'uuid-plain', schemaId: 11);
+		$this->buildService([$transferred, $plain]);
+
+		$this->deleteHandler->expects($this->once())
+			->method('deleteObject')
+			->with($this->anything(), $this->anything(), 'uuid-plain')
+			->willReturn(true);
+
+		$result = $this->service->deleteObjects(['uuid-transferred', 'uuid-plain']);
+
+		$this->assertSame(['uuid-plain'], $result['deleted_uuids']);
+		$this->assertSame(
+			[
+				'error' => 'OBJECT_TRANSFERRED',
+				'message' => 'This object has been transferred to the e-Depot and is read-only.',
+			],
+			$result['skipped_reasons']['uuid-transferred']
+		);
+	}//end testTransferredRowIsRefusedWhileTheRestOfTheBatchProceeds()
+
+	/**
+	 * The archiefstatus values that mean transferred.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function transferredStatuses(): array {
+		return ['current' => ['transferred'], 'legacy' => ['overgebracht']];
+	}//end transferredStatuses()
+
+	/**
+	 * NEGATIVE CONTROL: a row not yet transferred goes.
+	 *
+	 * @return void
+	 */
+	public function testARowNotYetTransferredIsDeleted(): void {
+		$row = $this->givenObject(uuid: 'uuid-row', schemaId: 11);
+		$row->setRetention(['archiefstatus' => 'nog_te_archiveren']);
+		$this->buildService([$row]);
+
+		$this->deleteHandler->method('deleteObject')->willReturn(true);
+
+		$this->assertSame(['uuid-row'], $this->service->deleteObjects(['uuid-row'])['deleted_uuids']);
+	}//end testARowNotYetTransferredIsDeleted()
+
+	/**
 	 * NEGATIVE CONTROL: the same row on a schema WITHOUT the annotation is deleted.
 	 *
 	 * The only difference from the test above is the schema configuration. Without

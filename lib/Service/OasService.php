@@ -1834,7 +1834,7 @@ class OasService {
 		}
 
 		// Ensure it starts with a letter (prepend 'Schema_' if it starts with number).
-		if (preg_match('/^[0-9]/', $sanitized) === true) {
+		if (preg_match('/^[0-9]/', $sanitized) === 1) {
 			$sanitized = 'Schema_' . $sanitized;
 		}
 

@@ -57,6 +57,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use stdClass;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceText;
+use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
 
 /**
  * Testable Schema subclass to avoid mocking Entity __call magic methods.
@@ -501,17 +503,17 @@ class SaveObjectAdditionalTest extends TestCase {
 	// =================================================================
 
 	public function testRemoveQueryParametersWithQueryString(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema?key=value']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?key=value');
 		$this->assertSame('schema', $result);
 	}
 
 	public function testRemoveQueryParametersWithoutQueryString(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema');
 		$this->assertSame('schema', $result);
 	}
 
 	public function testRemoveQueryParametersWithMultipleParams(): void {
-		$result = $this->invokePrivate('removeQueryParameters', ['schema?a=1&b=2']);
+		$result = (new ReferenceText())->withoutQuery(reference: 'schema?a=1&b=2');
 		$this->assertSame('schema', $result);
 	}
 
@@ -895,9 +897,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 	public function testResolveSchemaReferenceCachedResult(): void {
 		// Pre-populate the schema reference cache.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($this->saveObject, ['test-ref' => '42']);
+		SaveLookupsAccess::set($this->saveObject, 'schemaReferenceCache', ['test-ref' => '42']);
 
 		$result = $this->invokePrivate('resolveSchemaReference', ['test-ref']);
 		$this->assertSame('42', $result);
@@ -913,9 +913,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->assertNull($result);
 
 		// Verify it was cached as null.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cache = $cacheProperty->getValue($this->saveObject);
+		$cache = SaveLookupsAccess::get($this->saveObject, 'schemaReferenceCache');
 		$this->assertNull($cache['nonexistent-slug']);
 	}
 
@@ -924,7 +922,7 @@ class SaveObjectAdditionalTest extends TestCase {
 	// =================================================================
 
 	public function testResolveRegisterReferenceEmpty(): void {
-		$result = $this->invokePrivate('resolveRegisterReference', ['']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: '');
 		$this->assertNull($result);
 	}
 
@@ -937,7 +935,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 		$this->registerMapper->method('find')->willReturn($register);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['42']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: '42');
 		$this->assertSame('42', $result);
 	}
 
@@ -954,10 +952,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$register]);
 
-		$result = $this->invokePrivate(
-			'resolveRegisterReference',
-			['http://example.com/registers/publication']
-		);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'http://example.com/registers/publication');
 		$this->assertSame('5', $result);
 	}
 
@@ -967,7 +962,7 @@ class SaveObjectAdditionalTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([]);
 
-		$result = $this->invokePrivate('resolveRegisterReference', ['nonexistent']);
+		$result = SaveLookupsAccess::of($this->saveObject)->registerId(reference: 'nonexistent');
 		$this->assertNull($result);
 	}
 
@@ -1670,9 +1665,7 @@ class SaveObjectAdditionalTest extends TestCase {
 
 	public function testResolveSchemaReferenceCleanedCacheLookup(): void {
 		// Pre-populate cache with cleaned reference.
-		$cacheProperty = $this->reflection->getProperty('schemaReferenceCache');
-		$cacheProperty->setAccessible(true);
-		$cacheProperty->setValue($this->saveObject, ['schema' => '99']);
+		SaveLookupsAccess::set($this->saveObject, 'schemaReferenceCache', ['schema' => '99']);
 
 		// Query with query params should find the cleaned version.
 		$result = $this->invokePrivate('resolveSchemaReference', ['schema?version=2']);

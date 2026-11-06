@@ -3,8 +3,8 @@
 /**
  * Golden test of SftpTransport over a phpseclib3 stub.
  *
- * Every test runs in a separate process, because the stub makes phpseclib3 loadable
- * and other tests need it absent.
+ * Every test runs in a separate process, so the stub replaces the real phpseclib3
+ * there and no test opens a network connection.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Edepot
@@ -84,17 +84,13 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end tearDown()
 
 	/**
-	 * Build the transport; with $stub phpseclib3 becomes loadable.
-	 *
-	 * @param bool $stub Whether to load the phpseclib3 stub.
+	 * Build the transport over the phpseclib3 stub.
 	 *
 	 * @return SftpTransport The transport.
 	 */
-	private function transport(bool $stub = true): SftpTransport {
-		if ($stub === true) {
-			require_once __DIR__ . '/fixtures/phpseclib-sftp-stub.php';
-			SFTP::$size = 5;
-		}
+	private function transport(): SftpTransport {
+		require_once __DIR__ . '/fixtures/phpseclib-sftp-stub.php';
+		SFTP::$size = 5;
 
 		$logs = &$this->logs;
 		$logger = new class($logs) extends AbstractLogger {
@@ -144,12 +140,13 @@ class SftpTransportGoldenTest extends TestCase {
 		$this->assertTrue($result->isSuccess());
 		$this->assertSame($remote, $result->getTransferReference());
 		$this->assertSame(
-			[['connect', 'depot.example', 22], ['login', 'u', 'p'], ['put', $remote, $this->sip, 1], ['size', $remote]],
+			[['connect', 'depot.example', 22], ['login', 'u', 'p'], ['put', $remote, $this->sip, 1], ['filesize', $remote]],
 			SFTP::$calls
 		);
 		$this->assertSame(
 			[
 				'info [SftpTransport] Starting SFTP transfer {"host":"depot.example"}',
+				'warning [SftpTransport] No hostKeyFingerprint configured, server identity not verified []',
 				'info [SftpTransport] SFTP transfer successful ' . json_encode(['remotePath' => $remote, 'size' => 5]),
 			],
 			$this->logs
@@ -193,6 +190,35 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end testCredentialsRequired()
 
 	/**
+	 * A pinned key that matches is checked before the login and logs no warning.
+	 *
+	 * @return void
+	 */
+	public function testPinnedHostKeyMatches(): void {
+		$pin = 'SHA256:' . rtrim(base64_encode(hash('sha256', 'server key', true)), '=');
+
+		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => $pin]);
+
+		$this->assertTrue($result->isSuccess());
+		$this->assertSame(['hostKey'], SFTP::$calls[1] ?? null);
+		$this->assertSame('login', SFTP::$calls[2][0] ?? null);
+		$this->assertCount(2, $this->logs);
+	}//end testPinnedHostKeyMatches()
+
+	/**
+	 * A server with another key gets no credentials and no file.
+	 *
+	 * @return void
+	 */
+	public function testPinnedHostKeyMismatchSendsNothing(): void {
+		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => 'SHA256:other']);
+
+		$this->assertSame('SFTP host key does not match hostKeyFingerprint', $result->getErrorMessage());
+		$this->assertSame([['connect', 'depot.example', 22], ['hostKey']], SFTP::$calls);
+		$this->assertFalse($this->transport()->testConnection($this->config() + ['hostKeyFingerprint' => 'SHA256:other']));
+	}//end testPinnedHostKeyMismatchSendsNothing()
+
+	/**
 	 * A refused login stops before the upload.
 	 *
 	 * @return void
@@ -206,7 +232,7 @@ class SftpTransportGoldenTest extends TestCase {
 		$this->assertFalse($result->isSuccess());
 		$this->assertSame('SFTP authentication failed', $result->getErrorMessage());
 		$this->assertCount(2, SFTP::$calls);
-		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[1]);
+		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[2]);
 	}//end testAuthenticationFailure()
 
 	/**
@@ -252,20 +278,17 @@ class SftpTransportGoldenTest extends TestCase {
 	}//end testUnknownRemoteSize()
 
 	/**
-	 * Without phpseclib3 the transfer fails with the install hint, after the config check.
+	 * An incomplete config is refused before connecting.
 	 *
 	 * @return void
 	 */
-	public function testWithoutPhpseclib(): void {
-		$transport = $this->transport(stub: false);
+	public function testIncompleteConfig(): void {
+		$transport = $this->transport();
 
-		$this->assertSame(
-			'phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.',
-			$transport->send($this->sip, $this->config())->getErrorMessage()
-		);
 		$this->assertSame('Missing required SFTP config: host', $transport->send($this->sip, [])->getErrorMessage());
-		$this->assertSame('info [SftpTransport] Starting SFTP transfer {"host":"unknown"}', $this->logs[2]);
-	}//end testWithoutPhpseclib()
+		$this->assertSame('info [SftpTransport] Starting SFTP transfer {"host":"unknown"}', $this->logs[0]);
+		$this->assertSame([], SFTP::$calls);
+	}//end testIncompleteConfig()
 
 	/**
 	 * A missing SIP file connects to nothing.

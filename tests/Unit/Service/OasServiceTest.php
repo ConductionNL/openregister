@@ -554,10 +554,7 @@ class OasServiceTest extends TestCase {
 
 	public function testSanitizeSchemaNameStartingWithNumber(): void {
 		$result = $this->invokePrivateMethod('sanitizeSchemaName', ['123Schema']);
-		// preg_match returns 1 (int), which is truthy but === true test is different
-		// The method checks `=== true` which actually evaluates `1 === true` to false
-		// So the prefix is NOT added. Let's verify the actual behavior:
-		$this->assertMatchesRegularExpression('/^[a-zA-Z0-9._-]+$/', $result);
+		$this->assertSame('Schema_123Schema', $result);
 	}
 
 	public function testSanitizeSchemaNameWithDotsAndDashes(): void {

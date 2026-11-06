@@ -101,251 +101,27 @@
 			</p>
 
 			<div class="retention-table">
-				<div class="retention-row">
+				<div v-for="row in retentionRows" :key="row.id" class="retention-row">
 					<div class="retention-label">
-						<label for="retention-object-archive"
-							><strong>Soft Delete After Inactivity</strong></label
-						>
+						<label :for="row.id"><strong>{{ row.label }}</strong></label>
 						<p class="retention-description">
-							Time since last CRUD action before object is soft-deleted
+							{{ row.description }}
 						</p>
 					</div>
 					<div class="retention-input">
 						<div class="retention-input-wrapper">
 							<input
-								id="retention-object-archive"
-								v-model.number="
-									retentionOptions.objectArchiveRetention
-								"
+								:id="row.id"
+								v-model.number="retentionOptions[row.option]"
 								type="number"
 								:disabled="loading || saving"
-								placeholder="31536000000"
+								:placeholder="row.placeholder"
 								class="retention-input-field" />
 							<span class="retention-unit">ms</span>
 						</div>
 					</div>
 					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.objectArchiveRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-object-delete"
-							><strong
-								>Permanent Delete After Soft Delete</strong
-							></label
-						>
-						<p class="retention-description">
-							Time from soft-delete to permanent deletion
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-object-delete"
-								v-model.number="
-									retentionOptions.objectDeleteRetention
-								"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="63072000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.objectDeleteRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-search-trail"
-							><strong>Search Trail Retention</strong></label
-						>
-						<p class="retention-description">
-							Retention period for search query audit trails and
-							analytics
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-search-trail"
-								v-model.number="
-									retentionOptions.searchTrailRetention
-								"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.searchTrailRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-create-log"
-							><strong>Create Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object creation audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-create-log"
-								v-model.number="retentionOptions.createLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.createLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-read-log"
-							><strong>Read Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object access/view audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-read-log"
-								v-model.number="retentionOptions.readLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="86400000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(retentionOptions.readLogRetention)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-update-log"
-							><strong>Update Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object modification audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-update-log"
-								v-model.number="retentionOptions.updateLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="604800000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.updateLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-delete-log"
-							><strong>Delete Action Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for object deletion audit logs
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-delete-log"
-								v-model.number="retentionOptions.deleteLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.deleteLogRetention,
-							)
-						}}
-					</div>
-				</div>
-
-				<div class="retention-row">
-					<div class="retention-label">
-						<label for="retention-webhook-log"
-							><strong>Webhook Logs</strong></label
-						>
-						<p class="retention-description">
-							Retention period for webhook delivery logs and retry
-							attempts
-						</p>
-					</div>
-					<div class="retention-input">
-						<div class="retention-input-wrapper">
-							<input
-								id="retention-webhook-log"
-								v-model.number="retentionOptions.webhookLogRetention"
-								type="number"
-								:disabled="loading || saving"
-								placeholder="2592000000"
-								class="retention-input-field" />
-							<span class="retention-unit">ms</span>
-						</div>
-					</div>
-					<div class="retention-display">
-						{{
-							formatRetentionPeriod(
-								retentionOptions.webhookLogRetention,
-							)
-						}}
+						{{ formatRetentionPeriod(retentionOptions[row.option]) }}
 					</div>
 				</div>
 			</div>
@@ -365,6 +141,65 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SectionSaveActions from './SectionSaveActions.vue'
 import { settingsSectionState } from './settingsSectionState.js'
 
+const RETENTION_ROWS = [
+	{
+		id: 'retention-object-archive',
+		option: 'objectArchiveRetention',
+		label: 'Soft Delete After Inactivity',
+		description: 'Time since last CRUD action before object is soft-deleted',
+		placeholder: '31536000000',
+	},
+	{
+		id: 'retention-object-delete',
+		option: 'objectDeleteRetention',
+		label: 'Permanent Delete After Soft Delete',
+		description: 'Time from soft-delete to permanent deletion',
+		placeholder: '63072000000',
+	},
+	{
+		id: 'retention-search-trail',
+		option: 'searchTrailRetention',
+		label: 'Search Trail Retention',
+		description: 'Retention period for search query audit trails and analytics',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-create-log',
+		option: 'createLogRetention',
+		label: 'Create Action Logs',
+		description: 'Retention period for object creation audit logs',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-read-log',
+		option: 'readLogRetention',
+		label: 'Read Action Logs',
+		description: 'Retention period for object access/view audit logs',
+		placeholder: '86400000',
+	},
+	{
+		id: 'retention-update-log',
+		option: 'updateLogRetention',
+		label: 'Update Action Logs',
+		description: 'Retention period for object modification audit logs',
+		placeholder: '604800000',
+	},
+	{
+		id: 'retention-delete-log',
+		option: 'deleteLogRetention',
+		label: 'Delete Action Logs',
+		description: 'Retention period for object deletion audit logs',
+		placeholder: '2592000000',
+	},
+	{
+		id: 'retention-webhook-log',
+		option: 'webhookLogRetention',
+		label: 'Webhook Logs',
+		description: 'Retention period for webhook delivery logs and retry attempts',
+		placeholder: '2592000000',
+	},
+]
+
 export default {
 	name: 'RetentionConfiguration',
 
@@ -376,6 +211,10 @@ export default {
 	},
 
 	mixins: [settingsSectionState],
+
+	data() {
+		return { retentionRows: RETENTION_ROWS }
+	},
 
 	computed: {
 		retentionOptions: {
