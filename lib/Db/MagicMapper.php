@@ -2531,17 +2531,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function collectAllPropertyColumns(array $registerSchemaPairs): array {
 		$allColumns = [];
 
-		// List of metadata/configuration fields that should NOT be treated as properties.
-		// Same exclusion list as buildTableColumnsFromSchema().
-		$metadataFields = [
-			'objectNameField',
-			'objectDescriptionField',
-			'objectSummaryField',
-			'required',
-			'$schema',
-			'$id',
-		];
-
 		foreach ($registerSchemaPairs as $pair) {
 			$schema = $pair['schema'] ?? null;
 			if ($schema === null) {
@@ -2554,7 +2543,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			foreach ($properties as $propertyName => $propertyConfig) {
-				if (in_array($propertyName, $metadataFields, true) === true) {
+				if (in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
 					continue;
 				}
 

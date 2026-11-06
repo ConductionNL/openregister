@@ -41,7 +41,7 @@ final class MagicSchemaColumns {
 	 * `title`, `description` and `type` are absent: they are legitimate
 	 * property names (catalog.title, module.type).
 	 */
-	private const CONFIGURATION_FIELDS = [
+	public const CONFIGURATION_FIELDS = [
 		'objectNameField',
 		'objectDescriptionField',
 		'objectSummaryField',
