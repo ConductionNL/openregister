@@ -70,6 +70,7 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerEvaluatePermissionTest extends TestCase {
 
@@ -290,8 +291,8 @@ class PermissionHandlerEvaluatePermissionTest extends TestCase {
 		$verdict = $method->invoke(
 			$this->handler(case: $case, logger: $logger),
 			(new PermissionAsk(schema: $schema, action: ($case['action'] ?? 'read')))
-				->by(userId: $userId, objectOwner: $object?->getOwner())
-				->on(object: $object, register: null)
+				->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
 		);
 
 		return ['verdict' => $verdict, 'log' => $logger->lines];

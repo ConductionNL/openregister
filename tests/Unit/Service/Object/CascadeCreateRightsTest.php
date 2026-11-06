@@ -60,6 +60,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class CascadeCreateRightsTest extends TestCase {
 

@@ -476,8 +476,8 @@ class PermissionHandler {
 
 		return $this->answer(
 			ask: (new PermissionAsk(schema: $schema, action: $action))
-				->by(userId: $userId, objectOwner: $objectOwner)
-				->on(object: $object, register: $register)
+				->askedBy(userId: $userId, objectOwner: $objectOwner)
+				->about(object: $object, register: $register)
 		);
 	}//end hasPermission()
 
@@ -2570,10 +2570,8 @@ class PermissionHandler {
 	 * @spec openspec/changes/add-live-updates/tasks.md#task-3
 	 */
 	public function getReadableByUsers(ObjectEntity $object): array {
-		$schema = $this->schemaForReaders(object: $object);
-
 		// Null means "open / broadcast" or unresolvable: no targeted user list.
-		$groupIds = ($schema === null ? null : $this->readerGroupIds(schema: $schema));
+		$groupIds = $this->readerGroupIds(object: $object);
 		if ($groupIds === null) {
 			return [];
 		}
@@ -2626,11 +2624,16 @@ class PermissionHandler {
 	 * Fail-closed: an unresolvable authorization must not broadcast, so it answers
 	 * like an open schema, with no targeted user list.
 	 *
-	 * @param Schema $schema The schema.
+	 * @param ObjectEntity $object The object.
 	 *
 	 * @return array<string>|null The group ids, null for no targeted list.
 	 */
-	private function readerGroupIds(Schema $schema): ?array {
+	private function readerGroupIds(ObjectEntity $object): ?array {
+		$schema = $this->schemaForReaders(object: $object);
+		if ($schema === null) {
+			return null;
+		}
+
 		try {
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {

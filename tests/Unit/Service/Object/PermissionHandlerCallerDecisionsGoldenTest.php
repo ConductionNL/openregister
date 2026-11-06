@@ -49,6 +49,7 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\ProvenanceResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 

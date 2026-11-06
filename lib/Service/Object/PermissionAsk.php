@@ -88,12 +88,12 @@ final class PermissionAsk {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function by(?string $userId, ?string $objectOwner): self {
+	public function askedBy(?string $userId, ?string $objectOwner): self {
 		$this->userId      = $userId;
 		$this->objectOwner = $objectOwner;
 
 		return $this;
-	}//end by()
+	}//end askedBy()
 
 	/**
 	 * Name the object and the register.
@@ -105,12 +105,12 @@ final class PermissionAsk {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function on(?ObjectEntity $object, ?string $register): self {
+	public function about(?ObjectEntity $object, ?string $register): self {
 		$this->object   = $object;
 		$this->register = ($object?->getRegister() ?? $register);
 
 		return $this;
-	}//end on()
+	}//end about()
 
 	/**
 	 * The check that evaluates this question.

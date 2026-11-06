@@ -82,6 +82,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
