@@ -158,7 +158,7 @@ class RegistersControllerDestroyGoldenTest extends TestCase {
 
 		$objects = $this->createMock(MagicMapper::class);
 		$objects->method('getStatistics')->willReturnCallback(function (...$args) use ($case): array {
-			$this->calls[] = ['getStatistics', $args];
+			$this->calls[] = ['getStatistics', array_slice($args, 0, 2)];
 			if (($case['countFails'] ?? false) === true) {
 				throw new RuntimeException('count failed');
 			}

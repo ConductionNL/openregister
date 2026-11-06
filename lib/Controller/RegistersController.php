@@ -733,36 +733,7 @@ class RegistersController extends Controller {
 
 		try {
 			// Find the register first (validates existence + access).
-			$register = $this->registerService->find($id);
-
-			// Authorization: deleting a register requires manage permission
-			// (manage-group membership, or administrator). Reading stays open.
-			if ($this->checkRegisterManagePermission(register: $register) === false) {
-				return new JSONResponse(
-					data: ['error' => 'User does not have permission to manage this register'],
-					statusCode: 403
-				);
-			}
-
-			// Count objects and apply the delete-safety guard.
-			$objectCount = $this->countRegisterObjects(registerId: $register->getId());
-			$guardResponse = $this->handleObjectCountGuard(
-				register: $register,
-				objectCount: $objectCount,
-				force: $force
-			);
-			if ($guardResponse !== null) {
-				return $guardResponse;
-			}
-
-			$this->registerService->delete($register);
-
-			// **CACHE INVALIDATION (runtime-schema-api)**: Drop request-scoped
-			// find cache for the deleted register.
-			$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
-
-			// Return an empty response.
-			return new JSONResponse(data: []);
+			return $this->destroyFound(register: $this->registerService->find($id), force: $force);
 		} catch (DoesNotExistException $e) {
 			// Return 404 Not Found when register doesn't exist or is not accessible.
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
@@ -774,6 +745,38 @@ class RegistersController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Delete a found register, once the caller's rights and the object count allow it.
+	 *
+	 * @param Register $register The register.
+	 * @param bool     $force    Whether the force flag was set.
+	 *
+	 * @return JSONResponse Empty on success, or the refusal.
+	 *
+	 * @throws Exception When counting or deleting fails; destroy() answers it.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag comes from the request.
+	 */
+	private function destroyFound(Register $register, bool $force): JSONResponse {
+		// Authorization: deleting a register requires manage permission
+		// (manage-group membership, or administrator). Reading stays open.
+		if ($this->checkRegisterManagePermission(register: $register) === false) {
+			return new JSONResponse(data: ['error' => 'User does not have permission to manage this register'], statusCode: 403);
+		}
+
+		$refusal = $this->objectCountRefusal(register: $register, force: $force);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$this->registerService->delete($register);
+
+		// Drop the request-scoped find cache for the deleted register.
+		$this->services->registers->registerCacheHandler->invalidate(registerId: $register->getId());
+
+		return new JSONResponse(data: []);
+	}//end destroyFound()
 
 	/**
 	 * Parse the ?force query parameter into a boolean.
@@ -804,34 +807,39 @@ class RegistersController extends Controller {
 	}//end countRegisterObjects()
 
 	/**
-	 * Apply the delete-safety guard for object count.
-	 *
-	 * Returns a JSONResponse (409) when objects exist and force is false.
-	 * Logs a WARNING when force-deleting with objects present.
-	 * Returns null when the delete may proceed.
+	 * Apply the delete-safety guard for the objects attached to a register.
 	 *
 	 * @param Register $register The register to be deleted.
-	 * @param int $objectCount Number of objects attached to the register.
-	 * @param bool $force Whether the force flag was set.
+	 * @param bool     $force    Whether the force flag was set.
 	 *
-	 * @return JSONResponse|null 409 response to abort, or null to continue.
+	 * @return JSONResponse|null 409 when objects exist without force, or null to continue.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag comes from the request.
 	 */
-	private function handleObjectCountGuard(Register $register, int $objectCount, bool $force): ?JSONResponse {
+	private function objectCountRefusal(Register $register, bool $force): ?JSONResponse {
+		$objectCount = $this->countRegisterObjects(registerId: $register->getId());
 		if ($objectCount === 0) {
 			return null;
 		}
 
 		if ($force === false) {
-			return new JSONResponse(
-				data: [
-					'error' => 'register-has-objects',
-					'objectCount' => $objectCount,
-				],
-				statusCode: 409
-			);
+			return new JSONResponse(data: ['error' => 'register-has-objects', 'objectCount' => $objectCount], statusCode: 409);
 		}
 
-		// Force-delete with audit at WARNING level so operators can review.
+		$this->logForcedDelete(register: $register, objectCount: $objectCount);
+
+		return null;
+	}//end objectCountRefusal()
+
+	/**
+	 * Log a force-delete at WARNING level so operators can review it.
+	 *
+	 * @param Register $register    The register to be deleted.
+	 * @param int      $objectCount Number of objects attached to the register.
+	 *
+	 * @return void
+	 */
+	private function logForcedDelete(Register $register, int $objectCount): void {
 		$this->logger->warning(
 			message: '[RegistersController] Force-deleting register with attached objects',
 			context: [
@@ -842,9 +850,7 @@ class RegistersController extends Controller {
 				'objectCount' => $objectCount,
 			]
 		);
-
-		return null;
-	}//end handleObjectCountGuard()
+	}//end logForcedDelete()
 
 	/**
 	 * Get schemas associated with a register
