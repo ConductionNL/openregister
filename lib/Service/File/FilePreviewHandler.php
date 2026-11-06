@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCP\Files\File;
-use OCP\Files\IRootFolder;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
 use Psr\Log\LoggerInterface;
@@ -39,33 +38,26 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
+ *
+ * @spec openspec/specs/file-actions/spec.md
  */
 class FilePreviewHandler {
 
 	/**
-	 * Default preview width in pixels.
+	 * The message thrown when no preview can be made.
 	 *
-	 * @var int
+	 * @var string
 	 */
-	private const DEFAULT_WIDTH = 256;
-
-	/**
-	 * Default preview height in pixels.
-	 *
-	 * @var int
-	 */
-	private const DEFAULT_HEIGHT = 256;
+	private const UNAVAILABLE = 'Preview not available for this file type';
 
 	/**
 	 * Constructor for FilePreviewHandler.
 	 *
-	 * @param IPreview $previewManager Preview manager for generating thumbnails.
-	 * @param IRootFolder $rootFolder Root folder for file access.
-	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param IPreview        $previewManager Preview manager for generating thumbnails.
+	 * @param LoggerInterface $logger         Logger for logging operations.
 	 */
 	public function __construct(
 		private readonly IPreview $previewManager,
-		private readonly IRootFolder $rootFolder,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -73,9 +65,8 @@ class FilePreviewHandler {
 	/**
 	 * Get a preview for a file.
 	 *
-	 * @param File $file The file to generate a preview for.
-	 * @param int|null $width Optional width in pixels (default: 256).
-	 * @param int|null $height Optional height in pixels (default: 256).
+	 * @param File             $file The file to generate a preview for.
+	 * @param PreviewSize|null $size The preview size (default: 256x256).
 	 *
 	 * @return ISimpleFile The preview image file.
 	 *
@@ -83,30 +74,40 @@ class FilePreviewHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getPreview(File $file, ?int $width = null, ?int $height = null): ISimpleFile {
-		$width = $width ?? self::DEFAULT_WIDTH;
-		$height = $height ?? self::DEFAULT_HEIGHT;
-
-		// Check if preview is available for this file type.
+	public function getPreview(File $file, ?PreviewSize $size = null): ISimpleFile {
 		if ($this->previewManager->isAvailable($file) === false) {
-			throw new Exception('Preview not available for this file type');
+			throw new Exception(self::UNAVAILABLE);
 		}
 
 		try {
-			$preview = $this->previewManager->getPreview($file, $width, $height);
-
-			$this->logger->debug(
-				message: "[FilePreviewHandler] Generated preview for file {$file->getName()} ({$width}x{$height})",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return $preview;
+			return $this->generate(file: $file, size: $size ?? new PreviewSize());
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[FilePreviewHandler] Failed to generate preview: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new Exception('Preview not available for this file type');
-		}//end try
+			throw new Exception(self::UNAVAILABLE);
+		}
 	}//end getPreview()
+
+	/**
+	 * Generates the preview and logs its size.
+	 *
+	 * @param File        $file The file to generate a preview for.
+	 * @param PreviewSize $size The preview size.
+	 *
+	 * @return ISimpleFile The preview image file.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	private function generate(File $file, PreviewSize $size): ISimpleFile {
+		$preview = $this->previewManager->getPreview($file, $size->width, $size->height);
+
+		$this->logger->debug(
+			message: "[FilePreviewHandler] Generated preview for file {$file->getName()} ({$size->label()})",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $preview;
+	}//end generate()
 }//end class

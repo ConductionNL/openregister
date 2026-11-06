@@ -47,6 +47,7 @@ use Stringable;
  * the audit trail, the inverse relations and the outcome it reports.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\ObjectHandling
  * @uses \OCA\OpenRegister\Db\Register
