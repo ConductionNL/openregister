@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister file text mappers
+ * OpenRegister file text controller services
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,25 +20,31 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Files\Controller\Support;
 
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 
 /**
- * The mappers and repositories of the file text API.
+ * The service bundles of the file text API.
  *
  * @spec openspec/specs/api-test-coverage/spec.md
  */
-final class FileTextMappers {
+final class FileTextControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
+	 * @param ControllerSession $session  The session bundle.
+	 * @param FileTextMappers   $mappers  The mappers bundle.
+	 * @param FileTextDomain    $domain   The domain bundle.
+	 * @param FileTextPlatform  $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function __construct(
-		public readonly EntityRelationMapperInterface $entityRelationMapper,
+		public readonly ControllerSession $session,
+		public readonly FileTextMappers $mappers,
+		public readonly FileTextDomain $domain,
+		public readonly FileTextPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

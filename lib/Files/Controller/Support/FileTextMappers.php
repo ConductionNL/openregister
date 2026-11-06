@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister file text platform
+ * OpenRegister file text mappers
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,25 +20,25 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Files\Controller\Support;
 
-use OCP\Files\IRootFolder;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
 /**
- * The platform services of the file text API.
+ * The mappers and repositories of the file text API.
  *
  * @spec openspec/specs/api-test-coverage/spec.md
  */
-final class FileTextPlatform {
+final class FileTextMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function __construct(
-		public readonly IRootFolder $rootFolder,
+		public readonly EntityRelationMapperInterface $entityRelationMapper,
 	) {
 	}//end __construct()
 }//end class

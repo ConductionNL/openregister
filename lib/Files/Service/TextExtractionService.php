@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use Exception;
 use JsonException;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -73,7 +74,7 @@ use OCA\OpenRegister\Service\SettingsServiceInterface;
  * (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would
  * break the encapsulated extraction workflow.
  */
-class TextExtractionService {
+class TextExtractionService implements TextExtractionServiceInterface {
 	/**
 	 * Default chunk size in characters
 	 *

@@ -22,10 +22,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Files\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
+use OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;

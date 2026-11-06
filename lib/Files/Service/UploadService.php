@@ -32,6 +32,7 @@
 namespace OCA\OpenRegister\Files\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,7 +61,7 @@ use OCA\OpenRegister\Service\SecurityService;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-class UploadService {
+class UploadService implements UploadServiceInterface {
 
 	/**
 	 * HTTP client

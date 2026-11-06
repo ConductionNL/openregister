@@ -851,84 +851,84 @@ parameters:
 			path: lib/Controller/EndpointsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{deleted\\: int, reasons\\: array\\{\\}\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{deleted\\: int, reasons\\: array\\{\\}\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:cleanup\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Cleanup failed', message\\: string, data\\?\\: array\\{deleted\\: 0, reasons\\: array\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{discovered\\: int, failed\\: int, total\\: int, error\\?\\: string\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{discovered\\: int, failed\\: int, total\\: int, error\\?\\: string\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'File discovery…', message\\: string, data\\?\\: array\\{discovered\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>, error\\?\\: string\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{processed\\: int, failed\\: int, total\\: int\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{processed\\: int, failed\\: int, total\\: int\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:extractAll\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Batch extraction…', message\\: string, data\\?\\: array\\{processed\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:fileTypes\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:fileTypes\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:fileTypes\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:fileTypes\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{retried\\: int, failed\\: int, total\\: int\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, data\\: array\\{retried\\: int, failed\\: int, total\\: int\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:retryFailed\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Retry failed', message\\: string, data\\?\\: array\\{retried\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, data\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\FileExtractionController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileExtractionController\\:\\:stats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: 'Failed to retrieve…', message\\?\\: string, data\\?\\: array\\{totalFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, totalObjects\\: int, totalEntities\\: int\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string, message\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/FileExtractionController.php
+			path: lib/Files/Controller/FileExtractionController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Files\\\\Controller\\\\FileSearchController\\:\\:semanticSearch\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{success\\: bool, message\\?\\: string, query\\?\\: string, total\\?\\: int\\<0, max\\>, results\\?\\: array\\<int, array\\<string, mixed\\>\\>, search_type\\?\\: 'semantic'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, query\\: mixed, total\\: int, results\\: array\\<int, array\\<string, mixed\\>\\>, search_type\\: string\\}, array\\{\\}\\>\\.$#"

@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -68,7 +69,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
  */
-class AccessLinkReader {
+class AccessLinkReader implements AccessLinkReaderInterface {
 
 	/**
 	 * The `@self` keys a link may publish.

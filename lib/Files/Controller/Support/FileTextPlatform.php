@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister file text controller services
+ * OpenRegister file text platform
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,29 +20,25 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Files\Controller\Support;
+
+use OCP\Files\IRootFolder;
 
 /**
- * The service bundles of the file text API.
+ * The platform services of the file text API.
  *
  * @spec openspec/specs/api-test-coverage/spec.md
  */
-final class FileTextControllerServices {
+final class FileTextPlatform {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ControllerSession $session  The session bundle.
-	 * @param FileTextMappers   $mappers  The mappers bundle.
-	 * @param FileTextDomain    $domain   The domain bundle.
-	 * @param FileTextPlatform  $platform The platform bundle.
+	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
 	 *
 	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function __construct(
-		public readonly ControllerSession $session,
-		public readonly FileTextMappers $mappers,
-		public readonly FileTextDomain $domain,
-		public readonly FileTextPlatform $platform,
+		public readonly IRootFolder $rootFolder,
 	) {
 	}//end __construct()
 }//end class
