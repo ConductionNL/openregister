@@ -125,7 +125,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "ref empty": {
         "result": {
@@ -140,7 +140,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "ref not a string": {
         "result": {
@@ -155,7 +155,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "conditional entry": {
         "result": {
@@ -185,7 +185,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "missing parent": {
         "result": {
@@ -215,7 +215,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "any of": {
         "result": {
@@ -230,7 +230,7 @@
             },
             "required": []
         },
-        "rowsLeft": 0
+        "rowsLeft": 1
     },
     "no composition": {
         "result": {

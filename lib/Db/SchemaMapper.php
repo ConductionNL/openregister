@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
@@ -1918,160 +1919,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end getRegisterCountPerSchema()
 
 	/**
-	 * Find schemas that have properties referencing the given schema
-	 *
-	 * This method searches through all schemas to find ones that have properties
-	 * with $ref pointing to the target schema, indicating a relationship.
-	 *
-	 * @param Schema|int|string $schema The target schema to find references to
-	 *
-	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
-	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
-	 * @throws \OCP\DB\Exception If a database error occurs
-	 *
-	 * @return Schema[]
-	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	public function getRelated(Schema|int|string $schema): array {
-		// If we received a Schema entity, get its ID, otherwise find the schema.
-		if ($schema instanceof Schema === false) {
-			// Find the target schema to get all its identifiers.
-			// Metadata read: bypasses multitenancy, like the controller's own
-			// outgoing half and every other schema catalog lookup.
-			$targetSchema = $this->find(id: $schema, _multitenancy: false);
-			$targetSchemaId = (string)$targetSchema->getId();
-			$targetSchemaUuid = $targetSchema->getUuid();
-			$targetSchemaSlug = $targetSchema->getSlug();
-		}
-
-		if ($schema instanceof Schema === true) {
-			$targetSchemaId = (string)$schema->getId();
-			$targetSchemaUuid = $schema->getUuid();
-			$targetSchemaSlug = $schema->getSlug();
-		}
-
-		// Get all schemas to search through their properties (metadata read).
-		$allSchemas = $this->findAll(_multitenancy: false);
-		$relatedSchemas = [];
-
-		foreach ($allSchemas as $currentSchema) {
-			// Skip the target schema itself.
-			if ($currentSchema->getId() === (int)$targetSchemaId) {
-				continue;
-			}
-
-			// Get the properties of the current schema.
-			$properties = $currentSchema->getProperties() ?? [];
-
-			// Search for references to the target schema.
-			if ($this->hasReferenceToSchema(
-				properties: $properties,
-				targetSchemaId: $targetSchemaId,
-				targetSchemaUuid: $targetSchemaUuid,
-				targetSchemaSlug: $targetSchemaSlug
-			) === true
-			) {
-				$relatedSchemas[] = $currentSchema;
-			}
-		}//end foreach
-
-		return $relatedSchemas;
-	}//end getRelated()
-
-	/**
-	 * Recursively check if properties contain a reference to the target schema
-	 *
-	 * This method searches through properties recursively to find $ref values
-	 * that match the target schema's ID, files: UUID, rbac: or slug.
-	 *
-	 * @param array $properties The properties array to search through
-	 * @param string $targetSchemaId The target schema ID to look for
-	 * @param string $targetSchemaUuid The target schema UUID to look for
-	 * @param string $targetSchemaSlug The target schema slug to look for
-	 *
-	 * @return bool True if a reference to the target schema is found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Recursive reference checking requires many conditions
-	 */
-	public function hasReferenceToSchema(
-		array $properties,
-		string $targetSchemaId,
-		string $targetSchemaUuid,
-		string $targetSchemaSlug,
-	): bool {
-		foreach ($properties as $property) {
-			// Skip non-array properties.
-			if (is_array($property) === false) {
-				continue;
-			}
-
-			// Check if this property has a $ref that matches our target schema.
-			if (($property['$ref'] ?? null) !== null) {
-				$ref = $property['$ref'];
-
-				// Check exact matches first.
-				if ($ref === $targetSchemaId
-					|| $ref === $targetSchemaUuid
-					|| $ref === $targetSchemaSlug
-					|| $ref === (int)$targetSchemaId
-				) {
-					return true;
-				}
-
-				// Check if the ref contains the target schema slug in JSON Schema format.
-				// Format: "#/components/schemas/slug" or "components/schemas/slug" etc.
-				if (is_string($ref) === true && empty($targetSchemaSlug) === false) {
-					if (str_contains($ref, '/schemas/' . $targetSchemaSlug) === true
-						|| str_contains($ref, 'schemas/' . $targetSchemaSlug) === true
-						|| str_ends_with($ref, '/' . $targetSchemaSlug) === true
-					) {
-						return true;
-					}
-				}
-
-				// Check if the entity contains the target schema UUID.
-				if (is_string($ref) === true && empty($targetSchemaUuid) === false) {
-					if (str_contains($ref, $targetSchemaUuid) === true) {
-						return true;
-					}
-				}
-			}//end if
-
-			// Recursively check nested properties.
-			if (($property['properties'] ?? null) !== null && is_array($property['properties']) === true) {
-				if ($this->hasReferenceToSchema(
-					properties: $property['properties'],
-					targetSchemaId: $targetSchemaId,
-					targetSchemaUuid: $targetSchemaUuid,
-					targetSchemaSlug: $targetSchemaSlug
-				) === true
-				) {
-					return true;
-				}
-			}
-
-			// Check array items for references.
-			if (($property['items'] ?? null) !== null && is_array($property['items']) === true) {
-				if ($this->hasReferenceToSchema(
-					properties: [$property['items']],
-					targetSchemaId: $targetSchemaId,
-					targetSchemaUuid: $targetSchemaUuid,
-					targetSchemaSlug: $targetSchemaSlug
-				) === true
-				) {
-					return true;
-				}
-			}
-		}//end foreach
-
-		return false;
-	}//end hasReferenceToSchema()
-
-	/**
 	 * Get property source metadata for a schema
 	 *
 	 * Returns metadata about each property indicating whether it's native (defined in this schema)
@@ -2169,6 +2016,68 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end findExtendedBy()
 
 	/**
+	 * Find schemas that have properties referencing the given schema.
+	 *
+	 * @param Schema|int|string $schema The target schema to find references to.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the target schema does not exist
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple target schemas are found
+	 * @throws \OCP\DB\Exception If a database error occurs
+	 *
+	 * @return Schema[]
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function getRelated(Schema|int|string $schema): array {
+		// Metadata reads: these bypass multitenancy, like the controller's own
+		// outgoing half and every other schema catalog lookup.
+		$target = $schema;
+		if ($schema instanceof Schema === false) {
+			$target = $this->find(id: $schema, _multitenancy: false);
+		}
+
+		$related = [];
+		foreach ($this->findAll(_multitenancy: false) as $candidate) {
+			if ($candidate->getId() !== (int)$target->getId() && $this->hasReferenceToSchema(
+				properties: $candidate->getProperties(),
+				targetSchemaId: (string)$target->getId(),
+				targetSchemaUuid: $target->getUuid(),
+				targetSchemaSlug: $target->getSlug()
+			) === true
+			) {
+				$related[] = $candidate;
+			}
+		}
+
+		return $related;
+	}//end getRelated()
+
+	/**
+	 * Recursively check if properties contain a reference to the target schema.
+	 *
+	 * @param array  $properties       The properties array to search through.
+	 * @param string $targetSchemaId   The target schema ID to look for.
+	 * @param string $targetSchemaUuid The target schema UUID to look for.
+	 * @param string $targetSchemaSlug The target schema slug to look for.
+	 *
+	 * @return bool True if a reference to the target schema is found
+	 */
+	public function hasReferenceToSchema(
+		array $properties,
+		string $targetSchemaId,
+		string $targetSchemaUuid,
+		string $targetSchemaSlug,
+	): bool {
+		$search = new SchemaReferenceSearch(
+			target: ['id' => $targetSchemaId, 'uuid' => $targetSchemaUuid, 'slug' => $targetSchemaSlug]
+		);
+
+		return $search->foundIn(properties: $properties);
+	}//end hasReferenceToSchema()
+
+	/**
 	 * Find all schema extension relationships in a single scan.
 	 *
 	 * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
@@ -2250,22 +2159,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function findNonSearchableIds(): array {
 		$this->traceRead(method: 'findNonSearchableIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')
-			->from('openregister_schemas')
-			->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: false, type: IQueryBuilder::PARAM_BOOL)));
-
-		$ids = [];
-		$result = $qb->executeQuery();
-		while (($row = $result->fetch()) !== false) {
-			if (isset($row['id']) === true) {
-				$ids[] = (int)$row['id'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $ids;
+		return $this->idsWithFlag(column: 'searchable', value: false);
 	}//end findNonSearchableIds()
 
 	/**
@@ -2285,22 +2179,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function findSearchableIds(): array {
 		$this->traceRead(method: 'findSearchableIds');
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id')
-			->from('openregister_schemas')
-			->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
-
-		$ids = [];
-		$result = $qb->executeQuery();
-		while (($row = $result->fetch()) !== false) {
-			if (isset($row['id']) === true) {
-				$ids[] = (int)$row['id'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $ids;
+		return $this->idsWithFlag(column: 'searchable', value: true);
 	}//end findSearchableIds()
 
 	/**
@@ -2323,10 +2202,22 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function findSmartPickerEnabledIds(): array {
 		$this->traceRead(method: 'findSmartPickerEnabledIds');
 
+		return $this->idsWithFlag(column: 'smart_picker_enabled', value: true);
+	}//end findSmartPickerEnabledIds()
+
+	/**
+	 * The ids of the schemas whose boolean column holds the given value.
+	 *
+	 * @param string $column The column.
+	 * @param bool   $value  The value.
+	 *
+	 * @return array<int, int>
+	 */
+	private function idsWithFlag(string $column, bool $value): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('id')
 			->from('openregister_schemas')
-			->where($qb->expr()->eq('smart_picker_enabled', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+			->where($qb->expr()->eq($column, $qb->createNamedParameter(value: $value, type: IQueryBuilder::PARAM_BOOL)));
 
 		$ids = [];
 		$result = $qb->executeQuery();
@@ -2339,5 +2230,5 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$result->closeCursor();
 
 		return $ids;
-	}//end findSmartPickerEnabledIds()
+	}//end idsWithFlag()
 }//end class
