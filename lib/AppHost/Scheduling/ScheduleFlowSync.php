@@ -148,7 +148,7 @@ class ScheduleFlowSync {
 			return null;
 		}
 
-		$node = (new ScheduleActionAllowList())->flowNode(schedule: $schedule);
+		$node = (new ScheduleActionNodes())->flowNode(schedule: $schedule);
 		if ($node === null) {
 			$this->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": action or argument not allowed.');
 			return null;
