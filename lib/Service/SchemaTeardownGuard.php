@@ -51,6 +51,8 @@ final class SchemaTeardownGuard {
 
 	/**
 	 * Reads the rows of a table with a register.
+	 *
+	 * @var WholeTableRows
 	 */
 	public readonly WholeTableRows $rows;
 
@@ -77,6 +79,8 @@ final class SchemaTeardownGuard {
 	 * @param Schema                                                                         $schema The schema.
 	 *
 	 * @return int The number of frozen, archived, locked or unreadable rows.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
 	public function countKept(array $tables, Schema $schema): int {
 		$total = 0;
@@ -99,6 +103,8 @@ final class SchemaTeardownGuard {
 	 * @throws ObjectStateWriteException If a row is frozen or archived.
 	 * @throws LockedException If a row is locked.
 	 * @throws ValidationException If a table outliving its register holds rows.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
 	public function assertNoneKept(array $tables, Schema $schema): void {
 		foreach ($tables as $entry) {
@@ -121,6 +127,8 @@ final class SchemaTeardownGuard {
 	 * @param int    $keptRows The kept rows that will be destroyed.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
 	public function recordForced(Schema $schema, int $keptRows): void {
 		$archival = $schema->hasArchivalAnnotation();
@@ -147,6 +155,8 @@ final class SchemaTeardownGuard {
 	 * @param string $tableName The magic table name.
 	 *
 	 * @return int The row count (0 when the table does not exist).
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
 	public function countAllRows(string $tableName): int {
 		if ($this->db->tableExists($tableName) === false) {
