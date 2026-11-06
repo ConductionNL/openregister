@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Service\Oas\OasNames;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -114,7 +113,7 @@ class OasServiceSanitizePropertyGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testSanitizePropertyDefinitionMatchesGolden(mixed $definition): void {
 		$name = $this->dataName();
-		$actual = (new OasPropertySanitizer(names: new OasNames()))->sanitize(definition: $definition);
+		$actual = (new OasPropertySanitizer())->sanitize(definition: $definition);
 
 		$golden = [];
 		if (is_file(self::FIXTURE) === true) {

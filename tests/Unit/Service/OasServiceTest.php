@@ -142,7 +142,7 @@ class OasServiceTest extends TestCase {
 	 * @return array<string, mixed> The definition
 	 */
 	private function sanitized(array $args): array {
-		return (new OasPropertySanitizer(names: new OasNames()))->sanitize(definition: $args[0]);
+		return (new OasPropertySanitizer())->sanitize(definition: $args[0]);
 	}
 
 	/**
@@ -153,7 +153,7 @@ class OasServiceTest extends TestCase {
 	 * @return string The type
 	 */
 	private function typeOf(array $args): string {
-		return (new OasPropertySanitizer(names: new OasNames()))->typeOf(definition: $args[0]);
+		return (new OasPropertySanitizer())->typeOf(definition: $args[0]);
 	}
 
 	/**

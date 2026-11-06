@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Oas;
 
-use OCA\OpenRegister\Service\Oas\OasNames;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use PHPUnit\Framework\TestCase;
 
@@ -70,7 +69,7 @@ class OasPropertySanitizerTest extends TestCase {
 	 * @return void
 	 */
 	public function testADefinitionSanitises(array $definition, array $expected): void {
-		$sanitizer = new OasPropertySanitizer(names: new OasNames());
+		$sanitizer = new OasPropertySanitizer();
 
 		$this->assertEquals($expected, $sanitizer->sanitize(definition: $definition));
 	}//end testADefinitionSanitises()

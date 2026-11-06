@@ -37,7 +37,6 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\OasValidationException;
-use OCA\OpenRegister\Service\Oas\OasNames;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
@@ -346,13 +345,6 @@ class OasService {
 	private string $operationIdPrefix = '';
 
 	/**
-	 * Spells titles as OpenAPI names.
-	 *
-	 * @var OasNames
-	 */
-	private readonly OasNames $names;
-
-	/**
 	 * Reduces property definitions to valid OpenAPI.
 	 *
 	 * @var OasPropertySanitizer
@@ -387,8 +379,7 @@ class OasService {
 		$this->urlGenerator = $urlGenerator;
 		$this->logger = $logger;
 		$this->report = new OasValidationReport();
-		$this->names = new OasNames();
-		$this->propertySanitizer = new OasPropertySanitizer(names: $this->names);
+		$this->propertySanitizer = new OasPropertySanitizer();
 		$this->rbacAnnotator = new OasRbacAnnotator(
 			registerMapper: $registerMapper,
 			logger: $logger,
@@ -615,7 +606,7 @@ class OasService {
 				continue;
 			}
 
-			$this->oas['components']['schemas'][$this->names->schemaName(title: $schemaTitle)] = $schemaDefinition;
+			$this->oas['components']['schemas'][$this->propertySanitizer->names->schemaName(title: $schemaTitle)] = $schemaDefinition;
 			$this->oas['tags'][] = [
 				'name' => $schemaTitle,
 				'description' => $schema->getDescription() ?? 'Operations for ' . $schemaTitle,
@@ -665,7 +656,7 @@ class OasService {
 	private function addRegisterPaths(object $register, array $context): void {
 		$this->operationIdPrefix = '';
 		if ($context['prefixed'] === true) {
-			$this->operationIdPrefix = $this->names->pascalCase(string: $register->getTitle());
+			$this->operationIdPrefix = $this->propertySanitizer->names->pascalCase(string: $register->getTitle());
 		}
 
 		$noGroups = ['createGroups' => [], 'readGroups' => [], 'updateGroups' => [], 'deleteGroups' => []];
@@ -889,7 +880,7 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function slugOf(object $entity): string {
-		$fallback = $this->names->slug(string: $entity->getTitle());
+		$fallback = $this->propertySanitizer->names->slug(string: $entity->getTitle());
 		$slug     = $entity->getSlug();
 		if ($slug === null || $slug === '') {
 			return $fallback;
@@ -913,7 +904,7 @@ class OasService {
 	private function addJsonLdContextPaths(object $register, object $schema): void {
 		$registerSlug = $this->slugOf(entity: $register);
 		$schemaSlug   = $this->slugOf(entity: $schema);
-		$operationId  = 'getContext' . $this->names->pascalCase(string: $registerSlug);
+		$operationId  = 'getContext' . $this->propertySanitizer->names->pascalCase(string: $registerSlug);
 		$responses    = ['200' => self::CONTEXT_DOCUMENT_RESPONSE, '404' => $this->errorResponse(description: 'Register or schema not found')];
 
 		// Register-wide context document (idempotent across schemas of a register).
@@ -928,7 +919,7 @@ class OasService {
 		// Per-schema context document.
 		$this->oas['paths']['/contexts/' . $registerSlug . '/' . $schemaSlug]['get'] = [
 			'summary' => 'JSON-LD context for ' . $schemaSlug,
-			'operationId' => $operationId . $this->names->pascalCase(string: $schemaSlug),
+			'operationId' => $operationId . $this->propertySanitizer->names->pascalCase(string: $schemaSlug),
 			'tags' => ['JSON-LD'],
 			'description' => 'Dereferenceable per-schema JSON-LD @context document.',
 			'responses' => $responses,
@@ -1079,7 +1070,7 @@ class OasService {
 	 * @return array<string, mixed> OpenAPI content map
 	 */
 	private function schemaRefContent(string $schemaName): array {
-		$reference = '#/components/schemas/' . $this->names->schemaName(title: $schemaName);
+		$reference = '#/components/schemas/' . $this->propertySanitizer->names->schemaName(title: $schemaName);
 		return ['application/json' => ['schema' => ['$ref' => $reference]]];
 	}//end schemaRefContent()
 
@@ -1101,7 +1092,7 @@ class OasService {
 
 		return [
 			'summary' => 'Get all ' . $schemaTitle . ' objects',
-			'operationId' => 'getAll' . $this->names->pascalCase(string: $schemaTitle),
+			'operationId' => 'getAll' . $this->propertySanitizer->names->pascalCase(string: $schemaTitle),
 			'tags' => [$schemaTitle],
 			'description' => 'Retrieve a list of all ' . $schemaTitle . ' objects',
 			'parameters' => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
@@ -1125,7 +1116,7 @@ class OasService {
 	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
 	 */
 	private function paginatedContent(string $schemaTitle): array {
-		$items = ['$ref' => '#/components/schemas/' . $this->names->schemaName(title: $schemaTitle)];
+		$items = ['$ref' => '#/components/schemas/' . $this->propertySanitizer->names->schemaName(title: $schemaTitle)];
 		$page  = ['type' => 'object', 'properties' => ['results' => ['type' => 'array', 'items' => $items]]];
 		return [
 			'application/json' => ['schema' => ['allOf' => [['$ref' => '#/components/schemas/PaginatedResponse'], $page]]],
@@ -1213,7 +1204,7 @@ class OasService {
 
 		return [
 			'summary' => sprintf($summary, $title),
-			'operationId' => $verb . $this->names->pascalCase(string: $title),
+			'operationId' => $verb . $this->propertySanitizer->names->pascalCase(string: $title),
 			'tags' => [$title],
 			'description' => sprintf($description, $title),
 			'parameters' => [$this->idPathParameter(description: 'Unique identifier of the ' . $title . $idSuffix)],
@@ -1251,7 +1242,7 @@ class OasService {
 		$title = $schema->getTitle();
 
 		$operation['summary'] = 'Partially update a ' . $title . ' object';
-		$operation['operationId'] = 'patch' . $this->names->pascalCase(string: $title);
+		$operation['operationId'] = 'patch' . $this->propertySanitizer->names->pascalCase(string: $title);
 		$operation['description'] = 'Change only the fields sent; fields left out keep their stored value';
 		$operation['parameters'][0]['description'] = 'Unique identifier of the ' . $title . ' object to patch';
 		$operation['requestBody'] = [
@@ -1283,7 +1274,7 @@ class OasService {
 
 		$operation = [
 			'summary' => 'Create a new ' . $schema->getTitle() . ' object',
-			'operationId' => 'create' . $this->names->pascalCase(string: $schema->getTitle()),
+			'operationId' => 'create' . $this->propertySanitizer->names->pascalCase(string: $schema->getTitle()),
 			'tags' => [$schema->getTitle()],
 			'description' => 'Create a new ' . $schema->getTitle() . ' object with the provided data',
 			'parameters' => $this->createCommonQueryParameters(),

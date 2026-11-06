@@ -89,11 +89,17 @@ class OasPropertySanitizer {
 	private const STRING_ITEMS = ['type' => 'string'];
 
 	/**
-	 * Constructor.
+	 * Spells a bare $ref as a component name; the document's generator shares it.
 	 *
-	 * @param OasNames $names Spells a bare $ref as a component name
+	 * @var OasNames
 	 */
-	public function __construct(private readonly OasNames $names) {
+	public readonly OasNames $names;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->names = new OasNames();
 	}//end __construct()
 
 	/**
