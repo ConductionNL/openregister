@@ -236,8 +236,8 @@ class NoteService implements NoteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
-		return $this->versions->auditEdit(object: $object, noteId: $noteId, versions: $versions);
+	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool {
+		return $this->versions->auditEdit(object: StoredEntity::object(object: $object), noteId: $noteId, versions: $versions);
 	}//end auditEdit()
 
 	/**

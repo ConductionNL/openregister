@@ -181,7 +181,7 @@ class AccessLinkController extends Controller {
 
 		// Resolved once and threaded through: the reader needs it to serve the
 		// subject and the audit entry needs it to name what was read.
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 
 		$body = $this->reader->read(link: $link, object: $object);
 		if ($body === null) {
@@ -225,7 +225,7 @@ class AccessLinkController extends Controller {
 			return $link;
 		}
 
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 		if ($object === null) {
 			$this->registerRejectedAttempt();
 
@@ -280,7 +280,7 @@ class AccessLinkController extends Controller {
 			return $link;
 		}
 
-		$object = $this->reader->subjectObject(link: $link);
+		$object = StoredEntity::object(object: $this->reader->subjectObject(link: $link));
 		if ($object === null) {
 			$this->registerRejectedAttempt();
 

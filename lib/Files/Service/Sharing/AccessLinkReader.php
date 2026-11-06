@@ -137,7 +137,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
-	public function subjectObject(AccessLink $link): ?ObjectEntity {
+	public function subjectObject(AccessLinkInterface $link): ?ObjectEntity {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
 			return null;
 		}
@@ -195,13 +195,13 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * What the link serves, filtered, or null when the subject is gone.
 	 *
 	 * @param AccessLink $link The link.
-	 * @param ObjectEntity|null $object The subject, when the caller already resolved it.
+	 * @param ObjectEntityInterface|null $object The subject, when the caller already resolved it.
 	 *
 	 * @return array<string, mixed>|null The body, or null when there is nothing to serve.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
-	public function read(AccessLink $link, ?ObjectEntity $object = null): ?array {
+	public function read(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?array {
 		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
 			return $this->readView(link: $link);
 		}
@@ -209,7 +209,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		// The caller usually resolved the object already, because it needs it to
 		// attribute the audit entry. Taking it as an argument keeps the public
 		// read path to ONE database fetch instead of two.
-		$object = ($object ?? $this->subjectObject(link: $link));
+		$object = StoredEntity::object(object: $object ?? $this->subjectObject(link: $link));
 		if ($object === null) {
 			return null;
 		}
@@ -241,7 +241,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
-	private function readView(AccessLink $link): ?array {
+	private function readView(AccessLinkInterface $link): ?array {
 		$viewId = trim((string)$link->getSubjectId());
 		if ($viewId === '') {
 			return null;
@@ -304,8 +304,8 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 *
 	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-an-anonymous-caller-reads-no-more-than-the-access-link-reader-publishes-req-pub-003
 	 */
-	public function publish(ObjectEntity $object): array {
-		return $this->project(object: $object);
+	public function publish(ObjectEntityInterface $object): array {
+		return $this->project(object: StoredEntity::object(object: $object));
 	}//end publish()
 
 	/**
