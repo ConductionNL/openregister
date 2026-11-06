@@ -36,6 +36,7 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
+ * @covers \OCA\OpenRegister\BackgroundJob\AbstractRetentionJob
  * @covers \OCA\OpenRegister\BackgroundJob\AvgRetentionJob
  * @covers \OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob
  */
