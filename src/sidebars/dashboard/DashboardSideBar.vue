@@ -285,6 +285,11 @@ import {
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import formatBytes from '../../services/formatBytes.js'
+import {
+	registerSelect,
+	schemaSelect,
+	scopeOption,
+} from '../../services/scopeSelect.js'
 
 export default {
 	name: 'DashboardSideBar',
@@ -318,25 +323,7 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
@@ -346,33 +333,7 @@ export default {
 		 * @return {object} NcSelect options bag for schemas
 		 */
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
 		},
 
 		/**
@@ -382,14 +343,7 @@ export default {
 		 * @return {object|null} Selected register option, or null
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
@@ -399,14 +353,7 @@ export default {
 		 * @return {object|null} Selected schema option, or null
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 
 		/**

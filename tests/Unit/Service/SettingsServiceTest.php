@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -71,9 +70,6 @@ class SettingsServiceTest extends TestCase {
 	/** @var SchemaCacheHandler|MockObject */
 	private $schemaCacheService;
 
-	/** @var FacetCacheHandler|MockObject */
-	private $facetCacheHandler;
-
 	/** @var ICacheFactory|MockObject */
 	private $cacheFactory;
 
@@ -115,7 +111,6 @@ class SettingsServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheHandler = $this->createMock(FacetCacheHandler::class);
 		$this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->db = $this->createMock(IDBConnection::class);
@@ -145,7 +140,6 @@ class SettingsServiceTest extends TestCase {
 			logger: $this->logger,
 			organisationMapper: $this->organisationMapper,
 			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
 			searchTrailMapper: $this->searchTrailMapper,
 			userManager: $this->userManager,
 			db: $this->db,
@@ -1140,7 +1134,6 @@ class SettingsServiceTest extends TestCase {
 			logger: $this->logger,
 			organisationMapper: $this->organisationMapper,
 			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
 			searchTrailMapper: $this->searchTrailMapper,
 			userManager: $this->userManager,
 			db: $this->db,
@@ -1174,7 +1167,6 @@ class SettingsServiceTest extends TestCase {
 			logger: $this->logger,
 			organisationMapper: $this->organisationMapper,
 			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
 			searchTrailMapper: $this->searchTrailMapper,
 			userManager: $this->userManager,
 			db: $this->db,
@@ -1208,7 +1200,6 @@ class SettingsServiceTest extends TestCase {
 			logger: $this->logger,
 			organisationMapper: $this->organisationMapper,
 			schemaCacheService: $this->schemaCacheService,
-			facetCacheSvc: $this->facetCacheHandler,
 			searchTrailMapper: $this->searchTrailMapper,
 			userManager: $this->userManager,
 			db: $this->db,
@@ -1396,7 +1387,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->organisationMapper,
 			$this->schemaCacheService,
-			$this->facetCacheHandler,
 			$this->searchTrailMapper,
 			$this->userManager,
 			$this->db,
@@ -1432,7 +1422,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->organisationMapper,
 			$this->schemaCacheService,
-			$this->facetCacheHandler,
 			$this->searchTrailMapper,
 			$this->userManager,
 			$this->db,
@@ -1725,7 +1714,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->organisationMapper,
 			$this->schemaCacheService,
-			$this->facetCacheHandler,
 			$this->searchTrailMapper,
 			$this->userManager,
 			$this->db,
@@ -1763,7 +1751,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->organisationMapper,
 			$this->schemaCacheService,
-			$this->facetCacheHandler,
 			$this->searchTrailMapper,
 			$this->userManager,
 			$this->db,
@@ -1839,7 +1826,6 @@ class SettingsServiceTest extends TestCase {
 			$this->logger,
 			$this->organisationMapper,
 			$this->schemaCacheService,
-			$this->facetCacheHandler,
 			$this->searchTrailMapper,
 			$this->userManager,
 			$this->db,

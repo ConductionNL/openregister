@@ -15,12 +15,10 @@ Every OpenRegister command SHALL be declared in `appinfo/info.xml` under `<comma
 | Job | Commands |
 |---|---|
 | Inspect the instance | `openregister:descriptors:list`, `openregister:resolver:list`, `openregister:declared-groups` |
-| Repair registers and schemas | `openregister:registers:dedupe`, `openregister:registers:relink-schemas`, `openregister:schemas:dedup`, `openregister:schemas:prune-retired`, `openregister:schema:reset-to-shipped`, `openregister:configurations:dedupe`, `openregister:migrate-application`, `openregister:tables:reconcile`, `openregister:tables:search-index` |
+| Repair registers and schemas | `openregister:registers:dedupe`, `openregister:registers:dedupe-shared-schemas`, `openregister:registers:relink-schemas`, `openregister:schemas:dedup`, `openregister:schemas:prune-retired`, `openregister:schema:reset-to-shipped`, `openregister:configurations:dedupe`, `openregister:migrate-application`, `openregister:tables:reconcile`, `openregister:tables:search-index` |
 | Move or backfill data | `openregister:migrate-storage`, `openregister:files:move-to-account`, `openregister:backfill-system-owner`, `openregister:translations:backfill-source-language`, `openregister:rematerialise-calculations`, `openregister:encrypt-field`, `openregister:organisations:adopt`, `openregister:approval:rollback-to-steps` |
 | Import and sync | `openregister:vocabulary:import-csv`, `openregister:tables:sync`, `openregister:time:reconcile`, `openregister:contextchat:reindex` |
-| Security and retention | `openregister:objects:purge`, `openregister:rechain-audit-trail`, `openregister:web-push:generate-vapid` |
-
-`lib/Command/DedupeSharedSchemasCommand.php` (`openregister:registers:dedupe-shared-schemas`) exists but is not declared, so `occ` does not offer it.
+| Security and retention | `openregister:objects:purge`, `openregister:rechain-audit-trail`, `openregister:web-push:generate-vapid`, `openregister:tenant-key:rotate` |
 
 #### Scenario: an administrator lists the commands
 

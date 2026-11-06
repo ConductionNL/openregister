@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\UploadService;
@@ -98,7 +98,7 @@ class SchemasControllerRegisterLinkageTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(SchemaCacheHandler::class),
-			$this->createMock(FacetCacheHandler::class),
+			$this->createMock(FacetResultCacheClearer::class),
 			$this->createMock(SchemaService::class),
 			$this->createMock(LoggerInterface::class),
 			$container,

@@ -36,8 +36,6 @@ trimmed and an empty/whitespace-only result returns `null`; a parseable string r
 `DateTimeImmutable`; an unparseable string or any non-string/non-DateTime type returns
 `null` (with a debug-level log). `formatForDatabase(mixed $value): ?string` MUST normalize
 then format as `Y-m-d H:i:s`, returning `null` for empty/invalid input.
-`formatForIso8601(mixed $value): ?string` MUST normalize then format as ISO 8601 with
-timezone offset (`DateTimeInterface::ATOM`), returning `null` for empty/invalid input.
 
 `normalize()` MUST accept an optional `?DateTimeZone $assumeTimezone`. It MUST be applied
 ONLY to a string that carries no offset or timezone name of its own; a string that carries
@@ -52,7 +50,6 @@ one keeps it, and a `DateTimeInterface` is never re-zoned.
 - **GIVEN** a parseable datetime string
 - **WHEN** `formatForDatabase()` is called
 - **THEN** it MUST return the value formatted as `Y-m-d H:i:s`
-- **AND** `formatForIso8601()` MUST return the value formatted as ISO 8601 with offset
 
 #### Scenario: Unparseable or unsupported input degrades to null
 - **GIVEN** an unparseable string or a non-string, non-DateTime value
@@ -77,7 +74,7 @@ that offset-less value back as UTC, moving the instant two hours forward.
 The system MUST provide `formatDatabaseValueForIso8601(mixed $value): ?string` as the read
 counterpart. It MUST interpret an offset-less column value as UTC and format it as ISO 8601
 with offset. Every read path that lifts a `date-time` property straight out of its column
-MUST use it rather than `formatForIso8601()`, whose naive-string behaviour depends on the
+MUST use it, rather than normalising the naive string, whose reading depends on the
 server's configured timezone.
 
 #### Scenario: A non-UTC offset is converted, not dropped

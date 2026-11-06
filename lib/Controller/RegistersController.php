@@ -172,6 +172,13 @@ class RegistersController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * The user session.
 	 *
 	 * @var IUserSession
@@ -228,6 +235,7 @@ class RegistersController extends Controller {
 		$this->registerService = $services->registers->registerService;
 		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->userSession = $session->userSession;
+		$this->session = $session;
 		$this->container = $services->integrations->container;
 		$this->groupManager = $session->groupManager;
 		$this->logger->debug(
@@ -2237,12 +2245,7 @@ class RegistersController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

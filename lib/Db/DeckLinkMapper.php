@@ -29,8 +29,11 @@ use OCP\IDBConnection;
  * Class DeckLinkMapper
  *
  * @template-extends QBMapper<DeckLink>
+ * @method list<DeckLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class DeckLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -91,17 +94,12 @@ class DeckLinkMapper extends QBMapper {
 	 * @return DeckLink|null The link or null if not found.
 	 */
 	public function findByObjectAndCard(string $objectUuid, int $cardId): ?DeckLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'card_id', value: $cardId));
+		if ($link instanceof DeckLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndCard()
 
 	/**
@@ -116,11 +114,6 @@ class DeckLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndCard(string $objectUuid, int $cardId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'card_id', value: $cardId));
 	}//end deleteByObjectAndCard()
 }//end class

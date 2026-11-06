@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Files\File;
 use OCP\Files\Node;
@@ -116,7 +117,7 @@ final class ObjectFileFinder
 				message: "{$lookup->prefix} Found node is not a File instance, it's a: $nodeClass",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new \Exception('File not found.');
+			throw new Exception('File not found.');
 		}
 
 		$this->fileService->checkOwnership($node);
@@ -139,7 +140,7 @@ final class ObjectFileFinder
 		$fileNode = $this->fileService->getFile(object: $lookup->object, file: $lookup->file);
 		if ($fileNode === null) {
 			$this->logger->error(message: "{$lookup->prefix} No file found with ID: {$lookup->file}", context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new \Exception("File with ID {$lookup->file} does not exist");
+			throw new Exception("File with ID {$lookup->file} does not exist");
 		}
 
 		$foundMsg = "{$lookup->prefix} Found file by ID: " . $fileNode->getName();
@@ -193,7 +194,7 @@ final class ObjectFileFinder
 				message: "{$lookup->prefix} Could not get object folder for object: $objectId",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			throw new \Exception('Object folder not found.');
+			throw new Exception('Object folder not found.');
 		}
 
 		$this->logger->debug(
@@ -258,7 +259,7 @@ final class ObjectFileFinder
 		} catch (\Exception $e) {
 			$errMsg = "{$lookup->prefix} Unexpected error getting file from object folder: " . $e->getMessage();
 			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new \Exception('File not found.');
+			throw new Exception('File not found.');
 		}
 	}//end nodeInObjectFolder()
 
@@ -286,7 +287,7 @@ final class ObjectFileFinder
 			$errMsg = "{$lookup->prefix} File '{$lookup->fileName}' and '{$lookup->filePath}' not found";
 			$errMsg .= ' in object folder. NotFoundException: ' . $e2->getMessage();
 			$this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-			throw new \Exception('File not found.');
+			throw new Exception('File not found.');
 		}
 	}//end nodeAtFullPath()
 }//end class

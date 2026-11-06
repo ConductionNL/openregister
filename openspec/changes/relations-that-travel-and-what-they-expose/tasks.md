@@ -27,6 +27,13 @@
       answer — NOT a second walk (D-1). `types: null` means "not filtered by
       type"; `types: []` is REFUSED, because a caller who named no types either
       meant everything or meant nothing and those are opposite answers.
+- [x] 1.1b Served at `GET /api/objects/{register}/{schema}/{id}/affected`
+      (`ObjectRelationsController::affected()`), with `types`, `prune` and
+      `partySchemas` as query parameters. The root is read under the caller's
+      RBAC and purpose guard, and the graph is the same purpose-masked walk the
+      `graph` route answers. A node the walk could not resolve for the caller
+      is dropped with its edges before reachability, so nothing behind it and
+      no path naming it reaches the answer.
 - [x] 1.2a Projected beside the objects, by schema, each with its path.
 - [ ] 1.2b Which schemas ARE parties is handed in rather than looked up. The
       party model's own answer to that belongs to `party-model`, and guessing

@@ -107,6 +107,13 @@ class ComputedFieldHandler {
 	private ?Environment $twig = null;
 
 	/**
+	 * The fields in a dependency cycle, memoised per schema definition.
+	 *
+	 * @var array<string, array<string, true>>
+	 */
+	private array $cyclicBySchema = [];
+
+	/**
 	 * Constructor for ComputedFieldHandler.
 	 *
 	 * @param MagicMapperInterface $objectMapper Mapper for fetching referenced objects.
@@ -209,6 +216,8 @@ class ComputedFieldHandler {
 	 *
 	 * Iterates through schema properties, finds those with a `computed` attribute
 	 * matching the specified evaluateOn mode, and evaluates their Twig expressions.
+	 * A field that sits in a dependency cycle is not evaluated: it is set to null
+	 * and the cycle is logged.
 	 *
 	 * @param array $data The object data (used as Twig context).
 	 * @param Schema $schema The schema containing property definitions.
@@ -216,41 +225,92 @@ class ComputedFieldHandler {
 	 *
 	 * @return array The object data with computed field values added/updated.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
 	 */
 	public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn = 'save'): array {
-		$properties = $schema->getProperties() ?? [];
+		$cyclic = $this->cyclicFields(schema: $schema);
 
-		foreach ($properties as $propertyName => $property) {
-			// Skip properties without a computed attribute.
-			if (isset($property['computed']) === false || is_array($property['computed']) === false) {
+		foreach ($this->expressionsFor(schema: $schema, evaluateOn: $evaluateOn) as $propertyName => $expression) {
+			if (isset($cyclic[$propertyName]) === true) {
+				$data[$propertyName] = null;
 				continue;
 			}
 
-			$computed = $property['computed'];
-
-			// Skip if no expression defined.
-			if (isset($computed['expression']) === false || empty($computed['expression']) === true) {
-				continue;
-			}
-
-			// Check evaluateOn mode (default: 'save').
-			$propertyEvaluateOn = $computed['evaluateOn'] ?? 'save';
-			if ($propertyEvaluateOn !== $evaluateOn) {
-				continue;
-			}
-
-			// Evaluate the expression.
 			$data[$propertyName] = $this->evaluateExpression(
-				expression: $computed['expression'],
+				expression: $expression,
 				data: $data,
 				schema: $schema,
 				propertyName: $propertyName
 			);
-		}//end foreach
+		}
 
 		return $this->applyConceptScores(data: $data, schema: $schema);
 	}//end evaluateComputedFields()
+
+	/**
+	 * The computed expressions a schema declares for one evaluation mode, by property name.
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
+	 *
+	 * @return array<string, string> The expressions.
+	 */
+	private function expressionsFor(Schema $schema, string $evaluateOn): array {
+		$expressions = [];
+		foreach (($schema->getProperties() ?? []) as $propertyName => $property) {
+			$computed = ($property['computed'] ?? null);
+			if (is_array($computed) === false || empty($computed['expression']) === true) {
+				continue;
+			}
+
+			if (($computed['evaluateOn'] ?? 'save') === $evaluateOn) {
+				$expressions[(string)$propertyName] = $computed['expression'];
+			}
+		}
+
+		return $expressions;
+	}//end expressionsFor()
+
+	/**
+	 * The computed fields that sit in a dependency cycle, each cycle logged once.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * Memoised per schema definition within the request, so a list read does
+	 * not re-analyse the expressions once per object.
+	 *
+	 * @return array<string, true> The fields in a cycle, by name.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-circular-dependency-detection
+	 */
+	private function cyclicFields(Schema $schema): array {
+		$key = $schema->getId().':'.md5((string)json_encode($schema->getProperties()));
+		if (isset($this->cyclicBySchema[$key]) === false) {
+			$this->cyclicBySchema[$key] = $this->findCyclicFields(schema: $schema);
+		}
+
+		return $this->cyclicBySchema[$key];
+	}//end cyclicFields()
+
+	/**
+	 * Detect the cycles of a schema, log each, and name the fields in them.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, true> The fields in a cycle, by name.
+	 */
+	private function findCyclicFields(Schema $schema): array {
+		$cyclic = [];
+		foreach ($this->detectCircularDependencies(schema: $schema) as $cycle) {
+			$this->logger->warning(
+				message: '[ComputedFieldHandler] Circular dependency detected between computed fields; they are set to null: '.implode(' -> ', $cycle),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schema->getId(), 'cycle' => $cycle]
+			);
+			$cyclic += array_fill_keys($cycle, true);
+		}
+
+		return $cyclic;
+	}//end findCyclicFields()
 
 	/**
 	 * Write the rolled-up scores a schema's coded properties declare.

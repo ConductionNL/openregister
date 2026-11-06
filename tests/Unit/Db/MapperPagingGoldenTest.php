@@ -24,14 +24,18 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
+use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -42,14 +46,18 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\AnonymisationLogMapper
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @covers \OCA\OpenRegister\Db\BulkJobMapper
+ * @covers \OCA\OpenRegister\Db\BulkJobMemberMapper
+ * @covers \OCA\OpenRegister\Db\ChunkMapper
  * @covers \OCA\OpenRegister\Db\EmailLinkMapper
  * @covers \OCA\OpenRegister\Db\EndpointLogMapper
  * @covers \OCA\OpenRegister\Db\ImportPreviewMapper
+ * @covers \OCA\OpenRegister\Db\ImportPreviewRowMapper
  * @covers \OCA\OpenRegister\Db\SchemaChangelogMapper
  * @covers \OCA\OpenRegister\Db\SchemaRunEntryMapper
  * @covers \OCA\OpenRegister\Db\SchemaRunMapper
  * @covers \OCA\OpenRegister\Db\SearchTrailMapper
  * @covers \OCA\OpenRegister\Db\WebhookLogMapper
+ * @covers \OCA\OpenRegister\Db\WebhookMapper
  * @uses   \OCA\OpenRegister\Db\QueryPage
  */
 class MapperPagingGoldenTest extends TestCase {
@@ -72,6 +80,11 @@ class MapperPagingGoldenTest extends TestCase {
 			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6]],
 			'search trail all' => [SearchTrailMapper::class, 'findAll', []],
 			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7]],
+			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
+			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
+			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
+			'bulk job member by job' => [BulkJobMemberMapper::class, 'findByJob', ['jobId' => 8, 'outcome' => 'failed']],
+			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'decision' => 'skip']],
 		];
 	}//end sites()
 

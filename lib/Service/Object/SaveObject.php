@@ -2660,10 +2660,12 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		$this->assertMayCascadeCreate(
-			schema: $this->getCachedSchema(schemaId: $schemaId),
-			register: (is_int($register) === true || is_string($register) === true) ? (string)$register : null
-		);
+		$cascadeRegister = null;
+		if (is_int($register) === true || is_string($register) === true) {
+			$cascadeRegister = (string)$register;
+		}
+
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: $cascadeRegister);
 
 		// Use silent mode for cascaded sub-objects to improve performance.
 		// This skips audit trail creation for each sub-object, reducing database writes.

@@ -69,13 +69,7 @@ class BulkJobMemberMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('outcome', $qb->createNamedParameter($outcome)));
 		}
 
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByJob()

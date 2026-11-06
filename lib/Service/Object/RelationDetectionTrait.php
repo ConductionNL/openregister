@@ -78,19 +78,23 @@ trait RelationDetectionTrait {
 			return false;
 		}
 
-		$type = $propertyConfig['type'] ?? '';
-		$format = $propertyConfig['format'] ?? '';
-
-		if ($type === 'object') {
-			return true;
-		}
-
-		if ($type === 'text' && in_array($format, ['uuid', 'uri', 'url'], true) === true) {
-			return true;
-		}
-
-		return isset($propertyConfig['$ref']) === true || isset($propertyConfig['inversedBy']) === true;
+		return $this->hasReferenceType(propertyConfig: $propertyConfig)
+			|| isset($propertyConfig['$ref']) === true
+			|| isset($propertyConfig['inversedBy']) === true;
 	}//end isSchemaDeclaredReference()
+
+	/**
+	 * Whether the property's type says it holds a reference: an object, or text in uuid/uri/url format.
+	 *
+	 * @param array $propertyConfig The schema property definition.
+	 *
+	 * @return bool
+	 */
+	private function hasReferenceType(array $propertyConfig): bool {
+		$type = $propertyConfig['type'] ?? '';
+		return $type === 'object'
+			|| ($type === 'text' && in_array($propertyConfig['format'] ?? '', ['uuid', 'uri', 'url'], true) === true);
+	}//end hasReferenceType()
 
 	/**
 	 * Whether a value matches a UUID / prefixed-UUID / URL reference pattern.

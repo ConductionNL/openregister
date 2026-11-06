@@ -6,7 +6,7 @@
  * Tests: SchemaService, SearchTrailService, OrganisationService, DashboardService,
  * EndpointService, MappingService, ExportService, AuthenticationService,
  * AuthorizationService, McpToolsService, RegisterService, SchemaCacheHandler,
- * FacetCacheHandler, PropertyValidatorHandler.
+ * FacetResultCacheClearer, PropertyValidatorHandler.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -1146,20 +1146,6 @@ class ServicesIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test MappingService::invalidateMappingCache
-	 *
-	 * @return void
-	 */
-	public function testMappingServiceInvalidateCache(): void {
-		$service = \OC::$server->get(MappingService::class);
-
-		// This should not throw.
-		$service->invalidateMappingCache(99999);
-		$service->invalidateMappingCache('some-uuid');
-		$this->assertTrue(true);
-	}
-
-	/**
 	 * Test MappingService::getMappings
 	 *
 	 * @return void
@@ -2137,21 +2123,18 @@ class ServicesIntegrationTest extends TestCase {
 	}
 
 	// -------------------------------------------------------------------------
-	// FacetCacheHandler tests
+	// FacetResultCacheClearer tests
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Test FacetCacheHandler::invalidateForSchemaChange (graceful with missing table)
+	 * Test FacetResultCacheClearer::clearAll on the live cache backends
 	 *
 	 * @return void
 	 */
-	public function testFacetCacheHandlerInvalidate(): void {
-		$handler = \OC::$server->get(FacetCacheHandler::class);
+	public function testFacetResultCacheClearerClearsAll(): void {
+		$clearer = \OC::$server->get(FacetResultCacheClearer::class);
 
-		// invalidateForSchemaChange gracefully handles missing table.
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'update');
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'delete');
-		$handler->invalidateForSchemaChange($this->testSchema->getId(), 'create');
+		$clearer->clearAll();
 
 		$this->assertTrue(true);
 	}

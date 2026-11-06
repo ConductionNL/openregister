@@ -221,17 +221,6 @@ class TenantJobsScopeTest extends TestCase {
 		);
 
 		$usage = $this->createMock(TenantUsageMapper::class);
-		// The installation-wide sweep must never be the purge's delete: it has
-		// no organisation in its WHERE clause. It is recorded rather than
-		// forbidden with never(), because the job catches \Exception and would
-		// swallow the mock's failure, hiding the reason a test went red.
-		$usage->method('deleteOlderThan')->willReturnCallback(
-			static function () use (&$deletedUsage): int {
-				$deletedUsage[] = '*every organisation*';
-
-				return 0;
-			}
-		);
 		$usage->method('deleteByOrganisation')->willReturnCallback(
 			static function (string $organisationUuid) use (&$deletedUsage): int {
 				$deletedUsage[] = $organisationUuid;

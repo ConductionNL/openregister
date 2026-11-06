@@ -71,6 +71,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
@@ -724,37 +725,9 @@ class ObjectsController extends Controller {
 		];
 
 		// Add next/prev page URLs if applicable.
-		$currentUrl = $this->request->getRequestUri();
+		$links = new PaginationLinks(uri: $this->request->getRequestUri());
 
-		// Add next page link if there are more pages.
-		if ($page < $pages) {
-			$nextPage = $page + 1;
-			$nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-			if (strpos($nextUrl, 'page=') === false) {
-				$nextUrl .= '&page=' . $nextPage;
-				if (strpos($nextUrl, '?') === false) {
-					$nextUrl .= '?page=' . $nextPage;
-				}
-			}
-
-			$paginatedResults['next'] = $nextUrl;
-		}
-
-		// Add previous page link if not on first page.
-		if ($page > 1) {
-			$prevPage = $page - 1;
-			$prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-			if (strpos($prevUrl, 'page=') === false) {
-				$prevUrl .= '&page=' . $prevPage;
-				if (strpos($prevUrl, '?') === false) {
-					$prevUrl .= '?page=' . $prevPage;
-				}
-			}
-
-			$paginatedResults['prev'] = $prevUrl;
-		}
-
-		return $paginatedResults;
+		return array_merge($paginatedResults, $links->around(page: (int)$page, pages: (int)$pages));
 	}//end paginate()
 
 	/**
@@ -4099,7 +4072,7 @@ class ObjectsController extends Controller {
 			// client that sent `_expectedUpdated` on a PUT got no assertion at
 			// all, silently, and overwrote whatever had landed meanwhile. The
 			// two doors now call one method, so they cannot answer differently.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
@@ -4314,7 +4287,7 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
 			$conflict = $this->versionConflictResponse(
 				existingObject: $existingObject,
@@ -5750,14 +5723,16 @@ class ObjectsController extends Controller {
 	 * key is already stripped from the payload by the `_`-prefix filter or
 	 * ignored by validation, so this only notices.
 	 *
+	 * @param ObjectEntity $object The object this write is for; only its audit rows carry the mark.
+	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	private function noteClientSuppliedCause(): void {
+	private function noteClientSuppliedCause(ObjectEntity $object): void {
 		foreach (['cause', '_cause', 'causeRun', '_causeRun'] as $key) {
 			if ($this->request->getParam($key) !== null) {
-				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt();
+				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
 				$this->logger->warning(
 					message: '[ObjectsController] a request supplied its own audit cause; it was ignored',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'key' => $key]
