@@ -131,6 +131,13 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Event\PermissionsDeclaringEvent
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
