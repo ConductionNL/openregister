@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Support\OrderParameter;
+
 /**
  * Resolve the ORDER BY keys of a cross-schema UNION search and sort rows on them.
  *
@@ -71,20 +73,59 @@ final class MagicUnionOrder {
 	 */
 	public function keys(array $query): array {
 		$hasSearch = empty($query['_search'] ?? null) === false;
-		$order = $query['_order'] ?? [];
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		$keys = [];
-		if (empty($order) === false && is_array($order) === true) {
+		if ($order !== []) {
 			$keys = $this->requestedKeys(order: $order, hasSearch: $hasSearch);
 		} elseif ($hasSearch === true) {
 			$keys[] = ['row' => self::SCORE, 'sql' => self::SCORE, 'dir' => 'DESC'];
 		}
 
 		$uuidColumn = self::PREFIX . 'uuid';
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
+		if (in_array($uuidColumn, array_column($keys, 'row'), true) === false) {
+			$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
+		}
 
 		return $keys;
 	}//end keys()
+
+	/**
+	 * A query whose `_order` keeps only what a union of these columns can order on.
+	 *
+	 * Like a single-table search, a union leaves out a field it does not know:
+	 * in its ORDER BY such a field is an error from the database. A property
+	 * counts under its exact name only, because the refusal of a field that may
+	 * not be sorted on compares exact names. A request left with nothing orders
+	 * on the uuid, not on the search score: every batch of one search has to
+	 * order alike for the merge to find the rows of its page.
+	 *
+	 * @param array                $query   Search parameters.
+	 * @param array<string, mixed> $columns Column name => property name.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	public function orderable(array $query, array $columns): array {
+		if (array_key_exists('_order', $query) === false) {
+			return $query;
+		}
+
+		$fields = (new OrderParameter(order: $query['_order']))->fields();
+		$query['_order'] = [];
+		foreach ($fields as $field => $direction) {
+			if ($this->isOrderable(field: (string) $field, columns: $columns) === true) {
+				$query['_order'][$field] = $direction;
+			}
+		}
+
+		if ($fields !== [] && $query['_order'] === []) {
+			$query['_order'] = [self::PREFIX . 'uuid' => 'ASC'];
+		}
+
+		return $query;
+	}//end orderable()
 
 	/**
 	 * Sort merged rows on the SQL's own order keys.
@@ -108,39 +149,45 @@ final class MagicUnionOrder {
 	}//end sorted()
 
 	/**
+	 * Whether a union can order on a field.
+	 *
+	 * @param string               $field   The field.
+	 * @param array<string, mixed> $columns Column name => property name.
+	 *
+	 * @return bool
+	 */
+	private function isOrderable(string $field, array $columns): bool {
+		$column = $this->sanitizeColumnName(name: $field);
+		if ((string) ($columns[$column] ?? '') === $field) {
+			return true;
+		}
+
+		if (str_starts_with($field, '@self.') === true || in_array($field, ['_relevance', self::SCORE], true) === true) {
+			return true;
+		}
+
+		return str_starts_with($field, self::PREFIX) === true && array_key_exists($column, MagicMetadataColumns::ALL) === true;
+	}//end isOrderable()
+
+	/**
 	 * The keys of an `_order` parameter.
 	 *
-	 * @param array $order     The `_order` parameter.
-	 * @param bool  $hasSearch Whether the query searches.
+	 * @param array<array-key, string> $order     Field => direction.
+	 * @param bool                     $hasSearch Whether the query searches.
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}>
 	 */
 	private function requestedKeys(array $order, bool $hasSearch): array {
 		$keys = [];
 		foreach ($order as $field => $direction) {
-			$key = $this->fieldKey(field: $field, hasSearch: $hasSearch);
+			$key = $this->fieldKey(field: (string) $field, hasSearch: $hasSearch);
 			if ($key !== null) {
-				$keys[] = $key + ['dir' => $this->direction(value: $direction)];
+				$keys[] = $key + ['dir' => $direction];
 			}
 		}
 
 		return $keys;
 	}//end requestedKeys()
-
-	/**
-	 * The SQL direction of an `_order` value.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string
-	 */
-	private function direction(mixed $value): string {
-		if (strtoupper((string)$value) === 'DESC') {
-			return 'DESC';
-		}
-
-		return 'ASC';
-	}//end direction()
 
 	/**
 	 * The row key and SQL of one ordered field, or null when it is left out.

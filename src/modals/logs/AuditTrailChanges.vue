@@ -8,7 +8,6 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'auditTrailChanges'"
 		:name="t('openregister', 'Audit Trail Changes')"
 		size="large"
-		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->

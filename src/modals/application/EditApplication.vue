@@ -16,7 +16,6 @@ import {
 		"
 		:open="true"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>

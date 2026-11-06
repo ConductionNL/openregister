@@ -337,7 +337,7 @@ class RetentionSweepTest extends TestCase {
 	 */
 	public function testAFutureDisposalDateExcludes(): void {
 		$retention = $this->dueForDestruction();
-		$retention['archiefactiedatum'] = '2099-01-01';
+		$retention['archiefactiedatum'] = date('Y-m-d', strtotime('+10 years'));
 		$this->givenLegacyRow(id: 3, uuid: 'future-uuid', retention: $retention);
 
 		$this->assertSame([], $this->service->findEligibleForDestruction());
