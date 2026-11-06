@@ -1,5 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
+import { listDateTime } from '../../services/listDateTime.js'
 import { navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
@@ -162,40 +163,12 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 
 			<!-- Custom column: created date -->
 			<template #column-created="{ row }">
-				{{
-					row.created
-						? new Date(row.created).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.created).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+				{{ listDateTime(row.created) }}
 			</template>
 
 			<!-- Custom column: updated date -->
 			<template #column-updated="{ row }">
-				{{
-					row.updated
-						? new Date(row.updated).toLocaleDateString({
-								day: '2-digit',
-								month: '2-digit',
-								year: 'numeric',
-							})
-							+ ', '
-							+ new Date(row.updated).toLocaleTimeString({
-								hour: '2-digit',
-								minute: '2-digit',
-								second: '2-digit',
-							})
-						: '-'
-				}}
+				{{ listDateTime(row.updated) }}
 			</template>
 
 			<!-- Custom row actions for table view -->
