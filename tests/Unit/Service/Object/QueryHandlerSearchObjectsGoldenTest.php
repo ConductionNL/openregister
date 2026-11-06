@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\SearchResultShaper
  * @uses \OCA\OpenRegister\Service\Object\SearchPaging
  * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
+ * @uses \OCA\OpenRegister\Service\Object\SearchRenderNeed
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
