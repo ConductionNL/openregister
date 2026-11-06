@@ -68,6 +68,7 @@ use Psr\Log\NullLogger;
 /**
  * Task 4.2: the role grant and the grant that arrives from outside the block.
  *
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
