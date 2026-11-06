@@ -49,69 +49,15 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				}}
 			</NcNoteCard>
 
-			<div class="selected-objects-container">
-				<h4>
-					{{
-						t('openregister', 'Selected Objects ({count})', {
-							count: selectedObjects.length,
-						})
-					}}
-				</h4>
-
-				<div v-if="selectedObjects.length" class="selected-objects-list">
-					<div
-						v-for="obj in selectedObjects"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{
-								obj['@self']?.name
-								|| obj.name
-								|| obj.title
-								|| obj['@self']?.title
-								|| t('openregister', 'Unnamed Object')
-							}}</strong>
-							<p class="object-id">
-								{{
-									t('openregister', 'ID: {id}', {
-										id: obj.id || obj['@self']?.id,
-									})
-								}}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove {title}', {
-									title:
-										obj['@self']?.name
-										|| obj.name
-										|| obj.title
-										|| obj['@self']?.title
-										|| obj.id,
-								})
-							"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent
-					v-else
-					:name="t('openregister', 'No objects selected')">
-					<template #description>
-						{{
-							t(
-								'openregister',
-								'No objects are currently selected for deletion.',
-							)
-						}}
-					</template>
-				</NcEmptyContent>
-			</div>
+			<SelectedObjectsList
+				:objects="selectedObjects"
+				:emptyDescription="
+					t(
+						'openregister',
+						'No objects are currently selected for deletion.',
+					)
+				"
+				@remove="removeObject" />
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -157,29 +103,22 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
 
 export default {
 	name: 'MassDeleteObject',
 	components: {
+		SelectedObjectsList,
 		NcDialog,
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,
 		// Icons
 		TrashCanOutline,
 		Cancel,
-		Close,
 	},
 
 	data() {
@@ -338,18 +277,6 @@ export default {
 }
 
 @include step-title;
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-@include selected-objects-list-rules;
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-@include object-info-strong-rules;
 
 .deleted-link {
 	color: var(--color-primary);
