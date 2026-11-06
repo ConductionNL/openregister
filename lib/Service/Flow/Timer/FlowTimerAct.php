@@ -1,7 +1,7 @@
 <?php
 
 /**
- * What one timer operation carries: who, when, and why.
+ * What one timer operation carries: who and when.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -26,25 +26,20 @@ use DateTimeImmutable;
 use DateTimeInterface;
 
 /**
- * The acting identity, the clock, and the reason of one timer operation.
+ * The acting identity and the clock of one timer operation.
  */
 final class FlowTimerAct {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string|null            $actor  The acting identity.
-	 * @param DateTimeImmutable      $now    The clock.
-	 * @param string                 $reason Why, as recorded.
-	 * @param string|null            $basis  The legal ground.
-	 * @param DateTimeInterface|null $when   The moment the act names: the expected
-	 *                                       end of a suspension, the new anchor of a supersession.
+	 * @param string|null            $actor The acting identity.
+	 * @param DateTimeImmutable      $now   The clock.
+	 * @param DateTimeInterface|null $when  The moment the act names: the new anchor of a supersession.
 	 */
 	public function __construct(
 		public readonly ?string $actor,
 		public readonly DateTimeImmutable $now,
-		public readonly string $reason = '',
-		public readonly ?string $basis = null,
 		public readonly ?DateTimeInterface $when = null,
 	) {
 	}//end __construct()
