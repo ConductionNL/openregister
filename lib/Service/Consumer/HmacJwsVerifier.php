@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Consumer;
 
 use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Algorithm\HS256;
 use Jose\Component\Signature\Algorithm\HS384;
 use Jose\Component\Signature\Algorithm\HS512;
@@ -62,7 +62,7 @@ class HmacJwsVerifier {
 		}
 
 		try {
-			$jwk = JWKFactory::createFromSecret($key, ['alg' => $algorithm, 'use' => 'sig']);
+			$jwk = $this->sharedSecret(key: $key, algorithm: $algorithm);
 			$jws = (new CompactSerializer())->unserialize(input: $token);
 			return (new JWSVerifier(new AlgorithmManager([$verifierAlgorithm])))->verifyWithKey(jws: $jws, jwk: $jwk, signature: 0);
 		} catch (Throwable $e) {
@@ -85,4 +85,26 @@ class HmacJwsVerifier {
 			default => null,
 		};
 	}//end hmacAlgorithm()
+
+	/**
+	 * The shared secret as an "oct" JWK pinned to the algorithm.
+	 *
+	 * The same JWK as JWKFactory::createFromSecret() builds: `k` is the
+	 * base64url of the raw secret bytes.
+	 *
+	 * @param string $key       The shared secret.
+	 * @param string $algorithm The pinned algorithm.
+	 *
+	 * @return JWK
+	 */
+	private function sharedSecret(string $key, string $algorithm): JWK {
+		return new JWK(
+			[
+				'kty' => 'oct',
+				'k' => rtrim(strtr(base64_encode($key), '+/', '-_'), '='),
+				'alg' => $algorithm,
+				'use' => 'sig',
+			]
+		);
+	}//end sharedSecret()
 }//end class
