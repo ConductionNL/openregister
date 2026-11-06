@@ -66,8 +66,7 @@ class FlowLocatorTest extends TestCase {
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectService::class),
 			new \Psr\Log\NullLogger(),
-			$this->publishedVersions(),
-			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
+			$this->publishedVersions()
 		);
 	}//end locator()
 
@@ -240,8 +239,7 @@ class FlowLocatorTest extends TestCase {
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectService::class),
 			new \Psr\Log\NullLogger(),
-			$versions,
-			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
+			$versions
 		);
 
 		$this->assertSame(['published-1'], $locator->flowsForTrigger('object.created', 'r', 's'));
@@ -263,8 +261,7 @@ class FlowLocatorTest extends TestCase {
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectService::class),
 			new \Psr\Log\NullLogger(),
-			$versions,
-			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
+			$versions
 		);
 
 		$this->assertSame(['legacy-1'], $locator->flowsForTrigger('object.created', 'r', 's'));

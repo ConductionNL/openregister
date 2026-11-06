@@ -1,11 +1,10 @@
 <?php
 
 /**
- * OpenRegister AppHost — Schedule Action Allow-List
+ * OpenRegister AppHost: the closed map from a schedule's action to its flow node.
  *
- * A CLOSED, server-controlled map from a manifest `action` type to the flow node
- * that performs it. Nothing in manifest data names a class or a node type:
- * that would be arbitrary code running under the schedule's identity (ADR-005).
+ * Nothing in manifest data names a class or a node type: that would be arbitrary
+ * code running under the schedule's identity (ADR-005).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
 
 declare(strict_types=1);
@@ -27,11 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
 /**
- * Closed allow-list mapping action types to vetted job classes.
+ * Answers which flow node performs a schedule's action.
  *
- * @spec openspec/specs/apphost-scheduling/spec.md
+ * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class ScheduleActionAllowList {
+final class ScheduleActionNodes {
 	/**
 	 * Action type to the flow node performing it, and the manifest argument
 	 * that becomes the node's config key.

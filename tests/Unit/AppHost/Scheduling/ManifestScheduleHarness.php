@@ -19,8 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener;
-use OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
+use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowSync;
@@ -162,12 +161,10 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn () => $this->user());
 
-		$container = $this->container(flowMapper: $flowMapper);
 		$membership = new FlowTenantMembership($this->organisations());
+		$container = $this->container(flowMapper: $flowMapper, membership: $membership);
 		$sync = new ScheduleFlowSync(
 			new ScheduleFlowStore($flowMapper, $versions, $flowService, new FlowTriggerValidator($container, $this->logger)),
-			new ScheduleActionAllowList(),
-			new CronScheduleEvaluator(),
 			$membership,
 			new ScheduleAuditTrail($this->auditMapper()),
 			$this->logger
@@ -175,7 +172,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$listenerContainer = $this->createConfiguredMock(ContainerInterface::class, ['get' => $sync]);
 		$this->listener = new ApplicationPublishListener($this->reader($session), $listenerContainer, $this->logger);
 
-		$this->locator = $this->flowLocator(flowMapper: $flowMapper, membership: $membership);
+		$this->locator = $this->flowLocator(flowMapper: $flowMapper);
 		$this->scheduler = new FlowScheduleService(
 			$this->locator,
 			$this->flowRunService(container: $container),
@@ -387,25 +384,23 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->method('slugOrNull')->willReturnCallback(fn () => $this->slugsAnswer);
 
-		return new ScheduleReleaseReader($objects, $registers, $schemas, $slugs, $session);
+		return new ScheduleReleaseReader($objects, new ApplicationRegister($registers, $schemas, $slugs), $session);
 	}
 
 	/**
 	 * The locator over the flow table.
 	 *
 	 * @param FlowMapper $flowMapper The table.
-	 * @param FlowTenantMembership $membership The membership check.
 	 *
 	 * @return FlowLocator The locator.
 	 */
-	private function flowLocator(FlowMapper $flowMapper, FlowTenantMembership $membership): FlowLocator {
+	private function flowLocator(FlowMapper $flowMapper): FlowLocator {
 		return new FlowLocator(
 			$flowMapper,
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectOperationsInterface::class),
 			$this->logger,
-			$this->createMock(FlowVersionMapper::class),
-			$membership
+			$this->createMock(FlowVersionMapper::class)
 		);
 	}
 
@@ -439,10 +434,11 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 * The container the queue and the trigger validator resolve from.
 	 *
 	 * @param FlowMapper $flowMapper The table.
+	 * @param FlowTenantMembership $membership The membership check.
 	 *
 	 * @return ContainerInterface The container.
 	 */
-	private function container(FlowMapper $flowMapper): ContainerInterface {
+	private function container(FlowMapper $flowMapper, FlowTenantMembership $membership): ContainerInterface {
 		$versions = $this->createMock(FlowVersionMapper::class);
 		$versions->method('findPublished')->willReturnCallback(
 			fn (string $uuid) => isset($this->flows[$uuid]) ? new FlowVersion() : null
@@ -450,9 +446,10 @@ abstract class ManifestScheduleHarness extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id) use ($flowMapper, $versions) {
+			function (string $id) use ($flowMapper, $versions, $membership) {
 				return match ($id) {
 					FlowVersionMapper::class => $versions,
+					FlowTenantMembership::class => $membership,
 					'OCA\OpenRegister\Db\FlowMapper' => $flowMapper,
 					IUserSession::class => $this->createConfiguredMock(IUserSession::class, ['getUser' => $this->user()]),
 					default => throw new DoesNotExistException($id),

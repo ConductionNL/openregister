@@ -46,7 +46,7 @@ Publishing again as another user changes the identity of every schedule of that 
 
 The publisher must be a member of that organisation (`Organisation::hasUser`). An administrator is not exempted: administrator access to an organisation is a right to manage it, not membership, and a schedule runs with its identity's rights in that tenant. No organisation, or no membership: the save refuses and logs.
 
-Membership can end after publishing, so `FlowLocator` asks again before it offers a compiled flow to the scheduler. A flow whose `runAs` left the organisation is disabled with the reason in `status_message`, as for a flow that names nobody, until someone publishes again. This check covers compiled flows only; hand-drawn flows keep today's rule.
+Membership can end after publishing, so `FlowRunAttribution` asks again each time a compiled flow fires. A `runAs` that left the organisation counts as no identity: the queue refuses it, and the flow is disabled with the reason in `status_message`, as for a flow that names nobody, until someone publishes again. This check covers compiled flows only; hand-drawn flows keep today's rule.
 
 ### D-5: On-disk apps
 
@@ -68,7 +68,7 @@ A loose mapping would change how often work runs without anyone asking. A cron s
 
 ### D-7: Actions stay a closed map
 
-`ScheduleActionAllowList` maps an action to a flow node instead of a job class. `openconnector:synchronization` becomes `openconnector.synchronization-run` with `config.synchronization` = `arguments.synchronizationId`, the name buildiq writes. The spec's older `arguments.synchronization` is aligned to it. The compiled graph is trigger, step, `openregister.end`.
+`ScheduleActionNodes` maps an action to a flow node; `ScheduleActionAllowList`, which mapped to a job class, goes with the reconciler. `openconnector:synchronization` becomes `openconnector.synchronization-run` with `config.synchronization` = `arguments.synchronizationId`, the name buildiq writes. The spec's older `arguments.synchronization` is aligned to it. The compiled graph is trigger, step, `openregister.end`.
 
 ## Not in this change
 
