@@ -1305,7 +1305,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('initializeInverseCacheEntries', [$entityUuids, 'contacts']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -1318,7 +1318,7 @@ class RenderObjectTest extends TestCase {
 		$entity = $this->createObjectEntity(1, 'obj-1');
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'uuid-1_contacts' => [$entity],
@@ -2561,7 +2561,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parent'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -2579,7 +2579,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['fieldA', 'fieldB'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -2596,7 +2596,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parent'], ['entity-uuid-1'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -2612,7 +2612,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['parents'], ['entity-uuid-1', 'entity-uuid-2'], 'children')]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -2637,7 +2637,7 @@ class RenderObjectTest extends TestCase {
 
 		// Set up inverse relation cache.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_children' => [$childEntity],
@@ -2669,7 +2669,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_children' => [],
@@ -2698,7 +2698,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_child' => [$childEntity],
@@ -3672,7 +3672,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
@@ -3743,7 +3743,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_items' => [$childEntity],
@@ -3776,7 +3776,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_parent' => [],
@@ -4556,7 +4556,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
@@ -4601,7 +4601,7 @@ class RenderObjectTest extends TestCase {
 
 		// Pre-populate cache for 'contacts'.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_contacts' => [],
@@ -4645,7 +4645,7 @@ class RenderObjectTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [],
@@ -5377,7 +5377,7 @@ class RenderObjectTest extends TestCase {
 		$entity = $this->createBasicEntity(1, 'entity-uuid-1', ['id' => 'entity-uuid-1']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'entity-uuid-1_parent' => [],
@@ -5627,7 +5627,7 @@ class RenderObjectTest extends TestCase {
 		$this->invokePrivate('initializeInverseCacheEntries', [$uuids, 'contacts']);
 
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cache = $cacheProp->getValue($this->inversePart($this->handler));
 
@@ -5643,7 +5643,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testInitializeInverseCacheEntriesPreservesExisting(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 
 		$existingObj = $this->createObjectEntity(99, 'existing-ref');
@@ -5668,7 +5668,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsSimpleStringRef(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_contacts' => []]);
 
@@ -5690,7 +5690,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsHandlesValueObjectFormat(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_links' => []]);
 
@@ -5711,7 +5711,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsMatchesArrayUuids(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			'uuid-a_members' => [],
@@ -5736,7 +5736,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsDeduplicatesMultiField(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_contacts' => []]);
 
@@ -5758,7 +5758,7 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testIndexReferencingObjectsPopulatesObjectsCache(): void {
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), ['target-uuid_items' => []]);
 
@@ -6180,7 +6180,7 @@ class RenderObjectTest extends TestCase {
 
 		// Pre-populate inverse relation cache so it takes the cache path.
 		$ref = new ReflectionClass($this->handler);
-		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$cacheProp = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$cacheProp->setAccessible(true);
 		$cacheProp->setValue($this->inversePart($this->handler), [
 			$entityUuid . '_contacts' => [],

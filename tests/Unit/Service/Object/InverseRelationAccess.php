@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\InverseBatch;
 use OCA\OpenRegister\Service\Object\InverseLookup;
+use OCA\OpenRegister\Service\Object\InverseRelationCache;
 use OCA\OpenRegister\Service\Object\InverseRelationPreload;
 use OCA\OpenRegister\Service\Object\InverseRelationRender;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -30,7 +31,12 @@ trait InverseRelationAccess {
 	 * @return object
 	 */
 	private function methodOwner(RenderObject $handler, string $method): object {
-		foreach ([InverseRelationPreload::class => 'inversePreload', InverseRelationRender::class => 'inverseRelations'] as $class => $getter) {
+		$owners = [
+			InverseRelationCache::class => 'cache',
+			InverseRelationPreload::class => 'inversePreload',
+			InverseRelationRender::class => 'inverseRelations',
+		];
+		foreach ($owners as $class => $getter) {
 			if (method_exists($class, $method) === true) {
 				return $this->inversePart($handler, $getter);
 			}
@@ -47,11 +53,12 @@ trait InverseRelationAccess {
 	 *
 	 * @return object
 	 */
-	private function inversePart(RenderObject $handler, string $getter = 'inversePreload'): object {
-		$method = new ReflectionMethod($handler, $getter);
+	private function inversePart(RenderObject $handler, string $getter = 'cache'): object {
+		$method = new ReflectionMethod($handler, $getter === 'cache' ? 'inverseSupport' : $getter);
 		$method->setAccessible(true);
+		$part = $method->invoke($handler);
 
-		return $method->invoke($handler);
+		return $getter === 'cache' ? $part->cache : $part;
 	}
 
 	/**

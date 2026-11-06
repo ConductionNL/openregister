@@ -53,14 +53,7 @@ class InverseRelationRender {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function handleInversedProperties(ObjectEntity $entity, array $objectData): array {
-		$schema = ($this->support->schemaLookup)($entity->getSchema());
-		if ($schema === null) {
-			return $objectData;
-		}
-
-		$lookup = new InverseLookup();
-		$lookup->entity = $entity;
-		$lookup->inversedProperties = InverseRelationPreload::getInversedProperties(schema: $schema);
+		$lookup = $this->lookupFor(entity: $entity);
 		if (empty($lookup->inversedProperties) === true) {
 			return $objectData;
 		}
@@ -71,6 +64,26 @@ class InverseRelationRender {
 
 		return $this->fromReferencingObjects(lookup: $lookup, objectData: $objectData);
 	}//end handleInversedProperties()
+
+	/**
+	 * An entity with the inverse properties its schema declares; none when the schema is unknown.
+	 *
+	 * @param ObjectEntity $entity The entity to process.
+	 *
+	 * @return InverseLookup The lookup.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function lookupFor(ObjectEntity $entity): InverseLookup {
+		$lookup = new InverseLookup();
+		$lookup->entity = $entity;
+		$schema = ($this->support->schemaLookup)($entity->getSchema());
+		if ($schema !== null) {
+			$lookup->inversedProperties = $this->preload->getInversedProperties(schema: $schema);
+		}
+
+		return $lookup;
+	}//end lookupFor()
 
 	/**
 	 * Route a single read through the batched machinery the list path uses.
@@ -88,13 +101,13 @@ class InverseRelationRender {
 	 */
 	private function warmCache(InverseLookup $lookup): bool {
 		$propertyNames = array_keys($lookup->inversedProperties);
-		if ($this->preload->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames) === true) {
+		if ($this->support->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames) === true) {
 			return true;
 		}
 
 		$this->preload->preloadInverseRelationships(entities: [$lookup->entity], extend: $propertyNames);
 
-		return $this->preload->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames);
+		return $this->support->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames);
 	}//end warmCache()
 
 	/**
@@ -171,13 +184,13 @@ class InverseRelationRender {
 			return [];
 		}
 
-		return $this->support->mapper->findByRelationBatchInSchema(
-			uuids: [$entity->getUuid()],
-			schemaId: (int)$targetSchemaId,
-			registerId: (int)$entity->getRegister(),
-			fieldName: $inversedByValue[0],
-			additionalFieldNames: array_slice($inversedByValue, 1)
-		);
+		$batch = new InverseBatch();
+		$batch->entityUuids = [$entity->getUuid()];
+		$batch->registerId = (int)$entity->getRegister();
+		$batch->targetSchemaId = $targetSchemaId;
+		$batch->inversedByFields = $inversedByValue;
+
+		return $this->preload->queryReferencingObjects(batch: $batch);
 	}//end findByExtraInverseFields()
 
 	/**
@@ -243,7 +256,7 @@ class InverseRelationRender {
 			}
 
 			$objectData[$propertyName] = $this->inverseValue(
-				objects: $this->preload->cachedObjects(entityUuid: $entityUuid, propName: $propertyName),
+				objects: $this->support->cache->cachedObjects(entityUuid: $entityUuid, propName: $propertyName),
 				isArray: ($propertyConfig['type'] ?? null) === 'array'
 			);
 		}

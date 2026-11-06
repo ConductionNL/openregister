@@ -196,6 +196,13 @@ class RenderObject {
 	private ?InverseRelationRender $inverseRender = null;
 
 	/**
+	 * The lookups inverse relation rendering shares, created on first use.
+	 *
+	 * @var InverseRenderSupport|null
+	 */
+	private ?InverseRenderSupport $inverseSupport = null;
+
+	/**
 	 * The explicit-reveal masker, resolved on first use.
 	 *
 	 * @var ExplicitRevealMasker|null
@@ -2344,7 +2351,7 @@ class RenderObject {
 			return false;
 		}
 
-		$inversePropertyNames = array_keys(InverseRelationPreload::getInversedProperties(schema: $schema));
+		$inversePropertyNames = array_keys($this->inversePreload()->getInversedProperties(schema: $schema));
 
 		$extendArray = $extend;
 		if (is_array($extend) === false) {
@@ -4363,16 +4370,23 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function inverseSupport(): InverseRenderSupport {
+		if ($this->inverseSupport !== null) {
+			return $this->inverseSupport;
+		}
+
 		$support = new InverseRenderSupport();
 		$support->mapper = $this->objectEntityMapper;
 		$support->logger = $this->logger;
+		$support->cache = new InverseRelationCache(
+			remember: function (ObjectEntity $object): void {
+				$this->objectsCache[$object->getUuid()] = $object;
+			}
+		);
 		$support->schemaLookup = fn (int|string $id): ?Schema => $this->getSchema(id: $id);
 		$support->schemaIdLookup = fn (string $ref): string => $this->resolveSchemaReference(schemaRef: $ref);
 		$support->render = fn (ObjectEntity $object): array => $this->renderRelated(object: $object);
-		$support->remember = function (ObjectEntity $object): void {
-			$this->objectsCache[$object->getUuid()] = $object;
-		};
 		$support->rememberBehind = fn (array $objects) => $this->cacheReferencingObjects(objects: $objects);
+		$this->inverseSupport = $support;
 
 		return $support;
 	}//end inverseSupport()

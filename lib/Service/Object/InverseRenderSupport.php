@@ -51,6 +51,13 @@ final class InverseRenderSupport {
 	public LoggerInterface $logger;
 
 	/**
+	 * The objects found to point back, per entity and property.
+	 *
+	 * @var InverseRelationCache
+	 */
+	public InverseRelationCache $cache;
+
+	/**
 	 * Finds a schema by id, through the renderer's cache.
 	 *
 	 * @var Closure(int|string): (Schema|null)
@@ -70,13 +77,6 @@ final class InverseRenderSupport {
 	 * @var Closure(ObjectEntity): array
 	 */
 	public Closure $render;
-
-	/**
-	 * Keeps one object in the renderer's objects cache, replacing what is there.
-	 *
-	 * @var Closure(ObjectEntity): void
-	 */
-	public Closure $remember;
 
 	/**
 	 * Keeps objects in the renderer's objects cache without replacing what is there.

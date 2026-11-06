@@ -590,7 +590,7 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
 		$cache = $prop->getValue($this->inversePart($this->handler));
 
@@ -607,7 +607,7 @@ class RenderObjectCoverageTest extends TestCase {
 		$existing = $this->createObjectEntity(1, 'ref-uuid');
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
 		$prop->setValue($this->inversePart($this->handler), ['uuid-1_contacts' => [$existing]]);
 
@@ -637,7 +637,7 @@ class RenderObjectCoverageTest extends TestCase {
 
 		// Initialize cache.
 		$ref = new ReflectionClass($this->handler);
-		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
 		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
@@ -659,7 +659,7 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
 		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
@@ -681,7 +681,7 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationCache::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
 		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
