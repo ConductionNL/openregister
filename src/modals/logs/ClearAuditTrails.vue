@@ -4,11 +4,22 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'clearAuditTrails'"
 		:name="t('openregister', 'Clear Filtered Audit Trails')"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="successMessage"
+		:closeLabel="
+			success === null
+				? t('openregister', 'Cancel')
+				: t('openregister', 'Close')
+		"
+		:confirmLabel="t('openregister', 'Clear Entries')"
+		@cancel="closeDialog"
+		@confirm="clearAuditTrails()">
 		<p v-if="success === null">
 			{{
 				t(
@@ -52,64 +63,31 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				</NcNoteCard>
 			</div>
 		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="clearAuditTrails()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<DeleteOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Clear Entries') }}
-			</NcButton>
+		<template #confirmIcon>
+			<DeleteOutline :size="20" />
 		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
+import { NcNoteCard } from '@nextcloud/vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 
 export default {
 	name: 'ClearAuditTrails',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
+		ConfirmDialogFrame,
 		NcNoteCard,
-		// Icons
 		DeleteOutline,
-		Cancel,
 	},
+
+	mixins: [confirmDialogState(null)],
 
 	data() {
 		return {
-			success: null,
-			loading: false,
-			error: false,
 			successMessage: '',
-			closeModalTimeout: null,
 			filteredCount: 0,
 		}
 	},

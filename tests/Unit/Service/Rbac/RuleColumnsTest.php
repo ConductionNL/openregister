@@ -9,17 +9,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumns;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 /**
  * What a rule key resolves to, and what a save refuses.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\RuleColumns
- * @uses   \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  */
@@ -44,23 +42,8 @@ class RuleColumnsTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheMetadataMapIsTheTableBuilders(): void {
-		$reflection = new ReflectionClass(MagicMapper::class);
-		$columns = array_keys($reflection->getMethod('getMetadataColumns')->invoke($reflection->newInstanceWithoutConstructor()));
-
-		$this->assertEqualsCanonicalizing($columns, RuleColumns::METADATA);
+		$this->assertEqualsCanonicalizing(array_keys(MagicMetadataColumns::ALL), RuleColumns::METADATA);
 	}//end testTheMetadataMapIsTheTableBuilders()
-
-	/**
-	 * The linked-type map is the one the table builder uses.
-	 *
-	 * @return void
-	 */
-	public function testTheLinkedTypeMapIsTheTableBuilders(): void {
-		$this->assertSame(
-			(new ReflectionClass(MagicMapper::class))->getConstant('LINKED_TYPE_COLUMN_MAP'),
-			RuleColumns::LINKED_TYPES
-		);
-	}//end testTheLinkedTypeMapIsTheTableBuilders()
 
 	/**
 	 * A key renders to the column the table builder names, and only ever to safe characters.

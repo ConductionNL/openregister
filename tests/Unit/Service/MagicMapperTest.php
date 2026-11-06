@@ -442,11 +442,7 @@ class MagicMapperTest extends TestCase {
 	 * @return void
 	 */
 	public function testMetadataColumnsGeneration(): void {
-		$reflection = new \ReflectionClass($this->magicMapper);
-		$method = $reflection->getMethod('getMetadataColumns');
-		$method->setAccessible(true);
-
-		$columns = $method->invoke($this->magicMapper);
+		$columns = $this->magicMapper->getMetadataColumnDefinitions();
 
 		// Verify all expected metadata columns are present.
 		$expectedColumns = [
@@ -492,11 +488,8 @@ class MagicMapperTest extends TestCase {
 	public function testSchemaPropertyToColumnMapping(array $propertyConfig, array $expectedColumn, ?string $propertyName = null): void {
 		$propertyName = $propertyName ?? 'testProperty';
 
-		$reflection = new \ReflectionClass($this->magicMapper);
-		$method = $reflection->getMethod('mapSchemaPropertyToColumn');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($this->magicMapper, $propertyName, $propertyConfig);
+		$columns = new \OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns(logger: $this->createMock(LoggerInterface::class));
+		$result = $columns->forProperty(propertyName: $propertyName, propertyConfig: $propertyConfig);
 
 		$this->assertIsArray($result);
 		$this->assertEquals($expectedColumn['type'], $result['type']);
