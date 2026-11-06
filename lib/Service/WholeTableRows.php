@@ -66,8 +66,6 @@ final class WholeTableRows {
 	 * @throws ObjectStateWriteException When a row is frozen or archived.
 	 * @throws LockedException When a row is locked.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) forObject() is the exception's named constructor, as in SaveObject.
-	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
 	 */
 	public function assertNoneKept(Register $register, Schema $schema): void {
@@ -78,7 +76,7 @@ final class WholeTableRows {
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
 			(new FileWriteGuard())->assertWritable(object: $object);
 			if ($object->isLocked() === true) {
-				throw LockedException::forObject($object);
+				throw (new LockedException())->forObject($object);
 			}
 		}
 	}//end assertNoneKept()
