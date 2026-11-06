@@ -99,7 +99,6 @@ class DestructionCertificateContentTest extends TestCase {
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(AuditTrailMapper::class),
 			$this->createMock(ObjectRetentionHandler::class),
-			$appConfig,
 			$userSession,
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(RetentionRowScanner::class),

@@ -119,8 +119,6 @@ class TextExtractionServiceDeepTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			registerMapper: $this->registerMapper,
 			entityHandler: $this->entityHandler,
-			entityMapper: $this->entityMapper,
-			entityRelationMapper: $this->entityRelationMapper,
 			settingsService: $this->settingsService,
 			riskLevelService: $this->riskLevelService,
 			emlParser: $this->emlParser,

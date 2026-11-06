@@ -87,7 +87,6 @@ class ChatServiceTest extends TestCase {
 			$this->responseHandler,
 			$this->conversationHandler,
 			$this->historyHandler,
-			$this->toolHandler,
 			$this->logger
 		);
 	}
