@@ -252,6 +252,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 			$link->setMailMessageUid($row['uid']);
 		}
 
+		$link->setRfcMessageId(EmailLink::storableMessageId(messageId: ($row['rfcMessageId'] ?? null)));
 		$link->setSubject($row['subject']);
 		$link->setSender($row['sender']);
 
@@ -562,7 +563,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 * @param int $mailAccountId Mail account id.
 	 * @param int $mailMessageId Mail message id.
 	 *
-	 * @return array{uid:string,subject:?string,sender:?string,date:?string}|null
+	 * @return array{uid:string,subject:?string,sender:?string,date:?string,rfcMessageId:?string}|null
 	 */
 	private function fetchMessageRow(int $mailAccountId, int $mailMessageId): ?array {
 		try {
@@ -576,7 +577,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 			return null;
 		}
 
-		return $this->messageItem(row: $row);
+		return $this->messageItem(row: $row) + ['rfcMessageId' => ($row['message_id'] ?? null)];
 	}//end fetchMessageRow()
 
 

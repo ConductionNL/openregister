@@ -57,6 +57,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,6 +74,7 @@ class ObjectIntegrationsController extends Controller {
 	 * @param ObjectOperationsInterface $objectService OpenRegister object service (RBAC boundary).
 	 * @param SchemaMapperInterface $schemaMapper Schema loader (external-source detection).
 	 * @param TimelineVisibilityServiceInterface $visibility Internal/public filter for the timeline leaves.
+	 * @param PermissionHandler $permissions Answers the object update right for integration writes.
 	 *
 	 * @return void
 	 */
@@ -84,6 +86,7 @@ class ObjectIntegrationsController extends Controller {
 		private ObjectOperationsInterface $objectService,
 		private SchemaMapperInterface $schemaMapper,
 		private TimelineVisibilityServiceInterface $visibility,
+		private PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -170,6 +173,38 @@ class ObjectIntegrationsController extends Controller {
 
 		return null;
 	}//end guardObjectAccess()
+
+	/**
+	 * Guard a write to the object's integrations: the object must be readable
+	 * (404 otherwise) and the caller must hold the `update` right editing the
+	 * object requires (403 otherwise).
+	 *
+	 * @param string $register Register slug or numeric id.
+	 * @param string $schema Schema slug or numeric id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the write may proceed.
+	 */
+	private function guardObjectUpdate(string $register, string $schema, string $id): ?JSONResponse {
+		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+		if ($denial !== null) {
+			return $denial;
+		}
+
+		$schemaEntity = $this->objectService->getCurrentSchemaEntity();
+		if ($schemaEntity !== null
+			&& $this->permissions->hasPermission(
+				schema: $schemaEntity,
+				action: 'update',
+				objectOwner: $this->guardedObject?->getOwner(),
+				object: $this->guardedObject
+			) === true
+		) {
+			return null;
+		}
+
+		return new JSONResponse(['message' => 'You may not change this object, so you cannot change its integrations.'], Http::STATUS_FORBIDDEN);
+	}//end guardObjectUpdate()
 
 	/**
 	 * GET /api/objects/{register}/{schema}/{id}/integrations/{integrationId}
@@ -298,7 +333,7 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+		$denial = $this->guardObjectUpdate(register: $register, schema: $schema, id: $id);
 		if ($denial !== null) {
 			return $denial;
 		}
@@ -328,7 +363,7 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function update(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+		$denial = $this->guardObjectUpdate(register: $register, schema: $schema, id: $id);
 		if ($denial !== null) {
 			return $denial;
 		}
@@ -357,7 +392,7 @@ class ObjectIntegrationsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function destroy(string $register, string $schema, string $id, string $integrationId, string $entityId): JSONResponse {
-		$denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
+		$denial = $this->guardObjectUpdate(register: $register, schema: $schema, id: $id);
 		if ($denial !== null) {
 			return $denial;
 		}
