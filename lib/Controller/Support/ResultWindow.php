@@ -38,6 +38,8 @@ final class ResultWindow {
 	 * @param int|null $page   The page number.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		private readonly ?int $total = 0,
@@ -56,6 +58,8 @@ final class ResultWindow {
 	 * @param array<int, mixed> $results The results of this page.
 	 *
 	 * @return array<string, mixed> The results with total, page, pages, limit and offset.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function over(array $results): array {
 		$limit = max(1, ($this->limit ?? 20));

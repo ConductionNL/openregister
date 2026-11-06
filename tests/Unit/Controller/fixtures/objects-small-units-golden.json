@@ -151,6 +151,28 @@
             "offset": "integer"
         }
     },
+    "page offset of one": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 1,
+            "pages": 5,
+            "limit": 10,
+            "offset": 1,
+            "next": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "double",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string"
+        }
+    },
     "page offset on a page edge": {
         "answer": {
             "results": [

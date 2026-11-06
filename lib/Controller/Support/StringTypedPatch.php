@@ -36,6 +36,8 @@ final class StringTypedPatch {
 	 * @param list<string> $suppliedKeys Keys the caller actually sent in the patch payload.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function __construct(
 		public readonly mixed $schema,

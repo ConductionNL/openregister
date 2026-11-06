@@ -65,6 +65,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 			'second page by number' => [['a'], 45, 10, 0, 2],
 			'third page by offset' => [['a'], 45, 10, 25, 1],
 			'offset on a page edge' => [['a'], 45, 10, 20, 1],
+			'offset of one' => [['a'], 45, 10, 1, 1],
 			'page and offset both' => [['a'], 45, 10, 5, 3],
 			'last page' => [['a'], 45, 10, 0, 5],
 			'beyond the last page' => [[], 45, 10, 0, 9],
@@ -187,7 +188,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 
 	public function testRestoreLeavesDataAloneWhenTheContainerAnswersSomethingElse(): void {
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn(null);
+		$container->method('get')->willReturn(new \stdClass());
 		$controller = $this->controller();
 		$this->set($controller, 'container', $container);
 
