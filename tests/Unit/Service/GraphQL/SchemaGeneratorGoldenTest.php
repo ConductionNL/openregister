@@ -94,7 +94,11 @@ class SchemaGeneratorGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new SchemaGenerator($schemas, $session, $this->createMock(PropertyRbacHandler::class));
+		$rbac = $this->createMock(PropertyRbacHandler::class);
+		$rbac->method('couldReadProperty')->willReturn(true);
+		$rbac->method('isAdmin')->willReturn(true);
+
+		return new SchemaGenerator($schemas, $session, $rbac);
 	}//end generator()
 
 	private function resolver(): GraphQLResolver {

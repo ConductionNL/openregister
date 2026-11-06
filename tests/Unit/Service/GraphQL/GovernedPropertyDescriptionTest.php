@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The filter and input types describe a governed property only to a caller who may read it.
+ * The generated types describe a governed property only to a caller who may read it.
  *
  * @category  Test
  * @package   OCA\OpenRegister\Tests\Unit\Service\GraphQL
@@ -20,7 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\GraphQL;
 
+use GraphQL\Type\Definition\FieldDefinition;
 use GraphQL\Type\Definition\InputObjectType;
+use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Schema as GraphQLSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -39,6 +41,8 @@ use Psr\Log\LoggerInterface;
  * Covers no metadata on purpose: it drives the generator through every collaborator it builds.
  */
 class GovernedPropertyDescriptionTest extends TestCase {
+	private const PROPERTIES = ['name', 'salary', 'notes', 'motto', 'badge', 'odd'];
+
 	private const GROUPS = ['alice' => ['hr'], 'bob' => ['staff'], 'root' => ['admin']];
 
 	private static function schema(): Schema {
@@ -51,6 +55,9 @@ class GovernedPropertyDescriptionTest extends TestCase {
 				'name'   => ['type' => 'string'],
 				'salary' => ['type' => 'integer', 'authorization' => ['read' => ['hr']]],
 				'notes'  => ['type' => 'string', 'authorization' => ['read' => [['group' => 'hr', 'match' => ['status' => 'open']]]]],
+				'motto'  => ['type' => 'string', 'authorization' => ['read' => [['group' => 'public', 'match' => ['status' => 'open']]]]],
+				'badge'  => ['type' => 'string', 'authorization' => ['update' => ['hr']]],
+				'odd'    => ['type' => 'string', 'authorization' => ['read' => [['match' => ['status' => 'open']]]]],
 			]
 		);
 
@@ -96,10 +103,10 @@ class GovernedPropertyDescriptionTest extends TestCase {
 
 	public static function callers(): array {
 		return [
-			'in the group'     => ['alice', ['name', 'salary']],
-			'outside it'       => ['bob', ['name']],
-			'anonymous'        => [null, ['name']],
-			'an administrator' => ['root', ['name', 'salary', 'notes']],
+			'in the group'     => ['alice', ['name', 'salary', 'badge']],
+			'outside it'       => ['bob', ['name', 'badge']],
+			'anonymous'        => [null, ['name', 'badge']],
+			'an administrator' => ['root', ['name', 'salary', 'notes', 'motto', 'badge', 'odd']],
 		];
 	}//end callers()
 
@@ -107,7 +114,7 @@ class GovernedPropertyDescriptionTest extends TestCase {
 	public function testTheFilterTypeFollowsTheReadRule(?string $uid, array $expected): void {
 		$fields = $this->fieldsOfType($this->generated($uid), 'PeopleFilter');
 
-		$this->assertSame($expected, array_values(array_intersect($fields, ['name', 'salary', 'notes'])));
+		$this->assertSame($expected, array_values(array_intersect($fields, self::PROPERTIES)));
 	}//end testTheFilterTypeFollowsTheReadRule()
 
 	#[DataProvider('callers')]
@@ -116,4 +123,35 @@ class GovernedPropertyDescriptionTest extends TestCase {
 
 		$this->assertSame($expected, $fields);
 	}//end testTheInputTypeFollowsTheReadRule()
+
+	public static function objectFields(): array {
+		return [
+			'in the group'     => ['alice', ['name', 'salary', 'notes', 'motto', 'badge']],
+			'outside it'       => ['bob', ['name', 'motto', 'badge']],
+			'anonymous'        => [null, ['name', 'motto', 'badge']],
+			'an administrator' => ['root', ['name', 'salary', 'notes', 'motto', 'badge', 'odd']],
+		];
+	}//end objectFields()
+
+	#[DataProvider('objectFields')]
+	public function testTheObjectTypeKeepsWhatSomeRowCouldShow(?string $uid, array $expected): void {
+		$type = $this->generated($uid)->getType('People');
+		$this->assertInstanceOf(ObjectType::class, $type);
+
+		$this->assertSame($expected, array_values(array_intersect($type->getFieldNames(), self::PROPERTIES)));
+	}//end testTheObjectTypeKeepsWhatSomeRowCouldShow()
+
+	#[DataProvider('objectFields')]
+	public function testOnlyAnAdministratorReadsTheGroupsOfARule(?string $uid): void {
+		$type = $this->generated($uid)->getType('People');
+		$this->assertInstanceOf(ObjectType::class, $type);
+		$notes = array_map(static fn (FieldDefinition $field): ?string => $field->description, $type->getFields());
+
+		if ($uid === 'root') {
+			$this->assertSame('Requires group: hr', $notes['salary']);
+			return;
+		}
+
+		$this->assertStringNotContainsString('Requires', implode(' ', array_filter($notes)));
+	}//end testOnlyAnAdministratorReadsTheGroupsOfARule()
 }//end class
