@@ -3687,15 +3687,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function rejectRefusedDelete(ObjectDeleteRequest $request, ?Schema $sourcedSchema): void
     {
-        if ($request->scoped === true || $sourcedSchema !== null) {
-            $this->rejectSharedDelete(request: $request);
-        }
-
-        if ($sourcedSchema === null) {
-            $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
-        }
-
-        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
+        $this->rejectDeleteOfLeftObject(request: $request, sourced: $sourcedSchema !== null);
 
         $this->rejectIfViewBacked(operation: 'delete');
 
@@ -3703,6 +3695,31 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->rejectDeleteOnSchema(request: $request, schema: $this->currentSchema);
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * Refuse deleting shared master data, and an object that was transferred away.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param bool                $sourced Whether an object source serves the current schema.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the object is transferred.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag says where the rows live.
+     */
+    private function rejectDeleteOfLeftObject(ObjectDeleteRequest $request, bool $sourced): void
+    {
+        if ($request->scoped === true || $sourced === true) {
+            $this->rejectSharedDelete(request: $request);
+        }
+
+        if ($sourced === false) {
+            $this->rejectIfTransferred(uuid: $request->uuid, _rbac: $request->rbac, _multitenancy: $request->multitenancy);
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
+    }//end rejectDeleteOfLeftObject()
 
     /**
      * Refuse deleting shared master data when the delete answers to the caller's organisation.
@@ -3940,17 +3957,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             _multitenancy: $request->multitenancy
         );
 
-        // If no schema was provided, derive it from the object.
-        if ($this->currentSchema === null) {
-            $this->setSchema(schema: $objectToDelete->getSchema());
-        }
-
-        $this->scopeUnscopedDeleteToRow(request: $request, row: $objectToDelete);
-
-        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+        $this->adoptDeleteRowScope(request: $request, row: $objectToDelete);
 
         return $objectToDelete;
     }//end findDeleteTarget()
+
+    /**
+     * Settle the scope from the row found: its schema when none was provided, then its register.
+     *
+     * @param ObjectDeleteRequest $request The delete call.
+     * @param ObjectEntity        $row     The row.
+     *
+     * @return void
+     */
+    private function adoptDeleteRowScope(ObjectDeleteRequest $request, ObjectEntity $row): void
+    {
+        if ($this->currentSchema === null) {
+            $this->setSchema(schema: $row->getSchema());
+        }
+
+        $this->scopeUnscopedDeleteToRow(request: $request, row: $row);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+    }//end adoptDeleteRowScope()
 
     /**
      * The register a delete lookup is scoped to.
