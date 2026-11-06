@@ -51,7 +51,7 @@ final class MagicFacetFieldLabel {
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
-	public function of(string $field, mixed $value): string {
+	public function labelOf(string $field, mixed $value): string {
 		$numbered = ['_register' => ['openregister_registers', 'Register'], '_schema' => ['openregister_schemas', 'Schema']];
 		if (isset($numbered[$field]) === true && is_numeric($value) === true) {
 			[$table, $noun] = $numbered[$field];
@@ -63,7 +63,7 @@ final class MagicFacetFieldLabel {
 		}
 
 		return (string)$value;
-	}//end of()
+	}//end labelOf()
 
 	/**
 	 * Whether a string value is looked up as an organisation or an object.

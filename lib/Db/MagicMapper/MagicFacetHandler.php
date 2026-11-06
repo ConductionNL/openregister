@@ -2438,6 +2438,6 @@ class MagicFacetHandler {
 	private function getFieldLabel(string $field, mixed $value): string {
 		$this->resolveLazyDependencies();
 
-		return (new MagicFacetFieldLabel(db: $this->db, names: $this->cacheHandler))->of(field: $field, value: $value);
+		return (new MagicFacetFieldLabel(db: $this->db, names: $this->cacheHandler))->labelOf(field: $field, value: $value);
 	}//end getFieldLabel()
 }//end class
