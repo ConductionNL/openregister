@@ -150,7 +150,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(
-			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>'])
+			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>', 'user_id' => 'alice'])
 		);
 		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
 
