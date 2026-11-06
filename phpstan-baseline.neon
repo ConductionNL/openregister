@@ -3795,31 +3795,6 @@ parameters:
 			path: lib/Service/Edepot/TransferListService.php
 
 		-
-			message: "#^Call to method login\\(\\) on an unknown class phpseclib3\\\\Net\\\\SFTP\\.$#"
-			count: 2
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Call to static method load\\(\\) on an unknown class phpseclib3\\\\Crypt\\\\PublicKeyLoader\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Instantiated class phpseclib3\\\\Net\\\\SFTP not found\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\Transport\\\\SftpTransport\\:\\:createSftpConnection\\(\\) has invalid return type phpseclib3\\\\Net\\\\SFTP\\.$#"
-			count: 2
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Variable \\$logged might not be defined\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between string and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/EmailLinkService.php
