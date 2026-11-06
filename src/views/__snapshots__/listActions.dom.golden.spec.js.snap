@@ -276,35 +276,35 @@ exports[`list page action menus golden card 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> View </slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
 <x-eye size="20">
 </x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Export </slot-default>
+<slot-default> Export</slot-default>
 <slot-icon>
 <x-download size="20">
 </x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Publish </slot-default>
+<slot-default> Publish</slot-default>
 <slot-icon>
 <x-clouduploadoutline size="20">
 </x-clouduploadoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -364,7 +364,7 @@ exports[`list page action menus golden cardDiscovered 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Import </slot-default>
+<slot-default> Import</slot-default>
 <slot-icon>
 <x-cloudupload size="20">
 </x-cloudupload>
@@ -406,42 +406,42 @@ exports[`list page action menus golden cardRemote 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> View </slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
 <x-eye size="20">
 </x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Preview Update </slot-default>
+<slot-default> Preview Update</slot-default>
 <slot-icon>
 <x-eyeoutline size="20">
 </x-eyeoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Check Version </slot-default>
+<slot-default> Check Version</slot-default>
 <slot-icon>
 <x-sync size="20">
 </x-sync>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Export </slot-default>
+<slot-default> Export</slot-default>
 <slot-icon>
 <x-download size="20">
 </x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -507,21 +507,21 @@ exports[`list page action menus golden configurations 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Create Configuration </slot-default>
+<slot-default> Create Configuration</slot-default>
 <slot-icon>
 <x-plus size="20">
 </x-plus>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Import Configuration </slot-default>
+<slot-default> Import Configuration</slot-default>
 <slot-icon>
 <x-cloudupload size="20">
 </x-cloudupload>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Refresh </slot-default>
+<slot-default> Refresh</slot-default>
 <slot-icon>
 <x-refresh size="20">
 </x-refresh>
@@ -571,28 +571,28 @@ exports[`list page action menus golden configurations 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> View </slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
 <x-eye size="20">
 </x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Export </slot-default>
+<slot-default> Export</slot-default>
 <slot-icon>
 <x-download size="20">
 </x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -628,42 +628,42 @@ exports[`list page action menus golden configurations 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton closeafterclick="">
-<slot-default> View </slot-default>
+<slot-default> View</slot-default>
 <slot-icon>
 <x-eye size="20">
 </x-eye>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Check Version </slot-default>
+<slot-default> Check Version</slot-default>
 <slot-icon>
 <x-sync size="20">
 </x-sync>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Preview Update </slot-default>
+<slot-default> Preview Update</slot-default>
 <slot-icon>
 <x-eyeoutline size="20">
 </x-eyeoutline>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Export </slot-default>
+<slot-default> Export</slot-default>
 <slot-icon>
 <x-download size="20">
 </x-download>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton closeafterclick="">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -829,14 +829,14 @@ exports[`list page action menus golden deleted 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton disabled="true" closeafterclick="">
-<slot-default> Restore </slot-default>
+<slot-default> Restore</slot-default>
 <slot-icon>
 <x-restore size="20">
 </x-restore>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton disabled="true" closeafterclick="">
-<slot-default> Purge </slot-default>
+<slot-default> Purge</slot-default>
 <slot-icon>
 <x-delete size="20">
 </x-delete>
@@ -1833,14 +1833,14 @@ exports[`list page action menus golden schemas 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -1855,14 +1855,14 @@ exports[`list page action menus golden schemas 1`] = `
 <x-ncactions>
 <slot-default>
 <x-ncactionbutton title="" closeafterclick="" disabled="false">
-<slot-default> Edit </slot-default>
+<slot-default> Edit</slot-default>
 <slot-icon>
 <x-pencil size="20">
 </x-pencil>
 </slot-icon>
 </x-ncactionbutton>
 <x-ncactionbutton title="Cannot delete: objects are still attached" closeafterclick="" disabled="true">
-<slot-default> Delete </slot-default>
+<slot-default> Delete</slot-default>
 <slot-icon>
 <x-trashcanoutline size="20">
 </x-trashcanoutline>
@@ -2009,7 +2009,7 @@ exports[`list page action menus golden searchTrails 1`] = `
 </x-refresh>
 </slot-icon>
 </x-ncactionbutton>
-<x-ncactionbutton closeafterclick="" class="deleteAction">
+<x-ncactionbutton class="deleteAction" closeafterclick="">
 <slot-default> Delete</slot-default>
 <slot-icon>
 <x-delete size="20">
@@ -2047,7 +2047,7 @@ exports[`list page action menus golden searchTrails 1`] = `
 </x-eye>
 </slot-icon>
 </x-ncactionbutton>
-<x-ncactionbutton closeafterclick="" class="deleteAction">
+<x-ncactionbutton class="deleteAction" closeafterclick="">
 <slot-default> Delete</slot-default>
 <slot-icon>
 <x-delete size="20">

@@ -393,7 +393,9 @@ function markup(wrapper) {
 		)
 		.replace(/(<x-ncactionbutton[^>]*) primary="true"/g, '$1')
 		.replace(/\bt:(View|Edit|Delete|Refresh)\b/g, '$1')
+		.replace(/(<x-ncactionbutton)([^>]*?) class="(\w+)"/g, '$1 class="$3"$2')
 		.replace(/\s+/g, ' ')
+		.replace(/ <\/slot-default>/g, '</slot-default>')
 		.replace(/> ?</g, '>\n<')
 }
 
