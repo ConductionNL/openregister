@@ -268,6 +268,7 @@ class EmailsControllerTest extends TestCase {
 			$this->userSession,
 			$this->logger,
 			$this->emailLinkService,
+			$this->createMock(PermissionHandler::class),
 			$threads
 		);
 
