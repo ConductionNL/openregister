@@ -33,6 +33,16 @@ use Psr\Log\LoggerInterface;
  */
 class LocalConfigurationFileTest extends TestCase {
 
+	private const SCALARS = [
+		'number.json'   => '5',
+		'text.json'     => '"text"',
+		'true.json'     => 'true',
+		'false.json'    => 'false',
+		'null.json'     => 'null',
+		'section.json'  => '{"x-openregister":5}',
+		'wording.json'  => '{"x-openregister":"text"}',
+	];
+
 	private string $base;
 
 	private string $outside;
@@ -48,10 +58,13 @@ class LocalConfigurationFileTest extends TestCase {
 		file_put_contents($this->base . '/broken.json', '{not json');
 		file_put_contents($this->base . '/plain.json', '{"title":"Plain"}');
 		file_put_contents($this->base . '/traced.json', '{"x-openregister":{"sourceUrl":"https://a.example","sourceType":"url"}}');
+		foreach (self::SCALARS as $name => $content) {
+			file_put_contents($this->base . '/' . $name, $content);
+		}
 	}
 
 	protected function tearDown(): void {
-		foreach (['escape.json', 'broken.json', 'plain.json', 'traced.json'] as $name) {
+		foreach (['escape.json', 'broken.json', 'plain.json', 'traced.json', ...array_keys(self::SCALARS)] as $name) {
 			unlink($this->base . '/' . $name);
 		}
 
@@ -77,6 +90,13 @@ class LocalConfigurationFileTest extends TestCase {
 			'a missing file'       => ['nope.json', 'Configuration file not found: nope.json'],
 			'a link out of the root' => ['escape.json', 'Configuration file is outside the allowed directory: escape.json'],
 			'broken JSON'          => ['broken.json', 'Invalid JSON in configuration file: Syntax error'],
+			'a number'             => ['number.json', 'Configuration file is not a JSON object: number.json'],
+			'a string'             => ['text.json', 'Configuration file is not a JSON object: text.json'],
+			'true'                 => ['true.json', 'Configuration file is not a JSON object: true.json'],
+			'false'                => ['false.json', 'Configuration file is not a JSON object: false.json'],
+			'null'                 => ['null.json', 'Configuration file is not a JSON object: null.json'],
+			'a number as section'  => ['section.json', 'Configuration file is not a JSON object: section.json'],
+			'a string as section'  => ['wording.json', 'Configuration file is not a JSON object: wording.json'],
 		];
 	}
 

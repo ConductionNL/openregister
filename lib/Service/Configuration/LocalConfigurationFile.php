@@ -134,11 +134,11 @@ final class LocalConfigurationFile
 	 * @param string $filePath The requested path, for the error.
 	 * @param string $fullPath The real path.
 	 *
-	 * @return mixed The decoded JSON.
+	 * @return array<string, mixed> The decoded JSON.
 	 *
-	 * @throws Exception When the file cannot be read or is not JSON.
+	 * @throws Exception When the file cannot be read, is not JSON or holds a single value.
 	 */
-	private function parse(string $filePath, string $fullPath): mixed
+	private function parse(string $filePath, string $fullPath): array
 	{
 		$jsonContent = file_get_contents($fullPath);
 		if ($jsonContent === false) {
@@ -150,6 +150,25 @@ final class LocalConfigurationFile
 			throw new Exception('Invalid JSON in configuration file: '.json_last_error_msg());
 		}
 
-		return $data;
+		return $this->structured(data: $data, filePath: $filePath);
 	}//end parse()
+
+	/**
+	 * Refuse a decoded document that cannot carry the x-openregister section.
+	 *
+	 * @param mixed  $data     The decoded JSON.
+	 * @param string $filePath The requested path, for the error.
+	 *
+	 * @return array<string, mixed> The same document.
+	 *
+	 * @throws Exception When the document, or its x-openregister section, is a single value.
+	 */
+	private function structured(mixed $data, string $filePath): array
+	{
+		if (is_array($data) === false || is_array($data['x-openregister'] ?? []) === false) {
+			throw new Exception("Configuration file is not a JSON object: {$filePath}");
+		}
+
+		return $data;
+	}//end structured()
 }//end class
