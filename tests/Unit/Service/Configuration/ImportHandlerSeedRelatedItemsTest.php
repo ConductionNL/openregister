@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Unit\Service\Configuration;
 
-use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -12,7 +11,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -43,10 +41,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 	private MagicMapper&MockObject $objectEntityMapper;
 	private ConfigurationMapper&MockObject $configurationMapper;
 	private MappingMapper&MockObject $mappingMapper;
-	private Client&MockObject $client;
 	private IAppConfig&MockObject $appConfig;
 	private LoggerInterface&MockObject $logger;
-	private UploadHandler&MockObject $uploadHandler;
 	private ObjectService&MockObject $objectService;
 
 	protected function setUp(): void {
@@ -56,10 +52,8 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 	}
 
@@ -300,11 +294,9 @@ class ImportHandlerSeedRelatedItemsTest extends TestCase {
 			objectEntityMapper: $this->objectEntityMapper,
 			configurationMapper: $this->configurationMapper,
 			mappingMapper: $this->mappingMapper,
-			client: $this->client,
 			appConfig: $this->appConfig,
 			logger: $this->logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->uploadHandler,
 			objectService: $this->objectService
 		);
 	}

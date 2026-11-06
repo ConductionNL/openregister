@@ -80,7 +80,6 @@ use ReflectionClass;
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;
 
-
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
 	/** @var string|null When set, only this slug is held (so its suffixed variant is free). */
@@ -385,11 +384,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			objectEntityMapper:  $plainMapper,
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
 			appConfig:           $appConfig,
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
 			objectService:       $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($routing);

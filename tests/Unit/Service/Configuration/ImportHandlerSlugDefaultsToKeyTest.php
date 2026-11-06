@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -78,10 +77,8 @@ class ImportHandlerSlugDefaultsToKeyTest extends TestCase {
 		$objectEntityMapper = $this->createMock(MagicMapper::class);
 		$configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$mappingMapper = $this->createMock(MappingMapper::class);
-		$client = $this->createMock(Client::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$logger = $this->createMock(LoggerInterface::class);
-		$uploadHandler = $this->createMock(UploadHandler::class);
 		$objectService = $this->createMock(ObjectService::class);
 
 		// No previously-imported version, nothing in the database: a fresh instance.
@@ -119,11 +116,9 @@ class ImportHandlerSlugDefaultsToKeyTest extends TestCase {
 			objectEntityMapper:  $objectEntityMapper,
 			configurationMapper: $configurationMapper,
 			mappingMapper:       $mappingMapper,
-			client:              $client,
 			appConfig:           $appConfig,
 			logger:              $logger,
 			appDataPath:         '/tmp',
-			uploadHandler:       $uploadHandler,
 			objectService:       $objectService
 		);
 	}//end setUp()
