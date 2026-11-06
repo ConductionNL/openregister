@@ -108,7 +108,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
             ]
         },
         {
@@ -209,7 +209,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
             ]
         },
         {
@@ -508,7 +508,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
             ]
         },
         {
@@ -580,7 +580,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = current_schema() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = current_schema() LIMIT 1"
             ]
         },
         {
@@ -681,7 +681,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
             ]
         },
         {
@@ -871,7 +871,7 @@
         },
         {
             "prepare": [
-                "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = '*PREFIX*openregister_objects' AND table_schema = DATABASE() LIMIT 1"
             ]
         },
         {

@@ -753,14 +753,14 @@ class ReferentialIntegrityService {
 	 */
 	private function magicTableNames(): array {
 		$stmt = $this->db->prepare(
-			"SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' "
+			"SELECT table_name FROM information_schema.tables WHERE table_name LIKE '*PREFIX*openregister_table_%' "
 			. "AND table_schema = {$this->currentSchemaFunction()}"
 		);
 		$stmt->execute();
 		$tables = [];
 		while (($row = $stmt->fetch()) !== false && is_array($row) === true) {
 			if (is_string($row['table_name'] ?? null) === true) {
-				$tables[] = substr($row['table_name'], 3);
+				$tables[] = (string)strstr($row['table_name'], 'openregister_table_');
 			}
 		}
 
