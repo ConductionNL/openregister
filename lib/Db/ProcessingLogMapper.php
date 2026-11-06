@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
@@ -136,26 +137,10 @@ class ProcessingLogMapper extends QBMapper {
 		?string $organisationId = null,
 		bool $includeConfidential = false,
 	): array {
-		// One `subject_ids` element, exactly as stored: the closing brace keeps
-		// `111` from matching `1112`, and JSON escaping keeps a value from
-		// imitating an element.
-		$element = (string)json_encode(['type' => $idType, 'value' => $idValue]);
-
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->andX(
-						$qb->expr()->eq('subject_id_type', $qb->createNamedParameter($idType)),
-						$qb->expr()->eq('subject_id_value', $qb->createNamedParameter($idValue))
-					),
-					$qb->expr()->like(
-						'subject_ids',
-						$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($element) . '%')
-					)
-				)
-			);
+			->where($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 
 		$this->applyCommonFilters(
 			qb: $qb,
@@ -174,6 +159,42 @@ class ProcessingLogMapper extends QBMapper {
 
 		return $entries;
 	}//end findBySubject()
+
+	/**
+	 * The predicate for one subject, on single reads and on list reads.
+	 *
+	 * Single reads carry the subject in `subject_id_*`, list reads in the
+	 * `subject_ids` JSON. The pattern is a stretch of one element exactly as
+	 * stored: its braces and quotes keep `111` from matching `1112`, and JSON
+	 * escaping keeps a value from imitating an element.
+	 *
+	 * @param IQueryBuilder $qb      Query under construction.
+	 * @param string|null   $idType  Subject identifier type, or null for any.
+	 * @param string|null   $idValue Subject identifier value, or null for any.
+	 *
+	 * @return ICompositeExpression The expression.
+	 */
+	private function subjectMatch(IQueryBuilder $qb, ?string $idType, ?string $idValue): ICompositeExpression {
+		$columns = [];
+		$element = '';
+		if ($idType !== null) {
+			$columns[] = $qb->expr()->eq('subject_id_type', $qb->createNamedParameter($idType));
+			$element = substr((string)json_encode(['type' => $idType]), 0, -1) . ',';
+		}
+
+		if ($idValue !== null) {
+			$columns[] = $qb->expr()->eq('subject_id_value', $qb->createNamedParameter($idValue));
+			$element .= substr((string)json_encode(['value' => $idValue]), 1);
+		}
+
+		return $qb->expr()->orX(
+			$qb->expr()->andX(...$columns),
+			$qb->expr()->like(
+				'subject_ids',
+				$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($element) . '%')
+			)
+		);
+	}//end subjectMatch()
 
 	/**
 	 * Reduce a list entry to what concerns one subject.
@@ -203,6 +224,9 @@ class ProcessingLogMapper extends QBMapper {
 	/**
 	 * Find entries by an arbitrary filter set (FG inquiry / VNG API).
 	 *
+	 * A subject filter covers single reads and list reads. An entry stays whole
+	 * here: unlike the per-subject extract, it goes to the FG or the auditor.
+	 *
 	 * @param array<string, mixed> $filters register_id, schema_id, activity_id, actor, action, subject_id_type, subject_id_value.
 	 * @param DateTime|null $from Inclusive lower bound.
 	 * @param DateTime|null $to Inclusive upper bound.
@@ -227,11 +251,17 @@ class ProcessingLogMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')->from($this->getTableName());
 
-		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action', 'subject_id_type', 'subject_id_value'] as $column) {
+		foreach (['register_id', 'schema_id', 'activity_id', 'actor', 'action'] as $column) {
 			$value = ($filters[$column] ?? null);
 			if ($value !== null && $value !== '') {
 				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$value)));
 			}
+		}
+
+		$idType = $this->subjectFilter(value: ($filters['subject_id_type'] ?? null));
+		$idValue = $this->subjectFilter(value: ($filters['subject_id_value'] ?? null));
+		if ($idType !== null || $idValue !== null) {
+			$qb->andWhere($this->subjectMatch(qb: $qb, idType: $idType, idValue: $idValue));
 		}
 
 		$this->applyCommonFilters(
@@ -248,6 +278,21 @@ class ProcessingLogMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
+
+	/**
+	 * A subject filter as a string, or null when it filters nothing.
+	 *
+	 * @param mixed $value The filter value.
+	 *
+	 * @return string|null The value.
+	 */
+	private function subjectFilter(mixed $value): ?string {
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		return (string)$value;
+	}//end subjectFilter()
 
 	/**
 	 * Count entries attributed to each activity, optionally per register.
