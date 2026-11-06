@@ -253,7 +253,7 @@ class RelationsController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
 		try {

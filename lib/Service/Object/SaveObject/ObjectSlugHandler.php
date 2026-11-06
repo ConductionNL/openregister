@@ -46,7 +46,7 @@ use Throwable;
  * A schema without `objectSlugField` keeps the legacy behaviour: a client
  * slug is set as sent, no query, no log (design D8, BC1).
  *
- * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Design D1: this is the one owner of every slug
  *   write (save, bulk, restore, move, seed, backfill), so each writer has its entry point here.
@@ -127,7 +127,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return bool True when `objectSlugField` is a non-empty string.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	public function isManaged(Schema $schema): bool {
 		$field = ($schema->getConfiguration() ?? [])['objectSlugField'] ?? null;
@@ -147,7 +147,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string|null The candidate, or null when there is none.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
 	public function candidate(array $objectData, Schema $schema, ?string $clientSlug): ?string {
 		$normalised = $this->source->normaliseClient(clientSlug: $clientSlug);
@@ -175,7 +175,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return bool True when the client asked for a different slug.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
 		return $this->source->differsFromStored(clientSlug: $clientSlug, stored: $stored);
@@ -204,9 +204,9 @@ class ObjectSlugHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-freed-by-deleting-its-holder-must-go-to-the-next-object-that-saves-without-a-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-an-object-slug-once-set-must-not-be-changed-by-a-later-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-freed-by-deleting-its-holder-must-go-to-the-next-object-that-saves-without-a-slug
 	 */
 	public function applyOnSave(
 		ObjectEntity $entity,
@@ -304,7 +304,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string|null The slug to store; the entity's own slug when nothing changes.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForRestore(ObjectEntity $entity, Register $register, Schema $schema): ?string {
 		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'restore');
@@ -326,7 +326,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string|null The slug to store at the target.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string {
 		return $this->slugAtTarget(entity: $entity, register: $register, schema: $schema, path: 'move');
@@ -370,7 +370,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string The folded key.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function foldKey(string $slug): string {
 		return $this->batch->fold(slug: $slug);
@@ -390,7 +390,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return array<int|string, string|null> Row index => slug; empty when the schema did not opt in.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function decideBatch(array $rows, Register $register, Schema $schema): array {
 		if ($this->isManaged(schema: $schema) === false) {
@@ -414,7 +414,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string|null The slug to write, or null when the object stays without one.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run,
 	 *   which must decide without writing a warning.
@@ -478,7 +478,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string The suffixed slug.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function withSuffix(string $slug, ?string $stamp=null): string {
 		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->currentStamp());
@@ -492,7 +492,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return bool True when $slug is $candidate with a date-time suffix.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function isSuffixOf(string $slug, string $candidate): bool {
 		return preg_match('/^' . preg_quote($this->suffixBase(slug: $candidate), '/') . '-\d{14}$/', $slug) === 1;
@@ -503,7 +503,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return string The stamp.
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function currentStamp(): string {
 		$timestamp = ($this->timeFactory?->now()->getTimestamp() ?? time());
@@ -534,7 +534,7 @@ class ObjectSlugHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function logCollision(
 		Register $register,
