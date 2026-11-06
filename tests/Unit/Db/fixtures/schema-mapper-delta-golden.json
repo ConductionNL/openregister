@@ -50,8 +50,13 @@
         "rowsLeft": 0
     },
     "property turned scalar": {
-        "thrown": "TypeError",
-        "rowsLeft": 1
+        "result": {
+            "properties": {
+                "name": "scalar"
+            },
+            "required": []
+        },
+        "rowsLeft": 0
     },
     "nested properties turned scalar": {
         "result": {
