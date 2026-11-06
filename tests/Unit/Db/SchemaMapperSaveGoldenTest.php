@@ -128,6 +128,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

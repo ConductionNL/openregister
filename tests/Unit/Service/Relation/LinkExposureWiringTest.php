@@ -40,6 +40,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Relation\LinkExposure
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
