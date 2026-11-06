@@ -48,6 +48,9 @@ use Throwable;
 /**
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses   \OCA\OpenRegister\Service\OrganisationContext

@@ -25,6 +25,9 @@ use ReflectionMethod;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @covers \OCA\OpenRegister\Service\Object\ObjectVersionHandler
