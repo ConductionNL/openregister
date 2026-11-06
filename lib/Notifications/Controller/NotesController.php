@@ -272,6 +272,8 @@ class NotesController extends Controller {
 				);
 			}
 
+			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
+
 			$write = $this->resolveNoteWrite(
 				object: $object,
 				data: $this->request->getParams(),
@@ -331,7 +333,12 @@ class NotesController extends Controller {
 				statusCode: $e->getHttpStatus()
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}//end try
 	}//end update()
 
@@ -460,6 +467,8 @@ class NotesController extends Controller {
 				);
 			}
 
+			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
+
 			// Read the record BEFORE the note goes, so its references can be
 			// forgotten by id: after the delete there is nothing left to look
 			// the entry up by.
@@ -476,7 +485,12 @@ class NotesController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}
 	}//end destroy()
 

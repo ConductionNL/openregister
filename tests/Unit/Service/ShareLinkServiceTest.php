@@ -324,7 +324,7 @@ class ShareLinkServiceTest extends TestCase {
 		$this->addToAssertionCount(1);
 	}//end testRevokeShareHappyPath()
 
-	public function testRevokeShareOutsideFolderThrows403(): void {
+	public function testRevokeShareOutsideFolderIsNotFound(): void {
 		$folderNode = $this->buildNode(10, 'doc.txt');
 		$folder = $this->buildFolder([$folderNode]);
 		// Share backed by a node id (999) NOT present in the folder.
@@ -347,9 +347,33 @@ class ShareLinkServiceTest extends TestCase {
 		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
 
 		$this->expectException(Exception::class);
-		$this->expectExceptionCode(403);
+		$this->expectExceptionCode(404);
 		$service->revokeShare('uuid-1', 's7');
-	}//end testRevokeShareOutsideFolderThrows403()
+	}//end testRevokeShareOutsideFolderIsNotFound()
+
+	public function testRevokeShareOfSomebodyElseIsNotFound(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$folder = $this->buildFolder([$node]);
+		$share = $this->buildShare('s8', IShare::TYPE_USER, 'bob', 1, 'alice', $node);
+
+		$manager = $this->createMock(IManager::class);
+		$manager->method('getShareById')->with('s8')->willReturn($share);
+		$manager->expects($this->never())->method('deleteShare');
+
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('carol'),
+				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $this->buildFolderHandler($folder),
+				'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $this->buildObjectMapper(),
+			]
+		);
+
+		$service = new ShareLinkService($this->buildL10n(), $this->buildLogger(), $container);
+
+		$this->expectExceptionCode(404);
+		$service->revokeShare('uuid-1', 's8');
+	}//end testRevokeShareOfSomebodyElseIsNotFound()
 
 	public function testGetShareableFilesListsOnlyFiles(): void {
 		$file = $this->buildNode(10, 'doc.txt', FileInfo::TYPE_FILE);

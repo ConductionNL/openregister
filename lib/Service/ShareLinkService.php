@@ -295,8 +295,8 @@ class ShareLinkService {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception On missing user (401), share-not-found (404),
-	 *                   ownership mismatch (403).
+	 * @throws Exception On missing user (401), or 404 when the share does not exist,
+	 *                   lies outside the object's folder or is not the caller's.
 	 *
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the revoke-share contract is owned by the
 	 *              integration-shares / generic-integrations capability.
@@ -316,7 +316,11 @@ class ShareLinkService {
 
 		$folder = $this->resolveObjectFolder(objectUuid: $objectUuid);
 		if ($folder === null || $this->shareIsInFolder(share: $share, folder: $folder) === false) {
-			throw new Exception('Share does not belong to this object', 403);
+			throw new Exception('Share not found', 404);
+		}
+
+		if ($share->getSharedBy() !== $userId && $share->getShareOwner() !== $userId) {
+			throw new Exception('Share not found', 404);
 		}
 
 		$shareManager->deleteShare($share);
