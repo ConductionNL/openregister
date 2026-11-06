@@ -25,10 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -41,6 +43,8 @@ use OCP\IRequest;
  * @package  OCA\OpenRegister\Controller
  */
 class EmailsController extends Controller {
+	use ChecksObjectUpdateRight;
+
 
 	/**
 	 * Email service.
@@ -78,6 +82,13 @@ class EmailsController extends Controller {
 	private readonly EmailLinkService $emailLinkService;
 
 	/**
+	 * Answers the object update right.
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName Application name
@@ -87,6 +98,7 @@ class EmailsController extends Controller {
 	 * @param \OCP\IUserSession $userSession User session
 	 * @param \Psr\Log\LoggerInterface $logger Logger
 	 * @param EmailLinkService $emailLinkService Object-scoped email links
+	 * @param PermissionHandler $permissions Answers the object update right
 	 * @param ReplyThreadService|null $replyThreads Resolves reply headers onto objects
 	 *
 	 * @return void
@@ -99,6 +111,7 @@ class EmailsController extends Controller {
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
 		EmailLinkService $emailLinkService,
+		PermissionHandler $permissions,
 		private readonly ?ReplyThreadService $replyThreads = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -108,6 +121,7 @@ class EmailsController extends Controller {
 		$this->userSession = $userSession;
 		$this->logger = $logger;
 		$this->emailLinkService = $emailLinkService;
+		$this->permissions = $permissions;
 	}//end __construct()
 
 	/**
@@ -195,6 +209,10 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+			}
+
 			$data = $this->request->getParams();
 
 			if (empty($data['mailAccountId']) === true || empty($data['mailMessageId']) === true) {
@@ -203,6 +221,8 @@ class EmailsController extends Controller {
 					400
 				);
 			}
+
+			$this->emailLinkService->assertAccountOwnership(accountId: (int)$data['mailAccountId']);
 
 			$link = $this->emailService->linkEmail(
 				$object->getUuid(),
@@ -220,8 +240,8 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => $e->getMessage()], 409);
 			}
 
-			if ($code === 404) {
-				return new JSONResponse(['error' => $e->getMessage()], 404);
+			if ($code === 403 || $code === 404) {
+				return new JSONResponse(['error' => $e->getMessage()], $code);
 			}
 
 			return new JSONResponse(['error' => $e->getMessage()], 400);
@@ -260,6 +280,10 @@ class EmailsController extends Controller {
 			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
+			}
+
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
 			}
 
 			$objectUuid = $object->getUuid();

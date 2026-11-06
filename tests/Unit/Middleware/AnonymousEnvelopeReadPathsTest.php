@@ -73,6 +73,11 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectReadOptions
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectShow
+ * @uses \OCA\OpenRegister\Controller\Support\ShowServices
+ * @uses \OCA\OpenRegister\Controller\Support\ShownEntity
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsRouteScope
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses \OCA\OpenRegister\Controller\Support\ObjectRequestParams
@@ -344,7 +349,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			new TimeseriesRequestValidator()
 		);
 
-		$generator = new SchemaGenerator($registerMapper, $schemaMapper, $this->session(signedIn: $signedIn));
+		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn));
 		$generator->setResolver($resolver);
 
 		$uuid = (string)$this->record()->getUuid();

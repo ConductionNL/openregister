@@ -1732,11 +1732,11 @@ class MagicSearchHandler {
 	 * The quoted column of a property, so reserved words (e.g. 'case', 'status') stay valid SQL.
 	 *
 	 * @param SearchLeafScope $scope    The search scope.
-	 * @param string          $propName The property name.
+	 * @param int|string      $propName The property name; PHP keeps a numeric array key as an int.
 	 *
 	 * @return string The quoted column name.
 	 */
-	private function searchColumn(SearchLeafScope $scope, string $propName): string {
+	private function searchColumn(SearchLeafScope $scope, int|string $propName): string {
 		return $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $propName), isPostgres: $scope->isPostgres);
 	}//end searchColumn()
 
