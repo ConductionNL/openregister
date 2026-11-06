@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\Activity\IManager as IActivityManager;
@@ -39,7 +40,13 @@ use ReflectionMethod;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ActionLinkResolver
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\ActionTargetContext
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\AppRouteBase
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ObjectDetailLinks
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskActionLinks
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\LinkableUrl
  */
 final class ActionLinkGoldenTest extends TestCase {
 
@@ -160,9 +167,12 @@ final class ActionLinkGoldenTest extends TestCase {
 	 * The links of a spec.
 	 */
 	private function resolved(array $spec, ObjectEntity $object, array $data, bool $wired = true): array {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveActions');
+		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'actionLinks');
 
-		return $method->invoke($this->makeDispatcher(wired: $wired), $spec, $object, $data, 'origin');
+		return $method->invoke($this->makeDispatcher(wired: $wired))->resolve(
+			spec: $spec,
+			context: new ActionTargetContext(object: $object, data: $data, originApp: 'origin')
+		);
 	}//end resolved()
 
 	/**
