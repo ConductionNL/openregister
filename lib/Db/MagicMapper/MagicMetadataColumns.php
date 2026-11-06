@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 /**
- * The metadata columns every magic table carries and the columns linked types add.
+ * The metadata columns every magic table carries.
  *
  * @spec openspec/specs/magic-table-columns/spec.md
  */
@@ -260,18 +260,5 @@ final class MagicMetadataColumns {
 			'type' => 'json',
 			'nullable' => true,
 		],
-	];
-
-	/**
-	 * The metadata column of each linkedTypes value that adds one.
-	 */
-	public const LINKED_TYPES = [
-		'mail' => '_mail',
-		'contacts' => '_contacts',
-		'notes' => '_notes',
-		'todos' => '_todos',
-		'calendar' => '_calendar',
-		'talk' => '_talk',
-		'deck' => '_deck',
 	];
 }//end class

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -187,7 +188,7 @@ final class MagicSchemaColumns {
 	private function linkedTypeColumns(Schema $schema): array {
 		$columns = [];
 		foreach ($schema->getLinkedTypes() as $type) {
-			$columnName = MagicMetadataColumns::LINKED_TYPES[$type] ?? null;
+			$columnName = RuleColumns::LINKED_TYPES[$type] ?? null;
 			if ($columnName !== null) {
 				$columns[$columnName] = ['name' => $columnName, 'type' => 'json', 'nullable' => true, 'index' => true];
 			}

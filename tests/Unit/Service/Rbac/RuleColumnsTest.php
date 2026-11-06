@@ -46,18 +46,6 @@ class RuleColumnsTest extends TestCase {
 	}//end testTheMetadataMapIsTheTableBuilders()
 
 	/**
-	 * The linked-type map is the one the table builder uses.
-	 *
-	 * @return void
-	 */
-	public function testTheLinkedTypeMapIsTheTableBuilders(): void {
-		$this->assertSame(
-			MagicMetadataColumns::LINKED_TYPES,
-			RuleColumns::LINKED_TYPES
-		);
-	}//end testTheLinkedTypeMapIsTheTableBuilders()
-
-	/**
 	 * A key renders to the column the table builder names, and only ever to safe characters.
 	 *
 	 * @return void

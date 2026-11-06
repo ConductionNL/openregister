@@ -83,6 +83,7 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
@@ -4029,12 +4030,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array<string, mixed>
 	 */
 	private function prepareMetadataColumns(array $metadata, Schema $schema): array {
-		// MagicMetadataColumns::LINKED_TYPES values carry the column prefix; the loop below adds its own,
+		// RuleColumns::LINKED_TYPES values carry the column prefix; the loop below adds its own,
 		// so the linked type key itself is the field.
 		$fields     = self::METADATA_WRITE_FIELDS;
 		$jsonFields = self::METADATA_JSON_FIELDS;
 		foreach ($schema->getLinkedTypes() as $linkedType) {
-			if (isset(MagicMetadataColumns::LINKED_TYPES[$linkedType]) === true) {
+			if (isset(RuleColumns::LINKED_TYPES[$linkedType]) === true) {
 				$fields[]     = $linkedType;
 				$jsonFields[] = $linkedType;
 			}
