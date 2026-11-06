@@ -40,13 +40,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use DateTimeImmutable;
-use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
+use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
 use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
+use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
@@ -92,9 +92,6 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Service\Rbac\RuleColumns;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
-use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -219,90 +216,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
-
-	/**
-	 * The metadata fields every object write names, in column order.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_WRITE_FIELDS = [
-		'uuid',
-		'slug',
-		'uri',
-		'version',
-		'register',
-		'schema',
-		'owner',
-		'organisation',
-		'application',
-		'folder',
-		'name',
-		'description',
-		'summary',
-		'image',
-		'size',
-		'schema_version',
-		'files',
-		'relations',
-		'locked',
-		// `authorization` is DELIBERATELY absent from this list.
-		//
-		// authoritativeMetadata() strips it because per-object RBAC must not be
-		// writable by ordinary create/update calls. Listing it here would resolve
-		// the stripped key to an explicit NULL, and the UPDATE would write it,
-		// destroying the stored rules on the next save of that object: a private
-		// object would silently become visible again, and the per-object action
-		// overrides would be wiped the same way.
-		//
-		// Omitting the field means the column is never named in the INSERT or
-		// UPDATE at all (`updateObjectInRegisterSchemaTable()` only sets keys that
-		// are PRESENT), so the stored value is carried forward untouched. Writes go
-		// through the dedicated authorization-management path.
-		'validation',
-		'quality',
-		'deleted',
-		// Listed, and therefore carried forward on every ordinary update, for the
-		// same reason `locked` is: the value comes from the ENTITY, and
-		// `setSelfMetadata()` never accepts either key from a client `@self`
-		// payload, so no write path can archive or freeze an object without the
-		// endpoint. Omitting them would make `updateObjectEntity()` stop naming the
-		// column, and the dedicated archive write would be the only write that
-		// could ever clear it.
-		'archived',
-		'frozen',
-		// Carried forward like `frozen`: setSelfMetadata() lets a client set
-		// `draft` on create only, and only the submit leaves it.
-		'status',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-		'created',
-		'updated',
-		'last_user_activity',
-		'expires',
-	];
-
-	/**
-	 * The metadata fields stored as JSON; the schema's active linked types are added per write.
-	 *
-	 * @var string[]
-	 */
-	private const METADATA_JSON_FIELDS = [
-		'files',
-		'relations',
-		'locked',
-		'authorization',
-		'validation',
-		'quality',
-		'deleted',
-		'archived',
-		'frozen',
-		'geo',
-		'retention',
-		'groups',
-		'tmlo',
-	];
 
 	/**
 	 * Whether the last single-object write INSERTED or UPDATED.
@@ -3384,17 +3297,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		unset($data['@self']);
 
 		// An encrypted property is written only as an envelope, whichever path
-		// got here (see encryptFlaggedProperties()).
-		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
+		// got here (see MagicFlaggedEncryption).
+		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
-		$metadata = $this->authoritativeMetadata(
+		$rowMetadata = new MagicRowMetadata(container: $this->container);
+		$metadata = $rowMetadata->authoritative(
 			objectData: $objectData,
 			ids: ['register' => $register->getId(), 'schema' => $schema->getId()]
 		);
 		$metadata['created'] ??= $now;
 		$metadata['updated'] ??= $now;
 
-		$preparedData = $this->prepareMetadataColumns(metadata: $metadata, schema: $schema);
+		$preparedData = $rowMetadata->columns(metadata: $metadata, schema: $schema);
 		$propertyColumns = new MagicPropertyColumns(container: $this->container, logger: $this->logger);
 		$preparedData = array_replace($preparedData, $propertyColumns->forObject(data: $data, schema: $schema));
 
@@ -3403,218 +3317,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
-
-	/**
-	 * The `@self` metadata of an object with the server-controlled fields made authoritative.
-	 *
-	 * SECURITY (wave-7 CRITICAL C2, @self allowlist enforcement): clients must not be able
-	 * to overwrite server-controlled fields via the @self block. The primary defence lives
-	 * in SaveObject::setSelfMetadata (which strips owner/authorization from raw client
-	 * $selfData). This is defence in depth at the DB write boundary, for fields that any
-	 * code path can reach, not just the REST request path.
-	 *
-	 * - owner: the server-stamped owner (a scalar UID string set by
-	 *   SaveObject::applyOwnerAttribution before jsonSerialize()) MUST be persisted,
-	 *   otherwise rows land with an empty `_owner` column: the creator can never equal the
-	 *   owner, so the update lock-guard 403s the owner's own update and ownership-based
-	 *   RBAC and owner notifications are neutered. A non-string owner, the shape a
-	 *   forged `@self` payload would take, is dropped.
-	 * - authorization: per-object RBAC rules are not writable by ordinary create/update
-	 *   calls; they are managed through the dedicated authorization endpoint.
-	 * - register / schema: always the authoritative method parameters, never a client value.
-	 *
-	 * Not stripped here, because the server sets them before this point: version, created,
-	 * updated, deleted, locked, retention, uuid, slug, uri. Client injection of any of
-	 * those must be fixed at the SaveObject/controller level.
-	 *
-	 * @param array                                $objectData The object data, with its optional `@self` block
-	 * @param array{register: mixed, schema: mixed} $ids        The authoritative register and schema ids
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function authoritativeMetadata(array $objectData, array $ids): array {
-		$metadata = $objectData['@self'] ?? [];
-		unset($metadata['authorization']);
-
-		if (isset($metadata['owner']) === true && is_string($metadata['owner']) === false) {
-			unset($metadata['owner']);
-		}
-
-		$metadata['register'] = $ids['register'];
-		$metadata['schema']   = $ids['schema'];
-
-		// The entity serialises `schemaVersion` and `lastUserActivity`; the columns are snake_case.
-		$metadata['schema_version']     = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
-		$metadata['last_user_activity'] = $metadata['lastUserActivity'] ?? null;
-
-		return $metadata;
-	}//end authoritativeMetadata()
-
-	/**
-	 * The `_`-prefixed metadata columns written for one object, in column order.
-	 *
-	 * @param array<string, mixed> $metadata The authoritative metadata, `created` and `updated` filled in
-	 * @param Schema               $schema   The schema context
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function prepareMetadataColumns(array $metadata, Schema $schema): array {
-		// RuleColumns::LINKED_TYPES values carry the column prefix; the loop below adds its own,
-		// so the linked type key itself is the field.
-		$fields     = self::METADATA_WRITE_FIELDS;
-		$jsonFields = self::METADATA_JSON_FIELDS;
-		foreach ($schema->getLinkedTypes() as $linkedType) {
-			if (isset(RuleColumns::LINKED_TYPES[$linkedType]) === true) {
-				$fields[]     = $linkedType;
-				$jsonFields[] = $linkedType;
-			}
-		}
-
-		$columns = [];
-		foreach ($fields as $field) {
-			$value = $this->prepareMetadataValue(field: $field, value: ($metadata[$field] ?? null));
-			if (in_array($field, $jsonFields) === true) {
-				$value = $this->jsonColumnValue(value: $value);
-			}
-
-			$columns[self::METADATA_PREFIX.$field] = $value;
-		}
-
-		return $columns;
-	}//end prepareMetadataColumns()
-
-	/**
-	 * A metadata value as its column stores it; datetime fields become UTC 'Y-m-d H:i:s'.
-	 *
-	 * A DateTime is converted to the column's
-	 * timezone before formatting, because format() renders in the instance's own timezone
-	 * and a non-UTC value would be read back as UTC (WOO-567). This is done inline rather
-	 * than through DateTimeNormalizer so the path works without a resolvable container. A
-	 * string goes through DateTimeNormalizer, so empty input becomes null rather than now
-	 * and a non-UTC offset is converted rather than dropped.
-	 *
-	 * @param string $field The metadata field
-	 * @param mixed  $value The value from `@self`
-	 *
-	 * @return mixed
-	 */
-	private function prepareMetadataValue(string $field, mixed $value): mixed {
-		if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires']) === false) {
-			return $value;
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return DateTimeImmutable::createFromInterface($value)
-				->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
-				->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === true) {
-			return $this->container
-				->get(DateTimeNormalizer::class)
-				->formatForDatabase($value);
-		}
-
-		return $value;
-	}//end prepareMetadataValue()
-
-	/**
-	 * A value for a JSON metadata column: an empty array is NULL so IS NULL checks hold,
-	 * a string is kept, anything else is JSON-encoded.
-	 *
-	 * An empty string becomes NULL at the final insert/update stage, not here.
-	 *
-	 * @param mixed $value The value
-	 *
-	 * @return mixed
-	 */
-	private function jsonColumnValue(mixed $value): mixed {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_array($value) === true && empty($value) === true) {
-			return null;
-		}
-
-		if (is_string($value) === false) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end jsonColumnValue()
-
-	/**
-	 * Replace every `x-openregister-encrypted` property value with its envelope.
-	 *
-	 * SaveObject encrypts on the single-object path, but the table is the one
-	 * place every write passes through. Encrypting here as well means no path
-	 * (bulk, import, a service writing an entity back) can put plaintext in an
-	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
-	 * that is already an envelope, so the second pass never double-encrypts.
-	 *
-	 * Fails closed: if the schema has encrypted properties and the handler
-	 * cannot be resolved, the write is refused rather than stored in the clear.
-	 *
-	 * @param array<string, mixed> $data   Property values, without `@self`.
-	 * @param Schema               $schema The schema being written to.
-	 *
-	 * @return array<string, mixed> The data with encrypted properties as envelopes.
-	 *
-	 * @throws RuntimeException When the schema needs encryption and no handler is available.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedProperties(array $data, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $data;
-		}
-
-		$handler = $this->container->get(FieldEncryptionHandler::class);
-		if ($handler instanceof FieldEncryptionHandler === false) {
-			throw new RuntimeException(
-				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
-				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
-			);
-		}
-
-		return $handler->encryptProperties(data: $data, schema: $schema);
-	}//end encryptFlaggedProperties()
-
-	/**
-	 * Apply encryptFlaggedProperties() to every row of a bulk write.
-	 *
-	 * A bulk row carries its properties either under `object` or at the top
-	 * level beside `@self`, the two shapes MagicBulkHandler reads.
-	 *
-	 * @param array<int|string, mixed> $objects The rows.
-	 * @param Schema                   $schema  The schema being written to.
-	 *
-	 * @return array<int|string, mixed> The rows with encrypted properties as envelopes.
-	 *
-	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
-	 */
-	private function encryptFlaggedPropertiesInRows(array $objects, Schema $schema): array {
-		if ($schema->hasEncryptedProperties() === false) {
-			return $objects;
-		}
-
-		foreach ($objects as $key => $object) {
-			if (is_array($object) === false) {
-				continue;
-			}
-
-			if (isset($object['object']) === true && is_array($object['object']) === true) {
-				$object['object'] = $this->encryptFlaggedProperties(data: $object['object'], schema: $schema);
-			} else {
-				$object = $this->encryptFlaggedProperties(data: $object, schema: $schema);
-			}
-
-			$objects[$key] = $object;
-		}
-
-		return $objects;
-	}//end encryptFlaggedPropertiesInRows()
 
 	/**
 	 * Convert database row to ObjectEntity.
@@ -7894,7 +7596,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = $this->encryptFlaggedPropertiesInRows(objects: $objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->bulkUpsert(
