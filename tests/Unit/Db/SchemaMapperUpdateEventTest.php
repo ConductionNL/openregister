@@ -45,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * dispatched event is the real SchemaUpdatedEvent.
  *
  * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  */
 class SchemaMapperUpdateEventTest extends TestCase {
 	/**
