@@ -19,8 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener;
-use OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
+use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowSync;
@@ -54,7 +53,6 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -167,8 +165,6 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$membership = new FlowTenantMembership($this->organisations());
 		$sync = new ScheduleFlowSync(
 			new ScheduleFlowStore($flowMapper, $versions, $flowService, new FlowTriggerValidator($container, $this->logger)),
-			new ScheduleActionAllowList($this->createMock(IAppManager::class)),
-			new CronScheduleEvaluator(),
 			$membership,
 			new ScheduleAuditTrail($this->auditMapper()),
 			$this->logger
@@ -388,7 +384,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->method('slugOrNull')->willReturnCallback(fn () => $this->slugsAnswer);
 
-		return new ScheduleReleaseReader($objects, $registers, $schemas, $slugs, $session);
+		return new ScheduleReleaseReader($objects, new ApplicationRegister($registers, $schemas, $slugs), $session);
 	}
 
 	/**

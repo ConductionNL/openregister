@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  *
  * @covers \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleReleaseReader
+ * @covers \OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowSync
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore
  * @covers \OCA\OpenRegister\AppHost\Scheduling\CompiledScheduleFlow
