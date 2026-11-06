@@ -75,8 +75,8 @@
 						<div class="runPage__badges">
 							<CnStatusBadge
 								data-testid="run-detail-status"
-								:label="statusLabel(run.status)"
-								:variant="statusVariant(run.status)"
+								:label="statusLabel(shownStatus(run))"
+								:variant="statusVariant(shownStatus(run))"
 								size="small" />
 							<CnStatusBadge
 								v-if="versionLabel"
@@ -469,6 +469,7 @@ import {
 	RUN_TERMINAL_STATUSES,
 	runDuration,
 	shortUuid,
+	shownStatus,
 	statusLabel,
 	statusVariant,
 	stepRows,
@@ -697,6 +698,7 @@ export default {
 		formatDateTime,
 		formatDuration,
 		shortUuid,
+		shownStatus,
 		statusLabel,
 		statusVariant,
 		triggerLabel,
