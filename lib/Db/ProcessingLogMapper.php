@@ -116,6 +116,9 @@ class ProcessingLogMapper extends QBMapper {
 	/**
 	 * Find entries by data-subject identifier within a period.
 	 *
+	 * Covers single reads (`subject_id_*`) and list reads (`subject_ids`); a
+	 * list entry comes back reduced to this subject.
+	 *
 	 * @param string $idType Subject identifier type (e.g. `BSN`).
 	 * @param string $idValue Subject identifier value.
 	 * @param DateTime|null $from Inclusive lower bound.
@@ -133,11 +136,26 @@ class ProcessingLogMapper extends QBMapper {
 		?string $organisationId = null,
 		bool $includeConfidential = false,
 	): array {
+		// One `subject_ids` element, exactly as stored: the closing brace keeps
+		// `111` from matching `1112`, and JSON escaping keeps a value from
+		// imitating an element.
+		$element = (string)json_encode(['type' => $idType, 'value' => $idValue]);
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('subject_id_type', $qb->createNamedParameter($idType)))
-			->andWhere($qb->expr()->eq('subject_id_value', $qb->createNamedParameter($idValue)));
+			->where(
+				$qb->expr()->orX(
+					$qb->expr()->andX(
+						$qb->expr()->eq('subject_id_type', $qb->createNamedParameter($idType)),
+						$qb->expr()->eq('subject_id_value', $qb->createNamedParameter($idValue))
+					),
+					$qb->expr()->like(
+						'subject_ids',
+						$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($element) . '%')
+					)
+				)
+			);
 
 		$this->applyCommonFilters(
 			qb: $qb,
@@ -149,8 +167,38 @@ class ProcessingLogMapper extends QBMapper {
 
 		$qb->orderBy('created', 'ASC');
 
-		return $this->findEntities(query: $qb);
+		$entries = $this->findEntities(query: $qb);
+		foreach ($entries as $entry) {
+			$this->narrowToSubject(entry: $entry, idType: $idType, idValue: $idValue);
+		}
+
+		return $entries;
 	}//end findBySubject()
+
+	/**
+	 * Reduce a list entry to what concerns one subject.
+	 *
+	 * A per-subject extract goes to that subject, so a list entry must not
+	 * carry the other subjects in the list, the objects it covered or the
+	 * query, which can name other people. The count stays.
+	 *
+	 * @param ProcessingLogEntry $entry   The entry as read.
+	 * @param string             $idType  Subject identifier type.
+	 * @param string             $idValue Subject identifier value.
+	 *
+	 * @return void
+	 */
+	private function narrowToSubject(ProcessingLogEntry $entry, string $idType, string $idValue): void {
+		if ($entry->getSubjectIds() === null) {
+			return;
+		}
+
+		$entry->setSubjectIdType($idType);
+		$entry->setSubjectIdValue($idValue);
+		$entry->setSubjectIds([['type' => $idType, 'value' => $idValue]]);
+		$entry->setObjectUuids(null);
+		$entry->setQueryParams(null);
+	}//end narrowToSubject()
 
 	/**
 	 * Find entries by an arbitrary filter set (FG inquiry / VNG API).

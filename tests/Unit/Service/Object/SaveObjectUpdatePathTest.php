@@ -33,12 +33,15 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Stringable;
 
 /**
@@ -61,6 +64,7 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
+ * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  */
 final class SaveObjectUpdatePathTest extends TestCase {
@@ -69,6 +73,14 @@ final class SaveObjectUpdatePathTest extends TestCase {
 
 	/** @var list<mixed> */
 	private array $trace = [];
+
+	/** @var array<string, bool> Whether each audited object was marked at the moment its row was built. */
+	private array $auditedMarks = [];
+
+	protected function tearDown(): void {
+		WriteCause::reset();
+		parent::tearDown();
+	}
 
 	/**
 	 * The cases.
@@ -105,6 +117,85 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		foreach ($expected as $name => $outcome) {
 			$this->assertSame($outcome, $actual[$name], $name);
 		}
+	}
+
+	/**
+	 * A nested object is saved and audited before its parent, with no uuid of
+	 * the parent known yet. Only the save that carried the mark notes it, for
+	 * the uuid it wrote.
+	 */
+	public function testACreateMarksTheRowOfItsOwnObjectAndNotOfOneSavedBeforeIt(): void {
+		[$register, $schema] = $this->target();
+		$handler = $this->handler(case: [], logger: new NullLogger());
+
+		$nested = $handler->saveObject(register: $register, schema: $schema, data: ['title' => 'nested']);
+		$created = $handler->saveObject(
+			register: $register,
+			schema: $schema,
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+		);
+
+		$this->assertNotSame($nested->getUuid(), $created->getUuid());
+		$this->assertSame(
+			[$nested->getUuid() => false, $created->getUuid() => true],
+			$this->auditedMarks
+		);
+	}
+
+	public function testTheMarkIsNotStoredOnTheObject(): void {
+		[$register, $schema] = $this->target();
+
+		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
+			register: $register,
+			schema: $schema,
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+		);
+
+		$this->assertArrayNotHasKey(WriteCause::CLIENT_ATTEMPT_KEY, $created->getObject());
+	}
+
+	public function testOnlyTheBooleanTheDoorSetsCounts(): void {
+		[$register, $schema] = $this->target();
+
+		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
+			register: $register,
+			schema: $schema,
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => 'true']]
+		);
+
+		$this->assertFalse(WriteCause::clientAttemptedFor(objectUuid: (string)$created->getUuid()));
+	}
+
+	/**
+	 * A POST whose identifier is taken updates that object: the mark goes to it.
+	 */
+	public function testASaveThatLandsOnAStoredObjectMarksThatObject(): void {
+		[$register, $schema] = $this->target();
+
+		$this->handler(case: [], logger: new NullLogger())->saveObject(
+			register: $register,
+			schema: $schema,
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			uuid: self::UUID
+		);
+
+		$this->assertSame([self::UUID => true], $this->auditedMarks);
+	}
+
+	/**
+	 * The register and schema every case writes to.
+	 *
+	 * @return array{0: Register, 1: Schema}
+	 */
+	private function target(): array {
+		$register = new Register();
+		$register->setId(3);
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setSlug('things');
+		$schema->setProperties(['title' => ['type' => 'string']]);
+
+		return [$register, $schema];
 	}
 
 	/**
@@ -165,7 +256,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 	/**
 	 * The handler with tracing doubles.
 	 */
-	private function handler(array $case, AbstractLogger $logger): SaveObject {
+	private function handler(array $case, LoggerInterface $logger): SaveObject {
 		$stored = new ObjectEntity();
 		$stored->setId(11);
 		$stored->setUuid(self::UUID);
@@ -222,6 +313,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$audit = $this->createMock(AuditTrailMapper::class);
 		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
 			$this->trace[] = ['audit', $old?->getUuid(), $new?->getUuid(), $action];
+			$uuid = (string)($new?->getUuid() ?? $old?->getUuid());
+			$this->auditedMarks[$uuid] = WriteCause::clientAttemptedFor(objectUuid: $uuid);
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
