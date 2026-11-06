@@ -73,6 +73,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectsRouteScope
  * @covers \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator
  * @uses   \OCA\OpenRegister\Service\Rbac\AnonymousEnvelope
  * @uses \OCA\OpenRegister\Controller\Support\ObjectRequestParams
