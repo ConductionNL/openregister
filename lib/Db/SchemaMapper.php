@@ -27,12 +27,12 @@ use Closure;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
@@ -53,14 +53,8 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
-use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -86,7 +80,6 @@ use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
-use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -1173,6 +1166,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 */
 	private function cleanObject(Schema $schema): void {
+		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
 		$this->cleanRefProperties(schema: $schema);
 		$this->ensureSchemaIdentifiers(schema: $schema);
 		$this->validateConfigurationFields(schema: $schema);
@@ -1181,19 +1175,19 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->validateLifecycleAnnotation(schema: $schema);
 		$this->validateMacroActions(schema: $schema);
 		$this->validateMdtoMappingAnnotation(schema: $schema);
-		$this->validateAggregationsAnnotation(schema: $schema);
+		$advisory->checkAggregations(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
 		$this->validateConsentAnnotation(schema: $schema);
 		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateDependentValueTables(schema: $schema);
-		$this->validateQualityAnnotation(schema: $schema);
-		$this->validateDedupAnnotation(schema: $schema);
+		$advisory->checkQuality(schema: $schema);
+		$advisory->checkDedup(schema: $schema);
 		$this->validateUniqueHintAnnotation(schema: $schema);
-		$this->validateHingeAnnotations(schema: $schema);
-		$this->validateSurvivorshipAnnotation(schema: $schema);
-		$this->validateMergeAnnotation(schema: $schema);
-		$this->validatePartyAnnotation(schema: $schema);
-		$this->validateNotificationsAnnotation(schema: $schema);
+		$advisory->checkHinge(schema: $schema);
+		$advisory->checkSurvivorship(schema: $schema);
+		$advisory->checkMerge(schema: $schema);
+		$advisory->checkParty(schema: $schema);
+		$advisory->checkNotifications(schema: $schema);
 		$this->validateWidgetsAnnotation(schema: $schema);
 		$this->validateArchivalAnnotation(schema: $schema);
 		$this->validateHandoffAnnotation(schema: $schema);
@@ -1568,43 +1562,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			'Invalid ' . ElementMappingValidator::ANNOTATION_KEY . ' declaration: ' . implode(' ', $details)
 		);
 	}//end validateMdtoMappingAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-aggregations` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateAggregationsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-aggregations'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-aggregations' => $annotation,
-		];
-
-		$errors = (new AggregationAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Aggregations are ADVISORY report-metadata, not a storage requirement.
-		// A malformed / empty / non-canonical aggregation block must not abort the
-		// whole schema import — the schema still stores objects, the aggregation
-		// simply won't be runnable. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-aggregations annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (aggregation not registered): ' . implode(' ', $messages)
-		);
-	}//end validateAggregationsAnnotation()
 
 	/**
 	 * Validate declared calculations, from the annotation and from the properties.
@@ -1987,127 +1944,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end validateExtendingFormAnnotation()
 
 	/**
-	 * Validate the optional `x-openregister-quality` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateQualityAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-quality'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-quality' => $annotation,
-		];
-
-		$errors = (new QualityAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Quality scoring is ADVISORY derived-field metadata, not a storage
-		// requirement. A malformed quality block must not abort the whole schema
-		// import — the schema still stores objects, the score simply won't be
-		// materialised. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-quality annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (quality score not materialised): ' . implode(' ', $messages)
-		);
-	}//end validateQualityAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-dedup` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateDedupAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-dedup'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-dedup' => $annotation,
-		];
-
-		$errors = (new DedupAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Dedup match rules are ADVISORY metadata consumed on demand by
-		// DuplicateDetectionService. A malformed block must not abort the schema
-		// import — duplicate detection simply falls back to caller-supplied rules.
-		// Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-dedup annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (declared match rules not used): ' . implode(' ', $messages)
-		);
-	}//end validateDedupAnnotation()
-
-	/**
-	 * Validate the lens, list and geographic-inheritance annotations.
-	 *
-	 * All three are declarative reading instructions, not storage requirements:
-	 * a malformed one costs a surface, never an object. So this degrades to a
-	 * warning rather than aborting the import — but it does warn, because the
-	 * failure mode without it is a lens that renders empty forever and reads
-	 * exactly like a field nobody filled in.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/linked-entity-types/spec.md
-	 */
-	private function validateHingeAnnotations(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-		];
-
-		$declared = false;
-		foreach ([Schema::LENS_ANNOTATION, Schema::LIST_ANNOTATION, Schema::GEO_INHERITANCE_ANNOTATION] as $key) {
-			if (isset($configuration[$key]) === false) {
-				continue;
-			}
-
-			$shape[$key] = $configuration[$key];
-			$declared = true;
-		}
-
-		if ($declared === false) {
-			return;
-		}
-
-		$errors = (new HingeAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'Hinge annotations on schema "' . ((string)($schema->getSlug() ?? '')) . '" are '
-			. 'invalid and were ignored: ' . implode(' ', $messages)
-		);
-	}//end validateHingeAnnotations()
-
-	/**
 	 * Validate the optional `x-openregister-unique-hint` annotation.
 	 *
-	 * FATAL, unlike {@see validateDedupAnnotation()} one method above, which
+	 * FATAL, unlike {@see AdvisoryAnnotationChecks::checkDedup()}, which
 	 * degrades a malformed block to a logged warning. The difference is the
 	 * cost of being wrong. A malformed dedup block costs a duplicate sweep you
 	 * can re-run; a nomination of a property that does not exist costs a
@@ -2147,156 +1986,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			errors: $errors
 		);
 	}//end validateUniqueHintAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-survivorship` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateSurvivorshipAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-survivorship'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-survivorship' => $annotation,
-		];
-
-		$errors = (new SurvivorshipAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Survivorship is ADVISORY derived-field metadata, not a storage
-		// requirement. A malformed survivorship block must not abort the whole
-		// schema import — the schema still stores objects, the golden record
-		// simply won't be materialised. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-survivorship annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (golden record not materialised): ' . implode(' ', $messages)
-		);
-	}//end validateSurvivorshipAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-merge` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 */
-	private function validateMergeAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-merge'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-merge' => $annotation,
-		];
-
-		$errors = (new MergeAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// Merge config is ADVISORY steward-action metadata, not a storage
-		// requirement. A malformed merge block must not abort the whole schema
-		// import — the schema still stores objects, merges simply fall back to
-		// the documented defaults. Degrade to a non-fatal warning.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-merge annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (merge falls back to defaults): ' . implode(' ', $messages)
-		);
-	}//end validateMergeAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-party` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
-	 */
-	private function validatePartyAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-party'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-party' => $annotation,
-		];
-
-		$errors = (new PartyAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// A party declaration is ADVISORY metadata on top of a schema that
-		// stores objects perfectly well without it, so a malformed block must
-		// not abort the import. It is warned about rather than dropped: the
-		// failure a dropped declaration causes is a party schema that reads as
-		// an ordinary one, and the operator needs the field name to fix it.
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		$this->logger->warning(
-			'x-openregister-party annotation on schema "' . ((string)($schema->getSlug() ?? '')) . '" is '
-			. 'invalid and was ignored (the schema is not treated as a party schema): ' . implode(' ', $messages)
-		);
-	}//end validatePartyAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-notifications` annotation.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateNotificationsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-notifications'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-notifications' => $annotation,
-		];
-
-		$errors = (new NotificationAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-
-		// A malformed OPTIONAL notification annotation must NOT block the schema
-		// itself — and, on config import, the entire register + every schema
-		// that references it (the import aborts and 0 objects land). The runtime
-		// dispatcher only fires notifications whose trigger matches a known
-		// event, so an invalid/legacy notification spec (e.g. the older
-		// `onCreate`/`onStatusChange` shape without a trigger.type) is simply
-		// inert. Log a warning so it can be cleaned up, but keep the schema
-		// valid and importable.
-		$this->logger->warning(
-			'Schema "' . $schema->getSlug() . '" has invalid x-openregister-notifications (ignored at runtime, fix to enable): ' . implode(' ', $messages),
-			['schema' => $schema->getSlug()]
-		);
-	}//end validateNotificationsAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-widgets` annotation.
