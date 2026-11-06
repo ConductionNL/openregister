@@ -80,7 +80,6 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class UnknownMetadataConditionFailsClosedTest extends TestCase {
 

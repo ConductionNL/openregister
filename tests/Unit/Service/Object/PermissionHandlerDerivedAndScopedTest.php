@@ -65,7 +65,6 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerDerivedAndScopedTest extends TestCase {
 

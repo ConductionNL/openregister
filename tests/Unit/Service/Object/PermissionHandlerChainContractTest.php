@@ -70,7 +70,6 @@ use Stringable;
  * @uses   \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses   \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerChainContractTest extends TestCase {
 

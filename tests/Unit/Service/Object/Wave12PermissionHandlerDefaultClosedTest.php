@@ -51,7 +51,6 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 

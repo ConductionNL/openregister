@@ -59,7 +59,6 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class PermissionHandlerRecordOrganisationTest extends TestCase {
 

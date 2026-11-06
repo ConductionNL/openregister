@@ -107,7 +107,6 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
- * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
  */
 class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 
