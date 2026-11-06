@@ -446,124 +446,6 @@ class SearchQueryHandler {
 	}//end schemaDeclaresFilterProperty()
 
 	/**
-	 * Resolve a register or schema reference for the query being built.
-	 *
-	 * Delegates to {@see SearchReferenceResolver} when the container wired one.
-	 * Without it — a handler built positionally in a unit test — the reference
-	 * is still never int-cast into an empty page: what can be read as an id is
-	 * read as one, what says nothing becomes `null` (which reaches the global
-	 * fallbacks), and everything else is refused by name. That is the whole
-	 * point of openregister#3990: a reference nobody can resolve must not look
-	 * like a register with no objects in it.
-	 *
-	 * @param int|string|array|null $reference The register/schema id, uuid, slug, or a list.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return int|array|null The numeric id(s), or null when the reference says nothing.
-	 *
-	 * @psalm-return int|array<int, int>|null
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function resolveReference(int|string|array|null $reference, string $kind): int|array|null {
-		if ($reference === null) {
-			return null;
-		}
-
-		if ($this->referenceResolver !== null) {
-			if ($kind === 'register') {
-				return $this->referenceResolver->register(reference: $reference);
-			}
-
-			return $this->referenceResolver->schema(reference: $reference);
-		}
-
-		if (is_array($reference) === true) {
-			return $this->readReferenceList(references: $reference, kind: $kind);
-		}
-
-		return $this->readReference(reference: $reference, kind: $kind);
-	}//end resolveReference()
-
-	/**
-	 * Read a list of references without a resolver.
-	 *
-	 * @param array<int|string, mixed> $references The references.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return array<int, int> The ids the list names.
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function readReferenceList(array $references, string $kind): array {
-		$ids = [];
-		foreach ($references as $item) {
-			if (is_int($item) === false && is_string($item) === false) {
-				continue;
-			}
-
-			$id = $this->readReference(reference: $item, kind: $kind);
-			if ($id !== null) {
-				$ids[] = $id;
-			}
-		}
-
-		return $ids;
-	}//end readReferenceList()
-
-	/**
-	 * Read one reference without a resolver.
-	 *
-	 * Only what can be read as an id is read as one. Nothing is int-cast into
-	 * an empty page, and nothing is resolved either, because there is no mapper
-	 * here to ask.
-	 *
-	 * @param int|string $reference The id, uuid or slug.
-	 * @param string $kind Either `register` or `schema`.
-	 *
-	 * @return int|null The id, or null when the reference says nothing.
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When a register reference names no register.
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When a schema reference names no schema.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function readReference(int|string $reference, string $kind): ?int {
-		$trimmed = trim((string)$reference);
-		if ($trimmed === '') {
-			return null;
-		}
-
-		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
-			return (int)$trimmed;
-		}
-
-		throw $this->unreadableReference(reference: $trimmed, kind: $kind);
-	}//end readReference()
-
-	/**
-	 * The refusal of a reference this handler cannot read.
-	 *
-	 * @param string $reference The trimmed reference.
-	 * @param string $kind      Either `register` or `schema`.
-	 *
-	 * @return RegisterNotFoundException|SchemaNotFoundException The refusal.
-	 */
-	private function unreadableReference(string $reference, string $kind): RegisterNotFoundException|SchemaNotFoundException {
-		if ($kind === 'register') {
-			return new RegisterNotFoundException(registerSlugOrId: $reference);
-		}
-
-		return new SchemaNotFoundException(schemaSlugOrId: $reference);
-	}//end unreadableReference()
-
-	/**
 	 * Build search query from request parameters
 	 *
 	 * Converts HTTP request parameters into a structured query array for searchObjectsPaginated.
@@ -588,7 +470,7 @@ class SearchQueryHandler {
 		?array $ids = null,
 	): array {
 		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
-		$parts = $this->splitSearchParams(params: $params, self: $this->scopeFilters(register: $register, schema: $schema));
+		$parts = $this->splitSearchParams(params: $params, self: (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema));
 		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
 
 		if ($ids !== null) {
@@ -739,38 +621,6 @@ class SearchQueryHandler {
 
 		return $params;
 	}//end filterableParams()
-
-	/**
-	 * The `@self` register and schema filters of the call, single values or lists.
-	 *
-	 * A reference is resolved the way the write path resolves it, and refused the way the write
-	 * path refuses it; an int cast turned a slug into register 0 and an empty page
-	 * (openregister#3990).
-	 *
-	 * @param int|string|array|null $register The register reference.
-	 * @param int|string|array|null $schema   The schema reference.
-	 *
-	 * @return array<string, mixed> The `@self` filters.
-	 *
-	 * @throws RegisterNotFoundException When the register reference cannot be read.
-	 * @throws SchemaNotFoundException When the schema reference cannot be read.
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 */
-	private function scopeFilters(int|string|array|null $register, int|string|array|null $schema): array {
-		$self = [];
-		$registerId = $this->resolveReference(reference: $register, kind: 'register');
-		if ($registerId !== null) {
-			$self['register'] = $registerId;
-		}
-
-		$schemaId = $this->resolveReference(reference: $schema, kind: 'schema');
-		if ($schemaId !== null) {
-			$self['schema'] = $schemaId;
-		}
-
-		return $self;
-	}//end scopeFilters()
 
 	/**
 	 * Sort the parameters into `@self` metadata filters, underscore parameters and object field filters.

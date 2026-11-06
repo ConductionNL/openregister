@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Service\Object\DottedParamTree
  * @uses   \OCA\OpenRegister\Service\Object\SearchQueryParts
+ * @uses \OCA\OpenRegister\Service\Object\SearchScopeFilters
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
