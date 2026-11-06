@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller\Support;
 
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;

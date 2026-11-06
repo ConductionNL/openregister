@@ -4,7 +4,7 @@
  * DocumentProcessingHandlerLocalizationTest
  *
  * Unit tests for the placeholder TYPE-label localisation in
- * {@see \OCA\OpenRegister\Service\File\DocumentProcessingHandler}
+ * {@see \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler}
  * (anonymisation-placeholder-id-scope, Decision 6): known entity types are
  * translated to the acting user's language, unknown types fall back to the
  * raw label, and a null IL10N leaves the English label untouched.
@@ -26,10 +26,10 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\IRootFolder;
 use OCP\IL10N;
 use OCP\IUserSession;

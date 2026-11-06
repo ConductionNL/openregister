@@ -49,7 +49,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;

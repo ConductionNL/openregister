@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File\Pdf;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 

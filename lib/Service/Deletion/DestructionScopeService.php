@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use Psr\Log\LoggerInterface;

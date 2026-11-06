@@ -27,13 +27,13 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\ManualEntityResult;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -122,9 +122,9 @@ class FileTextController extends Controller {
 	/**
 	 * The object read rule for an object's file.
 	 *
-	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 * @var ?\OCA\OpenRegister\Files\Service\File\FileReadScope
 	 */
-	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+	private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope;
 
 	/**
 	 * Constructor

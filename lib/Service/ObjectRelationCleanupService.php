@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service;
 
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Files\Service\NoteService;
 
 /**
  * Cleans up every Nextcloud-entity relation belonging to a deleted object.

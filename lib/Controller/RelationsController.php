@@ -28,7 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCP\AppFramework\Controller;

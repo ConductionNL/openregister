@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;

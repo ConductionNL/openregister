@@ -9,7 +9,7 @@ use OCA\OpenRegister\Controller\ConfigurationsController;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;

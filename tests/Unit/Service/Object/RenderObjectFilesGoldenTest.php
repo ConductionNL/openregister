@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCP\SystemTag\ISystemTag;

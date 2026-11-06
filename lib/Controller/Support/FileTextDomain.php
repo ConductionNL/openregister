@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\File\FileReadScope;
-use OCA\OpenRegister\Service\File\ManualEntityService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 
 /**
  * The domain services of the file text API.

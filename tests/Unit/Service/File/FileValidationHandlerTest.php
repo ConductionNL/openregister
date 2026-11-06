@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;

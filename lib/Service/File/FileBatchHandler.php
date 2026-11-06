@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 
 /**
  * Handles batch file operations.

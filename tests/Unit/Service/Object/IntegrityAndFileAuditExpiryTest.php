@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\AuditRetentionResolver;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -59,7 +59,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
- * @covers \OCA\OpenRegister\Service\File\FileAuditHandler
+ * @covers \OCA\OpenRegister\Files\Service\File\FileAuditHandler
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity

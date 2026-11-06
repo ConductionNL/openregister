@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCP\Files\Node;
 use OCP\Files\NotPermittedException;
 use OCP\IUser;

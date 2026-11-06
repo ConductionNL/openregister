@@ -24,7 +24,7 @@
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -87,9 +87,9 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface {
 	 *
 	 * @param array $options Options: max_files, file_types
 	 *
-	 * @return \OCA\OpenRegister\Db\Chunk[]
+	 * @return \OCA\OpenRegister\Files\Db\Chunk[]
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+	 * @psalm-return list<\OCA\OpenRegister\Files\Db\Chunk>
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */

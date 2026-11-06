@@ -11,7 +11,7 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\DB\IPreparedStatement;

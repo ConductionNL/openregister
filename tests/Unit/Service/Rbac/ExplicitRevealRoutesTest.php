@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -44,7 +44,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\ExportService
  * @uses \OCA\OpenRegister\Db\StoredEntity
- * @covers \OCA\OpenRegister\Service\Sharing\AccessLinkReader
+ * @covers \OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema

@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 
 /**

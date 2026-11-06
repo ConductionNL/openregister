@@ -10,7 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;

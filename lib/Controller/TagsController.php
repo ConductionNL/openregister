@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;

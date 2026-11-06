@@ -50,7 +50,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;

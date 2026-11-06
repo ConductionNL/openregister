@@ -53,29 +53,29 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Files\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
@@ -1308,7 +1308,7 @@ class FileService {
 	 * @param string|null   $category    New category; '' clears, null skips.
 	 * @param string[]|null $labels      New labels; [] clears, null skips.
 	 *
-	 * @return \OCA\OpenRegister\Db\File The persisted metadata row.
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -1317,7 +1317,7 @@ class FileService {
 		?string $description = null,
 		?string $category = null,
 		?array $labels = null,
-	): \OCA\OpenRegister\Db\File {
+	): \OCA\OpenRegister\Files\Db\File {
 		return $this->updateFileHandler->updateFileMetadata(
 			fileId: $fileId,
 			description: $description,

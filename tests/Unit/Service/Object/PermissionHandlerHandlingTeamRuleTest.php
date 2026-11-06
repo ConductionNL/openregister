@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OperatorEvaluator;
@@ -55,7 +55,7 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
- * @covers \OCA\OpenRegister\Service\File\ObjectFileAccess
+ * @covers \OCA\OpenRegister\Files\Service\File\ObjectFileAccess
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  * @uses \OCA\OpenRegister\Db\ObjectEntity
