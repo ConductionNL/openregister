@@ -33,9 +33,10 @@ class ReservedColumnNamesTest extends TestCase {
 	/**
 	 * Reserved words already used as a column name before this test existed.
 	 *
-	 * Doctrine has each of them in its MariaDB and MySQL keyword lists, so it
-	 * quotes them and the migrations run. Renaming them would touch released
-	 * tables for no failure; a new column takes a name that is not reserved.
+	 * Doctrine quotes each of them on every engine where it is reserved
+	 * (`groups` is reserved on MySQL 8 only, `offset` on MariaDB only), so
+	 * the migrations run. Renaming them would touch released tables for no
+	 * failure; a new column takes a name that is not reserved.
 	 */
 	private const ALREADY_IN_USE = ['cursor', 'groups', 'limit', 'offset', 'schema', 'schemas', 'trigger'];
 
