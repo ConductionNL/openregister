@@ -51,6 +51,11 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceStrictness
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferenceValidator
+ * @uses   \OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
