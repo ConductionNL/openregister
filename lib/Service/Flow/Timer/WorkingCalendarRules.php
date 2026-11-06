@@ -89,7 +89,12 @@ final class WorkingCalendarRules {
 		$kind = (string)($rule['kind'] ?? '');
 		if (is_array($rule) === false || in_array($kind, WorkingCalendar::RULE_KINDS, true) === false) {
 			throw new FlowTimerValidationException(
-				message: sprintf("Working calendar '%s' has a rule of unknown kind '%s'; known kinds: %s.", $this->slug, $kind, implode(', ', WorkingCalendar::RULE_KINDS))
+				message: sprintf(
+					"Working calendar '%s' has a rule of unknown kind '%s'; known kinds: %s.",
+					$this->slug,
+					$kind,
+					implode(', ', WorkingCalendar::RULE_KINDS)
+				)
 			);
 		}
 

@@ -360,7 +360,9 @@ final class WorkingCalendarDefinition {
 
 		$zone = trim($value);
 		if (in_array($zone, DateTimeZone::listIdentifiers(), true) === false) {
-			throw new FlowTimerValidationException(message: sprintf("Working calendar '%s' declares timezone '%s', which is not an IANA zone name.", $this->slug, $zone));
+			throw new FlowTimerValidationException(
+				message: sprintf("Working calendar '%s' declares timezone '%s', which is not an IANA zone name.", $this->slug, $zone)
+			);
 		}
 
 		return $zone;
