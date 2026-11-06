@@ -197,15 +197,42 @@ final class ListAggregations {
 	 * @return array<string, mixed> The GroupBucket.
 	 */
 	private function bucket(array $bucket): array {
-		$key = ($bucket['key'] ?? null);
-		$value = ($bucket['value'] ?? null);
-
 		return [
-			'key' => $key === null ? null : (string)$key,
-			'value' => $value === null ? null : (float)$value,
+			'key' => $this->bucketKey(bucket: $bucket),
+			'value' => $this->bucketValue(bucket: $bucket),
 			'keys' => ($bucket['keys'] ?? null),
 			'values' => ($bucket['values'] ?? null),
 			'joined' => ($bucket['joined'] ?? null),
 		];
 	}//end bucket()
+
+	/**
+	 * The key of a bucket as a string, or null.
+	 *
+	 * @param array<string, mixed> $bucket The engine bucket.
+	 *
+	 * @return string|null The key.
+	 */
+	private function bucketKey(array $bucket): ?string {
+		if (isset($bucket['key']) === false) {
+			return null;
+		}
+
+		return (string)$bucket['key'];
+	}//end bucketKey()
+
+	/**
+	 * The value of a bucket as a float, or null.
+	 *
+	 * @param array<string, mixed> $bucket The engine bucket.
+	 *
+	 * @return float|null The value.
+	 */
+	private function bucketValue(array $bucket): ?float {
+		if (isset($bucket['value']) === false) {
+			return null;
+		}
+
+		return (float)$bucket['value'];
+	}//end bucketValue()
 }//end class
