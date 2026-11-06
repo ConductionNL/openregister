@@ -18,7 +18,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +26,6 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList
  * @covers \OCA\OpenRegister\Support\FleetAppId
- * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
  */
 class ScheduleActionAllowListTest extends TestCase {
 	private ScheduleActionAllowList $allowList;
@@ -115,54 +113,4 @@ class ScheduleActionAllowListTest extends TestCase {
 		$this->assertNull($this->allowList->resolve('OCA\\Evil\\Backdoor'));
 		$this->assertFalse($this->allowList->isAllowed('OCA\\OpenConnector\\Action\\SynchronizationAction'));
 	}
-
-	/**
-	 * A schedule with this action and these arguments.
-	 *
-	 * @param string $action The action type.
-	 * @param array<string, mixed> $arguments The arguments.
-	 *
-	 * @return ScheduleDescriptor The schedule.
-	 */
-	private function scheduleOf(string $action, array $arguments): ScheduleDescriptor {
-		return new ScheduleDescriptor('s', null, '0 6 * * *', $action, $arguments);
-	}
-
-	public function testSynchronizationCompilesToItsFlowNodeFromWhatBuildiqEmits(): void {
-		$this->assertSame(
-			['type' => 'openconnector.synchronization-run', 'config' => ['synchronization' => 'sync-1']],
-			$this->allowList->flowNode(
-				$this->scheduleOf('openconnector:synchronization', ['synchronizationId' => 'sync-1'])
-			)
-		);
-	}
-
-	public function testAnActionOffTheMapHasNoNode(): void {
-		$this->assertNull(
-			$this->allowList->flowNode($this->scheduleOf('OCA\\Evil\\Backdoor', ['synchronizationId' => 'x']))
-		);
-	}
-
-	/**
-	 * @dataProvider missingArguments
-	 */
-	public function testAMissingArgumentHasNoNode(array $arguments): void {
-		$this->assertNull(
-			$this->allowList->flowNode($this->scheduleOf('openconnector:synchronization', $arguments))
-		);
-	}
-
-	/**
-	 * Argument bags that name no synchronization.
-	 *
-	 * @return array<string, array{0: array<string, mixed>}>
-	 */
-	public static function missingArguments(): array {
-		return [
-			'absent' => [[]],
-			'blank' => [['synchronizationId' => '  ']],
-			'not a string' => [['synchronizationId' => ['x']]],
-			'the old name' => [['synchronization' => 'sync-1']],
-		];
-	}
-}
+}//end class

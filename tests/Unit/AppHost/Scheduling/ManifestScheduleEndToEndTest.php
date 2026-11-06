@@ -38,7 +38,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @covers \OCA\OpenRegister\Db\Flow
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\IntervalCron
- * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleActionAllowList
+ * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleActionNodes
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest
  * @uses   \OCA\OpenRegister\Db\AuditTrail

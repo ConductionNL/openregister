@@ -68,7 +68,7 @@ A loose mapping would change how often work runs without anyone asking. A cron s
 
 ### D-7: Actions stay a closed map
 
-`ScheduleActionAllowList` maps an action to a flow node instead of a job class. `openconnector:synchronization` becomes `openconnector.synchronization-run` with `config.synchronization` = `arguments.synchronizationId`, the name buildiq writes. The spec's older `arguments.synchronization` is aligned to it. The compiled graph is trigger, step, `openregister.end`.
+`ScheduleActionNodes` maps an action to a flow node; `ScheduleActionAllowList`, which mapped to a job class, goes with the reconciler. `openconnector:synchronization` becomes `openconnector.synchronization-run` with `config.synchronization` = `arguments.synchronizationId`, the name buildiq writes. The spec's older `arguments.synchronization` is aligned to it. The compiled graph is trigger, step, `openregister.end`.
 
 ## Not in this change
 
