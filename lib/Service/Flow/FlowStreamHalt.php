@@ -79,4 +79,17 @@ final class FlowStreamHalt {
 	public function reason(): ?string {
 		return $this->reason;
 	}//end reason()
+
+	/**
+	 * What the pass releases for this halt.
+	 *
+	 * @param string $owner The pass token.
+	 *
+	 * @return FlowStreamRelease The release.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	public function releaseFor(string $owner): FlowStreamRelease {
+		return new FlowStreamRelease(claimedPlaces: $this->claimed, owner: $owner, enabled: $this->enabled);
+	}//end releaseFor()
 }//end class

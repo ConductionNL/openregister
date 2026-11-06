@@ -1943,17 +1943,6 @@ class ImportService implements ObjectImporterInterface {
 			return $this->transformDateTimeValue(value: $value);
 		}
 
-		// Transform organisation property - ensure it's a valid UUID.
-		if ($propertyName === 'organisation') {
-			// Validate UUID format.
-			if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
-				return $value;
-			}
-
-			// If not a valid UUID, return as-is (might be a slug that needs resolution).
-			return $value;
-		}
-
 		// Return original value for other properties.
 		return $value;
 	}//end transformSelfProperty()

@@ -52,6 +52,8 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	public array $listCalled = [];
 	public array $getCalled = [];
 	public array $createCalled = [];
+	public array $updateCalled = [];
+	public array $deleteCalled = [];
 
 	public function __construct(
 		private string $id = 'stub',
@@ -114,8 +116,13 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	}//end create()
 
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		// no-op
+		$this->deleteCalled = compact('register', 'schema', 'objectId', 'entityId');
 	}//end delete()
+
+	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+		$this->updateCalled = compact('register', 'schema', 'objectId', 'entityId', 'payload');
+		return ['id' => $entityId];
+	}//end update()
 
 }//end class
 
@@ -124,11 +131,15 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
  */
 class ObjectIntegrationsControllerTest extends TestCase {
 
+	/** @var array<int, string> The actions the permission handler was asked about. */
+	private array $askedActions = [];
+
 	private function buildController(
 		IntegrationRegistry $registry,
 		?IRequest $request = null,
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
 		?\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility = null,
+		?\OCA\OpenRegister\Service\Object\PermissionHandler $permissions = null,
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
@@ -138,9 +149,28 @@ class ObjectIntegrationsControllerTest extends TestCase {
 			logger: new NullLogger(),
 			objectService: $objectService ?? $this->accessibleObjectService(),
 			schemaMapper: $this->createMock(SchemaMapper::class),
-			visibility: $visibility ?? $this->passThroughVisibility()
+			visibility: $visibility ?? $this->passThroughVisibility(),
+			permissions: $permissions ?? $this->permissions(mayUpdate: true)
 		);
 	}//end buildController()
+
+	/**
+	 * A permission handler that answers the `update` right with $mayUpdate and records the actions asked.
+	 *
+	 * @param bool $mayUpdate The answer for `update`.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\PermissionHandler
+	 */
+	private function permissions(bool $mayUpdate): \OCA\OpenRegister\Service\Object\PermissionHandler {
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (\OCA\OpenRegister\Db\Schema $schema, string $action) use ($mayUpdate): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $mayUpdate : true;
+			}
+		);
+		return $permissions;
+	}//end permissions()
 
 	/**
 	 * A visibility service that lets every row through, for the dispatch tests
@@ -160,8 +190,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 */
 	private function accessibleObjectService(): \OCA\OpenRegister\Service\ObjectService {
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectService->method('getObject')
-			->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('o-uuid');
+		$objectService->method('getObject')->willReturn($object);
+		$objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		return $objectService;
 	}//end accessibleObjectService()
 
@@ -370,6 +402,20 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	public function testAnItemOfAnotherObjectAnswers404(): void {
+		$provider = new class('stub') extends _ControllerStubProvider {
+			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+				throw new \Exception('Note not found', 404);
+			}
+		};
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider($provider);
+
+		$response = $this->buildController($registry)->destroy('r', 's', 'o', 'stub', 'entity-id');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAnItemOfAnotherObjectAnswers404()
+
 	public function testDestroyReturns204(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(new _ControllerStubProvider('stub'));
@@ -378,6 +424,89 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$response = $controller->destroy('r', 's', 'o', 'stub', 'entity-id');
 		$this->assertSame(Http::STATUS_NO_CONTENT, $response->getStatus());
 	}//end testDestroyReturns204()
+
+	public function testWritesNeedTheObjectUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$request = $this->buildRequest(['title' => 'X']);
+		$controller = $this->buildController(registry: $registry, request: $request, permissions: $this->permissions(mayUpdate: false));
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->create('r', 's', 'o', 'stub')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->update('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame([], $stub->createCalled);
+		$this->assertSame([], $stub->updateCalled);
+		$this->assertSame([], $stub->deleteCalled);
+		$this->assertSame(['update', 'update', 'update'], $this->askedActions, 'the right asked is update, not read');
+	}//end testWritesNeedTheObjectUpdateRight()
+
+	public function testWritesProceedWithTheObjectUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$this->assertSame(Http::STATUS_OK, $controller->update('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame(Http::STATUS_NO_CONTENT, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame('e', $stub->deleteCalled['entityId']);
+	}//end testWritesProceedWithTheObjectUpdateRight()
+
+	public function testReadsNeedNoUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+		$controller = $this->buildController(registry: $registry, permissions: $this->permissions(mayUpdate: false));
+
+		$this->assertSame(Http::STATUS_OK, $controller->show('r', 's', 'o', 'stub', 'e')->getStatus());
+	}//end testReadsNeedNoUpdateRight()
+
+	public function testProvidersReceiveTheResolvedUuidNotTheRouteId(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$controller->index('r', 's', 'my-slug', 'stub');
+		$controller->update('r', 's', 'my-slug', 'stub', 'e');
+		$controller->destroy('r', 's', 'my-slug', 'stub', 'e');
+
+		$this->assertSame('o-uuid', $stub->listCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->updateCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->deleteCalled['objectId']);
+	}//end testProvidersReceiveTheResolvedUuidNotTheRouteId()
+
+	public function testALinkOfAnotherObjectAnswers404Not500(): void {
+		$contacts = $this->createMock(\OCA\OpenRegister\Service\ContactService::class);
+		$contacts->expects($this->once())
+			->method('unlinkContact')
+			->with(77, 'o-uuid')
+			->willThrowException(new \Exception('Contact link not found', 404));
+		$contacts->method('updateRole')->willThrowException(new \Exception('Contact link not found', 404));
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(
+			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
+				$contacts,
+				$this->createMock(\OCP\App\IAppManager::class),
+				$this->createMock(\OCP\IL10N::class)
+			)
+		);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->update('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+	}//end testALinkOfAnotherObjectAnswers404Not500()
+
+	public function testAnObjectWithoutAUuidIsNotFound(): void {
+		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, objectService: $objectService);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame([], $stub->deleteCalled);
+	}//end testAnObjectWithoutAUuidIsNotFound()
 
 	public function testUnknownIntegrationReturns404(): void {
 		$registry = new IntegrationRegistry(new NullLogger());

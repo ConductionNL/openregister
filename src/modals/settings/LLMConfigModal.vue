@@ -607,288 +607,28 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import SettingsSaveActions from './SettingsSaveActions.vue'
+import {
+	AI_FEATURES,
+	CHAT_PROVIDERS,
+	EMBEDDING_PROVIDERS,
+	FIREWORKS_CHAT_MODELS,
+	FIREWORKS_EMBEDDING_MODELS,
+	OLLAMA_MODELS,
+	OPENAI_CHAT_MODELS,
+	OPENAI_EMBEDDING_MODELS,
+} from './llmOptions.js'
+import {
+	applyLlmSettings,
+	canTest,
+	CONNECTION_TESTS,
+	failureText,
+	FALLBACK_BACKEND,
+	llmSettingsToSave,
+	testConfig,
+	usesOllama,
+	vectorBackends,
+} from './llmSettings.js'
 import { freshState } from '../../services/initialState.js'
-
-/**
- * The OpenAI form values of stored OpenAI settings.
- *
- * @param {object} config The stored OpenAI settings.
- * @return {object} The form values.
- */
-function openaiFormConfig(config) {
-	return {
-		apiKey: config.apiKey || '',
-		model: config.model || null,
-		chatModel: config.chatModel || null,
-		organizationId: config.organizationId || '',
-	}
-}
-
-/**
- * The Ollama form values of stored Ollama settings.
- *
- * @param {object} config The stored Ollama settings.
- * @return {object} The form values.
- */
-function ollamaFormConfig(config) {
-	return {
-		url: config.url || 'http://localhost:11434',
-		model: config.model || null,
-		chatModel: config.chatModel || null,
-	}
-}
-
-/**
- * The Fireworks form values of stored Fireworks settings, with the models
- * swapped for their dropdown options when the dropdowns have them.
- *
- * @param {object} vm The LLM configuration modal.
- * @param {object} config The stored Fireworks settings.
- * @return {object} The form values.
- */
-function fireworksFormConfig(vm, config) {
-	return {
-		apiKey: config.apiKey || '',
-		embeddingModel:
-			modelOption(vm.fireworksEmbeddingModelOptions, config.embeddingModel)
-			|| config.embeddingModel
-			|| null,
-		chatModel:
-			modelOption(vm.fireworksChatModelOptions, config.chatModel)
-			|| config.chatModel
-			|| null,
-		baseUrl: config.baseUrl || 'https://api.fireworks.ai/inference/v1',
-	}
-}
-
-/**
- * The dropdown option of a stored model id, when there is one.
- *
- * @param {Array<object>} options The dropdown options.
- * @param {string|undefined} id The stored model id.
- * @return {object|undefined} The option.
- */
-function modelOption(options, id) {
-	return id ? options.find((m) => m.id === id) : undefined
-}
-
-/**
- * Fill the form from stored LLM settings: the providers, each provider's
- * settings, and the enabled features.
- *
- * @param {object} vm The LLM configuration modal.
- * @param {object} llmSettings The stored LLM settings.
- * @return {void}
- */
-function applyLlmSettings(vm, llmSettings) {
-	vm.llmEnabled = llmSettings.enabled || false
-	if (llmSettings.embeddingProvider) {
-		vm.selectedEmbeddingProvider = vm.embeddingProviderOptions.find(
-			(p) => p.id === llmSettings.embeddingProvider,
-		)
-	}
-	if (llmSettings.chatProvider) {
-		vm.selectedChatProvider = vm.chatProviderOptions.find(
-			(p) => p.id === llmSettings.chatProvider,
-		)
-	}
-	if (llmSettings.openaiConfig)
-		vm.openaiConfig = openaiFormConfig(llmSettings.openaiConfig)
-	if (llmSettings.ollamaConfig)
-		vm.ollamaConfig = ollamaFormConfig(llmSettings.ollamaConfig)
-	if (llmSettings.fireworksConfig)
-		vm.fireworksConfig = fireworksFormConfig(vm, llmSettings.fireworksConfig)
-	if (Array.isArray(llmSettings.enabledFeatures)) {
-		vm.aiFeatures.forEach((feature) => {
-			feature.enabled = llmSettings.enabledFeatures.includes(feature.id)
-		})
-	}
-}
-
-/**
- * Whether Ollama is chosen for embeddings or chat and has a URL, so its models can be listed.
- *
- * @param {object} vm The LLM configuration modal.
- * @return {boolean} True when the Ollama models should be fetched.
- */
-function usesOllama(vm) {
-	const chosen =
-		vm.selectedEmbeddingProvider?.id === 'ollama'
-		|| vm.selectedChatProvider?.id === 'ollama'
-	return chosen && Boolean(vm.ollamaConfig.url)
-}
-
-/**
- * The id of a model picked as an object, or the model itself when it is
- * already an id.
- *
- * @param {object|string} model The model
- * @return {string} The id
- */
-function modelId(model) {
-	return model?.id || model
-}
-
-/**
- * The message of a failed request: the server's error, else the error's own.
- *
- * @param {Error} error The error
- * @return {string} The message
- */
-function failureText(error) {
-	return error.response?.data?.error || error.message
-}
-
-/**
- * The OpenAI settings to save.
- *
- * @param {object} config The OpenAI form state
- * @return {object} The settings
- */
-function openaiSettings(config) {
-	return {
-		apiKey: config.apiKey,
-		model: modelId(config.model),
-		chatModel: modelId(config.chatModel),
-		organizationId: config.organizationId,
-	}
-}
-
-/**
- * The Ollama settings to save.
- *
- * @param {object} config The Ollama form state
- * @return {object} The settings
- */
-function ollamaSettings(config) {
-	return {
-		url: config.url,
-		model: modelId(config.model),
-		chatModel: modelId(config.chatModel),
-	}
-}
-
-/**
- * The Fireworks settings to save.
- *
- * @param {object} config The Fireworks form state
- * @return {object} The settings
- */
-function fireworksSettings(config) {
-	return {
-		apiKey: config.apiKey,
-		embeddingModel: modelId(config.embeddingModel),
-		chatModel: modelId(config.chatModel),
-		baseUrl: config.baseUrl,
-	}
-}
-
-/**
- * The two connection tests: where each posts, which form state it reads and
- * writes, and the provider settings it sends.
- */
-const CONNECTION_TESTS = {
-	embedding: {
-		busy: 'testingEmbedding',
-		result: 'embeddingTestResult',
-		selected: 'selectedEmbeddingProvider',
-		url: '/apps/openregister/api/vectors/test-embedding',
-		sample: { testText: 'This is a test embedding generation.' },
-		configs: {
-			openai: (vm) => ({
-				apiKey: vm.openaiConfig.apiKey,
-				model: modelId(vm.openaiConfig.model),
-			}),
-			fireworks: (vm) => ({
-				apiKey: vm.fireworksConfig.apiKey,
-				model: modelId(vm.fireworksConfig.embeddingModel),
-				baseUrl: vm.fireworksConfig.baseUrl,
-			}),
-			ollama: (vm) => ({
-				url: vm.ollamaConfig.url,
-				model: modelId(vm.ollamaConfig.model),
-			}),
-		},
-	},
-	chat: {
-		busy: 'testingChat',
-		result: 'chatTestResult',
-		selected: 'selectedChatProvider',
-		url: '/apps/openregister/api/llm/test-chat',
-		sample: { testMessage: 'Hello! Please respond with a brief greeting.' },
-		configs: {
-			openai: (vm) => ({
-				apiKey: vm.openaiConfig.apiKey,
-				model: modelId(vm.openaiConfig.chatModel),
-			}),
-			fireworks: (vm) => ({
-				apiKey: vm.fireworksConfig.apiKey,
-				model: modelId(vm.fireworksConfig.chatModel),
-				baseUrl: vm.fireworksConfig.baseUrl,
-			}),
-			ollama: (vm) => ({
-				url: vm.ollamaConfig.url,
-				model: modelId(vm.ollamaConfig.chatModel),
-			}),
-		},
-	},
-}
-
-/**
- * The vector backend that is always there.
- */
-const PHP_BACKEND = {
-	id: 'php',
-	name: 'PHP Cosine Similarity',
-	description: 'Always available, but slow for large datasets (>500 vectors)',
-	performance: 'slow',
-	available: true,
-	performanceNote: 'Calculates similarity in PHP. Suitable for small datasets.',
-}
-
-/**
- * The only vector backend offered when the backends cannot be loaded.
- */
-const FALLBACK_BACKEND = {
-	id: 'php',
-	name: 'PHP Cosine Similarity',
-	description: 'Always available fallback',
-	performance: 'slow',
-	available: true,
-}
-
-/**
- * The vector backends to offer: PHP, plus the database when it reports itself.
- *
- * @param {object} data The database settings response
- * @return {Array<object>} The backends
- */
-function vectorBackends(data) {
-	const backends = [{ ...PHP_BACKEND }]
-	if (data.success && data.database) {
-		backends.push(databaseBackend(data.database))
-	}
-	return backends
-}
-
-/**
- * The database vector backend, available when it supports vectors.
- *
- * @param {object} db The database description
- * @return {object} The backend
- */
-function databaseBackend(db) {
-	return {
-		id: 'database',
-		name: db.type + ' + pgvector',
-		description: db.vectorSupport
-			? 'Fast database-level vector search (Recommended)'
-			: 'PostgreSQL with pgvector extension required',
-		performance: db.vectorSupport ? 'fast' : null,
-		available: db.vectorSupport,
-		performanceNote: db.performanceNote,
-	}
-}
 
 /**
  * The state every instance of this component starts from.
@@ -925,250 +665,23 @@ const INITIAL_STATE = {
 		baseUrl: 'https://api.fireworks.ai/inference/v1',
 	},
 
-	embeddingProviderOptions: [
-		{
-			id: 'openai',
-			name: 'OpenAI',
-			description: 'State-of-the-art embeddings (paid)',
-		},
-		{
-			id: 'fireworks',
-			name: 'Fireworks AI',
-			description: 'Fast, optimized inference (paid)',
-		},
-		{
-			id: 'ollama',
-			name: 'Ollama',
-			description: 'Local models (free, requires Ollama)',
-		},
-	],
-
-	ollamaModelOptions: [
-		{
-			id: 'llama3.2:latest',
-			name: 'llama3.2:latest',
-			description: "Meta's Llama 3.2 (latest)",
-		},
-		{
-			id: 'llama3.1:latest',
-			name: 'llama3.1:latest',
-			description: "Meta's Llama 3.1",
-		},
-		{
-			id: 'llama3:latest',
-			name: 'llama3:latest',
-			description: "Meta's Llama 3",
-		},
-		{
-			id: 'llama2:latest',
-			name: 'llama2:latest',
-			description: "Meta's Llama 2",
-		},
-		{
-			id: 'mistral:7b',
-			name: 'mistral:7b',
-			description: 'Mistral 7B model',
-		},
-		{
-			id: 'mixtral:8x7b',
-			name: 'mixtral:8x7b',
-			description: "Mistral's Mixtral 8x7B model",
-		},
-		{
-			id: 'phi3:mini',
-			name: 'phi3:mini',
-			description: "Microsoft's Phi-3 model",
-		},
-		{
-			id: 'codellama:latest',
-			name: 'codellama:latest',
-			description: 'Code-specialized Llama',
-		},
-		{
-			id: 'gemma2:latest',
-			name: 'gemma2:latest',
-			description: "Google's Gemma 2",
-		},
-		{
-			id: 'nomic-embed-text:latest',
-			name: 'nomic-embed-text:latest',
-			description: 'Nomic embeddings',
-		},
-	],
+	embeddingProviderOptions: EMBEDDING_PROVIDERS,
+	ollamaModelOptions: OLLAMA_MODELS,
 
 	loadingOllamaModels: false,
 
-	chatProviderOptions: [
-		{
-			id: 'openai',
-			name: 'OpenAI ChatGPT',
-			description: 'GPT-4, GPT-3.5 models',
-		},
-		{
-			id: 'fireworks',
-			name: 'Fireworks AI',
-			description: 'Fast OSS models',
-		},
-		{ id: 'ollama', name: 'Ollama', description: 'Local LLMs' },
-	],
-
-	openaiModelOptions: [
-		{
-			id: 'text-embedding-ada-002',
-			name: 'text-embedding-ada-002',
-			dimensions: '1536',
-			cost: '$0.10/1M tokens',
-		},
-		{
-			id: 'text-embedding-3-small',
-			name: 'text-embedding-3-small',
-			dimensions: '1536',
-			cost: '$0.02/1M tokens',
-		},
-		{
-			id: 'text-embedding-3-large',
-			name: 'text-embedding-3-large',
-			dimensions: '3072',
-			cost: '$0.13/1M tokens',
-		},
-	],
-
-	openaiChatModelOptions: [
-		{
-			id: 'gpt-4-turbo',
-			name: 'GPT-4 Turbo',
-			contextWindow: '128K',
-			cost: '$10.00/$30.00',
-		},
-		{
-			id: 'gpt-4',
-			name: 'GPT-4',
-			contextWindow: '8K',
-			cost: '$30.00/$60.00',
-		},
-		{
-			id: 'gpt-3.5-turbo',
-			name: 'GPT-3.5 Turbo',
-			contextWindow: '16K',
-			cost: '$0.50/$1.50',
-		},
-	],
-
-	fireworksEmbeddingModelOptions: [
-		{
-			id: 'nomic-ai/nomic-embed-text-v1.5',
-			name: 'Nomic Embed Text v1.5',
-			dimensions: '768',
-			cost: '$0.008/1M tokens',
-		},
-		{
-			id: 'WhereIsAI/UAE-Large-V1',
-			name: 'UAE Large V1',
-			dimensions: '1024',
-			cost: '$0.016/1M tokens',
-		},
-		{
-			id: 'thenlper/gte-large',
-			name: 'GTE Large',
-			dimensions: '1024',
-			cost: '$0.016/1M tokens',
-		},
-		{
-			id: 'thenlper/gte-base',
-			name: 'GTE Base',
-			dimensions: '768',
-			cost: '$0.008/1M tokens',
-		},
-	],
-
-	fireworksChatModelOptions: [
-		{
-			id: 'accounts/fireworks/models/llama-v3p3-70b-instruct',
-			name: 'Llama 3.3 70B',
-			contextWindow: '131K',
-			cost: '$0.9/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/llama-v3p1-405b-instruct',
-			name: 'Llama 3.1 405B',
-			contextWindow: '131K',
-			cost: '$3/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
-			name: 'Llama 3.1 70B',
-			contextWindow: '131K',
-			cost: '$0.9/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/llama-v3p1-8b-instruct',
-			name: 'Llama 3.1 8B',
-			contextWindow: '131K',
-			cost: '$0.2/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/qwen2p5-72b-instruct',
-			name: 'Qwen 2.5 72B',
-			contextWindow: '32K',
-			cost: '$0.9/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/deepseek-r1',
-			name: 'DeepSeek R1',
-			contextWindow: '163K',
-			cost: '$3/1M',
-		},
-		{
-			id: 'accounts/fireworks/models/mixtral-8x22b-instruct',
-			name: 'Mixtral 8x22B',
-			contextWindow: '64K',
-			cost: '$1.2/1M',
-		},
-	],
+	chatProviderOptions: CHAT_PROVIDERS,
+	openaiModelOptions: OPENAI_EMBEDDING_MODELS,
+	openaiChatModelOptions: OPENAI_CHAT_MODELS,
+	fireworksEmbeddingModelOptions: FIREWORKS_EMBEDDING_MODELS,
+	fireworksChatModelOptions: FIREWORKS_CHAT_MODELS,
 
 	// Vector Search Backend
 	loadingBackends: false,
 	selectedVectorBackend: null,
 	vectorBackendOptions: [],
 
-	aiFeatures: [
-		{
-			id: 'text_generation',
-			label: 'Text Generation',
-			icon: '✍️',
-			enabled: true,
-		},
-		{
-			id: 'summarization',
-			label: 'Document Summarization',
-			icon: '📋',
-			enabled: true,
-		},
-		{
-			id: 'semantic_search',
-			label: 'Semantic Search',
-			icon: '🔍',
-			enabled: true,
-		},
-		{
-			id: 'embedding',
-			label: 'Text Embeddings',
-			icon: '🧮',
-			enabled: true,
-		},
-		{
-			id: 'translation',
-			label: 'Translation',
-			icon: '🌍',
-			enabled: false,
-		},
-		{
-			id: 'classification',
-			label: 'Content Classification',
-			icon: '🏷️',
-			enabled: false,
-		},
-	],
+	aiFeatures: AI_FEATURES,
 }
 
 export default {
@@ -1202,39 +715,14 @@ export default {
 		 * @spec exclude UI state helper — enables the embedding test when its provider is configured.
 		 */
 		canTestEmbedding() {
-			const provider = this.selectedEmbeddingProvider?.id
-			if (!provider) return false
-
-			if (provider === 'openai') {
-				return !!this.openaiConfig.apiKey && !!this.openaiConfig.model
-			} else if (provider === 'fireworks') {
-				return (
-					!!this.fireworksConfig.apiKey
-					&& !!this.fireworksConfig.embeddingModel
-				)
-			} else if (provider === 'ollama') {
-				return !!this.ollamaConfig.url && !!this.ollamaConfig.model
-			}
-			return false
+			return canTest(this, CONNECTION_TESTS.embedding)
 		},
 
 		/**
 		 * @spec exclude UI state helper — enables the chat test when its provider is configured.
 		 */
 		canTestChat() {
-			const provider = this.selectedChatProvider?.id
-			if (!provider) return false
-
-			if (provider === 'openai') {
-				return !!this.openaiConfig.apiKey && !!this.openaiConfig.chatModel
-			} else if (provider === 'fireworks') {
-				return (
-					!!this.fireworksConfig.apiKey && !!this.fireworksConfig.chatModel
-				)
-			} else if (provider === 'ollama') {
-				return !!this.ollamaConfig.url && !!this.ollamaConfig.chatModel
-			}
-			return false
+			return canTest(this, CONNECTION_TESTS.chat)
 		},
 	},
 
@@ -1288,20 +776,40 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/llm'),
-				)
-				applyLlmSettings(this, response.data)
-				// Fetch Ollama models if Ollama is selected
-				if (usesOllama(this)) {
-					this.fetchOllamaModels()
-				}
+				await this.readSettings()
 			} catch (error) {
-				console.error('Failed to load LLM configuration:', error)
-				showError(this.t('openregister', 'Failed to load LLM configuration'))
+				this.loadFailed(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Fill the form from the stored settings.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/platform-administration-modals/spec.md
+		 */
+		async readSettings() {
+			const response = await axios.get(
+				generateUrl('/apps/openregister/api/settings/llm'),
+			)
+			applyLlmSettings(this, response.data)
+			if (usesOllama(this)) {
+				this.fetchOllamaModels()
+			}
+		},
+
+		/**
+		 * Show that the stored settings could not be read.
+		 *
+		 * @param {Error} error The failure
+		 * @return {void}
+		 * @spec exclude Error display for a failed settings read; UI plumbing.
+		 */
+		loadFailed(error) {
+			console.error('Failed to load LLM configuration:', error)
+			showError(this.t('openregister', 'Failed to load LLM configuration'))
 		},
 
 		/**
@@ -1314,37 +822,31 @@ export default {
 		/**
 		 * @spec exclude Modal action plumbing — tests the embedding provider connection.
 		 */
-		async testEmbeddingConnection() {
-			const error = await this.testConnection(CONNECTION_TESTS.embedding)
-			if (error) {
-				showError(
-					this.t('openregister', 'Embedding test failed: {error}', {
-						error: failureText(error),
-					}),
-				)
-				return
-			}
-			showSuccess(
-				this.t('openregister', 'Embedding provider connection successful!'),
-			)
+		testEmbeddingConnection() {
+			return this.runConnectionTest(CONNECTION_TESTS.embedding)
 		},
 
 		/**
 		 * @spec exclude Modal action plumbing — tests the chat provider connection.
 		 */
-		async testChatConnection() {
-			const error = await this.testConnection(CONNECTION_TESTS.chat)
+		testChatConnection() {
+			return this.runConnectionTest(CONNECTION_TESTS.chat)
+		},
+
+		/**
+		 * Test one provider connection and tell the user how it went.
+		 *
+		 * @param {object} test One of CONNECTION_TESTS
+		 * @return {Promise<void>}
+		 * @spec exclude Modal action plumbing — reports a provider connection test.
+		 */
+		async runConnectionTest(test) {
+			const error = await this.testConnection(test)
 			if (error) {
-				showError(
-					this.t('openregister', 'Chat test failed: {error}', {
-						error: failureText(error),
-					}),
-				)
+				showError(test.failedText(this, failureText(error)))
 				return
 			}
-			showSuccess(
-				this.t('openregister', 'Chat provider connection successful!'),
-			)
+			showSuccess(test.connectedText(this))
 		},
 
 		/**
@@ -1358,15 +860,7 @@ export default {
 			this[test.busy] = true
 			this[test.result] = null
 			try {
-				const provider = this[test.selected]?.id
-				const config = Object.hasOwn(test.configs, provider)
-					? test.configs[provider](this)
-					: {}
-				await axios.post(generateUrl(test.url), {
-					provider,
-					config,
-					...test.sample,
-				})
+				await this.postConnectionTest(test)
 				this[test.result] = { success: true, message: 'Connected' }
 				return null
 			} catch (error) {
@@ -1378,49 +872,64 @@ export default {
 		},
 
 		/**
+		 * Post the selected provider's settings to a connection test.
+		 *
+		 * @param {object} test One of CONNECTION_TESTS
+		 * @return {Promise<object>} The response
+		 * @spec exclude Modal action plumbing — posts a provider connection test.
+		 */
+		postConnectionTest(test) {
+			return axios.post(generateUrl(test.url), {
+				provider: this[test.selected]?.id,
+				config: testConfig(this, test),
+				...test.sample,
+			})
+		},
+
+		/**
 		 * @spec exclude Modal save plumbing — posts LLM configuration to the settings endpoint.
 		 */
 		async saveConfiguration() {
 			this.saving = true
 			try {
-				await axios.patch(
-					generateUrl('/apps/openregister/api/settings/llm'),
-					this.llmPayload(),
-				)
-				showSuccess(
-					this.t('openregister', 'LLM configuration saved successfully'),
-				)
-				this.$emit('closing')
+				await this.writeSettings()
 			} catch (error) {
-				showError(
-					this.t('openregister', 'Failed to save configuration: {error}', {
-						error: failureText(error),
-					}),
-				)
+				this.saveFailed(error)
 			} finally {
 				this.saving = false
 			}
 		},
 
 		/**
-		 * The LLM settings to save. Models are picked as objects; the backend
-		 * expects their ids.
+		 * Store the form and close.
 		 *
-		 * @return {object} The settings
-		 * @spec exclude Modal save plumbing — builds the LLM settings payload.
+		 * @return {Promise<void>}
+		 * @spec exclude Modal save plumbing — posts LLM configuration to the settings endpoint.
 		 */
-		llmPayload() {
-			return {
-				embeddingProvider: this.selectedEmbeddingProvider?.id,
-				chatProvider: this.selectedChatProvider?.id,
-				openaiConfig: openaiSettings(this.openaiConfig),
-				ollamaConfig: ollamaSettings(this.ollamaConfig),
-				fireworksConfig: fireworksSettings(this.fireworksConfig),
-				vectorConfig: { backend: this.selectedVectorBackend?.id || 'php' },
-				enabledFeatures: this.aiFeatures
-					.filter((f) => f.enabled)
-					.map((f) => f.id),
-			}
+		async writeSettings() {
+			await axios.patch(
+				generateUrl('/apps/openregister/api/settings/llm'),
+				llmSettingsToSave(this),
+			)
+			showSuccess(
+				this.t('openregister', 'LLM configuration saved successfully'),
+			)
+			this.$emit('closing')
+		},
+
+		/**
+		 * Show that the settings could not be saved.
+		 *
+		 * @param {Error} error The failure
+		 * @return {void}
+		 * @spec exclude Error display for a failed save; UI plumbing.
+		 */
+		saveFailed(error) {
+			showError(
+				this.t('openregister', 'Failed to save configuration: {error}', {
+					error: failureText(error),
+				}),
+			)
 		},
 
 		/**
@@ -1430,32 +939,28 @@ export default {
 			if (!this.ollamaConfig.url || this.loadingOllamaModels) {
 				return
 			}
-
 			this.loadingOllamaModels = true
-
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/llm/ollama-models'),
-				)
-
-				if (
-					response.data.success
-					&& response.data.models
-					&& response.data.models.length > 0
-				) {
-					// Replace the hardcoded list with fetched models
-					this.ollamaModelOptions = response.data.models
-
-					// Loaded models from Ollama API successfully
-				} else {
-					// Keep fallback list if API returns empty or fails
-					// Using fallback model list
-				}
+				await this.readOllamaModels()
 			} catch {
-				// Silently fail and keep using the hardcoded fallback list
-				// Error fetching Ollama models, using fallback
+				// Keep the fixed list.
 			} finally {
 				this.loadingOllamaModels = false
+			}
+		},
+
+		/**
+		 * Offer the models Ollama reports, when it reports any.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Modal data-load plumbing — fetches available Ollama models for the picker.
+		 */
+		async readOllamaModels() {
+			const response = await axios.get(
+				generateUrl('/apps/openregister/api/llm/ollama-models'),
+			)
+			if (response.data.success && response.data.models?.length > 0) {
+				this.ollamaModelOptions = response.data.models
 			}
 		},
 
@@ -1479,63 +984,65 @@ export default {
 		 */
 		async clearAllEmbeddings() {
 			this.clearingEmbeddings = true
-
 			try {
 				const response = await axios.delete(
 					generateUrl('/apps/openregister/api/vectors/clear-all'),
 				)
-
-				if (response.data.success) {
-					showSuccess(
-						this.t(
-							'openregister',
-							'Successfully deleted {count} embeddings. Please re-vectorize your data.',
-							{ count: response.data.deleted },
-						),
-					)
-
-					// Emit event to parent to refresh stats
-					this.$emit('embeddings-cleared')
-				} else {
-					showError(
-						this.t(
-							'openregister',
-							'Failed to clear embeddings: {error}',
-							{ error: response.data.error || 'Unknown error' },
-						),
-					)
-				}
+				this.clearAnswered(response.data)
 			} catch (error) {
-				showError(
-					this.t('openregister', 'Failed to clear embeddings: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
+				this.clearFailed(failureText(error))
 			} finally {
 				this.clearingEmbeddings = false
 			}
 		},
 
 		/**
-		 * Load available vector search backends
+		 * Report how the server answered the clear request.
+		 *
+		 * @param {object} data The response body
+		 * @return {void}
+		 * @spec exclude Modal action plumbing — reports the cleared embeddings.
 		 */
+		clearAnswered(data) {
+			if (!data.success) {
+				this.clearFailed(data.error || 'Unknown error')
+				return
+			}
+			showSuccess(
+				this.t(
+					'openregister',
+					'Successfully deleted {count} embeddings. Please re-vectorize your data.',
+					{ count: data.deleted },
+				),
+			)
+			// Emit event to parent to refresh stats
+			this.$emit('embeddings-cleared')
+		},
+
 		/**
+		 * Show why the embeddings were not cleared.
+		 *
+		 * @param {string} error The reason
+		 * @return {void}
+		 * @spec exclude Error display for a failed clear; UI plumbing.
+		 */
+		clearFailed(error) {
+			showError(
+				this.t('openregister', 'Failed to clear embeddings: {error}', {
+					error,
+				}),
+			)
+		},
+
+		/**
+		 * Load available vector search backends
+		 *
 		 * @spec exclude Modal data-load plumbing — fetches available LLM backends for the pickers.
 		 */
 		async loadAvailableBackends() {
 			this.loadingBackends = true
 			try {
-				const dbResponse = await axios.get(
-					generateUrl('/apps/openregister/api/settings/database'),
-				)
-				const backends = vectorBackends(dbResponse.data)
-				this.vectorBackendOptions = backends
-				const llmResponse = await axios.get(
-					generateUrl('/apps/openregister/api/settings/llm'),
-				)
-				const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
-				this.selectedVectorBackend =
-					backends.find((b) => b.id === vectorBackend) || backends[0]
+				await this.fetchBackends()
 			} catch (error) {
 				console.error('Failed to load vector backends:', error)
 				this.vectorBackendOptions = [{ ...FALLBACK_BACKEND }]
@@ -1543,6 +1050,26 @@ export default {
 			} finally {
 				this.loadingBackends = false
 			}
+		},
+
+		/**
+		 * Offer the backends the server reports and select the stored one.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude Modal data-load plumbing — fetches available LLM backends for the pickers.
+		 */
+		async fetchBackends() {
+			const dbResponse = await axios.get(
+				generateUrl('/apps/openregister/api/settings/database'),
+			)
+			const backends = vectorBackends(dbResponse.data)
+			this.vectorBackendOptions = backends
+			const llmResponse = await axios.get(
+				generateUrl('/apps/openregister/api/settings/llm'),
+			)
+			const vectorBackend = llmResponse.data.vectorConfig?.backend || 'php'
+			this.selectedVectorBackend =
+				backends.find((b) => b.id === vectorBackend) || backends[0]
 		},
 	},
 }
@@ -1579,13 +1106,16 @@ export default {
 	margin-bottom: 32px;
 }
 
-.provider-column {
+.provider-column,
+.config-section {
 	h3 {
 		margin: 0 0 8px 0;
 		font-size: 16px;
 		font-weight: 600;
 	}
+}
 
+.provider-column {
 	.section-description {
 		margin: 0 0 16px 0;
 		color: var(--color-text-maxcontrast);
@@ -1595,12 +1125,6 @@ export default {
 
 .config-section {
 	margin-bottom: 32px;
-
-	h3 {
-		margin: 0 0 8px 0;
-		font-size: 16px;
-		font-weight: 600;
-	}
 
 	.section-description {
 		margin: 0 0 16px 0;
@@ -1692,35 +1216,6 @@ export default {
 	font-style: italic;
 }
 
-.test-result {
-	margin-top: 16px;
-	padding: 16px;
-	border-radius: 8px;
-
-	&.success {
-		background: var(--color-success);
-		color: white;
-	}
-
-	&.error {
-		background: var(--color-error);
-		color: white;
-	}
-
-	p {
-		margin: 0 0 8px 0;
-	}
-
-	pre {
-		margin: 0;
-		padding: 12px;
-		background: rgba(0, 0, 0, 0.2);
-		border-radius: 4px;
-		font-size: 12px;
-		overflow-x: auto;
-	}
-}
-
 .features-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -1731,11 +1226,6 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-}
-
-.slider {
-	width: 100%;
-	max-width: 400px;
 }
 
 /* Actions layout */
