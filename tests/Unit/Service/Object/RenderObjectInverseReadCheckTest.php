@@ -41,9 +41,9 @@ use RuntimeException;
  * Inverse properties hold only the objects the caller may read.
  *
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
- * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender

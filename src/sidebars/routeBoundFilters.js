@@ -18,6 +18,12 @@ import { registerStore, schemaStore } from '../store/store.js'
  */
 export function routeBoundFilters(path) {
 	return {
+		computed: {
+			// A <script setup> binding is not on `this`, and a watch path reads `this`.
+			registerStore: () => registerStore,
+			schemaStore: () => schemaStore,
+		},
+
 		watch: {
 			'$route.query': {
 				/**

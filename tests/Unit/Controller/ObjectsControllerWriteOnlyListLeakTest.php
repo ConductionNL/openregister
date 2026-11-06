@@ -77,9 +77,9 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @uses \OCA\OpenRegister\Controller\Support\GeoServices
  * @uses \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
- * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender

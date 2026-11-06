@@ -1,0 +1,418 @@
+{
+    "history between not projected": {
+        "status": 400,
+        "data": {
+            "error": "No history is recorded for property \"colour\", so it cannot be filtered over time. History is recorded for the properties a schema declares as its lifecycle field.",
+            "properties": [
+                "colour"
+            ]
+        }
+    },
+    "history no predicate": null,
+    "history not projected": {
+        "status": 400,
+        "data": {
+            "error": "No history is recorded for property \"colour\", so it cannot be filtered over time. History is recorded for the properties a schema declares as its lifecycle field.",
+            "properties": [
+                "colour"
+            ]
+        }
+    },
+    "history nothing projected": {
+        "status": 400,
+        "data": {
+            "error": "No history is recorded for property \"status\", so it cannot be filtered over time. History is recorded for the properties a schema declares as its lifecycle field.",
+            "properties": [
+                "status"
+            ]
+        }
+    },
+    "history projected": null,
+    "page all defaults": {
+        "answer": {
+            "results": [],
+            "total": 0,
+            "page": 1,
+            "pages": 1,
+            "limit": 20,
+            "offset": 0
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "integer",
+            "limit": "integer",
+            "offset": "integer"
+        }
+    },
+    "page beyond the last page": {
+        "answer": {
+            "results": [],
+            "total": 45,
+            "page": 9,
+            "pages": 5,
+            "limit": 10,
+            "offset": 80,
+            "prev": "/api/objects/1/2?_page=8&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "prev": "string"
+        }
+    },
+    "page last page": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 5,
+            "pages": 5,
+            "limit": 10,
+            "offset": 40,
+            "prev": "/api/objects/1/2?_page=4&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "prev": "string"
+        }
+    },
+    "page negative limit, offset and page": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 1,
+            "pages": 45,
+            "limit": 1,
+            "offset": 0,
+            "next": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string"
+        }
+    },
+    "page negative total": {
+        "answer": {
+            "results": [
+                "a",
+                "b"
+            ],
+            "total": 2,
+            "page": 1,
+            "pages": 1,
+            "limit": 10,
+            "offset": 0
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "integer",
+            "limit": "integer",
+            "offset": "integer"
+        }
+    },
+    "page nulls": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 1,
+            "page": 1,
+            "pages": 1,
+            "limit": 20,
+            "offset": 0
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "integer",
+            "limit": "integer",
+            "offset": "integer"
+        }
+    },
+    "page offset of one": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 1,
+            "pages": 5,
+            "limit": 10,
+            "offset": 1,
+            "next": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "double",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string"
+        }
+    },
+    "page offset on a page edge": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 3,
+            "pages": 5,
+            "limit": 10,
+            "offset": 20,
+            "next": "/api/objects/1/2?_page=4&x=1",
+            "prev": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "double",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string",
+            "prev": "string"
+        }
+    },
+    "page one exact page": {
+        "answer": {
+            "results": [
+                "a",
+                "b"
+            ],
+            "total": 2,
+            "page": 1,
+            "pages": 1,
+            "limit": 2,
+            "offset": 0
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "integer",
+            "limit": "integer",
+            "offset": "integer"
+        }
+    },
+    "page page and offset both": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 3,
+            "pages": 5,
+            "limit": 10,
+            "offset": 5,
+            "next": "/api/objects/1/2?_page=4&x=1",
+            "prev": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string",
+            "prev": "string"
+        }
+    },
+    "page second page by number": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 2,
+            "pages": 5,
+            "limit": 10,
+            "offset": 10,
+            "next": "/api/objects/1/2?_page=3&x=1",
+            "prev": "/api/objects/1/2?_page=1&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string",
+            "prev": "string"
+        }
+    },
+    "page third page by offset": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 3,
+            "pages": 5,
+            "limit": 10,
+            "offset": 25,
+            "next": "/api/objects/1/2?_page=4&x=1",
+            "prev": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "double",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string",
+            "prev": "string"
+        }
+    },
+    "page total below the results": {
+        "answer": {
+            "results": [
+                "a",
+                "b",
+                "c"
+            ],
+            "total": 3,
+            "page": 1,
+            "pages": 2,
+            "limit": 2,
+            "offset": 0,
+            "next": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string"
+        }
+    },
+    "page zero limit": {
+        "answer": {
+            "results": [
+                "a"
+            ],
+            "total": 45,
+            "page": 1,
+            "pages": 45,
+            "limit": 1,
+            "offset": 0,
+            "next": "/api/objects/1/2?_page=2&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "integer",
+            "pages": "double",
+            "limit": "integer",
+            "offset": "integer",
+            "next": "string"
+        }
+    },
+    "page zero total with an offset": {
+        "answer": {
+            "results": [],
+            "total": 0,
+            "page": 4,
+            "pages": 1,
+            "limit": 10,
+            "offset": 30,
+            "prev": "/api/objects/1/2?_page=3&x=1"
+        },
+        "types": {
+            "results": "array",
+            "total": "integer",
+            "page": "double",
+            "pages": "integer",
+            "limit": "integer",
+            "offset": "integer",
+            "prev": "string"
+        }
+    },
+    "unread anonymous": {
+        "answer": {
+            "id": 1
+        },
+        "logged": []
+    },
+    "unread container fails": {
+        "answer": {
+            "id": 1
+        },
+        "logged": [
+            "[ObjectsController] unread counts skipped: no container"
+        ]
+    },
+    "unread lookup fails": {
+        "answer": {
+            "id": 1
+        },
+        "logged": [
+            "[ObjectsController] unread counts skipped: no read state"
+        ]
+    },
+    "unread nothing unread": {
+        "answer": {
+            "id": 1
+        },
+        "logged": []
+    },
+    "unread unread": {
+        "answer": {
+            "id": 1,
+            "unreadCounts": {
+                "notes": 2,
+                "files": 1
+            }
+        },
+        "logged": []
+    },
+    "warn unknown key": {
+        "query": {
+            "colour": "red",
+            "status": "open",
+            "_limit": 5
+        },
+        "warned": [
+            [
+                "[OpenRegister] objects#index: filter key(s) \"colour\" name no property of schema \"s1\" in register \"r1\", so they do not filter on a property. Check the spelling; an unknown filter key is meant to become an HTTP 400.",
+                {
+                    "app": "openregister",
+                    "endpoint": "objects#index",
+                    "register": "r1",
+                    "schema": "s1",
+                    "keys": [
+                        "colour"
+                    ]
+                }
+            ]
+        ]
+    }
+}
