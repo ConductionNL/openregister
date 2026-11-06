@@ -61,7 +61,7 @@ class Version1Date20261106130000Test extends TestCase {
 	private function schema(bool $hasTable, object $table): ISchemaWrapper {
 		$schema = $this->createMock(ISchemaWrapper::class);
 		$schema->method('hasTable')->with('openregister_flows')->willReturn($hasTable);
-		$schema->method('getTable')->with('openregister_flows')->willReturn($table);
+		$schema->expects($hasTable === true ? $this->atLeastOnce() : $this->never())->method('getTable')->with('openregister_flows')->willReturn($table);
 		return $schema;
 	}
 }
