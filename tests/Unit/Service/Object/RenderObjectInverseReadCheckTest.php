@@ -48,6 +48,11 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
  * @uses \OCA\OpenRegister\Service\Object\InverseRenderSupport
  * @uses \OCA\OpenRegister\Service\Object\InverseTarget
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver
  */
 class RenderObjectInverseReadCheckTest extends TestCase {
 	private const PARENT = '11111111-1111-4111-8111-111111111111';
