@@ -35,6 +35,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -50,12 +51,12 @@ class ApplicationPublishListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ScheduleReleaseReader $reader Recognises a publish.
-	 * @param ScheduleFlowSync $sync Applies it.
+	 * @param ContainerInterface $container Builds the sync only for a publish: this runs on every object write.
 	 * @param LoggerInterface $logger Failures.
 	 */
 	public function __construct(
 		private readonly ScheduleReleaseReader $reader,
-		private readonly ScheduleFlowSync $sync,
+		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -73,7 +74,7 @@ class ApplicationPublishListener implements IEventListener {
 		try {
 			$release = $this->releaseOf(event: $event);
 			if ($release !== null) {
-				$this->sync->apply(release: $release);
+				$this->container->get(ScheduleFlowSync::class)->apply(release: $release);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
