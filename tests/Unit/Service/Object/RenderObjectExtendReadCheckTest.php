@@ -378,6 +378,16 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$this->assertStringNotContainsString('private name', (string)json_encode($far));
 	}
 
+	public function testAReaderWithTheReadRightFindsTheFullTargetInSelfObjects(): void {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->named('private name')]);
+		$renderer = $this->renderer(['status']);
+
+		$renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: ['one']);
+
+		$this->assertSame('private name', $renderer->getObjectsCache()[self::OPEN]['naam']);
+	}
+
 	public function testAnExposedNameStaysInTheEnvelope(): void {
 		$this->cache = $this->createMock(CacheHandler::class);
 		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->named('public name')]);

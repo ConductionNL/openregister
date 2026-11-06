@@ -27,8 +27,10 @@ for record relations, so there is one vocabulary and not two.
 
 The field set a link type declares is the intersection of what the link
 offers and what the reader could see through any other path. A link can
-therefore only ever show less than the far record, never more, and a reader
-who already has access is unaffected. The alternative, a link as a grant,
+therefore only ever show less than the far record, never more. `exposes` is a
+display choice: the render always narrows to the named fields, and a reader
+with the read right finds the full far record in `@self.objects`. The
+alternative, a link as a grant,
 turns every relation into an access-control decision made by whoever
 declared the schema.
 

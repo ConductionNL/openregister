@@ -53,11 +53,14 @@ naming it.
 
 ### Requirement: An exposure narrows a read and never widens one (REQ-RTE-005)
 
-The properties a reader receives through a relation SHALL be the
-intersection of the relation's declared `exposes` and what that reader could
-see on the far record through any other path. A relation SHALL NOT grant
-access to a property the reader is otherwise refused, and a reader who
-already holds full access SHALL be unaffected by the declaration.
+`exposes` is a display choice, not an access rule. The properties a reader
+receives in the extended property SHALL be the intersection of the relation's
+declared `exposes` and what that reader could see on the far record through
+any other path. A relation SHALL NOT grant access to a property the reader is
+otherwise refused. The render SHALL always narrow to the declared properties,
+also for a reader who holds the read right on the far record. That reader
+SHALL find the full far record, as a direct read shows it to them, in
+`@self.objects`.
 
 #### Scenario: a relation is not a back door
 
@@ -65,9 +68,10 @@ already holds full access SHALL be unaffected by the declaration.
 - **WHEN** the reader reads the far record through the relation
 - **THEN** that property reads as withheld
 
-#### Scenario: a reader with access sees no change
+#### Scenario: a reader with the read right finds the full record in @self.objects
 
 - **GIVEN** a reader who may read the far record directly
 - **WHEN** the same record is read through the relation
-- **THEN** every property they could see directly is returned
+- **THEN** the extended property shows the declared properties and marks the rest withheld
+- **AND** `@self.objects` holds every property they could see directly
 - @e2e exclude {intersection rule, covered by unit tests}
