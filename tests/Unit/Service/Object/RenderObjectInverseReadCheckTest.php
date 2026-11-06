@@ -197,6 +197,14 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
 	}
 
+	public function testAUuidTargetLeavesOutWhatTheCallerMayNotRead(): void {
+		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
+		$renderer = $this->renderer('44444444-4444-4444-8444-444444444444');
+
+		$this->assertSame([self::OPEN], $this->renderedChildren($renderer));
+		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
+	}
+
 	public function testTheFallbackPathLeavesOutWhatTheCallerMayNotRead(): void {
 		$this->mapper->method('findByRelationBatchInSchema')->willThrowException(new RuntimeException('batch down'));
 		$this->mapper->method('findByRelation')->willReturn($this->children());
