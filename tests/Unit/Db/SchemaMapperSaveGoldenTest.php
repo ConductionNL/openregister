@@ -110,3 +110,213 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
+ */
+class SchemaMapperSaveGoldenTest extends TestCase {
+	use RecordingQueryBuilderTrait;
+
+	private const FIXTURE = __DIR__ . '/fixtures/schema-mapper-save-golden.json';
+
+	private const PROPERTIES = [
+		'name' => ['type' => 'string', 'required' => true],
+		'status' => ['type' => 'string', 'enum' => ['open', 'closed']],
+		'startDate' => ['type' => 'string', 'format' => 'date'],
+		'count' => ['type' => 'integer', 'facetable' => 'TRUE '],
+		'link' => ['type' => 'string', '$ref' => 'far-schema', 'relation' => ['type' => 'owns', 'exposes' => ['nope']]],
+	];
+
+	private const BROKEN = [
+		'scalar' => 'nonsense',
+		'empty list' => [],
+		'unknown key' => ['bogus' => true],
+		'list of nothing' => [['bogus' => true]],
+		'named nothing' => ['first' => ['bogus' => true]],
+		'property that does not exist' => ['property' => 'nope', 'properties' => ['nope'], 'identity' => 'nope', 'owned' => ['nope']],
+	];
+
+	private const ANNOTATIONS = [
+		'x-openregister-lifecycle',
+		'x-openregister-mdto-mapping',
+		'x-openregister-aggregations',
+		'x-openregister-calculations',
+		'x-openregister-relation-types',
+		'x-openregister-quality',
+		'x-openregister-dedup',
+		'x-openregister-unique-hint',
+		'x-openregister-lenses',
+		'x-openregister-list',
+		'x-openregister-geo-inheritance',
+		'x-openregister-survivorship',
+		'x-openregister-merge',
+		'x-openregister-party',
+		'x-openregister-notifications',
+		'x-openregister-widgets',
+		'x-openregister-archival',
+		'x-openregister-handoff',
+		'handoffContract',
+		'x-openregister-mcp',
+		'x-openregister-registry',
+		'x-openregister-external-links',
+		'x-openregister-extends-form',
+		'x-openregister-hierarchy',
+		'x-openregister-action',
+		'x-openregister-review',
+		'x-openregister-no-such-key',
+	];
+
+	private array $logs = [];
+
+	private static function cases(): array {
+		$cases = [
+			'nothing declared' => [[], []],
+			'properties only' => [[], self::PROPERTIES],
+			'name and description found' => [[], ['titel' => ['type' => 'string'], 'summary' => ['type' => 'string']]],
+			'name field given' => [['objectNameField' => 'name', 'objectDescriptionField' => 'status'], self::PROPERTIES],
+			'name field missing' => [['objectNameField' => 'nope'], self::PROPERTIES],
+			'description field missing' => [['objectDescriptionField' => 'nope'], self::PROPERTIES],
+			'name template' => [['objectNameField' => '{{ name }} {{ status }}'], self::PROPERTIES],
+			'name template unknown' => [['objectNameField' => '{{ name }} {{ nope }}'], self::PROPERTIES],
+			'name template empty' => [['objectNameField' => '{{ }}'], self::PROPERTIES],
+			'name fallback' => [['objectNameField' => 'nope | name'], self::PROPERTIES],
+			'name fallback unknown' => [['objectNameField' => 'nope | gone'], self::PROPERTIES],
+			'name dotted' => [['objectNameField' => 'name.nl.long'], self::PROPERTIES],
+			'name dotted unknown' => [['objectNameField' => 'nope.nl'], self::PROPERTIES],
+			'ref as array' => [[], ['a' => ['$ref' => ['id' => 'x']]]],
+			'ref as object' => [[], ['a' => ['$ref' => (object) ['id' => 'x']]]],
+			'ref as int' => [[], ['a' => ['$ref' => 5]]],
+			'ref as float' => [[], ['a' => ['$ref' => 1.5]]],
+			'ref in items' => [[], ['a' => ['items' => ['b' => ['$ref' => ['id' => 'y']]]]]],
+			'ref in nested' => [[], ['a' => ['properties' => ['b' => ['$ref' => ['id' => 'y']]]]]],
+			'ref bad in nested' => [[], ['a' => ['properties' => ['b' => ['$ref' => ['x' => 1]]]]]],
+			'required flags' => [[], ['a' => ['required' => 'true'], 'b' => ['required' => ' TRUE '], 'c' => ['required' => false], 'd' => ['required' => true]]],
+			'consent clean' => [[], ['a' => ['type' => 'string']]],
+			'consent broken' => [[], ['a' => ['type' => 'string', 'x-openregister-consent' => 'nonsense']]],
+			'dependent broken' => [[], ['a' => ['type' => 'string', 'x-openregister-dependent-values' => ['on' => 'nope']]]],
+			'default expression broken' => [[], ['a' => ['type' => 'string', 'x-openregister-default-expression' => ['nope' => 1]]]],
+			'audit without read' => [[], ['a' => ['type' => 'string', 'authorization' => ['audit' => true]]]],
+			'audit with read' => [[], ['a' => ['type' => 'string', 'authorization' => ['audit' => true, 'read' => ['admin']]]]],
+			'forwarded calculation broken' => [[], ['a' => ['type' => 'number', 'calculation' => ['nope' => 1]]]],
+			'calculation on both' => [
+				['x-openregister-calculations' => ['a' => ['expression' => ['+' => [1, 2]]]]],
+				['a' => ['type' => 'number', 'calculation' => ['+' => [1, 2]]]],
+			],
+			'two broken annotations in order' => [
+				['x-openregister-quality' => ['bogus' => true], 'x-openregister-dedup' => ['bogus' => true], 'x-openregister-merge' => ['bogus' => true], 'x-openregister-widgets' => 'x'],
+				self::PROPERTIES,
+			],
+			'merge window' => [['x-openregister-merge' => ['reversalWindowDays' => 0]], self::PROPERTIES],
+			'party kind' => [['x-openregister-party' => ['kind' => '']], self::PROPERTIES],
+			'list column' => [['x-openregister-list' => ['columns' => [['property' => 'nope'], []]]], self::PROPERTIES],
+			'lifecycle provider' => [['x-openregister-lifecycle' => ['provider' => '']], self::PROPERTIES],
+			'lifecycle condition' => [
+				['x-openregister-lifecycle' => ['property' => 'status', 'transitions' => [['from' => 'open', 'to' => 'closed', 'condition' => 'x']]]],
+				self::PROPERTIES,
+			],
+			'archival unknown key' => [['x-openregister-archival' => ['retention' => [['condition' => 'x', 'retention' => 'P1Y', 'reason' => 'x']], 'bogus' => 1]], self::PROPERTIES],
+			'action kind' => [['x-openregister-action' => ['close' => ['name' => 'Close', 'kind' => 'nonsense']]], self::PROPERTIES],
+			'action destroy reversible' => [['x-openregister-action' => ['purge' => ['name' => 'Purge', 'kind' => 'destroy', 'reversible' => true]]], self::PROPERTIES],
+			'action flow' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow']]], self::PROPERTIES],
+			'action macro' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'macro' => ['flow' => 'a-flow']]]], self::PROPERTIES],
+			'mdto property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'name']]], self::PROPERTIES],
+			'mdto unknown property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'nope']]], self::PROPERTIES],
+			'handoff lifecycle state' => [
+				[
+					'x-openregister-handoff' => [['id' => 'send', 'trigger' => 'lifecycle:nope']],
+					'x-openregister-lifecycle' => ['field' => 'status', 'property' => 'status'],
+				],
+				self::PROPERTIES,
+			],
+			'contract implements' => [['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract jsonld' => [['jsonld' => ['type' => 'https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract schema org' => [['x-schema-org' => 'https://openregister.app/ns#Case', 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'extends form on schema and property' => [
+				['x-openregister-extends-form' => ['forwards' => ['nope-a']]],
+				['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]],
+			],
+			'extends form on property' => [[], ['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]]],
+			'hinge with two keys' => [['x-openregister-lenses' => ['bogus' => true], 'x-openregister-list' => 'x'], self::PROPERTIES],
+		];
+		foreach (self::ANNOTATIONS as $key) {
+			foreach (self::BROKEN as $shape => $value) {
+				$cases[$key . ' ' . $shape] = [[$key => $value], self::PROPERTIES];
+			}
+		}
+
+		return $cases;
+	}//end cases()
+
+	public function testSaveMatchesGolden(): void {
+		$actual = [];
+		foreach (self::cases() as $name => [$configuration, $properties]) {
+			$this->logs = [];
+			$this->queuedRows = [];
+			$schema = new Schema();
+			$schema->setTitle('Golden Schema');
+			$schema->setConfiguration($configuration);
+			$schema->setProperties($properties);
+			$actual[$name] = $this->saved($schema);
+		}
+
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents(self::FIXTURE, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$expected = json_decode((string) file_get_contents(self::FIXTURE), true);
+		foreach ($expected as $name => $outcome) {
+			$this->assertSame($outcome, $actual[$name] ?? null, $name);
+		}
+
+		$this->assertSame(array_keys($expected), array_keys($actual));
+	}//end testSaveMatchesGolden()
+
+	private function saved(Schema $schema): array {
+		$outcome = [];
+		try {
+			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->makeMapper(), $schema);
+		} catch (\Throwable $e) {
+			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
+			if (method_exists($e, 'getErrors') === true) {
+				$outcome['errors'] = $e->getErrors();
+			}
+		}
+
+		$outcome['logs'] = $this->logs;
+		$outcome['schema'] = [
+			'hasUuid' => $schema->getUuid() !== null,
+			'slug' => $schema->getSlug(),
+			'version' => $schema->getVersion(),
+			'source' => $schema->getSource(),
+			'required' => $schema->getRequired(),
+			'properties' => $schema->getProperties(),
+			'configuration' => $schema->getConfiguration(),
+		];
+
+		return $outcome;
+	}//end saved()
+
+	private function makeMapper(): SchemaMapper {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->recordingBuilder());
+		$logger = $this->createMock(LoggerInterface::class);
+		foreach (['debug', 'info', 'notice', 'warning', 'error'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				function (string|\Stringable $message, array $context = []) use ($level): void {
+					unset($context['file'], $context['line']);
+					$this->logs[] = [$level, (string) $message, $context];
+				}
+			);
+		}
+
+		return new SchemaMapper(
+			$db,
+			$this->createMock(IEventDispatcher::class),
+			$this->createMock(PropertyValidatorHandler::class),
+			$this->createMock(OrganisationMapper::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IAppConfig::class),
+			$logger
+		);
+	}//end makeMapper()
+}//end class
