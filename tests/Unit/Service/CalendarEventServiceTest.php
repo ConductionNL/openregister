@@ -120,6 +120,8 @@ class CalendarEventServiceTest extends TestCase {
 
 		$this->expectExceptionCode(404);
 		$this->service->deleteEvent('7', 'event.ics');
+	}
+
 	/**
 	 * A user with calendar 1 holding one event linked to `abc-123`.
 	 *
