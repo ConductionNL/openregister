@@ -13,6 +13,7 @@ use OCA\OpenRegister\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
+use OCA\OpenRegister\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -337,6 +338,43 @@ class FilesControllerFileActionsTest extends TestCase {
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(404, $response->getStatus());
 	}//end testPreviewUnsupported()
+
+	/**
+	 * Test preview streams the generated image at the requested size.
+	 */
+	public function testPreviewStreamsTheRequestedSize(): void {
+		$object = $this->createObjectMock();
+		$this->setupObjectServiceMocks($object);
+
+		$file = $this->createMock(File::class);
+		$this->fileService->method('getFile')->willReturn($file);
+
+		$image = $this->createMock(\OCP\Files\SimpleFS\ISimpleFile::class);
+		$image->method('read')->willReturn('png-bytes');
+		$image->method('getMimeType')->willReturn('image/png');
+		$image->method('getSize')->willReturn(9);
+
+		$asked = [];
+		$previewHandler = $this->createMock(FilePreviewHandler::class);
+		$previewHandler->method('getPreview')->willReturnCallback(
+			function (...$args) use (&$asked, $image) {
+				$asked = $args;
+				return $image;
+			}
+		);
+		$this->fileService->method('getPreviewHandler')->willReturn($previewHandler);
+
+		$this->request->method('getParam')->willReturnMap([['width', null, '100'], ['height', null, '50']]);
+
+		$response = $this->controller->preview('reg', 'sch', 'abc-123', 42);
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('image/png', $response->getHeaders()['Content-Type']);
+		$this->assertSame('max-age=3600, public', $response->getHeaders()['Cache-Control']);
+		$this->assertSame('9', $response->getHeaders()['Content-Length']);
+		$this->assertSame($file, $asked[0]);
+		$this->assertEquals(new PreviewSize(100, 50), $asked[1]);
+	}//end testPreviewStreamsTheRequestedSize()
 
 	/**
 	 * Test that an anonymous caller hitting preview() on an UNPUBLISHED file

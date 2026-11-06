@@ -68,6 +68,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Db\TalkLink
  * @uses   \OCA\OpenRegister\Db\XwikiLink
  * @uses   \OCA\OpenRegister\Db\LinkColumn
+ * @uses   \OCA\OpenRegister\Db\SelectByColumnTrait
  */
 class LinkMapperObjectKeyGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

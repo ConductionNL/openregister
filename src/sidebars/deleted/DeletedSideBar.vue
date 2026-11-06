@@ -207,11 +207,7 @@ import {
 	routeDate,
 } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import {
-	registerSelect,
-	schemaSelect,
-	scopeOption,
-} from '../../services/scopeSelect.js'
+import { scopePickers } from '../../services/scopePickers.js'
 
 /**
  * The ids of the selected register and schema, null when none is selected.
@@ -240,6 +236,8 @@ export default {
 		AccountCircle,
 	},
 
+	mixins: [scopePickers],
+
 	data() {
 		return {
 			activeTab: 'filters-tab',
@@ -251,46 +249,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the deleted-items filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return registerSelect(registerStore.registerList)
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			return scopeOption(registerStore.registerItem, 'register')
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			return scopeOption(schemaStore.schemaItem, 'schema')
-		},
-
 		/**
 		 * Derive the "deleted by" user filter options from the deleted-items list.
 		 *
