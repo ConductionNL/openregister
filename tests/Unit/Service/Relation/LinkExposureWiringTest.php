@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Relation;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
@@ -39,12 +40,16 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Relation\LinkExposure
  * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  */
 final class LinkExposureWiringTest extends TestCase {
 
@@ -339,10 +344,11 @@ final class LinkExposureWiringTest extends TestCase {
 	 * @return array<int, array{code: string, message: string}> The refusals.
 	 */
 	private function refusalsFor(SchemaMapper $mapper, Schema $schema): array {
-		$reflected = new ReflectionMethod(objectOrMethod: SchemaMapper::class, method: 'exposureRefusals');
-		$reflected->setAccessible(true);
+		$check = new RelationDeclarationCheck(
+			findSchema: static fn (string $id): Schema => $mapper->find(id: $id, _rbac: false, _multitenancy: false)
+		);
 
-		return $reflected->invoke($mapper, $schema);
+		return $check->exposureRefusals(schema: $schema);
 	}//end refusalsFor()
 
 	/**

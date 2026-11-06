@@ -79,7 +79,7 @@ class RelationCascadeHandler {
 	 * Resolves a schema reference to a schema ID.
 	 *
 	 * This method handles various types of schema references:
-	 * - Direct ID: "34" (a UUID reference is matched against slugs only)
+	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
 	 * - JSON Schema path references: "#/components/schemas/Contactgegevens"
 	 * - URL references: "http://example.com/api/schemas/34"
 	 * - Slug references: "contactgegevens"
@@ -139,15 +139,15 @@ class RelationCascadeHandler {
 	}//end removeQueryParameters()
 
 	/**
-	 * Whether a reference is first tried as a direct id. Only numeric references
-	 * are: a UUID reference resolves through the slug lookup.
+	 * Whether a reference is first tried as a direct id: a numeric id or a UUID.
 	 *
 	 * @param string $reference The reference without query parameters.
 	 *
 	 * @return bool
 	 */
 	private function isDirectId(string $reference): bool {
-		return is_numeric($reference) === true;
+		return is_numeric($reference) === true
+			|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $reference) === 1;
 	}//end isDirectId()
 
 	/**
@@ -187,7 +187,7 @@ class RelationCascadeHandler {
 	 * Resolves a register reference to a register ID.
 	 *
 	 * This method handles various types of register references:
-	 * - Direct ID: "34" (a UUID reference is matched against slugs only)
+	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
 	 * - URL path references: "https://api.example.com/api/registers/1"
 	 * - Slug references: "demo-register"
 	 *

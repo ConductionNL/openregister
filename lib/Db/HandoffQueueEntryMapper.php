@@ -50,6 +50,8 @@ use OCP\IDBConnection;
  *   (Scenario: No provider installed, queue mode)
  */
 class HandoffQueueEntryMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor for HandoffQueueEntryMapper.
 	 *
@@ -76,13 +78,7 @@ class HandoffQueueEntryMapper extends QBMapper {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function find(int $id): HandoffQueueEntry {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -96,12 +92,8 @@ class HandoffQueueEntryMapper extends QBMapper {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function findParked(?int $limit = null): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('status', $qb->createNamedParameter(HandoffQueueEntry::STATUS_PARKED)))
-			->orderBy('created', 'ASC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'status', value: HandoffQueueEntry::STATUS_PARKED));
+		$qb->orderBy('created', 'ASC');
 
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
@@ -121,12 +113,8 @@ class HandoffQueueEntryMapper extends QBMapper {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function findParkedByKind(string $kindUri): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('status', $qb->createNamedParameter(HandoffQueueEntry::STATUS_PARKED)))
-			->andWhere($qb->expr()->eq('target_kind', $qb->createNamedParameter($kindUri)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'status', value: HandoffQueueEntry::STATUS_PARKED));
+		$qb->andWhere($qb->expr()->eq('target_kind', $qb->createNamedParameter($kindUri)))
 			->orderBy('created', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -143,12 +131,8 @@ class HandoffQueueEntryMapper extends QBMapper {
 	 *   (Requirement: Handoff REST surface)
 	 */
 	public function findParkedForObject(string $sourceObjectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('status', $qb->createNamedParameter(HandoffQueueEntry::STATUS_PARKED)))
-			->andWhere($qb->expr()->eq('source_object_uuid', $qb->createNamedParameter($sourceObjectUuid)))
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'status', value: HandoffQueueEntry::STATUS_PARKED));
+		$qb->andWhere($qb->expr()->eq('source_object_uuid', $qb->createNamedParameter($sourceObjectUuid)))
 			->orderBy('created', 'ASC');
 
 		return $this->findEntities(query: $qb);

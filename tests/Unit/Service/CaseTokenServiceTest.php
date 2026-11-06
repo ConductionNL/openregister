@@ -489,6 +489,7 @@ class CaseTokenServiceTest extends TestCase {
 	 */
 	public function testRevokeByToken(): void {
 		$token = new CaseToken();
+		$token->setObjectUuid('obj-uuid');
 		$token->setToken('REVME');
 		$token->setRevokedAt(null);
 
@@ -507,9 +508,36 @@ class CaseTokenServiceTest extends TestCase {
 			container: $this->buildContainer([]),
 		);
 
-		$this->assertTrue($service->revoke('REVME'));
+		$this->assertTrue($service->revoke('obj-uuid', 'REVME'));
 		$this->assertNotNull($token->getRevokedAt());
 	}//end testRevokeByToken()
+
+	/**
+	 * revoke() refuses a token of another object, by token and by id, and writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testRevokeRefusesATokenOfAnotherObject(): void {
+		$token = new CaseToken();
+		$token->setObjectUuid('other-uuid');
+
+		$mapper = $this->createMock(CaseTokenMapper::class);
+		$mapper->method('findByToken')->willReturn(null);
+		$mapper->method('findById')->with(42)->willReturn($token);
+		$mapper->expects($this->never())->method('update');
+
+		$service = new CaseTokenService(
+			mapper: $mapper,
+			secureRandom: $this->buildSecureRandom('x'),
+			userSession: $this->buildUserSession('alice'),
+			urlGenerator: $this->buildUrlGenerator(),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $this->buildContainer([]),
+		);
+
+		$this->expectExceptionCode(404);
+		$service->revoke('obj-uuid', '42');
+	}//end testRevokeRefusesATokenOfAnotherObject()
 
 	/**
 	 * revoke() is idempotent on an already-revoked token (returns false,
@@ -519,6 +547,7 @@ class CaseTokenServiceTest extends TestCase {
 	 */
 	public function testRevokeIdempotentOnAlreadyRevoked(): void {
 		$token = new CaseToken();
+		$token->setObjectUuid('obj-uuid');
 		$token->setToken('DONE');
 		$token->setRevokedAt(new DateTime('-1 hour'));
 
@@ -535,7 +564,7 @@ class CaseTokenServiceTest extends TestCase {
 			container: $this->buildContainer([]),
 		);
 
-		$this->assertFalse($service->revoke('DONE'));
+		$this->assertFalse($service->revoke('obj-uuid', 'DONE'));
 	}//end testRevokeIdempotentOnAlreadyRevoked()
 
 	/**
@@ -546,6 +575,7 @@ class CaseTokenServiceTest extends TestCase {
 	 */
 	public function testRevokeByNumericId(): void {
 		$token = new CaseToken();
+		$token->setObjectUuid('obj-uuid');
 		$token->setId(42);
 		$token->setToken('BYID');
 		$token->setRevokedAt(null);
@@ -564,6 +594,6 @@ class CaseTokenServiceTest extends TestCase {
 			container: $this->buildContainer([]),
 		);
 
-		$this->assertTrue($service->revoke('42'));
+		$this->assertTrue($service->revoke('obj-uuid', '42'));
 	}//end testRevokeByNumericId()
 }//end class
