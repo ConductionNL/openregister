@@ -347,6 +347,7 @@ PEM;
 				$this->service()->authorizeJwt(authorization: 'Bearer ' . $this->hmacToken(algorithm: $algorithm, secret: str_repeat('x', $bytes)));
 				$this->fail(message: $algorithm . ' signed with another secret must be refused');
 			} catch (AuthenticationException $e) {
+				$this->assertStringContainsString(needle: 'does not match the public key', haystack: (string)json_encode($e->getDetails()), message: $algorithm);
 				$this->assertSame(expected: [], actual: $this->volatileUsers, message: $algorithm);
 			}
 		}
