@@ -803,6 +803,7 @@ class EdepotTransferService {
 			'password' => $this->appConfig->getValueString('openregister', 'edepot_sftp_password', ''),
 			'keyPath' => $sftpKeyPath,
 			'remotePath' => $this->appConfig->getValueString('openregister', 'edepot_sftp_remote_path', '/'),
+			'hostKeyFingerprint' => $this->appConfig->getValueString('openregister', 'edepot_sftp_host_key_fingerprint', ''),
 			'sourceId' => $this->appConfig->getValueString('openregister', 'edepot_openconnector_source_id', ''),
 			'baseUrl' => $this->appConfig->getValueString('openregister', 'edepot_openconnector_base_url', ''),
 		];

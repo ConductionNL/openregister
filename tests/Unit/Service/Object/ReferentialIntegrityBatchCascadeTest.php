@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -436,6 +437,58 @@ class ReferentialIntegrityBatchCascadeTest extends TestCase {
 
 		$this->service->applyDeletionActions($analysis, 'admin', 'root-uuid');
 	}//end testResolveFailureFallsBackEntirely()
+
+	/**
+	 * A target the delete guards refuse refuses the cascade before any target is written.
+	 *
+	 * @return void
+	 */
+	public function testARefusedTargetStopsTheBatchedCascade(): void {
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+			->willReturn([$this->createEntity('uuid-1'), $this->createEntity('uuid-2')]);
+		$this->objectMapper->method('assertDeletable')->willReturnCallback(
+			static function (ObjectEntity $entity): void {
+				if ($entity->getUuid() === 'uuid-1') {
+					throw new HookStoppedException(message: 'kept');
+				}
+			}
+		);
+
+		$this->objectMapper->expects($this->never())->method('softDeleteMultipleObjectEntities');
+		$this->objectMapper->expects($this->never())->method('deleteObjects');
+		$this->auditTrailMapper->expects($this->never())->method('insertAuditTrails');
+
+		$this->expectException(HookStoppedException::class);
+
+		$this->service->applyDeletionActions(
+			$this->analysisWithCascade([$this->target('uuid-1'), $this->target('uuid-2')]),
+			'admin',
+			'root-uuid'
+		);
+	}//end testARefusedTargetStopsTheBatchedCascade()
+
+	/**
+	 * The per-object fallback passes a guard's refusal on: it does not log it as a failed
+	 * group and audit the target as deleted.
+	 *
+	 * @return void
+	 */
+	public function testARefusalInThePerObjectFallbackIsNotSwallowed(): void {
+		$this->objectMapper->method('findMultipleAcrossAllMagicTables')
+			->willThrowException(new \RuntimeException('union query failed'));
+		$this->objectMapper->method('deleteObjects')
+			->willThrowException(new HookStoppedException(message: 'kept'));
+
+		$this->auditTrailMapper->expects($this->never())->method('insert');
+
+		$this->expectException(HookStoppedException::class);
+
+		$this->service->applyDeletionActions(
+			$this->analysisWithCascade([$this->target('uuid-1')]),
+			'admin',
+			'root-uuid'
+		);
+	}//end testARefusalInThePerObjectFallbackIsNotSwallowed()
 
 	/**
 	 * The per-object fallback groups targets by register and schema, gives a
