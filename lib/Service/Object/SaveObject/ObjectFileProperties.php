@@ -22,7 +22,6 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
-use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -68,7 +67,7 @@ final class ObjectFileProperties {
 			}
 
 			return $write->entity;
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$this->rollBack(write: $write, error: $e);
 			throw $e;
 		}
@@ -82,7 +81,7 @@ final class ObjectFileProperties {
 	 *
 	 * @return void
 	 */
-	private function rollBack(ObjectFileWrite $write, Exception $error): void {
+	private function rollBack(ObjectFileWrite $write, \Exception $error): void {
 		$this->logger->warning(
 			message: '[SaveObject] File processing failed, rolling back object creation',
 			context: ['uuid' => $write->entity->getUuid(), 'error' => $error->getMessage()]
