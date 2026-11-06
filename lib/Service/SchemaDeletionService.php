@@ -367,32 +367,12 @@ class SchemaDeletionService {
 		$schemaId = (int)$schema->getId();
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
 
-		$deletedCount = 0;
-		$deletedUuids = [];
-
 		// ---- Phase 1: one transaction. ----
 		$this->db->beginTransaction();
 		try {
 			$this->teardownGuard()->recordForced(schema: $schema, keptRows: $forcedRows);
 
-			foreach ($tables as $entry) {
-				if ($entry['register'] === null) {
-					// The magic table outlives its register (stale pair). There is no
-					// Register entity to read rows through, so nothing can be audited
-					// or deleted here — but the table is still dropped in phase 2.
-					continue;
-				}
-
-				$result = $this->deleteObjectsOfPair(
-					register: $entry['register'],
-					schema: $schema,
-					hardDelete: true,
-					triggeredBy: self::TRIGGER_SCHEMA_DELETION
-				);
-
-				$deletedCount += $result['deleted_count'];
-				$deletedUuids = array_merge($deletedUuids, $result['deleted_uuids']);
-			}
+			$removed = $this->deleteObjectsOfTables(schema: $schema, tables: $tables);
 
 			// The rows are gone, so the mapper guard naturally counts 0 — no force needed.
 			$this->schemaMapper->delete(entity: $schema);
@@ -427,18 +407,47 @@ class SchemaDeletionService {
 				'line' => __LINE__,
 				'schemaId' => $schemaId,
 				'schemaSlug' => $schema->getSlug(),
-				'deletedCount' => $deletedCount,
+				'deletedCount' => $removed['deletedCount'],
 				'tableDropped' => $tableDropped,
 			]
 		);
 
-		return [
-			'deletedCount' => $deletedCount,
-			'deletedUuids' => $deletedUuids,
-			'tableDropped' => $tableDropped,
-		];
+		return ($removed + ['tableDropped' => $tableDropped]);
 
 	}//end cascadeDeleteSchema()
+
+	/**
+	 * Audit and hard-delete the objects of every table with a register.
+	 *
+	 * @param Schema $schema The schema being torn down.
+	 * @param array<int, array{registerId: int, register: Register|null, tableName: string}> $tables The tables.
+	 *
+	 * @return array{deletedCount: int, deletedUuids: array<int, string>} What was removed.
+	 */
+	private function deleteObjectsOfTables(Schema $schema, array $tables): array {
+		$removed = ['deletedCount' => 0, 'deletedUuids' => []];
+
+		foreach ($tables as $entry) {
+			if ($entry['register'] === null) {
+				// The magic table outlives its register (stale pair). There is no
+				// Register entity to read rows through, so nothing can be audited
+				// or deleted here — but the table is still dropped in phase 2.
+				continue;
+			}
+
+			$result = $this->deleteObjectsOfPair(
+				register: $entry['register'],
+				schema: $schema,
+				hardDelete: true,
+				triggeredBy: self::TRIGGER_SCHEMA_DELETION
+			);
+
+			$removed['deletedCount'] += $result['deleted_count'];
+			$removed['deletedUuids'] = array_merge($removed['deletedUuids'], $result['deleted_uuids']);
+		}
+
+		return $removed;
+	}//end deleteObjectsOfTables()
 
 	/**
 	 * How many rows of the schema refuse a teardown unless it is forced.
