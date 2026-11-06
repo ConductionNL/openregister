@@ -232,6 +232,7 @@ class Notifier implements INotifier {
 			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
 			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
 			'form_unpublished' => $this->prepareFormUnpublished(...),
+			'external_grant_lapsing' => $this->prepareExternalGrantLapsing(...),
 			default => null,
 		};
 
@@ -901,4 +902,29 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end withAppIcon()
+
+	/**
+	 * Render "your access ends soon" for the holder of an external grant.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private function prepareExternalGrantLapsing(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$schema = (string)($parameters['schema'] ?? '');
+
+		$notification->setParsedSubject($l->t('Your access to "%1$s" ends in %2$s days', [$schema, (string)($parameters['daysLeft'] ?? '')]));
+		$notification->setParsedMessage(
+			$l->t(
+				'Your %1$s access ends on %2$s. Finish or hand over your work before then, or ask for an extension.',
+				[(string)($parameters['action'] ?? ''), (string)($parameters['endsAt'] ?? '')]
+			)
+		);
+
+		return $this->withAppIcon(notification: $notification);
+	}//end prepareExternalGrantLapsing()
 }//end class
