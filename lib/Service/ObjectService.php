@@ -3304,6 +3304,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return void
      *
      * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws Exception When the object lookup fails.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
