@@ -28,6 +28,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Schema
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleMessageValidator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleErrorBuilding
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleGraphValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
  *
