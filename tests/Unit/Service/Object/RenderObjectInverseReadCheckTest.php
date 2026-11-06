@@ -244,6 +244,17 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$this->assertSame([self::OPEN], $this->renderedChildren($renderer));
 	}
 
+	public function testAUserPageAfterATrustedReadChecksItsPreload(): void {
+		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
+		$renderer = $this->renderer('2');
+
+		$this->renderedChildren($renderer, false);
+		$renderer->clearCache();
+		$renderer->renderEntities(entities: [$this->object(self::PARENT, '1', ['name' => 'parent'])], _extend: ['children']);
+
+		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
+	}
+
 	public function testAFailedCheckLeavesTheObjectOut(): void {
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->permissions->method('hasPermission')->willThrowException(new RuntimeException('no session'));
