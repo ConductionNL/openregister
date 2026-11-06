@@ -60,6 +60,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStateBinding
  * @uses   \OCA\OpenRegister\Service\Flow\FlowScheduleService
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTriggerValidator
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowUnattributed
  * @uses   \OCA\OpenRegister\Service\WriteCause
  */
 class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
@@ -454,5 +455,39 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->publish([$this->schedule()]);
 
 		$this->assertSame(['Nobody signed in published it.'], $this->refusals->all());
+	}
+
+	public function testAMemberWhoLeftStopsTheScheduleWithTheReasonOnTheFlow(): void {
+		$this->publish([$this->schedule()]);
+		$this->members = ['quinten'];
+
+		$this->assertSame([], $this->tick());
+
+		$this->assertSame([], $this->runs);
+		$this->assertFalse($this->flow()->getEnabled());
+		$this->assertSame(Flow::STATUS_ERROR, $this->flow()->getStatus());
+		$this->assertStringContainsString('"pieter"', (string)$this->flow()->getStatusMessage());
+	}
+
+	public function testPublishingAgainRestoresAScheduleStoppedForItsTenant(): void {
+		$this->publish([$this->schedule()]);
+		$this->members = ['quinten'];
+		$this->tick();
+		$this->session = 'quinten';
+
+		$this->publish([$this->schedule()]);
+
+		$this->assertTrue($this->flow()->getEnabled());
+		$this->assertNull($this->flow()->getStatus());
+		$this->tick();
+		$this->assertSame('quinten', $this->runs[0]->getRunAs());
+	}
+
+	public function testAFlowAnAuthorDrewIsNotAskedForMembership(): void {
+		$this->publish([$this->schedule()]);
+		$this->flow()->setApp('openregister');
+		$this->members = [];
+
+		$this->assertCount(1, $this->tick());
 	}
 }

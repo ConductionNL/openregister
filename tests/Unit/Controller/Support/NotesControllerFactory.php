@@ -24,7 +24,6 @@ final class NotesControllerFactory {
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param TimelineVisibilityService $visibility Constructor argument.
 	 * @param TimelineWriteService $timeline Constructor argument.
-	 * @param TimelineEntryService $entries Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -35,7 +34,6 @@ final class NotesControllerFactory {
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility,
 		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService $timeline,
-		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService $entries,
 	): array {
 		return [
 			$appName,
@@ -46,7 +44,6 @@ final class NotesControllerFactory {
 				visibility: $visibility,
 				timeline: $timeline,
 			),
-			$entries,
 		];
 	}
 

@@ -4309,6 +4309,91 @@ class ImportHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
+	 * A row of a duplicate slug, as the mappers return it.
+	 *
+	 * @param object $row  An empty register or schema.
+	 * @param string $slug The slug.
+	 * @param int    $id   The id; it also numbers the uuid and title.
+	 */
+	private function duplicateRow(object $row, string $slug, int $id): object {
+		$row->setSlug($slug);
+		$row->setUuid('uuid-' . $id);
+		$row->setTitle('Row ' . $id);
+		$row->id = $id;
+		$row->setCreated(new \DateTime('2024-01-0' . $id . ' 10:30:00'));
+		return $row;
+	}
+
+	/**
+	 * The error names the rows of the slug, whatever their case, and no others, and is logged.
+	 */
+	public function testADuplicateRegisterIsNamedInFull(): void {
+		$this->registerMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->registerMapper->method('findAll')->willReturn([
+			$this->duplicateRow(new Register(), 'dup-register', 1),
+			$this->duplicateRow(new Register(), 'DUP-Register', 2),
+			$this->duplicateRow(new Register(), 'other', 3),
+		]);
+		$this->schemaMapper->method('findAll')->willReturn([]);
+
+		$message = "Duplicate register detected during import from app 'unknown' (version unknown). "
+			. "Register with slug 'dup-register' has multiple entries in the database: "
+			. "ID: 1, UUID: uuid-1, Title: 'Row 1', Created: 2024-01-01 10:30:00; "
+			. "ID: 2, UUID: uuid-2, Title: 'Row 2', Created: 2024-01-02 10:30:00. "
+			. 'Please resolve this by removing duplicate entries or updating the register slugs to be unique. '
+			. 'You can identify duplicates by checking registers with the same slug, uuid, or id.';
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(static function (string $line) use (&$logged): void {
+			$logged[] = $line;
+		});
+
+		try {
+			$this->handler->importRegister(['slug' => 'dup-register', 'version' => '1.0.0', 'title' => 'Duplicate']);
+			$this->fail('The duplicate must stop the import.');
+		} catch (Exception $e) {
+			$this->assertSame('Failed to import register: ' . $message, $e->getMessage());
+		}
+
+		$this->assertContains('[ImportHandler] ' . $message, $logged);
+	}
+
+	/**
+	 * The schema error reads the schemas, not the registers.
+	 */
+	public function testADuplicateSchemaIsNamedInFull(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->schemaMapper->method('findAll')->willReturn([
+			$this->duplicateRow(new Schema(), 'dup-schema', 1),
+			$this->duplicateRow(new Schema(), 'dup-schema', 2),
+		]);
+
+		$message = "Duplicate schema detected during import from app 'unknown' (version unknown). "
+			. "Schema with slug 'dup-schema' has multiple entries in the database: "
+			. "ID: 1, UUID: uuid-1, Title: 'Row 1', Created: 2024-01-01 10:30:00; "
+			. "ID: 2, UUID: uuid-2, Title: 'Row 2', Created: 2024-01-02 10:30:00. "
+			. 'Please resolve this by removing duplicate entries or updating the schema slugs to be unique. '
+			. 'You can identify duplicates by checking schemas with the same slug, uuid, or id.';
+
+		$this->expectExceptionMessage($message);
+		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+	}
+
+	/**
+	 * With one row or fewer behind the slug there is nothing to list.
+	 */
+	public function testADuplicateWithoutRowsSaysSo(): void {
+		$this->schemaMapper->method('find')
+			->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+		$this->schemaMapper->method('findAll')->willReturn([$this->duplicateRow(new Schema(), 'dup-schema', 1)]);
+
+		$this->expectExceptionMessage('multiple entries in the database: Unable to retrieve detailed duplicate information.');
+		$this->handler->importSchema(data: ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'], slugsAndIdsMap: []);
+	}
+
+	/**
 	 * getDuplicateSchemaInfo returns fallback when findAll() throws.
 	 */
 	public function testDuplicateSchemaInfoHandlesFindAllFailure(): void {
