@@ -232,5 +232,8 @@ class SchemaMapperInlineCompositionTest extends TestCase {
 		$this->assertNull($reference->of(['if' => [], 'then' => []]));
 		$this->assertNull($reference->of(['required' => ['a']]));
 		$this->assertNull($reference->of(''));
+		$this->assertNull($reference->of(0));
+		$this->assertNull($reference->of(['$ref' => 'schemas/']));
+		$this->assertNull($reference->of(['$ref' => 5]));
 	}
 }
