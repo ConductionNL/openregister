@@ -68,6 +68,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rules\DependentValueValidator
  * @uses \OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver
  * @uses \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
