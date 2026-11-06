@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
+use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -52,9 +54,19 @@ class MaintenanceModeMiddleware extends Middleware {
 	/**
 	 * The controllers that stay reachable while the mode holds.
 	 *
+	 * The console is three controllers since bd7fe3470d split consistency and
+	 * maintenance out of OperationsConsoleController. The maintenance one
+	 * MUST be here: it is the one that leaves the mode, and when only the
+	 * original class was listed, DELETE /api/operations/maintenance answered
+	 * the 503 it was meant to lift — the lock-out this list exists to prevent.
+	 *
 	 * @var array<int, string>
 	 */
-	private const ALWAYS_REACHABLE = [OperationsConsoleController::class];
+	private const ALWAYS_REACHABLE = [
+		OperationsConsoleController::class,
+		OperationsConsistencyController::class,
+		OperationsMaintenanceController::class,
+	];
 
 	/**
 	 * Constructor.
