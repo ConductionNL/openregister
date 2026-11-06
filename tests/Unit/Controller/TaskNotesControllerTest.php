@@ -174,6 +174,16 @@ class TaskNotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testANoteOfAnotherTaskIsNotFoundAndStays(): void {
+		$this->givenReadable();
+		$this->notes->method('requireNoteOf')->willThrowException(new \Exception('Note not found', 404));
+		$this->notes->expects($this->never())->method('deleteNote');
+		$this->notes->expects($this->never())->method('updateNote');
+
+		$this->assertSame(404, $this->controller()->destroy('t-1', '5')->getStatus());
+		$this->assertSame(404, $this->controller(['message' => 'x'])->update('t-1', '5')->getStatus());
+	}
+
 	public function testAnAbsentTaskAnswersExactlyAsAnUnreadableOne(): void {
 		$this->notes->expects($this->never())->method('getNotesForObject');
 

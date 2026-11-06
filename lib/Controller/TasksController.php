@@ -422,13 +422,20 @@ class TasksController extends Controller {
 				);
 			}
 
+			$this->taskService->requireTaskOf((string)$object->getUuid(), (string)$calendarId, $taskId);
+
 			$task = $this->taskService->updateTask($calendarId, $taskId, $data);
 
 			return new JSONResponse(data: $task);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}//end try
 	}//end update()
 
@@ -479,13 +486,20 @@ class TasksController extends Controller {
 				);
 			}
 
+			$this->taskService->requireTaskOf((string)$object->getUuid(), (string)$calendarId, $taskId);
+
 			$this->taskService->deleteTask($calendarId, $taskId);
 
 			return new JSONResponse(data: ['success' => true]);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}//end try
 	}//end destroy()
 

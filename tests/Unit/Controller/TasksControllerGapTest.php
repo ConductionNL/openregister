@@ -192,6 +192,32 @@ class TasksControllerGapTest extends TestCase {
 	}
 
 	/**
+	 * A calendar id in the request does not stand in for the tie to the object.
+	 */
+	public function testATaskThatIsNotOfTheObjectIsNotFoundAndStays(): void {
+		$object = $this->createObjectEntity();
+		$this->setupObjectValidation($object);
+		$this->request->method('getParams')->willReturn(['calendarId' => '20']);
+		$this->taskService->method('requireTaskOf')->willThrowException(new \Exception('Task not found', 404));
+		$this->taskService->expects($this->never())->method('updateTask');
+
+		$this->assertEquals(404, $this->controller->update('reg', 'schema', 'id', 'task-uri')->getStatus());
+	}
+
+	/**
+	 * Removal asks the same question.
+	 */
+	public function testDestroyOfATaskThatIsNotOfTheObjectIsNotFoundAndStays(): void {
+		$object = $this->createObjectEntity();
+		$this->setupObjectValidation($object);
+		$this->taskService->method('getTasksForObject')->willReturn([['id' => 'task-uri', 'calendarId' => '20']]);
+		$this->taskService->method('requireTaskOf')->willThrowException(new \Exception('Task not found', 404));
+		$this->taskService->expects($this->never())->method('deleteTask');
+
+		$this->assertEquals(404, $this->controller->destroy('reg', 'schema', 'id', 'task-uri')->getStatus());
+	}
+
+	/**
 	 * Test destroy success (covers calendarId found + deleteTask).
 	 */
 	public function testDestroySuccess(): void {

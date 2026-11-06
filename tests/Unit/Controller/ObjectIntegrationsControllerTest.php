@@ -402,6 +402,20 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	public function testAnItemOfAnotherObjectAnswers404(): void {
+		$provider = new class('stub') extends _ControllerStubProvider {
+			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+				throw new \Exception('Note not found', 404);
+			}
+		};
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider($provider);
+
+		$response = $this->buildController($registry)->destroy('r', 's', 'o', 'stub', 'entity-id');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAnItemOfAnotherObjectAnswers404()
+
 	public function testDestroyReturns204(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(new _ControllerStubProvider('stub'));
