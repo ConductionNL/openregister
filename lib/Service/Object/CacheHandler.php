@@ -68,6 +68,22 @@ use RuntimeException;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
+	/**
+	 * The counters before anything was counted.
+	 *
+	 * @var array<string, int>
+	 */
+	private const EMPTY_STATS = [
+		'hits'         => 0,
+		'misses'       => 0,
+		'preloads'     => 0,
+		'query_hits'   => 0,
+		'query_misses' => 0,
+		'name_hits'    => 0,
+		'name_misses'  => 0,
+		'name_warmups' => 0,
+	];
+
 
 	/**
 	 * In-memory cache of objects indexed by ID/UUID
@@ -191,16 +207,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *            warmup_breakdown?: array{organisations: int, objects_table: int,
 	 *                                     magic_tables: int, total_unique: int}}
 	 */
-	private array $stats = [
-		'hits' => 0,
-		'misses' => 0,
-		'preloads' => 0,
-		'query_hits' => 0,
-		'query_misses' => 0,
-		'name_hits' => 0,
-		'name_misses' => 0,
-		'name_warmups' => 0,
-	];
+	private array $stats = self::EMPTY_STATS;
 
 	/**
 	 * Distributed cache for query results
@@ -937,40 +944,36 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getStats(): array {
-		$totalRequests = $this->stats['hits'] + $this->stats['misses'];
-		$hitRate = 0;
-		if ($totalRequests > 0) {
-			$hitRate = ($this->stats['hits'] / $totalRequests) * 100;
-		}
-
-		$totalQueryRequests = $this->stats['query_hits'] + $this->stats['query_misses'];
-		$queryHitRate = 0;
-		if ($totalQueryRequests > 0) {
-			$queryHitRate = ($this->stats['query_hits'] / $totalQueryRequests) * 100;
-		}
-
-		$totalNameRequests = $this->stats['name_hits'] + $this->stats['name_misses'];
-		$nameHitRate = 0;
-		if ($totalNameRequests > 0) {
-			$nameHitRate = ($this->stats['name_hits'] / $totalNameRequests) * 100;
-		}
-
-		// Get distributed cache count (persists across requests).
-		$distNameCacheCount = $this->getDistributedNameCacheCount();
-
 		return array_merge(
 			$this->stats,
 			[
-				'hit_rate' => round($hitRate, 2),
-				'query_hit_rate' => round($queryHitRate, 2),
-				'name_hit_rate' => round($nameHitRate, 2),
+				'hit_rate' => $this->hitRate(prefix: ''),
+				'query_hit_rate' => $this->hitRate(prefix: 'query_'),
+				'name_hit_rate' => $this->hitRate(prefix: 'name_'),
 				'cache_size' => count($this->objectCache),
 				'query_cache_size' => count($this->inMemoryQueryCache),
 				'name_cache_size' => count($this->nameCache),
-				'distributed_name_cache_size' => $distNameCacheCount,
+				'distributed_name_cache_size' => $this->getDistributedNameCacheCount(),
 			]
 		);
 	}//end getStats()
+
+	/**
+	 * The hit rate of one counter pair, as a percentage with two decimals.
+	 *
+	 * @param string $prefix The pair's prefix in the stats.
+	 *
+	 * @return float The rate, 0 before any request.
+	 */
+	private function hitRate(string $prefix): float {
+		$hits  = $this->stats[$prefix.'hits'];
+		$total = ($hits + $this->stats[$prefix.'misses']);
+		if ($total === 0) {
+			return 0.0;
+		}
+
+		return round(($hits / $total) * 100, 2);
+	}//end hitRate()
 
 	/**
 	 * Clear query result caches
@@ -985,39 +988,11 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function clearSearchCache(?string $pattern = null): void {
-		// Clear in-memory cache.
-		if ($pattern !== null) {
-			$this->inMemoryQueryCache = array_filter(
-				$this->inMemoryQueryCache,
-				function ($key) use ($pattern) {
-					return strpos($key, $pattern) === false;
-				},
-				ARRAY_FILTER_USE_KEY
-			);
-		}
+		$this->inMemoryQueryCache = $this->queriesWithout(pattern: $pattern);
 
-		if ($pattern === null) {
-			$this->inMemoryQueryCache = [];
-		}
-
-		// Clear distributed cache if available.
-		if ($this->queryCache !== null) {
-			try {
-				// For targeted clearing, we'd need a more sophisticated approach.
-				// For now, clear all to ensure consistency.
-				$this->queryCache->clear();
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to clear search cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-						'pattern' => $pattern,
-					]
-				);
-			}
-		}
+		// For targeted clearing, we'd need a more sophisticated approach.
+		// For now, clear all to ensure consistency.
+		$this->clearDistributed(cache: $this->queryCache, failure: ['message' => '[CacheHandler] Failed to clear search cache', 'pattern' => $pattern]);
 
 		$this->logger->debug(
 			message: '[CacheHandler] 🧹 SEARCH CACHE CLEARED',
@@ -1026,85 +1001,102 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end clearSearchCache()
 
 	/**
-	 * Clear all search caches related to a specific schema (across all users)
+	 * The in-memory query cache without the entries whose key holds the pattern.
 	 *
-	 * **SCHEMA-WIDE INVALIDATION**: When objects in a schema change, we need to clear
-	 * all cached search results that could include objects from that schema.
-	 * This ensures colleagues see each other's changes immediately.
+	 * @param string|null $pattern The pattern, null for every entry.
 	 *
-	 * @param int|null $schemaId Schema ID to invalidate
-	 * @param int|null $registerId Register ID for additional context
-	 * @param string $operation Operation performed ('create', 'update', 'delete')
+	 * @return array The entries that stay.
+	 */
+	private function queriesWithout(?string $pattern): array {
+		if ($pattern === null) {
+			return [];
+		}
+
+		return array_filter(
+			$this->inMemoryQueryCache,
+			static fn ($key): bool => strpos($key, $pattern) === false,
+			ARRAY_FILTER_USE_KEY
+		);
+	}//end queriesWithout()
+
+	/**
+	 * Clear a distributed cache, reporting a failure instead of raising it.
+	 *
+	 * @param IMemcache|null $cache   The cache, null when there is none.
+	 * @param array          $failure The warning's `message` and what it reports beside the error.
+	 *
+	 * @return bool True when the cache was cleared.
+	 */
+	private function clearDistributed(?IMemcache $cache, array $failure): bool {
+		if ($cache === null) {
+			return false;
+		}
+
+		try {
+			$cache->clear();
+		} catch (\Exception $e) {
+			$message = $failure['message'];
+			unset($failure['message']);
+			$this->logger->warning(message: $message, context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()] + $failure);
+			return false;
+		}
+
+		return true;
+	}//end clearDistributed()
+
+	/**
+	 * Clear every search cache that may hold objects of a changed schema.
+	 *
+	 * Distributed keys cannot be pattern-matched, so all search entries go (a nuclear
+	 * approach). This affects all users, which is how colleagues see each other's
+	 * changes immediately.
+	 *
+	 * TODO: Implement more targeted cache clearing with schema-specific prefixes.
+	 *
+	 * @param ObjectChange $change The change.
 	 *
 	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function clearSchemaRelatedCaches(?int $schemaId = null, ?int $registerId = null, string $operation = 'unknown'): void {
+	private function clearSchemaRelatedCaches(ObjectChange $change): void {
 		$startTime = microtime(true);
-
-		// **STRATEGY 1**: Clear all in-memory search caches (fast).
 		$this->inMemoryQueryCache = [];
+		$this->clearDistributedForSchema(change: $change);
 
-		// **STRATEGY 2**: Clear distributed cache entries that could contain objects from this schema.
-		if ($this->queryCache !== null && $schemaId !== null) {
-			try {
-				// Since we can't easily pattern-match keys in distributed cache,.
-				// We clear all search cache entries for now (nuclear approach).
-				// TODO: Implement more targeted cache clearing with schema-specific prefixes.
-				$this->queryCache->clear();
-
-				$this->logger->debug(
-					message: '[CacheHandler] Schema-related distributed caches cleared',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $schemaId,
-						'registerId' => $registerId,
-						'operation' => $operation,
-						'strategy' => 'nuclear_clear',
-					]
-				);
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to clear schema-related distributed caches',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaId' => $schemaId,
-						'error' => $e->getMessage(),
-					]
-				);
-			}//end try
-		}//end if
-
-		if ($schemaId === null) {
-			// Fallback: clear all search caches if no specific schema.
+		// Fallback: clear all search caches if no specific schema.
+		if ($change->schemaId === null) {
 			$this->clearSearchCache();
-		}//end if
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-		// Determine strategy for logging.
-		$strategy = 'global_fallback';
-		if ($schemaId !== null) {
-			$strategy = 'schema_targeted';
 		}
 
 		$this->logger->info(
 			message: '[CacheHandler] Schema-related caches cleared for CUD operation',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schemaId' => $schemaId,
-				'registerId' => $registerId,
-				'operation' => $operation,
-				'executionTime' => $executionTime . 'ms',
+			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
+				'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
 				'impact' => 'all_users_affected',
-				'strategy' => $strategy,
+				'strategy' => ($change->schemaId !== null ? 'schema_targeted' : 'global_fallback'),
 			]
 		);
 	}//end clearSchemaRelatedCaches()
+
+	/**
+	 * Clear the distributed search cache for a change that names a schema.
+	 *
+	 * @param ObjectChange $change The change.
+	 *
+	 * @return void
+	 */
+	private function clearDistributedForSchema(ObjectChange $change): void {
+		if ($change->schemaId === null) {
+			return;
+		}
+
+		$failure = ['message' => '[CacheHandler] Failed to clear schema-related distributed caches', 'schemaId' => $change->schemaId];
+		if ($this->clearDistributed(cache: $this->queryCache, failure: $failure) === true) {
+			$this->logger->debug(
+				message: '[CacheHandler] Schema-related distributed caches cleared',
+				context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + ['strategy' => 'nuclear_clear']
+			);
+		}
+	}//end clearDistributedForSchema()
 
 	/**
 	 * Invalidate caches when objects are modified (CRUD operations)
@@ -1131,40 +1123,39 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		?int $schemaId = null,
 	): void {
 		$startTime = microtime(true);
+		$change    = (new ObjectChange(object: $object, operation: $operation))->in(registerId: $registerId, schemaId: $schemaId);
 
-		if ($object !== null) {
-			if ($registerId === null && $object->getRegister() !== null) {
-				$registerId = (int)$object->getRegister();
-			}
-
-			if ($schemaId === null && $object->getSchema() !== null) {
-				$schemaId = (int)$object->getSchema();
-			}
-
-			$this->forgetChangedObject(object: $object, operation: $operation);
-			if ($operation === 'create' || $operation === 'update') {
-				$this->rememberChangedObjectName(object: $object, source: self::objectNameSource(register: $registerId, schema: $schemaId));
-			}
-		}
-
-		// **SCHEMA-WIDE INVALIDATION**: Clear ALL search caches for this schema.
-		// This ensures colleagues see each other's changes immediately.
-		$this->clearSchemaRelatedCaches(schemaId: $schemaId, registerId: $registerId, operation: $operation);
+		$this->refreshChangedObject(change: $change);
+		$this->clearSchemaRelatedCaches(change: $change);
 
 		$this->logger->info(
 			message: '[CacheHandler] Schema-wide cache invalidated for CRUD operation',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'operation' => $operation,
-				'registerId' => $registerId,
-				'schemaId' => $schemaId,
+			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
 				'objectId' => $object?->getId(),
-				'executionTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+				'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
 				'scope' => 'all_users_in_schema',
 			]
 		);
 	}//end invalidateForObjectChange()
+
+	/**
+	 * Forget a changed object and remember its new name.
+	 *
+	 * @param ObjectChange $change The change.
+	 *
+	 * @return void
+	 */
+	private function refreshChangedObject(ObjectChange $change): void {
+		if ($change->object === null) {
+			return;
+		}
+
+		$this->forgetChangedObject(object: $change->object, operation: $change->operation);
+		if ($change->operation === 'create' || $change->operation === 'update') {
+			$source = self::objectNameSource(register: $change->registerId, schema: $change->schemaId);
+			$this->rememberChangedObjectName(object: $change->object, source: $source);
+		}
+	}//end refreshChangedObject()
 
 	/**
 	 * Drop a changed object and its cached name; a delete also drops its name everywhere it was recorded.
@@ -1339,64 +1330,29 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 		$this->objectCache = [];
 		$this->inMemoryQueryCache = [];
+		$this->stats = self::EMPTY_STATS;
+		$this->forgetNames();
+
+		$this->clearDistributed(cache: $this->queryCache, failure: ['message' => '[CacheHandler] Failed to clear distributed query cache']);
+		$this->clearDistributed(cache: $this->nameDistributedCache, failure: ['message' => '[CacheHandler] Failed to clear distributed name cache']);
+
+		$this->logger->info(
+			message: '[CacheHandler] All object caches cleared (including name cache)',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms']
+		);
+	}//end clearAllCaches()
+
+	/**
+	 * Empty the in-memory name cache and the tenancy recorded alongside it.
+	 *
+	 * @return void
+	 */
+	private function forgetNames(): void {
 		$this->nameCache = [];
 		$this->nameOrganisations = [];
 		$this->nameSources = [];
 		$this->readabilityMemo = [];
-		$this->stats = [
-			'hits' => 0,
-			'misses' => 0,
-			'preloads' => 0,
-			'query_hits' => 0,
-			'query_misses' => 0,
-			'name_hits' => 0,
-			'name_misses' => 0,
-			'name_warmups' => 0,
-		];
-
-		// Clear distributed query cache.
-		if ($this->queryCache !== null) {
-			try {
-				$this->queryCache->clear();
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to clear distributed query cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
-
-		// Clear distributed name cache.
-		if ($this->nameDistributedCache !== null) {
-			try {
-				$this->nameDistributedCache->clear();
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to clear distributed name cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
-
-		$this->logger->info(
-			message: '[CacheHandler] All object caches cleared (including name cache)',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'executionTime' => $executionTime . 'ms',
-			]
-		);
-	}//end clearAllCaches()
+	}//end forgetNames()
 
 	/**
 	 * Clear the cache (legacy method - kept for backward compatibility)
@@ -2527,27 +2483,8 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function clearNameCache(): void {
-		// Clear in-memory name cache and the tenancy recorded alongside it.
-		$this->nameCache = [];
-		$this->nameOrganisations = [];
-		$this->nameSources = [];
-		$this->readabilityMemo = [];
-
-		// Clear distributed name cache.
-		if ($this->nameDistributedCache !== null) {
-			try {
-				$this->nameDistributedCache->clear();
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Failed to clear distributed name cache',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
+		$this->forgetNames();
+		$this->clearDistributed(cache: $this->nameDistributedCache, failure: ['message' => '[CacheHandler] Failed to clear distributed name cache']);
 
 		$this->logger->debug(
 			message: '[CacheHandler] OBJECT NAME CACHE CLEARED',
