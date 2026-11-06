@@ -146,7 +146,7 @@ class OpenConnectorTransport extends HttpSipTransport {
 			]
 		);
 
-		return new TransportResult(success: true, transferReference: (string)$callLogId);
+		return new TransportResult(transferReference: (string)$callLogId);
 	}//end jobResult()
 
 	/**
