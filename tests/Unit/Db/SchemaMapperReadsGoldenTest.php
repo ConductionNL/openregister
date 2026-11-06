@@ -35,6 +35,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\ParentReference
