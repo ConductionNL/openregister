@@ -114,7 +114,7 @@ final class SchemaComposition {
 	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
 	 */
 	public function propertySource(string $propertyName, array $parentRefs): ?string {
-		foreach (array_filter($parentRefs) as $parentRef) {
+		foreach (array_filter(array_map([new ParentReference(), 'fromEntry'], $parentRefs)) as $parentRef) {
 			if (isset($this->propertiesOf(parentRef: $parentRef)[$propertyName]) === true) {
 				return (string)$parentRef;
 			}
