@@ -83,13 +83,32 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 		$this->manager->method('createNotification')->willReturn($notification);
 
 		$users = $this->createMock(IUserManager::class);
-		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => in_array($uid, ['adviser', 'advisers'], true));
+		$users->method('userExists')->willReturnCallback(fn (string $uid): bool => $this->lookedUp(name: $uid) !== null);
+		$users->method('get')->willReturnCallback(fn (string $uid): ?IUser => $this->lookedUp(name: $uid));
 
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('get')->willReturnCallback(fn (string $gid): ?IGroup => $gid === 'advisers' ? $this->group() : null);
 
 		return new ExternalGrantLapseNotifier(notifications: $this->manager, users: $users, groups: $groups);
 	}//end notifier()
+
+	/**
+	 * The user a name finds: the lookup ignores case and takes an email address, as the real one may.
+	 *
+	 * @param string $name The name asked for.
+	 *
+	 * @return IUser|null The user.
+	 */
+	private function lookedUp(string $name): ?IUser {
+		$uid = strtolower(str_replace('@example.org', '', $name));
+		if (in_array($uid, ['adviser', 'advisers'], true) === false) {
+			return null;
+		}
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		return $user;
+	}//end lookedUp()
 
 	/**
 	 * The group `advisers` with two members.
@@ -178,6 +197,19 @@ class ExternalGrantLapseNotifierTest extends TestCase {
 		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => ' adviser '])));
 		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['group' => ' advisers '])));
 	}//end testAPaddedIdWarnsNobody()
+
+	/**
+	 * Another casing or an email address finds a user but is not their uid, so it warns nobody.
+	 *
+	 * @return void
+	 */
+	public function testANameThatOnlyLooksUpToAUserWarnsNobody(): void {
+		$notifier = $this->notifier();
+		$this->manager->expects($this->never())->method('notify');
+
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'ADVISER'])));
+		$this->assertSame(0, $notifier->warn(schema: $this->schema(), grant: $this->lapsing(entry: ['user' => 'adviser@example.org'])));
+	}//end testANameThatOnlyLooksUpToAUserWarnsNobody()
 
 	/**
 	 * 🔴 A user and a group with the same name are never confused, either way.
