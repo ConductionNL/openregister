@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Listener;
  *
  * @spec openspec/specs/approval-workflow/spec.md#req-007
  */
-final class ApprovalChainRun {
+final class ChainGateRun {
 	/**
 	 * Constructor.
 	 *

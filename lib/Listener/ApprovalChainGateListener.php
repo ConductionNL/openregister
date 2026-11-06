@@ -199,7 +199,7 @@ class ApprovalChainGateListener implements IEventListener {
 		}
 
 		return $this->judgeSequence(
-			run: new ApprovalChainRun(edit: $edit, chainKey: $chainKey, template: $template, tierPositions: $tierPositions)
+			run: new ChainGateRun(edit: $edit, chainKey: $chainKey, template: $template, tierPositions: $tierPositions)
 		);
 	}//end evaluateGate()
 
@@ -238,13 +238,13 @@ class ApprovalChainGateListener implements IEventListener {
 	 * fresh attempt opens a sequence beside it rather than deleting the record of who
 	 * refused.
 	 *
-	 * @param ApprovalChainRun $run The chain being judged.
+	 * @param ChainGateRun $run The chain being judged.
 	 *
 	 * @return bool True when the transition was blocked.
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
-	private function judgeSequence(ApprovalChainRun $run): bool {
+	private function judgeSequence(ChainGateRun $run): bool {
 		$status = $this->newestStatus(run: $run);
 		if ($status === TaskSequence::STATUS_COMPLETED) {
 			return false;
@@ -263,11 +263,11 @@ class ApprovalChainGateListener implements IEventListener {
 	/**
 	 * The status of the anchor's newest sequence of this chain, or null when there is none.
 	 *
-	 * @param ApprovalChainRun $run The chain being judged.
+	 * @param ChainGateRun $run The chain being judged.
 	 *
 	 * @return string|null
 	 */
-	private function newestStatus(ApprovalChainRun $run): ?string {
+	private function newestStatus(ChainGateRun $run): ?string {
 		return $this->sequenceMapper->findNewestForAnchor(
 			anchorObjectUuid: $run->edit->uuid(),
 			templateId: (string)$run->template['templateId']
@@ -277,13 +277,13 @@ class ApprovalChainGateListener implements IEventListener {
 	/**
 	 * Open a new sequence for the chain.
 	 *
-	 * @param ApprovalChainRun $run The chain being judged.
+	 * @param ChainGateRun $run The chain being judged.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
-	private function provision(ApprovalChainRun $run): void {
+	private function provision(ChainGateRun $run): void {
 		$register   = (string)$run->edit->object()->getRegister();
 		$registerId = null;
 		if (is_numeric($register) === true) {
@@ -302,12 +302,12 @@ class ApprovalChainGateListener implements IEventListener {
 	/**
 	 * Refuse the transition while its approval is open.
 	 *
-	 * @param ApprovalChainRun $run     The chain being judged.
-	 * @param string           $message Human-readable message.
+	 * @param ChainGateRun $run     The chain being judged.
+	 * @param string       $message Human-readable message.
 	 *
 	 * @return void
 	 */
-	private function refusePending(ApprovalChainRun $run, string $message): void {
+	private function refusePending(ChainGateRun $run, string $message): void {
 		$run->edit->refuse(error: ['code' => 'approval-chain-pending', 'message' => $message]);
 	}//end refusePending()
 

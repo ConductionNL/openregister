@@ -65,7 +65,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
- * @covers \OCA\OpenRegister\Listener\ApprovalChainRun
+ * @covers \OCA\OpenRegister\Listener\ChainGateRun
  * @covers \OCA\OpenRegister\Listener\LifecycleAttempt
  * @covers \OCA\OpenRegister\Listener\LifecycleCreate
  * @covers \OCA\OpenRegister\Listener\LifecycleDeclaration

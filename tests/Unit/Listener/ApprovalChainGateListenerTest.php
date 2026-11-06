@@ -49,7 +49,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
- * @uses \OCA\OpenRegister\Listener\ApprovalChainRun
+ * @uses \OCA\OpenRegister\Listener\ChainGateRun
  * @uses \OCA\OpenRegister\Listener\LifecycleAttempt
  * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
  * @uses \OCA\OpenRegister\Listener\LifecycleEdit
