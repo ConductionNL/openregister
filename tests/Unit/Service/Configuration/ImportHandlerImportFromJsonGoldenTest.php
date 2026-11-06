@@ -275,11 +275,9 @@ class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $mappingMapper,
-			client: $this->createMock(Client::class),
 			appConfig: $appConfig,
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $objectService
 		);
 

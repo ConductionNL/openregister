@@ -33,8 +33,6 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 use DateTime;
 use Exception;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -58,7 +56,6 @@ use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -67,7 +64,6 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Class ImportHandler
@@ -170,13 +166,6 @@ class ImportHandler {
 	private readonly ConfigurationMapper $configurationMapper;
 
 	/**
-	 * HTTP client for fetching JSON from URLs.
-	 *
-	 * @var Client The Guzzle HTTP client instance.
-	 */
-	private readonly Client $client;
-
-	/**
 	 * App config for storing version information.
 	 *
 	 * @var IAppConfig The app config instance.
@@ -196,13 +185,6 @@ class ImportHandler {
 	 * @var string The app data path.
 	 */
 	private readonly string $appDataPath;
-
-	/**
-	 * Upload handler for processing uploaded JSON data.
-	 *
-	 * @var UploadHandler The upload handler instance.
-	 */
-	private readonly UploadHandler $uploadHandler;
 
 	/**
 	 * Object service for object CRUD operations.
@@ -369,11 +351,9 @@ class ImportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
-	 * @param Client $client The HTTP client for URL fetching.
 	 * @param IAppConfig $appConfig The app config.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param string $appDataPath The app data path.
-	 * @param UploadHandler $uploadHandler The upload handler.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
 	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
@@ -389,11 +369,9 @@ class ImportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
-		Client $client,
 		IAppConfig $appConfig,
 		LoggerInterface $logger,
 		string $appDataPath,
-		UploadHandler $uploadHandler,
 		ObjectOperationsInterface $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
@@ -405,11 +383,9 @@ class ImportHandler {
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->mappingMapper = $mappingMapper;
-		$this->client = $client;
 		$this->appConfig = $appConfig;
 		$this->logger = $logger;
 		$this->appDataPath = $appDataPath;
-		$this->uploadHandler = $uploadHandler;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
 	}//end __construct()
@@ -744,46 +720,6 @@ class ImportHandler {
 	}//end setObjectMapper()
 
 	/**
-	 * Decode JSON or YAML string data into PHP array.
-	 *
-	 * @param string $data The string data to decode.
-	 * @param string|null $type The content type.
-	 *
-	 * @return array|null The decoded array or null if decoding fails.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function decode(string $data, ?string $type): ?array {
-		switch ($type) {
-			case 'application/json':
-				$phpArray = json_decode(json: $data, associative: true);
-				break;
-			case 'application/yaml':
-				$phpArray = Yaml::parse(input: $data);
-				break;
-			default:
-				$phpArray = json_decode(json: $data, associative: true);
-				if ($phpArray === null || $phpArray === false) {
-					try {
-						$phpArray = Yaml::parse(input: $data);
-					} catch (Exception $exception) {
-						$phpArray = null;
-					}
-				}
-				break;
-		}
-
-		if ($phpArray === null || $phpArray === false) {
-			return null;
-		}
-
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
-		return $phpArray;
-	}//end decode()
-
-	/**
 	 * Recursively converts stdClass objects to arrays.
 	 *
 	 * @param mixed $data The data to convert.
@@ -807,101 +743,6 @@ class ImportHandler {
 
 		return $data;
 	}//end ensureArrayStructure()
-
-	/**
-	 * Get JSON data from uploaded file.
-	 *
-	 * @param array $uploadedFile The uploaded file data.
-	 * @param string|null $_type Unused parameter.
-	 *
-	 * @return JSONResponse|array The decoded array or error response.
-	 *
-	 * @SuppressWarnings (PHPMD.UnusedFormalParameter)
-	 *
-	 * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromFile(array $uploadedFile, ?string $_type = null): array|JSONResponse {
-		if ($uploadedFile['error'] !== UPLOAD_ERR_OK) {
-			return new JSONResponse(data: ['error' => 'File upload error: ' . $uploadedFile['error']], statusCode: 400);
-		}
-
-		$fileExtension = pathinfo(path: $uploadedFile['name'], flags: PATHINFO_EXTENSION);
-		$fileContent = file_get_contents(filename: $uploadedFile['tmp_name']);
-
-		$phpArray = $this->decode(data: $fileContent, type: $fileExtension);
-		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode file content as JSON or YAML', 'MIME-type' => $fileExtension],
-				statusCode: 400
-			);
-		}
-
-		return $phpArray;
-	}//end getJSONfromFile()
-
-	/**
-	 * Fetch JSON from URL using HTTP GET.
-	 *
-	 * @param string $url The URL to fetch.
-	 *
-	 * @return JSONResponse|array
-	 *
-	 * @throws GuzzleException
-	 *
-	 * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromURL(string $url): array|JSONResponse {
-		try {
-			$response = $this->client->request('GET', $url);
-		} catch (GuzzleException $e) {
-			$errorMessage = 'Failed to do a GET api-call on url: ' . $url . ' ' . $e->getMessage();
-			return new JSONResponse(data: ['error' => $errorMessage], statusCode: 400);
-		}
-
-		$responseBody = $response->getBody()->getContents();
-		$contentType = $response->getHeaderLine('Content-Type');
-		$phpArray = $this->decode(data: $responseBody, type: $contentType);
-
-		if ($phpArray === null) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to parse response body as JSON or YAML', 'Content-Type' => $contentType],
-				statusCode: 400
-			);
-		}
-
-		return $phpArray;
-	}//end getJSONfromURL()
-
-	/**
-	 * Get JSON data from request body.
-	 *
-	 * @param array|string $phpArray The request body data.
-	 *
-	 * @return JSONResponse|array The processed array or error response.
-	 *
-	 * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function getJSONfromBody(array|string $phpArray): array|JSONResponse {
-		if (is_string($phpArray) === true) {
-			$phpArray = json_decode($phpArray, associative: true);
-		}
-
-		if ($phpArray === null || $phpArray === false) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to decode JSON input'],
-				statusCode: 400
-			);
-		}
-
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
-		return $phpArray;
-	}//end getJSONfromBody()
 
 	/**
 	 * Import a register from configuration data.
