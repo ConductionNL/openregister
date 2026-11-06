@@ -1991,6 +1991,7 @@ class RegistersController extends Controller {
 			'summary' => $summary,
 		];
 		if ($errorsCsv !== '') {
+			$responseData['message'] = 'Import finished with errors';
 			$responseData['errors_csv'] = base64_encode($errorsCsv);
 			$responseData['errors_csv_filename'] = 'import_errors.csv';
 		}

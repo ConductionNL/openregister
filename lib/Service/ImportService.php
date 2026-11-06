@@ -1511,8 +1511,9 @@ class ImportService implements ObjectImporterInterface {
 	}//end saveCsvObjects()
 
 	/**
-	 * Bulk-save parsed objects and fill the summary from the result. A validation
-	 * error carries the sheet title first when `$import['sheetTitle']` is set.
+	 * Bulk-save parsed objects and fill the summary from the result. Every row the save
+	 * refused is reported, whatever the validation flag says, with the sheet title first
+	 * when `$import['sheetTitle']` is set.
 	 *
 	 * @param list<array> $objects The parsed objects
 	 * @param array       $import  The import options with the summary so far and the sheetTitle (null for CSV)
@@ -1529,10 +1530,8 @@ class ImportService implements ObjectImporterInterface {
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true) {
-			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
-			}
+		foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+			$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
 		}
 
 		return $summary;
