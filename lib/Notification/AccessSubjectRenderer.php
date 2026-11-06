@@ -239,7 +239,8 @@ class AccessSubjectRenderer extends SubjectRenderer {
 		$this->withAppIcon(notification: $notification);
 
 		$url = $this->urlGenerator->linkToRouteAbsolute(routeName: 'files.view.index') . '?dir=' . rawurlencode('/' . trim($folder, '/'));
-		$notification->addAction($this->primaryAction(notification: $notification, label: $l->t('Open Files'))->setLink(link: $url, requestType: 'GET'));
+		$open = $this->primaryAction(notification: $notification, label: $l->t('Open Files'));
+		$notification->addParsedAction($open->setLink(link: $url, requestType: 'GET'));
 
 		return $notification;
 	}//end auditExportReady()
