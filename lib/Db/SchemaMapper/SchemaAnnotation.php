@@ -78,6 +78,21 @@ final class SchemaAnnotation {
 	}//end isBlock()
 
 	/**
+	 * The annotation as an array, or empty when it is written as anything else.
+	 *
+	 * @return array<mixed>
+	 *
+	 * @spec exclude shared save-time plumbing, not a capability of its own
+	 */
+	public function block(): array {
+		if ($this->isBlock() === true) {
+			return $this->value();
+		}
+
+		return [];
+	}//end block()
+
+	/**
 	 * Whether the annotation holds any value but null.
 	 *
 	 * @return bool
