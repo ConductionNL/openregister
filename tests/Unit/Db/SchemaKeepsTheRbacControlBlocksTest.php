@@ -65,6 +65,10 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 

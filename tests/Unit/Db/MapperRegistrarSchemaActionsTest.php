@@ -34,6 +34,16 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionInputSchema
  * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionShape
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  */
 class MapperRegistrarSchemaActionsTest extends TestCase {
 
@@ -100,7 +110,7 @@ class MapperRegistrarSchemaActionsTest extends TestCase {
 	 * @return void
 	 */
 	public function testANonAdministratorsElevateIsRefused(): void {
-		$validate = new ReflectionMethod(SchemaMapper::class, 'validateMacroActions');
+		$validate = new ReflectionMethod(SchemaMapper::class, 'cleanObject');
 
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('only an administrator may declare "elevate"');

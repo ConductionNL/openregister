@@ -109,6 +109,16 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\EntityChangeDetector
+ * @uses \OCA\OpenRegister\Db\SchemaPropertyInheritance
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
@@ -233,6 +243,26 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 				['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]],
 			],
 			'extends form on property' => [[], ['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]]],
+			'calculation references broken' => [
+				[
+					'x-openregister-calculations' => ['t' => ['expression' => ['+' => [1, 2]]]],
+					'x-openregister-references' => ['r' => 'nonsense'],
+				],
+				self::PROPERTIES,
+			],
+			'calculation aggregate refs broken' => [
+				[
+					'x-openregister-calculations' => ['t' => ['expression' => ['+' => [1, 2]]]],
+					'x-openregister-aggregate-refs' => ['r' => 'nonsense'],
+				],
+				self::PROPERTIES,
+			],
+			'action two bodies' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow', 'steps' => [['id' => 'x']]]]], self::PROPERTIES],
+			'action inputs scalar' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow', 'inputs' => 'x']]], self::PROPERTIES],
+			'name field integer' => [['objectNameField' => 5], ['5' => ['type' => 'string']]],
+			'name field true' => [['objectNameField' => true], self::PROPERTIES],
+			'name field list' => [['objectNameField' => ['name']], self::PROPERTIES],
+			'property not an array' => [[], ['a' => 'nonsense']],
 			'hinge with two keys' => [['x-openregister-lenses' => ['bogus' => true], 'x-openregister-list' => 'x'], self::PROPERTIES],
 		];
 		foreach (self::ANNOTATIONS as $key) {
@@ -270,12 +300,137 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testSaveMatchesGolden()
 
+	/**
+	 * The exposure check reads the far schema through the mapper's own lookup.
+	 */
+	public function testFarSchemaLookupMatchesGolden(): void {
+		$far = ['id' => 9, 'uuid' => 'far-uuid', 'slug' => 'besluit', 'title' => 'Besluit', 'properties' => '{"zaaknummer":{"type":"string"}}'];
+		$link = ['type' => 'string', 'x-openregister-relation' => ['type' => 'gerelateerd']];
+		$exposing = ['key' => 'gerelateerd', 'label' => 'related to', 'exposes' => ['zaaknummer', 'zaknummer']];
+		$silent = ['key' => 'gerelateerd', 'label' => 'related to'];
+		$cases = [
+			'ref path' => [$exposing, $link + ['$ref' => '#/components/schemas/besluit'], [[$far]]],
+			'ref bare' => [$exposing, $link + ['$ref' => ' besluit '], [[$far]]],
+			'ref items' => [$exposing, $link + ['items' => ['$ref' => 'schemas/besluit']], [[$far]]],
+			'ref items object' => [$exposing, $link + ['items' => (object) ['$ref' => 'schemas/besluit']], [[$far]]],
+			'ref trailing slash' => [$exposing, $link + ['$ref' => 'schemas/'], [[$far]]],
+			'ref not a string' => [$exposing, $link + ['$ref' => 5], [[$far]]],
+			'ref empty' => [$exposing, $link + ['$ref' => '  '], [[$far]]],
+			'far missing' => [$exposing, $link + ['$ref' => 'besluit'], [[]]],
+			'exposes nothing' => [$silent, $link + ['$ref' => 'besluit'], [[$far]]],
+			'exposes known only' => [['exposes' => ['zaaknummer']] + $silent, $link + ['$ref' => 'besluit'], [[$far]]],
+		];
+		$actual = [];
+		foreach ($cases as $name => [$type, $property, $rows]) {
+			$this->logs = [];
+			$this->queryLog = [];
+			$this->queuedRows = $rows;
+			$schema = new Schema();
+			$schema->setId(7);
+			$schema->setTitle('Golden Schema');
+			$schema->setProperties(['link' => $property]);
+			$schema->setConfiguration(['x-openregister-relation-types' => [$type]]);
+			$outcome = $this->saved($schema);
+			$actual[$name] = ['thrown' => ($outcome['thrown'] ?? null), 'errors' => ($outcome['errors'] ?? null), 'rowsLeft' => count($this->queuedRows)];
+		}
+
+		$fixture = __DIR__ . '/fixtures/schema-mapper-save-far-golden.json';
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents($fixture, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$this->assertSame(json_decode((string) file_get_contents($fixture), true), $actual);
+	}//end testFarSchemaLookupMatchesGolden()
+
+	/**
+	 * What the save fills in depends on what the schema already carries.
+	 */
+	public function testDefaultsMatchGolden(): void {
+		$cases = [
+			'all given' => ['setUuid' => 'u-1', 'setSlug' => 'given', 'setVersion' => '2.0.0', 'setSource' => 'external', 'setRequired' => ['a']],
+			'empty source' => ['setSource' => ''],
+			'empty slug' => ['setSlug' => '', 'setTitle' => '  Één  Titel!! -- 2 '],
+			'no title' => ['setTitle' => null],
+		];
+		$actual = [];
+		foreach ($cases as $name => $setters) {
+			$this->logs = [];
+			$schema = new Schema();
+			$schema->setTitle('Golden Schema');
+			$schema->setProperties(['a' => ['required' => true], 'b' => ['required' => true]]);
+			foreach ($setters as $setter => $value) {
+				$schema->$setter($value);
+			}
+
+			$actual[$name] = $this->saved($schema)['schema'];
+			unset($actual[$name]['properties'], $actual[$name]['configuration']);
+		}
+
+		$this->assertGolden($actual, 'schema-mapper-save-defaults-golden.json');
+	}//end testDefaultsMatchGolden()
+
+	/**
+	 * The facet block is derived on update, after the save checks.
+	 */
+	public function testFacetsMatchGolden(): void {
+		$cases = [
+			'off wins over name' => ['status' => ['type' => 'string', 'facetable' => false]],
+			'off as word' => ['status' => ['facetable' => ' FALSE ']],
+			'off as string' => ['status' => ['facetable' => 'false']],
+			'on' => ['x' => ['facetable' => true], 'y' => ['facetable' => 'true'], 'z' => ['facetable' => ' True ']],
+			'on date type' => ['x' => ['facetable' => true, 'type' => 'date'], 'y' => ['facetable' => true, 'type' => 'datetime'], 'z' => ['facetable' => true, 'type' => 'date-time']],
+			'on date format' => ['x' => ['facetable' => true, 'format' => 'date'], 'y' => ['facetable' => true, 'format' => 'date-time'], 'z' => ['facetable' => true, 'format' => 'datetime']],
+			'on enum and number' => ['x' => ['facetable' => true, 'enum' => ['a']], 'y' => ['facetable' => true, 'type' => 'integer']],
+			'unknown flag' => ['x' => ['facetable' => 'yes'], 'y' => ['facetable' => 1], 'status' => ['facetable' => 'maybe']],
+			'common names' => ['Status' => [], 'TAGS' => [], 'language' => ['format' => 'date'], 'version' => ['type' => 'date']],
+			'enum' => ['x' => ['enum' => ['a']], 'y' => ['enum' => []], 'z' => ['enum' => 'a']],
+			'detected date' => ['x' => ['type' => 'date'], 'y' => ['type' => 'datetime'], 'z' => ['type' => 'date-time'], 'w' => ['format' => 'date']],
+			'date words' => ['createdAt' => [], 'UPDATED' => [], 'lastModified' => [], 'birthdate' => [], 'runtime' => [], 'timestamp' => [], 'other' => []],
+			'integer name' => ['0' => ['enum' => ['a']]],
+		];
+		$actual = [];
+		foreach ($cases as $name => $properties) {
+			$this->queuedRows = [['id' => 7, 'uuid' => 'u-7', 'title' => 'Old', 'version' => '1.0.0']];
+			$this->queuedRows = [[$this->queuedRows[0]]];
+			$schema = new Schema();
+			$schema->setId(7);
+			$schema->setTitle('Golden Schema');
+			$schema->setProperties($properties);
+			try {
+				$this->makeMapper()->update($schema);
+			} catch (\Throwable $e) {
+				$actual[$name] = ['thrown' => get_class($e) . ': ' . $e->getMessage()];
+			}
+
+			$actual[$name] = ($actual[$name] ?? []) + ['facets' => $schema->getFacets()];
+		}
+
+		$this->assertGolden($actual, 'schema-mapper-save-facets-golden.json');
+	}//end testFacetsMatchGolden()
+
+	private function assertGolden(array $actual, string $file): void {
+		$fixture = __DIR__ . '/fixtures/' . $file;
+		if (getenv('UPDATE_GOLDEN') === '1') {
+			file_put_contents($fixture, json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+			$this->addToAssertionCount(1);
+			return;
+		}
+
+		$this->assertSame(json_decode((string) file_get_contents($fixture), true), $actual);
+	}//end assertGolden()
+
 	private function saved(Schema $schema): array {
 		$outcome = [];
 		try {
 			(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->makeMapper(), $schema);
 		} catch (\Throwable $e) {
-			$outcome['thrown'] = get_class($e) . ': ' . $e->getMessage();
+			$outcome['thrown'] = get_class($e);
+			if ($e instanceof \TypeError === false) {
+				$outcome['thrown'] .= ': ' . $e->getMessage();
+			}
+
 			if (method_exists($e, 'getErrors') === true) {
 				$outcome['errors'] = $e->getErrors();
 			}
