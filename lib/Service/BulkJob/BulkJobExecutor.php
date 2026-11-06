@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
@@ -197,8 +198,7 @@ class BulkJobExecutor {
 		$action = null;
 		$members = $this->memberMapper->findPendingBatch(
 			jobId: (int)$job->getId(),
-			afterId: $job->getCursor(),
-			limit: $batchSize
+			cursor: new IdCursor(afterId: $job->getCursor(), limit: $batchSize)
 		);
 
 		if ($members === []) {
