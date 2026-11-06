@@ -171,6 +171,7 @@ function block(wrapper) {
 		.replace(/ data-v-[a-f0-9]+(="")?/g, '')
 		.replace(/<!--[\s\S]*?-->/g, '')
 		.replace(/\s+/g, ' ')
+		.replace(/> /g, '>')
 		.replace(/> ?</g, '>\n<')
 	expect(html).not.toBe('')
 	return html

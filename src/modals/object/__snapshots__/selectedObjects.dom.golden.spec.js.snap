@@ -93,7 +93,7 @@ exports[`selected objects in MassValidateObjects lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Named</strong>
-<p class="object-id"> ID: a</p>
+<p class="object-id">ID: a</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Named">
 <slot-icon>
@@ -105,7 +105,7 @@ exports[`selected objects in MassValidateObjects lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Titled</strong>
-<p class="object-id"> ID: b</p>
+<p class="object-id">ID: b</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Titled">
 <slot-icon>
@@ -117,7 +117,7 @@ exports[`selected objects in MassValidateObjects lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Unnamed Object</strong>
-<p class="object-id"> ID: c</p>
+<p class="object-id">ID: c</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove c">
 <slot-icon>
@@ -138,7 +138,7 @@ exports[`selected objects in MassValidateObjects removes the object whose button
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Named</strong>
-<p class="object-id"> ID: a</p>
+<p class="object-id">ID: a</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Named">
 <slot-icon>
@@ -150,7 +150,7 @@ exports[`selected objects in MassValidateObjects removes the object whose button
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Unnamed Object</strong>
-<p class="object-id"> ID: c</p>
+<p class="object-id">ID: c</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove c">
 <slot-icon>
@@ -187,7 +187,7 @@ exports[`selected objects in MigrationObject lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Named</strong>
-<p class="object-id"> ID: a</p>
+<p class="object-id">ID: a</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Named">
 <slot-icon>
@@ -199,7 +199,7 @@ exports[`selected objects in MigrationObject lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Titled</strong>
-<p class="object-id"> ID: b</p>
+<p class="object-id">ID: b</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Titled">
 <slot-icon>
@@ -211,7 +211,7 @@ exports[`selected objects in MigrationObject lists the objects 1`] = `
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Unnamed Object</strong>
-<p class="object-id"> ID: c</p>
+<p class="object-id">ID: c</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove c">
 <slot-icon>
@@ -232,7 +232,7 @@ exports[`selected objects in MigrationObject removes the object whose button is 
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Named</strong>
-<p class="object-id"> ID: a</p>
+<p class="object-id">ID: a</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove Named">
 <slot-icon>
@@ -244,7 +244,7 @@ exports[`selected objects in MigrationObject removes the object whose button is 
 <div class="selected-object-item">
 <div class="object-info">
 <strong>Unnamed Object</strong>
-<p class="object-id"> ID: c</p>
+<p class="object-id">ID: c</p>
 </div>
 <x-ncbutton variant="tertiary" aria-label="Remove c">
 <slot-icon>
