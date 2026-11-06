@@ -72,6 +72,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuard
+ * @uses \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  */
 class ObjectActionSelfAssignTest extends TestCase {
 

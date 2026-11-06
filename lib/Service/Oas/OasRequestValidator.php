@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Oas;
 
+use OCA\OpenRegister\Service\Object\RefLoopGuardParser;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Validator;
@@ -65,6 +66,7 @@ class OasRequestValidator {
 		// property the caller never sent. The OAS 3.1 meta-schema does exactly
 		// that with a query parameter's `allowEmptyValue`.
 		$validator = new Validator();
+		$validator->setParser((new RefLoopGuardParser(keyword: '$ref'))->schemaParser());
 		$validator->parser()->setOption('allowDefaults', false);
 		$result = $validator->validate(data: $bodyObj, schema: $schemaObj);
 		if ($result->isValid() === true) {
