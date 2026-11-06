@@ -33,8 +33,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -45,10 +45,10 @@ use Psr\Log\AbstractLogger;
 use RuntimeException;
 
 /**
- * @covers \OCA\OpenRegister\Service\File\DocumentProcessingHandler
- * @uses   \OCA\OpenRegister\Service\File\PlaceholderIdTranslator
- * @uses   \OCA\OpenRegister\Service\File\PlaceholderLookup
- * @uses   \OCA\OpenRegister\Service\File\DocumentReplacement
+ * @covers \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
  */
 class DocumentProcessingHandlerAnonymizeGoldenTest extends TestCase {
 

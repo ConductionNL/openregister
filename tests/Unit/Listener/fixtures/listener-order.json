@@ -55,9 +55,10 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
-		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener",
+		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
@@ -89,10 +90,11 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
 		"OCA\\OpenRegister\\Listener\\ContentReportRemovalListener",
-		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener",
+		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\TranslationProjectionListener",
@@ -109,7 +111,8 @@
 	"OCA\\OpenRegister\\Event\\ObjectDeletingEvent": [
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarDeleteGuardListener",
 		"OCA\\OpenRegister\\Listener\\ConceptDeleteGuardListener",
-		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener"
+		"OCA\\OpenRegister\\Listener\\FrozenObjectDeleteGuardListener",
+		"OCA\\OpenRegister\\Listener\\ObjectStateDeleteGuardListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectLockedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
@@ -140,12 +143,13 @@
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\CaseObjectEventListener",
+		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarChangedListener",
 		"OCA\\OpenRegister\\Listener\\ReferencedCalculationListener",
 		"OCA\\OpenRegister\\Listener\\RelatedRetentionRecalculationListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
-		"OCA\\OpenRegister\\Listener\\ContextChatSubmissionListener",
+		"OCA\\OpenRegister\\Mcp\\Listener\\ContextChatSubmissionListener",
 		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\FacetCacheInvalidationListener",
@@ -252,7 +256,7 @@
 		"OCA\\OpenRegister\\Listener\\TaskCalendarProjectionListener"
 	],
 	"OCA\\OpenRegister\\Event\\ToolRegistrationEvent": [
-		"OCA\\OpenRegister\\Listener\\ToolRegistrationListener"
+		"OCA\\OpenRegister\\Mcp\\Listener\\ToolRegistrationListener"
 	],
 	"OCA\\OpenRegister\\Event\\ViewAlertCrossedEvent": [
 		"OCA\\OpenRegister\\Listener\\ViewAlertCrossedListener"

@@ -56,7 +56,7 @@ class SftpTransport implements TransportInterface {
 	 * Send a SIP package via SFTP.
 	 *
 	 * @param string $sipFilePath The local path to the SIP ZIP archive.
-	 * @param array<string,mixed> $config SFTP configuration: host, port, username, password/keyPath, remotePath.
+	 * @param array<string,mixed> $config SFTP configuration: host, port, username, password/keyPath, remotePath, hostKeyFingerprint.
 	 *
 	 * @return TransportResult The result of the transport.
 	 *
@@ -101,27 +101,23 @@ class SftpTransport implements TransportInterface {
 	}//end upload()
 
 	/**
-	 * Put a SIP file on the server, when phpseclib3 can be loaded.
+	 * Put a SIP file on the server.
 	 *
 	 * @param string $sipFilePath The local path to the SIP ZIP archive.
 	 * @param array<string, mixed> $config SFTP configuration.
 	 *
 	 * @return array{0: string, 1: mixed} The remote path and the size the server reports.
 	 *
-	 * @throws RuntimeException When phpseclib3 is missing or the upload fails.
+	 * @throws RuntimeException When the upload fails.
 	 */
 	private function put(string $sipFilePath, array $config): array {
-		if (class_exists('\phpseclib3\Net\SFTP') === false) {
-			throw new RuntimeException('phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.');
-		}
-
 		$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
 		$sftp = $this->createSftpConnection(config: $config);
-		if ($sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE) === false) {
+		if ($sftp->put($remotePath, $sipFilePath, SFTP::SOURCE_LOCAL_FILE) === false) {
 			throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
 		}
 
-		return [$remotePath, $sftp->size($remotePath)];
+		return [$remotePath, $sftp->filesize($remotePath)];
 	}//end put()
 
 	/**
@@ -137,31 +133,13 @@ class SftpTransport implements TransportInterface {
 		try {
 			$this->validateConfig(config: $config);
 
-			return $this->pingWithPhpseclib(config: $config);
+			$this->createSftpConnection(config: $config)->pwd();
+
+			return true;
 		} catch (\Exception $e) {
 			return $this->failedConnectionTest(cause: $e, message: '[SftpTransport] Connection test failed');
 		}
 	}//end testConnection()
-
-	/**
-	 * Open a connection and ask the working directory; false without phpseclib3.
-	 *
-	 * @param array<string, mixed> $config The transport config.
-	 *
-	 * @return bool True when the server answered.
-	 */
-	private function pingWithPhpseclib(array $config): bool {
-		if (class_exists('\phpseclib3\Net\SFTP') === false) {
-			$this->logger->warning(
-				message: '[SftpTransport] phpseclib3 not available for connection test'
-			);
-			return false;
-		}
-
-		$sftp = $this->createSftpConnection(config: $config);
-		$sftp->pwd();
-		return true;
-	}//end pingWithPhpseclib()
 
 	/**
 	 * Get transport name.
@@ -207,12 +185,12 @@ class SftpTransport implements TransportInterface {
 	 *
 	 * @throws RuntimeException If connection fails.
 	 *
-	 * @psalm-suppress UndefinedClass
-	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
 	 */
 	private function createSftpConnection(array $config): SFTP {
 		$sftp = new SFTP($config['host'], (int)($config['port'] ?? 22));
+
+		$this->assertHostKey(sftp: $sftp, config: $config);
 
 		if ($sftp->login($config['username'], $this->loginCredential(config: $config)) === false) {
 			throw new RuntimeException('SFTP authentication failed');
@@ -222,13 +200,47 @@ class SftpTransport implements TransportInterface {
 	}//end createSftpConnection()
 
 	/**
+	 * Refuse a server whose host key differs from `hostKeyFingerprint`, before any
+	 * credential is sent. Without a configured fingerprint the server is not verified.
+	 *
+	 * @param SFTP $sftp The connection.
+	 * @param array<string,mixed> $config SFTP configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the host key differs.
+	 */
+	private function assertHostKey(SFTP $sftp, array $config): void {
+		$pinned = (string)($config['hostKeyFingerprint'] ?? '');
+		if ($pinned === '') {
+			$this->logger->warning(message: '[SftpTransport] No hostKeyFingerprint configured, server identity not verified');
+			return;
+		}
+
+		if (hash_equals($pinned, $this->fingerprint(hostKey: $sftp->getServerPublicHostKey())) === false) {
+			throw new RuntimeException('SFTP host key does not match hostKeyFingerprint');
+		}
+	}//end assertHostKey()
+
+	/**
+	 * The OpenSSH SHA256 fingerprint of a host key, as `ssh-keygen -lf` prints it.
+	 *
+	 * @param mixed $hostKey The key as `<type> <base64>`, or false when unavailable.
+	 *
+	 * @return string The fingerprint.
+	 */
+	private function fingerprint(mixed $hostKey): string {
+		$blob = base64_decode(explode(' ', (string)$hostKey)[1] ?? '');
+
+		return 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '=');
+	}//end fingerprint()
+
+	/**
 	 * The loaded key when a key path is configured, else the password.
 	 *
 	 * @param array<string,mixed> $config SFTP configuration.
 	 *
 	 * @return mixed The key object or password string.
-	 *
-	 * @psalm-suppress UndefinedClass
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
