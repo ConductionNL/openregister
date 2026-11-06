@@ -90,6 +90,9 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$fileMapper = $this->createMock(FileMapper::class);
 		$fileMapper->method('getFilesForObject')->willReturn([$this->record(self::RESTRICTED), $this->record(self::OPEN)]);
 		$fileMapper->method('getFile')->willReturnCallback(fn (int $id): array => $this->record($id));
+		$fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, [self::RESTRICTED, self::OPEN])
+		);
 
 		$guard = $this->createMock(FileRestrictionGuard::class);
 		$guard->method('readable')->willReturnCallback(
@@ -146,6 +149,34 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 
 		$this->assertSame([(string)self::OPEN], array_column($rendered->getFiles(), 'id'));
 	}//end testTheRenderedFilesLeaveTheRestrictedFileOut()
+
+	public function testTheLightweightFileIdsLeaveTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+
+		$rendered = $this->call($this->renderer(), 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testTheLightweightFileIdsLeaveTheRestrictedFileOut()
+
+	public function testThePagePrefetchLeavesTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+		$renderer = $this->renderer();
+
+		$this->call($renderer, 'prefetchPageFileIds', [[$object], []]);
+		$rendered = $this->call($renderer, 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testThePagePrefetchLeavesTheRestrictedFileOut()
+
+	public function testTheListRowsLeaveTheRestrictedFileOut(): void {
+		$rows = [['@self' => ['id' => 'c0ffee00-0000-4000-8000-000000000001']]];
+
+		$this->renderer()->attachLightweightFilesToRows($rows);
+
+		$this->assertSame([self::OPEN], $rows[0]['@self']['files']);
+	}//end testTheListRowsLeaveTheRestrictedFileOut()
 
 	public function testAFileTypedPropertyDoesNotHydrateTheRestrictedFile(): void {
 		$renderer = $this->renderer();
