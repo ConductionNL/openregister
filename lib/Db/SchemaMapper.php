@@ -1592,7 +1592,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
 		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
-		$schema = $this->composition()->extractDelta(schema: $schema);
+		$schema = $this->extractSchemaDelta(schema: $schema);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
 		(new FacetConfiguration())->generate(schema: $schema);
@@ -1643,7 +1643,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
 		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
-		$entity = $this->composition()->extractDelta(schema: $entity);
+		$entity = $this->extractSchemaDelta(schema: $entity);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
 		(new FacetConfiguration())->generate(schema: $entity);
@@ -1985,6 +1985,17 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			loadSchema: fn (string|int $identifier): Schema => $this->loadSchema(identifier: $identifier)
 		);
 	}//end composition()
+
+	/**
+	 * A composed schema reduced to what it adds to its parents.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return Schema
+	 */
+	private function extractSchemaDelta(Schema $schema): Schema {
+		return $this->composition()->extractDelta(schema: $schema);
+	}//end extractSchemaDelta()
 
 	/**
 	 * Find schemas that compose with a given schema.
