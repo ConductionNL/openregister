@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
+use OCA\OpenRegister\Formats\UuidFormat;
 use Throwable;
 
 /**
@@ -244,7 +245,7 @@ class RegisterScopedSchemaResolver {
 			return true;
 		}
 
-		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $ref) === 1;
+		return UuidFormat::isCanonical(value: $ref);
 	}//end isUniqueIdentifier()
 
 }//end class

@@ -77,6 +77,7 @@ if (class_exists('OCA\\Bookmarks\\Db\\Bookmark') === false) {
  * @uses   \OCA\OpenRegister\Db\MapLink
  * @uses   \OCA\OpenRegister\Db\PollLink
  * @uses   \OCA\OpenRegister\Db\BookmarkLink
+ * @uses   \OCA\OpenRegister\Db\CospendEntryKey
  * @uses   \OCA\OpenRegister\Db\CospendLink
  * @uses   \OCA\OpenRegister\Db\PhotoLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
