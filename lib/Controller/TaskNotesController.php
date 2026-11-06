@@ -201,6 +201,10 @@ class TaskNotesController extends Controller {
 			return new JSONResponse(['error' => 'Note message is required'], Http::STATUS_BAD_REQUEST);
 		}
 
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
+			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		}
+
 		return new JSONResponse($this->notes->updateNote((int)$noteId, $message));
 	}//end update()
 
@@ -222,10 +226,32 @@ class TaskNotesController extends Controller {
 			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
 		}
 
+		if ($this->isNoteOfTask(uuid: $uuid, noteId: (int)$noteId) === false) {
+			return new JSONResponse(self::NOT_FOUND, Http::STATUS_NOT_FOUND);
+		}
+
 		$this->notes->deleteNote((int)$noteId);
 
 		return new JSONResponse(['success' => true]);
 	}//end destroy()
+
+	/**
+	 * Whether the note hangs on this task.
+	 *
+	 * @param string $uuid   The task uuid.
+	 * @param int    $noteId The note id.
+	 *
+	 * @return bool
+	 */
+	private function isNoteOfTask(string $uuid, int $noteId): bool {
+		try {
+			$this->notes->requireNoteOf(objectUuid: $uuid, noteId: $noteId);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		return true;
+	}//end isNoteOfTask()
 
 	/**
 	 * The task this request may act on, or null.

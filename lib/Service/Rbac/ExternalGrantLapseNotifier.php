@@ -107,14 +107,17 @@ class ExternalGrantLapseNotifier {
 	}//end holdersOf()
 
 	/**
-	 * The named user, when it exists.
+	 * The named user, when that is its exact uid.
+	 *
+	 * A lookup may also answer to another casing or an email address, and
+	 * enforcement compares the uid exactly, so such a name holds nothing.
 	 *
 	 * @param string $uid The user id.
 	 *
 	 * @return array<int, string> The user id, or nothing.
 	 */
 	private function namedUser(string $uid): array {
-		if ($this->users->userExists($uid) === true) {
+		if ($this->users->get($uid)?->getUID() === $uid) {
 			return [$uid];
 		}
 

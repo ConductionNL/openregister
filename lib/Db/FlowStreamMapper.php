@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -36,6 +35,9 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FlowStream>
  */
 class FlowStreamMapper extends QBMapper {
+
+	use RunScopedRowsTrait;
+	use SelectByColumnTrait;
 
 	/**
 	 * Constructor.
@@ -54,11 +56,8 @@ class FlowStreamMapper extends QBMapper {
 	 * @return array<int, FlowStream> The streams.
 	 */
 	public function findByRun(string $runUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
-			->orderBy('ordinal_path', 'ASC')
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'run_uuid', value: $runUuid));
+		$qb->orderBy('ordinal_path', 'ASC')
 			->addOrderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -73,17 +72,15 @@ class FlowStreamMapper extends QBMapper {
 	 * @return FlowStream|null The stream, or null when absent.
 	 */
 	public function findByRunAndStream(string $runUuid, string $streamId): ?FlowStream {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
-			->andWhere($qb->expr()->eq('stream_id', $qb->createNamedParameter($streamId)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'run_uuid', value: $runUuid));
+		$qb->andWhere($qb->expr()->eq('stream_id', $qb->createNamedParameter($streamId)));
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException) {
-			return null;
+		$found = $this->findOneOrNull(query: $qb);
+		if ($found instanceof FlowStream) {
+			return $found;
 		}
+
+		return null;
 	}//end findByRunAndStream()
 
 	/**
@@ -120,36 +117,4 @@ class FlowStreamMapper extends QBMapper {
 		// one below it.
 		return max(1, ($next - 1));
 	}//end allocateNextSequence()
-
-	/**
-	 * Drop every stream of a run — with the run's own deletion.
-	 *
-	 * @param string $runUuid The run.
-	 *
-	 * @return int Rows deleted.
-	 */
-	public function deleteByRun(string $runUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByRun()
-
-	/**
-	 * Drop every stream row whose run no longer exists — the retention pass
-	 * prunes runs by age, and their streams go with them.
-	 *
-	 * @return int Rows deleted.
-	 */
-	public function deleteOrphans(): int {
-		$runs = $this->db->getQueryBuilder();
-		$runs->select('uuid')->from('openregister_flow_runs');
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->createFunction('run_uuid NOT IN (' . $runs->getSQL() . ')'));
-
-		return $qb->executeStatement();
-	}//end deleteOrphans()
 }//end class

@@ -127,12 +127,6 @@ class ChatService implements ChatServiceInterface {
 	 */
 	private MessageHistoryHandler $historyHandler;
 
-	/**
-	 * Tool management handler
-	 *
-	 * @var ToolManagementHandler
-	 */
-	private ToolManagementHandler $toolHandler;
 
 	/**
 	 * Logger
@@ -151,7 +145,6 @@ class ChatService implements ChatServiceInterface {
 	 * @param ResponseGenerationHandler $responseHandler Response handler.
 	 * @param ConversationManagementHandler $conversationHandler Conversation handler.
 	 * @param MessageHistoryHandler $historyHandler History handler.
-	 * @param ToolManagementHandler $toolHandler Tool handler.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -164,7 +157,6 @@ class ChatService implements ChatServiceInterface {
 		ResponseGenerationHandler $responseHandler,
 		ConversationManagementHandler $conversationHandler,
 		MessageHistoryHandler $historyHandler,
-		ToolManagementHandler $toolHandler,
 		LoggerInterface $logger,
 	) {
 		$this->conversationMapper = $conversationMapper;
@@ -174,7 +166,6 @@ class ChatService implements ChatServiceInterface {
 		$this->responseHandler = $responseHandler;
 		$this->conversationHandler = $conversationHandler;
 		$this->historyHandler = $historyHandler;
-		$this->toolHandler = $toolHandler;
 		$this->logger = $logger;
 	}//end __construct()
 
