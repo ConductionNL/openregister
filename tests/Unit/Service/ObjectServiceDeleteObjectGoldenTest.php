@@ -69,10 +69,10 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
- * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses   \OCA\OpenRegister\Service\Object\RetentionDestruction
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses   \OCA\OpenRegister\Service\Object\DraftCallerRule
