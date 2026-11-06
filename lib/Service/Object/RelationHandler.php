@@ -457,7 +457,7 @@ class RelationHandler {
 		$object = $this->pinnedObject(lookup: $lookup, pinned: $pinned);
 		$uniqueIds = (new RelationMap(relations: ($object->getRelations() ?? [])))->uuidsBesides(ownUuid: $object->getUuid());
 		if (empty($uniqueIds) === true) {
-			return $this->paged(items: [], query: $lookup->query);
+			return $this->emptyPage(query: $lookup->query);
 		}
 
 		$related = $this->readableRelated(uuids: $uniqueIds, lookup: $lookup);
@@ -514,6 +514,24 @@ class RelationHandler {
 		);
 		return $related;
 	}//end readableRelated()
+
+	/**
+	 * The empty page: the limit and offset as requested, whatever their type.
+	 *
+	 * @param array<string, mixed> $query The request's paging parameters.
+	 *
+	 * @return array{results: array<int, mixed>, total: int, limit: mixed, offset: mixed}
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function emptyPage(array $query): array {
+		return [
+			'results' => [],
+			'total' => 0,
+			'limit' => $query['_limit'] ?? 30,
+			'offset' => $query['_offset'] ?? 0,
+		];
+	}//end emptyPage()
 
 	/**
 	 * One page of the items, with the total and the limit and offset as requested.
@@ -783,7 +801,7 @@ class RelationHandler {
 			message: '[RelationHandler] Failed to get ' . $lookup->lists(),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error->getMessage(), 'objectId' => $lookup->objectId]
 		);
-		return $this->paged(items: [], query: $lookup->query);
+		return $this->emptyPage(query: $lookup->query);
 	}//end failedPage()
 
 	/**

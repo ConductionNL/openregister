@@ -571,6 +571,83 @@ class RelationHandlerTest extends TestCase {
 	}//end testGetUsesReturnsEmptyWhenObjectHasNoRelations()
 
 	/**
+	 * Paging parameters that array_slice() refuses.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function unusablePaging(): array {
+		return [
+			'text limit' => [['_limit' => 'abc']],
+			'empty limit' => [['_limit' => '']],
+			'text offset' => [['_offset' => 'abc']],
+			'empty offset' => [['_offset' => '']],
+			'both' => [['_limit' => 'abc', '_offset' => 'def']],
+		];
+	}//end unusablePaging()
+
+	/**
+	 * An object without relations answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testGetUsesWithoutRelationsEchoesUnusablePaging(array $query): void {
+		$entity = $this->makeObjectEntity(1);
+		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
+		$entity->setRelations([]);
+		$this->objectMapper->method('find')->willReturn($entity);
+
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: '550e8400-e29b-41d4-a716-446655440000', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testGetUsesWithoutRelationsEchoesUnusablePaging()
+
+	/**
+	 * A failed uses lookup answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testFailedGetUsesEchoesUnusablePaging(array $query): void {
+		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('Not found'));
+
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'missing-uuid', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testFailedGetUsesEchoesUnusablePaging()
+
+	/**
+	 * A failed used-by lookup answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testFailedGetUsedByEchoesUnusablePaging(array $query): void {
+		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('Not found'));
+
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testFailedGetUsedByEchoesUnusablePaging()
+
+	/**
+	 * The empty page a query answers.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function emptyPageOf(array $query): array {
+		return ['results' => [], 'total' => 0, 'limit' => $query['_limit'] ?? 30, 'offset' => $query['_offset'] ?? 0];
+	}//end emptyPageOf()
+
+	/**
 	 * Returns empty results when relations only contain the object's own UUID.
 	 *
 	 * @return void
