@@ -60,6 +60,7 @@ use Psr\Log\LoggerInterface;
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\SearchReferenceResolver
  * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  */
 class SearchReferenceResolutionTest extends TestCase {
 

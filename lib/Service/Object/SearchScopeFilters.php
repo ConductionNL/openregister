@@ -154,16 +154,12 @@ final class SearchScopeFilters {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function readReference(int|string $reference, string $kind): ?int {
-		$trimmed = trim((string)$reference);
-		if ($trimmed === '') {
+		$text = new SearchReferenceText(reference: $reference);
+		if ($text->isBlank() === true) {
 			return null;
 		}
 
-		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
-			return (int)$trimmed;
-		}
-
-		throw $this->unreadableReference(reference: $trimmed, kind: $kind);
+		return ($text->positiveId() ?? throw $this->unreadableReference(reference: $text->text, kind: $kind));
 	}//end readReference()
 
 	/**

@@ -280,17 +280,13 @@ class SearchReferenceResolver {
 		// Says nothing, so it filters nothing. `null` was always what this
 		// meant; `0` only ever meant it by accident, and then suppressed the
 		// global fallbacks that a real null reaches.
-		$text = trim((string)$reference);
-		if ($text === '') {
+		$text = new SearchReferenceText(reference: $reference);
+		if ($text->isBlank() === true) {
 			return null;
 		}
 
 		// An id already. The common case, and it costs no query.
-		if (ctype_digit($text) === true && (int)$text > 0) {
-			return (int)$text;
-		}
-
-		return $this->lookUpAndWarn(reference: $reference, kind: $kind);
+		return ($text->positiveId() ?? $this->lookUpAndWarn(reference: $reference, kind: $kind));
 	}//end resolveOne()
 
 	/**
