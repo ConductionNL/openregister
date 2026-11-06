@@ -231,33 +231,12 @@ class ImportHandler {
 
 
 	/**
-	 * Optional task service for seeding related VTODO items.
-	 *
-	 * @var TaskService|null
-	 */
-	private ?TaskService $taskService = null;
-
-	/**
-	 * Optional note service for seeding related comments.
-	 *
-	 * @var NoteService|null
-	 */
-	private ?NoteService $noteService = null;
-
-	/**
 	 * Decides the slug of a seed object so it cannot take a slug another live
 	 * object holds (#4037); null sets the seed slug as sent.
 	 *
 	 * @var \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler|null
 	 */
 	private ?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler = null;
-
-	/**
-	 * Optional file service for seeding related attachments.
-	 *
-	 * @var FileService|null
-	 */
-	private ?FileService $fileService = null;
 
 	/**
 	 * Optional provisioner that gives every register an app import returns its Files folder.
@@ -336,6 +315,13 @@ class ImportHandler {
 	private ShippedSeedContent $shippedContent;
 
 	/**
+	 * Creates the files, notes and tasks of a seed object.
+	 *
+	 * @var SeedRelatedItems
+	 */
+	private SeedRelatedItems $relatedItems;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -388,6 +374,7 @@ class ImportHandler {
 		$this->appDataPath = $appDataPath;
 		$this->objectService = $objectService;
 		$this->shippedContent = new ShippedSeedContent();
+		$this->relatedItems = new SeedRelatedItems(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -416,7 +403,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setTaskService(?TaskService $taskService): void {
-		$this->taskService = $taskService;
+		$this->relatedItems->useTaskService($taskService);
 	}//end setTaskService()
 
 	/**
@@ -427,7 +414,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setNoteService(?NoteService $noteService): void {
-		$this->noteService = $noteService;
+		$this->relatedItems->useNoteService($noteService);
 	}//end setNoteService()
 
 	/**
@@ -451,7 +438,7 @@ class ImportHandler {
 	 * @return void
 	 */
 	public function setFileService(?FileService $fileService): void {
-		$this->fileService = $fileService;
+		$this->relatedItems->useFileService($fileService);
 	}//end setFileService()
 
 	/**
@@ -6291,17 +6278,28 @@ class ImportHandler {
 		);
 
 		if (is_array($object->relatedItems) === true && count($object->relatedItems) > 0) {
-			$this->processRelatedItems(
-				object: $createdObject,
-				relatedItems: $object->relatedItems,
-				registerId: (int)$object->registerId,
-				schemaId: (int)$object->schema->getId(),
-				objectTitle: (string)($object->data['title'] ?? $object->slug),
-				hasUserContext: $seed->hasUserContext,
-				result: $seed->result
-			);
+			$target = $this->relatedTarget(object: $object, created: $createdObject);
+			$target->hasUserContext = $seed->hasUserContext;
+			$this->relatedItems->create(target: $target, result: $seed->result);
 		}
 	}//end insertSeedObject()
+
+	/**
+	 * Where a seed object's related items go.
+	 *
+	 * @param SeedDataObject $object  The seed object.
+	 * @param ObjectEntity   $created The object as inserted.
+	 *
+	 * @return SeedRelatedTarget The target, still without its user context.
+	 */
+	private function relatedTarget(SeedDataObject $object, ObjectEntity $created): SeedRelatedTarget {
+		$target = new SeedRelatedTarget(object: $created);
+		$target->items = $object->relatedItems;
+		$target->registerId = (int)$object->registerId;
+		$target->schemaId = (int)$object->schema->getId();
+		$target->title = (string)($object->data['title'] ?? $object->slug);
+		return $target;
+	}//end relatedTarget()
 
 	/**
 	 * The entity a new seed object is inserted as.
@@ -6328,249 +6326,6 @@ class ImportHandler {
 		$objectEntity->setUpdated($now);
 		return $objectEntity;
 	}//end newSeedEntity()
-
-	/**
-	 * Create related Nextcloud items (files, notes, tasks) for a freshly
-	 * seeded object. Each item type is attempted independently so a
-	 * failure in one doesn't block the others.
-	 *
-	 * @param ObjectEntity $object The freshly seeded object the related items belong to.
-	 * @param array<string, mixed> $relatedItems The `_relatedItems` payload — keys: files, notes, tasks.
-	 * @param int $registerId Register ID the object lives in.
-	 * @param int $schemaId Schema ID of the object.
-	 * @param string $objectTitle Human-readable title used in note/task subjects.
-	 * @param bool $hasUserContext Whether a logged-in user exists (gates note/task creation).
-	 * @param array<string, mixed> $result Result accumulator updated in place with related-item counts.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function processRelatedItems(
-		ObjectEntity $object,
-		array $relatedItems,
-		int $registerId,
-		int $schemaId,
-		string $objectTitle,
-		bool $hasUserContext,
-		array &$result,
-	): void {
-		$files = (array)($relatedItems['files'] ?? []);
-		$notes = (array)($relatedItems['notes'] ?? []);
-		$tasks = (array)($relatedItems['tasks'] ?? []);
-
-		$this->logger->debug(
-			message: '[ImportHandler] Processing related items for seed object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_uuid' => $object->getUuid(),
-				'files_count' => count($files),
-				'notes_count' => count($notes),
-				'tasks_count' => count($tasks),
-			]
-		);
-
-		$filesCreated = 0;
-		if (count($files) > 0 && $this->fileService !== null) {
-			$filesCreated = $this->seedRelatedFiles(object: $object, files: $files);
-		}
-
-		// Notes and tasks are written as the logged-in user, so without one they are skipped.
-		$notesCreated = 0;
-		if (count($notes) > 0 && $this->noteService !== null) {
-			$notesCreated = $this->seedRelatedNotes(
-				object: $object,
-				notes: $this->itemsForUser(items: $notes, context: ['kind' => 'notes', 'object' => $object, 'user' => $hasUserContext])
-			);
-		}
-
-		$tasksCreated = 0;
-		if (count($tasks) > 0 && $this->taskService !== null) {
-			$tasksCreated = $this->seedRelatedTasks(
-				tasks: $this->itemsForUser(items: $tasks, context: ['kind' => 'tasks', 'object' => $object, 'user' => $hasUserContext]),
-				owner: ['object' => $object, 'registerId' => $registerId, 'schemaId' => $schemaId, 'title' => $objectTitle]
-			);
-		}
-
-		$result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
-		$result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
-		$result['relatedTasks'] = ($result['relatedTasks'] ?? 0) + $tasksCreated;
-
-		$this->logger->debug(
-			message: '[ImportHandler] Related items processed for seed object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'object_uuid' => $object->getUuid(),
-				'files_created' => $filesCreated,
-				'notes_created' => $notesCreated,
-				'tasks_created' => $tasksCreated,
-			]
-		);
-	}//end processRelatedItems()
-
-	/**
-	 * The seed notes or tasks to create: all of them with a user session, none without one.
-	 *
-	 * @param array                $items   The seed notes or tasks.
-	 * @param array<string, mixed> $context The `kind` (notes or tasks), the `object` and whether a `user` is logged in.
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function itemsForUser(array $items, array $context): array {
-		if ($context['user'] === true) {
-			return $items;
-		}
-
-		$this->logger->warning(
-			message: "[ImportHandler] Skipping seed {$context['kind']} - no user session available",
-			context: ['object_uuid' => $context['object']->getUuid(), 'count' => count($items)]
-		);
-
-		return [];
-	}//end itemsForUser()
-
-	/**
-	 * Attach a seed object's files; a `base64:` prefix marks encoded content.
-	 *
-	 * A file without a name or with non-string content is skipped, and so is
-	 * one whose base64 does not decode; a failed write is logged and skipped.
-	 *
-	 * @param ObjectEntity $object The seed object.
-	 * @param array        $files  The file specs: name, content, tags, share.
-	 *
-	 * @return int The number of files created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedFiles(ObjectEntity $object, array $files): int {
-		$created = 0;
-		foreach ($files as $fileSpec) {
-			$name = (string)($fileSpec['name'] ?? '');
-			$content = ($fileSpec['content'] ?? null);
-			if ($name === '' || is_string($content) === false) {
-				continue;
-			}
-
-			if (str_starts_with($content, 'base64:') === true) {
-				$content = base64_decode(substr($content, 7), strict: true);
-			}
-
-			if ($content === false) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed file base64 decode failed - skipping',
-					context: ['object_uuid' => $object->getUuid(), 'name' => $name]
-				);
-				continue;
-			}
-
-			try {
-				$this->fileService->addFile($object, $name, $content, (bool)($fileSpec['share'] ?? false), (array)($fileSpec['tags'] ?? []));
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed file creation failed',
-					context: [
-						'object_uuid' => $object->getUuid(),
-						'name' => $name,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		return $created;
-	}//end seedRelatedFiles()
-
-	/**
-	 * Add a seed object's notes; one without a message is skipped, a failed one logged.
-	 *
-	 * @param ObjectEntity $object The seed object.
-	 * @param array        $notes  The note specs: message.
-	 *
-	 * @return int The number of notes created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedNotes(ObjectEntity $object, array $notes): int {
-		$created = 0;
-		foreach ($notes as $noteSpec) {
-			$message = (string)($noteSpec['message'] ?? '');
-			if ($message === '') {
-				continue;
-			}
-
-			try {
-				$this->noteService->createNote((string)$object->getUuid(), $message);
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed note creation failed',
-					context: [
-						'object_uuid' => $object->getUuid(),
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}
-
-		return $created;
-	}//end seedRelatedNotes()
-
-	/**
-	 * Add a seed object's tasks; one without a summary is skipped, a failed one logged.
-	 *
-	 * @param array                $tasks The task specs: summary, description, status, priority, due.
-	 * @param array<string, mixed> $owner The seed `object`, its `registerId`, `schemaId` and `title`.
-	 *
-	 * @return int The number of tasks created.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function seedRelatedTasks(array $tasks, array $owner): int {
-		$created = 0;
-		foreach ($tasks as $taskSpec) {
-			$summary = (string)($taskSpec['summary'] ?? '');
-			if ($summary === '') {
-				continue;
-			}
-
-			$taskData = [
-				'summary' => $summary,
-				'description' => (string)($taskSpec['description'] ?? ''),
-				'status' => (string)($taskSpec['status'] ?? 'needs-action'),
-				'priority' => (int)($taskSpec['priority'] ?? 0),
-				'due' => $taskSpec['due'] ?? null,
-			];
-			try {
-				$this->taskService->createTask(
-					$owner['registerId'],
-					$owner['schemaId'],
-					(string)$owner['object']->getUuid(),
-					$owner['title'],
-					$taskData
-				);
-				$created++;
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[ImportHandler] Seed task creation failed',
-					context: [
-						'object_uuid' => $owner['object']->getUuid(),
-						'summary' => $summary,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
-		}//end foreach
-
-		return $created;
-	}//end seedRelatedTasks()
 
 	/**
 	 * Minimal meta-schema describing the structural shape an OR schema

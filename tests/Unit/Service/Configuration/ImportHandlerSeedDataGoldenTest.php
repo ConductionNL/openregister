@@ -56,6 +56,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedTarget
  */
 class ImportHandlerSeedDataGoldenTest extends TestCase {
 

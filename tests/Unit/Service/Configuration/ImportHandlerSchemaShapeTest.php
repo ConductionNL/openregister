@@ -41,6 +41,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
  * @uses   \OCA\OpenRegister\Service\Oas\OasRequestValidator
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  */
 class ImportHandlerSchemaShapeTest extends TestCase {
 
