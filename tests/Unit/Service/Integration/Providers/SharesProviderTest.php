@@ -333,9 +333,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(
@@ -384,7 +384,7 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
 		]);
 
@@ -563,9 +563,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $shareManager,
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(
@@ -715,9 +715,9 @@ class SharesProviderTest extends TestCase {
 
 		$container = $this->buildContainer([
 			'OCP\\Share\\IManager' => $this->createMock(IManager::class),
-			'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $folderHandler,
+			'OCA\\OpenRegister\\Service\\FileService' => $folderHandler,
 			'OCP\\IUserSession' => $userSession,
-			'OCA\\OpenRegister\\Db\\ObjectEntityMapper' => $objectMapper,
+			'OCA\\OpenRegister\\Db\\MagicMapper' => $objectMapper,
 		]);
 
 		$provider = new SharesProvider(

@@ -9,11 +9,18 @@ import {
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSchema'"
 		name="Verwijder Schema"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		:confirmDisabled="!canDelete"
+		:closeLabel="success ? 'Sluiten' : 'Annuleren'"
+		confirmLabel="Verwijder"
+		@cancel="closeDialog"
+		@confirm="deleteSchema()">
 		<p v-if="!success && canDelete">
 			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen?
 			Deze actie kan niet ongedaan worden gemaakt.
@@ -24,55 +31,23 @@ import {
 			register <b>{{ registerName }}</b
 			>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
 		</p>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Sluiten' : 'Annuleren' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading || !canDelete"
-				variant="error"
-				@click="deleteSchema()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Verwijder
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteSchema',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
+
+	mixins: [confirmDialogState(false)],
 
 	data() {
 		return {
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
 			objects: [],
 			registerName: '',
 			isUpdated: false,
