@@ -173,6 +173,10 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->handler, $args);
+		}
+
 		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
 			return EmptyValueCalls::{$methodName}($this->handler, $args);
 		}
