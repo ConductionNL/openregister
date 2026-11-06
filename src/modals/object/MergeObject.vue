@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" :canClose="false">
+	<NcDialog name="Merge Objects" size="large" noClose>
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">

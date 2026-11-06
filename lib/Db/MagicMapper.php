@@ -9329,14 +9329,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 					_multitenancy: false,
 					_rbac: false
 				);
-				$register = $result['register'];
-				$schema = $result['schema'];
-				$key = $register->getId() . '-' . $schema->getId();
-				$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
-				$grouped[$key]['uuids'][] = $uuid;
 			} catch (\Exception $e) {
 				// Skip UUIDs that can't be found.
+				continue;
 			}
+
+			$this->assertDeletable(entity: $result['object']);
+			$register = $result['register'];
+			$schema = $result['schema'];
+			$key = $register->getId() . '-' . $schema->getId();
+			$grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
+			$grouped[$key]['uuids'][] = $uuid;
 		}
 
 		foreach ($grouped as $group) {

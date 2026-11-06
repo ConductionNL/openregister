@@ -48,6 +48,7 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
@@ -1861,10 +1862,12 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyBatchCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
-		[$handled, $deleted] = $this->batchCascadeSoftDelete(
-			targets: $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets),
-			origin: $origin
-		);
+		$resolved = $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets);
+		foreach ($resolved as $target) {
+			$this->objectEntityMapper->assertDeletable(entity: $target);
+		}
+
+		[$handled, $deleted] = $this->batchCascadeSoftDelete(targets: $resolved, origin: $origin);
 		$this->writeBatchCascadeAuditTrails(cascadeTargets: $cascadeTargets, deleted: $deleted, origin: $origin);
 
 		$fallbackTargets = array_values(
@@ -2109,6 +2112,8 @@ class ReferentialIntegrityService {
 		$uuids = array_map(static fn (array $t): string => $t['objectUuid'], $targets);
 		try {
 			$this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
+		} catch (HookStoppedException $refusal) {
+			throw $refusal;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Batch CASCADE delete failed',

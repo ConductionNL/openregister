@@ -12,7 +12,6 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				: t('openregister', 'Add Endpoint')
 		"
 		size="large"
-		:canClose="true"
 		@update:open="navigationStore.setModal(false)">
 		<div class="formContainer">
 			<div class="form">

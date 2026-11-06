@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
@@ -116,6 +117,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
+use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
@@ -203,6 +205,11 @@ use OCA\OpenRegister\Service\Object\SavedScopeIds;
  */
 class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 {
+
+    /**
+     * Why a transferred object refuses a write.
+     */
+    private const TRANSFERRED_MESSAGE = 'This object has been transferred to the e-Depot and is read-only.';
 
     /**
      * The current register context.
@@ -1299,97 +1306,117 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     ): ?ObjectEntity {
         // BUG-OBJ-13 (openregister#1520): find() is a read operation and MUST NOT
         // leave the shared `currentRegister` / `currentSchema` instance state
-        // mutated for the next caller. The previous context is snapshotted here
-        // and restored in the `finally` below, so any re-anchoring done for this
-        // call's rendering / RBAC is local to this invocation only. A caller that
-        // omits register/schema gets MagicMapper's cross-table search, never a
-        // previous caller's leftover schema.
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        // mutated for the next caller, so any re-anchoring done for this call's
+        // rendering / RBAC stays local to this invocation. A caller that omits
+        // register/schema gets MagicMapper's cross-table search, never a previous
+        // caller's leftover schema.
+        $request = new ObjectFindRequest(
+            id: $id,
+            extend: $_extend,
+            files: $files,
+            rbac: $_rbac,
+            multitenancy: $_multitenancy,
+            audit: $_audit
+        );
+        $target  = new ObjectFindTarget(register: $register, schema: $schema);
 
-        // The pending schema ref is the other half of that isolation: setSchema()
-        // remembers its raw ref so a later setRegister() can re-resolve it, and the
-        // next thing this method does is call setRegister(). A ref left behind by an
-        // unrelated earlier caller would be re-resolved inside THIS call's register
-        // and fail on a schema this call never mentioned. find() supplies its own
-        // scope through its arguments, so it never inherits a pending one.
+        return $this->preservingScope(
+            operation: function () use ($request, $target, $_render): ObjectEntity {
+                $object = $this->loadForFind(request: $request, target: $target);
+                $this->assertFindAllowed(object: $object, request: $request);
+
+                // The caller is the render site itself (ObjectsController::show()): the
+                // read path above still ran, but the expensive render pass runs once,
+                // in the caller.
+                if ($_render === false) {
+                    // AVG / GDPR per-access read logging still applies to the read.
+                    $this->logProcessingRead(object: $object);
+                    return $object;
+                }
+
+                return $this->renderFoundObject(object: $object, request: $request);
+            }
+        );
+    }//end find()
+
+    /**
+     * Loads the object for find() and anchors the context to it.
+     *
+     * The pending schema ref is the other half of find()'s isolation: setSchema()
+     * remembers its raw ref so a later setRegister() can re-resolve it, and the next
+     * thing this method does is call setRegister(). A ref left behind by an unrelated
+     * earlier caller would be re-resolved inside THIS call's register and fail on a
+     * schema this call never mentioned. find() supplies its own scope through its
+     * arguments, so it never inherits a pending one.
+     *
+     * @param ObjectFindRequest $request What the find() call asked for.
+     * @param ObjectFindTarget  $target  The register and schema the call names.
+     *
+     * @return ObjectEntity The object as read.
+     *
+     * @spec exclude Private step of find(); read behaviour owned by object-interactions.
+     */
+    private function loadForFind(ObjectFindRequest $request, ObjectFindTarget $target): ObjectEntity
+    {
         $this->discardPendingSchemaRef();
 
-        try {
-            $request = new ObjectFindRequest(
-                id: $id,
-                extend: $_extend,
-                files: $files,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy,
-                audit: $_audit
-            );
-            $scope   = $this->cachedFindScope(
-                id: $id,
-                scope: $this->callFindScope(register: $register, schema: $schema)
-            );
+        $scope = $this->cachedFindScope(
+            id: $request->id,
+            scope: $this->callFindScope(target: $target)
+        );
 
-            [$object, $scope] = $this->retrieveForFind(request: $request, scope: $scope);
+        [$object, $scope] = $this->retrieveForFind(request: $request, scope: $scope);
 
-            $this->anchorToFoundObject(object: $object, scope: $scope);
-            $this->rememberUuidScope(id: $id);
+        $this->anchorToFoundObject(object: $object, scope: $scope);
+        $this->rememberUuidScope(id: $request->id);
 
-            // Check user has permission to read this specific object (includes object owner check).
-            // Publication visibility is handled by RBAC conditional rules with $now variable.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'read',
-                userId: null,
-                objectOwner: $object->getOwner(),
-                _rbac: $_rbac,
-                object: $object
-            );
+        return $object;
+    }//end loadForFind()
 
-            // The caller is the render site itself (ObjectsController::show()): the
-            // read path above still ran, but the expensive render pass runs once,
-            // in the caller.
-            if ($_render === false) {
-                // AVG / GDPR per-access read logging still applies to the read.
-                $this->logProcessingRead(object: $object);
-                return $object;
-            }
-
-            return $this->renderFoundObject(object: $object, request: $request);
-        } finally {
-            // BUG-OBJ-13: restore the caller's context so find() has no
-            // observable side-effect on shared instance state.
-            $this->currentRegister  = $previousRegister;
-            $this->currentSchema    = $previousSchema;
-            // A restored schema is an ENTITY, already resolved. Leaving a stale
-            // pending ref behind would make the next setRegister() re-resolve the
-            // restored context against a register that has nothing to do with it.
-            $this->currentSchemaRef = null;
-        }//end try
-    }//end find()
+    /**
+     * Checks that the user may read this specific object (includes the object owner check).
+     *
+     * Publication visibility is handled by RBAC conditional rules with the $now variable.
+     *
+     * @param ObjectEntity      $object  The object as read.
+     * @param ObjectFindRequest $request What the find() call asked for.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of find(); the read rule itself lives in checkPermission().
+     */
+    private function assertFindAllowed(ObjectEntity $object, ObjectFindRequest $request): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'read',
+            userId: null,
+            objectOwner: $object->getOwner(),
+            _rbac: $request->rbac,
+            object: $object
+        );
+    }//end assertFindAllowed()
 
     /**
      * The register and schema a find() call names, resolved through the setters.
      *
-     * @param Register|string|int|null $register The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
+     * @param ObjectFindTarget $target The register and schema the call names.
      *
      * @return ObjectFindScope The call's scope; an omitted argument stays null.
      *
      * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
      */
-    private function callFindScope(
-        Register | string | int | null $register,
-        Schema | string | int | null $schema
-    ): ObjectFindScope {
+    private function callFindScope(ObjectFindTarget $target): ObjectFindScope
+    {
         $callRegister = null;
         $callSchema   = null;
-        if ($register !== null) {
-            $this->setRegister(register: $register);
+        if ($target->register !== null) {
+            $this->setRegister(register: $target->register);
             $callRegister = $this->currentRegister;
         }
 
-        if ($schema !== null) {
-            $this->setSchema(schema: $schema);
+        if ($target->schema !== null) {
+            $this->setSchema(schema: $target->schema);
             $callSchema = $this->currentSchema;
         }
 
@@ -1458,17 +1485,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 throw $e;
             }
 
-            // Keep the caller's REGISTER while dropping only the schema. Dropping the
-            // register too turns every legitimate miss into an instance-wide union
-            // across all magic tables (measured 2026-07-29: ~1.9s of a ~3.0s create).
-            $object = $this->getForFind(
-                request: $request,
-                scope: new ObjectFindScope(register: $scope->register, schema: null)
-            );
-
-            return [$object, new ObjectFindScope(register: null, schema: null)];
+            return $this->retryWithoutSchema(request: $request, scope: $scope);
         }//end try
     }//end retrieveForFind()
+
+    /**
+     * Repeats the lookup without the schema, keeping the caller's register.
+     *
+     * Dropping the register too turns every legitimate miss into an instance-wide union
+     * across all magic tables (measured 2026-07-29: ~1.9s of a ~3.0s create).
+     *
+     * @param ObjectFindRequest $request What the find() call asked for.
+     * @param ObjectFindScope   $scope   The scope that missed.
+     *
+     * @return array{0: ObjectEntity, 1: ObjectFindScope} The object and an empty scope to anchor from.
+     *
+     * @throws OcpDoesNotExistException When the object does not exist in the register either.
+     *
+     * @spec exclude Private retry step of find(); read behaviour owned by object-interactions.
+     */
+    private function retryWithoutSchema(ObjectFindRequest $request, ObjectFindScope $scope): array
+    {
+        $object = $this->getForFind(
+            request: $request,
+            scope: new ObjectFindScope(register: $scope->register, schema: null)
+        );
+
+        return [$object, new ObjectFindScope(register: null, schema: null)];
+    }//end retryWithoutSchema()
 
     /**
      * Whether a scoped miss may be retried without the schema.
@@ -2520,19 +2564,32 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         // A create rule may carry a `match` on the object being created, so the
         // create question is asked about the incoming data (openregister#4094).
-        $incoming = $this->buildIncomingObjectForCreateCheck(object: $object);
+        return $this->authoriseSave(
+            request: new SaveAccessRequest(
+                uuid: $uuid,
+                rbac: $_rbac,
+                incoming: $this->buildIncomingObjectForCreateCheck(object: $object),
+                multitenancy: $_multitenancy
+            )
+        );
+    }//end checkSavePermissions()
 
+    /**
+     * Ask the permission a save needs: create without a uuid, otherwise by what the uuid resolves to.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The uuid of the stored row the write lands on, null for a create.
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function authoriseSave(SaveAccessRequest $request): ?string
+    {
         // No UUID provided, this is a CREATE operation.
-        if ($uuid === null) {
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'create',
-                userId: null,
-                objectOwner: null,
-                _rbac: $_rbac,
-                object: $incoming,
-                register: $this->currentRegisterId()
-            );
+        if ($request->uuid === null) {
+            $this->assertMayCreate(request: $request);
             return null;
         }
 
@@ -2546,55 +2603,112 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // check is made against. Not finding it here means the same thing it has
         // always meant — treat the write as a create with a caller-chosen UUID.
         try {
-            $existingObject = $this->objectMapper->find(
-                identifier: $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema
-            );
-            // This is an UPDATE operation.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'update',
-                userId: null,
-                objectOwner: $existingObject->getOwner(),
-                _rbac: $_rbac,
-                object: $existingObject
-            );
-            return $existingObject->getUuid();
+            return $this->assertMayUpdateStored(request: $request);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Not found FOR THIS CALLER: new, or stored and hidden from them.
-            $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+            return $this->assertMayWriteUnseen(request: $request);
+        }
+    }//end authoriseSave()
 
-            // Object not found for this caller: a CREATE operation with specific UUID.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'create',
-                userId: null,
-                objectOwner: null,
-                _rbac: $_rbac,
-                object: $incoming,
-                register: $this->currentRegisterId()
-            );
+    /**
+     * Ask the create permission, about the incoming data.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return void
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayCreate(SaveAccessRequest $request): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'create',
+            userId: null,
+            objectOwner: null,
+            _rbac: $request->rbac,
+            object: $request->incoming,
+            register: $this->currentRegisterId()
+        );
+    }//end assertMayCreate()
 
-            // Stored but hidden: the write lands on that row, so it must keep to
-            // the caller's organisations and pass the update rule against it.
-            if ($hidden !== null) {
-                $this->refuseAWriteOntoAnAppendOnlyRow();
-                $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'update',
-                    userId: null,
-                    objectOwner: $hidden->getOwner(),
-                    _rbac: $_rbac,
-                    object: $hidden
-                );
-                return $hidden->getUuid();
-            }
-        }//end try
+    /**
+     * Ask the update permission, about a stored row.
+     *
+     * @param ObjectEntity $stored The row the write lands on.
+     * @param bool         $_rbac  Whether to apply RBAC checks.
+     *
+     * @return void
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayUpdate(ObjectEntity $stored, bool $_rbac): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'update',
+            userId: null,
+            objectOwner: $stored->getOwner(),
+            _rbac: $_rbac,
+            object: $stored
+        );
+    }//end assertMayUpdate()
 
-        return null;
-    }//end checkSavePermissions()
+    /**
+     * Find the row a uuid names for this caller and ask the update permission on it.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The stored row's uuid.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the caller does not see such a row.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayUpdateStored(SaveAccessRequest $request): ?string
+    {
+        $existingObject = $this->objectMapper->find(
+            identifier: $request->uuid,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
+
+        $this->assertMayUpdate(stored: $existingObject, _rbac: $request->rbac);
+
+        return $existingObject->getUuid();
+    }//end assertMayUpdateStored()
+
+    /**
+     * Ask the permissions of a write to a uuid the caller does not see: new, or stored and hidden.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The hidden row's uuid, null for a create with a caller-chosen uuid.
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayWriteUnseen(SaveAccessRequest $request): ?string
+    {
+        $hidden = $this->refuseSomebodyElsesDraft(uuid: $request->uuid, _rbac: $request->rbac);
+
+        $this->assertMayCreate(request: $request);
+        if ($hidden === null) {
+            return null;
+        }
+
+        // Stored but hidden: the write lands on that row, so it must keep to
+        // the caller's organisations and pass the update rule against it.
+        $this->refuseAWriteOntoAnAppendOnlyRow();
+        $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $request->multitenancy);
+        $this->assertMayUpdate(stored: $hidden, _rbac: $request->rbac);
+
+        return $hidden->getUuid();
+    }//end assertMayWriteUnseen()
 
     /**
      * Refuse a write onto a stored row the caller cannot read when the schema is append-only.
@@ -3037,58 +3151,110 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
     {
-        if ($uuid === null || $this->currentSchema === null) {
-            return;
-        }
-
-        $existingData = $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+        $existingData = $this->writeRuleBaseline(object: $object, uuid: $uuid);
         if ($existingData === null) {
             return;
         }
 
         // Strip @self from the incoming payload before comparing — the rules
         // are for business properties only.
-        $candidate = $object;
-        unset($candidate['@self']);
+        $candidate = array_diff_key($object, ['@self' => true]);
 
+        $readOnly  = $this->readOnlyViolations(candidate: $candidate, existingData: $existingData);
+        $immutable = $this->immutableViolations(candidate: $candidate, existingData: $existingData);
+        if ($readOnly === [] && $immutable === []) {
+            return;
+        }
+
+        $this->logWriteRuleRefusal(uuid: $uuid, violations: array_merge($readOnly, $immutable));
+
+        // ValidationException's `$errors` argument is typed `?ValidationError`
+        // (Opis), not an arbitrary array — pass null and let the message +
+        // log entry carry the violation detail.
+        throw new ValidationException(message: $this->describeWriteRuleRefusal(readOnly: $readOnly, immutable: $immutable));
+    }//end enforceReadOnlyOnUpdate()
+
+    /**
+     * The stored data an update's write rules compare against, null when no rule applies.
+     *
+     * @param array       $object The incoming object.
+     * @param string|null $uuid   The object uuid, null for a create.
+     *
+     * @return array|null The stored business properties.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function writeRuleBaseline(array $object, ?string $uuid): ?array
+    {
+        if ($uuid === null || $this->currentSchema === null) {
+            return null;
+        }
+
+        return $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+    }//end writeRuleBaseline()
+
+    /**
+     * The readOnly properties an update would change.
+     *
+     * @param array $candidate    The incoming business properties.
+     * @param array $existingData The stored business properties.
+     *
+     * @return array The violations.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function readOnlyViolations(array $candidate, array $existingData): array
+    {
         // `readOnly` means a client may not write the field; a trusted system
         // operation is what stamps it, so it is not refused there. `immutable`
         // below still holds for everyone.
-        $violations = [];
-        if (SystemOperationContext::isActive() === false) {
-            $violations = $this->validateHandler->validateReadOnlyConstraints(
-                incomingObject: $candidate,
-                existingObject: $existingData,
-                schema: $this->currentSchema
-            );
+        if (SystemOperationContext::isActive() === true) {
+            return [];
         }
 
-        // `immutable: true` is checked here rather than in a second private
-        // method so it reuses the record this one already loaded. Two methods
-        // would mean two `find()` calls on every update, and the second would
-        // eventually be the one somebody forgot to call.
-        $immutableViolations = $this->validateHandler->validateImmutableConstraints(
+        return $this->validateHandler->validateReadOnlyConstraints(
             incomingObject: $candidate,
             existingObject: $existingData,
             schema: $this->currentSchema
         );
+    }//end readOnlyViolations()
 
-        if ($violations === [] && $immutableViolations === []) {
-            return;
-        }
+    /**
+     * The immutable properties an update would change.
+     *
+     * `immutable: true` is checked here rather than in a second private
+     * method so it reuses the record this one already loaded. Two methods
+     * would mean two `find()` calls on every update, and the second would
+     * eventually be the one somebody forgot to call.
+     *
+     * @param array $candidate    The incoming business properties.
+     * @param array $existingData The stored business properties.
+     *
+     * @return array The violations.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function immutableViolations(array $candidate, array $existingData): array
+    {
+        return $this->validateHandler->validateImmutableConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+    }//end immutableViolations()
 
-        $parts = [];
-        if ($violations !== []) {
-            $parts[] = $this->describeViolations(violations: $violations, verb: 'modify readOnly');
-        }
-
-        if ($immutableViolations !== []) {
-            $parts[]    = $this->describeViolations(violations: $immutableViolations, verb: 'change immutable');
-            $violations = array_merge($violations, $immutableViolations);
-        }
-
-        $message = implode('. ', $parts);
-
+    /**
+     * Log an update refused by readOnly or immutable rules.
+     *
+     * @param string $uuid       The object uuid.
+     * @param array  $violations The readOnly violations, then the immutable ones.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logWriteRuleRefusal(string $uuid, array $violations): void
+    {
         $this->logger->info(
             message: '[ObjectService] readOnly / immutable enforcement rejected UPDATE',
             context: [
@@ -3099,12 +3265,31 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 'violations' => $violations,
             ]
         );
+    }//end logWriteRuleRefusal()
 
-        // ValidationException's `$errors` argument is typed `?ValidationError`
-        // (Opis), not an arbitrary array — pass null and let the message +
-        // log entry carry the violation detail.
-        throw new ValidationException(message: $message);
-    }//end enforceReadOnlyOnUpdate()
+    /**
+     * The message of an update refused by readOnly or immutable rules.
+     *
+     * @param array $readOnly  The readOnly violations.
+     * @param array $immutable The immutable violations.
+     *
+     * @return string The message.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function describeWriteRuleRefusal(array $readOnly, array $immutable): string
+    {
+        $parts = [];
+        if ($readOnly !== []) {
+            $parts[] = $this->describeViolations(violations: $readOnly, verb: 'modify readOnly');
+        }
+
+        if ($immutable !== []) {
+            $parts[] = $this->describeViolations(violations: $immutable, verb: 'change immutable');
+        }
+
+        return implode('. ', $parts);
+    }//end describeWriteRuleRefusal()
 
     /**
      * Load the stored business data the write rules compare against.
@@ -3265,83 +3450,117 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
     {
-        // Handle folder creation for existing objects or new objects with UUIDs.
-        $folderId = null;
+        if ($uuid === null) {
+            return null;
+        }
 
-        if ($uuid !== null) {
-            // For existing objects or objects with specific UUIDs, check if folder needs to be created.
-            try {
-                // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
-                // we are on the save path with both register and schema already
-                // resolved, so there is no reason to fall back to the
-                // cross-table search (openregister#1520). Unscoped, this was the
-                // third full-instance UUID resolution in a single update.
-                $existingObject = $this->objectMapper->find(
-                    $uuid,
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema
-                );
-                $folder         = $existingObject->getFolder();
+        $this->revalidateFolderBinding(uuid: $uuid, currentUser: $currentUser);
 
-                // The `_folder` column is `varchar(255)` — every populated
-                // value is a string. The earlier `is_string($folder) === true`
-                // clause matched ANY non-empty string and so triggered an
-                // auto-create on every update, overwriting valid folder
-                // bindings with freshly-generated auto-folders under the
-                // register's storage tree. The intent of the string branch
-                // was to handle LEGACY non-numeric string paths that
-                // pre-date the integer-id storage convention; restrict the
-                // check to that case.
-                $needsAutoCreate = (
-                    $folder === null
-                    || $folder === ''
-                    || (is_string($folder) === true && is_numeric($folder) === false)
-                );
-
-                if ($needsAutoCreate === false) {
-                    // Defense in depth (PR #1431 review concern): the
-                    // `setSelfMetadata` access check only fires when the
-                    // write payload includes `@self.folder`. Pre-PR
-                    // cross-tenant bindings (or any subsequent save that
-                    // touches other fields) would otherwise pass through
-                    // unchecked. Re-validate the existing binding on every
-                    // save so the check applies uniformly. Throws
-                    // `FolderAccessDeniedException` → HTTP 403 at the
-                    // controller layer when the acting user cannot access
-                    // the bound folder. The existing binding is kept, so no
-                    // folder id is returned (auto-create is not needed).
-                    $this->fileService->assertObjectFolderAccessible(
-                        object: $existingObject,
-                        currentUser: $currentUser
-                    );
-                    return null;
-                }
-
-                // Lazy folder creation: do NOT create a Files folder for an
-                // object that has none. Most objects never get a file attached,
-                // so eagerly creating a per-object folder on every save (a)
-                // clutters the Files tree with thousands of empty folders and
-                // (b) can bind the object to a folder created in a
-                // no-session/system context (e.g. config-import seeding) that a
-                // later editor cannot access — which then denies the edit with
-                // folder_access_denied. The folder is created on demand the
-                // first time a file is actually uploaded to the object
-                // (CreateFileHandler → getObjectFolder, which creates-if-missing).
-                // Leave $folderId null; the object functions fine without one.
-                $folderId = null;
-            } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
-                // Propagate folder-access denials up to the controller.
-                throw $e;
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                // Object not found, will create new one with the specified UUID.
-                // Let SaveObject handle the creation with the provided UUID.
-            } catch (Exception $e) {
-                // Other errors - let SaveObject handle the creation.
-            }//end try
-        }//end if
-
-        return $folderId;
+        // Lazy folder creation: do NOT create a Files folder for an
+        // object that has none. Most objects never get a file attached,
+        // so eagerly creating a per-object folder on every save (a)
+        // clutters the Files tree with thousands of empty folders and
+        // (b) can bind the object to a folder created in a
+        // no-session/system context (e.g. config-import seeding) that a
+        // later editor cannot access — which then denies the edit with
+        // folder_access_denied. The folder is created on demand the
+        // first time a file is actually uploaded to the object
+        // (CreateFileHandler → getObjectFolder, which creates-if-missing).
+        return null;
     }//end ensureObjectFolder()
+
+    /**
+     * Re-validate the folder binding of a stored object for the acting user.
+     *
+     * @param string     $uuid        The object uuid.
+     * @param IUser|null $currentUser The acting user, null to use the session.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function revalidateFolderBinding(string $uuid, ?IUser $currentUser): void
+    {
+        try {
+            $this->assertStoredFolderBinding(uuid: $uuid, currentUser: $currentUser);
+        } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+            // Propagate folder-access denials up to the controller.
+            throw $e;
+        } catch (Exception $e) {
+            // A missing object or any other error: let SaveObject handle the creation.
+        }//end try
+    }//end revalidateFolderBinding()
+
+    /**
+     * Look up a stored object and check its folder binding, when it has one.
+     *
+     * @param string     $uuid        The object uuid.
+     * @param IUser|null $currentUser The acting user, null to use the session.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the user cannot access the bound folder.
+     * @throws Exception When the object lookup fails.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertStoredFolderBinding(string $uuid, ?IUser $currentUser): void
+    {
+        // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
+        // we are on the save path with both register and schema already
+        // resolved, so there is no reason to fall back to the
+        // cross-table search (openregister#1520). Unscoped, this was the
+        // third full-instance UUID resolution in a single update.
+        $existingObject = $this->objectMapper->find(
+            $uuid,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
+
+        if ($this->hasFolderBinding(folder: $existingObject->getFolder()) === true) {
+            // Defense in depth (PR #1431 review concern): the
+            // `setSelfMetadata` access check only fires when the
+            // write payload includes `@self.folder`. Pre-PR
+            // cross-tenant bindings (or any subsequent save that
+            // touches other fields) would otherwise pass through
+            // unchecked. Re-validate the existing binding on every
+            // save so the check applies uniformly. Throws
+            // `FolderAccessDeniedException` → HTTP 403 at the
+            // controller layer when the acting user cannot access
+            // the bound folder. The existing binding is kept, so no
+            // folder id is returned (auto-create is not needed).
+            $this->fileService->assertObjectFolderAccessible(
+                object: $existingObject,
+                currentUser: $currentUser
+            );
+        }
+    }//end assertStoredFolderBinding()
+
+    /**
+     * Whether an object's folder column holds a binding to a folder id.
+     *
+     * The `_folder` column is `varchar(255)` — every populated
+     * value is a string. The earlier `is_string($folder) === true`
+     * clause matched ANY non-empty string and so triggered an
+     * auto-create on every update, overwriting valid folder
+     * bindings with freshly-generated auto-folders under the
+     * register's storage tree. The intent of the string branch
+     * was to handle LEGACY non-numeric string paths that
+     * pre-date the integer-id storage convention; restrict the
+     * check to that case.
+     *
+     * @param mixed $folder The stored folder value.
+     *
+     * @return bool True for a numeric folder id.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function hasFolderBinding(mixed $folder): bool
+    {
+        return $folder !== null && (is_string($folder) === false || is_numeric($folder) === true);
+    }//end hasFolderBinding()
 
     /**
      * Delete an object, optionally scoped to a (register, schema) magic table.
@@ -3555,11 +3774,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->rejectIfViewBacked(operation: 'delete');
 
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new AppendOnlyException(
-                schemaIdentifier: $schemaSlug,
-                operation: 'delete'
-            );
+            throw $this->appendOnlyDeleteRefusal(schema: $this->currentSchema);
         }
 
         if ($this->currentSchema !== null
@@ -3576,6 +3791,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * The refusal of a delete on an append-only schema.
+     *
+     * @param Schema $schema The append-only schema.
+     *
+     * @return AppendOnlyException
+     */
+    private function appendOnlyDeleteRefusal(Schema $schema): AppendOnlyException
+    {
+        return new AppendOnlyException(
+            schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()),
+            operation: 'delete'
+        );
+    }//end appendOnlyDeleteRefusal()
 
     /**
      * Whether a delete with these flags is bound by the caller's organisation.
@@ -4014,13 +4244,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 _multitenancy: $_multitenancy
             );
 
-            $retention = ($object->getRetention() ?? []);
-            // Both vocabularies: stored data is not migrated, so an install
-            // that transferred a record before GAP A4 holds `overgebracht`.
-            if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
-                throw new OcpDoesNotExistException(
-                    'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
-                );
+            if ($this->isTransferred(object: $object) === true) {
+                throw new OcpDoesNotExistException('OBJECT_TRANSFERRED: '.self::TRANSFERRED_MESSAGE);
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Re-throw if it's our transfer exception.
@@ -4031,6 +4256,23 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             // Object doesn't exist yet (new object), no check needed.
         }//end try
     }//end rejectIfTransferred()
+
+    /**
+     * Whether an object has been transferred to the e-Depot.
+     *
+     * Both vocabularies count: stored data is not migrated, so an install that
+     * transferred a record before GAP A4 holds `overgebracht`.
+     *
+     * @param ObjectEntity $object The object.
+     *
+     * @return bool
+     */
+    private function isTransferred(ObjectEntity $object): bool
+    {
+        $retention = ($object->getRetention() ?? []);
+
+        return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true);
+    }//end isTransferred()
 
     /**
      * Whether a write with this uuid on an append-only schema would touch a stored object.
@@ -6099,18 +6341,55 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             }
         }
 
+        return ($this->bulkDeleteStateRefusal(row: $scope['row'], schema: $gateSchema)
+            ?? $this->bulkDeleteArchivalRefusal(scope: $scope, schema: $gateSchema));
+    }//end bulkDeleteRefusal()
+
+    /**
+     * The archival refusal of a bulk-delete row, or null; a draft is not an archival record.
+     *
+     * @param array  $scope  The row's scope.
+     * @param Schema $schema The row's schema.
+     *
+     * @return array|null The skip reason, or null.
+     */
+    private function bulkDeleteArchivalRefusal(array $scope, Schema $schema): ?array
+    {
         if ($scope['draft'] === true) {
             return null;
         }
 
         try {
-            $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
+            $this->rejectIfArchivalImmutable(schema: $schema, retentionSweep: false);
         } catch (ArchivalImmutableException $archivalRefusal) {
             return $archivalRefusal->toResponseBody();
         }
 
         return null;
-    }//end bulkDeleteRefusal()
+    }//end bulkDeleteArchivalRefusal()
+
+    /**
+     * Why a bulk-delete row may not go whatever its draft status, or null.
+     *
+     * The same two refusals deleteObject() gives, asked of the row and its own schema.
+     *
+     * @param ObjectEntity $row    The stored row.
+     * @param Schema       $schema The row's schema.
+     *
+     * @return array|null The skip reason, or null.
+     */
+    private function bulkDeleteStateRefusal(ObjectEntity $row, Schema $schema): ?array
+    {
+        if ($this->isTransferred(object: $row) === true) {
+            return ['error' => 'OBJECT_TRANSFERRED', 'message' => self::TRANSFERRED_MESSAGE];
+        }
+
+        if ($schema->isAppendOnly() === true) {
+            return $this->appendOnlyDeleteRefusal(schema: $schema)->toResponseBody();
+        }
+
+        return null;
+    }//end bulkDeleteStateRefusal()
 
     /**
      * Record a deleted bulk-delete row, its cascade count and its scope pair for cache invalidation.
