@@ -24,20 +24,17 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\RegisterDownloads;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
-use OCA\OpenRegister\Exception\ExportTooLargeException;
-use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
@@ -60,7 +57,6 @@ use OCP\DB\Exception as DBException;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -114,13 +110,6 @@ class RegistersController extends Controller {
 	 * @var AuditTrailMapperInterface
 	 */
 	private readonly AuditTrailMapperInterface $auditTrailMapper;
-
-	/**
-	 * Export service for handling data exports
-	 *
-	 * @var ObjectExporterInterface
-	 */
-	private readonly ObjectExporterInterface $exportService;
 
 	/**
 	 * Import service for handling data imports
@@ -207,6 +196,13 @@ class RegistersController extends Controller {
 	private readonly RegistersControllerServices $services;
 
 	/**
+	 * The exports and import templates this controller hands out.
+	 *
+	 * @var RegisterDownloads
+	 */
+	private readonly RegisterDownloads $downloads;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for register operations.
@@ -232,6 +228,7 @@ class RegistersController extends Controller {
 		);
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
+		$this->downloads = new RegisterDownloads(session: $session, services: $services);
 		$this->registerService = $services->registers->registerService;
 		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->userSession = $session->userSession;
@@ -248,7 +245,6 @@ class RegistersController extends Controller {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
-		$this->exportService = $services->transfer->exportService;
 		$this->importService = $services->transfer->importService;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;
@@ -1008,57 +1004,42 @@ class RegistersController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple format branches
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function export(int $id): JSONResponse|DataDownloadResponse {
 		try {
-			$format          = $this->request->getParam(key: 'format', default: 'configuration');
-			$includeObjParam = $this->request->getParam(key: 'includeObjects', default: false);
-			$includeObjects  = filter_var($includeObjParam, FILTER_VALIDATE_BOOLEAN);
-			$register        = $this->registerService->find($id);
-
-			switch ($format) {
-				case 'excel':
-					return $this->exportRegisterToExcel(register: $register);
-				case 'csv':
-				case 'pdf':
-					return $this->exportRegisterSchemaTable(register: $register, format: $format);
-				case 'configuration':
-				default:
-					return $this->exportRegisterConfiguration(register: $register, includeObjects: $includeObjects);
-			}
+			$format   = $this->request->getParam(key: 'format', default: 'configuration');
+			$register = $this->registerService->find($id);
+			return $this->exportAs(register: $register, format: $format);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => 'Failed to export register: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end export()
 
 	/**
-	 * A register's objects as an Excel download.
+	 * A register as a download in the asked format.
 	 *
 	 * @param Register $register The register.
+	 * @param mixed    $format   The format the request asks for.
 	 *
-	 * @return DataDownloadResponse The download.
+	 * @return JSONResponse|DataDownloadResponse The download, or the refusal.
+	 *
+	 * @throws Exception When the export fails; export() answers 400.
 	 */
-	private function exportRegisterToExcel(Register $register): DataDownloadResponse {
-		$spreadsheet = $this->exportService->exportToExcel(
-			register: $register,
-			schema: null,
-			filters: [],
-			currentUser: $this->userSession->getUser()
-		);
-		$writer   = new Xlsx($spreadsheet);
-		$slug     = $register->getSlug() ?? 'register';
-		$date     = (new DateTime())->format('Y-m-d_His');
-		$filename = sprintf('%s_%s.xlsx', $slug, $date);
-		ob_start();
-		$writer->save('php://output');
-		$content = ob_get_clean();
-		$mime    = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-		return new DataDownloadResponse($content, $filename, $mime);
-	}//end exportRegisterToExcel()
+	private function exportAs(Register $register, mixed $format): JSONResponse|DataDownloadResponse {
+		switch ($format) {
+			case 'excel':
+				return $this->downloads->excel(register: $register);
+			case 'csv':
+			case 'pdf':
+				return $this->exportRegisterSchemaTable(register: $register, format: $format);
+			case 'configuration':
+			default:
+				$includeObjects = filter_var($this->request->getParam(key: 'includeObjects', default: false), FILTER_VALIDATE_BOOLEAN);
+				return $this->downloads->configuration(register: $register, includeObjects: $includeObjects);
+		}
+	}//end exportAs()
 
 	/**
 	 * One schema of a register as a CSV or PDF download.
@@ -1081,88 +1062,11 @@ class RegistersController extends Controller {
 
 		$schema = $this->schemaMapper->find($schemaId);
 		if ($format === 'pdf') {
-			return $this->exportRegisterSchemaToPdf(register: $register, schema: $schema);
+			return $this->downloads->pdf(register: $register, schema: $schema);
 		}
 
-		$csv = $this->exportService->exportToCsv(
-			register: $register,
-			schema: $schema,
-			filters: [],
-			currentUser: $this->userSession->getUser()
-		);
-		$filename = sprintf(
-			'%s_%s_%s.csv',
-			$register->getSlug() ?? 'register',
-			$schema->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-		return new DataDownloadResponse($csv, $filename, 'text/csv');
+		return $this->downloads->csv(register: $register, schema: $schema);
 	}//end exportRegisterSchemaTable()
-
-	/**
-	 * One schema of a register as a PDF download.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 *
-	 * @return JSONResponse|DataDownloadResponse The download, or the refusal when the export is too large or needs an office server.
-	 */
-	private function exportRegisterSchemaToPdf(Register $register, Schema $schema): JSONResponse|DataDownloadResponse {
-		try {
-			$pdf = $this->exportService->exportToPdf(
-				register: $register,
-				schema: $schema,
-				filters: [],
-				currentUser: $this->userSession->getUser()
-			);
-		} catch (ExportTooLargeException $e) {
-			return new JSONResponse(
-				data: [
-					'error'    => 'export_too_large',
-					'message'  => $e->getMessage(),
-					'rowCount' => $e->getRowCount(),
-					'maxRows'  => $e->getMaxRows(),
-				],
-				statusCode: ExportTooLargeException::HTTP_STATUS
-			);
-		} catch (OfficeServerRequiredException $e) {
-			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-		}
-
-		$filename = sprintf(
-			'%s_%s_%s.pdf',
-			$register->getSlug() ?? 'register',
-			$schema->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-		return new DataDownloadResponse($pdf, $filename, 'application/pdf');
-	}//end exportRegisterSchemaToPdf()
-
-	/**
-	 * A register's configuration as a JSON download.
-	 *
-	 * @param Register $register       The register.
-	 * @param bool     $includeObjects Whether the export carries the register's objects.
-	 *
-	 * @return DataDownloadResponse The download.
-	 *
-	 * @throws Exception When the configuration cannot be encoded as JSON.
-	 */
-	private function exportRegisterConfiguration(Register $register, bool $includeObjects): DataDownloadResponse {
-		$exportData  = $this->configurationService->exportConfig(
-			input: $register,
-			includeObjects: $includeObjects
-		);
-		$jsonContent = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-		if ($jsonContent === false) {
-			throw new Exception('Failed to encode register data to JSON');
-		}
-
-		$slug     = $register->getSlug() ?? 'register';
-		$date     = (new DateTime())->format('Y-m-d_His');
-		$filename = sprintf('%s_%s.json', $slug, $date);
-		return new DataDownloadResponse($jsonContent, $filename, 'application/json');
-	}//end exportRegisterConfiguration()
 
 	/**
 	 * Download an empty import template for a schema
@@ -1186,55 +1090,41 @@ class RegistersController extends Controller {
 	 */
 	public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse {
 		try {
-			$format = strtolower((string)$this->request->getParam(key: 'format', default: 'xlsx'));
-			if (in_array($format, ['xlsx', 'csv'], true) === false) {
-				return new JSONResponse(
-					data: ['error' => 'Unsupported template format: ' . $format . '. Supported formats: xlsx, csv.'],
-					statusCode: 400
-				);
-			}
-
-			// RBAC is enforced inside both find() calls (default _rbac=true).
-			$register = $this->registerMapper->find($id);
-			$schemaEntity = $this->schemaMapper->find($schema);
-
-			$schemaSlug = $schemaEntity->getSlug() ?? 'schema';
-			$currentUser = $this->userSession->getUser();
-
-			if ($format === 'csv') {
-				$content = $this->exportService->buildTemplateCsv(
-					register: $register,
-					schema: $schemaEntity,
-					currentUser: $currentUser
-				);
-				$filename = sprintf('%s_template.csv', $schemaSlug);
-				return new DataDownloadResponse($content, $filename, 'text/csv');
-			}
-
-			$spreadsheet = $this->exportService->buildTemplateSpreadsheet(
-				register: $register,
-				schema: $schemaEntity,
-				currentUser: $currentUser
-			);
-			$writer = new Xlsx($spreadsheet);
-			ob_start();
-			$writer->save('php://output');
-			$content = ob_get_clean();
-			$filename = sprintf('%s_template.xlsx', $schemaSlug);
-			$mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-			return new DataDownloadResponse($content, $filename, $mime);
+			return $this->templateDownload(id: $id, schema: $schema);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(
-				data: ['error' => 'Register or schema not found: ' . $e->getMessage()],
-				statusCode: 404
-			);
+			return new JSONResponse(data: ['error' => 'Register or schema not found: ' . $e->getMessage()], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to generate import template: ' . $e->getMessage()],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['error' => 'Failed to generate import template: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end importTemplate()
+
+	/**
+	 * The import template the request asks for.
+	 *
+	 * @param int|string $id     The register slug or numeric id.
+	 * @param int|string $schema The schema slug or numeric id.
+	 *
+	 * @return JSONResponse|DataDownloadResponse The template, or 400 on an unsupported format.
+	 *
+	 * @throws DoesNotExistException When the register or schema does not exist.
+	 * @throws Exception             When the template cannot be built.
+	 */
+	private function templateDownload(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse {
+		$format = strtolower((string)$this->request->getParam(key: 'format', default: 'xlsx'));
+		if (in_array($format, ['xlsx', 'csv'], true) === false) {
+			return new JSONResponse(data: ['error' => "Unsupported template format: {$format}. Supported formats: xlsx, csv."], statusCode: 400);
+		}
+
+		// RBAC is enforced inside both find() calls (default _rbac=true).
+		$register = $this->registerMapper->find($id);
+		$schemaEntity = $this->schemaMapper->find($schema);
+
+		if ($format === 'csv') {
+			return $this->downloads->templateCsv(register: $register, schema: $schemaEntity);
+		}
+
+		return $this->downloads->templateXlsx(register: $register, schema: $schemaEntity);
+	}//end templateDownload()
 
 	/**
 	 * Publish register OAS specification to GitHub

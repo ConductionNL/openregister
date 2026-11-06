@@ -228,7 +228,12 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $handler,
+				\OCA\OpenRegister\Service\File\FileRestrictionGuard::class => new class {
+					public function readableNodes(array $nodes): array {
+						return $nodes;
+					}
+				},
+				'OCA\\OpenRegister\\Service\\FileService' => $handler,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
