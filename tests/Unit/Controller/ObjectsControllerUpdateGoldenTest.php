@@ -70,6 +70,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Controller\Support\VersionClaim
  * @uses   \OCA\OpenRegister\Controller\Support\VersionMismatch
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectStore
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectTransfer
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectsControllerServices

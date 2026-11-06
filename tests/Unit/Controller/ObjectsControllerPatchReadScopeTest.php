@@ -55,6 +55,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\SentWrite
  * @uses \OCA\OpenRegister\Controller\Support\VersionClaim
  * @uses \OCA\OpenRegister\Controller\Support\StringTypedPatch
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectTarget
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectUpdate
+ * @uses \OCA\OpenRegister\Controller\Support\WriteCaller
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectStore

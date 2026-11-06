@@ -3908,7 +3908,8 @@ class ObjectsController extends Controller {
 	 */
 	private function logPatchScope(ObjectUpdate $patch): void {
 		$scoped = $patch->caller->scoped;
-		$context = ['file' => __FILE__, 'line' => __LINE__, 'id' => $patch->target->id, 'isAdmin' => ($scoped === false), 'rbac' => $scoped, 'multi' => $scoped];
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'id' => $patch->target->id];
+		$context += ['isAdmin' => ($scoped === false), 'rbac' => $scoped, 'multi' => $scoped];
 		$this->logger->debug(message: '[ObjectsController] PATCH: RBAC/Multitenancy settings', context: $context);
 	}//end logPatchScope()
 

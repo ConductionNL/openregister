@@ -61,6 +61,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\Support\ObjectCreateControls
  * @covers \OCA\OpenRegister\Controller\Support\WriteCaller
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
+ * @uses   \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectStore
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectTransfer
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
