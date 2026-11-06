@@ -96,6 +96,10 @@ final class ObjectChange {
 	 * @return int|null The id
 	 */
 	private static function idOf(string|int|null $value): ?int {
-		return ($value === null ? null : (int) $value);
+		if ($value === null) {
+			return null;
+		}
+
+		return (int) $value;
 	}//end idOf()
 }//end class

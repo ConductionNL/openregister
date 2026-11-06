@@ -1067,12 +1067,17 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$this->clearSearchCache();
 		}
 
+		$strategy = 'global_fallback';
+		if ($change->schemaId !== null) {
+			$strategy = 'schema_targeted';
+		}
+
 		$this->logger->info(
 			message: '[CacheHandler] Schema-related caches cleared for CUD operation',
 			context: ['file' => __FILE__, 'line' => __LINE__] + $change->facts() + [
 				'executionTime' => round((microtime(true) - $startTime) * 1000, 2).'ms',
 				'impact' => 'all_users_affected',
-				'strategy' => ($change->schemaId !== null ? 'schema_targeted' : 'global_fallback'),
+				'strategy' => $strategy,
 			]
 		);
 	}//end clearSchemaRelatedCaches()
