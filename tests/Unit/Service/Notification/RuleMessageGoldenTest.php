@@ -20,27 +20,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
-use OCP\Activity\IManager as IActivityManager;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleFiring;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleMessageRenderer;
 use OCP\App\IAppManager;
-use OCP\Http\Client\IClientService;
-use OCP\IGroupManager;
-use OCP\IServerContainer;
-use OCP\IUserManager;
-use OCP\Mail\IMailer;
-use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
-use ReflectionProperty;
 
 /**
  * Records each template and locale against the text it renders to, with and
  * without actions. Re-record with UPDATE_GOLDEN=1.
  *
- * @covers \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\RuleMessageRenderer
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\MessageTarget
+ * @uses   \OCA\OpenRegister\Notifications\Service\Notification\RuleFiring
+ * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
  */
 final class RuleMessageGoldenTest extends TestCase {
@@ -101,35 +99,30 @@ final class RuleMessageGoldenTest extends TestCase {
 	}//end testRenderingMatchesGolden()
 
 	private function subject(mixed $template, ?string $locale): string {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveLocalizedSubject');
-		return $method->invoke($this->dispatcher(), $template, $locale, self::DATA, [], 'rule-name');
+		return $this->renderer()->subject(new MessageTarget($this->firing($template, false), $locale));
 	}//end subject()
 
 	private function body(mixed $template, ?string $locale, bool $hasActions): string {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveMessageBody');
-		return $method->invoke($this->dispatcher(), $template, $locale, self::DATA, [], $hasActions, 'openregister');
+		return $this->renderer()->body(new MessageTarget($this->firing($template, $hasActions), $locale));
 	}//end body()
 
-	private function dispatcher(): AnnotationNotificationDispatcher {
+	private function firing(mixed $template, bool $hasActions): RuleFiring {
+		$object = new ObjectEntity();
+		$object->setObject(self::DATA);
+		$firing = new RuleFiring('rule-name', ['subject' => $template, 'message' => $template], $object, new Schema(), [], 'object_created');
+		$firing->originApp = 'openregister';
+		if ($hasActions === true) {
+			$firing->actions = [['url' => 'x']];
+		}
+
+		return $firing;
+	}//end firing()
+
+	private function renderer(): RuleMessageRenderer {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppInfo')->willReturn(['name' => 'Open Register']);
 		$logger = $this->createMock(LoggerInterface::class);
 
-		$dispatcher = new AnnotationNotificationDispatcher(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			notificationManager: $this->createMock(INotificationManager::class),
-			logger: $logger,
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			mailer: $this->createMock(IMailer::class),
-			activityManager: $this->createMock(IActivityManager::class),
-			httpClient: $this->createMock(IClientService::class),
-			serverContainer: $this->createMock(IServerContainer::class),
-			appManager: $appManager,
-			templating: new NotificationTemplating(logger: $logger)
-		);
-		(new ReflectionProperty(AnnotationNotificationDispatcher::class, 'registerLanguages'))->setValue($dispatcher, ['nl', 'en']);
-
-		return $dispatcher;
-	}//end dispatcher()
+		return new RuleMessageRenderer(new NotificationTemplating(logger: $logger), ['nl', 'en'], $appManager, $logger);
+	}//end renderer()
 }//end class
