@@ -23,10 +23,10 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller;
+namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Controller\Support\FileExtractionControllerServices;
-use OCA\OpenRegister\Controller\Support\FileExtractionListing;
+use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
+use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;

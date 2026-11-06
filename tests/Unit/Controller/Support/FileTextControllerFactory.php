@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 
 /**
  * Builds FileTextController from its services as separate arguments, wrapped into its constructor bundles.
@@ -48,22 +48,22 @@ final class FileTextControllerFactory {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\FileTextControllerServices(
+			new \OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices(
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
 					userSession: $userSession,
 					groupManager: $groupManager,
 					logger: $logger ?? new \Psr\Log\NullLogger(),
 				),
-				mappers: new \OCA\OpenRegister\Controller\Support\FileTextMappers(
+				mappers: new \OCA\OpenRegister\Files\Controller\Support\FileTextMappers(
 					entityRelationMapper: $entityRelationMapper,
 				),
-				domain: new \OCA\OpenRegister\Controller\Support\FileTextDomain(
+				domain: new \OCA\OpenRegister\Files\Controller\Support\FileTextDomain(
 					textExtractor: $textExtractor,
 					fileService: $fileService,
 					manualEntityService: $manualEntityService,
 					fileReadScope: $fileReadScope,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FileTextPlatform(
+				platform: new \OCA\OpenRegister\Files\Controller\Support\FileTextPlatform(
 					rootFolder: $rootFolder,
 				),
 			),

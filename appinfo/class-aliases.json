@@ -1765,6 +1765,61 @@
 			"class": "OCA\\OpenRegister\\Mcp\\Tool\\ToolInterface",
 			"eager": true,
 			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileExtractionController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileExtractionController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\FileTextController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\FileTextController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionDomain": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionListing": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionListing",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionMappers": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionMappers",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileExtractionPlatform": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileExtractionPlatform",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextControllerServices": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextControllerServices",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextDomain": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextDomain",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextMappers": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextMappers",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\FileTextPlatform": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\Support\\FileTextPlatform",
+			"eager": false,
+			"service": true
 		}
 	}
 }

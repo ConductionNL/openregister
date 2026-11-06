@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister file extraction controller services
+ * OpenRegister file extraction mappers
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,27 +20,28 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Files\Controller\Support;
+
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
 /**
- * The service bundles of the file extraction API.
+ * The mappers and repositories of the file extraction API.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class FileExtractionControllerServices {
+final class FileExtractionMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FileExtractionMappers  $mappers  The mappers bundle.
-	 * @param FileExtractionDomain   $domain   The domain bundle.
-	 * @param FileExtractionPlatform $platform The platform bundle.
+	 * @param ChunkMapper          $chunkMapper          Chunk mapper for text chunks
+	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly FileExtractionMappers $mappers,
-		public readonly FileExtractionDomain $domain,
-		public readonly FileExtractionPlatform $platform,
+		public readonly ChunkMapper $chunkMapper,
+		public readonly EntityRelationMapperInterface $entityRelationMapper,
 	) {
 	}//end __construct()
 }//end class

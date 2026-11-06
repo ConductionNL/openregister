@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
-use OCA\OpenRegister\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
 
 /**
  * Builds FileExtractionController from its services as separate arguments, wrapped into its constructor bundles.
@@ -48,18 +48,18 @@ final class FileExtractionControllerFactory {
 		return [
 			$appName,
 			$request,
-			new \OCA\OpenRegister\Controller\Support\FileExtractionControllerServices(
-				mappers: new \OCA\OpenRegister\Controller\Support\FileExtractionMappers(
+			new \OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices(
+				mappers: new \OCA\OpenRegister\Files\Controller\Support\FileExtractionMappers(
 					chunkMapper: $chunkMapper,
 					entityRelationMapper: $entityRelationMapper,
 				),
-				domain: new \OCA\OpenRegister\Controller\Support\FileExtractionDomain(
+				domain: new \OCA\OpenRegister\Files\Controller\Support\FileExtractionDomain(
 					textExtractor: $textExtractor,
 					vectorizationService: $vectorizationService,
 					riskLevelService: $riskLevelService,
 					fileReadScope: $fileReadScope,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\FileExtractionPlatform(
+				platform: new \OCA\OpenRegister\Files\Controller\Support\FileExtractionPlatform(
 					rootFolder: $rootFolder,
 					userSession: $userSession,
 					groupManager: $groupManager,

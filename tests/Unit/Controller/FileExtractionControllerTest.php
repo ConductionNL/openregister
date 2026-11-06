@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
-use OCA\OpenRegister\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Service\RiskLevelService;

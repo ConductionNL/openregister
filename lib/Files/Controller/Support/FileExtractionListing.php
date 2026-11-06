@@ -23,7 +23,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
+namespace OCA\OpenRegister\Files\Controller\Support;
 
 use OCP\IRequest;
 

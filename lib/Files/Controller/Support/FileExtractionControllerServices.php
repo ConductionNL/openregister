@@ -1,7 +1,7 @@
 <?php
 
 /**
- * OpenRegister file extraction platform
+ * OpenRegister file extraction controller services
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -20,31 +20,27 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Controller\Support;
-
-use OCP\Files\IRootFolder;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+namespace OCA\OpenRegister\Files\Controller\Support;
 
 /**
- * The platform services of the file extraction API.
+ * The service bundles of the file extraction API.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class FileExtractionPlatform {
+final class FileExtractionControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param IRootFolder   $rootFolder   Root folder for per-user file access checks
-	 * @param IUserSession  $userSession  Active user session for caller identity
-	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param FileExtractionMappers  $mappers  The mappers bundle.
+	 * @param FileExtractionDomain   $domain   The domain bundle.
+	 * @param FileExtractionPlatform $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly IRootFolder $rootFolder,
-		public readonly IUserSession $userSession,
-		public readonly IGroupManager $groupManager,
+		public readonly FileExtractionMappers $mappers,
+		public readonly FileExtractionDomain $domain,
+		public readonly FileExtractionPlatform $platform,
 	) {
 	}//end __construct()
 }//end class

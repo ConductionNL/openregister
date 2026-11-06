@@ -32,7 +32,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\ConfigurationController
  * @covers \OCA\OpenRegister\Controller\SourcesController
  * @covers \OCA\OpenRegister\Controller\OrganisationController
- * @covers \OCA\OpenRegister\Controller\FileTextController
+ * @covers \OCA\OpenRegister\Files\Controller\FileTextController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class ControllerAdminCheckGoldenTest extends TestCase {

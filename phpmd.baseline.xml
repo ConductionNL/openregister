@@ -65,13 +65,13 @@
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/EntityRelationsController.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/FederationController.php"/>
   <violation rule="PHPMD\Rule\Naming\ShortVariable" file="lib/Controller/FederationController.php"/>
-  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/FileExtractionController.php" method="__construct"/>
-  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Controller/FileTextController.php"/>
-  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Controller/FileTextController.php"/>
-  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Controller/FileTextController.php" method="__construct"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/FileTextController.php" method="anonymizeFile"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Controller/FileTextController.php" method="addManualEntity"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Controller/FileTextController.php" method="addManualEntity"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Files/Controller/FileExtractionController.php" method="__construct"/>
+  <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Files/Controller/FileTextController.php"/>
+  <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/Files/Controller/FileTextController.php"/>
+  <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Files/Controller/FileTextController.php" method="__construct"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FileTextController.php" method="anonymizeFile"/>
+  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FileTextController.php" method="addManualEntity"/>
+  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Files/Controller/FileTextController.php" method="addManualEntity"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Files/Controller/FilesController.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Files/Controller/FilesController.php" method="show"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Controller/IconController.php"/>
