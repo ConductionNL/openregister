@@ -189,6 +189,12 @@ export default {
 		}
 	},
 
+	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+		schemaStore: () => schemaStore,
+	},
+
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {

@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -82,11 +83,15 @@ class MagicMapperNumberColumnTest extends TestCase {
 		return $reflection->invokeArgs($mapper, $args);
 	}//end call()
 
+	private function column(string $propertyName, array $propertyConfig): array {
+		return (new MagicSchemaColumns(logger: $this->createMock(LoggerInterface::class)))->forProperty(propertyName: $propertyName, propertyConfig: $propertyConfig);
+	}//end column()
+
 	public function testANumberPropertyGetsTwentySixNotTenTwo(): void {
 		$mapper = $this->mapper();
 		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
 
-		$column = $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']]);
+		$column = $this->column('weight', ['type' => 'number']);
 
 		$this->assertSame('decimal', $column['type']);
 		$this->assertSame(20, $column['precision']);
@@ -95,7 +100,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 	}//end testANumberPropertyGetsTwentySixNotTenTwo()
 
 	public function testMultipleOfSetsTheColumnScale(): void {
-		$column = $this->call($this->mapper(), 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'multipleOf' => 0.001]]);
+		$column = $this->column('weight', ['type' => 'number', 'multipleOf' => 0.001]);
 
 		$this->assertSame(17, $column['precision']);
 		$this->assertSame(3, $column['scale']);
@@ -103,7 +108,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 
 	public function testFiveGramsRoundTrips(): void {
 		$mapper = $this->mapper();
-		$column = $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']]);
+		$column = $this->column('weight', ['type' => 'number']);
 		$schema = $this->schema(properties: ['weight' => ['type' => 'number']]);
 
 		$prepared = $this->call($mapper, 'prepareObjectDataForTable', [['weight' => 0.005], $this->createMock(Register::class), $schema]);
@@ -177,7 +182,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 		});
 
 		$current = ['weight' => ['name' => 'weight', 'type' => 'numeric', 'precision' => 10, 'scale' => 2, 'nullable' => true, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number']])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number'])];
 
 		$this->assertSame(['weight'], $mapper->findDecimalColumnsNeedingWiden(currentColumns: $current, requiredColumns: $required));
 		$this->assertSame(['weight'], $mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required));
@@ -194,7 +199,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 		});
 
 		$current = ['weight' => ['name' => 'weight', 'type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => false, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'required' => true]])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number', 'required' => true])];
 
 		$mapper->widenDecimalColumns(tableName: 'openregister_table_ab', currentColumns: $current, requiredColumns: $required);
 
@@ -204,7 +209,7 @@ class MagicMapperNumberColumnTest extends TestCase {
 	public function testAWideEnoughColumnIsLeftAlone(): void {
 		$mapper = $this->mapper();
 		$current = ['weight' => ['name' => 'weight', 'type' => 'numeric', 'precision' => 20, 'scale' => 6, 'nullable' => true, 'default' => null]];
-		$required = ['weight' => $this->call($mapper, 'mapSchemaPropertyToColumn', ['weight', ['type' => 'number', 'multipleOf' => 0.01]])];
+		$required = ['weight' => $this->column('weight', ['type' => 'number', 'multipleOf' => 0.01])];
 
 		$this->assertSame([], $mapper->findDecimalColumnsNeedingWiden(currentColumns: $current, requiredColumns: $required));
 	}//end testAWideEnoughColumnIsLeftAlone()

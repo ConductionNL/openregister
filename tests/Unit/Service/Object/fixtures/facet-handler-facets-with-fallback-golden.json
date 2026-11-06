@@ -129,9 +129,8 @@
         "logs": [
             [
                 "debug",
-                "[FacetHandler] Facets empty with restrictive filters \u2014 returning empty facets (no fallback)",
+                "[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)",
                 {
-                    "file": "FacetHandler.php",
                     "originalQuery": [
                         "_search"
                     ],
@@ -178,9 +177,8 @@
         "logs": [
             [
                 "debug",
-                "[FacetHandler] Facets empty with restrictive filters \u2014 returning empty facets (no fallback)",
+                "[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)",
                 {
-                    "file": "FacetHandler.php",
                     "originalQuery": [
                         "colour"
                     ],
@@ -1174,7 +1172,6 @@
                 "warning",
                 "[FacetHandler] Failed to get non-aggregated facet",
                 {
-                    "file": "FacetHandler.php",
                     "field": "tag",
                     "schemaId": 3,
                     "error": "scoped query failed"

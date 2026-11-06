@@ -37,12 +37,12 @@ guarantee, not a best-effort side effect.**
 
 ### Numbered rules
 
-#### Rule 1 — Every audit row is hash-chained at insert time
+#### Rule 1 — Every audit row is hash-chained by the seal sweep
 
-The two insert paths — `AuditTrailMapper::createAuditTrail()` and
-`createAuditTrailEntry()` — MUST compute `previousHash` from the current chain
-head (`AuditHashService::getLastHash()`) and set the row's `hash`
-(`computeHash()`) before persisting. A row inserted with a null hash is a
+`AuditSealJob`, through `AuditHashService::sealUnsealed()`, is the only sealer:
+it walks the unsealed tail in id order and sets each row's `previousHash` and
+`hash` (`computeHash()`). Insert paths MUST NOT seal, because sealing beside the
+sweep forks the chain. A row that stays unsealed after the sweep has run is a
 defect: `verifyChain()` treats null-hash rows as *skipped*, so an all-null table
 reports `valid: true` with `entriesVerified: 0` — a false guarantee.
 
