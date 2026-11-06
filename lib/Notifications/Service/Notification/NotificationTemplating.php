@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
@@ -286,7 +287,7 @@ class NotificationTemplating implements NotificationTemplatingInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function resolveRelationDisplayName(string $value): ?string {
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {
+		if (UuidFormat::isCanonical(value: $value) === false) {
 			return null;
 		}
 

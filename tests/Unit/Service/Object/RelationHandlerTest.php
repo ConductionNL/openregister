@@ -39,11 +39,17 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Unit tests for RelationHandler.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @covers \OCA\OpenRegister\Service\Object\RelationTables
+ * @covers \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @covers \OCA\OpenRegister\Service\Object\RelationLookup
+ * @uses   \OCA\OpenRegister\Service\Object\RelationLoadRun
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Object\PinnedTable
  * @uses \OCA\OpenRegister\Service\Object\ReferrerPage
@@ -130,192 +136,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// applyInversedByFilter tests
 	// =========================================================================
-
-	/**
-	 * When schema === false, applyInversedByFilter returns empty array immediately.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnEmptyWhenSchemaFalse(): void {
-		$filters = ['schema' => false];
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => []);
-
-		$this->assertSame([], $result);
-	}//end testApplyInversedByFilterReturnEmptyWhenSchemaFalse()
-
-	/**
-	 * When no filter keys contain underscore sub-keys, returns empty array.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnEmptyWhenNoSubFilters(): void {
-		$schema = $this->makeSchema(['name' => ['type' => 'string']]);
-		$filters = ['schema' => 1, 'name' => 'test'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => []);
-
-		$this->assertSame([], $result);
-	}//end testApplyInversedByFilterReturnEmptyWhenNoSubFilters()
-
-	/**
-	 * When sub-filter key matches a property with no inversedBy, iterator stays 0 and
-	 * returns empty array (not null).
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnEmptyWhenPropertyHasNoInversedBy(): void {
-		// Property 'owner' has no inversedBy.
-		$schema = $this->makeSchema(['owner' => ['type' => 'string']]);
-		$filters = ['schema' => 1, 'owner_name' => 'alice'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => []);
-
-		$this->assertSame([], $result);
-	}//end testApplyInversedByFilterReturnEmptyWhenPropertyHasNoInversedBy()
-
-	/**
-	 * When inversedBy property is found but callback returns no objects, returns null
-	 * (signals "no results match").
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsNullWhenCallbackFindsNothing(): void {
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'some-schema-uuid',
-			],
-		]);
-
-		$filters = ['schema' => 1, 'owner_id' => 'some-value'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		// Callback returns empty -- no matching objects found.
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => []);
-
-		$this->assertNull($result);
-	}//end testApplyInversedByFilterReturnsNullWhenCallbackFindsNothing()
-
-	/**
-	 * When inversedBy property is matched and related object contains a valid UUID in the
-	 * inversedBy field, that UUID is returned in the ids array.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterExtractsUuidFromRelatedObject(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'schema-uuid',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid, 'name' => 'Test']);
-
-		$filters = ['schema' => 1, 'owner_id' => 'some-value'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		$this->assertIsArray($result);
-		$this->assertContains($uuid, $result);
-	}//end testApplyInversedByFilterExtractsUuidFromRelatedObject()
-
-	/**
-	 * When inversedBy field value is a URL, the last path segment (UUID) is returned.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterExtractsUuidFromUrl(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'schema-uuid',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn([
-			'member' => 'https://example.com/objects/' . $uuid,
-		]);
-
-		$filters = ['schema' => 1, 'owner_id' => 'something'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		$this->assertIsArray($result);
-		$this->assertContains($uuid, $result);
-	}//end testApplyInversedByFilterExtractsUuidFromUrl()
-
-	/**
-	 * When inversedBy field value is neither a UUID nor a URL, null is mapped and the id list
-	 * can still be returned as an array containing null.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterHandlesNonUuidNonUrlValue(): void {
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'schema-uuid',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => 'not-a-uuid-or-url']);
-
-		$filters = ['schema' => 1, 'owner_id' => 'something'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		// Result is array containing null.
-		$this->assertIsArray($result);
-	}//end testApplyInversedByFilterHandlesNonUuidNonUrlValue()
-
-	/**
-	 * After processing, sub-filter keys are removed from $filters.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterRemovesProcessedFilterKeys(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'schema-uuid',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
-
-		$filters = ['schema' => 1, 'owner_id' => 'some-value'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-		$this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		// The composite key 'owner_id' should be removed from $filters.
-		$this->assertArrayNotHasKey('owner_id', $filters);
-	}//end testApplyInversedByFilterRemovesProcessedFilterKeys()
 
 	// =========================================================================
 	// extractAllRelationshipIds tests
@@ -739,11 +559,88 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('550e8400-e29b-41d4-a716-446655440000');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: '550e8400-e29b-41d4-a716-446655440000'));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
 	}//end testGetUsesReturnsEmptyWhenObjectHasNoRelations()
+
+	/**
+	 * Paging parameters that array_slice() refuses.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function unusablePaging(): array {
+		return [
+			'text limit' => [['_limit' => 'abc']],
+			'empty limit' => [['_limit' => '']],
+			'text offset' => [['_offset' => 'abc']],
+			'empty offset' => [['_offset' => '']],
+			'both' => [['_limit' => 'abc', '_offset' => 'def']],
+		];
+	}//end unusablePaging()
+
+	/**
+	 * An object without relations answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testGetUsesWithoutRelationsEchoesUnusablePaging(array $query): void {
+		$entity = $this->makeObjectEntity(1);
+		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
+		$entity->setRelations([]);
+		$this->objectMapper->method('find')->willReturn($entity);
+
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: '550e8400-e29b-41d4-a716-446655440000', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testGetUsesWithoutRelationsEchoesUnusablePaging()
+
+	/**
+	 * A failed uses lookup answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testFailedGetUsesEchoesUnusablePaging(array $query): void {
+		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('Not found'));
+
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'missing-uuid', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testFailedGetUsesEchoesUnusablePaging()
+
+	/**
+	 * A failed used-by lookup answers an empty page, echoing the paging as requested.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('unusablePaging')]
+	public function testFailedGetUsedByEchoesUnusablePaging(array $query): void {
+		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('Not found'));
+
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid', query: $query));
+
+		$this->assertSame($this->emptyPageOf(query: $query), $result);
+	}//end testFailedGetUsedByEchoesUnusablePaging()
+
+	/**
+	 * The empty page a query answers.
+	 *
+	 * @param array<string, mixed> $query The paging parameters.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function emptyPageOf(array $query): array {
+		return ['results' => [], 'total' => 0, 'limit' => $query['_limit'] ?? 30, 'offset' => $query['_offset'] ?? 0];
+	}//end emptyPageOf()
 
 	/**
 	 * Returns empty results when relations only contain the object's own UUID.
@@ -759,7 +656,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -777,7 +674,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUses('missing-uuid', ['_limit' => 5, '_offset' => 2]);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'missing-uuid', query: ['_limit' => 5, '_offset' => 2]));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -797,7 +694,7 @@ class RelationHandlerTest extends TestCase {
 		$this->logger->expects($this->never())->method('error');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
-		$this->handler->getUses('dubbel');
+		$this->handler->getUses(lookup: new RelationLookup(objectId: 'dubbel'));
 	}//end testGetUsesPropagatesAnAmbiguousIdentifier()
 
 	/**
@@ -811,7 +708,7 @@ class RelationHandlerTest extends TestCase {
 		$this->logger->expects($this->never())->method('error');
 
 		$this->expectException(\OCP\AppFramework\Db\MultipleObjectsReturnedException::class);
-		$this->handler->getUsedBy('dubbel');
+		$this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'dubbel'));
 	}//end testGetUsedByPropagatesAnAmbiguousIdentifier()
 
 	/**
@@ -826,7 +723,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -850,7 +747,7 @@ class RelationHandlerTest extends TestCase {
 		// getUses calls \OC::$server for RegisterMapper and MagicMapper -- this path will
 		// throw a fatal if OC is not available in unit tests, so we assert on the
 		// error-fallback path which still returns the correct structure.
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -872,7 +769,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('missing-uuid', ['_limit' => 5, '_offset' => 2]);
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid', query: ['_limit' => 5, '_offset' => 2]));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -892,7 +789,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('missing-uuid');
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'missing-uuid'));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -910,7 +807,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy('some-uuid');
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'some-uuid'));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1138,7 +1035,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', []);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', query: []));
 
 		$this->assertSame(30, $result['limit']);
 		$this->assertSame(0, $result['offset']);
@@ -1162,7 +1059,7 @@ class RelationHandlerTest extends TestCase {
 
 		// getUses will attempt \OC::$server calls, which may fail in unit test context.
 		// We just assert the response has the required structure.
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1182,7 +1079,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUses('bad-uuid', ['_limit' => 10, '_offset' => 2]);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'bad-uuid', query: ['_limit' => 10, '_offset' => 2]));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1193,61 +1090,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// Additional applyInversedByFilter tests
 	// =========================================================================
-
-	/**
-	 * Multiple inversedBy properties -- results are intersected.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterIntersectsMultipleInversedByProperties(): void {
-		$uuid1 = '550e8400-e29b-41d4-a716-446655440001';
-		$uuid2 = '550e8400-e29b-41d4-a716-446655440002';
-
-		$schema = $this->makeSchema([
-			'owner' => ['type' => 'string', 'inversedBy' => 'memberId', '$ref' => 'schema-1'],
-			'group' => ['type' => 'string', 'inversedBy' => 'groupId',  '$ref' => 'schema-2'],
-		]);
-
-		// First callback returns [uuid1, uuid2], second only uuid1.
-		$calls = 0;
-		$callback = function ($args) use ($uuid1, $uuid2, &$calls) {
-			$calls++;
-			$obj = $this->createMock(ObjectEntity::class);
-			if ($calls === 1) {
-				$obj->method('jsonSerialize')->willReturn(['memberId' => $uuid1]);
-				$obj2 = $this->createMock(ObjectEntity::class);
-				$obj2->method('jsonSerialize')->willReturn(['memberId' => $uuid2]);
-				return [$obj, $obj2];
-			}
-			$obj->method('jsonSerialize')->willReturn(['groupId' => $uuid1]);
-			return [$obj];
-		};
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$filters = ['schema' => 1, 'owner_x' => 'val1', 'group_y' => 'val2'];
-
-		$result = $this->handler->applyInversedByFilter($filters, $callback);
-
-		// The intersection of [uuid1, uuid2] and [uuid1] should be [uuid1].
-		$this->assertIsArray($result);
-	}//end testApplyInversedByFilterIntersectsMultipleInversedByProperties()
-
-	/**
-	 * applyInversedByFilter returns empty array when filters has no sub-filter keys.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyArrayOnlySimpleKeys(): void {
-		$schema = $this->makeSchema(['name' => ['type' => 'string']]);
-		$filters = ['schema' => 5, 'plain' => 'value'];
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => []);
-
-		$this->assertSame([], $result);
-	}//end testApplyInversedByFilterReturnsEmptyArrayOnlySimpleKeys()
 
 	// =========================================================================
 	// Additional extractRelatedData tests
@@ -1273,10 +1115,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'dddddddd-dddd-dddd-dddd-dddddddddddd',
-			['_limit' => 15, '_offset' => 3]
-		);
+		$result = $this->handler->getUsedBy(lookup: new RelationLookup(objectId: 'dddddddd-dddd-dddd-dddd-dddddddddddd', query: ['_limit' => 15, '_offset' => 3]));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1287,128 +1126,6 @@ class RelationHandlerTest extends TestCase {
 	// =========================================================================
 	// NEW: applyInversedByFilter -- advanced filter processing
 	// =========================================================================
-
-	/**
-	 * applyInversedByFilter passes the $ref as 'schema' in the callback filters.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterPassesRefAsSchemaToCallback(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'ref-schema-42',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
-
-		$capturedArgs = null;
-		$callback = function ($args) use ($relatedObject, &$capturedArgs) {
-			$capturedArgs = $args;
-			return [$relatedObject];
-		};
-
-		$filters = ['schema' => 1, 'owner_status' => 'active'];
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$this->handler->applyInversedByFilter($filters, $callback);
-
-		$this->assertIsArray($capturedArgs);
-		$this->assertArrayHasKey('filters', $capturedArgs);
-		$this->assertSame('ref-schema-42', $capturedArgs['filters']['schema']);
-	}//end testApplyInversedByFilterPassesRefAsSchemaToCallback()
-
-	/**
-	 * applyInversedByFilter sets $ref to null when property has no $ref key.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterSetsNullRefWhenMissing(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
-
-		$capturedArgs = null;
-		$callback = function ($args) use ($relatedObject, &$capturedArgs) {
-			$capturedArgs = $args;
-			return [$relatedObject];
-		};
-
-		$filters = ['schema' => 1, 'owner_name' => 'test'];
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$this->handler->applyInversedByFilter($filters, $callback);
-
-		$this->assertNull($capturedArgs['filters']['schema']);
-	}//end testApplyInversedByFilterSetsNullRefWhenMissing()
-
-	/**
-	 * applyInversedByFilter extracts UUID from URL with deep path segments.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterExtractsUuidFromDeepUrl(): void {
-		$schema = $this->makeSchema([
-			'ref' => [
-				'type' => 'string',
-				'inversedBy' => 'link',
-				'$ref' => 's1',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn([
-			'link' => 'https://example.com/api/v1/objects/my-final-segment',
-		]);
-
-		$filters = ['schema' => 1, 'ref_x' => 'val'];
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		$this->assertIsArray($result);
-		$this->assertContains('my-final-segment', $result);
-	}//end testApplyInversedByFilterExtractsUuidFromDeepUrl()
-
-	/**
-	 * applyInversedByFilter handles multiple sub-filter keys for same property.
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterHandlesMultipleSubKeysForSameProperty(): void {
-		$uuid = '550e8400-e29b-41d4-a716-446655440000';
-		$schema = $this->makeSchema([
-			'owner' => [
-				'type' => 'string',
-				'inversedBy' => 'member',
-				'$ref' => 'schema-uuid',
-			],
-		]);
-
-		$relatedObject = $this->createMock(ObjectEntity::class);
-		$relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
-
-		$filters = ['schema' => 1, 'owner_name' => 'alice', 'owner_status' => 'active'];
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$result = $this->handler->applyInversedByFilter($filters, fn ($x) => [$relatedObject]);
-
-		$this->assertIsArray($result);
-		// Both sub-keys should be removed.
-		$this->assertArrayNotHasKey('owner_name', $filters);
-		$this->assertArrayNotHasKey('owner_status', $filters);
-	}//end testApplyInversedByFilterHandlesMultipleSubKeysForSameProperty()
 
 	// =========================================================================
 	// NEW: extractAllRelationshipIds -- circuit breaker with mixed properties
@@ -1660,14 +1377,7 @@ class RelationHandlerTest extends TestCase {
 		$this->objectMapper->method('find')->willReturn($entity);
 
 		// Even with register/schema IDs that may fail internally, the response is correct.
-		$result = $this->handler->getUses(
-			'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-			[],
-			true,
-			true,
-			999,
-			888
-		);
+		$result = $this->handler->getUses(lookup: (new RelationLookup(objectId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', query: []))->filteredBy(rbac: true, multitenancy: true)->pinnedTo(registerId: 999, schemaId: 888));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1691,7 +1401,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses($ownUuid);
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: $ownUuid));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -1713,14 +1423,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'some-uuid',
-			['_limit' => 20, '_offset' => 5],
-			true,
-			true,
-			999,
-			888
-		);
+		$result = $this->handler->getUsedBy(lookup: (new RelationLookup(objectId: 'some-uuid', query: ['_limit' => 20, '_offset' => 5]))->filteredBy(rbac: true, multitenancy: true)->pinnedTo(registerId: 999, schemaId: 888));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);
@@ -1740,12 +1443,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->getUsedBy(
-			'some-uuid',
-			[],
-			false,
-			false
-		);
+		$result = $this->handler->getUsedBy(lookup: (new RelationLookup(objectId: 'some-uuid', query: []))->filteredBy(rbac: false, multitenancy: false));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -1771,7 +1469,7 @@ class RelationHandlerTest extends TestCase {
 
 		$this->objectMapper->method('find')->willReturn($entity);
 
-		$result = $this->handler->getUses('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+		$result = $this->handler->getUses(lookup: new RelationLookup(objectId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
 
 		$this->assertSame([], $result['results']);
 		$this->assertSame(0, $result['total']);

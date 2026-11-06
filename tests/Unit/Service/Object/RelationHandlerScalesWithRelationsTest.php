@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * Locks that a relation lookup touches only the tables that hold a match.
@@ -125,7 +126,7 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 			}
 		);
 
-		$result = $this->handler($magic)->getUses(self::LEAD);
+		$result = $this->handler($magic)->getUses(lookup: new RelationLookup(objectId: self::LEAD));
 
 		$this->assertSame(2, $result['total']);
 		$this->assertSame(['c-1', 'p-1'], array_map(static fn (array $row): string => $row['@self']['id'] ?? $row['id'], $result['results']));
@@ -142,7 +143,7 @@ class RelationHandlerScalesWithRelationsTest extends TestCase {
 		$magic->expects($this->once())->method('findByRelationAcrossAllMagicTables')->with(self::LEAD)->willReturn([$product]);
 		$magic->expects($this->once())->method('findAllInRegisterSchemaTable')->willReturn([$product]);
 
-		$result = $this->handler($magic)->getUsedBy(self::LEAD);
+		$result = $this->handler($magic)->getUsedBy(lookup: new RelationLookup(objectId: self::LEAD));
 
 		$this->assertSame(1, $result['total']);
 	}//end testUsedByReadsOnlyTheTablesHoldingAReference()

@@ -1,0 +1,247 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`settings section multitenancy rebases and saves through the store 1`] = `
+[
+  [
+    "showRebaseDialog",
+  ],
+  [
+    "updateMultitenancySettings",
+    {
+      "b": 2,
+    },
+  ],
+]
+`;
+
+exports[`settings section multitenancy shows its actions while idle 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="false">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="false">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section multitenancy shows its actions while loading 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section multitenancy shows its actions while rebasing 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section multitenancy shows its actions while saving 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section rbac rebases and saves through the store 1`] = `
+[
+  [
+    "showRebaseDialog",
+  ],
+  [
+    "updateRbacSettings",
+    {
+      "a": 1,
+    },
+  ],
+]
+`;
+
+exports[`settings section rbac shows its actions while idle 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="false">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="false">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section rbac shows its actions while loading 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section rbac shows its actions while rebasing 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section rbac shows its actions while saving 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section retention rebases and saves through the store 1`] = `
+[
+  [
+    "showRebaseDialog",
+  ],
+  [
+    "updateRetentionSettings",
+    {
+      "c": 3,
+    },
+  ],
+]
+`;
+
+exports[`settings section retention shows its actions while idle 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="false">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="false">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section retention shows its actions while loading 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section retention shows its actions while rebasing 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-contentsave size="20"></x-contentsave>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;
+
+exports[`settings section retention shows its actions while saving 1`] = `
+"<slot-actions>
+  <x-ncbutton variant="error" disabled="true">
+    <slot-default> Rebase</slot-default>
+    <slot-icon>
+      <x-refresh size="20"></x-refresh>
+    </slot-icon>
+  </x-ncbutton>
+  <x-ncbutton variant="primary" disabled="true">
+    <slot-default> Save</slot-default>
+    <slot-icon>
+      <x-ncloadingicon size="20"></x-ncloadingicon>
+    </slot-icon>
+  </x-ncbutton>
+</slot-actions>"
+`;

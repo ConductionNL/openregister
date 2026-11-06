@@ -86,8 +86,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setRetentionDays(?int $retentionDays)
  * @method boolean|null getAuditEnabled()
  * @method void setAuditEnabled(?bool $auditEnabled)
- * @method boolean|null getOversightEnabled()
- * @method void setOversightEnabled(?bool $oversightEnabled)
  * @method string|null getOwner()
  * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
@@ -151,6 +149,13 @@ class Flow extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const TRIGGER_SCHEDULE = 'schedule';
+
+	/**
+	 * The `app` of a flow compiled from a manifest schedule.
+	 *
+	 * @var string
+	 */
+	public const APP_MANIFEST_SCHEDULE = 'apphost-schedule';
 
 	/**
 	 * The flow is runnable as far as anything has judged.
@@ -364,15 +369,6 @@ class Flow extends Entity implements JsonSerializable {
 	protected ?bool $auditEnabled = null;
 
 	/**
-	 * Whether the oversight gate runs before each hop.
-	 *
-	 * NULL means "follow the administrator setting".
-	 *
-	 * @var boolean|null
-	 */
-	protected ?bool $oversightEnabled = null;
-
-	/**
 	 * Nextcloud UID of the person who authored and activated this flow.
 	 *
 	 * @var string|null
@@ -500,7 +496,6 @@ class Flow extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'limits', type: 'json');
 		$this->addType(fieldName: 'retentionDays', type: 'integer');
 		$this->addType(fieldName: 'auditEnabled', type: 'boolean');
-		$this->addType(fieldName: 'oversightEnabled', type: 'boolean');
 		$this->addType(fieldName: 'owner', type: 'string');
 		$this->addType(fieldName: 'organisation', type: 'string');
 		$this->addType(fieldName: 'notes', type: 'string');
@@ -545,6 +540,23 @@ class Flow extends Entity implements JsonSerializable {
 
 		return $this->owner !== null && trim($this->owner) !== '';
 	}//end canDispatch()
+
+	/**
+	 * The identity this flow's schedule trigger declares.
+	 *
+	 * @return string|null The `runAs`, or null when no schedule trigger names one.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function scheduledRunAs(): ?string {
+		foreach (($this->nodes ?? []) as $node) {
+			if (($node['type'] ?? null) === 'openregister.trigger-schedule') {
+				return ($node['config']['runAs'] ?? null);
+			}
+		}
+
+		return null;
+	}//end scheduledRunAs()
 
 	/**
 	 * Whether this flow belongs to the given organisation.
@@ -621,31 +633,6 @@ class Flow extends Entity implements JsonSerializable {
 	}//end auditsEachHop()
 
 	/**
-	 * Whether the oversight gate runs before each hop of this flow.
-	 *
-	 * On by default, and deliberately the opposite default to auditing: this is
-	 * the check that stops a running flow when the kill switch is thrown or a
-	 * registered budget is exhausted. A safety rail that defaults to off
-	 * protects only the flows someone remembered to configure.
-	 *
-	 * An explicit `false` is a real opt-out and is honoured — a flow may be
-	 * exempted — but it has to be chosen, not inherited from an unset column.
-	 *
-	 * @param boolean $instanceDefault The administrator-configured default.
-	 *
-	 * @return boolean True when oversight checks should gate each hop.
-	 *
-	 * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
-	 */
-	public function gatesEachHop(bool $instanceDefault): bool {
-		if ($this->oversightEnabled !== null) {
-			return $this->oversightEnabled;
-		}
-
-		return $instanceDefault;
-	}//end gatesEachHop()
-
-	/**
 	 * Serialise for the API.
 	 *
 	 * @return array<string, mixed> The flow as plain data.
@@ -696,7 +683,6 @@ class Flow extends Entity implements JsonSerializable {
 			'limits' => ($this->limits ?? []),
 			'retentionDays' => $this->retentionDays,
 			'auditEnabled' => $this->auditEnabled,
-			'oversightEnabled' => $this->oversightEnabled,
 			'owner' => $this->owner,
 			'organisation' => $this->organisation,
 			'notes' => $this->notes,

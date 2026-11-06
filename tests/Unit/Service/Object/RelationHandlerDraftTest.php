@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * The draft rule of the related-objects list.
@@ -107,7 +108,7 @@ class RelationHandlerDraftTest extends TestCase {
 			registerMapper: $registerMapper
 		);
 
-		$result = $handler->getUses('lead-1');
+		$result = $handler->getUses(lookup: new RelationLookup(objectId: 'lead-1'));
 
 		return array_map(static fn (array $row): string => (string)($row['@self']['id'] ?? $row['id'] ?? ''), $result['results']);
 	}//end uses()

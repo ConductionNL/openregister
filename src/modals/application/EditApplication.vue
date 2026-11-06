@@ -235,6 +235,7 @@ import RbacTable from '../../components/RbacTable.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 
 export default {
 	name: 'EditApplication',
@@ -258,6 +259,8 @@ export default {
 		Shield,
 	},
 
+	mixins: [quotaFields],
+
 	data() {
 		return {
 			activeTab: 0,
@@ -265,13 +268,7 @@ export default {
 				name: '',
 				description: '',
 				// Organisation will be set automatically by backend based on active organisation
-				quota: {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				},
+				quota: unlimitedQuota(),
 
 				groups: [],
 				authorization: {
@@ -295,19 +292,10 @@ export default {
 
 	computed: {
 		/**
-		 * @spec exclude UI display helper — converts storage quota bytes to MB for the form.
+		 * @spec exclude Names the form item for the quota fields; UI plumbing.
 		 */
-		storageQuotaMB() {
-			if (!this.applicationItem.quota?.storage) return 0
-			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
-		},
-
-		/**
-		 * @spec exclude UI display helper — converts bandwidth quota bytes to MB for the form.
-		 */
-		bandwidthQuotaMB() {
-			if (!this.applicationItem.quota?.bandwidth) return 0
-			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
+		quotaItem() {
+			return this.applicationItem
 		},
 
 		/**
@@ -458,23 +446,6 @@ export default {
 		},
 
 		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 * @spec exclude Form-field binding — removes a group from the selection.
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(
-				(g) => g.id !== groupToRemove.id,
-			)
-			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(
-				(group) => group.id,
-			)
-		},
-
-		/**
 		 * Update CRUD permission for application
 		 *
 		 * @param {object} payload - Permission update payload
@@ -514,113 +485,6 @@ export default {
 			this.applicationItem.authorization = {
 				...this.applicationItem.authorization,
 			}
-		},
-
-		/**
-		 * Update storage quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets storage quota (MB→bytes) in local state.
-		 */
-		updateStorageQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.storage = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update bandwidth quota (converts MB to bytes)
-		 *
-		 * @param {number} value - Quota in MB
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets bandwidth quota (MB→bytes) in local state.
-		 */
-		updateBandwidthQuota(value) {
-			// Convert MB to bytes (0 = unlimited)
-			const mbValue = value ? parseInt(value) : 0
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.bandwidth = mbValue * 1024 * 1024
-		},
-
-		/**
-		 * Update request quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets request quota in local state.
-		 */
-		updateRequestQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.requests = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update user quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets user quota in local state.
-		 */
-		updateUserQuota(value) {
-			// 0 = unlimited (not applicable for applications, but kept for consistency)
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.users = value ? parseInt(value) : 0
-		},
-
-		/**
-		 * Update group quota
-		 *
-		 * @param {number} value - Quota value
-		 * @return {void}
-		 * @spec exclude Form-field binding — sets group quota in local state.
-		 */
-		updateGroupQuota(value) {
-			// 0 = unlimited
-			if (!this.applicationItem.quota) {
-				this.applicationItem.quota = {
-					storage: 0,
-					bandwidth: 0,
-					requests: 0,
-					users: 0,
-					groups: 0,
-				}
-			}
-			this.applicationItem.quota.groups = value ? parseInt(value) : 0
 		},
 
 		/**

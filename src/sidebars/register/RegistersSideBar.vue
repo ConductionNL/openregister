@@ -232,11 +232,7 @@ import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
-import {
-	registerSelect,
-	schemaSelect,
-	scopeOption,
-} from '../../services/scopeSelect.js'
+import { scopePickers } from '../../services/scopePickers.js'
 // Ensure data is loaded
 dashboardStore.preload()
 
@@ -265,6 +261,8 @@ export default {
 		CnStatsBlock,
 		ChartBar,
 	},
+
+	mixins: [scopePickers],
 
 	data() {
 		return {
@@ -334,46 +332,6 @@ export default {
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
-		},
-
-		/**
-		 * Build the register dropdown options for the registers-overview filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return registerSelect(registerStore.registerList)
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			return scopeOption(registerStore.registerItem, 'register')
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 	},
 

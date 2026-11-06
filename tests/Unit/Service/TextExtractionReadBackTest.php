@@ -81,8 +81,6 @@ final class TextExtractionReadBackTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(EntityRecognitionHandler::class),
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(RiskLevelService::class),
 			$this->createMock(EmlParser::class),

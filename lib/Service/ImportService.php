@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use Closure;
 use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use DateTimeZone;
@@ -374,63 +375,89 @@ class ImportService implements ObjectImporterInterface {
 		// Clear caches at the start of each import to prevent stale data issues.
 		$this->clearCaches();
 
-		// Generate a per-import UUID and stamp it on every audit row
-		// produced during this call. ImportService::softDeleteByImportJobId
-		// uses this UUID to roll the import back. The set/clear pair is
-		// wrapped in try/finally so the request-scoped field is always
-		// cleared, including when the set itself or any subsequent line
-		// throws — guards against cross-request bleed on long-lived
-		// workers where the singleton mapper is reused.
+		$import = [
+			'register' => $register,
+			'schema' => $schema,
+			'validation' => $validation,
+			'events' => $events,
+			'_rbac' => $_rbac,
+			'_multitenancy' => $_multitenancy,
+			'publish' => $publish,
+			'currentUser' => $currentUser,
+			'enrich' => $enrich,
+		];
+
+		return $this->asImportJob(run: fn (): array => $this->importExcelFile(filePath: $filePath, import: $import));
+	}//end importFromExcel()
+
+	/**
+	 * Import a spreadsheet, one schema per sheet when only a register is given.
+	 *
+	 * @param string $filePath The path to the Excel file.
+	 * @param array  $import   The register, schema and save flags.
+	 *
+	 * @return array The summaries by sheet.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importExcelFile(string $filePath, array $import): array {
+		$reader = new Xlsx();
+		$reader->setReadDataOnly(true);
+		$spreadsheet = $reader->load($filePath);
+
+		if ($import['register'] !== null && $import['schema'] === null) {
+			return $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, import: $import);
+		}
+
+		$sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
+		$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
+		if ($import['schema'] !== null) {
+			$sheetSummary['schema'] = self::schemaSummary(schema: $import['schema']);
+		}
+
+		return [$sheetTitle => $sheetSummary];
+	}//end importExcelFile()
+
+	/**
+	 * Run an import as one job: every audit row it writes carries the job id,
+	 * which softDeleteByImportJobId() rolls the import back by.
+	 *
+	 * The id is cleared on a throw too, because the mapper outlives the request
+	 * on a long-lived worker.
+	 *
+	 * @param Closure(): array $run The import.
+	 *
+	 * @return array The import's result, with `importJobId`.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function asImportJob(Closure $run): array {
 		$importJobId = Uuid::v4()->toRfc4122();
 
 		try {
 			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
-			$reader = new Xlsx();
-			$reader->setReadDataOnly(true);
-			$spreadsheet = $reader->load($filePath);
-			$import = [
-				'register' => $register,
-				'schema' => $schema,
-				'validation' => $validation,
-				'events' => $events,
-				'_rbac' => $_rbac,
-				'_multitenancy' => $_multitenancy,
-				'publish' => $publish,
-				'currentUser' => $currentUser,
-				'enrich' => $enrich,
-			];
+			$result = $run();
+			$result['importJobId'] = $importJobId;
 
-			// If we have a register but no schema, process each sheet as a different schema.
-			if ($register !== null && $schema === null) {
-				$multi = $this->processMultiSchemaSpreadsheetAsync(spreadsheet: $spreadsheet, import: $import);
-				$multi['importJobId'] = $importJobId;
-				return $multi;
-			}
-
-			// Single schema processing - use batch processing for better performance.
-			$sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-			$sheetSummary = $this->processSpreadsheetBatch(spreadsheet: $spreadsheet, import: $import);
-
-			// Add schema information to the summary (consistent with multi-sheet Excel import).
-			if ($schema !== null) {
-				$sheetSummary['schema'] = [
-					'id' => $schema->getId(),
-					'title' => $schema->getTitle(),
-					'slug' => $schema->getSlug(),
-				];
-			}
-
-			$finalResult = [
-				$sheetTitle => $sheetSummary,
-				'importJobId' => $importJobId,
-			];
-
-			return $finalResult;
+			return $result;
 		} finally {
 			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
-		}//end try
-	}//end importFromExcel()
+		}
+	}//end asImportJob()
+
+	/**
+	 * The schema as an import summary names it.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array{id: int, title: string|null, slug: string|null}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function schemaSummary(Schema $schema): array {
+		return ['id' => $schema->getId(), 'title' => $schema->getTitle(), 'slug' => $schema->getSlug()];
+	}//end schemaSummary()
 
 	/**
 	 * Import data from CSV file.
@@ -485,55 +512,45 @@ class ImportService implements ObjectImporterInterface {
 			throw new InvalidArgumentException('CSV import requires a specific schema');
 		}
 
-		// Per-import UUID — see importFromExcel() for the rationale.
-		$importJobId = Uuid::v4()->toRfc4122();
+		$import = [
+			'schema' => $schema,
+			'validation' => $validation,
+			'events' => $events,
+			'_rbac' => $_rbac,
+			'_multitenancy' => $_multitenancy,
+			'publish' => $publish,
+			'currentUser' => $currentUser,
+			'enrich' => $enrich,
+			'pack' => $pack,
+			'dryRun' => $dryRun,
+			'register' => $register,
+		];
 
-		try {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
-
-			// Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
-			$reader = new Csv();
-			$reader->setReadDataOnly(true);
-			$reader->setDelimiter(',');
-			$reader->setEnclosure('"');
-			$spreadsheet = $reader->load($filePath);
-
-			// Get the sheet title for CSV (usually just 'Worksheet' or similar).
-			$sheetTitle = $spreadsheet->getActiveSheet()->getTitle();
-			$sheetSummary = $this->processCsvSheet(
-				sheet: $spreadsheet->getActiveSheet(),
-				register: $register,
-				import: [
-					'schema' => $schema,
-					'validation' => $validation,
-					'events' => $events,
-					'_rbac' => $_rbac,
-					'_multitenancy' => $_multitenancy,
-					'publish' => $publish,
-					'currentUser' => $currentUser,
-					'enrich' => $enrich,
-					'pack' => $pack,
-					'dryRun' => $dryRun,
-				]
-			);
-
-			// Add schema information to the summary (consistent with Excel import).
-			$sheetSummary['schema'] = [
-				'id' => $schema->getId(),
-				'title' => $schema->getTitle(),
-				'slug' => $schema->getSlug(),
-			];
-
-			$finalResult = [
-				$sheetTitle => $sheetSummary,
-				'importJobId' => $importJobId,
-			];
-
-			return $finalResult;
-		} finally {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
-		}//end try
+		return $this->asImportJob(run: fn (): array => $this->importCsvFile(filePath: $filePath, import: $import));
 	}//end importFromCsv()
+
+	/**
+	 * Import a CSV file into one schema.
+	 *
+	 * @param string $filePath The path to the CSV file.
+	 * @param array  $import   The register, schema and save flags.
+	 *
+	 * @return array The summary by sheet title.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importCsvFile(string $filePath, array $import): array {
+		$reader = new Csv();
+		$reader->setReadDataOnly(true);
+		$reader->setDelimiter(',');
+		$reader->setEnclosure('"');
+		$sheet = $reader->load($filePath)->getActiveSheet();
+
+		$sheetSummary = $this->processCsvSheet(sheet: $sheet, register: $import['register'], import: $import);
+		$sheetSummary['schema'] = self::schemaSummary(schema: $import['schema']);
+
+		return [$sheet->getTitle() => $sheetSummary];
+	}//end importCsvFile()
 
 	/**
 	 * Import objects of a single schema from a JSON document
@@ -664,18 +681,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
 	 */
 	private function runJsonImportJob(array $objects, array $job): array {
-		$importJobId = Uuid::v4()->toRfc4122();
-
-		try {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
-
-			return [
-				'JSON' => $this->importJsonObjects(objects: $objects, job: $job),
-				'importJobId' => $importJobId,
-			];
-		} finally {
-			$this->auditTrailMapper->setRequestImportJobId(importJobId: null);
-		}
+		return $this->asImportJob(run: fn (): array => ['JSON' => $this->importJsonObjects(objects: $objects, job: $job)]);
 	}//end runJsonImportJob()
 
 	/**
@@ -710,11 +716,7 @@ class ImportService implements ObjectImporterInterface {
 			$summary = $this->saveJsonImportRows(rows: $resolution['rows'], target: ['summary' => $summary] + $job);
 		}
 
-		$summary['schema'] = [
-			'id' => $schema->getId(),
-			'title' => $schema->getTitle(),
-			'slug' => $schema->getSlug(),
-		];
+		$summary['schema'] = self::schemaSummary(schema: $schema);
 
 		return $summary;
 	}//end importJsonObjects()
@@ -1146,11 +1148,7 @@ class ImportService implements ObjectImporterInterface {
 				$schema = $this->getSchemaBySlug(slug: $schemaSlug);
 				// Schema is guaranteed to be non-null if we reach here (exception thrown otherwise).
 				// Add schema information to the summary.
-				$summary[$schemaSlug]['schema'] = [
-					'id' => $schema->getId(),
-					'title' => $schema->getTitle(),
-					'slug' => $schema->getSlug(),
-				];
+				$summary[$schemaSlug]['schema'] = self::schemaSummary(schema: $schema);
 			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 				$summary[$schemaSlug]['errors'][] = [
 					'sheet' => $schemaSlug,
@@ -1511,8 +1509,9 @@ class ImportService implements ObjectImporterInterface {
 	}//end saveCsvObjects()
 
 	/**
-	 * Bulk-save parsed objects and fill the summary from the result. A validation
-	 * error carries the sheet title first when `$import['sheetTitle']` is set.
+	 * Bulk-save parsed objects and fill the summary from the result. Every row the save
+	 * refused is reported, whatever the validation flag says, with the sheet title first
+	 * when `$import['sheetTitle']` is set.
 	 *
 	 * @param list<array> $objects The parsed objects
 	 * @param array       $import  The import options with the summary so far and the sheetTitle (null for CSV)
@@ -1529,10 +1528,8 @@ class ImportService implements ObjectImporterInterface {
 
 		$saveResult = $this->bulkSaveWithNotifyPush(objects: $objects, import: $import);
 		$summary = $this->withSaveOutcome(summary: $import['summary'], saveResult: $saveResult);
-		if ($import['validation'] === true) {
-			foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
-				$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
-			}
+		foreach (($saveResult['invalid'] ?? []) as $invalidItem) {
+			$summary['errors'][] = $this->validationError(invalidItem: $invalidItem, sheetTitle: $import['sheetTitle']);
 		}
 
 		return $summary;
@@ -1943,17 +1940,6 @@ class ImportService implements ObjectImporterInterface {
 			return $this->transformDateTimeValue(value: $value);
 		}
 
-		// Transform organisation property - ensure it's a valid UUID.
-		if ($propertyName === 'organisation') {
-			// Validate UUID format.
-			if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === true) {
-				return $value;
-			}
-
-			// If not a valid UUID, return as-is (might be a slug that needs resolution).
-			return $value;
-		}
-
 		// Return original value for other properties.
 		return $value;
 	}//end transformSelfProperty()
@@ -1990,6 +1976,8 @@ class ImportService implements ObjectImporterInterface {
 				continue;
 			}
 
+			// PHP turns a numeric column header into an integer key.
+			$key = (string)$key;
 			if (str_starts_with($key, '_') === true) {
 				// REQUIREMENT: Columns starting with _ are completely ignored.
 				continue;

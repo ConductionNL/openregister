@@ -271,7 +271,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	 */
 	private function decisionFor(int $rowNumber): ImportPreviewRow {
 		foreach ($this->rows as $row) {
-			if ($row->getRowNumber() === $rowNumber) {
+			if ($row->getSourceRow() === $rowNumber) {
 				return $row;
 			}
 		}
@@ -479,6 +479,25 @@ final class ImportPreviewServiceTest extends TestCase {
 
 		$this->expectException(ImportPreviewRefusedException::class);
 		$this->service->commit($preview, $hash);
+	}
+
+	public function testARowTheBulkSaveRefusedIsReportedAndNotStampedAsWritten(): void {
+		$this->matchResolver->method('resolve')->willReturn([]);
+
+		$path = $this->csv("bsn,naam\n111,Jansen\n222,Pietersen\n");
+		$preview = $this->service->preview($this->params($path, ConflictPolicy::UPSERT));
+		$kept = $this->decisionFor(2);
+
+		$this->objectService->expects($this->once())
+			->method('saveObjects')
+			->willReturn(['invalid' => [['object' => ['@self' => ['id' => $kept->getPayload()['@self']['id']]], 'error' => 'Object is locked by bob']]]);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$this->service->commit($preview, hash_file('sha256', $path));
+
+		$this->assertSame(1, $preview->getApplied());
+		$this->assertSame(1, $preview->getFailed());
+		$this->assertSame('The write failed: Object is locked by bob', $kept->getReason());
 	}
 
 	public function testACreateRowCarriesAStableUuidSoARetryCannotDuplicateIt(): void {

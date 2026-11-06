@@ -427,7 +427,7 @@ class ImportPreviewService {
 		}
 
 		try {
-			$this->objectService->saveObjects(
+			$result = $this->objectService->saveObjects(
 				objects: $objects,
 				register: $register,
 				schema: $schema,
@@ -435,7 +435,13 @@ class ImportPreviewService {
 				events: false
 			);
 
-			$this->stampApplied(preview: $preview, rows: $batch);
+			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
+			foreach ($refused as $key => $reason) {
+				$batch[$key]->setReason('The write failed: '.$reason);
+				$this->stampFailed(preview: $preview, row: $batch[$key]);
+			}
+
+			$this->stampApplied(preview: $preview, rows: array_diff_key($batch, $refused));
 
 			return;
 		} catch (Throwable $exception) {
@@ -489,11 +495,76 @@ class ImportPreviewService {
 			$this->stampApplied(preview: $preview, rows: [$row]);
 		} catch (Throwable $exception) {
 			$row->setReason('The write failed: '.$exception->getMessage());
-			$row->setAppliedAt(new DateTime());
-			$this->rowMapper->persist(row: $row);
-			$preview->setFailed(($preview->getFailed() + 1));
+			$this->stampFailed(preview: $preview, row: $row);
 		}//end try
 	}//end writeRow()
+
+	/**
+	 * The reason per batch row that the bulk save refused.
+	 *
+	 * @param array<int, ImportPreviewRow> $batch   The rows sent.
+	 * @param array<int, mixed>            $invalid The refused items of the save result.
+	 *
+	 * @return array<int, string> The reasons, keyed like the batch.
+	 */
+	private function refusalsIn(array $batch, array $invalid): array {
+		$refused = [];
+		foreach ($invalid as $item) {
+			$key = self::batchKeyOf(batch: $batch, object: ($item['object'] ?? $item));
+			if ($key === null) {
+				$this->logger->warning(message: '[ImportPreviewService] A refused row matches no row of its batch');
+				continue;
+			}
+
+			$refused[$key] = (string)($item['error'] ?? 'Validation failed');
+		}
+
+		return $refused;
+	}//end refusalsIn()
+
+	/**
+	 * The batch row a refused object came from. Every written payload carries its id.
+	 *
+	 * @param array<int, ImportPreviewRow> $batch  The rows sent.
+	 * @param array<string, mixed>         $object The refused object.
+	 *
+	 * @return int|null The row's key, or null.
+	 */
+	private static function batchKeyOf(array $batch, array $object): ?int {
+		$id = self::objectId(object: $object);
+		foreach ($batch as $key => $row) {
+			if ($id !== null && self::objectId(object: ($row->getPayload() ?? [])) === $id) {
+				return $key;
+			}
+		}
+
+		return null;
+	}//end batchKeyOf()
+
+	/**
+	 * The id an object names, in any of the shapes a payload carries it.
+	 *
+	 * @param array<string, mixed> $object The object.
+	 *
+	 * @return mixed The id, or null.
+	 */
+	private static function objectId(array $object): mixed {
+		return ($object['id'] ?? $object['@self']['id'] ?? $object['uuid'] ?? null);
+	}//end objectId()
+
+	/**
+	 * Stamp a row that was not written, with the reason it already carries.
+	 *
+	 * @param ImportPreview    $preview The preview being committed.
+	 * @param ImportPreviewRow $row     The row.
+	 *
+	 * @return void
+	 */
+	private function stampFailed(ImportPreview $preview, ImportPreviewRow $row): void {
+		$row->setAppliedAt(new DateTime());
+		$this->rowMapper->persist(row: $row);
+		$preview->setFailed(($preview->getFailed() + 1));
+	}//end stampFailed()
 
 	/**
 	 * Stamp rows as written, which is what a retry reads.
@@ -657,7 +728,7 @@ class ImportPreviewService {
 	private function persistDecision(ImportPreview $preview, array $row, array $decision): void {
 		$entity = new ImportPreviewRow();
 		$entity->setPreviewId((int)$preview->getId());
-		$entity->setRowNumber((int)$row['row']);
+		$entity->setSourceRow((int)$row['row']);
 		$entity->setDecision((string)$decision['decision']);
 		$entity->setReason($decision['reason']);
 		$entity->setTargetUuid($decision['targetUuid']);
@@ -689,7 +760,7 @@ class ImportPreviewService {
 			decision: ImportPreviewRow::DECISION_REFUSE
 		) as $row) {
 			$refusals[] = [
-				'row' => $row->getRowNumber(),
+				'row' => $row->getSourceRow(),
 				'reason' => $row->getReason(),
 				'candidates' => ($row->getCandidates() ?? []),
 			];

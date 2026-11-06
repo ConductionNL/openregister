@@ -323,6 +323,18 @@ function unitFormat(locale, unit, digits) {
 }
 
 /**
+ * The status a run reads as: how it ended, which for a clean End is
+ * `completed` although the engine stored `stopped`.
+ *
+ * @param {object} run The run.
+ * @return {string} The status to show.
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-says-how-it-ended
+ */
+export function shownStatus(run) {
+	return run?.outcome || run?.status || ''
+}
+
+/**
  * How many of the runs ended which way.
  *
  * @param {Array<object>} runs The runs.
@@ -333,7 +345,7 @@ export function runCounts(runs) {
 	const counts = { total: 0, completed: 0, failed: 0, stopped: 0, active: 0 }
 	for (const run of Array.isArray(runs) ? runs : []) {
 		counts.total++
-		const outcome = runOutcome(run?.status)
+		const outcome = runOutcome(shownStatus(run))
 		if (outcome) {
 			counts[outcome]++
 		}
@@ -379,7 +391,7 @@ const RUN_FILTERS = new Map([
  */
 export function matchesRunFilter(run, filter) {
 	const matches = RUN_FILTERS.get(filter)
-	return matches ? matches(run?.status) : true
+	return matches ? matches(shownStatus(run)) : true
 }
 
 /**
@@ -476,7 +488,7 @@ function loggedStepRow(entry, step) {
 	return {
 		nodeId: step.nodeId,
 		label: step.label,
-		status: entry.status || '',
+		status: stepStatus(entry),
 		times: (step.previous?.times ?? 0) + 1,
 		...entryFields(entry, ['itemsIn', 'itemsOut']),
 		durationMs: summedDuration(entry, step.previous),
@@ -484,6 +496,18 @@ function loggedStepRow(entry, step) {
 		error: entry.error || entry.reason || '',
 		reached: true,
 	}
+}
+
+/**
+ * The status a step row shows: an End step that stopped the run finished it,
+ * a stop from an oversight check did not.
+ *
+ * @param {object} entry The log entry.
+ * @return {string} The status.
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-says-how-it-ended
+ */
+function stepStatus(entry) {
+	return entry.status === 'stopped' && !entry.checkId ? 'completed' : (entry.status || '')
 }
 
 /**

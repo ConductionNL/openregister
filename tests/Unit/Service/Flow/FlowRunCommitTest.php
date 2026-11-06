@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Flow\FlowFiring;
+use OCA\OpenRegister\Service\Flow\FlowHopAudit;
 use OCA\OpenRegister\Service\Flow\FlowRunCommit;
 use OCA\OpenRegister\Service\Flow\FlowStreamClosure;
 use OCA\OpenRegister\Service\Flow\FlowStreamRef;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\Flow\FlowStreamRelease;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 
 /**
  * The commit path over an in-memory row.
@@ -68,6 +70,13 @@ class FlowRunCommitTest extends TestCase {
 
 	private int $transactions = 0;
 
+	private int $commits = 0;
+
+	private bool $stepInsertFails = false;
+
+	/** @var FlowHopAudit&\PHPUnit\Framework\MockObject\MockObject */
+	private FlowHopAudit $hopAudit;
+
 	private FlowRunCommit $commit;
 
 	protected function setUp(): void {
@@ -79,9 +88,14 @@ class FlowRunCommitTest extends TestCase {
 		$this->row->setMarking(['a' => 1, 'b' => 1]);
 		$this->row->setFirings(0);
 
+		$this->hopAudit = $this->createMock(FlowHopAudit::class);
+
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('beginTransaction')->willReturnCallback(function (): void {
 			$this->transactions++;
+		});
+		$db->method('commit')->willReturnCallback(function (): void {
+			$this->commits++;
 		});
 
 		$runs = $this->createMock(FlowRunMapper::class);
@@ -131,6 +145,10 @@ class FlowRunCommitTest extends TestCase {
 		$steps = $this->createMock(FlowRunStepMapper::class);
 		$steps->method('highestSequence')->willReturn(0);
 		$steps->method('insert')->willReturnCallback(function (FlowRunStep $step): FlowRunStep {
+			if ($this->stepInsertFails === true) {
+				throw new RuntimeException('step row refused');
+			}
+
 			$this->steps[] = $step;
 			return $step;
 		});
@@ -141,7 +159,8 @@ class FlowRunCommitTest extends TestCase {
 			streams: $streams,
 			claims: $claims,
 			steps: $steps,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			hopAudit: $this->hopAudit
 		);
 	}//end setUp()
 
@@ -206,6 +225,38 @@ class FlowRunCommitTest extends TestCase {
 			->withClaimedPlaces(claimedPlaces: array_merge($froms, $taken))
 			->withLogEntry(logEntry: ['transition' => $transition, 'type' => 'x', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1], enabledAfter: $enabledAfter);
 	}//end firing()
+
+	/**
+	 * The firing's step row goes to the audit, and only after the transaction
+	 * closed: the critical section holds no I/O.
+	 */
+	public function testACommittedFiringIsAuditedWithItsStepRowAfterTheCommit(): void {
+		$this->stream('sA', '0001.0001', 'a');
+		$this->claim('a', 'A');
+		$this->claim('c', 'A');
+
+		$audited = [];
+		$this->hopAudit->expects($this->once())->method('record')->willReturnCallback(
+			function (FlowRun $run, FlowRunStep $step) use (&$audited): void {
+				$audited = [$run->getUuid(), $step, $this->commits];
+			}
+		);
+
+		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+
+		$this->assertSame('run-1', $audited[0]);
+		$this->assertSame($this->steps[0], $audited[1]);
+		$this->assertSame(1, $audited[2]);
+	}//end testACommittedFiringIsAuditedWithItsStepRowAfterTheCommit()
+
+	public function testAFiringThatRolledBackIsNotAudited(): void {
+		$this->stream('sA', '0001.0001', 'a');
+		$this->stepInsertFails = true;
+		$this->hopAudit->expects($this->never())->method('record');
+
+		$this->expectException(RuntimeException::class);
+		$this->commit->commitFiring(run: clone $this->row, firing: $this->firing('sA', 'T1', ['a'], ['c']), owner: 'A');
+	}//end testAFiringThatRolledBackIsNotAudited()
 
 	public function testTwoInterleavedCommitsKeepBothEffects(): void {
 		// design.md Decision 3, t=1..24: A and B both read {a:1, b:1} before

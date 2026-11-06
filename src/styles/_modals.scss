@@ -62,6 +62,23 @@
 	}
 }
 
+@mixin rbac-table-frame {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--color-border-dark);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@mixin rbac-table-head-cell {
+	color: var(--color-text-dark);
+	font-weight: 600;
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 2px solid var(--color-border-dark);
+}
+
 @mixin rbac-section {
 	.rbac-section {
 		display: flex;
@@ -297,6 +314,100 @@
 	.codeMirrorContainer :deep(.cm-content) {
 		border-radius: 0 !important;
 		border: none !important;
+	}
+}
+
+// Token colours and selection colours of a CodeMirror editor, for light and dark.
+@mixin code-mirror-theme {
+	/* value text color */
+	/* string */
+	.codeMirrorContainer.light :deep(.ͼe) {
+		color: #448c27;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼe) {
+		color: #88c379;
+	}
+
+	/* boolean */
+	.codeMirrorContainer.light :deep(.ͼc) {
+		color: #221199;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼc) {
+		color: #8d64f7;
+	}
+
+	/* null */
+	.codeMirrorContainer.light :deep(.ͼb) {
+		color: #770088;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼb) {
+		color: #be55cd;
+	}
+
+	/* number */
+	.codeMirrorContainer.light :deep(.ͼd) {
+		color: #d19a66;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼd) {
+		color: #9d6c3a;
+	}
+
+	/* text cursor */
+	.codeMirrorContainer :deep(.cm-content) * {
+		cursor: text !important;
+	}
+
+	/* selection color */
+	.codeMirrorContainer.light :deep(.cm-line)::selection,
+	.codeMirrorContainer.light :deep(.cm-line) ::selection {
+		background-color: #d7eaff !important;
+		color: black;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line)::selection,
+	.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+		background-color: #8fb3e6 !important;
+		color: black;
+	}
+
+	/* string */
+	.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
+		color: #2d770f;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
+		color: #104e0c;
+	}
+
+	/* boolean */
+	.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
+		color: #221199;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
+		color: #4026af;
+	}
+
+	/* null */
+	.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
+		color: #770088;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
+		color: #770088;
+	}
+
+	/* number */
+	.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
+		color: #8c5c2c;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
+		color: #623907;
 	}
 }
 
