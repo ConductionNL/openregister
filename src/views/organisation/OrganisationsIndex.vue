@@ -211,15 +211,13 @@ import { NcActionButton, NcAppContent, NcButton } from '@nextcloud/vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import Check from 'vue-material-design-icons/Check.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
+import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'OrganisationsIndex',
@@ -339,12 +337,54 @@ export default {
 		 */
 		organisationActions(organisation) {
 			return [
-				{ label: t('openregister', 'View'), icon: Eye, run: () => this.viewOrganisation(organisation) },
-				{ label: t('openregister', 'Set as Active'), icon: Check, hidden: this.isActiveOrganisation(organisation), run: () => this.setActiveOrganisation(organisation.uuid) },
-				{ label: t('openregister', 'Edit'), icon: Pencil, hidden: !this.canEditOrganisation(organisation), run: () => this.editOrganisation(organisation) },
-				{ label: t('openregister', 'Go to organisation'), icon: OpenInNew, hidden: !organisation.website, run: () => this.goToOrganisation(organisation) },
-				{ label: t('openregister', 'Add User'), icon: AccountMultiplePlus, run: () => this.openJoinModal(organisation) },
-				{ label: t('openregister', 'Delete'), icon: TrashCanOutline, hidden: !this.canDeleteOrganisation(organisation), run: () => this.openDeleteModal(organisation) },
+				viewAction(() => this.viewOrganisation(organisation)),
+				this.activateAction(organisation),
+				editAction(() => this.editOrganisation(organisation), {
+					hidden: !this.canEditOrganisation(organisation),
+				}),
+				...this.memberActions(organisation),
+				deleteAction(() => this.openDeleteModal(organisation), {
+					hidden: !this.canDeleteOrganisation(organisation),
+				}),
+			]
+		},
+
+		/**
+		 * The entry that makes an organisation the active one.
+		 *
+		 * @spec exclude UI plumbing — menu entry state.
+		 * @param {object} organisation - organisation row
+		 * @return {object}
+		 */
+		activateAction(organisation) {
+			return {
+				label: t('openregister', 'Set as Active'),
+				icon: Check,
+				hidden: this.isActiveOrganisation(organisation),
+				run: () => this.setActiveOrganisation(organisation.uuid),
+			}
+		},
+
+		/**
+		 * The website and add-user entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries.
+		 * @param {object} organisation - organisation row
+		 * @return {Array<object>}
+		 */
+		memberActions(organisation) {
+			return [
+				{
+					label: t('openregister', 'Go to organisation'),
+					icon: OpenInNew,
+					hidden: !organisation.website,
+					run: () => this.goToOrganisation(organisation),
+				},
+				{
+					label: t('openregister', 'Add User'),
+					icon: AccountMultiplePlus,
+					run: () => this.openJoinModal(organisation),
+				},
 			]
 		},
 

@@ -167,14 +167,13 @@ import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+import { deleteAction, editAction } from '../../services/menuActions.js'
 import {
 	registerFormSchema,
 	registerPayload,
@@ -405,14 +404,72 @@ export default {
 				action()
 			}
 			return [
-				this.editAction(register),
-				{ label: t('openregister', 'Publish OAS'), icon: CloudUploadOutline, run: selected(() => navigationStore.setModal('publishRegister')) },
-				{ label: t('openregister', 'Import'), icon: Upload, run: selected(() => navigationStore.setModal('importRegister')) },
-				{ label: t('openregister', 'View API Documentation'), icon: ApiIcon, run: selected(() => this.viewOasDoc(register)) },
-				{ label: t('openregister', 'Download API Specification'), icon: Download, run: selected(() => this.downloadOas(register)) },
-				this.deleteAction(register, selected(() => navigationStore.setDialog('deleteRegister'))),
-				{ label: t('openregister', 'View Details'), icon: InformationOutline, run: () => this.viewRegisterDetails(register) },
+				this.lockedEdit(register),
+				...this.publishActions(selected),
+				...this.apiActions(register, selected),
+				this.lockedDelete(register, selected),
+				this.detailsAction(register),
 			]
+		},
+
+		/**
+		 * The publish and import entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		publishActions(selected) {
+			return [
+				{
+					label: t('openregister', 'Publish OAS'),
+					icon: CloudUploadOutline,
+					run: selected(() => navigationStore.setModal('publishRegister')),
+				},
+				{
+					label: t('openregister', 'Import'),
+					icon: Upload,
+					run: selected(() => navigationStore.setModal('importRegister')),
+				},
+			]
+		},
+
+		/**
+		 * The API documentation and specification entries.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the page.
+		 * @param {object} register - register row
+		 * @param {(action: () => void) => () => void} selected - selects the register first
+		 * @return {Array<object>}
+		 */
+		apiActions(register, selected) {
+			return [
+				{
+					label: t('openregister', 'View API Documentation'),
+					icon: ApiIcon,
+					run: selected(() => this.viewOasDoc(register)),
+				},
+				{
+					label: t('openregister', 'Download API Specification'),
+					icon: Download,
+					run: selected(() => this.downloadOas(register)),
+				},
+			]
+		},
+
+		/**
+		 * The entry that opens the register detail page.
+		 *
+		 * @spec exclude UI plumbing — menu entry.
+		 * @param {object} register - register row
+		 * @return {object}
+		 */
+		detailsAction(register) {
+			return {
+				label: t('openregister', 'View Details'),
+				icon: InformationOutline,
+				run: () => this.viewRegisterDetails(register),
+			}
 		},
 
 		/**
@@ -422,16 +479,19 @@ export default {
 		 * @param {object} register - register row
 		 * @return {object}
 		 */
-		editAction(register) {
+		lockedEdit(register) {
 			const locked = this.isManagedByExternalConfig(register)
 			const title = this.getManagingConfiguration(register)?.title
-			return {
-				label: t('openregister', 'Edit'),
-				icon: Pencil,
-				title: locked ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title }) : '',
+			return editAction(() => this.$refs.indexPage.openFormDialog(register), {
+				title: locked
+					? t(
+							'openregister',
+							'Cannot edit: This register is managed by external configuration {title}',
+							{ title },
+						)
+					: '',
 				disabled: locked,
-				run: () => this.$refs.indexPage.openFormDialog(register),
-			}
+			})
 		},
 
 		/**
@@ -439,18 +499,18 @@ export default {
 		 *
 		 * @spec exclude UI plumbing — menu entry state.
 		 * @param {object} register - register row
-		 * @param {() => void} run - what the entry does
+		 * @param {(action: () => void) => () => void} selected - selects the register first
 		 * @return {object}
 		 */
-		deleteAction(register, run) {
+		lockedDelete(register, selected) {
 			const locked = register.stats?.total > 0
-			return {
-				label: t('openregister', 'Delete'),
-				icon: TrashCanOutline,
-				title: locked ? t('openregister', 'Cannot delete: objects are still attached') : '',
+			const run = selected(() => navigationStore.setDialog('deleteRegister'))
+			return deleteAction(run, {
+				title: locked
+					? t('openregister', 'Cannot delete: objects are still attached')
+					: '',
 				disabled: locked,
-				run,
-			}
+			})
 		},
 
 		/**

@@ -137,10 +137,8 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'SourcesIndex',
@@ -252,9 +250,9 @@ export default {
 		 */
 		sourceActions(source) {
 			return [
-				{ label: t('openregister', 'View'), icon: Eye, run: () => this.openModal(source, 'viewSource') },
-				{ label: t('openregister', 'Edit'), icon: Pencil, run: () => this.openModal(source, 'editSource') },
-				{ label: t('openregister', 'Delete'), icon: TrashCanOutline, run: () => this.openDialog(source, 'deleteSource') },
+				viewAction(() => this.openModal(source, 'viewSource')),
+				editAction(() => this.openModal(source, 'editSource')),
+				deleteAction(() => this.openDialog(source, 'deleteSource')),
 			]
 		},
 

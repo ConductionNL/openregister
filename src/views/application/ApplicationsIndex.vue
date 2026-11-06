@@ -162,9 +162,8 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
+import { deleteAction, editAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'ApplicationsIndex',
@@ -272,8 +271,10 @@ export default {
 		 */
 		applicationActions(application) {
 			return [
-				{ label: t('openregister', 'Edit'), icon: Pencil, run: () => this.openModal(application, 'editApplication') },
-				{ label: t('openregister', 'Delete'), icon: TrashCanOutline, run: () => this.openDialog(application, 'deleteApplication') },
+				editAction(() => this.openModal(application, 'editApplication')),
+				deleteAction(() =>
+					this.openDialog(application, 'deleteApplication'),
+				),
 			]
 		},
 
