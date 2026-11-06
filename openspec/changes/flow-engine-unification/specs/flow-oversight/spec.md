@@ -23,25 +23,40 @@ already carry the operational history.
 - **WHEN** a flow sets its own audit flag to true on an instance whose default is off
 - **THEN** that flow's hops are audit-trailed and other flows' hops are not.
 
-### Requirement: The oversight gate is engine-wide, optional, and on by default
+#### Scenario: A flow opts out against the instance default
+- **WHEN** a flow sets its own audit flag to false on an instance whose default is on
+- **THEN** that flow's hops are not audit-trailed.
 
-The engine SHALL consult a set of registered oversight checks before each hop.
-It SHALL be configurable by an administrator app setting and overridable per
-flow, and SHALL default to **on**, because it is the mechanism that stops a
-running flow — a safety rail defaulting to off protects only the flows someone
-remembered to configure.
+#### Scenario: Both step-row paths audit a hop once
+- **WHEN** a hop's step row is written, after a walk or inside a firing's commit
+- **THEN** exactly one audit-trail entry with action `flow.hop` names the same run, node and sequence as the step row, and a firing that rolled back leaves no entry.
+
+#### Scenario: A hop entry holds no run values
+- **WHEN** a step fails with an error message, or carries items
+- **THEN** its audit-trail entry holds identifiers, counts and the fact of the failure, and the message and the items stay on the step row.
+
+#### Scenario: A hop entry is not object history
+- **WHEN** a run has a subject object and auditing on
+- **THEN** the hop entry names the subject in `changed`, is not filed under that object's `object_uuid`, and does not appear in the run's list of written objects.
+
+#### Scenario: An audit failure does not fail the hop
+- **WHEN** a hop entry cannot be written
+- **THEN** the run continues and the failure is logged at error level.
+
+### Requirement: The oversight gate is engine-wide and always on
+
+The engine SHALL consult a set of registered oversight checks before each hop
+of every flow. No flow, run context or instance setting SHALL switch the gate
+off, because it is the mechanism that stops a running flow: a kill switch with
+an exemption is a kill switch with a way past it.
 
 #### Scenario: The kill switch stops a running flow
 - **WHEN** the kill switch is thrown while a multi-node flow is mid-walk
 - **THEN** the next hop does not execute, the run is recorded as stopped with the vetoing check named, and the hops already completed keep their recorded results.
 
-#### Scenario: A flow may be exempted, but only explicitly
-- **WHEN** a flow sets its own oversight flag to false
-- **THEN** its hops are not gated, while a flow that merely leaves the flag unset continues to follow the instance default.
-
-#### Scenario: Changing the instance default moves the unset flows
-- **WHEN** the administrator turns the oversight default off
-- **THEN** flows that never set their own flag stop being gated, and a flow that explicitly set true is still gated.
+#### Scenario: A caller cannot exempt a run
+- **WHEN** a run is started with a context that claims oversight is off
+- **THEN** its hops are gated like any other run's, and a veto stops it.
 
 ### Requirement: Oversight checks are contributed, not hardcoded
 

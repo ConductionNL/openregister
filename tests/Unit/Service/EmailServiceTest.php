@@ -118,6 +118,7 @@ class EmailServiceTest extends TestCase {
 		$result->method('fetch')->willReturn([
 			'uid' => '44', 'subject' => 'Aanvulling op Woo-verzoek', 'sent_at' => 1760512500,
 			'sender_email' => 'sanne.devries@zuiddrecht.example', 'sender_label' => 'Sanne de Vries',
+			'message_id' => '<a1@zuiddrecht.example>',
 		]);
 		$qb->method('executeQuery')->willReturn($result);
 		$this->db->method('getQueryBuilder')->willReturn($qb);
@@ -127,6 +128,7 @@ class EmailServiceTest extends TestCase {
 
 		$this->assertSame(expected: 'sanne.devries@zuiddrecht.example', actual: $link->getSender());
 		$this->assertSame(expected: 'Sanne de Vries', actual: $link->getSenderName());
+		$this->assertSame(expected: '<a1@zuiddrecht.example>', actual: $link->getRfcMessageId());
 	}
 
 	public function testUnlinkEmailSuccess(): void {

@@ -65,15 +65,16 @@ final class PaginationLinks {
 	}//end around()
 
 	/**
-	 * The URI with its `page` parameter set, or added with the right separator.
+	 * The URI with its `page` or `_page` parameter set, or `page` added with the right separator.
 	 *
 	 * @param int $page The page.
 	 *
 	 * @return string The URI.
 	 */
 	private function toPage(int $page): string {
-		$url = (string)preg_replace('/([?&])page=\d+/', '${1}page='.$page, $this->uri);
-		if (str_contains($url, 'page=') === true) {
+		$rewritten = 0;
+		$url = (string)preg_replace('/([?&]_?page=)[^&]*/', '${1}'.$page, $this->uri, -1, $rewritten);
+		if ($rewritten > 0) {
 			return $url;
 		}
 

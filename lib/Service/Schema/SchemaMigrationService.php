@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Schema;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunEntry;
@@ -329,7 +330,7 @@ class SchemaMigrationService {
 		}
 
 		$schema = $this->schemaMapper->find($run->getSchemaId());
-		$entries = $this->runEntryMapper->findByRun($runId, SchemaRunEntry::OUTCOME_MIGRATED);
+		$entries = $this->runEntryMapper->findByRun(runId: $runId, filter: new OutcomeFilter(outcome: SchemaRunEntry::OUTCOME_MIGRATED));
 
 		$restored = 0;
 		$conflicts = 0;

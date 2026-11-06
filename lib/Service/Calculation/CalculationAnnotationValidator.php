@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service\Calculation;
  * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
  */
 final class CalculationAnnotationValidator {
+	use PropNameReading;
 
 	/**
 	 * Supported unit values for the dateDiff operator.
@@ -123,13 +124,36 @@ final class CalculationAnnotationValidator {
 		$this->validateReferences(references: ($schema['x-openregister-references'] ?? []), walk: $walk);
 		$this->validateAggregateRefs(aggregateRefs: ($schema['x-openregister-aggregate-refs'] ?? []), walk: $walk);
 		$this->validateCalculations(calcs: $calcs, walk: $walk);
+		$this->checkCycles(walk: $walk);
+
+		return $walk->errors;
+	}//end validateDeclared()
+
+	/**
+	 * Refuse a dependency cycle among the walked calculations.
+	 *
+	 * @param CalculationWalk $walk The validation state.
+	 *
+	 * @return void
+	 */
+	private function checkCycles(CalculationWalk $walk): void {
 		$cycle = (new DependencyCycleFinder())->find(deps: $walk->deps);
 		if ($cycle !== null) {
 			$walk->fail(code: 'calculation-cycle', message: sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle)));
 		}
+	}//end checkCycles()
 
-		return $walk->errors;
-	}//end validateDeclared()
+	/**
+	 * Whether a map entry is a named object.
+	 *
+	 * @param mixed $name The entry's key.
+	 * @param mixed $spec The entry's value.
+	 *
+	 * @return bool
+	 */
+	private function isNamedSpec(mixed $name, mixed $spec): bool {
+		return is_string($name) === true && $name !== '' && is_array($spec) === true;
+	}//end isNamedSpec()
 
 	/**
 	 * The keys of a map, or none when it is not an array.
@@ -336,25 +360,6 @@ final class CalculationAnnotationValidator {
 	}//end walkProp()
 
 	/**
-	 * The name a `prop` operand reads, or an empty string.
-	 *
-	 * @param mixed $args The `prop` operand.
-	 *
-	 * @return string
-	 */
-	private function propName(mixed $args): string {
-		if (is_string($args) === true) {
-			return $args;
-		}
-
-		if (is_array($args) === true) {
-			return (string)($args[0] ?? '');
-		}
-
-		return '';
-	}//end propName()
-
-	/**
 	 * Check an `@ref.`, `@aggregate.` or `@self.` name; false for any other name.
 	 *
 	 * @param string          $name The name a `prop` reads.
@@ -536,7 +541,7 @@ final class CalculationAnnotationValidator {
 		}
 
 		foreach ($references as $refName => $refSpec) {
-			if (is_string($refName) === false || $refName === '' || is_array($refSpec) === false) {
+			if ($this->isNamedSpec(name: $refName, spec: $refSpec) === false) {
 				$walk->fail(code: 'reference-malformed', message: sprintf('Reference "%s" must be a named object.', (string)$refName));
 				continue;
 			}
@@ -559,6 +564,18 @@ final class CalculationAnnotationValidator {
 			$walk->fail(code: 'reference-no-schema', message: sprintf('Reference "%s" requires a target schema.', $walk->name));
 		}
 
+		$this->checkReferenceMode(spec: $spec, walk: $walk);
+	}//end validateReference()
+
+	/**
+	 * Check a reference's mode and the mode's own key.
+	 *
+	 * @param array<string, mixed> $spec The reference spec.
+	 * @param CalculationWalk      $walk The validation state, named after the reference.
+	 *
+	 * @return void
+	 */
+	private function checkReferenceMode(array $spec, CalculationWalk $walk): void {
 		$mode = (string)($spec['mode'] ?? '');
 		if ($mode === 'relatedObject') {
 			$this->checkReferenceField(field: (string)($spec['field'] ?? ''), walk: $walk);
@@ -573,7 +590,7 @@ final class CalculationAnnotationValidator {
 		if (is_array($spec['filters'] ?? null) === false) {
 			$walk->fail(code: 'reference-no-filters', message: sprintf('Reference "%s" (lookup) requires a filters map.', $walk->name));
 		}
-	}//end validateReference()
+	}//end checkReferenceMode()
 
 	/**
 	 * Check the field of a relatedObject reference: present and a schema property.
@@ -611,7 +628,7 @@ final class CalculationAnnotationValidator {
 		}
 
 		foreach ($aggregateRefs as $aggName => $aggSpec) {
-			if (is_string($aggName) === false || $aggName === '' || is_array($aggSpec) === false) {
+			if ($this->isNamedSpec(name: $aggName, spec: $aggSpec) === false) {
 				$message = sprintf('Aggregate-reference "%s" must be a named object.', (string)$aggName);
 				$walk->fail(code: 'aggregate-ref-malformed', message: $message);
 				continue;

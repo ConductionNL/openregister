@@ -91,6 +91,17 @@ function stores(state) {
 }
 
 /**
+ * A component's computeds, its mixins' included.
+ *
+ * @param {object} component The component
+ * @return {object} The computeds
+ */
+function computedOf(component) {
+	const mixed = (component.mixins || []).map((mixin) => mixin.computed)
+	return Object.assign({}, ...mixed, component.computed)
+}
+
+/**
  * A component context with its data, computeds as getters and methods.
  *
  * @param {object} component The component
@@ -99,7 +110,7 @@ function stores(state) {
  */
 function instance(component, state = {}) {
 	const ctx = { ...component.data.call({ t: (a, s) => s }), ...state }
-	for (const [name, getter] of Object.entries(component.computed || {})) {
+	for (const [name, getter] of Object.entries(computedOf(component))) {
 		if (!(name in state)) {
 			Object.defineProperty(ctx, name, {
 				get: () =>

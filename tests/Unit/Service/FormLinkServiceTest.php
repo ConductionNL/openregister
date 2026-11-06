@@ -28,6 +28,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -199,7 +200,7 @@ class FormLinkServiceTest extends TestCase {
 		$existing->setFormId(42);
 		$existing->setSubmissionId(1001);
 
-		$this->formLinkMapper->method('findSubmissionLink')->with('obj-1', 42, 1001)->willReturn($existing);
+		$this->formLinkMapper->method('findSubmissionLink')->with('obj-1', new FormSubmissionRef(42, 1001))->willReturn($existing);
 		$this->formLinkMapper->expects($this->never())->method('insert');
 
 		$link = $this->service->linkFormSubmission(
