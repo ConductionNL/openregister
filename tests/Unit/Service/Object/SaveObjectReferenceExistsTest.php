@@ -47,6 +47,9 @@ use RuntimeException;
  * which events it sends, and when it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterException
