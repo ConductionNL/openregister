@@ -47,16 +47,12 @@ class ScheduleFlowSync {
 	 * Constructor.
 	 *
 	 * @param ScheduleFlowStore $store The compiled flows.
-	 * @param ScheduleActionAllowList $allowList The closed action map.
-	 * @param CronScheduleEvaluator $cron Rejects an unparseable cron.
 	 * @param FlowTenantMembership $membership Answers whether the publisher is in the organisation.
 	 * @param ScheduleAuditTrail $audit Records identity changes.
 	 * @param LoggerInterface $logger Refusals.
 	 */
 	public function __construct(
 		private readonly ScheduleFlowStore $store,
-		private readonly ScheduleActionAllowList $allowList,
-		private readonly CronScheduleEvaluator $cron,
 		private readonly FlowTenantMembership $membership,
 		private readonly ScheduleAuditTrail $audit,
 		private readonly LoggerInterface $logger,
@@ -100,7 +96,7 @@ class ScheduleFlowSync {
 		$manifest = ScheduleManifest::fromManifest(
 			applicationId: $release->slug(),
 			manifest: $release->manifest,
-			cron: $this->cron
+			cron: new CronScheduleEvaluator()
 		);
 		foreach ($manifest->diagnostics as $diagnostic) {
 			$this->refuse(release: $release, reason: $diagnostic);
@@ -152,7 +148,7 @@ class ScheduleFlowSync {
 			return null;
 		}
 
-		$node = $this->allowList->flowNode(schedule: $schedule);
+		$node = (new ScheduleActionAllowList())->flowNode(schedule: $schedule);
 		if ($node === null) {
 			$this->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": action or argument not allowed.');
 			return null;
