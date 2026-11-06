@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use Exception;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -60,7 +59,7 @@ final class MagicDdlRunner {
 		try {
 			$this->db->executeStatement($sql);
 			return true;
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: $failure->message,
 				context: $failure->context + ['error' => $e->getMessage()]
