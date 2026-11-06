@@ -72,6 +72,7 @@ import { NcEmptyContent, NcListItem, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
+import { relationTab } from './relationTab.js'
 
 /**
  * ReferencedByTab — the records that point at this object, grouped by schema.
@@ -97,61 +98,26 @@ export default {
 		LinkVariantOff,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
+	mixins: [relationTab],
 
 	data() {
 		return {
 			loading: false,
-			error: false,
-			errorMessage: '',
 			groups: [],
 			total: 0,
 		}
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId The object now being read.
-			 * @spec exclude watcher refetching the reverse view on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchReferencedBy()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
 		 * Read the records that reference this object, grouped by schema.
 		 *
 		 * @spec openspec/specs/linked-entity-types/spec.md
 		 * @return {Promise<void>}
 		 */
-		async fetchReferencedBy() {
+		async load() {
 			this.loading = true
-			this.error = false
-			this.errorMessage = ''
+			this.clearFailure()
 
 			const url = generateUrl(
 				'/apps/openregister/api/objects/{register}/{schema}/{id}/referenced-by',
@@ -167,8 +133,7 @@ export default {
 				this.groups = response.data?.groups || []
 				this.total = response.data?.total || 0
 			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
+				this.showFailure(err)
 			} finally {
 				this.loading = false
 			}
