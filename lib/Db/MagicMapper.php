@@ -45,6 +45,10 @@ use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
+use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
+use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableCreator;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicSchemaColumns;
 use RuntimeException;
@@ -57,7 +61,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRowWrite;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectLookup;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableDdl;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
@@ -210,15 +213,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
-
-	/**
-	 * Metadata fields indexed on every magic table besides UUID, register/schema,
-	 * organisation and owner. `slug` and `uri` are here because the single-object
-	 * lookup ORs `_id OR _uuid OR _slug OR _uri`, and Postgres only uses an index
-	 * for a disjunction when every branch has one (measured: 2.5ms Seq Scan
-	 * against 0.107ms by `_uuid` alone on a 2,962-row register).
-	 */
-	private const INDEXED_METADATA_FIELDS = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
 
 	/**
 	 * Schema-and-property pairs already warned about as named like a metadata column.
@@ -592,11 +586,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private ?MagicStatisticsHandler $statisticsHandler = null;
 
 	/**
-	 * Cached result of pg_trgm extension availability check
+	 * Answers once whether pg_trgm is available.
 	 *
-	 * @var boolean|null null = not checked yet, true/false = checked result
+	 * @var MagicPgTrgmProbe|null
 	 */
-	private ?bool $hasPgTrgm = null;
+	private ?MagicPgTrgmProbe $pgTrgmProbe = null;
 
 	/**
 	 * Undeclared properties already reported as discarded, by schema id then property name.
@@ -1120,34 +1114,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return bool True if pg_trgm is available, false otherwise
 	 */
 	private function hasPgTrgmExtension(): bool {
-		// Return cached result if available.
-		if ($this->hasPgTrgm !== null) {
-			return $this->hasPgTrgm;
-		}
-
-		// Not PostgreSQL = no pg_trgm.
-		$platform = $this->db->getDatabasePlatform();
-		if ($platform instanceof PostgreSQLPlatform === false) {
-			$this->hasPgTrgm = false;
-			return false;
-		}
-
-		// Check if pg_trgm extension is installed.
-		try {
-			$stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-			$result = $stmt->execute();
-			$count = (int)$result->fetchOne();
-			$this->hasPgTrgm = $count > 0;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Failed to check pg_trgm extension availability',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			$this->hasPgTrgm = false;
-		}
-
-		return $this->hasPgTrgm;
+		return $this->trgmProbe()->available();
 	}//end hasPgTrgmExtension()
+
+	/**
+	 * The pg_trgm probe of this mapper.
+	 *
+	 * @return MagicPgTrgmProbe
+	 */
+	private function trgmProbe(): MagicPgTrgmProbe {
+		$this->pgTrgmProbe ??= new MagicPgTrgmProbe(db: $this->db, logger: $this->logger);
+
+		return $this->pgTrgmProbe;
+	}//end trgmProbe()
 
 	/**
 	 * Create or update table for a specific register+schema combination
@@ -3141,20 +3120,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end buildTableColumnsFromSchema()
 
 	/**
-	 * Create table with specified columns
-	 *
-	 * @param string $tableName The table name
-	 * @param array $columns Array of column definitions
-	 *
-	 * @throws Exception If table creation fails
-	 *
-	 * @return void
-	 */
-
-	/**
 	 * Create a new table with specified columns.
-	 *
-	 * Uses Nextcloud 32+ compatible schema API for table creation.
 	 *
 	 * @param string $tableName The table name
 	 * @param array $columns The column definitions
@@ -3164,173 +3130,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return void
 	 */
 	private function createTable(string $tableName, array $columns): void {
-		try {
-			// Build CREATE TABLE SQL manually for Nextcloud 32 compatibility.
-			$ddl = new MagicTableDdl(platform: $this->db->getDatabasePlatform(), tableName: $tableName);
-
-			// Get database table prefix from Nextcloud config.
-			$tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
-			$fullTableName = $tablePrefix . $tableName;
-
-			foreach ($columns as $column) {
-				$this->addColumnDefinition(ddl: $ddl, column: $column);
-			}
-
-			$sql = 'CREATE TABLE IF NOT EXISTS ' . $ddl->quoted(name: $fullTableName) . ' (';
-			$sql .= implode(', ', $ddl->columnDefs);
-			$sql .= $this->tableConstraintsSql(ddl: $ddl);
-			$sql .= ')';
-
-			// Execute table creation.
-			$this->db->executeStatement($sql);
-
-			$this->logger->debug(
-				message: '[MagicMapper] Created table with columns',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'fullTableName' => $fullTableName,
-					'columns' => array_column($columns, 'name'),
-				]
-			);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[MagicMapper] Failed to create table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			throw new Exception('Failed to create table ' . $tableName . ': ' . $e->getMessage(), 0, $e);
-		}//end try
+		(new MagicTableCreator(db: $this->db, config: $this->config, logger: $this->logger))->create(tableName: $tableName, columns: $columns);
 	}//end createTable()
-
-	/**
-	 * Add one column's definition to the statement, and track its primary key and unique constraint.
-	 *
-	 * @param MagicTableDdl $ddl    The statement being built.
-	 * @param array         $column The column definition.
-	 *
-	 * @return void
-	 */
-	private function addColumnDefinition(MagicTableDdl $ddl, array $column): void {
-		// BUG-DB-7: route the raw column name through quoteIdentifier so
-		// embedded quote characters are escaped (doubled) rather than
-		// concatenated unescaped.
-		$colName = $this->quoteIdentifier(name: $column['name'], isPostgres: $ddl->isPostgres);
-
-		$def = $colName . ' ' . $this->mapColumnTypeToSQL(type: $column['type'], column: $column);
-
-		if (($column['nullable'] ?? true) === false) {
-			$def .= ' NOT NULL';
-		}
-
-		if (isset($column['default']) === true) {
-			$def .= ' DEFAULT ' . $this->defaultLiteral(ddl: $ddl, value: $column['default']);
-		}
-
-		if (($column['autoincrement'] ?? false) === true) {
-			$def = ($this->autoincrementColumn(ddl: $ddl, colName: $colName) ?? $def . ' AUTO_INCREMENT');
-		}
-
-		$ddl->columnDefs[] = $def;
-
-		if (($column['primary'] ?? false) === true) {
-			$ddl->primaryKey = $colName;
-		}
-
-		// Track unique constraints (required for PostgreSQL ON CONFLICT).
-		if (($column['unique'] ?? false) === true) {
-			$ddl->uniqueConstraints[] = $colName;
-		}
-	}//end addColumnDefinition()
-
-	/**
-	 * The SQL literal of a column default.
-	 *
-	 * @param MagicTableDdl $ddl   The statement being built.
-	 * @param mixed         $value The default value, never null (a null default is not written).
-	 *
-	 * @return mixed The literal: TRUE/FALSE, a quoted string, or the value itself.
-	 */
-	private function defaultLiteral(MagicTableDdl $ddl, mixed $value): mixed {
-		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'TRUE';
-			}
-
-			return 'FALSE';
-		}
-
-		if (is_string($value) === true) {
-			// BUG-DB-1: escape via the platform so values containing a single
-			// quote (e.g. O'Brien) do not break the DDL or allow stored-DDL
-			// injection.
-			return $ddl->platform->quoteStringLiteral($value);
-		}
-
-		return $value;
-	}//end defaultLiteral()
-
-	/**
-	 * The definition of an autoincrement column on PostgreSQL or SQLite.
-	 *
-	 * PostgreSQL uses BIGSERIAL. SQLite auto-increments an INTEGER PRIMARY KEY
-	 * column declared inline; AUTO_INCREMENT is a syntax error there and a
-	 * separate PRIMARY KEY(...) constraint would stop the column from aliasing
-	 * rowid, so the inline declaration is recorded on the statement.
-	 *
-	 * @param MagicTableDdl $ddl     The statement being built.
-	 * @param string        $colName The quoted column name.
-	 *
-	 * @return string|null The definition, or null where MySQL's AUTO_INCREMENT applies.
-	 */
-	private function autoincrementColumn(MagicTableDdl $ddl, string $colName): ?string {
-		if ($ddl->isPostgres === true) {
-			return $colName . ' BIGSERIAL';
-		}
-
-		if ($ddl->isSqlite === true) {
-			$ddl->inlinePrimaryKey = true;
-			return $colName . ' INTEGER PRIMARY KEY AUTOINCREMENT';
-		}
-
-		return null;
-	}//end autoincrementColumn()
-
-	/**
-	 * The PRIMARY KEY and UNIQUE table constraints of the statement.
-	 *
-	 * The primary key is skipped on SQLite when the autoincrement column already
-	 * declared it inline. Unique constraints (required for PostgreSQL ON
-	 * CONFLICT) are named explicitly so MySQL/MariaDB doesn't fall back to using
-	 * the column name as the constraint/index name, which collides across tables
-	 * (e.g. every dynamic table getting a constraint literally called `_uuid`)
-	 * and breaks Nextcloud's ensureUniqueNamesConstraints check on the next app
-	 * install.
-	 *
-	 * @param MagicTableDdl $ddl The statement being built.
-	 *
-	 * @return string The constraints, each with a leading comma.
-	 */
-	private function tableConstraintsSql(MagicTableDdl $ddl): string {
-		$sql = '';
-		if ($ddl->primaryKey !== null && $ddl->inlinePrimaryKey === false) {
-			$sql .= ', PRIMARY KEY (' . $ddl->primaryKey . ')';
-		}
-
-		foreach ($ddl->uniqueConstraints as $uniqueCol) {
-			$rawCol = trim($uniqueCol, '`"');
-			$constraintName = $ddl->tableName . '_' . ltrim($rawCol, '_') . '_uq';
-			$sql .= ', CONSTRAINT ' . $ddl->quoted(name: $constraintName) . ' UNIQUE (' . $uniqueCol . ')';
-		}
-
-		return $sql;
-	}//end tableConstraintsSql()
 
 	/**
 	 * Map column type to SQL type string.
@@ -3339,51 +3140,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $column The column configuration
 	 *
 	 * @return string The SQL type string
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type mapping switch requires handling all SQL types
 	 */
 	private function mapColumnTypeToSQL(string $type, array $column): string {
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
+		$isPostgres = $this->db->getDatabasePlatform() instanceof PostgreSQLPlatform;
 
-		switch ($type) {
-			case 'bigint':
-				return 'BIGINT';
-			case 'integer':
-				return 'INTEGER';
-			case 'smallint':
-				return 'SMALLINT';
-			case 'string':
-				$length = $column['length'] ?? 255;
-				return "VARCHAR($length)";
-			case 'text':
-				return 'TEXT';
-			case 'datetime':
-				if ($isPostgres === true) {
-					return 'TIMESTAMP';
-				}
-				return 'DATETIME';
-			case 'boolean':
-				return 'BOOLEAN';
-			case 'decimal':
-				$precision = $column['precision'] ?? 10;
-				$scale = $column['scale'] ?? 2;
-				return "DECIMAL($precision,$scale)";
-			case 'json':
-				if ($isPostgres === true) {
-					return 'JSONB';
-				}
-				return 'JSON';
-			case 'json_ordered':
-				// Order-preserving JSON storage for object-typed schema properties.
-				// PostgreSQL JSONB hashes keys and loses insertion order; the JSON type
-				// stores the document verbatim. MySQL/MariaDB JSON also stores in document
-				// order (LONGTEXT-backed), so the same type label maps to JSON on both
-				// platforms. See issue #1720.
-				return 'JSON';
-			default:
-				return 'TEXT';
-		}//end switch
+		return (new MagicColumnSql(isPostgres: $isPostgres))->type(type: $type, column: $column);
 	}//end mapColumnTypeToSQL()
 
 	/**
@@ -3391,341 +3152,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param string $tableName The table name
 	 * @param Register $_register The register context (unused)
-	 * @param Schema $_schema The schema for index analysis (unused)
+	 * @param Schema $_schema The schema for index analysis
 	 *
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
 	private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void {
-		try {
-			// Add prefix for raw SQL queries.
-			$run = new MagicTableIndexRun(
-				tableName: $tableName,
-				fullTableName: $this->getFullTableName(tableName: $tableName)
-			);
-			$this->createBaseIndexes(run: $run);
-
-			$platform = $this->db->getDatabasePlatform();
-			$run->isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-			if ($run->isPostgres === true) {
-				$this->createPostgresIndexes(run: $run);
-			} else {
-				$this->createMySqlDeletedOwnerIndex(run: $run);
-			}
-
-			// Create indexes for schema-specific properties.
-			$schemaProperties = $_schema->getProperties();
-			if (is_array($schemaProperties) === true) {
-				foreach ($schemaProperties as $propertyName => $propertyConfig) {
-					$run->column = $this->sanitizeColumnName(name: $propertyName);
-					$run->quotedColumn = $this->quoteIdentifier(name: $run->column, isPostgres: $run->isPostgres);
-					$this->createPropertyIndexes(run: $run, propertyConfig: $propertyConfig);
-				}
-			}
-
-			$this->logger->debug(
-				message: '[MagicMapper] Created table indexes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'baseIndexCount' => 5 + count(self::INDEXED_METADATA_FIELDS),
-					'relationIndexes' => $run->relationIndexes,
-					'facetIndexes' => $run->facetIndexes,
-					'searchableIndexes' => $run->searchableIndexes,
-				]
-			);
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Failed to create some table indexes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-			// Don't fail table creation if indexes fail.
-		}//end try
+		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
+		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer->create(run: $run, schema: $_schema);
 	}//end createTableIndexes()
-
-	/**
-	 * Create the indexes every magic table carries: the unique UUID index, the
-	 * multitenancy and RBAC indexes and the frequently filtered metadata fields.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createBaseIndexes(MagicTableIndexRun $run): void {
-		$tableName = $run->tableName;
-		$fullTableName = $run->fullTableName;
-
-		// Create unique index on UUID.
-		$this->db->executeStatement(
-			"CREATE UNIQUE INDEX IF NOT EXISTS {$tableName}_uuid_idx ON {$fullTableName} (" . self::METADATA_PREFIX . 'uuid)'
-		);
-
-		// Composite index on register + schema for multitenancy.
-		$registerCol = self::METADATA_PREFIX . 'register';
-		$schemaCol = self::METADATA_PREFIX . 'schema';
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_register_schema_idx ON {$fullTableName} ({$registerCol}, {$schemaCol})"
-		);
-
-		// Organisation for multitenancy, owner for RBAC, then the frequently
-		// filtered metadata fields.
-		foreach (array_merge(['organisation', 'owner'], self::INDEXED_METADATA_FIELDS) as $field) {
-			$col = self::METADATA_PREFIX . $field;
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$tableName}_{$field}_idx ON {$fullTableName} ({$col})"
-			);
-		}
-	}//end createBaseIndexes()
-
-	/**
-	 * Create the PostgreSQL-only indexes: the GIN index on `_relations`, the
-	 * partial live-owner index and the baseline `_name` trigram index.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createPostgresIndexes(MagicTableIndexRun $run): void {
-		$tableName = $run->tableName;
-		$fullTableName = $run->fullTableName;
-
-		// GIN index on _relations for fast containment (@>) relationship lookups.
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_relations_gin_idx ON {$fullTableName} USING GIN (_relations)"
-		);
-
-		// PERF-5: every list/search query filters `_deleted IS NULL`. A partial
-		// index on (_owner) restricted to live rows serves the common
-		// "WHERE _owner = ? AND _deleted IS NULL" access pattern. Partial
-		// indexes are a PostgreSQL feature, so this is Postgres-only.
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-		$ownerCol = self::METADATA_PREFIX . 'owner';
-		$this->db->executeStatement(
-			"CREATE INDEX IF NOT EXISTS {$tableName}_live_owner_idx ON {$fullTableName} ({$ownerCol}) WHERE {$deletedCol} IS NULL"
-		);
-
-		if ($this->hasPgTrgmExtension() === true) {
-			$this->createNameTrigramIndex(run: $run);
-		}
-	}//end createPostgresIndexes()
-
-	/**
-	 * Create the baseline pg_trgm GIN index on the `_name` metadata column.
-	 *
-	 * `_name` is searched for every schema by
-	 * MagicSearchHandler::buildSearchConditionSql() (the ILIKE path and the
-	 * `_fuzzy=true` similarity() path), so a rare-term search without this
-	 * index is a sequential scan (measured 268ms; ~1.5ms once GIN-backed on an
-	 * 81,950-row table). The index is on an existing varchar/text column, so it
-	 * stays invisible to Doctrine's introspectSchema(). A missing extension or
-	 * incompatible column never fails table creation.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createNameTrigramIndex(MagicTableIndexRun $run): void {
-		$nameCol = self::METADATA_PREFIX . 'name';
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->tableName}_name_trgm_idx ON {$run->fullTableName} USING GIN ({$nameCol} gin_trgm_ops)"
-			);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[MagicMapper] Skipped baseline _name trgm index',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $run->tableName,
-					'error' => $e->getMessage(),
-				]
-			);
-		}
-	}//end createNameTrigramIndex()
-
-	/**
-	 * Create the composite (_deleted, _owner) index on MySQL/MariaDB.
-	 *
-	 * MySQL/MariaDB have no partial indexes, so the "WHERE _owner = ? AND
-	 * _deleted IS NULL" access pattern gets the closest composite index.
-	 * `CREATE INDEX IF NOT EXISTS` is not portable across older MySQL, so a
-	 * duplicate-index error is treated as a no-op.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createMySqlDeletedOwnerIndex(MagicTableIndexRun $run): void {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-		$ownerCol = self::METADATA_PREFIX . 'owner';
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX {$run->tableName}_deleted_owner_idx ON {$run->fullTableName} ({$deletedCol}, {$ownerCol})"
-			);
-		} catch (\Throwable $e) {
-			// Index already exists (no IF NOT EXISTS on MySQL): ignore.
-		}
-	}//end createMySqlDeletedOwnerIndex()
-
-	/**
-	 * Create the indexes one schema property asks for: relation, array GIN,
-	 * facet and searchable (trigram) indexes.
-	 *
-	 * @param MagicTableIndexRun $run            The index-creation pass, positioned on the property's column.
-	 * @param array              $propertyConfig The property definition.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createPropertyIndexes(MagicTableIndexRun $run, array $propertyConfig): void {
-		// Single object references (stored as VARCHAR UUID), for _extend queries.
-		if ($this->isSingleRelation(propertyConfig: $propertyConfig) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'rel_idx') === true
-		) {
-			$run->relationIndexes[] = $run->column;
-		}
-
-		// Arrays of object references or inversedBy relations get a GIN index on PostgreSQL.
-		if ($this->wantsArrayGinIndex(run: $run, propertyConfig: $propertyConfig) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'arr_gin_idx') === true
-		) {
-			$run->relationIndexes[] = $run->column . ' (GIN)';
-		}
-
-		// Facetable fields, for efficient facet queries.
-		if (($propertyConfig['facetable'] ?? false) === true
-			&& $this->tryCreateColumnIndex(run: $run, suffix: 'facet_idx') === true
-		) {
-			$run->facetIndexes[] = $run->column;
-		}
-
-		// Opt-in `searchable: true`: a pg_trgm GIN index so fuzzy/substring
-		// matching on the column is index-backed (PostgreSQL + pg_trgm only).
-		if (($propertyConfig['searchable'] ?? false) === true
-			&& $run->isPostgres === true
-			&& $this->hasPgTrgmExtension() === true
-		) {
-			$this->createSearchableIndex(run: $run);
-		}
-	}//end createPropertyIndexes()
-
-	/**
-	 * Whether a property is a single object reference that relates objects.
-	 *
-	 * @param array $propertyConfig The property definition.
-	 *
-	 * @return bool
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function isSingleRelation(array $propertyConfig): bool {
-		$handling = ($propertyConfig['objectConfiguration'] ?? [])['handling'] ?? null;
-
-		return ($propertyConfig['type'] ?? 'string') === 'object'
-			&& isset($propertyConfig['$ref']) === true
-			&& ObjectHandling::relates($handling) === true;
-	}//end isSingleRelation()
-
-	/**
-	 * Whether a property is an array of references (or an inversedBy relation)
-	 * on PostgreSQL, which gets a GIN index.
-	 *
-	 * @param MagicTableIndexRun $run            The index-creation pass.
-	 * @param array              $propertyConfig The property definition.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function wantsArrayGinIndex(MagicTableIndexRun $run, array $propertyConfig): bool {
-		if (($propertyConfig['type'] ?? 'string') !== 'array' || $run->isPostgres === false) {
-			return false;
-		}
-
-		$items = $propertyConfig['items'] ?? [];
-
-		return ($items['$ref'] ?? null) !== null
-			|| ($items['inversedBy'] ?? ($propertyConfig['inversedBy'] ?? null)) !== null;
-	}//end wantsArrayGinIndex()
-
-	/**
-	 * Create an index on the current property column, tolerating an index that
-	 * already exists or a column type the index does not support.
-	 *
-	 * @param MagicTableIndexRun $run    The index-creation pass, positioned on the column.
-	 * @param string             $suffix The index kind; a `gin` kind is created with USING GIN.
-	 *
-	 * @return bool Whether the index statement succeeded.
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function tryCreateColumnIndex(MagicTableIndexRun $run, string $suffix): bool {
-		$using = '';
-		if (str_contains($suffix, 'gin') === true) {
-			$using = 'USING GIN ';
-		}
-
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: $suffix)} ON {$run->fullTableName} {$using}({$run->quotedColumn})"
-			);
-			return true;
-		} catch (Exception $e) {
-			// Index may already exist or column type incompatible.
-			return false;
-		}
-	}//end tryCreateColumnIndex()
-
-	/**
-	 * Create the pg_trgm GIN index of a `searchable` property column.
-	 *
-	 * A column type gin_trgm_ops does not support (a non-string property marked
-	 * searchable) or an existing index is logged as a warning; table creation
-	 * and sync continue.
-	 *
-	 * @param MagicTableIndexRun $run The index-creation pass, positioned on the column.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/magic-table-columns/spec.md
-	 */
-	private function createSearchableIndex(MagicTableIndexRun $run): void {
-		try {
-			$this->db->executeStatement(
-				"CREATE INDEX IF NOT EXISTS {$run->columnIndexName(suffix: 'trgm_idx')} ON {$run->fullTableName} USING GIN ({$run->quotedColumn} gin_trgm_ops)"
-			);
-			$run->searchableIndexes[] = $run->column;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicMapper] Skipped searchable trgm index (incompatible column or already present)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $run->tableName,
-					'column' => $run->column,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end createSearchableIndex()
 
 	/**
 	 * Save single object to register+schema-specific table
@@ -5491,13 +4928,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return string The quoted identifier.
 	 */
 	private function quoteIdentifier(string $name, bool $isPostgres): string {
-		// BUG-DB-7: escape any embedded quote characters by doubling them so an
-		// identifier containing the quote char cannot break out of the quoting.
-		if ($isPostgres === true) {
-			return '"' . str_replace('"', '""', $name) . '"';
-		}
-
-		return '`' . str_replace('`', '``', $name) . '`';
+		return (new MagicColumnSql(isPostgres: $isPostgres))->quote(name: $name);
 	}//end quoteIdentifier()
 
 	/**
