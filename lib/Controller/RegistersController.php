@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
+use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -147,13 +148,6 @@ class RegistersController extends Controller {
 	private readonly RegisterService $registerService;
 
 	/**
-	 * The object entity mapper.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $objectEntityMapper;
-
-	/**
 	 * The logger.
 	 *
 	 * @var LoggerInterface
@@ -203,6 +197,13 @@ class RegistersController extends Controller {
 	private readonly RegisterDownloads $downloads;
 
 	/**
+	 * The object counts this controller reports.
+	 *
+	 * @var RegisterStatistics
+	 */
+	private readonly RegisterStatistics $statistics;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for register operations.
@@ -229,8 +230,8 @@ class RegistersController extends Controller {
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
 		$this->downloads = new RegisterDownloads(session: $session, services: $services);
+		$this->statistics = new RegisterStatistics(services: $services);
 		$this->registerService = $services->registers->registerService;
-		$this->objectEntityMapper = $services->mappers->objectEntityMapper;
 		$this->userSession = $session->userSession;
 		$this->session = $session;
 		$this->container = $services->integrations->container;
@@ -324,7 +325,7 @@ class RegistersController extends Controller {
 		if (in_array('schemas', $extend, true) === true
 			&& in_array('@self.stats', $extend, true) === true
 		) {
-			$statsByRegisterId = $this->schemaStatsByRegister(registers: $registers);
+			$statsByRegisterId = $this->statistics->schemaCounts(registers: $registers);
 		}
 
 		$registersArr = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
@@ -367,47 +368,6 @@ class RegistersController extends Controller {
 	}//end listPage()
 
 	/**
-	 * The object counts per schema of every register, keyed by register id.
-	 *
-	 * Every schema across every register is resolved in ONE query; schemaMapper->find()
-	 * per schema id took 1,231 round trips to render one list on an instance with 76
-	 * registers and 1,231 schemas. Orphan ids do not come back from the bulk read and
-	 * cannot contribute to stats.
-	 *
-	 * @param array<Register> $registers The registers in the list.
-	 *
-	 * @return array<int, array> The schema counts per register id.
-	 */
-	private function schemaStatsByRegister(array $registers): array {
-		$allSchemaIds = [];
-		foreach ($registers as $register) {
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$allSchemaIds[] = (int)$schemaId;
-			}
-		}
-
-		$schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
-
-		$statsByRegisterId = [];
-		foreach ($registers as $register) {
-			$expandedSchemas = [];
-			foreach (($register->getSchemas() ?? []) as $schemaId) {
-				$schema = ($schemasById[(int)$schemaId] ?? null);
-				if ($schema !== null) {
-					$expandedSchemas[] = $schema;
-				}
-			}
-
-			$statsByRegisterId[(int)$register->getId()] = $this->registerService->getSchemaObjectCounts(
-				registerId: (int)$register->getId(),
-				schemas: $expandedSchemas
-			);
-		}
-
-		return $statsByRegisterId;
-	}//end schemaStatsByRegister()
-
-	/**
 	 * Attach register-level statistics to serialized registers.
 	 *
 	 * They stay a controller concern because they depend on the object and audit-trail
@@ -424,7 +384,7 @@ class RegistersController extends Controller {
 	private function withRegisterStats(array $registers, ?array $statsByRegisterId): array {
 		foreach ($registers as &$register) {
 			$register['stats'] = [
-				'objects' => $this->registerObjectStats(
+				'objects' => $this->statistics->objectTotals(
 					registerId: (int)$register['id'],
 					schemaStats: ($statsByRegisterId[(int)$register['id']] ?? null)
 				),
@@ -436,68 +396,6 @@ class RegistersController extends Controller {
 		unset($register);
 		return $registers;
 	}//end withRegisterStats()
-
-	/**
-	 * Register-level object statistics, reused from the per-schema counts when we have them.
-	 *
-	 * A register's object stats are the sum of its schemas' object stats. When the caller
-	 * asked for `schemas` + `@self.stats`, index() already computed those per-schema
-	 * counts in one UNION per register — so sum them here rather than call
-	 * ObjectEntityMapper::getStatistics(), which recomputes the same numbers by walking
-	 * the whole register/schema-pair list and counting each table again (~4.7s of a ~7s
-	 * request on a 76-register / 1,231-schema instance).
-	 *
-	 * `total` is the LIVE object count (soft-deleted rows excluded), matching what
-	 * `total` has always meant on this endpoint; `deleted` carries the soft-deleted
-	 * count the per-schema UNION also returns. Summing the per-schema counts scopes the
-	 * total to the register's currently-linked schemas, which is exactly the set whose
-	 * per-schema breakdown is shown alongside it.
-	 *
-	 * When `$schemaStats` is null (the `@self.stats`-without-`schemas` caller has no
-	 * per-schema counts), fall back to the mapper so the numbers are still produced.
-	 *
-	 * @param int $registerId The register id.
-	 * @param array<int, array<string, int>>|null $schemaStats Per-schema stats already
-	 *                                                         computed for this register
-	 *                                                         (schemaId => count row), or null.
-	 *
-	 * @return array<string, int> The register-level object stats.
-	 *
-	 * @spec exclude performance: sums already-computed per-schema counts in lieu of a full recount
-	 */
-	private function registerObjectStats(int $registerId, ?array $schemaStats): array {
-		if ($schemaStats === null) {
-			return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
-		}
-
-		$total = 0;
-		$deleted = 0;
-		$invalid = 0;
-		$locked = 0;
-		$size = 0;
-
-		foreach ($schemaStats as $stat) {
-			$schemaTotal = (int)($stat['total'] ?? 0);
-			$schemaDeleted = (int)($stat['deleted'] ?? 0);
-
-			// The UNION's `total` counts every row; the live total excludes the
-			// soft-deleted subset, so `total` here means the same "live objects" that
-			// getStatistics() reports.
-			$total += max(0, ($schemaTotal - $schemaDeleted));
-			$deleted += $schemaDeleted;
-			$invalid += (int)($stat['invalid'] ?? 0);
-			$locked += (int)($stat['locked'] ?? 0);
-			$size += (int)($stat['size'] ?? 0);
-		}
-
-		return [
-			'total' => $total,
-			'size' => $size,
-			'invalid' => $invalid,
-			'deleted' => $deleted,
-			'locked' => $locked,
-		];
-	}//end registerObjectStats()
 
 	/**
 	 * Retrieves a single register by ID
@@ -538,7 +436,7 @@ class RegistersController extends Controller {
 			// If '@self.stats' is requested, attach statistics to the register.
 			if (in_array('@self.stats', $extend, true) === true) {
 				$registerArr['stats'] = [
-					'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
+					'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
 					'logs' => $this->auditLogStats(registerId: (int)$registerArr['id']),
 					'files' => [ 'total' => 0, 'size' => 0 ],
 				];
@@ -900,7 +798,7 @@ class RegistersController extends Controller {
 	 * @return int Total object count.
 	 */
 	private function countRegisterObjects(int $registerId): int {
-		$stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+		$stats = $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
 		return (int)$stats['total'];
 	}//end countRegisterObjects()
 
@@ -966,25 +864,12 @@ class RegistersController extends Controller {
 		try {
 			// Find the register first to validate it exists and get its ID.
 			$register = $this->registerService->find($id);
-			$registerId = $register->getId();
-
-			// Get the schemas associated with this register.
-			$schemas = $this->registerMapper->getSchemasByRegisterId($registerId);
-
-			// Convert schemas to array format for JSON response.
-			$schemasArray = array_map(fn ($schema) => $schema->jsonSerialize(), $schemas);
-
-			return new JSONResponse(
-				data: [
-					'results' => $schemasArray,
-					'total' => count($schemasArray),
-				]
-			);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// Return a 404 error if the register doesn't exist.
+			$schemas  = $this->registerMapper->getSchemasByRegisterId($register->getId());
+			$results  = array_map(fn ($schema) => $schema->jsonSerialize(), $schemas);
+			return new JSONResponse(data: ['results' => $results, 'total' => count($results)]);
+		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
-			// Return a 500 error for other exceptions.
 			return new JSONResponse(data: ['error' => 'Internal server error: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end schemas()
