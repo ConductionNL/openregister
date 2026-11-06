@@ -27,11 +27,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\BuildsObjectSlugHandler;
-use Closure;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -57,6 +57,7 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Service\Configuration\ListedSeed
  * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceIndex
  * @uses   \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
@@ -438,17 +439,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			}
 		);
 
-		$mapper = (new ReflectionClass(MagicMapper::class))->newInstanceWithoutConstructor();
-		Closure::bind(
-			function (LoggerInterface $logger): void {
-				$this->logger = $logger;
-			},
-			$mapper,
-			MagicMapper::class
-		)($logger);
-
-		$report = new \ReflectionMethod(MagicMapper::class, 'reportDroppedProperties');
-		$report->invoke($mapper, $data, $schema->getProperties(), $schema);
+		(new MagicDroppedProperties($logger))->report($data, $schema);
 
 		return $warnings;
 	}//end discardWarnings()
