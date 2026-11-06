@@ -51,6 +51,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
+ * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 class MagicNumericPropertyKeyTest extends TestCase {
 	private const PROPERTIES = ['7' => ['type' => 'string', 'facetable' => true], 'title' => ['type' => 'string']];
