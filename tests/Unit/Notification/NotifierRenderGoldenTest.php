@@ -38,6 +38,10 @@ use PHPUnit\Framework\TestCase;
  * for two parameter sets per subject, against a golden recorded before the renderers were split.
  *
  * @covers \OCA\OpenRegister\Notification\Notifier
+ * @covers \OCA\OpenRegister\Notification\SubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\ArchivalSubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\ReportSubjectRenderer
+ * @covers \OCA\OpenRegister\Notification\WorkSubjectRenderer
  */
 class NotifierRenderGoldenTest extends TestCase {
 
