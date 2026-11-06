@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
+use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -134,13 +135,6 @@ class RegistersController extends Controller {
 	private readonly RegisterMapperInterface $registerMapper;
 
 	/**
-	 * GitHub service for publishing to GitHub
-	 *
-	 * @var GitHubClientInterface
-	 */
-	private readonly GitHubClientInterface $githubService;
-
-	/**
 	 * The register service.
 	 *
 	 * @var RegisterService
@@ -204,6 +198,13 @@ class RegistersController extends Controller {
 	private readonly RegisterStatistics $statistics;
 
 	/**
+	 * The publisher of a register's OpenAPI file.
+	 *
+	 * @var RegisterGitHubPublisher
+	 */
+	private readonly RegisterGitHubPublisher $gitHub;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for register operations.
@@ -231,6 +232,7 @@ class RegistersController extends Controller {
 		$this->services = $services;
 		$this->downloads = new RegisterDownloads(session: $session, services: $services);
 		$this->statistics = new RegisterStatistics(services: $services);
+		$this->gitHub = new RegisterGitHubPublisher(request: $request, session: $session, services: $services);
 		$this->registerService = $services->registers->registerService;
 		$this->userSession = $session->userSession;
 		$this->session = $session;
@@ -249,7 +251,6 @@ class RegistersController extends Controller {
 		$this->importService = $services->transfer->importService;
 		$this->schemaMapper = $services->mappers->schemaMapper;
 		$this->registerMapper = $services->mappers->registerMapper;
-		$this->githubService = $services->integrations->githubService;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor completed.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1024,10 +1025,6 @@ class RegistersController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with publish result or error
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       GitHub publishing requires many conditional checks
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-5
 	 */
 	public function publishToGitHub(int $id): JSONResponse {
@@ -1037,155 +1034,17 @@ class RegistersController extends Controller {
 		// the existing importFromGitHub gate). Ideally callers would use a
 		// per-user token, but until that lands the endpoint must be admin-only.
 		if ($this->isCurrentUserAdmin() === false) {
-			return new JSONResponse(
-				data: ['error' => 'Only administrators may publish registers to GitHub'],
-				statusCode: 403
-			);
+			return new JSONResponse(data: ['error' => 'Only administrators may publish registers to GitHub'], statusCode: 403);
 		}
 
 		try {
-			$register = $this->registerMapper->find($id);
-			$target   = $this->gitHubPublishTarget(register: $register);
-			if (empty($target['owner']) === true || empty($target['repo']) === true) {
-				return new JSONResponse(data: ['error' => 'Owner and repo parameters are required'], statusCode: 400);
-			}
-
-			$this->logger->info(
-				message: '[RegistersController] Publishing register OAS to GitHub',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id, 'register_slug' => $register->getSlug()]
-					+ array_intersect_key($target, array_flip(['owner', 'repo', 'path', 'branch']))
-			);
-
-			// A pure OAS file, not a configuration file: no x-openregister metadata.
-			$oasData = $this->services->integrations->oasService->createOas((string)$register->getId());
-			$result  = $this->githubService->publishConfiguration(
-				owner: $target['owner'],
-				repo: $target['repo'],
-				path: $target['path'],
-				branch: $target['branch'],
-				content: json_encode($oasData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
-				commitMessage: $target['commitMessage'],
-				fileSha: $this->gitHubFileSha(target: $target)
-			);
-
-			$this->logger->info(
-				message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo']]
-					+ ['branch' => $target['branch'], 'path' => $target['path'], 'file_url' => $result['file_url'] ?? null]
-			);
-
-			$notes = $this->gitHubBranchNotes(target: $target, defaultBranch: $this->gitHubDefaultBranch(target: $target));
-			return new JSONResponse(
-				data: ['success' => true, 'message' => $notes['message'], 'registerId' => $register->getId()]
-					+ ['commit_sha' => $result['commit_sha'], 'commit_url' => $result['commit_url'], 'file_url' => $result['file_url']] + $notes,
-				statusCode: 200
-			);
+			return $this->gitHub->publish(register: $this->registerMapper->find($id));
 		} catch (DoesNotExistException $e) {
-			$this->logger->error(
-				message: '[RegistersController] Register not found for publishing',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id]
-			);
-			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+			return $this->gitHub->registerMissing(id: $id);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[RegistersController] Failed to publish register OAS to GitHub: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			return new JSONResponse(data: ['error' => 'Failed to publish register OAS: ' . $e->getMessage()], statusCode: 500);
-		}//end try
+			return $this->gitHub->failure(error: $e);
+		}
 	}//end publishToGitHub()
-
-	/**
-	 * Where to publish a register's OAS, from the request.
-	 *
-	 * The path loses its leading slash and defaults to `<slug>_openregister.json`.
-	 *
-	 * @param Register $register The register to publish.
-	 *
-	 * @return array{owner: string, repo: string, path: string, branch: string, commitMessage: string} The target.
-	 */
-	private function gitHubPublishTarget(Register $register): array {
-		$data = $this->request->getParams();
-		$path = ltrim($data['path'] ?? '', '/');
-		if (empty($path) === true) {
-			$path = ($register->getSlug() ?? 'register') . '_openregister.json';
-		}
-
-		return [
-			'owner'         => $data['owner'] ?? '',
-			'repo'          => $data['repo'] ?? '',
-			'path'          => $path,
-			'branch'        => $data['branch'] ?? 'main',
-			'commitMessage' => $data['commitMessage'] ?? "Update register OAS: {$register->getTitle()}",
-		];
-	}//end gitHubPublishTarget()
-
-	/**
-	 * The sha of the file at the publish target, null when it does not exist yet.
-	 *
-	 * @param array{owner: string, repo: string, path: string, branch: string} $target The publish target.
-	 *
-	 * @return string|null The sha.
-	 */
-	private function gitHubFileSha(array $target): ?string {
-		try {
-			return $this->githubService->getFileSha(owner: $target['owner'], repo: $target['repo'], path: $target['path'], branch: $target['branch']);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: '[RegistersController] File does not exist, will create new file',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $target['path']]
-			);
-			return null;
-		}
-	}//end gitHubFileSha()
-
-	/**
-	 * The default branch of the target repository, null when GitHub could not tell.
-	 *
-	 * @param array{owner: string, repo: string} $target The publish target.
-	 *
-	 * @return string|null The default branch.
-	 */
-	private function gitHubDefaultBranch(array $target): ?string {
-		try {
-			$repoInfo = $this->githubService->getRepositoryInfo(owner: $target['owner'], repo: $target['repo']);
-			return $repoInfo['default_branch'] ?? 'main';
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[RegistersController] Could not fetch repository default branch',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $target['owner'], 'repo' => $target['repo'], 'error' => $e->getMessage()]
-			);
-			return null;
-		}
-	}//end gitHubDefaultBranch()
-
-	/**
-	 * The branch part of a publish response, with its Code Search notes.
-	 *
-	 * GitHub Code Search primarily indexes the default branch, so a publish elsewhere says so.
-	 *
-	 * @param array{branch: string} $target        The publish target.
-	 * @param string|null           $defaultBranch The repository's default branch, if known.
-	 *
-	 * @return array{message: string, branch: string, default_branch: string|null, indexing_note: string} The fields.
-	 */
-	private function gitHubBranchNotes(array $target, ?string $defaultBranch): array {
-		$branch  = $target['branch'];
-		$message = 'Register OAS published successfully to GitHub. Note: GitHub Code Search may take a few minutes to index new files.';
-		if ($defaultBranch !== null && $defaultBranch !== '' && $branch !== $defaultBranch) {
-			$message = 'Register OAS published successfully to GitHub'
-				. ". Note: Published to branch '{$branch}' (default is '{$defaultBranch}')."
-				. ' GitHub Code Search primarily indexes the default branch. This may not appear in search results immediately.';
-		}
-
-		$indexingNote = 'File published successfully. GitHub Code Search indexing may take a few minutes.';
-		if ($defaultBranch !== null && $branch !== $defaultBranch) {
-			$indexingNote = "Published to non-default branch. For discovery, publish to '{$defaultBranch}' branch.";
-		}
-
-		return ['message' => $message, 'branch' => $branch, 'default_branch' => $defaultBranch, 'indexing_note' => $indexingNote];
-	}//end gitHubBranchNotes()
 
 	/**
 	 * Import data into a register
