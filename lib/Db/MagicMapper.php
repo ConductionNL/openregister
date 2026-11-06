@@ -664,22 +664,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Get the configured database table prefix.
 	 *
 	 * Reads `dbtableprefix` from the Nextcloud system config once per call,
-	 * defaulting to `oc_`. Centralising this replaces the hardcoded `'oc_'`
-	 * literals that previously broke every raw-SQL path on installs with a
-	 * custom prefix (BUG-DB-3).
+	 * defaulting to `oc_`. An empty value stays empty: the connection applies
+	 * the same value to every query builder table, so raw SQL must too.
 	 *
 	 * @return string The configured table prefix (e.g. `oc_`).
 	 */
 	private function getTablePrefix(): string {
-		// Fall back to the Nextcloud default when the system value is empty or
-		// unset. An empty prefix would yield unprefixed table names, breaking
-		// magic-table discovery and every raw-SQL table reference.
-		$prefix = (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
-		if ($prefix === '') {
-			return 'oc_';
-		}
-
-		return $prefix;
+		return (string)$this->config->getSystemValue('dbtableprefix', 'oc_');
 	}//end getTablePrefix()
 
 	/**
