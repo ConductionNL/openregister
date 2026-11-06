@@ -49,6 +49,7 @@ use ReflectionClass;
  * The evaluator's rule, and the shipped templates held to it.
  *
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class NotificationPlaceholdersAnsweredTest extends TestCase {
 

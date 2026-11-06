@@ -752,42 +752,6 @@ class MappingService {
 	}//end getCachedTemplate()
 
 	/**
-	 * Evicts ONE distributed-cache key for a mapping.
-	 *
-	 * NOT the write-path invalidation, despite what this docblock used to claim.
-	 * It said "Called by MappingMapper on create, update, or delete" and no such
-	 * call exists or ever did — `MappingMapper` invalidates through its OWN
-	 * private `invalidateCache()`, on all three write paths, against the same
-	 * `openregister_mapping_` prefix. The design the sentence described is real;
-	 * it just never ran through here.
-	 *
-	 * Prefer the mapper's version, and understand the difference before reaching
-	 * for this one: `getMapping()` caches under WHATEVER identifier the caller
-	 * passed, and `MappingMapper::find()` accepts an id, a uuid OR a slug — so
-	 * one mapping can sit in the cache under three keys. This method removes
-	 * exactly the one it is given. Evicting by id therefore leaves the uuid- and
-	 * slug-keyed copies live, which looks like a flush and is not one. The
-	 * mapper's `invalidateCache()` removes all three, from the entity.
-	 *
-	 * Kept as the single-key primitive for a caller that genuinely holds one key
-	 * and means one key.
-	 *
-	 * @param int|string $id The single cache key to remove (id, uuid or slug).
-	 *
-	 * @return void
-	 *
-	 * @spec exclude Single-key distributed-cache eviction primitive; the write-path invalidation is
-	 *              MappingMapper::invalidateCache(), pinned by MappingMapperCacheInvalidationTest.
-	 */
-	public function invalidateMappingCache(int|string $id): void {
-		if ($this->mappingCache === null) {
-			return;
-		}
-
-		$this->mappingCache->remove((string)$id);
-	}//end invalidateMappingCache()
-
-	/**
 	 * Converts a coordinate string to an array of coordinates.
 	 *
 	 * @param string $coordinates A string containing coordinates.

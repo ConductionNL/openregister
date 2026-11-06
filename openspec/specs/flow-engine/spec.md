@@ -1081,7 +1081,15 @@ steps reached, in order, each with `nodeId`, `type`, `label`, `status`, `itemsIn
 end `status`. It SHALL perform only steps that declare `IFlowSideEffectFree`; every other step SHALL be described and
 not performed. It SHALL write no run, object, audit trail entry or message and SHALL deliver nothing. It SHALL be
 refused without a session (401), without the `flow.update` right (403), for a flow the caller cannot see (404) and for
-an object the caller cannot read (404).
+an object the caller cannot read (404). A body with `payload` in place of an object SHALL walk the flow the same way
+with that data as the object, reading no object; a `payload` that is not a JSON object SHALL be refused (400).
+
+#### Scenario: Example payload
+
+- **GIVEN** the same flow
+- **WHEN** it is tried with the payload `{"amount": 5000}`
+- **THEN** the steps are the switch and the send-email, as for an object with amount 5000
+- **AND** no object is read, no mail is sent and no run is stored
 
 #### Scenario: Branch and message
 

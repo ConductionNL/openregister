@@ -30,7 +30,6 @@ namespace Unit\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter;
 use OCA\OpenRegister\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
 use OCP\IAppConfig;
@@ -327,20 +326,6 @@ class PdfOdtFallbackOrchestratorTest extends TestCase {
 
 		$this->assertTrue($this->buildOrchestrator()->isEnabled());
 	}//end testIsEnabledRequiresBothFlagAndBridge()
-
-	/**
-	 * The default-shipped Null converter reports unavailable + throws on use.
-	 *
-	 * @return void
-	 */
-	public function testNullConverterIsDormantByDefault(): void {
-		$converter = new NullNcOfficeConverter();
-
-		$this->assertFalse($converter->isAvailable());
-
-		$this->expectException(RuntimeException::class);
-		$converter->pdfToOdt('whatever');
-	}//end testNullConverterIsDormantByDefault()
 
 	/**
 	 * Build the orchestrator under test with the mocked collaborators.

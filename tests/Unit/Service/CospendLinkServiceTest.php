@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\CospendEntryKey;
 use OCA\OpenRegister\Db\CospendLink;
 use OCA\OpenRegister\Db\CospendLinkMapper;
 use OCA\OpenRegister\Service\CospendLinkService;
@@ -52,6 +53,7 @@ use Psr\Log\LoggerInterface;
  *
  * @group requires-app-cospend
  * @uses \OCA\OpenRegister\Service\LinkTarget
+ * @uses \OCA\OpenRegister\Db\CospendEntryKey
  */
 class CospendLinkServiceTest extends TestCase {
 
@@ -149,7 +151,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->method('findDuplicate')
-			->with('abc-123', 'project', 'proj-1', null)
+			->with('abc-123', new CospendEntryKey('project', 'proj-1'))
 			->willReturn(new CospendLink());
 
 		$this->expectException(Exception::class);
@@ -182,7 +184,7 @@ class CospendLinkServiceTest extends TestCase {
 		$this->setupUser();
 		$this->appManager->method('isEnabledForUser')->willReturn(true);
 		$this->mapper->method('findDuplicate')
-			->with('abc-123', 'bill', 'proj-1', 7)
+			->with('abc-123', (new CospendEntryKey('bill', 'proj-1'))->withBill(7))
 			->willReturn(new CospendLink());
 
 		$this->expectException(Exception::class);

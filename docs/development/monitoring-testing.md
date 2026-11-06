@@ -53,9 +53,6 @@ recordMetric(
     ?string $userId = null
 ): void
 
-// Get files processed per day
-getFilesProcessedPerDay(int $days = 30): array
-
 // Get embedding generation stats
 getEmbeddingStats(int $days = 30): array
 // Returns: total, successful, failed, success_rate, estimated_cost_usd
@@ -67,9 +64,6 @@ getSearchLatencyStats(int $days = 7): array
 // Get storage growth data
 getStorageGrowth(int $days = 30): array
 // Returns: daily_vectors_added, current_storage_mb, avg_vectors_per_day
-
-// Get all dashboard metrics
-getDashboardMetrics(): array
 
 // Clean old metrics (retention)
 cleanOldMetrics(int $retentionDays = 90): int
