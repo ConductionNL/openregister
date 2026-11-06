@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
 use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCP\IUser;
@@ -173,8 +174,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
-			->method('findRowsByTable')
-			->with(5, 'alice', 10, 20)
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withPage(limit: 10, offset: 20))
 			->willReturn([['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]]);
 
 		$objects = $this->provider()->findAll($register, $schema, ['limit' => 10, 'offset' => 20], ['tableId' => 5]);
@@ -196,7 +197,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
 			->method('findRow')
-			->with(42, 5, 'alice')
+			->with(42, new TablesReadScope(5, 'alice'))
 			->willReturn(['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]);
 
 		$object = $this->provider()->find($register, $schema, '42', ['tableId' => 5]);
@@ -228,7 +229,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$uuid = $this->deriver->deriveObjectUuid(tableId: 5, rowId: 42);
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
-		$this->reader->method('findRowsByTable')->willReturn(
+		$this->reader->method('findRows')->willReturn(
 			[
 				['id' => 41, 'cells' => []],
 				['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]],
@@ -251,8 +252,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 		[$register, $schema] = $this->binding();
 
 		$this->reader->method('countRows')->willReturnCallback(
-			static function (int $id, string $userId, bool $isView) {
-				return ($isView === true) ? 7 : 3;
+			static function (TablesReadScope $scope) {
+				return ($scope->isView() === true) ? 7 : 3;
 			}
 		);
 
@@ -261,7 +262,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 	}//end testCountTableAndView()
 
 	/**
-	 * A config.viewId binds a Tables View (findRowsByView, not findRowsByTable).
+	 * A config.viewId binds a Tables View.
 	 *
 	 * @return void
 	 */
@@ -270,10 +271,9 @@ class TablesObjectSourceProviderTest extends TestCase {
 
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
-			->method('findRowsByView')
-			->with(9, 'alice', 200, 0)
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 200, offset: 0))
 			->willReturn([['id' => 1, 'cells' => []]]);
-		$this->reader->expects($this->never())->method('findRowsByTable');
 
 		$objects = $this->provider()->findAll($register, $schema, [], ['tableId' => 5, 'viewId' => 9]);
 
@@ -356,8 +356,8 @@ class TablesObjectSourceProviderTest extends TestCase {
 	public function testUnknownUuidIsNull(): void {
 		[$register, $schema] = $this->binding();
 		$this->reader->expects($this->once())
-			->method('findRowsByView')
-			->with(9, 'alice', 1000, 0)
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 1000, offset: 0))
 			->willReturn([['id' => 1, 'cells' => []]]);
 
 		$uuid = $this->deriver->deriveObjectUuid(tableId: 5, rowId: 2);

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCA\Tables\Service\ColumnService;
 use OCA\Tables\Service\FakeEntity;
@@ -44,6 +45,7 @@ use Stringable;
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesTableReader
  * @covers \OCA\OpenRegister\Service\ObjectSource\TablesEntityDescriptors
  * @uses   \OCA\OpenRegister\Service\ObjectSource\ContainerServiceLookup
+ * @uses   \OCA\OpenRegister\Service\ObjectSource\TablesReadScope
  */
 #[RunTestsInSeparateProcesses]
 #[PreserveGlobalState(false)]
@@ -164,7 +166,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function tableRows(TablesTableReader $reader): array {
-		return $reader->findRowsByTable(tableId: 5, userId: 'alice', limit: 10, offset: 20);
+		return $reader->findRows(scope: (new TablesReadScope(5, 'alice'))->withPage(limit: 10, offset: 20));
 	}//end tableRows()
 
 	/**
@@ -175,7 +177,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return array<int, array<string, mixed>> The rows.
 	 */
 	private function viewRows(TablesTableReader $reader): array {
-		return $reader->findRowsByView(viewId: 9, userId: 'alice', limit: 10, offset: 20);
+		return $reader->findRows(scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 10, offset: 20));
 	}//end viewRows()
 
 	/**
@@ -186,7 +188,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return int The count.
 	 */
 	private function countTable(TablesTableReader $reader): int {
-		return $reader->countRows(id: 5, userId: 'alice');
+		return $reader->countRows(scope: new TablesReadScope(5, 'alice'));
 	}//end countTable()
 
 	/**
@@ -197,7 +199,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return int The count.
 	 */
 	private function countView(TablesTableReader $reader): int {
-		return $reader->countRows(id: 9, userId: 'alice', isView: true);
+		return $reader->countRows(scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9));
 	}//end countView()
 
 	/**
@@ -208,7 +210,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 	 * @return array<string, mixed>|null The row.
 	 */
 	private function boundRow(TablesTableReader $reader): ?array {
-		return $reader->findRow(rowId: 42, tableId: 5, userId: 'alice');
+		return $reader->findRow(rowId: 42, scope: new TablesReadScope(5, 'alice'));
 	}//end boundRow()
 
 	/**
@@ -530,6 +532,7 @@ class TablesTableReaderGoldenTest extends TestCase {
 
 		$this->assertNull($this->boundRow($reader));
 		$this->assertSame([], RowService::$calls);
+		$this->assertCount(1, $this->warnings, 'only the failed lookup is logged');
 	}//end testFindRowWithoutPermissionServiceRefuses()
 
 	/**
