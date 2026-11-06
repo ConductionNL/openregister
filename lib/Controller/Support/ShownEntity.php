@@ -80,7 +80,7 @@ final class ShownEntity {
 		}
 
 		if ($this->extend !== []) {
-			$extras['objects'] = $this->show->objectService->getExtendedObjects();
+			$extras['objects'] = $this->show->services->objects->getExtendedObjects();
 		}
 
 		return $extras;

@@ -9,6 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
+use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -55,6 +56,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
  * @covers \OCA\OpenRegister\Controller\Support\ObjectReadOptions
  * @covers \OCA\OpenRegister\Controller\Support\ObjectShow
+ * @covers \OCA\OpenRegister\Controller\Support\ShowServices
  * @covers \OCA\OpenRegister\Controller\Support\ShownEntity
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectRequestParams
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectStore
@@ -134,7 +136,7 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 	}
 
 	public function testHasEntitiesNeedsBoth(): void {
-		$service = $this->createMock(ObjectService::class);
+		$service = new ShowServices($this->createMock(ObjectService::class), $this->createMock(PermissionHandler::class), $this->createMock(CacheHandlerInterface::class));
 		$both = ['registerEntity' => new Register(), 'schemaEntity' => new Schema()];
 		$this->assertTrue((new ObjectShow('1', ['r', 's'], $both, $service))->hasEntities());
 		$this->assertFalse((new ObjectShow('1', ['r', 's'], ['schemaEntity' => null] + $both, $service))->hasEntities());

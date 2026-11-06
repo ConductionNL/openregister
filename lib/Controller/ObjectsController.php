@@ -49,6 +49,7 @@ use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
 use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
+use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Controller\Support\ShownEntity;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
@@ -2901,10 +2902,27 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		return $this->shownObject(
-			show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, objectService: $objectService)
-		);
+		$services = $this->showServices(objectService: $objectService);
+
+		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
 	}//end show()
+
+	/**
+	 * What show() asks of the request's object service.
+	 *
+	 * @param ObjectService $objectService The object service.
+	 *
+	 * @return ShowServices The services.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function showServices(ObjectService $objectService): ShowServices {
+		return new ShowServices(
+			objects: $objectService,
+			permissions: $objectService->getPermissionHandler(),
+			names: $objectService->getCacheHandler()
+		);
+	}//end showServices()
 
 	/**
 	 * Read one object for show().
@@ -3086,8 +3104,7 @@ class ObjectsController extends Controller {
 			$shown->resolvedExtras()
 		);
 		if (in_array('_names', $shown->extend, true) === true) {
-			$cacheHandler = $shown->show->objectService->getCacheHandler();
-			$rendered['@self']['names'] = $this->collectNamesForResponse(renderedData: $rendered, cacheHandler: $cacheHandler);
+			$rendered['@self']['names'] = $this->collectNamesForResponse(renderedData: $rendered, cacheHandler: $shown->show->services->names);
 		}
 
 		return $rendered;
@@ -3189,8 +3206,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$permissions = $shown->show->objectService->getPermissionHandler();
-			$renderedData['@self']['actions'] = $permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
 		} catch (\Throwable $e) {
 			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
 			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
