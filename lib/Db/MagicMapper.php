@@ -2600,18 +2600,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the tables one after the other gave the same question a different
 	 * order, and a different page 2, depending on the path that ran.
 	 *
+	 * A numeric `_limit` is bounded by MAX_PAGE_SIZE, as on the UNION path;
+	 * only `_limit=false` asks for every row.
+	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		// Each table answers the merged question's first `offset + limit` rows,
 		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
-		$pageQuery = $query;
+		$pageQuery = $this->boundedPageQuery(query: $query);
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
 		// The UNION path's own order keys, so both paths answer the same
@@ -2661,6 +2665,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $allResults;
 	}//end searchAcrossMultipleTablesSequential()
+
+	/**
+	 * The query with a numeric `_limit` reduced to MAX_PAGE_SIZE.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return array The query; an unlimited one is returned as it came.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
+	 */
+	private function boundedPageQuery(array $query): array {
+		$limit = QueryLimit::normalise($query['_limit'] ?? null);
+		if ($limit !== null) {
+			$query['_limit'] = min($limit, self::MAX_PAGE_SIZE);
+		}
+
+		return $query;
+	}//end boundedPageQuery()
 
 	/**
 	 * The rows one register+schema pair contributes to a sequential search.
