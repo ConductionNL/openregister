@@ -75,6 +75,11 @@ use Psr\Log\LoggerInterface;
  * Tests that a save cannot reach a draft its caller cannot read.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation
+ * @uses   \OCA\OpenRegister\Service\Object\SavedObjectScope
+ * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -96,6 +101,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
  */
 class ObjectServiceHiddenRowWriteTest extends TestCase {
 

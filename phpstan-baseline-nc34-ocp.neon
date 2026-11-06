@@ -49,12 +49,12 @@ parameters:
 		-
 			message: "#^Parameter \\$renderAs of class OCP\\\\AppFramework\\\\Http\\\\TemplateResponse constructor expects ''\\|'base'\\|'error'\\|'guest'\\|'public'\\|'user', '500' given\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Http\\\\ContentSecurityPolicy\\:\\:allowEvalScript\\(\\)\\.$#"
 			count: 1
-			path: lib/Controller/GraphQLController.php
+			path: lib/Search/Controller/GraphQLController.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
