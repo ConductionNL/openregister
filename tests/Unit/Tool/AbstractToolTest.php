@@ -4,8 +4,8 @@ namespace Unit\Tool;
 
 use BadMethodCallException;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Tool\AbstractTool;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Tool\AbstractTool;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
