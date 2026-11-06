@@ -204,6 +204,10 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its emails.'], 403);
+			}
+
 			$data = $this->request->getParams();
 
 			if (empty($data['mailAccountId']) === true || empty($data['mailMessageId']) === true) {
