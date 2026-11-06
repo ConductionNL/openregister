@@ -89,6 +89,40 @@ class HmacJwsVerifierTest extends TestCase {
 	}//end testATamperedPayloadIsRefused()
 
 	/**
+	 * Signature segments that are not canonical base64url, each carrying the valid signature bytes.
+	 *
+	 * The hash_hmac() code this verifier replaced decoded the signature leniently and accepted
+	 * all of these; web-token decodes base64url strictly (RFC 7515 §2) and refuses them, so one
+	 * signature has one encoding.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function nonCanonicalSignatures(): array {
+		return [
+			'padded with ='        => ['='],
+			'trailing junk byte'   => ['!'],
+			'trailing whitespace'  => [' '],
+		];
+	}//end nonCanonicalSignatures()
+
+	/**
+	 * A valid signature in a non-canonical base64url form is refused.
+	 *
+	 * @param string $suffix What is appended to the signature segment.
+	 *
+	 * @dataProvider nonCanonicalSignatures
+	 *
+	 * @return void
+	 */
+	public function testANonCanonicalSignatureEncodingIsRefused(string $suffix): void {
+		$secret = str_repeat('a', 32);
+		$token = $this->sign(algorithm: 'HS256', hash: 'sha256', secret: $secret);
+
+		$this->assertTrue(condition: (new HmacJwsVerifier())->verify(token: $token, algorithm: 'HS256', key: $secret));
+		$this->assertFalse(condition: (new HmacJwsVerifier())->verify(token: $token . $suffix, algorithm: 'HS256', key: $secret));
+	}//end testANonCanonicalSignatureEncodingIsRefused()
+
+	/**
 	 * A token signed as HS512 does not verify against a consumer pinned to HS256.
 	 *
 	 * @return void
