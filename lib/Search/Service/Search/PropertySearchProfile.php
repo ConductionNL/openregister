@@ -103,6 +103,23 @@ final class PropertySearchProfile {
 	private const DATE_FORMATS = ['date', 'date-time', 'datetime', 'time'];
 
 	/**
+	 * What a property declares about being searched: its match type, input control and whether the type was declared.
+	 *
+	 * @param array<string, mixed> $property The property definition.
+	 *
+	 * @return array{matchType: string, inputControl: string, declared: bool}
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	public function declaredBy(array $property): array {
+		return [
+			'matchType' => self::matchTypeFor(property: $property),
+			'inputControl' => self::inputControlFor(property: $property),
+			'declared' => self::declaresMatchType(property: $property),
+		];
+	}//end declaredBy()
+
+	/**
 	 * Whether the property declares a match type of its own.
 	 *
 	 * @param array $property The property definition.
