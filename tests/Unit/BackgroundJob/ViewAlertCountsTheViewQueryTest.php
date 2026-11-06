@@ -26,13 +26,25 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Service\Object\ContentSearchHandler;
+use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\IAppContainer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -126,6 +138,11 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 				continue;
 			}
 
+			if ($type->getName() === QueryHandler::class) {
+				$args[] = $this->realQueryHandler();
+				continue;
+			}
+
 			$args[] = $this->createMock($type->getName());
 		}
 
@@ -141,6 +158,31 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 
 		return $service;
 	}//end realObjectService()
+
+	/**
+	 * The real QueryHandler and reference resolver over this test's mapper.
+	 *
+	 * @return QueryHandler
+	 */
+	private function realQueryHandler(): QueryHandler {
+		return new QueryHandler(
+			$this->mapper,
+			$this->createMock(GetObject::class),
+			$this->createMock(RenderObject::class),
+			$this->createMock(SearchQueryHandler::class),
+			$this->createMock(FacetHandler::class),
+			$this->createMock(PerformanceOptimizationHandler::class),
+			$this->createMock(ContentSearchHandler::class),
+			$this->createMock(IAppContainer::class),
+			new NullLogger(),
+			$this->createMock(IRequest::class),
+			referenceResolver: new SearchReferenceResolver(
+				$this->createMock(RegisterMapperInterface::class),
+				$this->createMock(SchemaMapperInterface::class),
+				new NullLogger()
+			)
+		);
+	}//end realQueryHandler()
 
 	/**
 	 * 🔴 The live case: three records behind the view, no alert at gte 4.
