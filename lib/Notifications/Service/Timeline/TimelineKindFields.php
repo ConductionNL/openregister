@@ -50,28 +50,46 @@ class TimelineKindFields {
 	 * @throws TimelineValidationException When a value does not fit.
 	 */
 	public function validated(): array {
-		$accepted = [];
-		$errors = [];
-
-		foreach (($this->kind->getProperties() ?? []) as $name => $declaration) {
-			if (is_string($name) === false) {
-				continue;
-			}
-
-			$reason = $this->checkProperty(name: $name, declaration: $declaration);
-			if ($reason !== null) {
-				$errors[$name] = $reason;
-			} else if (array_key_exists($name, $this->fields) === true) {
-				$accepted[$name] = $this->fields[$name];
-			}
-		}
-
+		$errors = $this->errors();
 		if ($errors !== []) {
 			throw new TimelineValidationException($errors);
 		}
 
+		$accepted = [];
+		foreach (array_keys($this->declarations()) as $name) {
+			if (array_key_exists($name, $this->fields) === true) {
+				$accepted[$name] = $this->fields[$name];
+			}
+		}
+
 		return $accepted;
 	}//end validated()
+
+	/**
+	 * The reason each declared property does not fit.
+	 *
+	 * @return array<string,string> The reasons by property name.
+	 */
+	private function errors(): array {
+		$errors = [];
+		foreach ($this->declarations() as $name => $declaration) {
+			$reason = $this->checkProperty(name: $name, declaration: $declaration);
+			if ($reason !== null) {
+				$errors[$name] = $reason;
+			}
+		}
+
+		return $errors;
+	}//end errors()
+
+	/**
+	 * The kind's property declarations by name.
+	 *
+	 * @return array<string,mixed> The declarations.
+	 */
+	private function declarations(): array {
+		return array_filter(($this->kind->getProperties() ?? []), 'is_string', ARRAY_FILTER_USE_KEY);
+	}//end declarations()
 
 	/**
 	 * Judge one declared property against what the entry carries.
