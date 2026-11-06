@@ -124,25 +124,31 @@ final class LifecycleSeed {
 	 */
 	private function parentValue(array $seed, string $parentRef): mixed {
 		if ($parentRef === '') {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
-				context: ['field' => $seed['field'], 'from' => $seed['from']]
-			);
+			$this->noOp(reason: 'parent reference is empty', seed: $seed);
 			return null;
 		}
 
 		$parent = $this->loadParent(parentRef: $parentRef, field: $seed['field']);
 		$value = (($parent?->getObject() ?? [])[$seed['parentPath']] ?? null);
 		if ($parent !== null && self::isFilled(value: $value) === false) {
-			$this->logger->debug(
-				message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
-				context: ['field' => $seed['field'], 'parentPath' => $seed['parentPath']]
-			);
+			$this->noOp(reason: 'parent initial value is empty', seed: $seed);
 			return null;
 		}
 
 		return $value;
 	}//end parentValue()
+
+	/**
+	 * Record why a seed did nothing.
+	 *
+	 * @param string                                                 $reason Why.
+	 * @param array{from: string, parentPath: string, field: string} $seed   The seed.
+	 *
+	 * @return void
+	 */
+	private function noOp(string $reason, array $seed): void {
+		$this->logger->debug(message: '[SaveObject] Lifecycle seed no-op: ' . $reason, context: $seed);
+	}//end noOp()
 
 	/**
 	 * Load the parent, or null when it cannot be loaded.
