@@ -332,6 +332,26 @@ PEM;
 		}
 	}//end testAnHmacSecretOfTheHashOutputSizeIsAccepted()
 
+
+	/**
+	 * An HMAC token signed with another secret is refused, for every HS algorithm.
+	 *
+	 * @return void
+	 */
+	public function testAnHmacTokenSignedWithAnotherSecretIsRefused(): void {
+		foreach ([['HS256', 32], ['HS384', 48], ['HS512', 64]] as [$algorithm, $bytes]) {
+			$this->consumers = [];
+			$this->consumer(algorithm: $algorithm, publicKey: str_repeat('k', $bytes));
+
+			try {
+				$this->service()->authorizeJwt(authorization: 'Bearer ' . $this->hmacToken(algorithm: $algorithm, secret: str_repeat('x', $bytes)));
+				$this->fail(message: $algorithm . ' signed with another secret must be refused');
+			} catch (AuthenticationException $e) {
+				$this->assertSame(expected: [], actual: $this->volatileUsers, message: $algorithm);
+			}
+		}
+	}//end testAnHmacTokenSignedWithAnotherSecretIsRefused()
+
 	public function testAReusedJtiIsRefused(): void {
 		$secret = str_repeat('k', 32);
 		$this->consumer('HS256', $secret);
