@@ -188,7 +188,7 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 		$response = $this->controller(request: $this->validationRequest(), service: $service)->validate();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['success' => false, 'error' => 'validate', 'message' => 'Validation failed'], $response->getData());
+		$this->assertSame(['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'], $response->getData());
 	}
 
 	public function testValidateLeavesAnErrorToTheServer(): void {
