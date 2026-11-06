@@ -6350,6 +6350,34 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A finished PDF export is recorded with the row count the export service answers.
+	 *
+	 * @return void
+	 */
+	public function testAPdfExportIsRecordedWithItsRowCount(): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) {
+				$this->assertSame('pdf', $args['format'] ?? $args[2]);
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? 'pdf' : $default
+		);
+		$this->exportService->method('exportToPdf')->willReturn('%PDF');
+		$this->exportService->expects($this->once())->method('countExportRows')->willReturn(4);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertSame('%PDF', $result->render());
+	}
+
+	/**
 	 * A JSON export drops the route from its filters and answers a named JSON file.
 	 *
 	 * @return void
