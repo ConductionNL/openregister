@@ -35,6 +35,8 @@ final class SchemaDefaults {
 	 *
 	 * @return void
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+	 *
 	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
 	 */
 	public function ensureIdentifiers(Schema $schema): void {

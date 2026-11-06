@@ -132,7 +132,7 @@ final class SchemaComposition {
 	 */
 	private function propertiesOf(mixed $parentRef): array {
 		try {
-			return $this->resolve(schema: ($this->loadSchema)($parentRef))->getProperties();
+			return ($this->resolve(schema: ($this->loadSchema)($parentRef))->getProperties() ?? []);
 		} catch (Exception $e) {
 			return [];
 		}
@@ -287,7 +287,7 @@ final class SchemaComposition {
 		}
 
 		$schema->setProperties(
-			(new PropertyDelta())->of(parentProperties: $parents['properties'], childProperties: $schema->getProperties())
+			(new PropertyDelta())->between(parentProperties: $parents['properties'], childProperties: $schema->getProperties())
 		);
 		$schema->setRequired(array_values(array_diff($schema->getRequired(), $parents['required'])));
 	}//end extractAllOfDelta()
@@ -300,7 +300,7 @@ final class SchemaComposition {
 	 * @return array{properties: array<mixed>, required: array<mixed>}
 	 */
 	private function mergedParents(array $allOf): array {
-		$references = array_map([new ParentReference(), 'of'], $allOf);
+		$references = array_map([new ParentReference(), 'fromEntry'], $allOf);
 		$merged = self::NOTHING_MERGED;
 		foreach (array_filter($references, static fn (mixed $ref): bool => $ref !== null) as $parentRef) {
 			$parent = ($this->loadSchema)($parentRef);
@@ -334,9 +334,9 @@ final class SchemaComposition {
 	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return int|string
+	 * @return mixed An integer id, a uuid, or 'unknown'.
 	 */
-	private function idOf(Schema $schema): int|string {
+	private function idOf(Schema $schema): mixed {
 		return ($schema->getId() ?? $schema->getUuid() ?? 'unknown');
 	}//end idOf()
 }//end class

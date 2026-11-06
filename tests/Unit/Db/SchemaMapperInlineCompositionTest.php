@@ -226,14 +226,14 @@ class SchemaMapperInlineCompositionTest extends TestCase {
 	public function testRefEntryStillResolvesToAParentIdentifier(): void {
 		$reference = new ParentReference();
 
-		$this->assertSame('Person', $reference->of(['$ref' => '#/components/schemas/Person']));
-		$this->assertSame('person', $reference->of('person'));
-		$this->assertSame(42, $reference->of(42));
-		$this->assertNull($reference->of(['if' => [], 'then' => []]));
-		$this->assertNull($reference->of(['required' => ['a']]));
-		$this->assertNull($reference->of(''));
-		$this->assertNull($reference->of(0));
-		$this->assertNull($reference->of(['$ref' => 'schemas/']));
-		$this->assertNull($reference->of(['$ref' => 5]));
+		$this->assertSame('Person', $reference->fromEntry(['$ref' => '#/components/schemas/Person']));
+		$this->assertSame('person', $reference->fromEntry('person'));
+		$this->assertSame(42, $reference->fromEntry(42));
+		$this->assertNull($reference->fromEntry(['if' => [], 'then' => []]));
+		$this->assertNull($reference->fromEntry(['required' => ['a']]));
+		$this->assertNull($reference->fromEntry(''));
+		$this->assertNull($reference->fromEntry(0));
+		$this->assertNull($reference->fromEntry(['$ref' => 'schemas/']));
+		$this->assertNull($reference->fromEntry(['$ref' => 5]));
 	}
 }
