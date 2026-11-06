@@ -105,6 +105,17 @@ class ZaaktypeCaseSkeletonMapperGoldenTest extends TestCase {
 			],
 			'only junk statuses' => [['statustypen' => ['a', 3, null]]],
 			'only invalid results' => [['resultaattypen' => ['a', ['omschrijving' => ' ']]]],
+			'null archival terms' => [['resultaattypen' => [['omschrijving' => ' Verleend ', 'archiefnominatie' => null, 'selectielijstklasse' => 0]]]],
+			'numeric volgnummer strings and ties' => [
+				[
+					'statustypen' => [
+						['volgnummer' => '10', 'omschrijving' => 'Tien'],
+						['volgnummer' => 9.5, 'omschrijving' => 'Negen'],
+						['volgnummer' => 9, 'omschrijving' => 'Ook negen'],
+						['volgnummer' => null, 'omschrijving' => 'Leeg'],
+					],
+				],
+			],
 			'full' => [$full],
 		];
 	}//end cases()
