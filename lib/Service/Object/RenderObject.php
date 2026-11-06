@@ -4425,7 +4425,7 @@ class RenderObject {
 		}
 
 		// If it's a UUID, try to find the schema by UUID.
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === true) {
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === 1) {
 			try {
 				$schema = $this->schemaMapper->find($cleanSchemaRef);
 				return (string)$schema->getId();

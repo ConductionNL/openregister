@@ -228,13 +228,14 @@ class RenderObjectDeepTest extends TestCase {
 	}
 
 	/**
-	 * Test resolveSchemaReference with UUID falls through to slug resolution
-	 * because preg_match === true check fails (returns 1, not true).
+	 * Test resolveSchemaReference with a UUID no schema answers to falls through
+	 * to slug resolution and keeps the reference.
 	 */
 	public function testResolveSchemaReferenceWithUuidFallsThrough(): void {
 		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
 
-		// UUID is not numeric and not a path, so it goes to slug-based findAll
+		$this->schemaMapper->method('find')
+			->willThrowException(new \Exception('not found'));
 		$this->schemaMapper->method('findAll')
 			->willReturn([]);
 
