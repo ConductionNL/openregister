@@ -99,19 +99,19 @@ final class OutdatedTranslations {
 	 * @return void
 	 */
 	private function flagProperty(ObjectUpdateRun $run, mixed $property): void {
-		$language = $this->projection->resolveSourceLanguage(
+		$source = $this->projection->resolveSourceLanguage(
 			schema: $run->schema,
 			object: $run->updated,
 			property: $property,
 			registerDefault: $run->register->getDefaultLanguage()
 		);
-		$old = self::languageValue(value: ((array)($run->oldObject->getObject() ?? []))[$property] ?? null, language: $language);
-		$new = self::languageValue(value: ((array)($run->updated->getObject() ?? []))[$property] ?? null, language: $language);
+		$old = self::languageValue(value: ((array)($run->oldObject->getObject() ?? []))[$property] ?? null, language: $source);
+		$new = self::languageValue(value: ((array)($run->updated->getObject() ?? []))[$property] ?? null, language: $source);
 		if ($old === null || $new === null || $old === $new) {
 			return;
 		}
 
-		$this->status->markDerivedTranslationsOutdated(objectUuid: (string)$run->updated->getUuid(), property: (string)$property, sourceLanguage: $language);
+		$this->status->markDerivedTranslationsOutdated(objectUuid: (string)$run->updated->getUuid(), property: (string)$property, sourceLanguage: $source);
 	}//end flagProperty()
 
 	/**
