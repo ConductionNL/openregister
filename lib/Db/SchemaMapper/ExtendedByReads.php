@@ -207,7 +207,11 @@ final class ExtendedByReads {
 	 */
 	private function rows(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
+		$rows = [];
+		for ($row = $result->fetch(); $row !== false; $row = $result->fetch()) {
+			$rows[] = $row;
+		}
+
 		$result->closeCursor();
 
 		return $rows;
