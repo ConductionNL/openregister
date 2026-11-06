@@ -38,6 +38,7 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\AuthorizationUnresolvableException
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  */
 class PermissionHandlerExpandRolesGoldenTest extends TestCase {
 
