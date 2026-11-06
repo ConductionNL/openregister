@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Support\OrderParameter;
+
 /**
  * Resolve the ORDER BY keys of a cross-schema UNION search and sort rows on them.
  *
@@ -71,10 +73,10 @@ final class MagicUnionOrder {
 	 */
 	public function keys(array $query): array {
 		$hasSearch = empty($query['_search'] ?? null) === false;
-		$order = $query['_order'] ?? [];
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		$keys = [];
-		if (empty($order) === false && is_array($order) === true) {
+		if ($order !== []) {
 			$keys = $this->requestedKeys(order: $order, hasSearch: $hasSearch);
 		} elseif ($hasSearch === true) {
 			$keys[] = ['row' => self::SCORE, 'sql' => self::SCORE, 'dir' => 'DESC'];
@@ -110,37 +112,22 @@ final class MagicUnionOrder {
 	/**
 	 * The keys of an `_order` parameter.
 	 *
-	 * @param array $order     The `_order` parameter.
-	 * @param bool  $hasSearch Whether the query searches.
+	 * @param array<array-key, string> $order     Field => direction.
+	 * @param bool                     $hasSearch Whether the query searches.
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}>
 	 */
 	private function requestedKeys(array $order, bool $hasSearch): array {
 		$keys = [];
 		foreach ($order as $field => $direction) {
-			$key = $this->fieldKey(field: $field, hasSearch: $hasSearch);
+			$key = $this->fieldKey(field: (string) $field, hasSearch: $hasSearch);
 			if ($key !== null) {
-				$keys[] = $key + ['dir' => $this->direction(value: $direction)];
+				$keys[] = $key + ['dir' => $direction];
 			}
 		}
 
 		return $keys;
 	}//end requestedKeys()
-
-	/**
-	 * The SQL direction of an `_order` value.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string
-	 */
-	private function direction(mixed $value): string {
-		if (strtoupper((string)$value) === 'DESC') {
-			return 'DESC';
-		}
-
-		return 'ASC';
-	}//end direction()
 
 	/**
 	 * The row key and SQL of one ordered field, or null when it is left out.
