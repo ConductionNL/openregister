@@ -1570,7 +1570,9 @@ class PermissionHandler {
 
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
-		return $this->denialAnswer(question: (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: $principals, object: $object));
+		$question = new DenialQuestion(authorization: $authorization, action: $action);
+
+		return $this->denialAnswer(question: $question->about(principals: $principals, object: $object));
 	}//end denialFor()
 
 	/**
