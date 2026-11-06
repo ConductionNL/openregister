@@ -107,7 +107,7 @@ final class SchemaAnnotation {
 	 * @spec exclude shared save-time plumbing, not a capability of its own
 	 */
 	public function shape(): array {
-		return ['properties' => ($this->schema->getProperties() ?? []), $this->key => $this->value()];
+		return ['properties' => $this->schema->getProperties(), $this->key => $this->value()];
 	}//end shape()
 
 	/**
@@ -152,6 +152,47 @@ final class SchemaAnnotation {
 			messages: array_map(static fn (array $err): string => $err['code'] . ': ' . $err['message'], $errors)
 		);
 	}//end refuseCoded()
+
+	/**
+	 * Refuse the save as an invalid declaration, if there are errors.
+	 *
+	 * "Invalid" is load-bearing: SchemasController maps the exception to a 400
+	 * by matching that word, and the codes ride along so a client can tell which
+	 * rule refused.
+	 *
+	 * @param array<int, array{code: string, message: string}> $errors The validator's errors.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When there is an error.
+	 *
+	 * @spec exclude shared save-time plumbing, not a capability of its own
+	 */
+	public function refuseInvalid(array $errors): void {
+		if ($errors !== []) {
+			$details = array_map(static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'], $errors);
+			throw new Exception('Invalid ' . $this->key . ' declaration: ' . implode(' ', $details));
+		}
+	}//end refuseInvalid()
+
+	/**
+	 * The log line about keys the block does not know, which are ignored rather than refused.
+	 *
+	 * @param array<int, array{message: string}> $warnings The findings about unknown keys.
+	 *
+	 * @return string
+	 *
+	 * @spec exclude shared save-time plumbing, not a capability of its own
+	 */
+	public function unknownKeysNotice(array $warnings): string {
+		return sprintf(
+			'[OpenRegister.SchemaMapper] Ignored %d unknown %s key(s) on schema "%s": %s',
+			count($warnings),
+			$this->key,
+			(string)($this->schema->getSlug() ?? ''),
+			implode(' ', array_map(static fn (array $finding) => $finding['message'], $warnings))
+		);
+	}//end unknownKeysNotice()
 
 	/**
 	 * Refuse the save with the given messages, if there are any.
