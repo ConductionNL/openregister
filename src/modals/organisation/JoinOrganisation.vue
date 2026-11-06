@@ -7,7 +7,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 	<NcDialog
 		:name="t('openregister', 'Add User to Organisation')"
 		size="normal"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>

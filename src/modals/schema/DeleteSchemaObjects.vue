@@ -9,7 +9,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 		v-if="navigationStore.dialog === 'deleteSchemaObjects'"
 		name="Delete Schema Objects"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<!-- Confirmation State -->
 		<div v-if="!success && !loading">
 			<p>
@@ -95,7 +95,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<SchemaStatsBlock
 					:objectCount="0"
 					:objectStats="null"
-					:loading="false"
+					:loading="countLoading"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
 		</div>
@@ -183,6 +183,7 @@ export default {
 			error: false,
 			success: false,
 			deletionResult: null,
+			countLoading: true,
 			objectCount: 0,
 			objectStats: null,
 			hardDelete: [],
@@ -191,7 +192,6 @@ export default {
 
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		navigationStore: () => navigationStore,
 		schemaStore: () => schemaStore,
 	},
 
@@ -207,26 +207,6 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param {string|boolean} newDialog
-			 * @spec exclude watcher loading object count when dialog opens
-			 */
-			handler(newDialog) {
-				if (
-					newDialog === 'deleteSchemaObjects'
-					&& schemaStore.schemaItem?.id
-				) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
 		},
 	},
 
@@ -242,6 +222,7 @@ export default {
 		 * @spec exclude form-state loader for schema object count via schemaStore
 		 */
 		async loadObjectCount() {
+			this.countLoading = true
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
@@ -255,6 +236,8 @@ export default {
 				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 				this.objectCount = 0
 				this.objectStats = null
+			} finally {
+				this.countLoading = false
 			}
 		},
 

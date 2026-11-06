@@ -2,7 +2,6 @@
 	<NcDialog
 		:name="t('openregister', 'Edit View')"
 		size="large"
-		:canClose="true"
 		@closing="handleClose">
 		<NcNoteCard v-if="success" type="success">
 			<p>{{ t('openregister', 'View successfully updated') }}</p>

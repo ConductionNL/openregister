@@ -65,6 +65,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\NullFilter;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -397,15 +398,7 @@ class MagicSearchHandler {
 		$limit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
-		$order = $query['_order'] ?? [];
-		// The _order parameter may arrive as a JSON string from URL query params.
-		if (is_string($order) === true) {
-			$decoded = json_decode($order, true);
-			$order = [];
-			if (is_array($decoded) === true) {
-				$order = $decoded;
-			}
-		}
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		$count = $query['_count'] ?? false;
 		$search = $query['_search'] ?? null;
@@ -1732,11 +1725,11 @@ class MagicSearchHandler {
 	 * The quoted column of a property, so reserved words (e.g. 'case', 'status') stay valid SQL.
 	 *
 	 * @param SearchLeafScope $scope    The search scope.
-	 * @param string          $propName The property name.
+	 * @param int|string      $propName The property name; PHP keeps a numeric array key as an int.
 	 *
 	 * @return string The quoted column name.
 	 */
-	private function searchColumn(SearchLeafScope $scope, string $propName): string {
+	private function searchColumn(SearchLeafScope $scope, int|string $propName): string {
 		return $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $propName), isPostgres: $scope->isPostgres);
 	}//end searchColumn()
 
@@ -4060,6 +4053,7 @@ class MagicSearchHandler {
 		$properties = $sort->schema->getProperties();
 
 		foreach ($sort->order as $field => $direction) {
+			$field = (string) $field;
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';

@@ -44,11 +44,11 @@ use Throwable;
  * Guarded plain-array reader over the Nextcloud Tables internal services.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Every Tables-entity getter is individually guarded (soft dependency).
  */
 class TablesTableReader {
 
 	use ContainerServiceLookup;
+	use TablesEntityDescriptors;
 
 	/**
 	 * Label the warnings of this reader carry.
@@ -143,6 +143,27 @@ class TablesTableReader {
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
 	public function listTables(string $userId): array {
+		$result = [];
+		foreach ($this->tableEntities(userId: $userId) as $table) {
+			$id = $this->intGetter(entity: $table, getter: 'getId');
+			if ($id !== null) {
+				$result[] = ['id' => $id, 'title' => $this->stringGetter(entity: $table, getter: 'getTitle')];
+			}
+		}
+
+		return $result;
+	}//end listTables()
+
+	/**
+	 * Ask Tables for the table entities the acting user may read.
+	 *
+	 * @param string $userId The acting user id.
+	 *
+	 * @return array<int, object> The table entities, empty on failure.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function tableEntities(string $userId): array {
 		$service = $this->resolveService(class: self::TABLE_SERVICE);
 		if ($service === null) {
 			return [];
@@ -152,31 +173,12 @@ class TablesTableReader {
 			// Fourth argument (createTutorial) MUST stay false: the default of
 			// TableService::findAll() creates a tutorial table for first-time
 			// users, which a read-only reconcile pass must never do.
-			$tables = $service->findAll($userId, false, false, false);
+			return $this->entities(list: $service->findAll($userId, false, false, false));
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:tables] could not list tables: ' . $e->getMessage());
 			return [];
 		}
-
-		$result = [];
-		foreach ((array)$tables as $table) {
-			if (is_object($table) === false) {
-				continue;
-			}
-
-			$id = $this->intGetter(entity: $table, getter: 'getId');
-			if ($id === null) {
-				continue;
-			}
-
-			$result[] = [
-				'id' => $id,
-				'title' => $this->stringGetter(entity: $table, getter: 'getTitle'),
-			];
-		}//end foreach
-
-		return $result;
-	}//end listTables()
+	}//end tableEntities()
 
 	/**
 	 * Collect full table descriptors (`{id, title, columns}`) visible to any of
@@ -196,22 +198,32 @@ class TablesTableReader {
 	public function collectTableDescriptors(array $userIds): array {
 		$byId = [];
 		foreach ($userIds as $userId) {
-			foreach ($this->listTables(userId: $userId) as $table) {
-				$tableId = (int)$table['id'];
-				if (isset($byId[$tableId]) === true) {
-					continue;
-				}
-
-				$byId[$tableId] = [
-					'id' => $tableId,
-					'title' => (string)$table['title'],
-					'columns' => $this->listColumns(tableId: $tableId, userId: $userId),
-				];
-			}
+			$byId = $this->withTablesOf(byId: $byId, userId: $userId);
 		}
 
 		return array_values($byId);
 	}//end collectTableDescriptors()
+
+	/**
+	 * Add the descriptors of the tables one user sees that are not collected yet.
+	 *
+	 * @param array<int, array<string, mixed>> $byId The descriptors so far, by table id.
+	 * @param string $userId The acting user id.
+	 *
+	 * @return array<int, array<string, mixed>> The descriptors, by table id.
+	 *
+	 * @spec openspec/specs/tables-virtual-register/spec.md
+	 */
+	private function withTablesOf(array $byId, string $userId): array {
+		foreach ($this->listTables(userId: $userId) as $table) {
+			$tableId = $table['id'];
+			if (isset($byId[$tableId]) === false) {
+				$byId[$tableId] = $table + ['columns' => $this->listColumns(tableId: $tableId, userId: $userId)];
+			}
+		}
+
+		return $byId;
+	}//end withTablesOf()
 
 	/**
 	 * List a table's columns as plain descriptors.
@@ -236,16 +248,7 @@ class TablesTableReader {
 			return [];
 		}
 
-		$result = [];
-		foreach ((array)$columns as $column) {
-			if (is_object($column) === false) {
-				continue;
-			}
-
-			$result[] = $this->columnDescriptor(column: $column);
-		}
-
-		return $result;
+		return array_map(fn (object $column): array => $this->columnDescriptor(column: $column), $this->entities(list: $columns));
 	}//end listColumns()
 
 	/**
@@ -393,267 +396,19 @@ class TablesTableReader {
 			return [];
 		}
 
-		$result = [];
-		foreach ((array)$rows as $row) {
-			if (is_object($row) === false) {
-				continue;
-			}
-
-			$result[] = $this->rowDescriptor(row: $row);
-		}
-
-		return $result;
+		return array_map(fn (object $row): array => $this->rowDescriptor(row: $row), $this->entities(list: $rows));
 	}//end rows()
 
 	/**
-	 * Extract a plain descriptor from a Tables Row2 entity.
+	 * The entities in a Tables reply, skipping anything that is not an object.
 	 *
-	 * @param object $row The Tables row entity.
+	 * @param mixed $list The reply.
 	 *
-	 * @return array<string, mixed> The row descriptor.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function rowDescriptor(object $row): array {
-		$cells = [];
-		foreach ($this->arrayGetter(entity: $row, getter: 'getData') as $cell) {
-			$cellArray = $this->cellToArray(cell: $cell);
-			if ($cellArray !== null) {
-				$cells[] = $cellArray;
-			}
-		}
-
-		return [
-			'id' => ($this->intGetter(entity: $row, getter: 'getId') ?? 0),
-			'createdBy' => $this->nullableStringGetter(entity: $row, getter: 'getCreatedBy'),
-			'createdAt' => $this->dateGetter(entity: $row, getter: 'getCreatedAt'),
-			'lastEditBy' => $this->nullableStringGetter(entity: $row, getter: 'getLastEditBy'),
-			'lastEditAt' => $this->dateGetter(entity: $row, getter: 'getLastEditAt'),
-			'cells' => $cells,
-		];
-	}//end rowDescriptor()
-
-	/**
-	 * Normalise a single Tables cell (array or object) to `{columnId, value}`.
-	 *
-	 * @param mixed $cell The raw cell (array or object).
-	 *
-	 * @return array{columnId: int, value: mixed}|null The normalised cell, or null.
+	 * @return array<int, object> The entities.
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function cellToArray(mixed $cell): ?array {
-		if (is_array($cell) === true) {
-			if (isset($cell['columnId']) === false) {
-				return null;
-			}
-
-			return ['columnId' => (int)$cell['columnId'], 'value' => ($cell['value'] ?? null)];
-		}
-
-		if (is_object($cell) === true) {
-			$columnId = $this->intGetter(entity: $cell, getter: 'getColumnId');
-			if ($columnId === null) {
-				return null;
-			}
-
-			return ['columnId' => $columnId, 'value' => $this->rawGetter(entity: $cell, getter: 'getValue')];
-		}
-
-		return null;
-	}//end cellToArray()
-
-	/**
-	 * Extract a plain descriptor from a Tables Column entity.
-	 *
-	 * @param object $column The Tables column entity.
-	 *
-	 * @return array<string, mixed> The column descriptor.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function columnDescriptor(object $column): array {
-		return [
-			'id' => ($this->intGetter(entity: $column, getter: 'getId') ?? 0),
-			'title' => $this->stringGetter(entity: $column, getter: 'getTitle'),
-			'technicalName' => $this->nullableStringGetter(entity: $column, getter: 'getTechnicalName'),
-			'type' => $this->stringGetter(entity: $column, getter: 'getType'),
-			'subtype' => $this->nullableStringGetter(entity: $column, getter: 'getSubtype'),
-			'mandatory' => ($this->boolGetter(entity: $column, getter: 'getMandatory') === true),
-			'numberMin' => $this->floatGetter(entity: $column, getter: 'getNumberMin'),
-			'numberMax' => $this->floatGetter(entity: $column, getter: 'getNumberMax'),
-			'numberDecimals' => $this->intGetter(entity: $column, getter: 'getNumberDecimals'),
-			'selectionOptions' => $this->selectionOptions(column: $column),
-			'relationTargetTableId' => $this->intGetter(entity: $column, getter: 'getRelationTableId'),
-		];
-	}//end columnDescriptor()
-
-	/**
-	 * Extract selection-option labels from a Tables column, tolerant of shapes.
-	 *
-	 * @param object $column The Tables column entity.
-	 *
-	 * @return array<int, string> The option labels.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function selectionOptions(object $column): array {
-		$options = [];
-		foreach ($this->arrayGetter(entity: $column, getter: 'getSelectionOptions') as $option) {
-			if (is_array($option) === true) {
-				$options[] = (string)($option['label'] ?? $option['value'] ?? '');
-				continue;
-			}
-
-			$options[] = (string)$option;
-		}
-
-		return array_values(array_filter($options, static fn (string $label) => $label !== ''));
-	}//end selectionOptions()
-
-	/**
-	 * Read an integer getter from a Tables entity, guarded (magic getters).
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return int|null The integer value, or null when unavailable.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function intGetter(object $entity, string $getter): ?int {
-		$value = $this->rawGetter(entity: $entity, getter: $getter);
-		if ($value === null || is_scalar($value) === false) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end intGetter()
-
-	/**
-	 * Read a float getter from a Tables entity, guarded.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return float|null The float value, or null when unavailable.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function floatGetter(object $entity, string $getter): ?float {
-		$value = $this->rawGetter(entity: $entity, getter: $getter);
-		if ($value === null || is_scalar($value) === false) {
-			return null;
-		}
-
-		return (float)$value;
-	}//end floatGetter()
-
-	/**
-	 * Read a boolean getter from a Tables entity, guarded.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return bool The boolean value (false when unavailable).
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function boolGetter(object $entity, string $getter): bool {
-		return (bool)$this->rawGetter(entity: $entity, getter: $getter);
-	}//end boolGetter()
-
-	/**
-	 * Read a string getter from a Tables entity, defaulting to '' on failure.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return string The string value, or ''.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function stringGetter(object $entity, string $getter): string {
-		return (string)($this->nullableStringGetter(entity: $entity, getter: $getter) ?? '');
-	}//end stringGetter()
-
-	/**
-	 * Read a string getter from a Tables entity, returning null when absent.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return string|null The string value, or null.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function nullableStringGetter(object $entity, string $getter): ?string {
-		$value = $this->rawGetter(entity: $entity, getter: $getter);
-		if ($value === null || is_scalar($value) === false) {
-			return null;
-		}
-
-		return (string)$value;
-	}//end nullableStringGetter()
-
-	/**
-	 * Read an ISO-8601 date getter from a Tables entity, or null.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return string|null The ISO-8601 date string, or null.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function dateGetter(object $entity, string $getter): ?string {
-		$value = $this->rawGetter(entity: $entity, getter: $getter);
-		if ($value instanceof \DateTimeInterface) {
-			return $value->format(\DateTime::ATOM);
-		}
-
-		if (is_string($value) === true && $value !== '') {
-			return $value;
-		}
-
-		return null;
-	}//end dateGetter()
-
-	/**
-	 * Read an array getter from a Tables entity, defaulting to [] on failure.
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return array<int|string, mixed> The array value, or [].
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function arrayGetter(object $entity, string $getter): array {
-		$value = $this->rawGetter(entity: $entity, getter: $getter);
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end arrayGetter()
-
-	/**
-	 * Invoke a getter on a Tables entity, guarded (OCP Entity magic getters make
-	 * method_exists unreliable, so each call is wrapped).
-	 *
-	 * @param object $entity The Tables entity.
-	 * @param string $getter The getter method name.
-	 *
-	 * @return mixed The raw value, or null on failure.
-	 *
-	 * @spec openspec/specs/tables-virtual-register/spec.md
-	 */
-	private function rawGetter(object $entity, string $getter): mixed {
-		try {
-			return $entity->$getter();
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end rawGetter()
+	private function entities(mixed $list): array {
+		return array_values(array_filter((array)$list, 'is_object'));
+	}//end entities()
 }//end class

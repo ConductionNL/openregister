@@ -7,11 +7,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Tool;
 
-use OCA\OpenRegister\Tool\AgentTool;
-use OCA\OpenRegister\Tool\ApplicationTool;
-use OCA\OpenRegister\Tool\ObjectsTool;
-use OCA\OpenRegister\Tool\RegisterTool;
-use OCA\OpenRegister\Tool\SchemaTool;
+use OCA\OpenRegister\Mcp\Tool\AgentTool;
+use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
+use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
+use OCA\OpenRegister\Mcp\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -20,11 +20,11 @@ use PHPUnit\Framework\TestCase;
  *
  * Compared with fixtures/tool-function-definitions-golden.json; set UPDATE_GOLDEN=1 to rewrite it.
  *
- * @covers \OCA\OpenRegister\Tool\AgentTool
- * @covers \OCA\OpenRegister\Tool\ApplicationTool
- * @covers \OCA\OpenRegister\Tool\ObjectsTool
- * @covers \OCA\OpenRegister\Tool\RegisterTool
- * @covers \OCA\OpenRegister\Tool\SchemaTool
+ * @covers \OCA\OpenRegister\Mcp\Tool\AgentTool
+ * @covers \OCA\OpenRegister\Mcp\Tool\ApplicationTool
+ * @covers \OCA\OpenRegister\Mcp\Tool\ObjectsTool
+ * @covers \OCA\OpenRegister\Mcp\Tool\RegisterTool
+ * @covers \OCA\OpenRegister\Mcp\Tool\SchemaTool
  */
 class ToolFunctionDefinitionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/tool-function-definitions-golden.json';

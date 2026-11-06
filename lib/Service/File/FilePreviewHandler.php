@@ -25,6 +25,7 @@ use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\PreviewSize;
 
 /**
  * Handles file preview and thumbnail generation.

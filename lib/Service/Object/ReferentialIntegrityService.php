@@ -39,14 +39,17 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep;
 use OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
@@ -465,48 +468,98 @@ class ReferentialIntegrityService {
 		// missed RESTRICT destroys data the user asked the system to protect.
 		$version = $this->schemaCatalogueVersion();
 		$cache = $this->cacheFactory->createDistributed(self::CACHE_PREFIX);
-		if ($version !== null) {
-			$cached = $cache->get(self::CACHE_KEY_INDEX);
-			if (is_array($cached) === true
-				&& ($cached['version'] ?? null) === $version
-				&& is_array($cached['index'] ?? null) === true
-			) {
-				$this->relationIndex = $cached['index'];
-				return;
-			}
+		$this->relationIndex = self::cachedRelationIndex(cached: $this->cachedIndexEntry(cache: $cache, version: $version), version: $version);
+		if ($this->relationIndex !== null) {
+			return;
 		}
 
-		$this->relationIndex = [];
+		if ($this->buildRelationIndex() === true && $version !== null) {
+			$cache->set(self::CACHE_KEY_INDEX, ['version' => $version, 'index' => $this->relationIndex], self::CACHE_TTL);
+		}
+	}//end ensureRelationIndex()
 
-		try {
-			$allSchemas = $this->schemaMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[ReferentialIntegrity] Failed to load schemas for relation index',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			return;
+	/**
+	 * Build the relation index from every schema.
+	 *
+	 * @return bool False when the schemas could not be loaded; the index stays empty.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function buildRelationIndex(): bool {
+		$this->relationIndex = [];
+		$allSchemas = $this->allSchemasOrNull(purpose: 'relation index');
+		if ($allSchemas === null) {
+			return false;
 		}
 
 		foreach ($allSchemas as $schema) {
 			$this->indexRelationsForSchema(schema: $schema, allSchemas: $allSchemas);
 		}
 
+		return true;
+	}//end buildRelationIndex()
+
+	/**
+	 * The stored index entry, when a catalogue version can be trusted.
+	 *
+	 * @param ICache      $cache   The distributed cache.
+	 * @param string|null $version The catalogue version.
+	 *
+	 * @return array The entry, empty when there is none.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function cachedIndexEntry(ICache $cache, ?string $version): array {
+		$entry = null;
 		if ($version !== null) {
-			$cache->set(
-				self::CACHE_KEY_INDEX,
-				[
-					'version' => $version,
-					'index' => $this->relationIndex,
-				],
-				self::CACHE_TTL
-			);
+			$entry = $cache->get(self::CACHE_KEY_INDEX);
 		}
 
-	}//end ensureRelationIndex()
+		if (is_array($entry) === false) {
+			return [];
+		}
+
+		return $entry;
+	}//end cachedIndexEntry()
+
+	/**
+	 * The index in a cache entry, when the entry belongs to this catalogue version.
+	 *
+	 * @param array       $cached  The cache entry.
+	 * @param string|null $version The catalogue version.
+	 *
+	 * @return array|null The index.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function cachedRelationIndex(array $cached, ?string $version): ?array {
+		if (($cached['version'] ?? false) !== $version || is_array($cached['index'] ?? null) === false) {
+			return null;
+		}
+
+		return $cached['index'];
+	}//end cachedRelationIndex()
+
+	/**
+	 * Every schema, or null when they cannot be loaded.
+	 *
+	 * @param string $purpose What they are for, for the warning.
+	 *
+	 * @return array|null The schemas.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function allSchemasOrNull(string $purpose): ?array {
+		try {
+			return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] Failed to load schemas for ' . $purpose,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end allSchemasOrNull()
 
 	/**
 	 * Compute a token that changes whenever any schema definition changes.
@@ -547,47 +600,12 @@ class ReferentialIntegrityService {
 	 */
 	private function schemaCatalogueVersion(): ?string {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'version', 'updated')
-				->from('openregister_schemas');
-			$result = $qb->executeQuery();
-			$rows = $result->fetchAll();
-			$result->closeCursor();
-
-			$parts = [];
-			$newest = null;
-			foreach ($rows as $row) {
-				$stamp = (string)($row['updated'] ?? '');
-				$parts[] = ((string)($row['id'] ?? '')) . ':'
-					. ((string)($row['version'] ?? '')) . ':' . $stamp;
-
-				if ($stamp === '') {
-					continue;
-				}
-
-				$epoch = strtotime($stamp);
-				if ($epoch === false) {
-					// An unparseable stamp means the freshness of this row
-					// cannot be established, so the token cannot be trusted.
-					return null;
-				}
-
-				if ($newest === null || $epoch > $newest) {
-					$newest = $epoch;
-				}
-			}
-
-			// Refuse a token that has not settled past the timestamp(0)
-			// truncation boundary. A stamp in the future (clock skew, or a
-			// caller-supplied value) yields a negative age and is refused by
-			// the same comparison.
-			if ($newest !== null && (time() - $newest) < self::VERSION_SETTLE_SECONDS) {
+			$rows = $this->catalogueRows();
+			if (self::catalogueSettled(newest: self::newestStamp(rows: $rows)) === false) {
 				return null;
 			}
 
-			sort($parts);
-
-			return count($parts) . '|' . md5(implode("\n", $parts));
+			return self::catalogueHash(rows: $rows);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				message: '[ReferentialIntegrity] Could not compute schema catalogue version',
@@ -597,6 +615,78 @@ class ReferentialIntegrityService {
 		}//end try
 
 	}//end schemaCatalogueVersion()
+
+	/**
+	 * The id, version and update stamp of every schema.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function catalogueRows(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'version', 'updated')->from('openregister_schemas');
+		$result = $qb->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end catalogueRows()
+
+	/**
+	 * The newest update stamp in the rows.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The catalogue rows.
+	 *
+	 * @return int|false|null The epoch, null without stamps, false on a stamp that cannot be read.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function newestStamp(array $rows): int|false|null {
+		$stamps = array_map(static fn (array $row): string => (string)($row['updated'] ?? ''), $rows);
+		$epochs = array_map('strtotime', array_filter($stamps, static fn (string $stamp): bool => $stamp !== ''));
+		if (in_array(false, $epochs, true) === true) {
+			return false;
+		}
+
+		if ($epochs === []) {
+			return null;
+		}
+
+		return max($epochs);
+	}//end newestStamp()
+
+	/**
+	 * Whether the catalogue has been quiet long enough to trust a version.
+	 *
+	 * @param int|false|null $newest The newest stamp, as newestStamp() gives it.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function catalogueSettled(int|false|null $newest): bool {
+		return $newest !== false && ($newest === null || (time() - $newest) >= self::VERSION_SETTLE_SECONDS);
+	}//end catalogueSettled()
+
+	/**
+	 * The version string of the catalogue rows, independent of their order.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The catalogue rows.
+	 *
+	 * @return string The version.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private static function catalogueHash(array $rows): string {
+		$parts = array_map(
+			static fn (array $row): string => ((string)($row['id'] ?? '')) . ':' . ((string)($row['version'] ?? '')) . ':' . ((string)($row['updated'] ?? '')),
+			$rows
+		);
+		sort($parts);
+
+		return count($parts) . '|' . md5(implode("\n", $parts));
+	}//end catalogueHash()
 
 	/**
 	 * Hydrate the schema entities and schema-to-register map on demand.
@@ -619,16 +709,8 @@ class ReferentialIntegrityService {
 		$this->schemaCache = [];
 		$this->schemaRegisterMap = [];
 
-		try {
-			$allSchemas = $this->schemaMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[ReferentialIntegrity] Failed to load schemas for detail cache',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
+		$allSchemas = $this->allSchemasOrNull(purpose: 'detail cache');
+		if ($allSchemas === null) {
 			return;
 		}
 
@@ -651,58 +733,9 @@ class ReferentialIntegrityService {
 	 */
 	private function buildSchemaRegisterMap(): void {
 		try {
-			$allRegisters = $this->registerMapper->findAll(
-				_rbac: false,
-				_multitenancy: false
-			);
-			$registerCache = [];
-			foreach ($allRegisters as $register) {
-				$registerCache[(string)$register->getId()] = $register;
-			}
-
-			// Raw SQL: QueryBuilder does not target the information_schema metadata
-			// tables. The schema-resolution function differs across platforms —
-			// MySQL/MariaDB expose DATABASE() while PostgreSQL exposes current_schema()
-			// (mirrors lib/Db/MagicMapper.php:1697-1707). get_debug_type() is used
-			// instead of get_class() so a null platform (e.g. a mocked IDBConnection
-			// in unit tests) degrades to the MySQL syntax rather than fatal-erroring.
-			$platform = $this->db->getDatabasePlatform();
-			$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-			$schemaFn = 'DATABASE()';
-			if ($isPostgres === true) {
-				$schemaFn = 'current_schema()';
-			}//end if
-
-			// phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
-			$sql = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute();
-			$tables = [];
-			while (($row = $stmt->fetch()) !== false) {
-				// If fetch() returns something other than a row array or false
-				// (e.g. null from a mocked statement), stop the loop to avoid
-				// spinning forever on non-advancing iteration.
-				if (is_array($row) === false) {
-					break;
-				}
-
-				if (isset($row['table_name']) === false || is_string($row['table_name']) === false) {
-					continue;
-				}
-
-				$tables[] = substr($row['table_name'], 3);
-			}
-
-			foreach ($tables as $tableName) {
-				if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
-					$regId = $matches[1];
-					$schemaId = $matches[2];
-					if (isset($registerCache[$regId]) === true
-						&& isset($this->schemaRegisterMap[$schemaId]) === false
-					) {
-						$this->schemaRegisterMap[$schemaId] = $registerCache[$regId];
-					}
-				}
+			$registers = $this->registersById();
+			foreach ($this->magicTableNames() as $tableName) {
+				$this->mapTableToRegister(tableName: $tableName, registers: $registers);
 			}
 		} catch (\Exception $e) {
 			$this->logger->debug(
@@ -712,6 +745,79 @@ class ReferentialIntegrityService {
 		}//end try
 
 	}//end buildSchemaRegisterMap()
+
+	/**
+	 * The magic table names in this database, without their table prefix.
+	 *
+	 * @return array<int, string> The table names.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function magicTableNames(): array {
+		$stmt = $this->db->prepare(
+			"SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' "
+			. "AND table_schema = {$this->currentSchemaFunction()}"
+		);
+		$stmt->execute();
+		$tables = [];
+		while (($row = $stmt->fetch()) !== false && is_array($row) === true) {
+			if (is_string($row['table_name'] ?? null) === true) {
+				$tables[] = substr($row['table_name'], 3);
+			}
+		}
+
+		return $tables;
+	}//end magicTableNames()
+
+	/**
+	 * The SQL function that names the current schema on this database.
+	 *
+	 * @return string The function call.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function currentSchemaFunction(): string {
+		if (stripos(get_debug_type($this->db->getDatabasePlatform()), 'PostgreSQL') !== false) {
+			return 'current_schema()';
+		}
+
+		return 'DATABASE()';
+	}//end currentSchemaFunction()
+
+	/**
+	 * Every register, by id.
+	 *
+	 * @return array<int|string, Register> The registers.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function registersById(): array {
+		$registers = [];
+		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
+			$registers[(string)$register->getId()] = $register;
+		}
+
+		return $registers;
+	}//end registersById()
+
+	/**
+	 * Remember the register of the schema a magic table belongs to; the first table found wins.
+	 *
+	 * @param string     $tableName The table name.
+	 * @param Register[] $registers The registers by id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function mapTableToRegister(string $tableName, array $registers): void {
+		if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1
+			&& isset($registers[$matches[1]]) === true
+			&& isset($this->schemaRegisterMap[$matches[2]]) === false
+		) {
+			$this->schemaRegisterMap[$matches[2]] = $registers[$matches[1]];
+		}
+	}//end mapTableToRegister()
 
 	/**
 	 * Index referential integrity relations for a single schema.
@@ -724,57 +830,84 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void {
-		$schemaId = (string)$schema->getId();
-		$properties = $schema->getProperties();
-		if ($properties === null) {
+		foreach (($schema->getProperties() ?? []) as $propertyName => $property) {
+			$this->indexRelation(
+				relation: new DeclaredRelation(
+					sourceSchemaId: (string)$schema->getId(),
+					property: $propertyName,
+					definition: $property
+				),
+				allSchemas: $allSchemas
+			);
+		}
+	}//end indexRelationsForSchema()
+
+	/**
+	 * Add one declared relation to the index, when it has an action and a target that resolves.
+	 *
+	 * @param DeclaredRelation $relation   The property read as a relation.
+	 * @param array            $allSchemas All schemas for ref resolution.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function indexRelation(DeclaredRelation $relation, array $allSchemas): void {
+		$onDelete = $this->extractOnDelete(property: $relation->definition);
+		if ($onDelete === null || $onDelete === 'NO_ACTION') {
 			return;
 		}
 
-		foreach ($properties as $propertyName => $property) {
-			$onDelete = $this->extractOnDelete(property: $property);
-			if ($onDelete === null || $onDelete === 'NO_ACTION') {
-				continue;
-			}
+		$targetSchemaId = $this->relationTargetId(relation: $relation, allSchemas: $allSchemas);
+		if ($targetSchemaId === null || $this->isIgnoredKeyRelation(relation: $relation, onDelete: $onDelete) === true) {
+			return;
+		}
 
-			$targetRef = $this->extractTargetRef(property: $property);
-			if ($targetRef === null) {
-				continue;
-			}
+		$referenceKey = $this->extractReferenceKey(property: $relation->definition);
+		$this->relationIndex[$targetSchemaId][] = $relation->indexEntry(onDelete: $onDelete, referenceKey: $referenceKey);
+	}//end indexRelation()
 
-			$targetSchemaId = $this->resolveSchemaRef(ref: $targetRef, allSchemas: $allSchemas);
-			if ($targetSchemaId === null) {
-				continue;
-			}
+	/**
+	 * The schema ID a declared relation points at.
+	 *
+	 * @param DeclaredRelation $relation   The property read as a relation.
+	 * @param array            $allSchemas All schemas for ref resolution.
+	 *
+	 * @return string|null The schema ID, or null without a target or when it does not resolve.
+	 */
+	private function relationTargetId(DeclaredRelation $relation, array $allSchemas): ?string {
+		$targetRef = $this->extractTargetRef(property: $relation->definition);
+		if ($targetRef === null) {
+			return null;
+		}
 
-			$referenceKey = $this->extractReferenceKey(property: $property);
-			if ($referenceKey !== null && $onDelete !== 'RESTRICT') {
-				// A reference by key (a code, not a uuid) only refuses. CASCADE,
-				// SET_NULL and SET_DEFAULT rewrite or delete by uuid, so on a key
-				// they would act on the wrong value; the relation is left out and
-				// the schema author told why, rather than half-applied.
-				$this->logger->warning(
-					message: '[ReferentialIntegrity] referenceKey is only honoured with onDelete RESTRICT; relation ignored',
-					context: ['schemaId' => $schemaId, 'property' => $propertyName, 'onDelete' => $onDelete]
-				);
-				continue;
-			}
+		return $this->resolveSchemaRef(ref: $targetRef, allSchemas: $allSchemas);
+	}//end relationTargetId()
 
-			$isArray = isset($property['type']) && $property['type'] === 'array';
+	/**
+	 * Whether a reference by key asks for more than a refusal, and is left out of the index.
+	 *
+	 * A reference by key (a code, not a uuid) only refuses. CASCADE, SET_NULL and
+	 * SET_DEFAULT rewrite or delete by uuid, so on a key they would act on the wrong
+	 * value; the relation is left out and the schema author told why, rather than
+	 * half-applied.
+	 *
+	 * @param DeclaredRelation $relation The property read as a relation.
+	 * @param string           $onDelete The uppercase onDelete action.
+	 *
+	 * @return bool True when the relation is ignored.
+	 */
+	private function isIgnoredKeyRelation(DeclaredRelation $relation, string $onDelete): bool {
+		if ($this->extractReferenceKey(property: $relation->definition) === null || $onDelete === 'RESTRICT') {
+			return false;
+		}
 
-			if (isset($this->relationIndex[$targetSchemaId]) === false) {
-				$this->relationIndex[$targetSchemaId] = [];
-			}
-
-			$this->relationIndex[$targetSchemaId][] = [
-				'sourceSchemaId' => $schemaId,
-				'property' => $propertyName,
-				'onDelete' => $onDelete,
-				'isArray' => $isArray,
-				'referenceKey' => $referenceKey,
-			];
-		}//end foreach
-
-	}//end indexRelationsForSchema()
+		$this->logger->warning(
+			message: '[ReferentialIntegrity] referenceKey is only honoured with onDelete RESTRICT; relation ignored',
+			context: ['schemaId' => $relation->sourceSchemaId, 'property' => $relation->property, 'onDelete' => $onDelete]
+		);
+		return true;
+	}//end isIgnoredKeyRelation()
 
 	/**
 	 * Extract the onDelete action from a property definition.
@@ -805,28 +938,15 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function extractTargetRef(array $property): ?string {
-		// Direct $ref on the property.
-		if (isset($property['$ref']) === true) {
-			return (string)$property['$ref'];
-		}
-
-		// Array items with $ref.
-		if (isset($property['items']['$ref']) === true) {
-			return (string)$property['items']['$ref'];
-		}
-
 		// A reference that is not an object relation (a code citing a row by
 		// key) names its target with `referenceSchema`, so the `$ref` relation
 		// machinery (rendering, _extend, uuid validation) is not engaged.
-		if (isset($property['referenceSchema']) === true) {
-			return (string)$property['referenceSchema'];
+		$ref = ($property['$ref'] ?? $property['items']['$ref'] ?? $property['referenceSchema'] ?? $property['items']['referenceSchema'] ?? null);
+		if ($ref === null) {
+			return null;
 		}
 
-		if (isset($property['items']['referenceSchema']) === true) {
-			return (string)$property['items']['referenceSchema'];
-		}
-
-		return null;
+		return (string)$ref;
 	}//end extractTargetRef()
 
 	/**
@@ -852,8 +972,6 @@ class ReferentialIntegrityService {
 	 *
 	 * @return string|null The resolved schema ID, or null if not found.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies needed
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function resolveSchemaRef(string $ref, array $allSchemas): ?string {
@@ -861,21 +979,9 @@ class ReferentialIntegrityService {
 		$refClean = basename($ref);
 
 		foreach ($allSchemas as $schema) {
-			$id = (string)$schema->getId();
-			$slug = $schema->getSlug();
-			$uuid = $schema->getUuid();
-
-			// Match by ID, slug, or UUID.
-			if ($id === $ref || $id === $refClean) {
-				return $id;
-			}
-
-			if ($slug !== null && ($slug === $ref || $slug === $refClean)) {
-				return $id;
-			}
-
-			if ($uuid !== null && ($uuid === $ref || $uuid === $refClean)) {
-				return $id;
+			$names = [(string)$schema->getId(), $schema->getSlug(), $schema->getUuid()];
+			if (in_array($ref, $names, true) === true || in_array($refClean, $names, true) === true) {
+				return $names[0];
 			}
 		}
 
@@ -892,32 +998,55 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function walkDeletionGraph(DeletionGraphNode $node): void {
-		// Cycle detection.
-		$uuid = $node->object->getUuid();
-		if ($node->walk->hasVisited(uuid: $uuid) === true) {
+		if ($this->entersNode(node: $node) === false) {
 			return;
 		}
 
-		// Depth limit.
+		foreach ($this->relationsCiting(object: $node->object) as $dep) {
+			$this->walkDependent(node: $node, dep: $dep);
+		}
+	}//end walkDeletionGraph()
+
+	/**
+	 * Mark a node visited, unless it was visited before or lies past the depth limit.
+	 *
+	 * @param DeletionGraphNode $node The object being analyzed for deletion.
+	 *
+	 * @return bool True when the walk goes on from this node.
+	 */
+	private function entersNode(DeletionGraphNode $node): bool {
+		$uuid = $node->object->getUuid();
+		if ($node->walk->hasVisited(uuid: $uuid) === true) {
+			return false;
+		}
+
 		if ($node->depth >= self::MAX_DEPTH) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Max depth reached during graph walk',
 				context: ['uuid' => $uuid, 'depth' => $node->depth]
 			);
-			return;
+			return false;
 		}
 
 		$node->walk->markVisited(uuid: $uuid);
+		return true;
+	}//end entersNode()
 
-		$schemaId = $node->object->getSchema();
-		if ($schemaId === null || isset($this->relationIndex[$schemaId]) === false) {
-			return;
+	/**
+	 * The relation index entries that point at an object's schema.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<int, array<string, mixed>> The entries, none for an object without a schema.
+	 */
+	private function relationsCiting(ObjectEntity $object): array {
+		$schemaId = $object->getSchema();
+		if ($schemaId === null) {
+			return [];
 		}
 
-		foreach ($this->relationIndex[$schemaId] as $dep) {
-			$this->walkDependent(node: $node, dep: $dep);
-		}
-	}//end walkDeletionGraph()
+		return ($this->relationIndex[$schemaId] ?? []);
+	}//end relationsCiting()
 
 	/**
 	 * Walk the objects that cite a node's object through one relation.
@@ -931,39 +1060,53 @@ class ReferentialIntegrityService {
 	 */
 	private function walkDependent(DeletionGraphNode $node, array $dep): void {
 		if (($dep['referenceKey'] ?? null) !== null) {
-			$node->walk->addBlockers(
-				blockers: $this->keyReferenceBlockers(object: $node->object, dep: $dep, chain: $node->chain)
-			);
+			$node->walk->addBlockers(blockers: $this->keyReferenceBlockers(node: $node, dep: $dep));
 			return;
 		}
 
 		// Find actual objects of the dependent schema that reference this object's UUID.
-		$uuid = $node->object->getUuid();
-		$referencingObjects = $this->findReferencingObjects(dep: $dep, targetUuid: $uuid);
+		$referencingObjects = $this->findReferencingObjects(dep: $dep, targetUuid: $node->object->getUuid());
 		if ($referencingObjects === null) {
 			// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
-			$node->walk->addBlocker(
-				blocker: [
-					'objectUuid' => '',
-					'schema' => $dep['sourceSchemaId'],
-					'property' => $dep['property'],
-					'action' => 'RESTRICT',
-					'reason' => 'unverifiable',
-					'chain' => array_merge($node->chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
-				]
-			);
+			$chain = array_merge($node->chain, ["{$node->object->getUuid()} → {$dep['property']} (not verifiable)"]);
+			$node->walk->addBlocker(blocker: self::unverifiableBlocker(dep: $dep, chain: $chain));
 			return;
 		}
 
-		foreach ($referencingObjects as $refObj) {
-			// Skip already soft-deleted objects.
-			if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
-				continue;
-			}
-
+		foreach (self::liveObjects(objects: $referencingObjects) as $refObj) {
 			$this->applyOnDelete(step: new DeletionGraphStep(node: $node, dep: $dep, referencing: $refObj));
 		}
 	}//end walkDependent()
+
+	/**
+	 * A RESTRICT blocker for a relation whose citing objects could not be read.
+	 *
+	 * @param array<string, mixed> $dep   The relation index entry.
+	 * @param array<int, string>   $chain The chain to report.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function unverifiableBlocker(array $dep, array $chain): array {
+		return [
+			'objectUuid' => '',
+			'schema' => $dep['sourceSchemaId'],
+			'property' => $dep['property'],
+			'action' => 'RESTRICT',
+			'reason' => 'unverifiable',
+			'chain' => $chain,
+		];
+	}//end unverifiableBlocker()
+
+	/**
+	 * The objects that are not soft-deleted.
+	 *
+	 * @param ObjectEntity[] $objects The objects.
+	 *
+	 * @return list<ObjectEntity>
+	 */
+	private static function liveObjects(array $objects): array {
+		return array_values(array_filter($objects, fn (ObjectEntity $object): bool => empty($object->getDeleted()) === true));
+	}//end liveObjects()
 
 	/**
 	 * Add what the relation's onDelete action does to one referencing object.
@@ -980,16 +1123,15 @@ class ReferentialIntegrityService {
 		switch ($step->dep['onDelete']) {
 			case 'RESTRICT':
 				$step->node->walk->addBlocker(blocker: $this->restrictBlocker(step: $step, chain: $step->chain));
-				break;
+				return;
 			case 'CASCADE':
 				$this->cascadeStep(step: $step);
-				break;
+				return;
 			case 'SET_NULL':
-				$this->setNullStep(step: $step);
-				break;
+				$this->clearOrBlock(step: $step, blockNote: '(SET_NULL on required → RESTRICT)');
+				return;
 			case 'SET_DEFAULT':
 				$this->setDefaultStep(step: $step);
-				break;
 		}
 	}//end applyOnDelete()
 
@@ -1001,15 +1143,7 @@ class ReferentialIntegrityService {
 	 * @return void
 	 */
 	private function cascadeStep(DeletionGraphStep $step): void {
-		$step->node->walk->addCascadeTarget(
-			target: [
-				'objectUuid' => $step->referencing->getUuid(),
-				'register' => $step->referencing->getRegister(),
-				'schema' => $step->dep['sourceSchemaId'],
-				'property' => $step->dep['property'],
-				'chain' => $step->chain,
-			]
-		);
+		$step->node->walk->addCascadeTarget(target: self::cascadeTarget(step: $step));
 
 		$this->walkDeletionGraph(
 			node: new DeletionGraphNode(
@@ -1022,25 +1156,40 @@ class ReferentialIntegrityService {
 	}//end cascadeStep()
 
 	/**
-	 * SET_NULL: clear the reference, or block when the property is required.
+	 * A cascade target for a referencing object.
 	 *
 	 * @param DeletionGraphStep $step The referencing object and its relation.
 	 *
+	 * @return array<string, mixed>
+	 */
+	private static function cascadeTarget(DeletionGraphStep $step): array {
+		return [
+			'objectUuid' => $step->referencing->getUuid(),
+			'register' => $step->referencing->getRegister(),
+			'schema' => $step->dep['sourceSchemaId'],
+			'property' => $step->dep['property'],
+			'chain' => $step->chain,
+		];
+	}//end cascadeTarget()
+
+	/**
+	 * Clear the reference, or block when the property is required.
+	 *
+	 * @param DeletionGraphStep $step      The referencing object and its relation.
+	 * @param string            $blockNote What the chain says when the delete is blocked.
+	 *
 	 * @return void
 	 */
-	private function setNullStep(DeletionGraphStep $step): void {
+	private function clearOrBlock(DeletionGraphStep $step, string $blockNote): void {
 		if ($this->isStepPropertyRequired(step: $step) === true) {
 			$step->node->walk->addBlocker(
-				blocker: $this->restrictBlocker(
-					step: $step,
-					chain: array_merge($step->chain, ['(SET_NULL on required → RESTRICT)'])
-				)
+				blocker: $this->restrictBlocker(step: $step, chain: array_merge($step->chain, [$blockNote]))
 			);
 			return;
 		}
 
 		$step->node->walk->addNullifyTarget(target: $this->nullifyTarget(step: $step));
-	}//end setNullStep()
+	}//end clearOrBlock()
 
 	/**
 	 * SET_DEFAULT: reset the reference to its default; without one, behave as SET_NULL.
@@ -1054,30 +1203,30 @@ class ReferentialIntegrityService {
 			schemaId: $step->dep['sourceSchemaId'],
 			propertyName: $step->dep['property']
 		);
-		if ($defaultValue !== null) {
-			$step->node->walk->addDefaultTarget(
-				target: [
-					'objectUuid' => $step->referencing->getUuid(),
-					'schema' => $step->dep['sourceSchemaId'],
-					'property' => $step->dep['property'],
-					'defaultValue' => $defaultValue,
-				]
-			);
+		if ($defaultValue === null) {
+			$this->clearOrBlock(step: $step, blockNote: '(SET_DEFAULT no default + required → RESTRICT)');
 			return;
 		}
 
-		if ($this->isStepPropertyRequired(step: $step) === true) {
-			$step->node->walk->addBlocker(
-				blocker: $this->restrictBlocker(
-					step: $step,
-					chain: array_merge($step->chain, ['(SET_DEFAULT no default + required → RESTRICT)'])
-				)
-			);
-			return;
-		}
-
-		$step->node->walk->addNullifyTarget(target: $this->nullifyTarget(step: $step));
+		$step->node->walk->addDefaultTarget(target: self::defaultTarget(step: $step, defaultValue: $defaultValue));
 	}//end setDefaultStep()
+
+	/**
+	 * A default target for a referencing object.
+	 *
+	 * @param DeletionGraphStep $step         The referencing object and its relation.
+	 * @param mixed             $defaultValue The value the reference is reset to.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function defaultTarget(DeletionGraphStep $step, mixed $defaultValue): array {
+		return [
+			'objectUuid' => $step->referencing->getUuid(),
+			'schema' => $step->dep['sourceSchemaId'],
+			'property' => $step->dep['property'],
+			'defaultValue' => $defaultValue,
+		];
+	}//end defaultTarget()
 
 	/**
 	 * Whether the referencing property is required on its schema.
@@ -1136,55 +1285,66 @@ class ReferentialIntegrityService {
 	 * outcome a RESTRICT rules out. Only a citing table that does not exist
 	 * yet answers "nothing cites it", because then nothing can.
 	 *
-	 * @param ObjectEntity $object The object being deleted.
-	 * @param array $dep The relation index entry (with `referenceKey`).
-	 * @param array $chain The chain so far.
+	 * @param DeletionGraphNode    $node The object being deleted.
+	 * @param array<string, mixed> $dep  The relation index entry (with `referenceKey`).
 	 *
 	 * @return array<int, array<string, mixed>> The blockers, possibly none.
 	 *
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
-	private function keyReferenceBlockers(ObjectEntity $object, array $dep, array $chain): array {
-		$uuid = (string)$object->getUuid();
-		$value = (($object->getObject() ?? [])[$dep['referenceKey']] ?? null);
-		if (is_scalar($value) === false || trim((string)$value) === '') {
-			// Nothing to be cited by.
+	private function keyReferenceBlockers(DeletionGraphNode $node, array $dep): array {
+		$value = self::citedKeyValue(object: $node->object, key: $dep['referenceKey']);
+		if ($value === null) {
 			return [];
 		}
 
-		$referencing = $this->findReferencingByKey(dep: $dep, value: trim((string)$value));
-
-		$step = "{$uuid} → {$dep['property']}={$value} (RESTRICT by {$dep['referenceKey']})";
-		if ($referencing === null) {
-			return [
-				[
-					'objectUuid' => '',
-					'schema' => $dep['sourceSchemaId'],
-					'property' => $dep['property'],
-					'action' => 'RESTRICT',
-					'reason' => 'unverifiable',
-					'chain' => array_merge($chain, [$step]),
-				],
-			];
-		}
-
-		$blockers = [];
-		foreach ($referencing as $refObj) {
-			if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
-				continue;
-			}
-
-			$blockers[] = [
-				'objectUuid' => $refObj->getUuid(),
-				'schema' => $dep['sourceSchemaId'],
-				'property' => $dep['property'],
-				'action' => 'RESTRICT',
-				'chain' => array_merge($chain, [$step]),
-			];
-		}
-
-		return $blockers;
+		$uuid = $node->object->getUuid();
+		$chain = array_merge($node->chain, ["{$uuid} → {$dep['property']}={$value} (RESTRICT by {$dep['referenceKey']})"]);
+		return $this->blockersCiting(
+			node: new DeletionGraphNode(object: $node->object, walk: $node->walk, chain: $chain, depth: $node->depth),
+			reference: $dep + ['value' => trim((string)$value)]
+		);
 	}//end keyReferenceBlockers()
+
+	/**
+	 * The blockers for the live rows that cite a key value; one unverifiable blocker when they cannot be read.
+	 *
+	 * @param DeletionGraphNode    $node      The object being deleted, its chain the one to report.
+	 * @param array<string, mixed> $reference The relation index entry with the cited `value`.
+	 *
+	 * @return array<int, array<string, mixed>> The blockers, possibly none.
+	 */
+	private function blockersCiting(DeletionGraphNode $node, array $reference): array {
+		$referencing = $this->findReferencingByKey(dep: $reference, value: $reference['value']);
+		if ($referencing === null) {
+			return [self::unverifiableBlocker(dep: $reference, chain: $node->chain)];
+		}
+
+		return array_map(
+			fn (ObjectEntity $refObj): array => $this->restrictBlocker(
+				step: new DeletionGraphStep(node: $node, dep: $reference, referencing: $refObj),
+				chain: $node->chain
+			),
+			self::liveObjects(objects: $referencing)
+		);
+	}//end blockersCiting()
+
+	/**
+	 * The value an object can be cited by.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $key    The key property.
+	 *
+	 * @return bool|float|int|string|null The value as stored, or null when it has nothing to be cited by.
+	 */
+	private static function citedKeyValue(ObjectEntity $object, string $key): bool|float|int|string|null {
+		$value = (($object->getObject() ?? [])[$key] ?? null);
+		if (is_scalar($value) === false || trim((string)$value) === '') {
+			return null;
+		}
+
+		return $value;
+	}//end citedKeyValue()
 
 	/**
 	 * Rows of a schema whose property holds a key value, or null when that cannot be read.
@@ -1234,27 +1394,35 @@ class ReferentialIntegrityService {
 		}
 
 		// Fallback: broad search across all sources (only for schemas without register mapping).
-		try {
-			$candidates = $this->objectEntityMapper->findByRelation(
-				uuid: $targetUuid
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
-				context: ['uuid' => $targetUuid, 'error' => $e->getMessage()]
-			);
+		$candidates = $this->relationCandidates(uuid: $targetUuid);
+		if ($candidates === null) {
 			return null;
 		}
 
-		$matches = [];
-		foreach ($candidates as $candidate) {
-			if ($this->cites(candidate: $candidate, reference: $dep + ['value' => $targetUuid]) === true) {
-				$matches[] = $candidate;
-			}
-		}
-
-		return $matches;
+		$reference = $dep + ['value' => $targetUuid];
+		return array_values(
+			array_filter($candidates, fn (ObjectEntity $candidate): bool => $this->cites(candidate: $candidate, reference: $reference))
+		);
 	}//end findReferencingObjects()
+
+	/**
+	 * The objects the broad relation search finds for a UUID.
+	 *
+	 * @param string $uuid The UUID being referenced.
+	 *
+	 * @return ObjectEntity[]|null The candidates, or null when the search failed.
+	 */
+	private function relationCandidates(string $uuid): ?array {
+		try {
+			return $this->objectEntityMapper->findByRelation(uuid: $uuid);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
+				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end relationCandidates()
 
 	/**
 	 * Whether the citing schema of a relation has a register, so its magic table can be searched.
@@ -1284,24 +1452,47 @@ class ReferentialIntegrityService {
 		try {
 			return $this->findReferencingInMagicTable(dep: $dep, targetUuid: $value);
 		} catch (\Exception $e) {
-			$register = $this->schemaRegisterMap[$dep['sourceSchemaId']];
-			$schema = $this->schemaCache[$dep['sourceSchemaId']];
-			if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
-				return [];
-			}
-
-			$message = '[ReferentialIntegrity] reference could not be checked, so the delete is refused';
-			if (($dep['referenceKey'] ?? null) !== null) {
-				$message = '[ReferentialIntegrity] key reference could not be checked, so the delete is refused';
-			}
-
-			$this->logger->warning(
-				message: $message,
-				context: ['schemaId' => $dep['sourceSchemaId'], 'property' => $dep['property'], 'error' => $e->getMessage()]
-			);
-			return null;
-		}//end try
+			return $this->afterFailedLookup(dep: $dep, error: $e);
+		}
 	}//end magicTableReferences()
+
+	/**
+	 * What a failed magic table lookup answers: nothing for a table that does not exist yet, else unverifiable.
+	 *
+	 * @param array<string, mixed> $dep   The relation index entry, with a register known for its schema.
+	 * @param \Exception           $error The failure.
+	 *
+	 * @return array{}|null An empty list, or null when unverifiable.
+	 */
+	private function afterFailedLookup(array $dep, \Exception $error): ?array {
+		if ($this->hasBuiltTable(dep: $dep) === false) {
+			return [];
+		}
+
+		$message = '[ReferentialIntegrity] reference could not be checked, so the delete is refused';
+		if (($dep['referenceKey'] ?? null) !== null) {
+			$message = '[ReferentialIntegrity] key reference could not be checked, so the delete is refused';
+		}
+
+		$this->logger->warning(
+			message: $message,
+			context: ['schemaId' => $dep['sourceSchemaId'], 'property' => $dep['property'], 'error' => $error->getMessage()]
+		);
+		return null;
+	}//end afterFailedLookup()
+
+	/**
+	 * Whether the citing schema's magic table exists yet.
+	 *
+	 * @param array<string, mixed> $dep The relation index entry, with a register known for its schema.
+	 *
+	 * @return bool
+	 */
+	private function hasBuiltTable(array $dep): bool {
+		$register = $this->schemaRegisterMap[$dep['sourceSchemaId']];
+		$schema = $this->schemaCache[$dep['sourceSchemaId']];
+		return $this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId());
+	}//end hasBuiltTable()
 
 	/**
 	 * Whether a candidate found by the broad relation search cites the value in the relation's property.
@@ -1394,21 +1585,46 @@ class ReferentialIntegrityService {
 
 		$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
-		$deletedCheck = '_deleted IS NULL';
-		if ($isPostgres === true) {
-			$deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-		}
-
 		// For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
-		$whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
-		if ($dep['isArray'] === true && $isPostgres === true) {
-			$whereCondition = "{$deletedCheck} AND {$quotedCol}::jsonb @> to_jsonb(?::text)";
-		} elseif ($dep['isArray'] === true) {
-			$whereCondition = "{$deletedCheck} AND JSON_CONTAINS({$quotedCol}, JSON_QUOTE(?))";
+		$holdsValue = "{$quotedCol} = ?";
+		if ($dep['isArray'] === true) {
+			$holdsValue = self::jsonArrayHolds(column: $quotedCol, isPostgres: $isPostgres);
 		}
 
-		return "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$quotedTable} WHERE {$whereCondition} LIMIT 100";
+		$liveRow = self::liveRowCondition(isPostgres: $isPostgres);
+		return "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$quotedTable} WHERE {$liveRow} AND {$holdsValue} LIMIT 100";
 	}//end referenceSql()
+
+	/**
+	 * The condition for a row that is not soft-deleted.
+	 *
+	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return string The SQL condition.
+	 */
+	private static function liveRowCondition(bool $isPostgres): string {
+		if ($isPostgres === true) {
+			return "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
+		}
+
+		return '_deleted IS NULL';
+	}//end liveRowCondition()
+
+	/**
+	 * The condition for a JSON array column that holds the value.
+	 *
+	 * @param string $column     The quoted column.
+	 * @param bool   $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return string The SQL condition, with one placeholder for the value.
+	 */
+	private static function jsonArrayHolds(string $column, bool $isPostgres): string {
+		if ($isPostgres === true) {
+			return "{$column}::jsonb @> to_jsonb(?::text)";
+		}
+
+		return "JSON_CONTAINS({$column}, JSON_QUOTE(?))";
+	}//end jsonArrayHolds()
 
 	/**
 	 * A minimal entity for one citing row: its uuid, register, schema, deletion and the matched property.
@@ -1424,25 +1640,50 @@ class ReferentialIntegrityService {
 		$entity->setRegister($row['_register'] ?? (string)$this->schemaRegisterMap[$reference['sourceSchemaId']]->getId());
 		$entity->setSchema($row['_schema'] ?? (string)$this->schemaCache[$reference['sourceSchemaId']]->getId());
 
-		$deleted = $row['_deleted'] ?? null;
-		if ($deleted !== null && $deleted !== 'null') {
-			$decoded = $deleted;
-			if (is_string($deleted) === true) {
-				$decoded = json_decode($deleted, true);
-			}
-
-			$deletedValue = [];
-			if (is_array($decoded) === true) {
-				$deletedValue = $decoded;
-			}
-
-			$entity->setDeleted($deletedValue);
+		$deletion = self::rowDeletion(row: $row);
+		if ($deletion !== null) {
+			$entity->setDeleted($deletion);
 		}
 
 		// Set object with at least the property that matched.
 		$entity->setObject([$reference['property'] => $row['_prop'] ?? $reference['value']]);
 		return $entity;
 	}//end referencingEntity()
+
+	/**
+	 * The deletion a row carries.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 *
+	 * @return array<string, mixed>|null The deletion, empty when it cannot be read, or null for a live row.
+	 */
+	private static function rowDeletion(array $row): ?array {
+		$deleted = $row['_deleted'] ?? null;
+		if ($deleted === null || $deleted === 'null') {
+			return null;
+		}
+
+		return self::decodedDeletion(deleted: $deleted);
+	}//end rowDeletion()
+
+	/**
+	 * A stored deletion as an array.
+	 *
+	 * @param mixed $deleted The stored value, JSON text or already decoded.
+	 *
+	 * @return array<string, mixed> The deletion, empty when it cannot be read.
+	 */
+	private static function decodedDeletion(mixed $deleted): array {
+		if (is_string($deleted) === true) {
+			$deleted = json_decode($deleted, true);
+		}
+
+		if (is_array($deleted) === true) {
+			return $deleted;
+		}
+
+		return [];
+	}//end decodedDeletion()
 
 	/**
 	 * The physical column of a schema property, as the schema's table was built.
@@ -1757,10 +1998,12 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyBatchCascadeDelete(array $cascadeTargets, CascadeDeleteOrigin $origin): void {
-		[$handled, $deleted] = $this->batchCascadeSoftDelete(
-			targets: $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets),
-			origin: $origin
-		);
+		$resolved = $this->resolveCascadeTargets(cascadeTargets: $cascadeTargets);
+		foreach ($resolved as $target) {
+			$this->objectEntityMapper->assertDeletable(entity: $target);
+		}
+
+		[$handled, $deleted] = $this->batchCascadeSoftDelete(targets: $resolved, origin: $origin);
 		$this->writeBatchCascadeAuditTrails(cascadeTargets: $cascadeTargets, deleted: $deleted, origin: $origin);
 
 		$fallbackTargets = array_values(
@@ -2005,6 +2248,8 @@ class ReferentialIntegrityService {
 		$uuids = array_map(static fn (array $t): string => $t['objectUuid'], $targets);
 		try {
 			$this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: false);
+		} catch (HookStoppedException $refusal) {
+			throw $refusal;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[ReferentialIntegrity] Batch CASCADE delete failed',

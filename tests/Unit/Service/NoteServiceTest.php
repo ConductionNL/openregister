@@ -12,8 +12,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
@@ -55,7 +55,6 @@ class NoteServiceTest extends TestCase {
 			$this->commentsManager,
 			$this->userSession,
 			$this->userManager,
-			$this->logger,
 			$this->visibility,
 			$this->versions
 		);
@@ -527,5 +526,48 @@ class NoteServiceTest extends TestCase {
 
 		$this->assertCount(2, $rows);
 		$this->assertSame('Second', $rows[0]['message']);
+	}
+
+	/**
+	 * A comment of the given object.
+	 *
+	 * @param string $objectType The comment's object type.
+	 * @param string $objectId   The comment's object id.
+	 *
+	 * @return IComment
+	 */
+	private function commentOn(string $objectType, string $objectId): IComment {
+		$comment = $this->createMock(IComment::class);
+		$comment->method('getObjectType')->willReturn($objectType);
+		$comment->method('getObjectId')->willReturn($objectId);
+		return $comment;
+	}
+
+	public function testRequireNoteOfAcceptsANoteOfTheObject(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('openregister', 'uuid-mine'));
+
+		$this->service->requireNoteOf('uuid-mine', 5);
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireNoteOfRefusesANoteOfAnotherObject(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('openregister', 'uuid-other'));
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
+	}
+
+	public function testRequireNoteOfRefusesACommentOfAnotherApp(): void {
+		$this->commentsManager->method('get')->willReturn($this->commentOn('files', 'uuid-mine'));
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
+	}
+
+	public function testRequireNoteOfRefusesAnUnknownNote(): void {
+		$this->commentsManager->method('get')->willThrowException(new \OCP\Comments\NotFoundException());
+
+		$this->expectExceptionCode(404);
+		$this->service->requireNoteOf('uuid-mine', 5);
 	}
 }

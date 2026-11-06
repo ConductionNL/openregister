@@ -12,7 +12,7 @@ import {
 	<NcDialog
 		:name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Source and Target Information -->
 		<div class="migration-overview">
 			<div class="source-info">
@@ -986,13 +986,7 @@ export default {
 	margin-bottom: 4px;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 .detail-grid {
 	display: grid;
@@ -1081,5 +1075,4 @@ export default {
 	color: var(--color-primary);
 	margin-top: 40px;
 }
-
 </style>

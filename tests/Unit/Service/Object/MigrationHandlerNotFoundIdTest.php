@@ -120,9 +120,6 @@ class MigrationHandlerNotFoundIdTest extends TestCase {
 
 		$handler = new MigrationHandler(
 			objectMapper: $mapper,
-			schemaMapper: $this->createMock(originalClassName: SchemaMapper::class),
-			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
-			saveHandler: $this->createMock(originalClassName: SaveObject::class),
 			utilityHandler: $utility,
 			dataManipHandler: $dataManip,
 			logger: $this->createMock(originalClassName: LoggerInterface::class)

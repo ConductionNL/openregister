@@ -25,13 +25,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Mcp;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 
 /**
  * Binds an MCP session to an agent and holds every call on it to the agent's grant.
