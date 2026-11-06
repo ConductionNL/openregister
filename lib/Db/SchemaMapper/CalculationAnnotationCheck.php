@@ -83,9 +83,7 @@ final class CalculationAnnotationCheck {
 			throw new CalculationDeclarationException(errors: $blocking);
 		}
 
-		if ($errors !== []) {
-			$this->warn(annotation: $annotation, errors: $errors);
-		}
+		$this->warn(annotation: $annotation, errors: $errors);
 	}//end check()
 
 	/**
@@ -136,7 +134,7 @@ final class CalculationAnnotationCheck {
 	}//end shape()
 
 	/**
-	 * Log the advisory faults.
+	 * Log the advisory faults, if there are any.
 	 *
 	 * @param SchemaAnnotation                   $annotation The annotation.
 	 * @param array<int, array{message: string}> $errors     The faults.
@@ -144,9 +142,11 @@ final class CalculationAnnotationCheck {
 	 * @return void
 	 */
 	private function warn(SchemaAnnotation $annotation, array $errors): void {
-		$this->logger->warning(
-			$annotation->label() . ' is invalid and was ignored (calculation not evaluated): '
-			. implode(' ', array_map(static fn (array $err) => $err['message'], $errors))
-		);
+		if ($errors !== []) {
+			$this->logger->warning(
+				$annotation->label() . ' is invalid and was ignored (calculation not evaluated): '
+				. implode(' ', array_map(static fn (array $err) => $err['message'], $errors))
+			);
+		}
 	}//end warn()
 }//end class

@@ -99,14 +99,24 @@ final class DeclaredActionCheck {
 			)
 		);
 
-		$runnable = array_filter(
-			ObjectActionDefinition::parse(configuration: $configuration),
-			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
-		);
-		if ($runnable !== []) {
+		if ($this->runnable(configuration: $configuration) !== []) {
 			$this->logger->warning('[SchemaMapper] Declared actions saved without verifying their flows: no validator is wired');
 		}
 	}//end checkShapeOnly()
+
+	/**
+	 * The declared actions that have a body to run.
+	 *
+	 * @param array<string, mixed> $configuration The schema configuration.
+	 *
+	 * @return array<ObjectActionDefinition>
+	 */
+	private function runnable(array $configuration): array {
+		return array_filter(
+			ObjectActionDefinition::parse(configuration: $configuration),
+			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
+		);
+	}//end runnable()
 
 	/**
 	 * Refuse the save with the given reasons, if there are any.

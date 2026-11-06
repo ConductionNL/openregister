@@ -117,11 +117,22 @@ final class RelationDeclarationCheck {
 			}
 		}
 
+		return $this->refusals(reasons: $reasons);
+	}//end exposureRefusals()
+
+	/**
+	 * The refusals for the links that have a reason.
+	 *
+	 * @param array<int, string|null> $reasons One reason or null per exposing link.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function refusals(array $reasons): array {
 		return array_map(
 			static fn (string $reason): array => ['code' => 'relation-exposes-unknown-property', 'message' => $reason],
 			array_values(array_filter($reasons, static fn (?string $reason): bool => $reason !== null))
 		);
-	}//end exposureRefusals()
+	}//end refusals()
 
 	/**
 	 * The properties and the vocabulary, as the validator reads them.
