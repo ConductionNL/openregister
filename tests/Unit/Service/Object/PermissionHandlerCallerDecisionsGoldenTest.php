@@ -194,7 +194,8 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		$schema  = $this->schemaWith($block);
 		$object  = null;
 		if ($caller['object'] !== 'none') {
-			$object = $this->objectWith(($caller['object'] === 'own block' ? $block : null), 'bob');
+			$ownBlock = (str_ends_with($caller['object'], 'own block') === true ? $block : null);
+			$object   = $this->objectWith($ownBlock, (str_starts_with($caller['object'], 'foreign') === true ? 'ghost' : 'bob'));
 		}
 
 		$userId  = $caller['user'];
@@ -245,7 +246,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		$recording = [];
 		foreach (self::blocks() as $blockName => $block) {
 			foreach (['enforcing', 'staging', 'off'] as $mode) {
-				foreach (['none', 'plain', 'own block'] as $objectKind) {
+				foreach (['none', 'plain', 'own block', 'foreign', 'foreign own block'] as $objectKind) {
 					$recording["$blockName|$mode|$objectKind"] = $this->recordCallers($block, ['mode' => $mode, 'object' => $objectKind]);
 				}
 			}
