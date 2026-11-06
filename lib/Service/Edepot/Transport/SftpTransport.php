@@ -72,44 +72,57 @@ class SftpTransport implements TransportInterface {
 		try {
 			$this->assertSendable(sipFilePath: $sipFilePath, config: $config);
 
-			$localSize = filesize($sipFilePath);
-			$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
-
-			// Use phpseclib for SFTP if available.
-			if (class_exists('\phpseclib3\Net\SFTP') === true) {
-				$sftp = $this->createSftpConnection(config: $config);
-				$result = $sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
-
-				if ($result === false) {
-					throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
-				}
-
-				// Verify remote file size.
-				$remoteSize = $sftp->size($remotePath);
-				if ($remoteSize !== $localSize) {
-					throw new RuntimeException(
-						"Remote file size mismatch: expected {$localSize}, got {$remoteSize}"
-					);
-				}
-
-				$this->logger->info(
-					message: '[SftpTransport] SFTP transfer successful',
-					context: [
-						'remotePath' => $remotePath,
-						'size' => $localSize,
-					]
-				);
-
-				return new TransportResult(transferReference: $remotePath);
-			}//end if
-
-			throw new RuntimeException(
-				'phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.'
-			);
+			return $this->upload(sipFilePath: $sipFilePath, config: $config);
 		} catch (\Exception $e) {
 			return $this->failedTransfer(cause: $e, message: '[SftpTransport] SFTP transfer failed');
 		}//end try
 	}//end send()
+
+	/**
+	 * Upload a SIP file and verify the remote size matches the local one.
+	 *
+	 * @param string $sipFilePath The local path to the SIP ZIP archive.
+	 * @param array<string, mixed> $config SFTP configuration.
+	 *
+	 * @return TransportResult The result, referring to the remote path.
+	 *
+	 * @throws RuntimeException When the upload fails or the sizes differ.
+	 */
+	private function upload(string $sipFilePath, array $config): TransportResult {
+		$localSize = filesize($sipFilePath);
+		[$remotePath, $remoteSize] = $this->put(sipFilePath: $sipFilePath, config: $config);
+		if ($remoteSize !== $localSize) {
+			throw new RuntimeException("Remote file size mismatch: expected {$localSize}, got {$remoteSize}");
+		}
+
+		$this->logger->info(message: '[SftpTransport] SFTP transfer successful', context: ['remotePath' => $remotePath, 'size' => $localSize]);
+
+		return new TransportResult(transferReference: $remotePath);
+	}//end upload()
+
+	/**
+	 * Put a SIP file on the server, when phpseclib3 can be loaded.
+	 *
+	 * @param string $sipFilePath The local path to the SIP ZIP archive.
+	 * @param array<string, mixed> $config SFTP configuration.
+	 *
+	 * @return array{0: string, 1: mixed} The remote path and the size the server reports.
+	 *
+	 * @throws RuntimeException When phpseclib3 is missing or the upload fails.
+	 */
+	private function put(string $sipFilePath, array $config): array {
+		if (class_exists('\phpseclib3\Net\SFTP') === false) {
+			throw new RuntimeException('phpseclib3 is not installed. Install phpseclib/phpseclib to enable SFTP transport.');
+		}
+
+		$remotePath = rtrim(($config['remotePath'] ?? '/'), '/') . '/' . basename($sipFilePath);
+		$sftp = $this->createSftpConnection(config: $config);
+		if ($sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE) === false) {
+			throw new RuntimeException('SFTP upload failed: ' . $sftp->getLastSFTPError());
+		}
+
+		return [$remotePath, $sftp->size($remotePath)];
+	}//end put()
 
 	/**
 	 * Test SFTP connection.
@@ -197,28 +210,33 @@ class SftpTransport implements TransportInterface {
 	 * @psalm-suppress UndefinedClass
 	 *
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 */
 	private function createSftpConnection(array $config): SFTP {
-		$port = (int)($config['port'] ?? 22);
-		$sftp = new SFTP($config['host'], $port);
+		$sftp = new SFTP($config['host'], (int)($config['port'] ?? 22));
 
-		if (empty($config['keyPath']) === false) {
-			$key = PublicKeyLoader::load(
-				file_get_contents($config['keyPath'])
-			);
-			$logged = $sftp->login($config['username'], $key);
-		}
-
-		if (empty($config['keyPath']) === true) {
-			$logged = $sftp->login($config['username'], ($config['password'] ?? ''));
-		}
-
-		if ($logged === false) {
+		if ($sftp->login($config['username'], $this->loginCredential(config: $config)) === false) {
 			throw new RuntimeException('SFTP authentication failed');
 		}
 
 		return $sftp;
 	}//end createSftpConnection()
+
+	/**
+	 * The loaded key when a key path is configured, else the password.
+	 *
+	 * @param array<string,mixed> $config SFTP configuration.
+	 *
+	 * @return mixed The key object or password string.
+	 *
+	 * @psalm-suppress UndefinedClass
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 */
+	private function loginCredential(array $config): mixed {
+		if (empty($config['keyPath']) === true) {
+			return ($config['password'] ?? '');
+		}
+
+		return PublicKeyLoader::load(file_get_contents($config['keyPath']));
+	}//end loginCredential()
 }//end class

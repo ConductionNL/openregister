@@ -221,7 +221,7 @@ class FileFormattingHandlerFormatFileGoldenTest extends TestCase {
 		}
 
 		if ($mode === 'full') {
-			$row->setDepublished(new DateTime('2099-01-01T00:00:00+00:00'));
+			$row->setDepublished(new DateTime('9999-12-31T00:00:00+00:00'));
 			$row->setLockedBy('bob');
 			$row->setLockedAt(new DateTime('2026-01-02T03:04:05+00:00'));
 		}
