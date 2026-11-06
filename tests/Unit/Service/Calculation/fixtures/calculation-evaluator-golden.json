@@ -399,8 +399,8 @@
         "message": "dateAdd requires either (\"amount\" + \"unit\") or \"duration\"."
     },
     "dateAdd bad date": {
-        "type": "string",
-        "value": "2026-11-06"
+        "type": "null",
+        "value": null
     },
     "dateAdd null date": {
         "type": "null",
