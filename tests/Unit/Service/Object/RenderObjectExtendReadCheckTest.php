@@ -166,28 +166,33 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('resolveTranslationsForRender')->willReturnArgument(0);
 
-		return new RenderObject(
-			fileMapper: $this->createMock(FileMapper::class),
-			objectEntityMapper: $this->mapper,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $schemas,
-			systemTagManager: $this->createMock(ISystemTagManager::class),
-			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			objectCacheService: $this->cache,
-			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			logger: new NullLogger(),
-			fileService: $this->createMock(FileService::class),
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $translations,
-			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
-			calculationEvaluator: $this->createMock(CalculationEvaluator::class),
-			urnService: $this->createMock(UrnService::class),
-			translationStatusService: $this->createMock(TranslationStatusService::class),
-			translationMapper: $this->createMock(TranslationMapper::class),
-			languageService: $this->createMock(LanguageService::class),
-			container: $container,
-		);
+		$dependencies = [
+			'fileMapper' => $this->createMock(FileMapper::class),
+			'objectEntityMapper' => $this->mapper,
+			'registerMapper' => $this->createMock(RegisterMapper::class),
+			'schemaMapper' => $schemas,
+			'systemTagManager' => $this->createMock(ISystemTagManager::class),
+			'systemTagMapper' => $this->createMock(ISystemTagObjectMapper::class),
+			'cacheHandler' => $this->createMock(CacheHandler::class),
+			'objectCacheService' => $this->cache,
+			'propertyRbacHandler' => $this->createMock(PropertyRbacHandler::class),
+			'logger' => new NullLogger(),
+			'fileService' => $this->createMock(FileService::class),
+			'computedFieldHandler' => $this->createMock(ComputedFieldHandler::class),
+			'translationHandler' => $translations,
+			'linkedEntityEnricher' => $this->createMock(LinkedEntityEnricher::class),
+			'calculationEvaluator' => $this->createMock(CalculationEvaluator::class),
+			'urnService' => $this->createMock(UrnService::class),
+			'translationStatusService' => $this->createMock(TranslationStatusService::class),
+			'translationMapper' => $this->createMock(TranslationMapper::class),
+			'languageService' => $this->createMock(LanguageService::class),
+			'container' => $container,
+		];
+
+		// Only what the constructor declares, so the test follows its dependency list.
+		$declared = array_column((new \ReflectionMethod(RenderObject::class, '__construct'))->getParameters(), 'name');
+
+		return new RenderObject(...array_intersect_key($dependencies, array_flip($declared)));
 	}
 
 	/**
