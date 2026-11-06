@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
 use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\ConditionMatcher;
-use OCA\OpenRegister\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -59,7 +59,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
  * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
- * @uses \OCA\OpenRegister\Service\Mcp\McpResourcesService
+ * @uses \OCA\OpenRegister\Mcp\Service\Mcp\McpResourcesService
  * @uses \OCA\OpenRegister\Service\Rbac\RevealCollector
  * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
  * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver

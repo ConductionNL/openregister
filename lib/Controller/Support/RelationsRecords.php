@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -37,7 +37,7 @@ final class RelationsRecords {
 	 * Bundle the services.
 	 *
 	 * @param ObjectOperationsInterface                $objectService Object service
-	 * @param NoteService                  $noteService   Note service
+	 * @param NoteServiceInterface                  $noteService   Note service
 	 * @param ObjectCalendarTasksInterface $taskService   Task service
 	 * @param EmailServiceInterface                 $emailService  Email service
 	 *
@@ -45,7 +45,7 @@ final class RelationsRecords {
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
-		public readonly NoteService $noteService,
+		public readonly NoteServiceInterface $noteService,
 		public readonly ObjectCalendarTasksInterface $taskService,
 		public readonly EmailServiceInterface $emailService,
 	) {
