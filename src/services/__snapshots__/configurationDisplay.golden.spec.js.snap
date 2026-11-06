@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`configuration display golden card labels 1`] = `
+[
+  "Local",
+  "GitHub",
+  "GitLab",
+  "URL",
+  "Unknown",
+  "Unknown",
+]
+`;
+
+exports[`configuration display golden card labels 2`] = `
+[
+  "Synced just now",
+  "Synced 1h ago",
+  "Synced 23h ago",
+  "Synced 1d ago",
+  "Synced 2d ago",
+  "Never synced",
+  "Sync failed",
+  "Sync pending",
+  "Never synced",
+]
+`;
+
+exports[`configuration display golden import modal version check 1`] = `
+[
+  {
+    "error": [],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 1,
+    "success": [
+      [
+        "t:Update available: {local} → {remote}{"local":"1","remote":"2"}",
+      ],
+    ],
+  },
+  {
+    "error": [],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 1,
+    "success": [
+      [
+        "t:Configuration is up to date",
+      ],
+    ],
+  },
+  {
+    "error": [
+      [
+        "t:Failed to check version: {error}{"error":"said"}",
+      ],
+    ],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 0,
+    "success": [],
+  },
+  {
+    "error": [
+      [
+        "t:Failed to check version: {error}{"error":"plain"}",
+      ],
+    ],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 0,
+    "success": [],
+  },
+]
+`;
+
+exports[`configuration display golden list labels 1`] = `
+[
+  "Local",
+  "GitHub",
+  "GitLab",
+  "URL",
+  "Unknown",
+  "Unknown",
+]
+`;
+
+exports[`configuration display golden list labels 2`] = `
+[
+  "Synced just now",
+  "Synced 1h ago",
+  "Synced 23h ago",
+  "Synced 1d ago",
+  "Synced 2d ago",
+  "Never synced",
+  "Sync failed",
+  "Sync pending",
+  "Never synced",
+]
+`;
+
+exports[`configuration display golden list version check 1`] = `
+[
+  {
+    "error": [],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 1,
+    "success": [
+      [
+        "t:Update available: {local} → {remote}{"local":"1","remote":"2"}",
+      ],
+    ],
+  },
+  {
+    "error": [],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 1,
+    "success": [
+      [
+        "t:Configuration is up to date",
+      ],
+    ],
+  },
+  {
+    "error": [
+      [
+        "t:Failed to check version: {error}{"error":"said"}",
+      ],
+    ],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 0,
+    "success": [],
+  },
+  {
+    "error": [
+      [
+        "t:Failed to check version: {error}{"error":"plain"}",
+      ],
+    ],
+    "posted": [
+      [
+        "/apps/openregister/api/configurations/5/check-version",
+      ],
+    ],
+    "refreshed": 0,
+    "success": [],
+  },
+]
+`;
