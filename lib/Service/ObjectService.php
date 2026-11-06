@@ -7454,15 +7454,26 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     /**
      * The schema and converter that restore string-typed values, when both can be had.
      *
-     * A container may answer with something other than a converter, or with nothing at
-     * all. Null keeps the data unchanged, and with it the pre-existing refusal; calling
-     * a method on null would turn a patch into a fatal.
+     * `SchemaTypeConverter::restoreStringTypedValues()` owns the rule. All this does is
+     * find the schema whose property declarations say which keys are string-typed.
      *
-     * @param ObjectEntity $existing The stored object.
+     * The schema lookup runs with RBAC and multitenancy off: it reads type declarations
+     * to persist an object correctly, not data on the caller's behalf, and `saveObject()`
+     * still applies every check to the write itself. Leaving them on would make the repair
+     * depend on the caller's schema permissions, so the defect would come back for exactly
+     * the callers least able to diagnose it.
+     *
+     * If the schema or the converter cannot be resolved the data stays unchanged, which
+     * leaves the pre-existing loud validation refusal in place. That is the intended
+     * failure direction: never swallow, never silently rewrite. A container may also answer
+     * with something other than a converter, or with nothing at all; calling a method on
+     * null would turn a patch into a fatal.
+     *
+     * @param ObjectEntity $existing The object as it was read.
      *
      * @return array{schema: Schema, converter: SchemaTypeConverter}|null The pair, or null.
      *
-     * @spec exclude Private step of patchObject(); conversion owned by SchemaTypeConverter.
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     private function stringTypeRestorer(ObjectEntity $existing): ?array
     {
@@ -7475,10 +7486,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $schema    = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
             $converter = $this->container->get(SchemaTypeConverter::class);
         } catch (\Throwable $restoreError) {
-            $this->logger->warning(
-                message: '[ObjectService] Could not restore string-typed values before the save',
-                context: ['schema' => $schemaId, 'exception' => $restoreError->getMessage()]
-            );
+            $this->logStringRestoreFailure(schemaId: $schemaId, error: $restoreError);
             return null;
         }
 
@@ -7488,6 +7496,29 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         return ['schema' => $schema, 'converter' => $converter];
     }//end stringTypeRestorer()
+
+    /**
+     * Records that string-typed values could not be restored before a save.
+     *
+     * @param int|string $schemaId The schema of the object.
+     * @param \Throwable $error    What went wrong.
+     *
+     * @return void
+     *
+     * @spec exclude Logging step of patchObject(); no business rule.
+     */
+    private function logStringRestoreFailure(int | string $schemaId, \Throwable $error): void
+    {
+        $this->logger->warning(
+            message: '[ObjectService] Could not restore string-typed values before the save',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'schema' => $schemaId,
+                'exception' => $error->getMessage(),
+            ]
+        );
+    }//end logStringRestoreFailure()
 
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS
