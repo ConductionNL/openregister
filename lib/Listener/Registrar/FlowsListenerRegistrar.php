@@ -166,6 +166,12 @@ final class FlowsListenerRegistrar {
 		$context->registerEventListener(ObjectUnlockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 		$context->registerEventListener(ObjectRevertedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 
+		// A publish of a manifest applies its schedules as scheduled flows.
+		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
+		$context->registerEventListener(\OCA\OpenRegister\Event\ObjectCreatedEvent::class, $publish);
+		$context->registerEventListener(\OCA\OpenRegister\Event\ObjectUpdatedEvent::class, $publish);
+		$context->registerEventListener(\OCA\OpenRegister\Event\ObjectDeletedEvent::class, $publish);
+
 		// Non-object native flow triggers: a file or a user is not an OpenRegister
 		// object, so its event rides on the run as a payload the worker seeds the
 		// first item from. A flow wired to file.created / user.created runs on
