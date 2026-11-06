@@ -66,6 +66,10 @@ use Psr\Log\LoggerInterface;
  * Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\SearchTrailRecorder
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSourcePageReader
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSourceQuery
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSourceWindow
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
  * @uses   \OCA\OpenRegister\Db\Register
@@ -73,7 +77,6 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\ObjectSourceRead
- * @uses   \OCA\OpenRegister\Service\Object\SearchTrailRecorder
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
