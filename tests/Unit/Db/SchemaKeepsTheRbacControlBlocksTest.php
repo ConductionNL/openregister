@@ -59,6 +59,28 @@ use ReflectionMethod;
 
 /**
  * Save-time survival of the hierarchy annotation and the department matrix.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 
@@ -111,7 +133,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateHierarchy(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateHierarchyAnnotation');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateHierarchy()
 
@@ -613,7 +635,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateDeny(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateAuthorizationDeny');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateDeny()
 

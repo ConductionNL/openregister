@@ -119,7 +119,6 @@ class RetentionSweepTest extends TestCase {
 			$this->registerMapper,
 			$this->createMock(AuditTrailMapper::class),
 			$this->settingsHandler,
-			$this->createMock(IAppConfig::class),
 			$this->createMock(IUserSession::class),
 			$this->logger,
 			// The REAL scanner over the SAME mocks these tests program, not a

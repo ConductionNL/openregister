@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -249,15 +248,6 @@ final class ServiceRegistrar {
 		$context->registerService(TaskService::class, self::buildTaskService(...));
 
 		$context->registerService(NoteService::class, self::buildNoteService(...));
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\TimeProvider::class,
-			function (ContainerInterface $container) {
-				return new IntegrationTimeProvider(
-					appConfig: $container->get('OCP\IAppConfig')
-				);
-			}
-		);
 	}//end registerObjectServices()
 
 	/**
@@ -437,7 +427,6 @@ final class ServiceRegistrar {
 				commentsManager: $container->get('OCP\Comments\ICommentsManager'),
 				userSession: $container->get('OCP\IUserSession'),
 				userManager: $container->get('OCP\IUserManager'),
-				logger: $container->get('Psr\Log\LoggerInterface'),
 				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
 				versions: $container->get(\OCA\OpenRegister\Service\NoteVersionService::class)
 			);

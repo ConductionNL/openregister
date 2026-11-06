@@ -129,7 +129,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	public function __construct(
 		private readonly EmailLinkMapper $mapper,
 		private readonly IAppManager $appManager,
-		private readonly IDBConnection $db,
+		IDBConnection $db,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
@@ -185,6 +185,8 @@ class EmailLinkService implements EmailLinkReaderInterface {
 		if ($message->messageNumber() <= 0) {
 			throw new Exception('Invalid mail message id', 400);
 		}
+
+		$this->assertAccountOwnership(accountId: $message->mailAccountId);
 
 		// Idempotent path: return the existing row if the composite key
 		// already exists.
@@ -536,7 +538,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	 *
 	 * @throws Exception When the active user does not own the account.
 	 */
-	private function assertAccountOwnership(int $accountId): void {
+	public function assertAccountOwnership(int $accountId): void {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in', 401);

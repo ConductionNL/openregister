@@ -238,6 +238,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
 		$updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
 
 		if ($updated === null) {
@@ -261,6 +262,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
 		[$calendarId, $taskUri] = $this->splitEntityId(entityId: $entityId);
+		$this->taskService->requireTaskOf(objectUuid: $objectId, calendarId: $calendarId, taskUri: $taskUri);
 		$this->taskService->deleteTask(calendarId: $calendarId, taskUri: $taskUri);
 	}//end delete()
 
