@@ -91,6 +91,8 @@ class ValidateObjectFlowGoldenTest extends TestCase {
 		return [
 			'color'       => [['type' => 'color'], ['#ff0000', 'nope', 12, '', null]],
 			'color rgb'   => [['type' => 'color', 'format' => 'rgb'], ['rgb(1,2,3)', '#ff0000']],
+			'color rgba'  => [['type' => 'color', 'format' => 'rgba'], ['rgba(1,2,3,0.5)', '#ff0000']],
+			'color oklch' => [['type' => 'color', 'format' => 'oklch'], ['oklch(0.5 0.2 100)', '#ff0000']],
 			'recurrence'  => [['type' => 'recurrence'], ['FREQ=DAILY', 'nope', 12, null]],
 			'bsn'         => [['type' => 'string', 'format' => 'bsn'], ['123456782', '123456789']],
 			'semver'      => [['type' => 'string', 'format' => 'semver'], ['1.2.3', 'x']],
@@ -117,6 +119,14 @@ class ValidateObjectFlowGoldenTest extends TestCase {
 			'null union'  => [
 				['type' => 'object', 'title' => 'Nested', 'properties' => ['a' => ['anyOf' => [['type' => 'string'], ['type' => 'null']], 'nullable' => true]]],
 				[['a' => null]],
+			],
+			'null oneOf'  => [
+				['type' => 'object', 'title' => 'Nested', 'properties' => ['a' => ['oneOf' => [['type' => 'string'], ['type' => 'null']], 'nullable' => true]]],
+				[['a' => null]],
+			],
+			'null type'   => [
+				['type' => 'object', 'title' => 'Nested', 'properties' => ['a' => ['type' => 'null', 'nullable' => true]]],
+				[['a' => null], ['a' => 'x']],
 			],
 			'enum'        => [['type' => 'string', 'enum' => ['a', 'b']], ['a', 'c', null, '']],
 			'enum empty'  => [['type' => 'string', 'enum' => ['', 'b']], ['', null]],
@@ -191,7 +201,8 @@ class ValidateObjectFlowGoldenTest extends TestCase {
 			'no properties'    => $this->outcome($handler, ['object' => ['title' => 5], 'schemaObject' => $empty]),
 			'first of two'     => $this->outcome($handler, ['object' => ['title' => 5], 'schema' => $stored]),
 			'second of two'    => $this->outcome($handler, ['object' => ['title' => 'x'], 'schema' => $stored]),
-			'excused'          => $this->outcome($handler, ['object' => [], 'schema' => $stored, 'notSupplied' => [['property' => 'title', 'reason' => 'unknown']]]),
+			'excused'          => $this->outcome($handler, ['object' => ['other' => 1], 'schema' => $stored, 'notSupplied' => ['title' => 'unknown']]),
+			'not excused'      => $this->outcome($handler, ['object' => ['other' => 1], 'schema' => $stored]),
 			'given and stored' => $this->outcome(
 				$handler,
 				['object' => ['title' => 5], 'schema' => $stored, 'schemaObject' => (object) ['properties' => (object) ['title' => (object) ['type' => 'integer']]]]
