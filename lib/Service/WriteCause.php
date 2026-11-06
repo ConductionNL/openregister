@@ -214,6 +214,16 @@ final class WriteCause {
 	}
 
 	/**
+	 * The `@self` key a write door sets on the object it hands to a save, to say
+	 * the request tried to name its own cause. The object's uuid may not exist
+	 * yet, and nested objects are saved and audited before it, so the attempt
+	 * travels with the object until the save knows which row it belongs to.
+	 *
+	 * @var string
+	 */
+	public const CLIENT_ATTEMPT_KEY = '_clientCauseAttempt';
+
+	/**
 	 * Note that a request tried to name its own cause for the write of one object.
 	 *
 	 * @param string $objectUuid The object being written.

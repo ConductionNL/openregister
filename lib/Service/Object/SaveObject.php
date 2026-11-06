@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
@@ -3352,6 +3353,7 @@ class SaveObject implements SaveObjectInterface {
 		$call->flags->dedupOverride = $_dedupOverride;
 		$call->flags->owner = $_owner;
 		$this->takeDedupOverrideFromBody(call: $call);
+		$this->readClientCauseAttempt(call: $call);
 
 		// Resolve schema and register to entity objects.
 		[$call->schema, $call->schemaId, $call->register, $call->registerId] = $this->resolveSchemaAndRegister(
@@ -3393,6 +3395,38 @@ class SaveObject implements SaveObjectInterface {
 
 		unset($call->data[DedupCreatePolicy::OVERRIDE_KEY]);
 	}//end takeDedupOverrideFromBody()
+
+	/**
+	 * Read the client-cause mark from the object's `@self`.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function readClientCauseAttempt(ObjectSaveCall $call): void {
+		$call->flags->clientCauseAttempt = (($call->selfData[WriteCause::CLIENT_ATTEMPT_KEY] ?? false) === true);
+	}//end readClientCauseAttempt()
+
+	/**
+	 * Note a client-cause attempt against the object this save wrote.
+	 *
+	 * Runs before that object's audit row is built, and only for the save the
+	 * mark came in on: an object cascaded from it is a save of its own.
+	 *
+	 * @param ObjectSaveCall $call   The save call.
+	 * @param ObjectEntity   $object The object it wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function noteClientCauseAttempt(ObjectSaveCall $call, ObjectEntity $object): void {
+		if ($call->flags->clientCauseAttempt === true) {
+			WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
+		}
+	}//end noteClientCauseAttempt()
 
 	/**
 	 * Save an object once its register and schema are resolved.
@@ -3672,6 +3706,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function updateExistingForSave(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		$this->noteClientCauseAttempt(call: $call, object: $existingObject);
 		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
 			$call->selfData = $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac);
@@ -4497,6 +4532,7 @@ class SaveObject implements SaveObjectInterface {
 			$action = 'update';
 		}
 
+		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
 		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
 
 		$savedEntity->setLastLog($log->jsonSerialize());
