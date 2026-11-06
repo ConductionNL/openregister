@@ -90,6 +90,16 @@ final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 			'calc-both' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 0.85], 'previously' => ['gte' => 0.85]],
 			'calc-eq-ne' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['ne' => 0.5], 'previously' => ['eq' => 0.9]],
 			'calc-condition-string' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => 'lt', 'previously' => 3],
+			'calc-lt-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 0.5]],
+			'calc-lte-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lte' => 0.5]],
+			'calc-gt-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gt' => 0.5]],
+			'calc-gte-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gte' => 0.5]],
+			'calc-eq-numeric-text' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['eq' => '0.50']],
+			'calc-ne-numeric-text' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['ne' => '0.50']],
+			'calc-eq-word' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['eq' => 'high']],
+			'calc-gt-word' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gt' => 'x']],
+			'calc-lt-word-value' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 2]],
+			'calc-unknown-operator' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['between' => 1]],
 			'mixed-everything' => ['type' => 'created', 'action' => 'close', 'condition' => ['field' => 'status'], 'field' => 'score', 'filter' => ['field' => 'channel', 'value' => 'mail']],
 		];
 	}//end triggers()
