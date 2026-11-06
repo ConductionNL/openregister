@@ -239,11 +239,11 @@ class MagicSearchHandler {
 	private array $ignoredFilters = [];
 
 	/**
-	 * Cached result of pg_trgm extension availability check.
+	 * The pg_trgm probe, built on first use.
 	 *
-	 * @var boolean|null
+	 * @var MagicPgTrgmProbe|null
 	 */
-	private ?bool $hasPgTrgm = null;
+	private ?MagicPgTrgmProbe $trgmProbe = null;
 
 	/**
 	 * PERF-4: request-scoped memo of the per-schema property-type and
@@ -335,32 +335,9 @@ class MagicSearchHandler {
 	 * @return bool True if pg_trgm is available, false otherwise.
 	 */
 	public function hasPgTrgmExtension(): bool {
-		// Return cached result if available.
-		if ($this->hasPgTrgm !== null) {
-			return $this->hasPgTrgm;
-		}
+		$this->trgmProbe ??= new MagicPgTrgmProbe(db: $this->db, logger: $this->logger);
 
-		// Not PostgreSQL = no pg_trgm.
-		if ($this->isPostgresPlatform() === false) {
-			$this->hasPgTrgm = false;
-			return false;
-		}
-
-		// Check if pg_trgm extension is installed.
-		try {
-			$stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-			$result = $stmt->execute();
-			$count = (int)$result->fetchOne();
-			$this->hasPgTrgm = $count > 0;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicSearchHandler] Failed to check pg_trgm extension availability',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			$this->hasPgTrgm = false;
-		}
-
-		return $this->hasPgTrgm;
+		return $this->trgmProbe->available();
 	}//end hasPgTrgmExtension()
 
 	/**
