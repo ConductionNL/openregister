@@ -215,7 +215,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 								label="label"
 								trackBy="value"
 								:placeholder="
-									t('openregister', 'Map to target property...')
+									t('openregister', 'Map to target property…')
 								"
 								:clearable="true"
 								@update:modelValue="

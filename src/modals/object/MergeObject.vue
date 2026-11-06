@@ -62,7 +62,7 @@ import {
 
 			<div v-if="loading" class="loading-container">
 				<NcLoadingIcon :size="32" />
-				<p>{{ t('openregister', 'Loading objects...') }}</p>
+				<p>{{ t('openregister', 'Loading objects…') }}</p>
 			</div>
 
 			<div v-else-if="availableObjects.length" class="object-list">
