@@ -52,10 +52,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Integration;
 
-use OCA\OpenRegister\Db\AnonymisationLog;
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
-use OCA\OpenRegister\Service\File\SanitizationResult;
+use OCA\OpenRegister\Files\Db\AnonymisationLog;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\SanitizationResult;
 use OCP\AppFramework\Db\Entity;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;

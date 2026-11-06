@@ -7,7 +7,6 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcAppContent>
 		<CnIndexPage
-			ref="indexPage"
 			:title="t('openregister', 'Applications')"
 			:description="t('openregister', 'Manage your applications and modules')"
 			:showTitle="true"
@@ -49,41 +48,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 							<ApplicationOutline :size="20" />
 							{{ object.name }}
 						</h2>
-						<NcActions
-							:primary="true"
-							:menuName="t('openregister', 'Actions')">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										applicationStore.setApplicationItem(object)
-										navigationStore.setModal('editApplication')
-									}
-								">
-								<template #icon>
-									<Pencil :size="20" />
-								</template>
-								{{ t('openregister', 'Edit') }}
-							</NcActionButton>
-							<NcActionButton
-								closeAfterClick
-								@click="
-									() => {
-										applicationStore.setApplicationItem(object)
-										navigationStore.setDialog(
-											'deleteApplication',
-										)
-									}
-								">
-								<template #icon>
-									<TrashCanOutline :size="20" />
-								</template>
-								{{ t('openregister', 'Delete') }}
-							</NcActionButton>
-						</NcActions>
+						<ActionMenu :actions="applicationActions(object)" primary />
 					</div>
 					<!-- Application Details -->
 					<div class="applicationDetails">
@@ -187,37 +152,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 			<!-- Custom row actions for table view -->
 			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								applicationStore.setApplicationItem(row)
-								navigationStore.setModal('editApplication')
-							}
-						">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						{{ t('openregister', 'Edit') }}
-					</NcActionButton>
-					<NcActionButton
-						closeAfterClick
-						@click="
-							() => {
-								applicationStore.setApplicationItem(row)
-								navigationStore.setDialog('deleteApplication')
-							}
-						">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						{{ t('openregister', 'Delete') }}
-					</NcActionButton>
-				</NcActions>
+				<ActionMenu :actions="applicationActions(row)" />
 			</template>
 		</CnIndexPage>
 	</NcAppContent>
@@ -225,23 +160,18 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import { NcAppContent } from '@nextcloud/vue'
 import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import { deleteAction, editAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'ApplicationsIndex',
 	components: {
+		ActionMenu,
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		ApplicationOutline,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 	},
 
 	data() {
@@ -332,6 +262,48 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The menu of one application.
+		 *
+		 * @spec exclude UI plumbing — menu entries; each delegates to the stores.
+		 * @param {object} application - list row
+		 * @return {Array<object>}
+		 */
+		applicationActions(application) {
+			return [
+				editAction(() => this.openModal(application, 'editApplication')),
+				deleteAction(() =>
+					this.openDialog(application, 'deleteApplication'),
+				),
+			]
+		},
+
+		/**
+		 * Select a row and open a modal on it.
+		 *
+		 * @spec exclude UI plumbing — store delegation.
+		 * @param {object} item - list row
+		 * @param {string} modal - modal name
+		 * @return {void}
+		 */
+		openModal(item, modal) {
+			applicationStore.setApplicationItem(item)
+			navigationStore.setModal(modal)
+		},
+
+		/**
+		 * Select a row and open a dialog on it.
+		 *
+		 * @spec exclude UI plumbing — store delegation.
+		 * @param {object} item - list row
+		 * @param {string} dialog - dialog name
+		 * @return {void}
+		 */
+		openDialog(item, dialog) {
+			applicationStore.setApplicationItem(item)
+			navigationStore.setDialog(dialog)
+		},
+
 		/**
 		 * Reload the application list from the store.
 		 *

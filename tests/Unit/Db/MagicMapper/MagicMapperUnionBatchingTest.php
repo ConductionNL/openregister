@@ -296,6 +296,14 @@ class MagicMapperUnionBatchingTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testMergeClampsANumericLimitToTheMaximumPage(): void {
+		$rows = array_map(static fn (int $index): array => ['_uuid' => sprintf('%05d', $index)], range(1, 1001));
+
+		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_limit' => 5000], 'isPostgres' => false]);
+
+		$this->assertCount(1000, $merged);
+	}//end testMergeClampsANumericLimitToTheMaximumPage()
+
 	public function testMergeWithoutALimitReturnsTheRestOfTheSet(): void {
 		$rows = [
 			['_uuid' => 'a'],

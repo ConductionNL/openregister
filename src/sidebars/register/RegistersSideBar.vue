@@ -403,49 +403,13 @@ export default {
 <style lang="scss" scoped>
 @use '../../styles/sidebars.scss' as *;
 
-.section {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.section:last-child {
-	border-bottom: none;
-}
+@include sidebar-section;
 
 @include section-title;
 
-.loadingContainer {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 0 16px;
-	color: var(--color-text-maxcontrast);
-}
+@include sidebar-loading;
 
 @include stats-stack;
 
-.filterSection {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding-bottom: 20px;
-	border-bottom: 1px solid var(--color-border);
-
-	h3 {
-		margin: 0;
-		font-size: 1.1em;
-		color: var(--color-main-text);
-	}
-}
-
-.filterGroup {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-
-	label {
-		font-size: 0.9em;
-		color: var(--color-text-maxcontrast);
-	}
-}
+@include filter-section-block;
 </style>
