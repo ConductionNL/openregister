@@ -220,6 +220,17 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->assertSame([], $this->flows);
 	}
 
+	public function testAnotherSchemaInTheRegisterIsNoPublish(): void {
+		$this->version = $this->object(['manifest' => ['schedules' => [$this->schedule()]]], self::VERSION);
+		$after = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-1');
+		$after->setSchema('9');
+		$after->setOrganisation(self::ORGANISATION);
+
+		$this->listener->handle(new ObjectUpdatedEvent($after, $this->object(['slug' => 'crm'], 'app-1')));
+
+		$this->assertSame([], $this->flows);
+	}
+
 	public function testTheRunActsAsThePublisherNotTheManifestOrTheApplicationOwner(): void {
 		$this->session = 'quinten';
 
