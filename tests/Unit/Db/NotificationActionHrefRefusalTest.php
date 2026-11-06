@@ -61,6 +61,7 @@ final class NotificationActionHrefRefusalTest extends TestCase {
 			'file transfer' => ['ftp://example.test/call'],
 			'phone' => ['tel:+31201234567'],
 			'not a url' => ['call'],
+			'broken host' => ['http://exa mple.test/call'],
 			'empty' => [''],
 		];
 	}//end refused()
