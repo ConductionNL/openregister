@@ -104,6 +104,7 @@ class PermissionHandlerExpandRolesGoldenTest extends TestCase {
 			'unknown role'     => ['roles' => ['ghost' => ['editors']]],
 			'unknown + known'  => ['read' => ['x'], 'roles' => ['ghost' => ['a'], 'viewer' => ['b']]],
 			'two roles'        => ['roles' => ['viewer' => ['a'], 'editor' => ['b'], 'lead' => ['c'], 'writer' => ['d']]],
+			'blank role key'   => ['roles' => ['' => ['editors']]],
 			'int role key'     => ['roles' => [7 => ['editors']]],
 			'deny'             => ['deny' => ['roles' => ['viewer' => ['x']]], 'roles' => ['viewer' => ['y']]],
 			'deny of deny'     => ['deny' => ['deny' => ['read' => ['z']], 'roles' => ['viewer' => ['x']]]],
