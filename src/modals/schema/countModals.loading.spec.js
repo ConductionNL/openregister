@@ -17,12 +17,30 @@ jest.mock('@nextcloud/l10n', () => ({
 }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
 jest.mock('vue', () => ({ ...jest.requireActual('vue'), ...mockLibrary() }))
-jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Cancel.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/DatabaseOutline.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/DeleteSweep.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Eye.vue', () => ({ __esModule: true, default: {} }))
+jest.mock('vue-material-design-icons/AlertCircle.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Cancel.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/CheckCircle.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/DatabaseOutline.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/DeleteSweep.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Eye.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
 jest.mock('../../store/store.js', () => ({
 	navigationStore: { dialog: null, setDialog: () => {} },
 	registerStore: {},
@@ -41,7 +59,10 @@ function mockLibrary() {
 	const stub = (name) => ({
 		name,
 		render() {
-			return render('div', Object.values(this.$slots).map((slot) => slot({})))
+			return render(
+				'div',
+				Object.values(this.$slots).map((slot) => slot({})),
+			)
 		},
 	})
 	return {
