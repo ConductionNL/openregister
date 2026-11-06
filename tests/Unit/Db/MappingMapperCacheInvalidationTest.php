@@ -20,9 +20,7 @@
  *     that two constants are equal is a claim, so this asserts it.
  *
  * Filed as #2417 on the theory that the invalidation was missing entirely. It is
- * not: it is present, correct, more complete than the public
- * `MappingService::invalidateMappingCache()`, and simply lives under a different
- * name. What was actually missing is this file.
+ * not: it is present, correct, and simply lives under a different name. What was actually missing is this file.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db

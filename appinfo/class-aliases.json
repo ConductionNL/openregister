@@ -916,11 +916,6 @@
 			"eager": true,
 			"service": true
 		},
-		"OCA\\OpenRegister\\Service\\Notification\\VngNotificatiesEnvelope": {
-			"class": "OCA\\OpenRegister\\Notifications\\Service\\Notification\\VngNotificatiesEnvelope",
-			"eager": false,
-			"service": true
-		},
 		"OCA\\OpenRegister\\Service\\Party\\PartyNotificationService": {
 			"class": "OCA\\OpenRegister\\Notifications\\Service\\Party\\PartyNotificationService",
 			"eager": false,
@@ -1008,6 +1003,56 @@
 		},
 		"OCA\\OpenRegister\\Service\\Webhook\\WebhookInterceptionCache": {
 			"class": "OCA\\OpenRegister\\Notifications\\Service\\Webhook\\WebhookInterceptionCache",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\AggregationController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\AggregationController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ContactSearchController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ContactSearchController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\DashboardController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\DashboardController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\DuplicateController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\DuplicateController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\GraphQLController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\GraphQLController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\MapsOverviewController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\MapsOverviewController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ReportsController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ReportsController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\SearchController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\SearchController",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\Support\\ViewPatch": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\Support\\ViewPatch",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\ViewsController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ViewsController",
 			"eager": false,
 			"service": true
 		}

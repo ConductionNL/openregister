@@ -67,7 +67,6 @@ use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Search\Listener\ObjectMetricsListener;
 
 /**
  * Submit/remove object content on the object lifecycle events.

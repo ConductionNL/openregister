@@ -341,7 +341,7 @@ Since PHP is a request-scoped runtime without persistent in-memory state, the sy
 The system MUST expose metrics from the `PerformanceHandler` (`lib/Service/Object/PerformanceHandler.php`) and `PerformanceOptimizationHandler` to track internal optimization effectiveness. These metrics enable capacity planning and regression detection.
 
 #### Scenario: Fast-path detection rate
-- **GIVEN** the `PerformanceHandler.optimizeRequestForPerformance()` classifies requests as simple or complex
+- **GIVEN** `PerformanceHandler::isSimpleRequest()` classifies requests as simple or complex
 - **WHEN** the metrics endpoint is scraped
 - **THEN** `openregister_fast_path_requests_total` and `openregister_slow_path_requests_total` counters MUST be present
 
@@ -547,13 +547,7 @@ testing.
 
 ### Requirement: Metrics aggregation helpers MUST summarize operational metrics from the metrics table
 
-`MetricsService` MUST aggregate rows from the `openregister_metrics` table into the per-day, per-type, and summary shapes consumed by the dashboard and operational reporting, plus the supporting numeric helpers those aggregations rely on.
-
-#### Scenario: Files processed per day
-
-- **GIVEN** file-processed metrics recorded over the last N days
-- **WHEN** `getFilesProcessedPerDay(days)` runs
-- **THEN** it MUST return a `[date => count]` map, grouped by `%Y-%m-%d` and ordered ascending, restricted to rows within the window
+`MetricsService` MUST aggregate rows from the `openregister_metrics` table into the per-type and summary shapes consumed by operational reporting, plus the supporting numeric helpers those aggregations rely on.
 
 #### Scenario: Embedding statistics with success rate and cost
 
@@ -568,12 +562,11 @@ testing.
 - **WHEN** `getSearchLatencyStats(days)` runs
 - **THEN** it MUST return `[type => {count, avg_ms, min_ms, max_ms}]` computed per search type
 
-#### Scenario: Storage growth and dashboard composition
+#### Scenario: Storage growth
 
 - **GIVEN** recorded vector/storage metrics
 - **WHEN** `getStorageGrowth(days)` runs
 - **THEN** it MUST return per-day vector additions plus current storage and an average derived from `calculateAverageVectorsPerDay()`
-- **AND** `getDashboardMetrics()` MUST compose `files_processed` (30d), `embedding_stats` (30d), `search_latency` (7d), and `storage_growth` (30d) into a single bundle
 
 #### Scenario: Numeric helper behavior
 

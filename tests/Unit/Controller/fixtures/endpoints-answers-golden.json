@@ -2,15 +2,22 @@
     "allLogs by a non-admin": {
         "calls": [
             {
-                "endpointLogMapper.findAll": [
-                    50,
-                    0
+                "groupManager.isAdmin": "bob"
+            },
+            {
+                "endpointMapper.findAll": [
+                    null,
+                    null
                 ]
             },
             {
-                "endpointLogMapper.findAll": [
+                "endpointLogMapper.findPageWithin": [
+                    [
+                        5
+                    ],
                     null,
-                    null
+                    50,
+                    0
                 ]
             }
         ],
@@ -22,6 +29,9 @@
     },
     "allLogs fails": {
         "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
             {
                 "endpointLogMapper.findAll": [
                     50,
@@ -42,6 +52,9 @@
     },
     "allLogs for one endpoint": {
         "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
             {
                 "endpointLogMapper.findByEndpoint": [
                     5,
@@ -66,6 +79,9 @@
     "allLogs for one endpoint fails": {
         "calls": [
             {
+                "groupManager.isAdmin": "alice"
+            },
+            {
                 "endpointLogMapper.findByEndpoint": [
                     5,
                     50,
@@ -87,6 +103,9 @@
     "allLogs not found": {
         "calls": [
             {
+                "groupManager.isAdmin": "alice"
+            },
+            {
                 "endpointLogMapper.findAll": [
                     50,
                     0
@@ -106,6 +125,9 @@
     },
     "allLogs succeeds": {
         "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
             {
                 "endpointLogMapper.findAll": [
                     50,
@@ -128,6 +150,9 @@
     "allLogs with an empty endpoint": {
         "calls": [
             {
+                "groupManager.isAdmin": "alice"
+            },
+            {
                 "endpointLogMapper.findAll": [
                     50,
                     0
@@ -148,6 +173,9 @@
     },
     "allLogs with endpoint 0": {
         "calls": [
+            {
+                "groupManager.isAdmin": "alice"
+            },
             {
                 "endpointLogMapper.findAll": [
                     50,

@@ -25,7 +25,7 @@ use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;

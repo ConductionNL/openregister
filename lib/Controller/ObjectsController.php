@@ -29,18 +29,35 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use DateTimeImmutable;
+use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
+use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
+use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
+use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
+use OCA\OpenRegister\Controller\Support\ValidationWindow;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
+use OCA\OpenRegister\Controller\Support\MagicMappedTable;
+use OCA\OpenRegister\Controller\Support\ObjectsRouteScope;
+use OCA\OpenRegister\Controller\Support\ObjectsTableRead;
+use OCA\OpenRegister\Controller\Support\ObjectVersionGuard;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
+use OCA\OpenRegister\Controller\Support\ResultWindow;
+use OCA\OpenRegister\Controller\Support\SentWrite;
+use OCA\OpenRegister\Controller\Support\ShowServices;
+use OCA\OpenRegister\Controller\Support\ShownEntity;
+use OCA\OpenRegister\Controller\Support\VersionClaim;
+use OCA\OpenRegister\Controller\Support\StringTypedPatch;
+use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -56,8 +73,6 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
@@ -69,12 +84,14 @@ use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
+use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
-use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -89,7 +106,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\DB\Exception;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -98,6 +114,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -122,20 +139,6 @@ class ObjectsController extends Controller {
 	use ResolvesRegisterAndSchemaTrait;
 
 	/**
-	 * Export service for handling data exports
-	 *
-	 * @var ObjectExporterInterface
-	 */
-	private readonly ObjectExporterInterface $exportService;
-
-	/**
-	 * Import service for handling data imports
-	 *
-	 * @var ObjectImporterInterface
-	 */
-	private readonly ObjectImporterInterface $importService;
-
-	/**
 	 * The `@`-prefixed body keys a client is allowed to send.
 	 *
 	 * Everything else starting with `@` is server-managed metadata and is
@@ -156,27 +159,6 @@ class ObjectsController extends Controller {
 	 * @var ContainerInterface
 	 */
 	private readonly ContainerInterface $container;
-
-	/**
-	 * The register mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * The audit trail mapper.
-	 *
-	 * @var AuditTrailMapperInterface
-	 */
-	private readonly AuditTrailMapperInterface $auditTrailMapper;
 
 	/**
 	 * The object service.
@@ -244,28 +226,34 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ControllerSession $session,
-		ObjectsControllerServices $services,
-	) {
+	public function __construct(string $appName, IRequest $request, ControllerSession $session, ObjectsControllerServices $services) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
 		$this->governance = $services->governance;
 		$this->linkedData = $services->extensions->linkedData;
 		$this->geo = $services->extensions->geo;
 		$this->container = $services->extensions->container;
-		$this->registerMapper = $services->store->registerMapper;
-		$this->schemaMapper = $services->store->schemaMapper;
-		$this->auditTrailMapper = $services->store->auditTrailMapper;
 		$this->objectService = $services->store->objectService;
 		$this->userSession = $session->userSession;
 		$this->groupManager = $session->groupManager;
 		$this->logger = $session->logger;
-		$this->exportService = $services->transfer->exportService;
-		$this->importService = $services->transfer->importService;
 	}//end __construct()
+
+	/**
+	 * The version check every write path asks before it writes.
+	 *
+	 * @return ObjectVersionGuard The guard for this request.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function versionGuard(): ObjectVersionGuard {
+		return new ObjectVersionGuard(
+			claim: new VersionClaim(request: $this->request),
+			container: $this->container,
+			trail: new ConflictTrail(auditTrail: $this->services->store->auditTrailMapper, logger: $this->logger),
+			logger: $this->logger
+		);
+	}//end versionGuard()
 
 	/**
 	 * The refusal body for an object that is in the trash rather than absent.
@@ -380,18 +368,17 @@ class ObjectsController extends Controller {
 	 * predicate all remain applied exactly as for the plain-JSON response.
 	 *
 	 * @param array $renderedObject The rendered object array.
-	 * @param \OCA\OpenRegister\Db\Register|null $register The resolved register entity.
-	 * @param \OCA\OpenRegister\Db\Schema|null $schema The resolved schema entity.
+	 * @param array $resolved The resolved register and schema entities.
 	 *
 	 * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse {
+	private function jsonLdObjectResponse(array $renderedObject, array $resolved): JSONResponse {
 		$document = $this->linkedData->jsonLdSerializer->serialize(
 			renderedObject: $renderedObject,
-			schema: $schema,
-			register: $register
+			schema: $resolved['schemaEntity'],
+			register: $resolved['registerEntity']
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
@@ -401,18 +388,17 @@ class ObjectsController extends Controller {
 	 * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
 	 *
 	 * @param array $result The paginated result array.
-	 * @param \OCA\OpenRegister\Db\Register|null $register The resolved register entity.
-	 * @param \OCA\OpenRegister\Db\Schema|null $schema The resolved schema entity.
+	 * @param array $resolved The resolved register and schema entities.
 	 *
 	 * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
 	 *
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
-	private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse {
+	private function jsonLdCollectionResponse(array $result, array $resolved): JSONResponse {
 		$document = $this->linkedData->jsonLdSerializer->serializeCollection(
 			paginatedResult: $result,
-			schema: $schema,
-			register: $register
+			schema: $resolved['schemaEntity'],
+			register: $resolved['registerEntity']
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
@@ -455,25 +441,7 @@ class ObjectsController extends Controller {
 			return $data;
 		}
 
-		foreach ($data as $key => $value) {
-			if (is_string($value) === false) {
-				continue;
-			}
-
-			$trimmed = trim($value);
-
-			// Only attempt decode on values that look like JSON arrays or objects.
-			if (($trimmed[0] ?? '') !== '[' && ($trimmed[0] ?? '') !== '{') {
-				continue;
-			}
-
-			$decoded = json_decode($trimmed, associative: true);
-			if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-				$data[$key] = $decoded;
-			}
-		}
-
-		return $data;
+		return (new ObjectRequestParams())->decodedFormValues(data: $data);
 	}//end normalizeFormDataValues()
 
 	/**
@@ -493,7 +461,7 @@ class ObjectsController extends Controller {
 	 *   slug, name, description, summary, image, relations, tmlo (update path only)
 	 *
 	 * Rejected at this layer (server-managed or security-sensitive):
-	 *   owner, organisation, authorization, groups, application, folder
+	 *   owner, organisation, authorization, groups, application, folder, _autoGeneratedUuid
 	 *
 	 * @param array $data The raw request data (may contain a '@self' key)
 	 *
@@ -512,6 +480,8 @@ class ObjectsController extends Controller {
 			'groups',
 			'application',
 			'folder',
+			'_autoGeneratedUuid',
+			\OCA\OpenRegister\Service\WriteCause::CLIENT_ATTEMPT_KEY,
 		];
 
 		foreach ($serverManagedKeys as $key) {
@@ -588,7 +558,7 @@ class ObjectsController extends Controller {
 		}
 
 		$uploadedFile = $this->request->getUploadedFile($fieldName);
-		if ($uploadedFile === null || isset($uploadedFile['tmp_name']) === false) {
+		if (isset($uploadedFile['tmp_name']) === false) {
 			return null;
 		}
 
@@ -654,17 +624,10 @@ class ObjectsController extends Controller {
 	}//end multipleFileAt()
 
 	/**
-	 * Private helper method to handle pagination of results.
-	 *
-	 * This method paginates the given results array based on the provided total, limit, offset, and page parameters.
-	 * It calculates the number of pages, sets the appropriate offset and page values, and returns the paginated results
-	 * along with metadata such as total items, current page, total pages, limit, and offset.
+	 * The results in their paging envelope, with next and previous page links.
 	 *
 	 * @param array $results The array of objects to paginate.
-	 * @param int|null $total The total number of items (before pagination). Defaults to 0.
-	 * @param int|null $limit The number of items per page. Defaults to 20.
-	 * @param int|null $offset The offset of items. Defaults to 0.
-	 * @param int|null $page The current page number. Defaults to 1.
+	 * @param ResultWindow $window The total and the position asked for.
 	 *
 	 * @return (array|float|int|string)[]
 	 *
@@ -674,302 +637,30 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-param array<int, mixed> $results
 	 *
-	 * @psalm-return array{
-	 *     results: array<int, mixed>,
-	 *     total: int<0, max>,
-	 *     page: float|int<1, max>,
-	 *     pages: 1|float,
-	 *     limit: int<1, max>,
-	 *     offset: int<0, max>,
-	 *     next?: string,
-	 *     prev?: string
-	 * }
+	 * @psalm-return array<string, mixed>
 	 */
-	private function paginate(array $results, ?int $total = 0, ?int $limit = 20, ?int $offset = 0, ?int $page = 1): array {
-		// Ensure we have valid values (never null).
-		$total = max(0, $total ?? 0);
-		$limit = max(1, $limit ?? 20);
-		// Minimum limit of 1.
-		$offset = max(0, $offset ?? 0);
-		$page = max(1, $page ?? 1);
-		// Minimum page of 1        // Calculate the number of pages (minimum 1 page).
-		$pages = max(1, ceil($total / $limit));
+	private function paginate(array $results, ResultWindow $window): array {
+		$paginated = $window->over(results: $results);
+		$links = new PaginationLinks(uri: $this->request->getRequestUri());
 
-		// If we have a page but no offset, calculate the offset.
-		if ($offset === 0) {
-			$offset = ($page - 1) * $limit;
-		}
-
-		// If we have an offset but page is 1, calculate the page.
-		if ($page === 1 && $offset > 0) {
-			$page = floor($offset / $limit) + 1;
-		}
-
-		// If total is smaller than the number of results, set total to the number of results.
-		// @todo: this is a hack to ensure the pagination is correct when the total is not known.
-		// That suggests that the underlying count service has a problem that needs to be fixed instead.
-		if ($total < count($results)) {
-			$total = count($results);
-			$pages = max(1, ceil($total / $limit));
-		}
-
-		// Initialize the results array with pagination information.
-		$paginatedResults = [
-			'results' => $results,
-			'total' => $total,
-			'page' => $page,
-			'pages' => $pages,
-			'limit' => $limit,
-			'offset' => $offset,
-		];
-
-		// Add next/prev page URLs if applicable.
-		$currentUrl = $this->request->getRequestUri();
-
-		// Add next page link if there are more pages.
-		if ($page < $pages) {
-			$nextPage = $page + 1;
-			$nextUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $nextPage, $currentUrl);
-			if (strpos($nextUrl, 'page=') === false) {
-				$nextUrl .= '&page=' . $nextPage;
-				if (strpos($nextUrl, '?') === false) {
-					$nextUrl .= '?page=' . $nextPage;
-				}
-			}
-
-			$paginatedResults['next'] = $nextUrl;
-		}
-
-		// Add previous page link if not on first page.
-		if ($page > 1) {
-			$prevPage = $page - 1;
-			$prevUrl = preg_replace('/([?&])page=\d+/', '$1page=' . $prevPage, $currentUrl);
-			if (strpos($prevUrl, 'page=') === false) {
-				$prevUrl .= '&page=' . $prevPage;
-				if (strpos($prevUrl, '?') === false) {
-					$prevUrl .= '?page=' . $prevPage;
-				}
-			}
-
-			$paginatedResults['prev'] = $prevUrl;
-		}
-
-		return $paginatedResults;
+		return array_merge($paginated, $links->around(page: (int)$paginated['page'], pages: (int)$paginated['pages']));
 	}//end paginate()
 
 	/**
-	 * Helper method to get configuration array from the current request (LEGACY)
+	 * The listing configuration of this request.
 	 *
-	 * @param string|null $_register Optional register identifier (unused).
-	 * @param string|null $_schema Optional schema identifier (unused).
-	 * @param array|null $ids Optional array of specific IDs to filter
-	 *
-	 * @return (array|int|mixed|null)[] Configuration array containing:
+	 * @return array The configuration, see ObjectRequestParams::listing().
 	 *
 	 * @deprecated Use buildSearchQuery() instead for faceting-enabled endpoints
-	 *               - limit: (int) Maximum number of items per page
-	 *               - offset: (int|null) Number of items to skip
-	 *               - page: (int|null) Current page number
-	 *               - filters: (array) Filter parameters
-	 *               - sort: (array) Sort parameters
-	 *               - search: (string|null) Search term
-	 *               - _extend: (array|null) Properties to extend
-	 *               - fields: (array|null) Fields to include
-	 *               - unset: (array|null) Fields to exclude
-	 *               - register: (string|null) Register identifier
-	 *               - schema: (string|null) Schema identifier
-	 *               - ids: (array|null) Specific IDs to filter
-	 *
-	 * @psalm-return array{
-	 *     limit: int,
-	 *     offset: int|null,
-	 *     page: int|null,
-	 *     filters: array,
-	 *     sort: array<never, never>|mixed,
-	 *     _search: mixed|null,
-	 *     _extend: mixed|null,
-	 *     _fields: mixed|null,
-	 *     _unset: mixed|null,
-	 *     ids: array|null
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 */
-	private function getConfig(?string $_register = null, ?string $_schema = null, ?array $ids = null): array {
+	private function getConfig(): array {
 		$params = $this->request->getParams();
 
 		unset($params['id']);
 		unset($params['_route']);
 
-		// Extract and normalize parameters.
-		$limit = (int)($params['limit'] ?? $params['_limit'] ?? 20);
-		$offset = null;
-		if (($params['_offset'] ?? null) !== null) {
-			$offset = (int)$params['_offset'];
-		}
-
-		if (($params['offset'] ?? null) !== null) {
-			$offset = (int)$params['offset'];
-		}
-
-		$page = null;
-		if (($params['_page'] ?? null) !== null) {
-			$page = (int)$params['_page'];
-		}
-
-		if (($params['page'] ?? null) !== null) {
-			$page = (int)$params['page'];
-		}
-
-		// If we have a page but no offset, calculate the offset.
-		if ($page !== null && $offset === null) {
-			$offset = ($page - 1) * $limit;
-		}
-
-		return [
-			'limit' => $limit,
-			'offset' => $offset,
-			'page' => $page,
-			'filters' => $params,
-			'sort' => $this->normalizeOrderParameter(order: $params['order'] ?? $params['_order'] ?? []),
-			'_search' => ($params['_search'] ?? null),
-			'_extend' => $this->normalizeExtendParameter(extend: $params['extend'] ?? $params['_extend'] ?? null),
-			'_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
-			'_unset' => ($params['unset'] ?? $params['_unset'] ?? null),
-			'ids' => $ids,
-		];
+		return (new ObjectRequestParams())->listing(params: $params);
 	}//end getConfig()
-
-	/**
-	 * Normalize order parameter from request.
-	 *
-	 * The _order parameter may arrive as a JSON-encoded string from URL query
-	 * parameters (e.g., _order={"deadline":"asc"}). This method ensures it
-	 * is always returned as an array.
-	 *
-	 * @param mixed $order The order parameter from the request.
-	 *
-	 * @return array The normalized order array.
-	 */
-	private function normalizeOrderParameter(mixed $order): array {
-		if (is_array($order) === true) {
-			return $order;
-		}
-
-		if (is_string($order) === true && $order !== '') {
-			$decoded = json_decode($order, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		return [];
-	}//end normalizeOrderParameter()
-
-	/**
-	 * Normalize extend parameter for backwards compatibility
-	 *
-	 * Converts old @self.schema format to new _schema format.
-	 * Supports both single strings and arrays of extend values.
-	 *
-	 * @param mixed $extend The extend parameter from request (string, array, or null)
-	 *
-	 * @return array|null Normalized extend array or null
-	 */
-	private function normalizeExtendParameter(mixed $extend): ?array {
-		if ($extend === null) {
-			return null;
-		}
-
-		// Convert string to array.
-		if (is_string($extend) === true) {
-			$extend = explode(',', $extend);
-		}
-
-		// Ensure it's an array.
-		if (is_array($extend) === false) {
-			return null;
-		}
-
-		// Normalize each extend value for backwards compatibility.
-		$normalized = [];
-		foreach ($extend as $key => $value) {
-			// Skip if not a string.
-			if (is_string($value) === false) {
-				$normalized[$key] = $value;
-				continue;
-			}
-
-			// Convert @self.schema to _schema for backwards compatibility.
-			if ($value === '@self.schema') {
-				$normalized[$key] = '_schema';
-				continue;
-			}
-
-			// Convert @self.register to _register for backwards compatibility.
-			if ($value === '@self.register') {
-				$normalized[$key] = '_register';
-				continue;
-			}
-
-			// Keep original value.
-			$normalized[$key] = $value;
-		}//end foreach
-
-		return $normalized;
-	}//end normalizeExtendParameter()
-
-	/**
-	 * Helper method to resolve register and schema slugs to numeric IDs
-	 *
-	 * This ensures consistent slug-to-ID conversion across all controller methods
-	 * and prevents the discrepancy between slug-based and ID-based API calls.
-	 *
-	 * @param string $register Register slug or ID
-	 * @param string $schema Schema slug or ID
-	 * @param ObjectOperationsInterface $objectService Object service instance
-	 *
-	 * @return array Array with resolved register and schema IDs: ['register' => int, 'schema' => int]
-	 *
-	 * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException
-	 * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException
-	 *
-	 * @psalm-return   array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
-	 * @phpstan-return array{register: int, schema: int, registerEntity: mixed, schemaEntity: mixed}
-	 */
-
-	/**
-	 * Parse multi-value parameter (array or comma-separated).
-	 *
-	 * Supports both formats:
-	 * - Array: schemas[]=1&schemas[]=2
-	 * - Comma-separated: schemas=1,2,3
-	 *
-	 * @param mixed $param The parameter value (string, array, or null).
-	 * @param string $defaultValue Default value to use if param is null.
-	 *
-	 * @return array Array of values.
-	 */
-	private function parseMultiValue($param, string $defaultValue): array {
-		// If no parameter provided, use default.
-		if ($param === null || $param === '') {
-			return [$defaultValue];
-		}
-
-		// If already an array, return as-is.
-		if (is_array($param) === true) {
-			return array_values(array_unique(array_filter($param)));
-			// Remove empty values and duplicates.
-		}
-
-		// If string contains comma, split on comma.
-		if (is_string($param) === true && str_contains($param, ',') === true) {
-			return array_values(array_unique(array_filter(array_map('trim', explode(',', $param)))));
-		}
-
-		// Single value.
-		return [$param];
-	}//end parseMultiValue()
 
 	/**
 	 * Perform cross-table search across multiple register+schema combinations.
@@ -1087,8 +778,8 @@ class ObjectsController extends Controller {
 		foreach (array_unique($ids) as $entityId) {
 			try {
 				$entities[(string)$entityId] = match ($kind) {
-					'register' => $this->registerMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
-					default => $this->schemaMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+					'register' => $this->services->store->registerMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
+					default => $this->services->store->schemaMapper->find(id: $entityId, _multitenancy: false, _rbac: false),
 				};
 			} catch (\Exception $e) {
 				$this->logger->warning(
@@ -1165,7 +856,7 @@ class ObjectsController extends Controller {
 		);
 		if ($includeEmpty === false) {
 			$serializedResults = array_map(
-				callback: [$this, 'stripEmptyValues'],
+				callback: [new EmptyValueStripper(), 'stripped'],
 				array: $serializedResults
 			);
 		}
@@ -1281,33 +972,24 @@ class ObjectsController extends Controller {
 	 * the mistake is visible in the log without refusing the request.
 	 *
 	 * @param array<string, mixed> $query The query from `buildSearchQuery()`.
-	 * @param Schema|null $schemaEntity The resolved schema, when there is one.
-	 * @param string $register The register reference from the URL.
-	 * @param string $schema The schema reference from the URL.
+	 * @param array<string, mixed> $listing The listing: the URL references and the resolved schema.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	private function warnUnknownFilterKeys(
-		array $query,
-		?Schema $schemaEntity,
-		string $register,
-		string $schema,
-	): void {
+	private function warnUnknownFilterKeys(array $query, array $listing): void {
+		$schemaEntity = ($listing['resolved']['schemaEntity'] ?? null);
 		if ($schemaEntity === null) {
 			return;
 		}
 
 		FilterParams::warnUnknownKeys(
 			logger: $this->logger,
-			keys: FilterParams::unknownObjectFilterKeys(
-				query: $query,
-				properties: ($schemaEntity->getProperties() ?? [])
-			),
+			keys: FilterParams::unknownObjectFilterKeys(query: $query, properties: $schemaEntity->getProperties()),
 			endpoint: 'objects#index',
-			register: $register,
-			schema: $schema
+			register: $listing['register'],
+			schema: $listing['schema']
 		);
 	}//end warnUnknownFilterKeys()
 
@@ -1330,32 +1012,62 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function refuseMalformedSearchTerm(array $params): ?JSONResponse {
+		$term = $this->parsedSearchTerm(params: $params);
+		if ($term === null) {
+			return null;
+		}
+
+		try {
+			(new SearchTermParser())->parse(term: $term);
+		} catch (SearchTermSyntaxException $exception) {
+			return $this->searchSyntaxRefusal(exception: $exception);
+		}
+
+		return null;
+	}//end refuseMalformedSearchTerm()
+
+	/**
+	 * The `_search` term, trimmed, when the boolean parser has to read it.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The term, or null when there is nothing to parse.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function parsedSearchTerm(array $params): ?string {
 		$search = ($params['_search'] ?? null);
 		if (is_string($search) === false || trim($search) === '') {
 			return null;
 		}
 
-		$parser = new SearchTermParser();
 		$term = trim($search);
-		if ($parser->needsParsing(term: $term) === false) {
-			return null;
-		}
-
-		try {
-			$parser->parse(term: $term);
-		} catch (SearchTermSyntaxException $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'position' => $exception->getPosition(),
-					'term' => $exception->getTerm(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		if ((new SearchTermParser())->needsParsing(term: $term) === true) {
+			return $term;
 		}
 
 		return null;
-	}//end refuseMalformedSearchTerm()
+	}//end parsedSearchTerm()
+
+	/**
+	 * The 400 for a search term the parser cannot read.
+	 *
+	 * @param SearchTermSyntaxException $exception The parser's refusal.
+	 *
+	 * @return JSONResponse The refusal, naming the position and the term.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function searchSyntaxRefusal(SearchTermSyntaxException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $exception->getMessage(),
+				'position' => $exception->getPosition(),
+				'term' => $exception->getTerm(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end searchSyntaxRefusal()
 
 	/**
 	 * Refuse a history filter over a property that has no history.
@@ -1385,19 +1097,29 @@ class ObjectsController extends Controller {
 			return null;
 		}
 
+		return $this->historyRefusal(predicate: $predicate);
+	}//end refuseUnprojectedHistoryPredicate()
+
+	/**
+	 * The 400 for a history predicate over a property with no recorded history.
+	 *
+	 * @param \OCA\OpenRegister\Service\Search\HistoryPredicate $predicate The parsed predicate.
+	 *
+	 * @return JSONResponse|null A 400 naming the property, or null.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function historyRefusal(\OCA\OpenRegister\Service\Search\HistoryPredicate $predicate): ?JSONResponse {
 		$refusal = $predicate->refusalFor(projectedProperties: $this->governance->stateHistory->projectedProperties());
 		if ($refusal === null) {
 			return null;
 		}
 
 		return new JSONResponse(
-			data: [
-				'error' => $refusal,
-				'properties' => $predicate->properties(),
-			],
+			data: ['error' => $refusal, 'properties' => $predicate->properties()],
 			statusCode: Http::STATUS_BAD_REQUEST
 		);
-	}//end refuseUnprojectedHistoryPredicate()
+	}//end historyRefusal()
 
 	/**
 	 * Retrieves a list of all objects for a specific register and schema
@@ -1532,12 +1254,12 @@ class ObjectsController extends Controller {
 	private function crossTableTargets(array $params, array $urlPath): ?array {
 		$schemasList = [];
 		if (($params['schemas'] ?? null) !== null) {
-			$schemasList = $this->parseMultiValue(param: $params['schemas'], defaultValue: $urlPath['schema']);
+			$schemasList = (new ObjectRequestParams())->multiValue(param: $params['schemas'], defaultValue: $urlPath['schema']);
 		}
 
 		$registersList = [];
 		if (($params['registers'] ?? null) !== null) {
-			$registersList = $this->parseMultiValue(param: $params['registers'], defaultValue: $urlPath['register']);
+			$registersList = (new ObjectRequestParams())->multiValue(param: $params['registers'], defaultValue: $urlPath['register']);
 		}
 
 		if (count($schemasList) <= 1 && count($registersList) <= 1) {
@@ -1688,11 +1410,7 @@ class ObjectsController extends Controller {
 
 		// Content negotiation: JSON-LD @graph for magic-mapped results (json-ld-output).
 		if ($this->wantsJsonLd() === true) {
-			return $this->jsonLdCollectionResponse(
-				result: $responseData,
-				register: $listing['resolved']['registerEntity'],
-				schema: $listing['resolved']['schemaEntity']
-			);
+			return $this->jsonLdCollectionResponse(result: $responseData, resolved: $listing['resolved']);
 		}
 
 		// Response compression is negotiated at the webserver level; the
@@ -1719,12 +1437,7 @@ class ObjectsController extends Controller {
 			schema: $listing['resolved']['schema']
 		);
 
-		$this->warnUnknownFilterKeys(
-			query: $query,
-			schemaEntity: ($listing['resolved']['schemaEntity'] ?? null),
-			register: $listing['register'],
-			schema: $listing['schema']
-		);
+		$this->warnUnknownFilterKeys(query: $query, listing: $listing);
 
 		return $query;
 	}//end buildListingQuery()
@@ -1770,52 +1483,54 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function serializeMagicResults(array $results, array $listing): array {
-		$query = $listing['query'];
-		$extend = $this->rowExtensions(query: $query);
+		$extend = $this->rowExtensions(query: $listing['query']);
+		if ($this->needsFullRender(query: $listing['query'], extend: $extend) === true && empty($results) === false) {
+			return $this->fullyRenderedRows(results: $results, listing: $listing + ['extend' => $extend]);
+		}
 
-		$hasComplexRendering = empty($extend) === false
+		return $this->renderedMagicRows(results: $results, rbac: $listing['rbac']);
+	}//end serializeMagicResults()
+
+	/**
+	 * Rows through the full render, for a listing that asks for more than plain rows.
+	 *
+	 * @param array<int, ObjectEntity> $results The rows.
+	 * @param array<string, mixed> $listing The listing scope, with its `extend`.
+	 *
+	 * @return array<int, array<string, mixed>> The rendered rows.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function fullyRenderedRows(array $results, array $listing): array {
+		$query = $listing['query'];
+
+		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class)->renderEntities(
+			entities: $results,
+			_extend: $listing['extend'],
+			_filter: ($query['_filter'] ?? null),
+			_fields: ($query['_fields'] ?? null),
+			_unset: ($query['_unset'] ?? null),
+			_rbac: $listing['rbac'],
+			_multitenancy: $listing['multi']
+		);
+	}//end fullyRenderedRows()
+
+	/**
+	 * Whether a listing asks for more than the plain rows.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 * @param array<int, mixed> $extend The row extensions.
+	 *
+	 * @return bool True when extensions or a field filter apply.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function needsFullRender(array $query, array $extend): bool {
+		return empty($extend) === false
 			|| empty($query['_fields'] ?? null) === false
 			|| empty($query['_filter'] ?? null) === false
 			|| empty($query['_unset'] ?? null) === false;
-
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-		if ($hasComplexRendering === true && empty($results) === false) {
-			return $renderHandler->renderEntities(
-				entities: $results,
-				_extend: $extend,
-				_filter: $query['_filter'] ?? null,
-				_fields: $query['_fields'] ?? null,
-				_unset: $query['_unset'] ?? null,
-				_rbac: $listing['rbac'],
-				_multitenancy: $listing['multi']
-			);
-		}
-
-		// This fast path bypasses renderEntity, where write-only secrets are
-		// stripped (openregister#380, ocon#147); without the redaction below a
-		// plain list read returns every write-only field in cleartext. `_rbac`
-		// gates ONLY the property `authorization.read` strip; writeOnly strips
-		// unconditionally, admin included (#389/#460).
-		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $listing['rbac']);
-
-		// Same bypass, same gap for lenses: renderEntity is where a schema's
-		// declared lenses are resolved.
-		$renderHandler->applyLensesToRows(rows: $results, _rbac: $listing['rbac']);
-
-		// Same bypass, same gap for translatable properties: renderEntity is
-		// where a `{"nl":...}` map projects to the negotiated language.
-		$renderHandler->resolveTranslationsForRows(rows: $results);
-
-		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
-		$renderHandler->attachLightweightFilesToRows(rows: $results);
-
-		$serializedResults = [];
-		foreach ($results as $entity) {
-			$serializedResults[] = $entity->jsonSerialize();
-		}
-
-		return $serializedResults;
-	}//end serializeMagicResults()
+	}//end needsFullRender()
 
 	/**
 	 * Work out limit, page, page count and total of a magic-table listing.
@@ -1835,16 +1550,6 @@ class ObjectsController extends Controller {
 	private function paginateMagicResults(array $listing): array {
 		$query = $listing['query'];
 		$limit = (int)($query['_limit'] ?? 20);
-		$offset = $query['_offset'] ?? null;
-		$page = $query['_page'] ?? null;
-
-		// Convert page to offset if page is provided but offset is not.
-		if ($page !== null && $offset === null && $limit > 0) {
-			$offset = ((int)$page - 1) * $limit;
-		} else {
-			$offset = (int)($offset ?? 0);
-		}
-
 		$total = $this->countMagicTotal(listing: $listing);
 		if ($limit <= 0) {
 			return ['total' => $total, 'pages' => 1, 'page' => 1, 'limit' => $limit];
@@ -1855,13 +1560,26 @@ class ObjectsController extends Controller {
 			$pages = (int)ceil($total / $limit);
 		}
 
-		// Calculate page from offset if not explicitly provided.
-		if ($page === null) {
-			$page = (int)floor($offset / $limit) + 1;
+		return ['total' => $total, 'pages' => $pages, 'page' => $this->magicPage(query: $query, limit: $limit), 'limit' => $limit];
+	}//end paginateMagicResults()
+
+	/**
+	 * The page of a magic-table query: the one asked for, or the one its offset falls on.
+	 *
+	 * @param array $query The search query.
+	 * @param int   $limit The page size, above zero.
+	 *
+	 * @return int The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicPage(array $query, int $limit): int {
+		if (($query['_page'] ?? null) !== null) {
+			return (int)$query['_page'];
 		}
 
-		return ['total' => $total, 'pages' => $pages, 'page' => (int)$page, 'limit' => $limit];
-	}//end paginateMagicResults()
+		return ((int)floor((int)($query['_offset'] ?? 0) / $limit) + 1);
+	}//end magicPage()
 
 	/**
 	 * The grand total of a magic-table listing, or null when the caller does not want it.
@@ -1922,33 +1640,47 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function buildMagicResponse(array $page, array $listing): array {
-		$query = $listing['query'];
 		$responseData = [
 			'results' => $page['results'],
 			'total' => $page['total'],
 			'pages' => $page['pages'],
 			'page' => $page['page'],
 			'limit' => $page['limit'],
-			'@self' => [
-				'source' => 'magic_mapper',
-				'register' => $listing['register'],
-				'schema' => $listing['schema'],
-				'query' => $query,
-				'rbac' => $listing['rbac'],
-				'multi' => $listing['multi'],
-				'deleted' => $listing['deleted'],
-				'activeOrganisation' => $this->activeOrganisationUuid(),
-			],
+			'@self' => $this->magicSelfBlock(listing: $listing),
 		];
 
 		// The `_recent` lens report: whether it could answer, and why not
 		// (`read-history-on-audit-trail`). Present only when asked.
-		if (is_array($query['_recentLens'] ?? null) === true) {
-			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		if (is_array($listing['query']['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $listing['query']['_recentLens'];
 		}
 
 		return $responseData;
 	}//end buildMagicResponse()
+
+	/**
+	 * The `@self` block of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The block.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicSelfBlock(array $listing): array {
+		return [
+			'source' => 'magic_mapper',
+			'register' => $listing['register'],
+			'schema' => $listing['schema'],
+			'query' => $listing['query'],
+			'rbac' => $listing['rbac'],
+			'multi' => $listing['multi'],
+			'deleted' => $listing['deleted'],
+			'activeOrganisation' => $this->activeOrganisationUuid(),
+		];
+	}//end magicSelfBlock()
 
 	/**
 	 * The active organisation's UUID for the debugging metadata, or null when unavailable.
@@ -1994,10 +1726,23 @@ class ObjectsController extends Controller {
 
 		$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'unset'];
 		$mistakenParams = array_intersect($ignoredFilters, $controlParams);
-		if (empty($mistakenParams) === true) {
-			return $responseData;
+		if (empty($mistakenParams) === false) {
+			$responseData['@self']['hint'] = $this->controlParamHint(mistakenParams: $mistakenParams);
 		}
 
+		return $responseData;
+	}//end addIgnoredFilterHint()
+
+	/**
+	 * The hint for control parameters sent without their underscore.
+	 *
+	 * @param array $mistakenParams The parameters.
+	 *
+	 * @return string The hint.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function controlParamHint(array $mistakenParams): string {
 		$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
 		$hint = 'Query returned 0 results because ';
 		$hint .= implode(', ', $mistakenParams);
@@ -2006,10 +1751,9 @@ class ObjectsController extends Controller {
 		$hint .= implode(', ', $suggestions);
 		$hint .= '? Control parameters require an';
 		$hint .= ' underscore prefix (e.g. _limit, _offset, _page).';
-		$responseData['@self']['hint'] = $hint;
 
-		return $responseData;
-	}//end addIgnoredFilterHint()
+		return $hint;
+	}//end controlParamHint()
 
 	/**
 	 * Add the magic table's facets when `_facets` asks for them.
@@ -2030,11 +1774,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$facets = $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-				query: $listing['query'],
-				register: $listing['resolved']['registerEntity'],
-				schema: $listing['resolved']['schemaEntity']
-			);
+			$facets = $this->magicFacets(listing: $listing);
 			if (empty($facets) === false) {
 				$responseData['facets'] = $facets;
 			}
@@ -2046,6 +1786,25 @@ class ObjectsController extends Controller {
 	}//end addMagicFacets()
 
 	/**
+	 * The facets of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query and mapper.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The facets.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicFacets(array $listing): array {
+		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
+			query: $listing['query'],
+			register: $listing['resolved']['registerEntity'],
+			schema: $listing['resolved']['schemaEntity']
+		);
+	}//end magicFacets()
+
+	/**
 	 * Strip empty values from every row, serializing ObjectEntity rows first.
 	 *
 	 * @param array $results The rows.
@@ -2055,22 +1814,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function stripEmptyFromResults(array $results): array {
-		return array_map(
-			callback: function ($item) {
-				if (is_array($item) === false
-					&& method_exists(object_or_class: $item, method: 'jsonSerialize') === true
-				) {
-					$item = $item->jsonSerialize();
-				}
-
-				if (is_array($item) === true) {
-					return $this->stripEmptyValues(data: $item);
-				}
-
-				return $item;
-			},
-			array: $results
-		);
+		return (new EmptyValueStripper())->strippedRows(results: $results);
 	}//end stripEmptyFromResults()
 
 	/**
@@ -2117,7 +1861,10 @@ class ObjectsController extends Controller {
 		$registerEntity = $listing['resolved']['registerEntity'] ?? null;
 		$schemaEntity = $listing['resolved']['schemaEntity'] ?? null;
 		if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
-			return $this->jsonLdCollectionResponse(result: $result, register: $registerEntity, schema: $schemaEntity);
+			return $this->jsonLdCollectionResponse(
+				result: $result,
+				resolved: ['registerEntity' => $registerEntity, 'schemaEntity' => $schemaEntity]
+			);
 		}
 
 		return new JSONResponse(data: $result);
@@ -2127,7 +1874,7 @@ class ObjectsController extends Controller {
 	 * Batched object-count endpoint — POST /api/objects/counts.
 	 *
 	 * Accepts a JSON body of the shape
-	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object?> } ] }`
+	 * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object|null> } ] }`
 	 * and returns `{ "results": [ { "register": ..., "schema": ..., "count": <int|null> } ] }`
 	 * with exactly one result per input entry, in the same order as the
 	 * request array. Identical `(register, schema, filter)` triples are
@@ -2387,34 +2134,20 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return new JSONResponse(
-				data: ['error' => 'Geo filtering primitives not configured'],
-				statusCode: 501
-			);
+			return new JSONResponse(data: ['error' => 'Geo filtering primitives not configured'], statusCode: 501);
 		}
 
-		$body = $this->request->getParams();
 		try {
-			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $body);
+			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $this->request->getParams());
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
 		// Reuse the standard listing path, then post-filter.
-		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
-		$payload = (array)$listing->getData();
-		$rows = ($payload['results'] ?? []);
-		if (is_array($rows) === false) {
-			return $listing;
-		}
-
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$payload['results'] = $filtered;
-		if (isset($payload['total']) === true) {
-			$payload['total'] = count($filtered);
-		}
-
-		return new JSONResponse(data: $payload);
+		return $this->geoFilteredListing(
+			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
+			filters: $filters
+		);
 	}//end geoSearch()
 
 	/**
@@ -2449,21 +2182,18 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
-		$fields = $this->parseFieldsParam(params: $params);
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			fields: $fields,
+			geoProperty: $this->geoPropertyParam(params: $params),
+			fields: $this->parseFieldsParam(params: $params),
 			includeArea: true
 		);
 
@@ -2471,8 +2201,28 @@ class ObjectsController extends Controller {
 		// application/json content type is kept (NC's Content-Type
 		// override requires the full container); the @self envelope is
 		// omitted so the body is consumable directly by GIS clients.
-		return new JSONResponse(data: $collection);
+		return $this->geoCollectionResponse(collection: $collection, crs: $crs);
 	}//end geoJson()
+
+	/**
+	 * A FeatureCollection in the requested CRS, naming that CRS when one was asked for.
+	 *
+	 * @param array<string, mixed> $collection The collection, in WGS84.
+	 * @param GeoResponseCrs       $crs        The negotiated CRS.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+	 */
+	private function geoCollectionResponse(array $collection, GeoResponseCrs $crs): JSONResponse {
+		$response = new JSONResponse(data: $crs->applyTo(collection: $collection));
+		$contentCrs = $crs->contentCrs();
+		if ($contentCrs !== null) {
+			$response->addHeader('Content-Crs', $contentCrs);
+		}
+
+		return $response;
+	}//end geoCollectionResponse()
 
 	/**
 	 * WFS GetFeature-compatible endpoint (REQ-GEO-008).
@@ -2501,30 +2251,21 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
 
-		$maxFeatures = null;
-		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
-		if ($rawMax !== null && is_numeric($rawMax) === true) {
-			$maxFeatures = (int)$rawMax;
-		}
-
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
-
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			maxFeatures: $maxFeatures
+			geoProperty: $this->geoPropertyParam(params: $params),
+			maxFeatures: $this->wfsMaxFeatures(params: $params)
 		);
 
-		return new JSONResponse(data: $response);
+		return $this->geoCollectionResponse(collection: $response, crs: $crs);
 	}//end wfs()
 
 	/**
@@ -2557,27 +2298,107 @@ class ObjectsController extends Controller {
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->geo->pdokGeocoder->geocodeFree(
-				query: (string)$query,
-				maxItems: 5,
-				bagOnly: $bagOnly
-			);
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, maxItems: 5, bagOnly: $bagOnly);
 			return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
 		}
 
+		return $this->reverseGeocodeResponse(params: $params, available: $available);
+	}//end geocode()
+
+	/**
+	 * The address at the `lon` and `lat` of a geocode request.
+	 *
+	 * @param array $params    The request params.
+	 * @param bool  $available Whether the geocoder is available.
+	 *
+	 * @return JSONResponse The address, or a 422 without coordinates.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function reverseGeocodeResponse(array $params, bool $available): JSONResponse {
 		$lon = ($params['lon'] ?? null);
 		$lat = ($params['lat'] ?? null);
-		if (is_numeric($lon) === true && is_numeric($lat) === true) {
-			$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
-			return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+		if (is_numeric($lon) === false || is_numeric($lat) === false) {
+			return new JSONResponse(data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='], statusCode: 422);
 		}
 
-		return new JSONResponse(
-			data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
-			statusCode: 422
-		);
+		$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
+		return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+	}//end reverseGeocodeResponse()
 
-	}//end geocode()
+	/**
+	 * A listing response with its rows run through geo filters.
+	 *
+	 * @param JSONResponse $listing The listing.
+	 * @param array        $filters The parsed filters.
+	 *
+	 * @return JSONResponse The filtered listing, or the listing when its results are not an array.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoFilteredListing(JSONResponse $listing, array $filters): JSONResponse {
+		$payload = (array)$listing->getData();
+		$payload['results'] = ($payload['results'] ?? []);
+		if (is_array($payload['results']) === false) {
+			return $listing;
+		}
+
+		return new JSONResponse(data: $this->withGeoFilteredRows(result: $payload, filters: $filters));
+	}//end geoFilteredListing()
+
+	/**
+	 * A result with its rows run through geo filters, its total following when it has one.
+	 *
+	 * @param array $result  The result, with an array of rows.
+	 * @param array $filters The parsed filters.
+	 *
+	 * @return array The result.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function withGeoFilteredRows(array $result, array $filters): array {
+		$result['results'] = $this->geo->geoFilterApplier->applyAll(rows: $result['results'], filters: $filters);
+		if (isset($result['total']) === true) {
+			$result['total'] = count($result['results']);
+		}
+
+		return $result;
+	}//end withGeoFilteredRows()
+
+	/**
+	 * The `geo.property` request param.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The property, or null when not given.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoPropertyParam(array $params): ?string {
+		if (isset($params['geo.property']) === false) {
+			return null;
+		}
+
+		return (string)$params['geo.property'];
+	}//end geoPropertyParam()
+
+	/**
+	 * The feature cap of a WFS request: `count`, or else `maxFeatures`.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return int|null The cap, or null when none is given or it is not numeric.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function wfsMaxFeatures(array $params): ?int {
+		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+		if (is_numeric($rawMax) === true) {
+			return (int)$rawMax;
+		}
+
+		return null;
+	}//end wfsMaxFeatures()
 
 	/**
 	 * Fetch the RBAC-scoped listing rows for a register/schema.
@@ -2647,24 +2468,11 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function applyGeoQueryFilters(array $params, array $result): array {
-		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return $result;
-		}
-
 		// NC's IRequest parses `geo.bbox` etc. as a nested array
 		// (`geo: {bbox: ...}`). Re-flatten back to the dotted form the
 		// parser expects, so callers using either notation work.
 		$flatParams = $this->flattenGeoParams(params: $params);
-
-		$hasGeoParam = false;
-		foreach (['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'] as $key) {
-			if (isset($flatParams[$key]) === true) {
-				$hasGeoParam = true;
-				break;
-			}
-		}
-
-		if ($hasGeoParam === false) {
+		if ($this->asksForGeoFilter(flatParams: $flatParams) === false) {
 			return $result;
 		}
 
@@ -2674,27 +2482,33 @@ class ObjectsController extends Controller {
 			// Malformed input: surface a 422-shape envelope inside the
 			// existing result body so consumers see the validation error
 			// without crashing the whole listing path.
-			return [
-				'error' => 'geo filter parse error: ' . $e->getMessage(),
-				'results' => [],
-				'total' => 0,
-			];
+			return ['error' => 'geo filter parse error: ' . $e->getMessage(), 'results' => [], 'total' => 0];
 		}
 
-		if ($filters === [] || isset($result['results']) === false || is_array($result['results']) === false) {
+		if ($filters === [] || is_array($result['results'] ?? null) === false) {
 			return $result;
 		}
 
-		$rows = $result['results'];
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$result['results'] = $filtered;
-		// Update `total` to reflect the post-filter count when present.
-		if (isset($result['total']) === true) {
-			$result['total'] = count($filtered);
+		return $this->withGeoFilteredRows(result: $result, filters: $filters);
+	}//end applyGeoQueryFilters()
+
+	/**
+	 * Whether geo filtering is configured and the request names a geo param.
+	 *
+	 * @param array $flatParams The params, `geo.*` keys flattened.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function asksForGeoFilter(array $flatParams): bool {
+		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
+			return false;
 		}
 
-		return $result;
-	}//end applyGeoQueryFilters()
+		$named = array_filter(['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'], fn (string $key): bool => isset($flatParams[$key]));
+		return $named !== [];
+	}//end asksForGeoFilter()
 
 	/**
 	 * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
@@ -2770,226 +2584,167 @@ class ObjectsController extends Controller {
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function objects(ObjectOperationsInterface $objectService): JSONResponse {
-		// Check for register/schema in query parameters for magic mapper routing.
-		$params = $this->request->getParams();
-		$registerParam = $params['register'] ?? $params['_register'] ?? null;
-		$schemaParam = $params['schema'] ?? $params['_schema'] ?? null;
-		$schemasParam = $params['schemas'] ?? null;
-		$registersParam = $params['registers'] ?? null;
-
-		// If multiple schemas or registers specified, use cross-table search.
-		$schemasList = [];
-		$registersList = [];
-
-		if ($schemasParam !== null) {
-			$schemasList = $this->parseMultiValue(param: $schemasParam, defaultValue: $schemaParam ?? '');
-		} elseif ($schemaParam !== null) {
-			$schemasList = [$schemaParam];
+		$scope = new ObjectsRouteScope(params: $this->request->getParams());
+		if ($scope->spansTables() === true) {
+			return $this->crossTableSearch(registers: $scope->registers, schemas: $scope->schemas, objectService: $objectService);
 		}
 
-		if ($registersParam !== null) {
-			$registersList = $this->parseMultiValue(param: $registersParam, defaultValue: $registerParam ?? '');
-		} elseif ($registerParam !== null) {
-			$registersList = [$registerParam];
+		$answer = ['register' => null, 'schema' => null];
+		if ($scope->namesOneTable() === true) {
+			$answer = $this->oneTableListing(scope: $scope, objectService: $objectService);
 		}
 
-		// Multi-table search: multiple schemas or registers.
-		if ((count($schemasList) > 1) || (count($registersList) > 1)) {
-			return $this->crossTableSearch(
-				registers: $registersList,
-				schemas: $schemasList,
-				objectService: $objectService
-			);
+		if ($answer instanceof JSONResponse) {
+			return $answer;
 		}
 
-		// Single register+schema: resolve slugs/IDs to numeric IDs (same
-		// resolution semantics as the path-style index() route) and check
-		// whether magic mapping is enabled. The resolved numeric IDs are
-		// captured in $resolvedRegisterId/$resolvedSchemaId so the fallback
-		// buildSearchQuery() call below can filter correctly instead of
-		// silently matching zero rows against an unresolved slug string.
-		$resolvedRegisterId = null;
-		$resolvedSchemaId = null;
-		if ($registerParam !== null && $schemaParam !== null) {
-			try {
-				$resolved = $this->resolveRegisterSchemaIds(
-					register: $registerParam,
-					schema: $schemaParam,
-					objectService: $objectService
-				);
+		return $this->searchedListing(resolved: $answer, objectService: $objectService);
+	}//end objects()
 
-				$resolvedRegisterId = $resolved['register'];
-				$resolvedSchemaId = $resolved['schema'];
+	/**
+	 * The answer for one named table, or its resolved ids when the search should answer.
+	 *
+	 * The purpose guard sits on the resolution rather than per branch: this
+	 * endpoint is a public page, and both branches below descend from here.
+	 *
+	 * @param ObjectsRouteScope $scope The register and schema the request named.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return array<string, mixed>|JSONResponse The resolved ids, or the response.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function oneTableListing(ObjectsRouteScope $scope, ObjectOperationsInterface $objectService): array|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(register: $scope->register, schema: $scope->schema, objectService: $objectService);
 
-				// DOELBINDING. This endpoint is @PublicPage and reads the same
-				// data as index(), which has guarded its single-schema branch
-				// since PurposeGuard landed - this one guarded nothing, on any
-				// branch. A schema that refuses show() for want of a declared
-				// purpose answered here in full, without authentication.
-				//
-				// Placed on the resolution rather than per branch: both branches
-				// below (magic-mapper and the searchObjectsPaginated fallback)
-				// descend from this point, and the multi-schema branch above is
-				// guarded inside crossTableSearch() itself. A per-branch check
-				// would reproduce the gap the next time a branch is added.
-				$refusal = $this->refuseUnboundPurpose(resolved: $resolved);
-				if ($refusal !== null) {
-					return $refusal;
-				}
+			$answer = $this->refuseUnboundPurpose(resolved: $resolved);
+			if ($answer === null && (new MagicMappedTable(resolved: $resolved))->isMapped() === true) {
+				$answer = $this->magicTableListing(table: new ObjectsTableRead(scope: $scope, resolved: $resolved), objectService: $objectService);
+			}
+		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
+			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
+		}
 
-				// Check if magic mapping is enabled for this register+schema.
-				$registerEntity = $resolved['registerEntity'] ?? null;
-				$schemaEntity = $resolved['schemaEntity'] ?? null;
+		return ($answer ?? $resolved);
+	}//end oneTableListing()
 
-				if ($registerEntity !== null && $schemaEntity !== null) {
-					// Get register configuration.
-					$registerConfig = $registerEntity->getConfiguration() ?? [];
-					$enableMagicMapping = ($registerConfig['enableMagicMapping'] ?? false) === true;
-					$magicMappingSchemas = $registerConfig['magicMappingSchemas'] ?? [];
-					$schemaId = (string)$schemaEntity->getId();
-					$schemaSlug = $schemaEntity->getSlug();
-
-					// Check if this specific schema is magic-mapped.
-					if ($enableMagicMapping === true
-						&& (in_array($schemaId, $magicMappingSchemas, true) === true
-						|| in_array($schemaSlug, $magicMappingSchemas, true) === true)
-					) {
-						// Use MagicMapper for magic-mapped schemas.
-						$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
-
-						// Build search query with resolved numeric IDs.
-						$query = $objectService->buildSearchQuery(
-							requestParams: $this->request->getParams(),
-							register: $resolved['register'],
-							schema: $resolved['schema']
-						);
-
-						// Use MagicMapper search directly.
-						$results = $magicMapper->searchObjectsInRegisterSchemaTable(
-							query: $query,
-							register: $registerEntity,
-							schema: $schemaEntity
-						);
-
-						// Redact write-only secrets before serialising (openregister#380,
-						// ocon#147) — this direct-magic-mapper path bypasses renderEntity.
-						// `_rbac` (false for an admin) gates only the property
-						// `authorization.read` strip; writeOnly strips unconditionally (#460).
-						$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
-						$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
-
-						// Same bypass, same gap for lenses: renderEntity is where a schema's
-						// declared lenses are resolved.
-						$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac'] ?? true);
-
-						// Same bypass, same gap for translatable properties: renderEntity is
-						// where a `{"nl":...}` map projects to the negotiated language.
-						$renderHandler->resolveTranslationsForRows(rows: $results);
-
-						// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
-						$renderHandler->attachLightweightFilesToRows(rows: $results);
-
-						// Convert ObjectEntity array to JSON-serializable format.
-						$serializedResults = [];
-						foreach ($results as $entity) {
-							$serializedResults[] = $entity->jsonSerialize();
-						}
-
-						// Calculate pagination.
-						$limit = $query['_limit'] ?? 20;
-						$offset = $query['_offset'] ?? 0;
-						$total = count($serializedResults);
-						$pages = 1;
-						$page = 1;
-						if ($limit > 0) {
-							$pages = (int)ceil($total / $limit);
-							$page = (int)floor($offset / $limit) + 1;
-						}
-
-						// Strip empty values from results unless _empty=true is set.
-						$includeEmpty = filter_var(
-							value: $params['_empty'] ?? false,
-							filter: FILTER_VALIDATE_BOOLEAN
-						);
-						if ($includeEmpty === false) {
-							$serializedResults = array_map(
-								callback: [$this, 'stripEmptyValues'],
-								array: $serializedResults
-							);
-						}
-
-						// Return in expected format with magic_mapper source indicator.
-						return new JSONResponse(
-							data: [
-								'results' => $serializedResults,
-								'total' => $total,
-								'pages' => $pages,
-								'page' => $page,
-								'limit' => $limit,
-								'@self' => [
-									'source' => 'magic_mapper',
-									'register' => $registerParam,
-									'schema' => $schemaParam,
-								],
-							]
-						);
-					}//end if
-				}//end if
-			} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-				return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
-			}//end try
-		}//end if
-
-		// Build search query and execute via the normal route (magic tables).
-		// Pass the already-resolved numeric register/schema IDs (when a
-		// register/schema query parameter was supplied) so the query filters
-		// on '@self.register' / '@self.schema' the same way the path-style
-		// index() route does. Without this, buildSearchQuery() falls back to
-		// treating the raw 'register'/'schema' query-string values (slugs)
-		// as the metadata filter, which never matches the numeric register
-		// ID column and silently returns zero results.
+	/**
+	 * The rows of a magic-mapped table, straight from its mapper.
+	 *
+	 * @param ObjectsTableRead $table The scope and its resolved ids and entities.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The rows and their paging, marked with their source.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicTableListing(ObjectsTableRead $table, ObjectOperationsInterface $objectService): JSONResponse {
+		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
 		$query = $objectService->buildSearchQuery(
 			requestParams: $this->request->getParams(),
-			register: $resolvedRegisterId,
-			schema: $resolvedSchemaId
+			register: $table->resolved['register'],
+			schema: $table->resolved['schema']
 		);
+		$results = $magicMapper->searchObjectsInRegisterSchemaTable(
+			query: $query,
+			register: $table->resolved['registerEntity'],
+			schema: $table->resolved['schemaEntity']
+		);
+		$rows = $this->renderedMagicRows(results: $results, rbac: ($query['_rbac'] ?? true));
 
-		// **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
+		return new JSONResponse(data: $this->magicTablePage(rows: $rows, table: $table->withQuery(query: $query)));
+	}//end magicTableListing()
+
+	/**
+	 * Rows from a mapper as a reader may see them.
+	 *
+	 * The direct mapper path bypasses renderEntity, which is where write-only
+	 * secrets are redacted, lenses resolved, translations projected and files
+	 * listed, so each of those is asked for here. `_rbac` (false for an admin)
+	 * gates only the `authorization.read` strip; writeOnly strips unconditionally.
+	 *
+	 * @param array<int, ObjectEntity> $results The rows.
+	 * @param bool $rbac Whether the reader is held to `authorization.read`.
+	 *
+	 * @return array<int, array<string, mixed>> The serialised rows.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedMagicRows(array $results, bool $rbac): array {
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+		$renderHandler->applyLensesToRows(rows: $results, _rbac: $rbac);
+		$renderHandler->resolveTranslationsForRows(rows: $results);
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
+		return array_values(array_map(static fn ($entity) => $entity->jsonSerialize(), $results));
+	}//end renderedMagicRows()
+
+	/**
+	 * The envelope of a magic-mapped listing.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The serialised rows.
+	 * @param ObjectsTableRead $table The scope and the search query.
+	 *
+	 * @return array<string, mixed> The envelope, with `@self.source` naming the mapper.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicTablePage(array $rows, ObjectsTableRead $table): array {
+		if ($this->wantsEmptyValues() === false) {
+			$stripped = array_map(callback: [new EmptyValueStripper(), 'stripped'], array: $rows);
+		}
+
+		return array_merge(
+			['results' => ($stripped ?? $rows)],
+			$table->paging(total: count($rows)),
+			['@self' => ['source' => 'magic_mapper', 'register' => $table->scope->register, 'schema' => $table->scope->schema]]
+		);
+	}//end magicTablePage()
+
+	/**
+	 * Whether the caller asked to keep null, empty string and empty array values.
+	 *
+	 * @return bool True for a truthy `_empty`.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function wantsEmptyValues(): bool {
+		$params = $this->request->getParams();
+
+		return filter_var(value: ($params['_empty'] ?? false), filter: FILTER_VALIDATE_BOOLEAN);
+	}//end wantsEmptyValues()
+
+	/**
+	 * The listing through the object search.
+	 *
+	 * The resolved numeric ids go into the query, so it filters on
+	 * `@self.register` and `@self.schema` the way the path-style index() does;
+	 * a raw slug never matches those columns.
+	 *
+	 * @param array<string, mixed> $resolved The resolved ids, null when none were named.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The search result; a 404 when a schema-level read is denied, as in show().
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function searchedListing(array $resolved, ObjectOperationsInterface $objectService): JSONResponse {
+		$query = $objectService->buildSearchQuery(requestParams: $this->request->getParams(), register: $resolved['register'], schema: $resolved['schema']);
+
 		try {
 			$result = $objectService->searchObjectsPaginated($query);
 		} catch (NotAuthorizedException $exception) {
-			// Schema-level list read denied (object-source parity check).
-			// Mirror show(): 404 so denial reveals nothing.
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		}
 
-		// Strip empty values from results unless _empty=true is set.
-		$includeEmpty = filter_var(
-			value: $params['_empty'] ?? false,
-			filter: FILTER_VALIDATE_BOOLEAN
-		);
-		if ($includeEmpty === false && isset($result['results']) === true && is_array($result['results']) === true) {
-			$result['results'] = array_map(
-				callback: function ($item) {
-					// Serialize ObjectEntity instances to arrays before stripping.
-					if (is_array($item) === false
-						&& method_exists(object_or_class: $item, method: 'jsonSerialize') === true
-					) {
-						$item = $item->jsonSerialize();
-					}
-
-					if (is_array($item) === true) {
-						return $this->stripEmptyValues(data: $item);
-					}
-
-					return $item;
-				},
-				array: $result['results']
-			);
+		if ($this->wantsEmptyValues() === false && is_array(($result['results'] ?? null)) === true) {
+			$result['results'] = $this->stripEmptyFromResults(results: $result['results']);
 		}
 
 		return new JSONResponse(data: $result);
-	}//end objects()
+	}//end searchedListing()
 
 	/**
 	 * The options a filtered reference property may offer for this record.
@@ -3026,26 +2781,75 @@ class ObjectsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 600, period: 60)]
-	public function referenceOptions(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function referenceOptions(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		$property = (string)($this->request->getParam('property') ?? '');
 		if (trim($property) === '') {
-			return new JSONResponse(
-				data: ['message' => 'Name the property whose options you want, with ?property=<name>.'],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['message' => 'Name the property whose options you want, with ?property=<name>.'], statusCode: 400);
 		}
 
+		return $this->optionsFor(
+			ask: new ReferenceOptionsAsk(id: $id, register: $register, schema: $schema, property: $property),
+			objectService: $objectService
+		);
+	}//end referenceOptions()
+
+	/**
+	 * The options once the property is known.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record and property.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The options, or why there are none.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsFor(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): JSONResponse {
+		$schemaEntity = $this->optionsSchema(ask: $ask, objectService: $objectService);
+		if ($schemaEntity instanceof JSONResponse) {
+			return $schemaEntity;
+		}
+
+		$answer = new ReferenceOptionsAnswer(request: $this->request, logger: $this->logger, lookup: $this->storedForOptions(...), search: $objectService);
+
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
-			);
+			return $answer->answer(ask: $ask, schema: $schemaEntity);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ask->id);
+		}
+	}//end optionsFor()
+
+	/**
+	 * The record as it stands, read as a lookup in the caller's scope.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record.
+	 *
+	 * @return ObjectEntity|null The stored record.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
+		return WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ask->id,
+			files: false,
+			register: $ask->register,
+			schema: $ask->schema,
+			_render: false
+		));
+	}//end storedForOptions()
+
+	/**
+	 * The schema of the record a reference-options read is about.
+	 *
+	 * @param ReferenceOptionsAsk $ask The register and schema in the URL.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return Schema|JSONResponse The schema, or a 404.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -3055,102 +2859,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['message' => 'Schema not found.'], statusCode: 404);
 		}
 
-		// The record as it stands. A read the caller may not make answers the
-		// same 404 it would anywhere else, so this endpoint cannot be used to
-		// confirm an object exists.
-		$record = [];
-		try {
-			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_render: false
-			));
-			if ($stored !== null) {
-				$record = $stored->getObject();
-			}
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
-			);
-		}
-
-		if (is_array($record) === false) {
-			$record = [];
-		}
-
-		$draft = $this->request->getParam('_draft');
-		if (is_array($draft) === true) {
-			$record = array_merge($record, $draft);
-		}
-
-		$reader = new ReferenceOptionsReader();
-
-		try {
-			$plan = $reader->plan(schema: $schemaEntity, property: $property, record: $record);
-		} catch (ReferenceFilterException $e) {
-			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
-		}
-
-		if ($reader->isAnswerable(plan: $plan) === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'needs' => $plan['needs'],
-					'filter' => $plan['filter'],
-					'message' => sprintf(
-						'Choose %s first; there are no options until then.',
-						implode(' and ', $plan['needs'])
-					),
-				]
-			);
-		}
-
-		$target = ($plan['target'] ?? []);
-		if (is_string(($target['schema'] ?? null)) === false) {
-			return new JSONResponse(
-				data: ['message' => sprintf('\'%s\' does not name a schema to read options from.', $property)],
-				statusCode: 422
-			);
-		}
-
-		$limit = $reader->limitFor(requested: $this->request->getParam('_limit'));
-		$offset = (int)($this->request->getParam('_offset') ?? 0);
-		$query = $reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
-
-		try {
-			// Point the service at the REFERENCED register and schema. Without
-			// this the search would run against the record's own schema and
-			// answer a confidently wrong list.
-			$objectService->setRegister(($target['register'] ?? $register));
-			$objectService->setSchema($target['schema']);
-
-			// `_rbac` stays on. The options a picker offers are objects, and a
-			// picker is not a way to see objects you may not see.
-			$options = $objectService->searchObjectsPaginated(query: $query);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectsController] A reference-options read failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['message' => 'The options for this field could not be read.'],
-				statusCode: 500
-			);
-		}
-
-		$options['filtered'] = $plan['filtered'];
-		$options['filter'] = $plan['filter'];
-		$options['needs'] = [];
-
-		return new JSONResponse(data: $options);
-	}//end referenceOptions()
+		return $schemaEntity;
+	}//end optionsSchema()
 
 	/**
 	 * Shows a specific object from a register and schema
@@ -3179,19 +2889,12 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
-	public function show(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectService $objectService,
-	): JSONResponse {
+	public function show(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
 
 		try {
-			// Resolve slugs to numeric IDs consistently and get register/schema entities.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
@@ -3203,225 +2906,213 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		// Get request parameters for filtering and searching.
-		$requestParams = $this->request->getParams();
+		$services = $this->showServices(objectService: $objectService);
 
-		// Extract parameters for rendering.
-		$extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
-		$filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);
-		$fields = ($requestParams['fields'] ?? $requestParams['_fields'] ?? null);
-		$unset = ($requestParams['unset'] ?? $requestParams['_unset'] ?? null);
+		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+	}//end show()
 
-		// Normalize extend parameter for backwards compatibility (@self.schema -> _schema).
-		$extend = $this->normalizeExtendParameter(extend: $extend);
+	/**
+	 * What show() asks of the request's object service.
+	 *
+	 * @param ObjectService $objectService The object service.
+	 *
+	 * @return ShowServices The services.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function showServices(ObjectService $objectService): ShowServices {
+		return new ShowServices(
+			objects: $objectService,
+			permissions: $objectService->getPermissionHandler(),
+			names: $objectService->getCacheHandler()
+		);
+	}//end showServices()
 
-		// Convert fields to array if it's a string.
-		if (is_string($fields) === true) {
-			$fields = explode(',', $fields);
-		}
+	/**
+	 * Read one object for show().
+	 *
+	 * A denied read answers 404, not 403, so an unauthorized caller cannot tell
+	 * "exists but forbidden" from "does not exist".
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function shownObject(ObjectShow $show): JSONResponse {
+		$read = new ObjectReadOptions(params: $this->request->getParams(), admin: $this->isCurrentUserAdmin());
 
-		// Convert filter to array if it's a string.
-		if (is_string($filter) === true) {
-			$filter = explode(',', $filter);
-		}
-
-		// Convert unset to array if it's a string.
-		if (is_string($unset) === true) {
-			$unset = explode(',', $unset);
-		}
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		// If admin, disable RBAC.
-		$multi = $isAdmin === false;
-		// If admin, disable multitenancy.
-		// Find and validate the object. Rendering is deferred to the single
-		// renderEntity() call below (`_render: false`): find() previously
-		// rendered the entity with the same $extend and the controller then
-		// rendered it AGAIN, repeating file hydration, writeOnly redaction and
-		// the expensive inverse-property resolution on every single read.
-		// Permission checks and read logging inside find() still run.
 		try {
-			$objectEntity = $this->objectService->find(
-				id: $id,
-				_extend: $extend,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				_render: false
-			);
+			$objectEntity = $this->foundForShow(show: $show, read: $read);
 			if ($objectEntity === null) {
-				// THE REFUSAL SAYS WHERE THE OBJECT WENT. A flat "not found" on
-				// a soft-deleted object is the answer that makes a caseworker
-				// think their work is gone, when it is in the trash with a
-				// stated window still open.
-				$registerScope = null;
-				if (is_numeric($resolved['register']) === true) {
-					$registerScope = (int)$resolved['register'];
-				}
-
-				$deletedRefusal = $this->deletedRefusal(
-					id: $id,
-					rbac: $rbac,
-					multitenancy: $multi,
-					registerIdScope: $registerScope
-				);
-				if ($deletedRefusal !== null) {
-					return new JSONResponse(data: $deletedRefusal, statusCode: Http::STATUS_NOT_FOUND);
-				}
-
-				$errorMsg = "Object with id {$id} not found";
-				return new JSONResponse(data: ['error' => $errorMsg], statusCode: Http::STATUS_NOT_FOUND);
+				return $this->absentObject(show: $show, read: $read);
 			}
 
-			// `_reveal` is honoured on this single-object read only, and only for the
-			// object found, by its uuid: an extended or listed object stays masked,
-			// whatever id or slug it shares with the route (property-explicit-reveal).
-			$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
-			if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
-				$explicitReveal->grantFor(objectId: (string)$objectEntity->getUuid(), reveal: (string)($requestParams['_reveal'] ?? ''));
-			}
-
-			// Render the object with requested extensions, filters, fields, and unset parameters.
-			// This is the ONLY render on the show() response path: writeOnly
-			// redaction and read-authorization stripping (openregister#385/#386)
-			// are applied here, exactly once, inside renderEntity().
-			$renderedObject = $this->objectService->renderEntity(
-				entity: $objectEntity,
-				_extend: $extend,
-				depth: 0,
-				filter: $filter,
-				fields: $fields,
-				unset: $unset,
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
-
-			// Add registers, schemas, and extended objects to @self for single object responses.
-			// Only include when explicitly requested via _extend parameter.
-			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
-			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
-			// No separate view is recorded here any more: the audited read in
-			// GetObject::find() above IS the view (`read-history-on-audit-trail`),
-			// and the `_recent` lens reads it back from the audit trail.
-			$renderedData = $renderedObject;
-			if (isset($renderedData['@self']) === true) {
-				// The tab badges (`object-read-state`). Attached HERE and
-				// nowhere else, because this is the only read path that knows it
-				// is rendering exactly one object: counting a sub-resource looks
-				// at the object's files and its dated arrays, so doing it in
-				// RenderObject would pay that cost per row on every list.
-				$renderedData['@self'] = $this->withUnreadCounts(
-					self: $renderedData['@self'],
-					object: $objectEntity
-				);
-
-				$extendArray = [];
-				if (is_array($extend) === true) {
-					$extendArray = $extend;
-				}
-
-				// Add registers if _registers or _register is in _extend.
-				if (in_array('_registers', $extendArray, true) === true
-					|| in_array('_register', $extendArray, true) === true
-				) {
-					$registerId = $resolved['register'];
-					$registers = [];
-					if ($resolved['registerEntity'] !== null) {
-						$registers[$registerId] = $resolved['registerEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['registers'] = $registers;
-				}
-
-				// Add schemas if _schemas or _schema is in _extend.
-				if (in_array('_schemas', $extendArray, true) === true
-					|| in_array('_schema', $extendArray, true) === true
-				) {
-					$schemaId = $resolved['schema'];
-					$schemas = [];
-					if ($resolved['schemaEntity'] !== null) {
-						$schemas[$schemaId] = $resolved['schemaEntity']->jsonSerialize();
-					}
-
-					$renderedData['@self']['schemas'] = $schemas;
-				}
-
-				// Get extended objects indexed by UUID (for _extend lookups).
-				// Always include objects if any _extend is requested.
-				if (empty($extendArray) === false) {
-					$extendedObjects = $objectService->getExtendedObjects();
-					$renderedData['@self']['objects'] = $extendedObjects;
-				}
-
-				// Add names mapping if _names is in _extend.
-				// This provides UUID-to-name mappings for all related objects,
-				// reducing frontend calls to the names service.
-				if (in_array('_names', $extendArray, true) === true) {
-					$renderedData['@self']['names'] = $this->collectNamesForResponse(
-						renderedData: $renderedData,
-						cacheHandler: $objectService->getCacheHandler()
-					);
-				}
-			}//end if
-
-			// Strip empty values from response unless _empty=true is set.
-			$includeEmpty = filter_var(
-				value: $requestParams['_empty'] ?? false,
-				filter: FILTER_VALIDATE_BOOLEAN
-			);
-			if ($includeEmpty === false) {
-				$renderedData = $this->stripEmptyValues(data: $renderedData);
-			}
-
-			// THE RECORD SAYS WHAT ITS READER MAY DO WITH IT. Resolved in the
-			// same pass that decided this read, from the memoised verdicts, so
-			// it costs the resolutions a client would otherwise provoke by
-			// trying. Without it every client guesses, and the user finds out
-			// by clicking into a 403 (design D-9).
-			//
-			// AFTER the empty strip, deliberately: a caller who may do nothing
-			// on this row has an EMPTY list of actions, and that is an answer.
-			// Stripping it would leave the client unable to tell "no rights" from
-			// "this instance does not report rights".
-			$renderedData = $this->withPermittedActions(
-				renderedData: $renderedData,
-				schema: $resolved['schemaEntity'],
-				object: $objectEntity,
-				objectService: $objectService
-			);
-
-			// Content negotiation: emit JSON-LD when requested. The serializer
-			// wraps the already-rendered array — no second data path — so all
-			// access control above remains applied (json-ld-output).
-			if ($this->wantsJsonLd() === true
-				&& $resolved['registerEntity'] !== null
-				&& $resolved['schemaEntity'] !== null
-			) {
-				return $this->jsonLdObjectResponse(
-					renderedObject: $renderedData,
-					register: $resolved['registerEntity'],
-					schema: $resolved['schemaEntity']
-				);
-			}
-
-			return new JSONResponse(data: $renderedData);
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (NotAuthorizedException $exception) {
-			// RBAC denied the read. Return 404 (not 500, and not 403) so an
-			// unauthorized caller cannot distinguish "exists but forbidden"
-			// from "does not exist" — avoids leaking object existence while
-			// still denying access. Previously this exception escaped the
-			// handler and surfaced as an HTTP 500.
+			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
+		} catch (DoesNotExistException|NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}//end try
-	}//end show()
+			return $this->ambiguousIdentifierResponse(id: $show->id);
+		}
+	}//end shownObject()
+
+	/**
+	 * Find the object without rendering it.
+	 *
+	 * Rendering waits for the single renderEntity() call; permission checks and
+	 * read logging inside find() still run.
+	 *
+	 * @param ObjectShow $show The object asked for.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is absent.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
+		return $this->objectService->find(
+			id: $show->id,
+			_extend: $read->extend,
+			files: false,
+			register: $show->path[0],
+			schema: $show->path[1],
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped,
+			_render: false
+		);
+	}//end foundForShow()
+
+	/**
+	 * The 404 for an object find() did not return.
+	 *
+	 * The refusal says where the object went: a flat "not found" on a
+	 * soft-deleted object makes a caseworker think their work is gone, when it
+	 * is in the trash with a stated window still open.
+	 *
+	 * @param ObjectShow $show The object asked for and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's scope.
+	 *
+	 * @return JSONResponse The 404.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function absentObject(ObjectShow $show, ObjectReadOptions $read): JSONResponse {
+		$registerScope = null;
+		if (is_numeric($show->resolved['register']) === true) {
+			$registerScope = (int)$show->resolved['register'];
+		}
+
+		$deleted = $this->deletedRefusal(id: $show->id, rbac: $read->scoped, multitenancy: $read->scoped, registerIdScope: $registerScope);
+		if ($deleted !== null) {
+			return new JSONResponse(data: $deleted, statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: ['error' => "Object with id {$show->id} not found"], statusCode: Http::STATUS_NOT_FOUND);
+	}//end absentObject()
+
+	/**
+	 * Render a found object for its reader.
+	 *
+	 * This is the ONLY render on the show() path: writeOnly redaction and
+	 * read-authorization stripping happen here, exactly once, inside
+	 * renderEntity(). The JSON-LD serializer wraps the rendered array, so all
+	 * of that stays applied to it. The permitted actions come AFTER the empty
+	 * strip: an empty list of actions is an answer, not an empty value.
+	 *
+	 * @param ShownEntity $shown The found object and its resolved scope.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return JSONResponse The object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedShow(ShownEntity $shown, ObjectReadOptions $read): JSONResponse {
+		$this->grantExplicitReveal(object: $shown->entity);
+		$rendered = $this->withSelfExtras(rendered: $this->renderedEntity(entity: $shown->entity, read: $read), shown: $shown);
+		if ($this->wantsEmptyValues() === false) {
+			$rendered = (new EmptyValueStripper())->stripped(data: $rendered);
+		}
+
+		$rendered = $this->withPermittedActions(renderedData: $rendered, shown: $shown);
+		if ($this->wantsJsonLd() === true && $shown->show->hasEntities() === true) {
+			return $this->jsonLdObjectResponse(renderedObject: $rendered, resolved: $shown->show->resolved);
+		}
+
+		return new JSONResponse(data: $rendered);
+	}//end renderedShow()
+
+	/**
+	 * Honour `_reveal` for the object found, by its uuid.
+	 *
+	 * Only on this single-object read: an extended or listed object stays masked,
+	 * whatever id or slug it shares with the route (property-explicit-reveal).
+	 *
+	 * @param ObjectEntity $object The object found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function grantExplicitReveal(ObjectEntity $object): void {
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+			$params = $this->request->getParams();
+			$explicitReveal->grantFor(objectId: (string)$object->getUuid(), reveal: (string)($params['_reveal'] ?? ''));
+		}
+	}//end grantExplicitReveal()
+
+	/**
+	 * The render of one object.
+	 *
+	 * @param ObjectEntity $entity The object.
+	 * @param ObjectReadOptions $read The caller's render options and scope.
+	 *
+	 * @return array<string, mixed> The rendered object.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function renderedEntity(ObjectEntity $entity, ObjectReadOptions $read): array {
+		return $this->objectService->renderEntity(
+			entity: $entity,
+			_extend: $read->extend,
+			depth: 0,
+			filter: $read->filter,
+			fields: $read->fields,
+			unset: $read->unset,
+			_rbac: $read->scoped,
+			_multitenancy: $read->scoped
+		);
+	}//end renderedEntity()
+
+	/**
+	 * Add what `_extend` asked for to `@self`, with the tab badges.
+	 *
+	 * The badges are attached here and nowhere else: this is the only read path
+	 * that knows it renders exactly one object.
+	 *
+	 * @param array<string, mixed> $rendered The rendered object.
+	 * @param ShownEntity $shown The found object and the extensions asked for.
+	 *
+	 * @return array<string, mixed> The object with its extras.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function withSelfExtras(array $rendered, ShownEntity $shown): array {
+		if (isset($rendered['@self']) === false) {
+			return $rendered;
+		}
+
+		$rendered['@self'] = array_merge(
+			$this->withUnreadCounts(self: $rendered['@self'], object: $shown->entity),
+			$shown->resolvedExtras()
+		);
+		if (in_array('_names', $shown->extend, true) === true) {
+			$rendered['@self']['names'] = $this->collectNamesForResponse(renderedData: $rendered, cacheHandler: $shown->show->services->names);
+		}
+
+		return $rendered;
+	}//end withSelfExtras()
 
 	/**
 	 * The 409 answer for an identifier that matches more than one object (#4037).
@@ -3505,41 +3196,24 @@ class ObjectsController extends Controller {
 	 * returned because the read was allowed, and every write is resolved again
 	 * on its own request. A reporting field must never be able to refuse a read.
 	 *
-	 * @param array $renderedData The rendered record.
-	 * @param Schema|null $schema The schema, when it resolved.
-	 * @param ObjectEntity|null $object The row.
-	 * @param ObjectService $objectService The service holding the resolver.
+	 * @param array<string, mixed> $renderedData The rendered object.
+	 * @param ShownEntity $shown The found object and its resolved scope.
 	 *
 	 * @return array The record, with its actions when they could be resolved.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function withPermittedActions(
-		array $renderedData,
-		?Schema $schema,
-		?ObjectEntity $object,
-		ObjectService $objectService,
-	): array {
-		if ($schema === null || $object === null || isset($renderedData['@self']) === false) {
+	private function withPermittedActions(array $renderedData, ShownEntity $shown): array {
+		$schema = $shown->show->resolved['schemaEntity'];
+		if ($schema === null || isset($renderedData['@self']) === false) {
 			return $renderedData;
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $objectService->getPermissionHandler()->permittedActionsFor(
-				schema: $schema,
-				object: $object
-			);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
 		} catch (\Throwable $e) {
-			// See the docblock: reporting never refuses a read.
-			$this->logger->warning(
-				message: '[ObjectsController] Could not resolve the actions for a record; returning it without them',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-					'error' => $e->getMessage(),
-				]
-			);
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
+			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
 		}
 
 		return $renderedData;
@@ -3610,7 +3284,7 @@ class ObjectsController extends Controller {
 					request: $this->request,
 					eventType: 'object.creating'
 				);
-			} catch (Exception $e) {
+			} catch (\Throwable $e) {
 				// Log error but continue with original request if webhook fails.
 				// This ensures webhook failures don't break the API.
 				$this->logger->error(
@@ -3701,8 +3375,9 @@ class ObjectsController extends Controller {
 			// Use the object service to validate and save the object.
 			// Use resolved numeric IDs instead of slugs.
 			$objectToSave = $object;
+			$body = $this->withClientCauseAttempt(object: $object);
 			$save = static fn (?string $uuid): ObjectEntity => $objectService->saveObject(
-				object: $objectToSave,
+				object: $body,
 				register: $resolved['register'],
 				schema: $resolved['schema'],
 				_rbac: $rbac,
@@ -4099,12 +3774,11 @@ class ObjectsController extends Controller {
 			// client that sent `_expectedUpdated` on a PUT got no assertion at
 			// all, silently, and overwrote whatever had landed meanwhile. The
 			// two doors now call one method, so they cannot answer differently.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
-			$conflict = $this->versionConflictResponse(
-				existingObject: $existingObject,
-				sent: $object,
-				schemaEntity: $resolved['schemaEntity']
+			$conflict = $this->versionGuard()->refusal(
+				stored: $existingObject,
+				write: new SentWrite(data: $object, schema: $resolved['schemaEntity'])
 			);
 			if ($conflict !== null) {
 				return $conflict;
@@ -4314,12 +3988,11 @@ class ObjectsController extends Controller {
 			// and the write is rejected with 409 instead of overwriting the newer
 			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
 			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$this->noteClientSuppliedCause();
+			$this->noteClientSuppliedCause(object: $existingObject);
 
-			$conflict = $this->versionConflictResponse(
-				existingObject: $existingObject,
-				sent: $patchData,
-				schemaEntity: $resolved['schemaEntity']
+			$conflict = $this->versionGuard()->refusal(
+				stored: $existingObject,
+				write: new SentWrite(data: $patchData, schema: $resolved['schemaEntity'])
 			);
 			if ($conflict !== null) {
 				return $conflict;
@@ -4333,8 +4006,7 @@ class ObjectsController extends Controller {
 			// did NOT send are restored — see restoreStringTypedValues().
 			$mergedData = $this->restoreStringTypedValues(
 				mergedData: $mergedData,
-				schemaEntity: $resolved['schemaEntity'],
-				suppliedKeys: array_keys($patchData)
+				patch: new StringTypedPatch(schema: $resolved['schemaEntity'], suppliedKeys: array_keys($patchData))
 			);
 
 			// Use the object service to validate and update the object.
@@ -4519,8 +4191,7 @@ class ObjectsController extends Controller {
 			// did NOT send are restored — see restoreStringTypedValues().
 			$mergedData = $this->restoreStringTypedValues(
 				mergedData: $mergedData,
-				schemaEntity: $resolved['schemaEntity'],
-				suppliedKeys: array_keys($patchData)
+				patch: new StringTypedPatch(schema: $resolved['schemaEntity'], suppliedKeys: array_keys($patchData))
 			);
 
 			$objectService->clearCreatedSubObjects();
@@ -4597,7 +4268,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
-	 * @throws Exception
+	 * @throws \Exception
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -4866,11 +4537,8 @@ class ObjectsController extends Controller {
 		// Return empty paginated response.
 		return new JSONResponse(
 			data: $this->paginate(
-				results: $result['results'] ?? [],
-				total: $result['total'] ?? 0,
-				limit: $limit,
-				offset: $offset,
-				page: $page
+				results: ($result['results'] ?? []),
+				window: new ResultWindow(total: ($result['total'] ?? 0), limit: $limit, offset: $offset, page: $page)
 			)
 		);
 	}//end contracts()
@@ -4893,73 +4561,7 @@ class ObjectsController extends Controller {
 	 * @return array The same envelope with `url` stamped on each resolvable record.
 	 */
 	private function stampObjectUrls(array $result): array {
-		if ($this->linkedData->deepLinkRegistry === null
-			|| isset($result['results']) === false
-			|| is_array($result['results']) === false
-		) {
-			return $result;
-		}
-
-		foreach ($result['results'] as $index => $record) {
-			// Normalise entities to their serialized array form.
-			if (is_object($record) === true && method_exists($record, 'jsonSerialize') === true) {
-				$record = $record->jsonSerialize();
-			}
-
-			if (is_array($record) === false) {
-				continue;
-			}
-
-			$self = ($record['@self'] ?? []);
-			$uuid = ($self['id'] ?? ($record['id'] ?? null));
-			$registerId = ($self['register'] ?? null);
-			$schemaId = ($self['schema'] ?? null);
-
-			if ($uuid === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
-				$result['results'][$index] = $record;
-				continue;
-			}
-
-			try {
-				$flat = array_merge(
-					$record,
-					[
-						'uuid' => $uuid,
-						'id' => $uuid,
-						'register' => $registerId,
-						'schema' => $schemaId,
-					]
-				);
-
-				$url = $this->linkedData->deepLinkRegistry->resolveUrl(
-					registerId: (int)$registerId,
-					schemaId: (int)$schemaId,
-					objectData: $flat
-				);
-
-				if ($url === null && $this->linkedData->relationUrlGenerator !== null) {
-					$url = $this->linkedData->relationUrlGenerator->linkToRoute(
-						'openregister.objects.show',
-						[
-							'register' => $registerId,
-							'schema' => $schemaId,
-							'id' => $uuid,
-						]
-					);
-				}
-
-				if ($url !== null) {
-					$record['url'] = $url;
-				}
-			} catch (\Throwable $e) {
-				// Defensive: never let URL resolution break the relation response.
-				$this->logger->debug('Relation URL resolution failed: ' . $e->getMessage());
-			}//end try
-
-			$result['results'][$index] = $record;
-		}//end foreach
-
-		return $result;
+		return (new RelationUrlStamper(linkedData: $this->linkedData, logger: $this->logger))->stamped(result: $result);
 	}//end stampObjectUrls()
 
 	/**
@@ -5123,8 +4725,8 @@ class ObjectsController extends Controller {
 			}
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+		} catch (\Exception $e) {
+			return $this->historyLookupFailureResponse(failure: $e);
 		}
 
 		// Normalize and compare register.
@@ -5183,7 +4785,7 @@ class ObjectsController extends Controller {
 		}
 
 		// Get config and fetch logs.
-		$config = $this->getConfig(_register: $register, _schema: $schema);
+		$config = $this->getConfig();
 		$logs = $objectService->getLogs(uuid: $id, filters: $config['filters']);
 
 		// An explicit-reveal value reads masked for an administrator too.
@@ -5199,10 +4801,7 @@ class ObjectsController extends Controller {
 		return new JSONResponse(
 			data: $this->paginate(
 				results: $logs,
-				total: $total,
-				limit: $config['limit'],
-				offset: $config['offset'],
-				page: $config['page']
+				window: new ResultWindow(total: $total, limit: $config['limit'], offset: $config['offset'], page: $config['page'])
 			)
 		);
 	}//end logs()
@@ -5220,7 +4819,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
-		$config = $this->getConfig(_register: $register, _schema: $schema);
+		$config = $this->getConfig();
 		$search = null;
 		if ($config['_search'] !== null) {
 			$search = (string)$config['_search'];
@@ -5450,211 +5049,6 @@ class ObjectsController extends Controller {
 	}//end exists()
 
 	/**
-	 * Refuse a write made from a stale read, and say what the other value is.
-	 *
-	 * 🔴 OPT-IN, EXACTLY AS BEFORE (REQ-CSO-003). A caller that sends neither
-	 * `_expectedUpdated` nor `If-Match` behaves as it does today: no assertion,
-	 * last write wins. Nothing that works now starts failing; a write that
-	 * asks for the guarantee gets it.
-	 *
-	 * 🔴 THE BODY CARRIES THE ANSWER, NOT JUST THE VERDICT. Two timestamps tell
-	 * a machine to retry and tell a person nothing. {@see ConflictReport} adds
-	 * what was sent, what was read and what is stored, per conflicting
-	 * property, so a client can render the choice without a second request and
-	 * without racing the reload.
-	 *
-	 * @param ObjectEntity $existingObject The object as stored.
-	 * @param array<string, mixed> $sent What the caller is writing.
-	 * @param mixed $schemaEntity The schema, for the field filter.
-	 *
-	 * @return JSONResponse|null The 409, or null when the caller may write.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function versionConflictResponse(
-		ObjectEntity $existingObject,
-		array $sent,
-		mixed $schemaEntity = null,
-	): ?JSONResponse {
-		// Read from the RAW request: the payload filters strip `_`-prefixed
-		// keys, so by the time a handler sees the body this is gone.
-		$expected = $this->request->getParam('_expectedUpdated');
-		if ($expected === null || trim((string)$expected) === '') {
-			// 🔴 `If-Match` IS ACCEPTED ONLY WHEN IT IS SHAPED LIKE THE THING IT
-			// IS COMPARED AGAINST. `getHeader()` answers a string for any
-			// header name, and a caller sending an ordinary etag, or a test
-			// stubbing the method blanket-wise, would otherwise have every
-			// write refused 409 against a value that was never a version.
-			// Measured: taking the header unconditionally reddened 28 existing
-			// controller tests, all of which stub `getHeader` once for
-			// `Content-Type`. Comparing like with like is the fix, not
-			// loosening the assertion.
-			$expected = $this->asExpectedVersion(value: $this->request->getHeader('If-Match'));
-		}
-
-		if ($expected === null || trim((string)$expected) === '') {
-			return null;
-		}
-
-		$current = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
-		if ((string)$current === (string)$expected) {
-			return null;
-		}
-
-		$body = [
-			'error' => \OCA\OpenRegister\Service\Object\ConflictReport::ERROR,
-			'code' => \OCA\OpenRegister\Service\Object\ConflictReport::CODE,
-			'message' => 'This object changed since you read it. Re-read it and try again.',
-			'conflicts' => [],
-			'changedBy' => null,
-			'changedAt' => null,
-		];
-
-		if ($schemaEntity instanceof Schema === true) {
-			try {
-				$body = $this->container->get(\OCA\OpenRegister\Service\Object\ConflictReport::class)->build(
-					stored: $existingObject,
-					schema: $schemaEntity,
-					sent: $sent,
-					intervening: $this->interveningChanges(object: $existingObject, since: (string)$expected)
-				);
-			} catch (\Throwable $e) {
-				// A report that could not be built must not turn a 409 into a
-				// 500: the refusal is still correct and still the right status,
-				// it simply says less. Reporting less is a degraded answer;
-				// letting the write through would be a lost update.
-				$this->logger->warning(
-					message: '[ObjectsController] a conflict body could not be built: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		// The two timestamps stay on the body beside the new block: every
-		// existing client branches on them, and removing them to make room for
-		// a better answer would break the clients this is meant to help.
-		$body['expectedUpdated'] = (string)$expected;
-		$body['currentUpdated'] = (string)$current;
-
-		$this->recordRefusedWrite(object: $existingObject, expected: (string)$expected, current: (string)$current, body: $body);
-
-		return new JSONResponse(data: $body, statusCode: 409);
-	}//end versionConflictResponse()
-
-	/**
-	 * An `If-Match` value, when it is an instant rather than any old header.
-	 *
-	 * The object's concurrency token IS its `updated` timestamp, so an
-	 * `If-Match` that does not parse as one cannot be a version of it and is
-	 * ignored rather than refused: a caller sending a content etag is not
-	 * making a concurrency assertion, and answering 409 would break them for
-	 * asking a different question.
-	 *
-	 * @param string|null $value The header value.
-	 *
-	 * @return string|null The instant, or null.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function asExpectedVersion(?string $value): ?string {
-		$value = trim(trim((string)$value), '"');
-		if ($value === '') {
-			return null;
-		}
-
-		try {
-			$parsed = new DateTimeImmutable($value);
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		// A bare word like `application/json` can still parse on some builds,
-		// so the round trip has to look like the input rather than merely
-		// succeeding: an instant this app wrote always carries a date.
-		if (preg_match('/\\d{4}-\\d{2}-\\d{2}/', $value) === 1) {
-			return $parsed->format(\DateTimeInterface::ATOM);
-		}
-
-		return null;
-	}//end asExpectedVersion()
-
-	/**
-	 * The changes made to this object since the caller read it, newest first.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $since The caller's `updated`, ISO-8601.
-	 *
-	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The entries.
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
-	 */
-	private function interveningChanges(ObjectEntity $object, string $since): array {
-		try {
-			$read = new DateTime($since);
-		} catch (\Throwable $e) {
-			return [];
-		}
-
-		$entries = [];
-		foreach ($this->auditTrailMapper->findAll(filters: ['object_uuid' => $object->getUuid()], limit: 25) as $entry) {
-			if ($entry instanceof \OCA\OpenRegister\Db\AuditTrail === false) {
-				continue;
-			}
-
-			$created = $entry->getCreated();
-			if ($created !== null && $created->getTimestamp() > $read->getTimestamp()) {
-				$entries[] = $entry;
-			}
-		}
-
-		return $entries;
-	}//end interveningChanges()
-
-	/**
-	 * Leave a trail that a write was refused, and why.
-	 *
-	 * 🔑 A REFUSAL IS A FACT ABOUT THE OBJECT. Without it, the only record of a
-	 * lost-update collision is in the client that was refused, so nobody
-	 * investigating "two people keep overwriting each other on this case" can
-	 * see that the guard is working, or how often.
-	 *
-	 * Never throws: a trail that cannot be written must not turn a correct
-	 * refusal into a 500.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $expected The version the caller held.
-	 * @param string $current The version stored.
-	 * @param array<string, mixed> $body The conflict body.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
-	 */
-	private function recordRefusedWrite(ObjectEntity $object, string $expected, string $current, array $body): void {
-		try {
-			$this->auditTrailMapper->createAuditTrailEntry(
-				object: $object,
-				action: 'refused',
-				context: [
-					'reason' => 'version-conflict',
-					'expectedUpdated' => $expected,
-					'currentUpdated' => $current,
-					// The NAMES only. The values are in the response the caller
-					// got, filtered for them; the trail is read by OTHER people
-					// and must not become a way to read a restricted property
-					// out of somebody else's refusal.
-					'properties' => array_keys(($body['conflicts'] ?? [])),
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectsController] a refused write could not be recorded: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-	}//end recordRefusedWrite()
-
-	/**
 	 * Move an object to another register and schema, keeping who it is.
 	 *
 	 * 🔴 NOT A COPY. Every side table — the audit trail, the versions, the
@@ -5708,12 +5102,12 @@ class ObjectsController extends Controller {
 
 		try {
 			$from = [
-				'register' => $this->registerMapper->find($register),
-				'schema' => $this->schemaMapper->find($schema),
+				'register' => $this->services->store->registerMapper->find($register),
+				'schema' => $this->services->store->schemaMapper->find($schema),
 			];
 			$to = [
-				'register' => $this->registerMapper->find($targetRegister),
-				'schema' => $this->schemaMapper->find($targetSchema),
+				'register' => $this->services->store->registerMapper->find($targetRegister),
+				'schema' => $this->services->store->schemaMapper->find($targetSchema),
 			];
 		} catch (\Throwable $e) {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
@@ -5750,23 +5144,68 @@ class ObjectsController extends Controller {
 	 * key is already stripped from the payload by the `_`-prefix filter or
 	 * ignored by validation, so this only notices.
 	 *
+	 * @param ObjectEntity $object The object this write is for; only its audit rows carry the mark.
+	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	private function noteClientSuppliedCause(): void {
+	private function noteClientSuppliedCause(ObjectEntity $object): void {
+		if ($this->requestNamesItsCause() === true) {
+			\OCA\OpenRegister\Service\WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
+		}
+	}//end noteClientSuppliedCause()
+
+	/**
+	 * The body of a create, marked when the request tried to name its own cause.
+	 *
+	 * The create door cannot note the attempt itself: the object has no uuid
+	 * yet, and the objects nested in it are saved and audited first. The mark
+	 * rides on this object's own `@self`, and the save takes it off and notes
+	 * it for the uuid it wrote. See {@see WriteCause::CLIENT_ATTEMPT_KEY}.
+	 *
+	 * @param array<string, mixed> $object The filtered request body.
+	 *
+	 * @return array<string, mixed> The body to save.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function withClientCauseAttempt(array $object): array {
+		if ($this->requestNamesItsCause() === false) {
+			return $object;
+		}
+
+		$self = ($object['@self'] ?? []);
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$object['@self'] = array_merge($self, [\OCA\OpenRegister\Service\WriteCause::CLIENT_ATTEMPT_KEY => true]);
+
+		return $object;
+	}//end withClientCauseAttempt()
+
+	/**
+	 * Whether this request tried to name its own cause. Logs the attempt.
+	 *
+	 * @return boolean True when a cause key is in the request.
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function requestNamesItsCause(): bool {
 		foreach (['cause', '_cause', 'causeRun', '_causeRun'] as $key) {
 			if ($this->request->getParam($key) !== null) {
-				\OCA\OpenRegister\Service\WriteCause::noteClientAttempt();
 				$this->logger->warning(
 					message: '[ObjectsController] a request supplied its own audit cause; it was ignored',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'key' => $key]
 				);
 
-				return;
+				return true;
 			}
 		}
-	}//end noteClientSuppliedCause()
+
+		return false;
+	}//end requestNamesItsCause()
 
 	/**
 	 * Say that the caller still has this object open.
@@ -6035,7 +5474,7 @@ class ObjectsController extends Controller {
 		// Get register and schema entities.
 		//
 		// Reuse what setRegister()/setSchema() already resolved instead of
-		// re-resolving. The re-resolution was GLOBAL — `$this->schemaMapper->find()`
+		// re-resolving. The re-resolution was GLOBAL — `$this->services->store->schemaMapper->find()`
 		// matches `LOWER(slug)` across the whole instance — so on an instance where
 		// two apps share a schema slug the export was named after ANOTHER app's
 		// schema while its rows came from this register's. A filename is exactly
@@ -6071,7 +5510,7 @@ class ObjectsController extends Controller {
 
 		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
 		if ($type === 'csv') {
-			$content = $this->exportService->exportToCsv(
+			$content = $this->services->transfer->exportService->exportToCsv(
 				register: $registerEntity,
 				schema: $schemaEntity,
 				filters: $filters,
@@ -6093,7 +5532,7 @@ class ObjectsController extends Controller {
 		}
 
 		if ($type === 'json') {
-			$content = $this->exportService->exportToJson(
+			$content = $this->services->transfer->exportService->exportToJson(
 				register: $registerEntity,
 				schema: $schemaEntity,
 				filters: $filters
@@ -6115,7 +5554,7 @@ class ObjectsController extends Controller {
 
 		if ($type === 'pdf') {
 			try {
-				$content = $this->exportService->exportToPdf(
+				$content = $this->services->transfer->exportService->exportToPdf(
 					register: $registerEntity,
 					schema: $schemaEntity,
 					filters: $filters,
@@ -6139,7 +5578,7 @@ class ObjectsController extends Controller {
 				register: $registerEntity,
 				schema: $schemaEntity,
 				format: 'pdf',
-				rowCount: $this->exportService->countExportRows(
+				rowCount: $this->services->transfer->exportService->countExportRows(
 					register: $registerEntity,
 					schema: $schemaEntity,
 					filters: $filters
@@ -6154,7 +5593,7 @@ class ObjectsController extends Controller {
 		}//end if
 
 		// Default to Excel.
-		$spreadsheet = $this->exportService->exportToExcel(
+		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
 			register: $registerEntity,
 			schema: $schemaEntity,
 			filters: $filters,
@@ -6607,7 +6046,7 @@ class ObjectsController extends Controller {
 					unlink($zipInfo['path']);
 				}
 
-				throw new Exception('Failed to read ZIP file content');
+				throw new RuntimeException('Failed to read ZIP file content');
 			}
 
 			// Clean up temporary file after reading.
@@ -6679,26 +6118,12 @@ class ObjectsController extends Controller {
 			$batchSize = (int)($data['batchSize'] ?? 25);
 
 			// Use ObjectService delegation to handler.
-			$result = $this->objectService->vectorizeBatchObjects(
-				_views: $views,
-				_batchSize: $batchSize
-			);
+			$result = $this->objectService->vectorizeBatchObjects(_views: $views, _batchSize: $batchSize);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $result,
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => true, 'data' => $result]);
+		} catch (\Throwable $e) {
+			return $this->vectorizationFailureResponse(failure: $e);
+		}
 	}//end vectorizeBatch()
 
 	/**
@@ -6727,21 +6152,10 @@ class ObjectsController extends Controller {
 			// Use ObjectService delegation to handler.
 			$stats = $this->objectService->getVectorizationStatistics(_views: $views);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'stats' => $stats,
-				]
-			);
-		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => true, 'stats' => $stats]);
+		} catch (\Throwable $e) {
+			return $this->vectorizationFailureResponse(failure: $e);
+		}
 	}//end getObjectVectorizationStats()
 
 	/**
@@ -6761,106 +6175,176 @@ class ObjectsController extends Controller {
 	 */
 	public function validate(): JSONResponse {
 		try {
-			// Get request parameters.
-			$register = $this->request->getParam(key: 'register');
-			$schemaId = $this->request->getParam(key: 'schema');
-			$limit = $this->request->getParam(key: 'limit');
-			$offset = $this->request->getParam(key: 'offset');
-
-			if ($register === null || $schemaId === null) {
+			$window = new ValidationWindow(request: $this->request);
+			if ($window->isComplete() === false) {
 				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'Register and schema parameters are required',
-					],
+					data: ['success' => false, 'error' => 'Register and schema parameters are required'],
 					statusCode: 400
 				);
 			}
 
-			// Parse limit/offset with sensible defaults for chunked processing.
-			if ($limit !== null) {
-				$limitInt = (int)$limit;
-			} else {
-				$limitInt = null;
-			}
-
-			if ($offset !== null) {
-				$offsetInt = (int)$offset;
-			} else {
-				$offsetInt = 0;
-			}
-
-			$this->logger->info(
-				message: '[ObjectsController] Starting bulk validation for schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'limit' => $limitInt,
-					'offset' => $offsetInt,
-				]
-			);
-
-			// Validate and save objects in the schema to update metadata.
-			$result = $this->objectService->validateAndSaveObjectsBySchema(
-				registerId: (int)$register,
-				schemaId: (int)$schemaId,
-				limit: $limitInt,
-				offset: $offsetInt
-			);
-
-			$this->logger->info(
-				message: '[ObjectsController] Bulk validation and save completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'processed' => $result['processed'] ?? 0,
-					'updated' => $result['updated'] ?? 0,
-					'failed' => $result['failed'] ?? 0,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Validation completed successfully',
-					'statistics' => [
-						'processed' => $result['processed'] ?? 0,
-						'updated' => $result['updated'] ?? 0,
-						'failed' => $result['failed'] ?? 0,
-						'total' => $result['total'] ?? null,
-					],
-					'pagination' => [
-						'limit' => $limitInt,
-						'offset' => $offsetInt,
-					],
-					'errors' => $result['errors'] ?? [],
-				]
-			);
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ObjectsController] Bulk validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-					'message' => 'Validation failed',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->validationResponse(window: $window, result: $this->validatedChunk(window: $window));
+		} catch (\Exception $e) {
+			return $this->validationFailureResponse(failure: $e);
+		}
 	}//end validate()
+
+	/**
+	 * Validate and save one chunk of a schema's objects, logging start and end.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 *
+	 * @return array The validation result.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validatedChunk(ValidationWindow $window): array {
+		$scope = ['file' => __FILE__, 'line' => __LINE__, 'register' => $window->register, 'schema' => $window->schema];
+		$start = '[ObjectsController] Starting bulk validation for schema';
+		$this->logger->info(message: $start, context: $scope + ['limit' => $window->limit, 'offset' => $window->offset]);
+
+		// Validate and save objects in the schema to update metadata.
+		$result = $this->objectService->validateAndSaveObjectsBySchema(
+			registerId: (int)$window->register,
+			schemaId: (int)$window->schema,
+			limit: $window->limit,
+			offset: $window->offset
+		);
+
+		$done = '[ObjectsController] Bulk validation and save completed';
+		$this->logger->info(message: $done, context: $scope + $this->validationCounts(result: $result));
+
+		return $result;
+	}//end validatedChunk()
+
+	/**
+	 * The processed, updated and failed counts of a validation result.
+	 *
+	 * @param array $result The validation result.
+	 *
+	 * @return array{processed: mixed, updated: mixed, failed: mixed} The counts.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationCounts(array $result): array {
+		return [
+			'processed' => ($result['processed'] ?? 0),
+			'updated' => ($result['updated'] ?? 0),
+			'failed' => ($result['failed'] ?? 0),
+		];
+	}//end validationCounts()
+
+	/**
+	 * The answer to a completed bulk validation.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 * @param array            $result The validation result.
+	 *
+	 * @return JSONResponse The statistics, pagination and errors.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationResponse(ValidationWindow $window, array $result): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Validation completed successfully',
+				'statistics' => ($this->validationCounts(result: $result) + ['total' => ($result['total'] ?? null)]),
+				'pagination' => ['limit' => $window->limit, 'offset' => $window->offset],
+				'errors' => ($result['errors'] ?? []),
+			]
+		);
+	}//end validationResponse()
+
+	/**
+	 * Log a failed bulk validation and answer it.
+	 *
+	 * @param \Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationFailureResponse(\Exception $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
+		$this->logger->error(
+			message: '[ObjectsController] Bulk validation failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $failure->getMessage(),
+				'trace' => $failure->getTraceAsString(),
+			]
+		);
+
+		return new JSONResponse(
+			data: ['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'],
+			statusCode: 500
+		);
+	}//end validationFailureResponse()
+
+	/**
+	 * Log a failed vectorization route and answer it without the failure's text.
+	 *
+	 * @param \Throwable $failure The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function vectorizationFailureResponse(\Throwable $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
+		$this->logger->error(
+			message: '[ObjectsController] Vectorization route failed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
+		);
+
+		return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+	}//end vectorizationFailureResponse()
+
+	/**
+	 * Answer an object history lookup that failed with a 404, logging anything but a plain miss.
+	 *
+	 * @param \Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 404 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function historyLookupFailureResponse(\Exception $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
+		if ($failure instanceof DoesNotExistException === false) {
+			$this->logger->error(
+				message: '[ObjectsController] Object history lookup failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
+			);
+		}
+
+		return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+	}//end historyLookupFailureResponse()
+
+	/**
+	 * Let an external source's failure leave the route: ObjectSourceErrorMiddleware answers it with its own status.
+	 *
+	 * @param \Throwable $failure The failure a route caught.
+	 *
+	 * @return void
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException When the failure is one of these.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function rethrowExternalSourceFailure(\Throwable $failure): void {
+		if ($failure instanceof DbalObjectSourceException || $failure instanceof DbalWriteException) {
+			throw $failure;
+		}
+	}//end rethrowExternalSourceFailure()
 
 	/**
 	 * Collect UUID-to-name mappings for all related objects in a response.
@@ -6881,144 +6365,13 @@ class ObjectsController extends Controller {
 			return [];
 		}
 
-		$uuids = [];
-
-		// Collect UUIDs from @self.relations.
-		$relations = $renderedData['@self']['relations'] ?? [];
-		if (is_array($relations) === true) {
-			foreach ($relations as $relation) {
-				if (is_string($relation) === true && $this->isUuid(value: $relation) === true) {
-					$uuids[] = $relation;
-				} elseif (is_array($relation) === true) {
-					// Handle nested relation arrays.
-					foreach ($relation as $uuid) {
-						if (is_string($uuid) === true && $this->isUuid(value: $uuid) === true) {
-							$uuids[] = $uuid;
-						}
-					}
-				}
-			}
-		}
-
-		// Collect UUIDs from object properties (for extended relations).
-		$objectData = $renderedData['@self']['object'] ?? $renderedData;
-		if (is_array($objectData) === true) {
-			$this->collectUuidsFromArray(data: $objectData, uuids: $uuids);
-		}
-
-		// Remove duplicates.
-		$uuids = array_unique($uuids);
-
-		if (empty($uuids) === true) {
+		$uuids = array_unique((new RenderedObjectUuids())->inRendered(rendered: $renderedData));
+		if ($uuids === []) {
 			return [];
 		}
 
-		// Resolve all UUIDs to names using CacheHandler.
 		return $cacheHandler->getMultipleObjectNames($uuids);
 	}//end collectNamesForResponse()
-
-	/**
-	 * Recursively collect UUIDs from an array structure.
-	 *
-	 * @param array $data The array to scan for UUIDs.
-	 * @param array $uuids Reference to array collecting UUIDs.
-	 *
-	 * @return void
-	 */
-	private function collectUuidsFromArray(array $data, array &$uuids): void {
-		foreach ($data as $key => $value) {
-			// Skip metadata keys.
-			if ($key === '@self' || $key === 'id' || $key === '_id') {
-				continue;
-			}
-
-			if (is_string($value) === true && $this->isUuid(value: $value) === true) {
-				$uuids[] = $value;
-			} elseif (is_array($value) === true) {
-				// Check if it's an array of UUIDs.
-				foreach ($value as $item) {
-					if (is_string($item) === true && $this->isUuid(value: $item) === true) {
-						$uuids[] = $item;
-					} elseif (is_array($item) === true) {
-						// Recurse into nested arrays.
-						$this->collectUuidsFromArray(data: $item, uuids: $uuids);
-					}
-				}
-			}
-		}
-	}//end collectUuidsFromArray()
-
-	/**
-	 * Check if a string is a valid UUID format.
-	 *
-	 * @param string $value The value to check.
-	 *
-	 * @return bool True if the value is a UUID format.
-	 */
-	private function isUuid(string $value): bool {
-		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
-	}//end isUuid()
-
-	/**
-	 * Recursively strips empty values (null, empty string, empty array) from an array.
-	 *
-	 * Used to reduce API response payload by omitting properties that have no value.
-	 * Values of 0, false, and "0" are preserved as they are meaningful.
-	 *
-	 * By default, responses are stripped. Pass _empty=true in the query to include
-	 * empty values in the response for debugging or schema-aware consumers.
-	 *
-	 * @param array $data The data array to strip empty values from.
-	 *
-	 * @return array The data with empty values removed.
-	 */
-	private function stripEmptyValues(array $data): array {
-		$result = [];
-		foreach ($data as $key => $value) {
-			// Recursively strip nested arrays (but not sequential arrays like relations/files).
-			if (is_array($value) === true) {
-				// Check if this is a sequential (indexed) array.
-				$isSequential = array_is_list($value);
-
-				if ($isSequential === true) {
-					// For sequential arrays, strip each element if it's an associative array.
-					$stripped = [];
-					foreach ($value as $item) {
-						if (is_array($item) === true) {
-							$stripped[] = $this->stripEmptyValues(data: $item);
-						} else {
-							$stripped[] = $item;
-						}
-					}
-
-					// Only include non-empty sequential arrays.
-					if (empty($stripped) === false) {
-						$result[$key] = $stripped;
-					}
-
-					continue;
-				}
-
-				// For associative arrays, recurse.
-				$stripped = $this->stripEmptyValues(data: $value);
-				if (empty($stripped) === false) {
-					$result[$key] = $stripped;
-				}
-
-				continue;
-			}//end if
-
-			// Skip null and empty strings.
-			if ($value === null || $value === '') {
-				continue;
-			}
-
-			// Keep everything else (including 0, false, "0").
-			$result[$key] = $value;
-		}//end foreach
-
-		return $result;
-	}//end stripEmptyValues()
 
 	/**
 	 * Build the structured HTTP 403 response for a folder-access denial.
@@ -7115,37 +6468,53 @@ class ObjectsController extends Controller {
 	 * leaving today's loud validation refusal in place rather than guessing.
 	 *
 	 * @param array $mergedData The merged object data about to be saved.
-	 * @param mixed $schemaEntity The resolved schema entity, or whatever resolution produced.
-	 * @param array $suppliedKeys Keys the caller actually sent in the patch payload.
+	 * @param StringTypedPatch $patch The resolved schema and the keys the caller sent.
 	 *
 	 * @return array The data with untouched string-typed JSON values restored.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function restoreStringTypedValues(array $mergedData, mixed $schemaEntity, array $suppliedKeys): array {
-		if (($schemaEntity instanceof Schema) === false) {
+	private function restoreStringTypedValues(array $mergedData, StringTypedPatch $patch): array {
+		if (($patch->schema instanceof Schema) === false) {
 			return $mergedData;
 		}
 
-		try {
-			$converter = $this->container->get(SchemaTypeConverter::class);
-		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
-			return $mergedData;
-		}
-
-		// A container may answer with something other than a converter, or with
-		// nothing at all. Returning the data unchanged keeps the pre-existing
-		// refusal; calling a method on null would turn a patch into a fatal.
-		if (($converter instanceof SchemaTypeConverter) === false) {
+		$converter = $this->stringTypeConverter();
+		if ($converter === null) {
 			return $mergedData;
 		}
 
 		return $converter->restoreStringTypedValues(
 			data: $mergedData,
-			properties: ($schemaEntity->getProperties() ?? []),
-			suppliedKeys: $suppliedKeys
+			properties: $patch->schema->getProperties(),
+			suppliedKeys: $patch->suppliedKeys
 		);
 	}//end restoreStringTypedValues()
+
+	/**
+	 * The converter from the container, or null when it answers with anything else.
+	 *
+	 * A container may answer with something other than a converter, or with
+	 * nothing at all. Having none keeps the pre-existing refusal; calling a
+	 * method on null would turn a patch into a fatal.
+	 *
+	 * @return SchemaTypeConverter|null The converter.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function stringTypeConverter(): ?SchemaTypeConverter {
+		try {
+			$converter = $this->container->get(SchemaTypeConverter::class);
+		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
+			return null;
+		}
+
+		if (($converter instanceof SchemaTypeConverter) === false) {
+			return null;
+		}
+
+		return $converter;
+	}//end stringTypeConverter()
 
 	/**
 	 * Refuse a write to a locked object, or return null when it may proceed.
@@ -7240,23 +6609,38 @@ class ObjectsController extends Controller {
 	 */
 	private function withUnreadCounts(array $self, ObjectEntity $object): array {
 		try {
-			$readState = $this->container->get(ReadStateService::class);
-			if ($readState->callerUid() === null) {
-				return $self;
-			}
-
-			$counts = $readState->unreadCounts(object: $object);
-			if ($counts !== []) {
-				$self['unreadCounts'] = $counts;
-			}
+			$counts = $this->unreadCounts(object: $object);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[ObjectsController] unread counts skipped: %s', $e->getMessage())
 			);
-		}//end try
+			return $self;
+		}
+
+		if ($counts !== []) {
+			$self['unreadCounts'] = $counts;
+		}
 
 		return $self;
 	}//end withUnreadCounts()
+
+	/**
+	 * The signed-in caller's unread counts of an object; nothing for an anonymous read.
+	 *
+	 * @param ObjectEntity $object The object being read.
+	 *
+	 * @return array<string, mixed> The counts.
+	 *
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 */
+	private function unreadCounts(ObjectEntity $object): array {
+		$readState = $this->container->get(ReadStateService::class);
+		if ($readState->callerUid() === null) {
+			return [];
+		}
+
+		return $readState->unreadCounts(object: $object);
+	}//end unreadCounts()
 
 	/**
 	 * Read the records that reference this object, grouped by schema.
@@ -7383,7 +6767,7 @@ class ObjectsController extends Controller {
 
 		$schemaEntity = null;
 		try {
-			$schemaEntity = $this->schemaMapper->find(
+			$schemaEntity = $this->services->store->schemaMapper->find(
 				id: $objectEntity->getSchema(),
 				_rbac: false,
 				_multitenancy: false

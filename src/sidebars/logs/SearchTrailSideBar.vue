@@ -28,33 +28,9 @@ import {
 			<!-- Filter Section -->
 			<div class="filterSection">
 				<h3>{{ t('openregister', 'Filter Search Trails') }}</h3>
-				<div class="filterGroup">
-					<label for="registerSelect">{{
-						t('openregister', 'Register')
-					}}</label>
-					<NcSelect
-						id="registerSelect"
-						v-bind="registerOptions"
-						:modelValue="selectedRegisterValue"
-						:placeholder="t('openregister', 'All registers')"
-						:inputLabel="t('openregister', 'Register')"
-						:clearable="true"
-						@update:modelValue="handleRegisterChange" />
-				</div>
-				<div class="filterGroup">
-					<label for="schemaSelect">{{
-						t('openregister', 'Schema')
-					}}</label>
-					<NcSelect
-						id="schemaSelect"
-						v-bind="schemaOptions"
-						:modelValue="selectedSchemaValue"
-						:placeholder="t('openregister', 'All schemas')"
-						:inputLabel="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
-						:clearable="true"
-						@update:modelValue="handleSchemaChange" />
-				</div>
+				<ScopeFilterFields
+					@registerChange="handleRegisterChange"
+					@schemaChange="handleSchemaChange" />
 				<div class="filterGroup">
 					<label for="successSelect">{{
 						t('openregister', 'Success Status')
@@ -460,6 +436,7 @@ import {
 </template>
 
 <script>
+import ScopeFilterFields from '../ScopeFilterFields.vue'
 import {
 	NcAppSidebar,
 	NcAppSidebarTab,
@@ -483,21 +460,16 @@ import {
 	addDateRange,
 	addStrings,
 	csvValues,
-	queriesEqual,
 	routeDate,
 } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import {
-	registerSelect,
-	schemaSelect,
-	scopeOption,
-} from '../../services/scopeSelect.js'
 import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
 	trailUserOptions,
 } from '../../services/trailFilters.js'
+import { routeBoundFilters } from '../routeBoundFilters.js'
 
 /**
  * Leave a statistic as the API reports it.
@@ -576,6 +548,7 @@ const RANGE_FILTERS = Object.keys(ROUTE_FIELDS)
 export default {
 	name: 'SearchTrailSideBar',
 	components: {
+		ScopeFilterFields,
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcSelect,
@@ -593,6 +566,8 @@ export default {
 		Monitor,
 		FilterOffOutline,
 	},
+
+	mixins: [routeBoundFilters('/search-trails')],
 
 	data() {
 		return {
@@ -666,45 +641,8 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the search-trail filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return registerSelect(registerStore.registerList)
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			return scopeOption(registerStore.registerItem, 'register')
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			return scopeOption(schemaStore.schemaItem, 'schema')
-		},
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		searchTrailStore: () => searchTrailStore,
 
 		/**
 		 * Derive the user filter options from the search-trail list.
@@ -718,30 +656,8 @@ export default {
 	},
 
 	watch: {
-		// Keep component/store in sync with URL query params (single source of truth)
-		'$route.query': {
-			/**
-			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /search-trails.
-			 */
-			handler() {
-				if (this.$route.path !== '/search-trails') return
-				this.applyQueryParamsFromRoute()
-			},
-
-			deep: true,
-		},
-
 		'searchTrailStore.searchTrailList': function () {
 			this.updateFilteredCount()
-		},
-
-		// Watch for changes in the global stores
-		'registerStore.registerItem': function () {
-			this.applyFilters()
-		},
-
-		'schemaStore.schemaItem': function () {
-			this.applyFilters()
 		},
 	},
 
@@ -1051,31 +967,6 @@ export default {
 		},
 
 		/**
-		 * Handle register change (cascade: set register, clear schema, re-apply filters).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} register - Selected register
-		 * @return {void}
-		 */
-		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
-			this.applyFilters()
-		},
-
-		/**
-		 * Handle schema change (set schema, re-apply filters).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object} schema - Selected schema
-		 * @return {void}
-		 */
-		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
-			this.applyFilters()
-		},
-
-		/**
 		 * Get register/schema name for display
 		 *
 		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
@@ -1132,31 +1023,6 @@ export default {
 				['resultCountTo', this.resultCountTo],
 			])
 			return query
-		},
-
-		/**
-		 * Shallow-compare two query objects (keys and stringified values).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @param {object} a - First query object
-		 * @param {object} b - Second query object
-		 * @return {boolean} Whether the queries are equal
-		 */
-		queriesEqual(a, b) {
-			return queriesEqual(a, b)
-		},
-
-		/**
-		 * Write current sidebar state into the URL query (only on /search-trails).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		updateRouteQueryFromState() {
-			if (this.$route.path !== '/search-trails') return
-			const nextQuery = this.buildQueryFromState()
-			if (this.queriesEqual(nextQuery, this.$route.query)) return
-			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
 
 		/**

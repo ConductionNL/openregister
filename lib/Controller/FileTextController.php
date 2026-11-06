@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\FileTextControllerServices;
 use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Db\EntityRelationMapperInterface;
@@ -39,7 +40,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -99,6 +99,13 @@ class FileTextController extends Controller {
 	private readonly ManualEntityService $manualEntityService;
 
 	/**
+	 * The session bundle, which answers the admin check.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
+
+	/**
 	 * Session user accessor (for the manual-entity endpoint)
 	 *
 	 * @var IUserSession
@@ -111,13 +118,6 @@ class FileTextController extends Controller {
 	 * @var IRootFolder
 	 */
 	private readonly IRootFolder $rootFolder;
-
-	/**
-	 * Group manager for admin checks
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
 
 	/**
 	 * The object read rule for an object's file.
@@ -145,8 +145,8 @@ class FileTextController extends Controller {
 		$this->logger = $services->session->logger;
 		$this->manualEntityService = $services->domain->manualEntityService;
 		$this->userSession = $services->session->userSession;
+		$this->session = $services->session;
 		$this->rootFolder = $services->platform->rootFolder;
-		$this->groupManager = $services->session->groupManager;
 		$this->fileReadScope = $services->domain->fileReadScope;
 	}//end __construct()
 
@@ -187,12 +187,7 @@ class FileTextController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -473,7 +468,7 @@ class FileTextController extends Controller {
 			}
 
 			// The anonymizeDocument call marks the relation rows itself, so this controller MUST NOT
-			// call markAsAnonymized (a second UPDATE would overwrite anonymized_value).
+			// mark them again (a second UPDATE would overwrite anonymized_value).
 			$anonymizedFile = $this->fileService->anonymizeDocument(
 				node: $fileNode,
 				entities: $entities,

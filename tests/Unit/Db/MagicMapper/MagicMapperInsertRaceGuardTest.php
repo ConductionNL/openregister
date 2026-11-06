@@ -51,6 +51,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
@@ -67,6 +71,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses   \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate

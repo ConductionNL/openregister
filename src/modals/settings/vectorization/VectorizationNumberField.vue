@@ -13,6 +13,7 @@
 </template>
 
 <script>
+import { modelProxy } from './modelProxy.js'
 /**
  * A labelled number input of a vectorization run, with a hint below it
  * that is also the placeholder unless one is given.
@@ -35,29 +36,15 @@ export default {
 	emits: ['update:modelValue'],
 
 	computed: {
-		number: {
-			/**
-			 * @spec exclude Two-way binding of the field value.
-			 * @return {number|string} The value
-			 */
-			get() {
-				return this.modelValue
-			},
-
-			/**
-			 * @param {number|string} value The value
-			 * @spec exclude Two-way binding of the field value.
-			 */
-			set(value) {
-				this.$emit('update:modelValue', value)
-			},
-		},
+		number: modelProxy(),
 	},
 }
 </script>
 
 <style scoped lang="scss">
 .form-group {
+	margin-bottom: 20px;
+
 	label {
 		display: block;
 		margin-bottom: 8px;

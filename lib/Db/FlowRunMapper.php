@@ -318,6 +318,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 			$summary[$flowId]['lastRun'] = [
 				'uuid' => $run->getUuid(),
 				'status' => $run->getStatus(),
+				'outcome' => $run->getOutcome(),
 				'error' => $run->getError(),
 				'created' => $run->getCreated()?->format(DateTime::ATOM),
 				'updated' => $run->getUpdated()?->format(DateTime::ATOM),
@@ -362,11 +363,12 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 	}//end countSinceByFlow()
 
 	/**
-	 * The newest visible run of each flow, without its log or marking.
+	 * The newest visible run of each flow, without its marking.
 	 *
 	 * Two queries rather than one per flow: the newest id per flow, then those
-	 * rows. Only the columns a summary shows are read, so a list of a hundred
-	 * flows never loads a hundred run logs.
+	 * rows. Only the columns a summary needs are read. That includes the log,
+	 * because how a stopped run ended is written only there; the summary serves
+	 * the outcome, never the log.
 	 *
 	 * @param array<int, string> $flowIds      The flows to read.
 	 * @param string|null        $requesterUid The caller, or null for no scoping.
@@ -398,7 +400,7 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 		}
 
 		$rows = $this->db->getQueryBuilder();
-		$rows->select('id', 'uuid', 'flow_id', 'status', 'error', 'created', 'updated')
+		$rows->select('id', 'uuid', 'flow_id', 'status', 'log', 'error', 'created', 'updated')
 			->from($this->getTableName())
 			->where($rows->expr()->in('id', $rows->createNamedParameter($latest, IQueryBuilder::PARAM_INT_ARRAY)));
 
@@ -1398,36 +1400,6 @@ class FlowRunMapper extends QBMapper implements FlowRunMapperInterface {
 
 		return (int)$qb->executeStatement();
 	}//end pruneBefore()
-
-	/**
-	 * How many runs that can still move are pinned to one version of a flow.
-	 *
-	 * Asked before a version may be removed. Counts only ACTIVE runs on
-	 * purpose: a completed run's pin is history, and history keeping a version
-	 * alive forever would make the version table unprunable. A run that can
-	 * still move, though, needs its graph to still exist.
-	 *
-	 * @param string  $flowUuid The flow.
-	 * @param integer $version  The version number.
-	 *
-	 * @return integer The number of non-terminal runs pinned to that version.
-	 *
-	 * @spec openspec/specs/flow-definition-versioning/spec.md
-	 */
-	public function countActivePinnedTo(string $flowUuid, int $version): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->createFunction('COUNT(*) AS `c`'))
-			->from($this->getTableName())
-			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowUuid)))
-			->andWhere($qb->expr()->eq('flow_version', $qb->createNamedParameter($version, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)));
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		return (int)($row['c'] ?? 0);
-	}//end countActivePinnedTo()
 
 	/**
 	 * Pin every still-movable run of a flow that has no version yet.

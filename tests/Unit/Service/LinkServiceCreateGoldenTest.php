@@ -81,6 +81,8 @@ if (class_exists('OCA\\Maps\\Service\\FavoritesService') === false) {
  * @uses   \OCA\OpenRegister\Db\MapLink
  * @uses   \OCA\OpenRegister\AppInfo\ClassAliasMap
  * @uses   \OCA\OpenRegister\Service\MailTableQueries
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class LinkServiceCreateGoldenTest extends TestCase {
 
@@ -123,7 +125,13 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps = $this->createMock(IAppManager::class);
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->rowBuilder($row));
+		// The first query is the account-owner lookup, the next the message.
+		$answers = [['user_id' => $uid2]];
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function () use (&$answers, $row) {
+				return $this->rowBuilder(array_shift($answers) ?? $row);
+			}
+		);
 		$service = new EmailLinkService($mapper, $apps, $db, $this->session($uid2), $this->createMock(LoggerInterface::class));
 
 		$this->assertGolden(
@@ -132,6 +140,26 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			}
 		);
 	}//end testLinkEmailGolden()
+
+	/**
+	 * The linked mail's RFC `Message-ID` lands on the link, from the Mail row.
+	 */
+	public function testLinkEmailKeepsTheRfcMessageId(): void {
+		$mapper = $this->getMockBuilder(EmailLinkMapper::class)->disableOriginalConstructor()
+			->onlyMethods(['findByObjectAccountMessageUid', 'insert'])->getMock();
+		$mapper->method('insert')->willReturnArgument(0);
+		$apps = $this->createMock(IAppManager::class);
+		$apps->method('isEnabledForUser')->willReturn(true);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(
+			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>', 'user_id' => 'alice'])
+		);
+		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
+
+		$link = $service->linkEmail((new LinkTarget('obj-1', 3))->inSchema(4), (new EmailMessageRef(42, '7'))->withUid('u'));
+
+		$this->assertSame('<a1@x>', $link->getRfcMessageId());
+	}//end testLinkEmailKeepsTheRfcMessageId()
 
 	/**
 	 * Share scenarios: file id, type, recipient, permissions, password, expiration, manager failure.
@@ -202,7 +230,12 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				'OCA\\OpenRegister\\Service\\File\\FolderManagementHandler' => $handler,
+				\OCA\OpenRegister\Service\File\FileRestrictionGuard::class => new class {
+					public function readableNodes(array $nodes): array {
+						return $nodes;
+					}
+				},
+				'OCA\\OpenRegister\\Service\\FileService' => $handler,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);

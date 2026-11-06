@@ -17,17 +17,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class BookmarkLinkMapper
  *
  * @template-extends QBMapper<BookmarkLink>
+ * @method list<BookmarkLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class BookmarkLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -48,19 +49,12 @@ class BookmarkLinkMapper extends QBMapper {
 	 * @return BookmarkLink|null The link or null if not found.
 	 */
 	public function findByObjectAndBookmark(string $objectUuid, int $bookmarkId): ?BookmarkLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT))
-			);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'bookmark_id', value: $bookmarkId));
+		if ($link instanceof BookmarkLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndBookmark()
 
 	/**
@@ -75,13 +69,6 @@ class BookmarkLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndBookmark(string $objectUuid, int $bookmarkId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT))
-			);
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'bookmark_id', value: $bookmarkId));
 	}//end deleteByObjectAndBookmark()
 }//end class

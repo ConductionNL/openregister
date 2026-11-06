@@ -33,6 +33,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
  */
 class FlowRunStepMapper extends QBMapper {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -53,16 +55,13 @@ class FlowRunStepMapper extends QBMapper {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
 	 */
 	public function findByRun(string $runUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)))
-			// CANONICAL order: by stream ordinal, then position within the
-			// stream. A function of the path taken, never of which branch
-			// returned first, so two runs of one flow read identically. Rows
-			// written before streams existed carry the root path (back-filled)
-			// and reproduce their old sequence order exactly.
-			->orderBy('ordinal_path', 'ASC')
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'run_uuid', value: $runUuid));
+		// CANONICAL order: by stream ordinal, then position within the
+		// stream. A function of the path taken, never of which branch
+		// returned first, so two runs of one flow read identically. Rows
+		// written before streams existed carry the root path (back-filled)
+		// and reproduce their old sequence order exactly.
+		$qb->orderBy('ordinal_path', 'ASC')
 			->addOrderBy('sequence', 'ASC')
 			->addOrderBy('id', 'ASC');
 

@@ -26,10 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Edepot\Transport;
 
-use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -40,7 +38,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass
  */
-class RestApiTransport implements TransportInterface {
+class RestApiTransport extends HttpSipTransport {
 
 	use SipTransportSteps;
 
@@ -77,18 +75,6 @@ class RestApiTransport implements TransportInterface {
 		self::AUTH_OAUTH2,
 		self::AUTH_CERTIFICATE,
 	];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param Client $httpClient The HTTP client.
-	 * @param LoggerInterface $logger Logger.
-	 */
-	public function __construct(
-		private readonly Client $httpClient,
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
 
 	/**
 	 * Send a SIP package via REST API.
@@ -229,19 +215,18 @@ class RestApiTransport implements TransportInterface {
 	 */
 	private function acceptedResult(mixed $body, int $statusCode): TransportResult {
 		$transferRef = ($body['reference'] ?? $body['id'] ?? null);
-		$objectResults = $this->objectResults(body: $body);
-		$hasRejections = $this->hasRejections(objectResults: $objectResults);
+		$result = new TransportResult(transferReference: $transferRef, objectResults: $this->objectResults(body: $body));
 
 		$this->logger->info(
 			message: '[RestApiTransport] REST API transfer completed',
 			context: [
 				'statusCode' => $statusCode,
 				'reference' => $transferRef,
-				'hasRejections' => $hasRejections,
+				'hasRejections' => $result->hasRejections(),
 			]
 		);
 
-		return new TransportResult(success: ($hasRejections === false), objectResults: $objectResults, transferReference: $transferRef);
+		return $result;
 	}//end acceptedResult()
 
 	/**
@@ -268,23 +253,6 @@ class RestApiTransport implements TransportInterface {
 
 		return $objectResults;
 	}//end objectResults()
-
-	/**
-	 * Whether any object was rejected.
-	 *
-	 * @param array<string, array{accepted: mixed}> $objectResults The per-object outcomes.
-	 *
-	 * @return bool
-	 */
-	private function hasRejections(array $objectResults): bool {
-		foreach ($objectResults as $result) {
-			if ($result['accepted'] === false) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end hasRejections()
 
 	/**
 	 * Get transport name.
@@ -325,6 +293,20 @@ class RestApiTransport implements TransportInterface {
 			throw new RuntimeException('Missing required REST API config: endpointUrl');
 		}
 
+		$authType = $this->supportedAuthType(config: $config);
+		$this->assertCredentialFor(authType: $authType, config: $config);
+	}//end validateConfig()
+
+	/**
+	 * The configured authentication type, or a refusal when it is missing or unsupported.
+	 *
+	 * @param array<string, mixed> $config The transport config.
+	 *
+	 * @return string One of SUPPORTED_AUTH_TYPES.
+	 *
+	 * @throws RuntimeException When the type is missing or unsupported.
+	 */
+	private function supportedAuthType(array $config): string {
 		$authType = (string)($config['authenticationType'] ?? '');
 		if (in_array($authType, self::SUPPORTED_AUTH_TYPES, true) === false) {
 			throw new RuntimeException(
@@ -334,18 +316,28 @@ class RestApiTransport implements TransportInterface {
 			);
 		}
 
-		if ($authType === self::AUTH_API_KEY && empty($config['apiKey']) === true) {
-			throw new RuntimeException(
-				'Missing required REST API config: apiKey is empty while authenticationType is ' . self::AUTH_API_KEY
-			);
-		}
+		return $authType;
+	}//end supportedAuthType()
 
-		if ($authType === self::AUTH_OAUTH2 && empty($config['bearerToken']) === true) {
+	/**
+	 * Refuse an API-key or OAuth2 config whose credential is empty.
+	 *
+	 * @param string               $authType The validated authentication type.
+	 * @param array<string, mixed> $config   The transport config.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the credential the type needs is empty.
+	 */
+	private function assertCredentialFor(string $authType, array $config): void {
+		$needs = [self::AUTH_API_KEY => 'apiKey', self::AUTH_OAUTH2 => 'bearerToken'];
+		$key = ($needs[$authType] ?? null);
+		if ($key !== null && empty($config[$key]) === true) {
 			throw new RuntimeException(
-				'Missing required REST API config: bearerToken is empty while authenticationType is ' . self::AUTH_OAUTH2
+				"Missing required REST API config: {$key} is empty while authenticationType is {$authType}"
 			);
 		}
-	}//end validateConfig()
+	}//end assertCredentialFor()
 
 	/**
 	 * Build authentication headers.

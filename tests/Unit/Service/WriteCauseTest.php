@@ -229,11 +229,12 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testAClientAttemptIsRecorded(): void {
-		self::assertFalse(WriteCause::clientAttempted());
+		self::assertFalse(WriteCause::clientAttemptedFor(objectUuid: 'u-1'));
 
-		WriteCause::noteClientAttempt();
+		WriteCause::noteClientAttempt(objectUuid: 'u-1');
 
-		self::assertTrue(WriteCause::clientAttempted());
+		self::assertTrue(WriteCause::clientAttemptedFor(objectUuid: 'u-1'));
+		self::assertFalse(WriteCause::clientAttemptedFor(objectUuid: 'u-2'), 'the attempt belongs to the write it came with');
 	}
 	/**
 	 * A lookup made for a person is caused `lookup`, and the frame closes after.

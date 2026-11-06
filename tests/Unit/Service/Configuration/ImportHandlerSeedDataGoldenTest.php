@@ -56,6 +56,8 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedTarget
  */
 class ImportHandlerSeedDataGoldenTest extends TestCase {
 
@@ -266,11 +268,9 @@ class ImportHandlerSeedDataGoldenTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $this->createMock(IAppConfig::class),
 			logger: $logger,
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 		$handler->setObjectMapper($this->routingMapper());

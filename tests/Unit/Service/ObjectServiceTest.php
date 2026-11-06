@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -65,6 +66,7 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -1927,16 +1929,6 @@ class ObjectServiceTest extends TestCase {
 		}
 	}
 
-	public function testBuildObjectSearchQueryDelegatesToBuildSearchQuery(): void {
-		$this->searchQueryHandler->expects($this->once())
-			->method('buildSearchQuery')
-			->willReturn(['_limit' => 20]);
-
-		$result = $this->service->buildObjectSearchQuery(params: ['_limit' => 20]);
-
-		$this->assertSame(20, $result['_limit']);
-	}
-
 	// ── 39. vectorization methods — disabled ────────────────────────────
 
 	public function testVectorizeBatchObjectsThrowsDisabledException(): void {
@@ -2123,6 +2115,78 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame(0, $result['total']);
 	}
 
+	/**
+	 * The flags and context scope each relation listing hands to the handler.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: bool, 3: bool}>
+	 */
+	public static function relationHandOffs(): array {
+		return [
+			'uses, filters on' => ['getObjectUses', 'getUses', true, true],
+			'uses, rbac off' => ['getObjectUses', 'getUses', false, true],
+			'uses, multitenancy off' => ['getObjectUses', 'getUses', true, false],
+			'used by, filters on' => ['getObjectUsedBy', 'getUsedBy', true, true],
+			'used by, rbac off' => ['getObjectUsedBy', 'getUsedBy', false, true],
+			'used by, multitenancy off' => ['getObjectUsedBy', 'getUsedBy', true, false],
+		];
+	}//end relationHandOffs()
+
+	#[DataProvider('relationHandOffs')]
+	public function testRelationListingHandsItsFiltersAndContextToTheHandler(
+		string $listing,
+		string $handlerMethod,
+		bool $rbac,
+		bool $multitenancy
+	): void {
+		$this->service->setRegister($this->register);
+		$this->service->setSchema($this->schema);
+		$lookup = $this->relationLookupOf($handlerMethod);
+
+		$this->service->$listing('uuid-123', ['_limit' => 7], $rbac, $multitenancy);
+
+		$this->assertSame('uuid-123', $lookup->value->objectId);
+		$this->assertSame(['_limit' => 7], $lookup->value->query);
+		$this->assertSame($rbac, $lookup->value->appliesRbac());
+		$this->assertSame($multitenancy, $lookup->value->appliesMultitenancy());
+		$this->assertSame($this->register->getId(), $lookup->value->registerId());
+		$this->assertSame($this->schema->getId(), $lookup->value->schemaId());
+	}//end testRelationListingHandsItsFiltersAndContextToTheHandler()
+
+	#[DataProvider('relationHandOffs')]
+	public function testRelationListingWithoutContextIsNotPinned(
+		string $listing,
+		string $handlerMethod,
+		bool $rbac,
+		bool $multitenancy
+	): void {
+		$lookup = $this->relationLookupOf($handlerMethod);
+
+		$this->service->$listing('uuid-123', [], $rbac, $multitenancy);
+
+		$this->assertNull($lookup->value->registerId());
+		$this->assertNull($lookup->value->schemaId());
+	}//end testRelationListingWithoutContextIsNotPinned()
+
+	/**
+	 * Capture the lookup the relation handler receives.
+	 *
+	 * @param string $handlerMethod The handler method.
+	 *
+	 * @return \stdClass Its `value` holds the lookup after the call.
+	 */
+	private function relationLookupOf(string $handlerMethod): \stdClass {
+		$captured = new \stdClass();
+		$this->getProperty('relationHandler')->expects($this->once())
+			->method($handlerMethod)
+			->willReturnCallback(
+				static function (RelationLookup $lookup) use ($captured): array {
+					$captured->value = $lookup;
+					return ['results' => [], 'total' => 0];
+				}
+			);
+		return $captured;
+	}//end relationLookupOf()
+
 	// ── 45. handleValidationException delegation ────────────────────────
 
 	public function testHandleValidationExceptionDelegatesToValidateHandler(): void {
@@ -2145,18 +2209,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame($this->deleteHandler, $result);
 	}
 
-	// ── 47. collectNamesForResults (private) ────────────────────────────
-
-	public function testCollectNamesForResultsReturnsEmptyForEmptyResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [[]]);
-		$this->assertSame([], $result);
-	}
-
-	public function testCollectNamesForResultsSkipsNonArrayResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [['not-an-array', 42]]);
-		$this->assertSame([], $result);
-	}
-
 	// ── 48. isUuidFormat (private) ──────────────────────────────────────
 
 	public function testIsUuidFormatReturnsTrueForValid(): void {
@@ -2167,107 +2219,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['not-a-uuid']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['123']));
-	}
-
-	// ── 49. collectUuidsFromRelations (private) ─────────────────────────
-
-	public function testCollectUuidsFromRelationsCollectsDirectUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			['550e8400-e29b-41d4-a716-446655440000', 'not-uuid'],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-		$this->assertSame('550e8400-e29b-41d4-a716-446655440000', $uuids[0]);
-	}
-
-	public function testCollectUuidsFromRelationsCollectsNestedUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			[['550e8400-e29b-41d4-a716-446655440000', 'not-uuid']],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	// ── 50. collectUuidsFromObjectData (private) ────────────────────────
-
-	public function testCollectUuidsFromObjectDataCollectsTopLevel(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'title' => 'Test',
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'@self' => 'skip',
-				'id' => 'skip',
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataStopsAtDepth1(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			['related' => '550e8400-e29b-41d4-a716-446655440000'],
-			&$uuids,
-			1, // depth > 0 should return immediately
-		]);
-
-		$this->assertCount(0, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataCollectsFromArrays(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'relations' => [
-					'550e8400-e29b-41d4-a716-446655440000',
-					'not-a-uuid',
-					'660e8400-e29b-41d4-a716-446655440000',
-				],
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(2, $uuids);
-	}
-
-	// ── 51. collectUuidsFromArrayResult (private) ───────────────────────
-
-	public function testCollectUuidsFromArrayResultHandlesSelfStructure(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'@self' => [
-					'relations' => ['550e8400-e29b-41d4-a716-446655440000'],
-					'organisation' => '660e8400-e29b-41d4-a716-446655440000',
-					'owner' => '770e8400-e29b-41d4-a716-446655440000',
-					'object' => ['title' => 'Test'],
-				],
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(3, $uuids);
-	}
-
-	public function testCollectUuidsFromArrayResultHandlesFlatArray(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'title' => 'Test',
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
 	}
 
 	// ── 55. getObject / setObject ───────────────────────────────────────

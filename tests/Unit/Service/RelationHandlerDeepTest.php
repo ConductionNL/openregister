@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -268,7 +269,7 @@ class RelationHandlerDeepTest extends TestCase {
 	}//end testGetContractsException()
 
 	// =========================================================================
-	// filterByRbac (private)
+	// RelatedReadFilter::admitted
 	// =========================================================================
 
 	/**
@@ -277,14 +278,14 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacAdmin(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(true);
 
 		$obj1 = $this->createMock(ObjectEntity::class);
 		$obj2 = $this->createMock(ObjectEntity::class);
 
-		$result = $method->invoke($this->handler, [$obj1, $obj2]);
+		$result = $filter->admitted(objects: [$obj1, $obj2]);
 		$this->assertCount(2, $result);
 
 	}//end testFilterByRbacAdmin()
@@ -295,11 +296,11 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacNonObjectEntity(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
 
-		$result = $method->invoke($this->handler, ['not-an-object']);
+		$result = $filter->admitted(objects: ['not-an-object']);
 		$this->assertCount(1, $result);
 
 	}//end testFilterByRbacNonObjectEntity()
@@ -310,14 +311,14 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacNullSchema(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
 
 		$obj = new ObjectEntity();
 		// Schema is null by default.
 
-		$result = $method->invoke($this->handler, [$obj]);
+		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
 
 	}//end testFilterByRbacNullSchema()
@@ -328,7 +329,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacSchemaNotFound(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
 
@@ -338,7 +339,7 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->schemaMapper->method('find')
 			->willThrowException(new \Exception('Not found'));
 
-		$result = $method->invoke($this->handler, [$obj]);
+		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);
 
 	}//end testFilterByRbacSchemaNotFound()
@@ -349,7 +350,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacFiltersOnPermission(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
 
@@ -365,7 +366,7 @@ class RelationHandlerDeepTest extends TestCase {
 		// First call returns true (has permission), second returns false.
 		$this->rbacHandler->method('hasPermission')->willReturn(true);
 
-		$result = $method->invoke($this->handler, [$obj]);
+		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(1, $result);
 
 	}//end testFilterByRbacFiltersOnPermission()
@@ -376,7 +377,7 @@ class RelationHandlerDeepTest extends TestCase {
 	 * @return void
 	 */
 	public function testFilterByRbacDeniesNoPermission(): void {
-		$method = new \ReflectionMethod(RelationHandler::class, 'filterByRbac');
+		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
 
@@ -391,7 +392,7 @@ class RelationHandlerDeepTest extends TestCase {
 
 		$this->rbacHandler->method('hasPermission')->willReturn(false);
 
-		$result = $method->invoke($this->handler, [$obj]);
+		$result = $filter->admitted(objects: [$obj]);
 		$this->assertCount(0, $result);
 
 	}//end testFilterByRbacDeniesNoPermission()
