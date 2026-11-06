@@ -141,6 +141,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
 
+		// A publish of a manifest applies its schedules as scheduled flows.
+		$publish = \OCA\OpenRegister\AppHost\Listener\ApplicationPublishListener::class;
+		$context->registerEventListener(ObjectCreatedEvent::class, $publish);
+		$context->registerEventListener(ObjectUpdatedEvent::class, $publish);
+		$context->registerEventListener(ObjectDeletedEvent::class, $publish);
+
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
 		// flow is rejected before any other listener does work on the way in.
