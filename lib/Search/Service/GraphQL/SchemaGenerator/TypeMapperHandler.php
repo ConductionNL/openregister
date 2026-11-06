@@ -164,23 +164,6 @@ class TypeMapperHandler {
 	}//end __construct()
 
 	/**
-	 * Reset cached input types (called when regenerating schema).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
-	 */
-	public function resetCache(): void {
-		$this->inputTypes = [];
-		$this->connectionTypes = [];
-		$this->pageInfoType = null;
-		$this->sortInputType = null;
-		$this->selfFilterType = null;
-		$this->auditTrailType = null;
-
-	}//end resetCache()
-
-	/**
 	 * Update scalar type instances (called after initScalars).
 	 *
 	 * @param array<string, Type> $scalars The custom scalar types

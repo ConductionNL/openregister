@@ -146,21 +146,6 @@ interface EntityRelationMapperInterface {
 	public function findEntityIdsByValueForFiles(array $fileIds): array;
 
 	/**
-	 * Mark entity relations as anonymized.
-	 *
-	 * Skip-aware: rows where `skip_anonymization = true` are excluded
-	 * (those reflect an operator decision NOT to redact the occurrence).
-	 * Per the `entity-relation-grondslagen` change, skipped rows retain
-	 * `anonymized = false` after the file's anonymise pass.
-	 *
-	 * @param int $fileId The file ID.
-	 * @param string $anonymizedValue The placeholder value used.
-	 *
-	 * @return int Number of relations updated.
-	 */
-	public function markAsAnonymized(int $fileId, string $anonymizedValue): int;
-
-	/**
 	 * Probe whether a relation already exists at a specific position
 	 * for a (file, entity) pair.
 	 *
@@ -250,8 +235,8 @@ interface EntityRelationMapperInterface {
 	 * @param array<int|string, string> $placeholders Keys are int|string,
 	 *        not string: a stringified entity id is a canonical numeric string,
 	 *        which PHP coerces to an int array key. Map of entity id → the
-	 *                                                     exact placeholder emitted for it
-	 *                                                     (e.g. "7" => "[PERSOON: 1]").
+	 *                                                exact placeholder emitted for it
+	 *                                                (e.g. "7" => "[PERSOON: 1]").
 	 *
 	 * @return int Number of relation rows marked anonymized.
 	 */

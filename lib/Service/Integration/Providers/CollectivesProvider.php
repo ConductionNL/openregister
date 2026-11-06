@@ -41,14 +41,30 @@ use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class CollectivesProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkTableProvider;
+	use MarkerSourceFallback;
 	use MarkerLookupTrait;
 
 	private const REQUIRED_APP = 'collectives';
 
 	private const MARKER_PREFIX = '[or:';
+
+	/**
+	 * Where the legacy `[or:{uuid}]` marker lives: table, marker column, extra
+	 * columns, id column, and the app URL a row's id is appended to.
+	 *
+	 * @var array{table: string, column: string, extra: list<string>, id: string, url: string}
+	 */
+	private const MARKER_SOURCE = [
+		'table' => 'collectives_pages',
+		'column' => 'slug',
+		'extra' => ['emoji', 'last_user_id'],
+		'id' => 'id',
+		'url' => '/index.php/apps/collectives/',
+	];
 
 	/**
 	 * Constructor.
@@ -84,78 +100,14 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 		return 'docs';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
 	/**
-	 * List linked Knowledge pages for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `collectives_pages.slug` so pages that pre-date the link table
-	 * still surface.
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>> List of registry leaf rows.
-	 *
-	 * @spec openspec/specs/integration-collectives/spec.md
+	 * @return CollectiveLinkMapper
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->collectiveLinkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (CollectiveLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]`
-		// marker in `collectives_pages.slug`.
-		$marker = self::MARKER_PREFIX . $objectId . ']';
-		$rows = $this->findByMarker(
-			db: $this->db,
-			table: 'collectives_pages',
-			markerColumn: 'slug',
-			marker: $marker,
-			extraColumns: ['emoji', 'last_user_id'],
-			idColumn: 'id',
-		);
-
-		return array_map(
-			static function (array $row): array {
-				return [
-					'id' => (string)($row['id'] ?? ''),
-					'title' => (string)($row['slug'] ?? ''),
-					'url' => '/index.php/apps/collectives/' . (string)($row['id'] ?? ''),
-					'data' => $row,
-				];
-			},
-			$rows
-		);
-	}//end list()
+	protected function linkMapper(): CollectiveLinkMapper {
+		return $this->collectiveLinkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert a CollectiveLink row into the registry leaf-row shape.
@@ -164,23 +116,32 @@ class CollectivesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(CollectiveLink $link): array {
-		$pageId = (int)$link->getPageId();
-		$data = $link->jsonSerialize();
-		$url = $link->getUrl();
-		if ($url === null || $url === '') {
-			$url = '/index.php/apps/collectives/?fileId=' . $pageId;
-		}
-
+	protected function rowFromLink(CollectiveLink $link): array {
 		return [
-			'id' => (string)$pageId,
+			'id' => (string)(int)$link->getPageId(),
 			'title' => (string)$link->getPageTitle(),
-			'url' => $url,
+			'url' => $this->pageUrl(link: $link),
 			'emoji' => $link->getEmoji(),
 			'collectiveName' => $link->getCollectiveName(),
-			'data' => $data,
+			'data' => $link->jsonSerialize(),
 		];
 	}//end rowFromLink()
+
+	/**
+	 * The page URL the link stored, or the Collectives file URL of its page.
+	 *
+	 * @param CollectiveLink $link The link.
+	 *
+	 * @return string
+	 */
+	private function pageUrl(CollectiveLink $link): string {
+		$url = $link->getUrl();
+		if ($url === null || $url === '') {
+			return '/index.php/apps/collectives/?fileId=' . (int)$link->getPageId();
+		}
+
+		return $url;
+	}//end pageUrl()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).

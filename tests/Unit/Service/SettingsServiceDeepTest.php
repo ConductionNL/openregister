@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -92,7 +91,6 @@ class SettingsServiceDeepTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$organisationMapper = $this->createMock(OrganisationMapper::class);
 		$schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$facetCacheService = $this->createMock(FacetCacheHandler::class);
 		$searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$userManager = $this->createMock(IUserManager::class);
 		$objectCacheService = $this->createMock(CacheHandler::class);

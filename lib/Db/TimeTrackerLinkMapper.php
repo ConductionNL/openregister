@@ -30,6 +30,7 @@ use OCP\IDBConnection;
  * Class TimeTrackerLinkMapper
  *
  * @template-extends QBMapper<TimeTrackerLink>
+ * @method list<TimeTrackerLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class TimeTrackerLinkMapper extends QBMapper {
 	use FindLinksByObjectUuidTrait;

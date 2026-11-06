@@ -81,7 +81,6 @@ class RelationHandlerTest extends TestCase {
 		$this->handler = new RelationHandler(
 			$this->objectMapper,
 			$this->schemaMapper,
-			$this->performanceHandler,
 			$this->rbacHandler,
 			$this->logger,
 			$this->registerMapper
@@ -453,68 +452,5 @@ class RelationHandlerTest extends TestCase {
 		$this->assertEmpty($result['results']);
 	}
 
-	// =============================================
-	// extractRelatedData tests
-	// =============================================
 
-	/**
-	 * Test extractRelatedData delegates to PerformanceHandler
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegatesToPerformanceHandler(): void {
-		$expected = ['related' => ['uuid-1'], 'relatedNames' => ['uuid-1' => 'Name']];
-
-		$this->performanceHandler
-			->expects($this->once())
-			->method('extractRelatedData')
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData(
-			['some' => 'data'],
-			true,
-			true
-		);
-
-		$this->assertEquals($expected, $result);
-	}
-
-	// =============================================
-	// applyInversedByFilter tests
-	// =============================================
-
-	/**
-	 * Test applyInversedByFilter returns empty when schema is false
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenSchemaIsFalse(): void {
-		$filters = ['schema' => false];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
-
-	/**
-	 * Test applyInversedByFilter returns empty when no sub-filters
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenNoSubFilters(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn([]);
-
-		$this->schemaMapper
-			->method('find')
-			->willReturn($schema);
-
-		$filters = ['schema' => 1, 'name' => 'test'];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
 }

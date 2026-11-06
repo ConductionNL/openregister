@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,6 +33,10 @@ use Psr\Log\LoggerInterface;
  * object data. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @covers \OCA\OpenRegister\Service\Object\RelationMap
+ * @covers \OCA\OpenRegister\Service\Object\RelationTables
+ * @covers \OCA\OpenRegister\Service\Object\RelatedReadFilter
+ * @covers \OCA\OpenRegister\Service\Object\RelationLookup
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -141,6 +146,8 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 			'anonymous'                    => $base + ['uid' => null],
 			'administrator'                => $base + ['uid' => 'root'],
 			'access filter off'            => $base + ['rbac' => false, 'uid' => 'bob'],
+			'access filter off, fallback'  => ['tables' => ['1_3' => ['b1']]] + $base + ['rbac' => false, 'uid' => 'bob'],
+			'tenancy off, filter schema fails' => $base + ['tenancy' => false, 'schemaFails' => [5]],
 			'drafts, null schema, loose'   => $withDraft,
 			'drafts as their owner'        => $withDraft + ['uid' => 'bob', 'readable' => ['bob' => ['d1', 'b1', 'x1']]],
 			'schema lookup fails in filter' => $base + ['schemaFails' => [5]],
@@ -219,20 +226,16 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 
 		$handler = $this->handler(noResolver: ($scenario['noResolver'] ?? false));
 		$pin = $scenario['pin'] ?? [null, null];
-		$result = $handler->$method(
-			objectId: 'lead-id',
-			query: ($scenario['query'] ?? []),
-			_rbac: ($scenario['rbac'] ?? true),
-			_multitenancy: true,
-			_registerId: $pin[0],
-			_schemaId: $pin[1],
-		);
+		$lookup = (new RelationLookup(objectId: 'lead-id', query: ($scenario['query'] ?? [])))
+			->filteredBy(rbac: ($scenario['rbac'] ?? true), multitenancy: ($scenario['tenancy'] ?? true))
+			->pinnedTo(registerId: $pin[0], schemaId: $pin[1]);
+		$result = $handler->$method(lookup: $lookup);
 		$record = ['result' => $this->rows(result: $result), 'calls' => $this->calls];
 
 		if (isset($scenario['then']) === true) {
 			$this->calls = [];
 			$then = $scenario['then'];
-			$record['then'] = ['result' => $this->rows(result: $handler->$then(objectId: 'lead-id')), 'calls' => $this->calls];
+			$record['then'] = ['result' => $this->rows(result: $handler->$then(lookup: new RelationLookup(objectId: 'lead-id'))), 'calls' => $this->calls];
 		}
 
 		return $record;
@@ -356,7 +359,6 @@ class RelationHandlerLookupsGoldenTest extends TestCase {
 		return new RelationHandler(
 			objectEntityMapper: $magic,
 			schemaMapper: $schemaMapper,
-			performanceHandler: $this->createMock(PerformanceHandler::class),
 			rbacHandler: $rbac,
 			logger: $logger,
 			registerMapper: $registerMapper,

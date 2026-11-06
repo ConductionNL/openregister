@@ -84,12 +84,17 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 	/**
 	 * A renderer for a caller who is not admitted to the restricted file.
 	 *
+	 * @param FileService|null $fileService The file service, a bare double when null.
+	 *
 	 * @return RenderObject
 	 */
-	private function renderer(): RenderObject {
+	private function renderer(?FileService $fileService = null): RenderObject {
 		$fileMapper = $this->createMock(FileMapper::class);
 		$fileMapper->method('getFilesForObject')->willReturn([$this->record(self::RESTRICTED), $this->record(self::OPEN)]);
 		$fileMapper->method('getFile')->willReturnCallback(fn (int $id): array => $this->record($id));
+		$fileMapper->method('getFileIdsForObjects')->willReturnCallback(
+			static fn (array $uuids): array => array_fill_keys($uuids, [self::RESTRICTED, self::OPEN])
+		);
 
 		$guard = $this->createMock(FileRestrictionGuard::class);
 		$guard->method('readable')->willReturnCallback(
@@ -108,7 +113,7 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 			objectCacheService: $this->createMock(CacheHandler::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: new NullLogger(),
-			fileService: $this->createMock(FileService::class),
+			fileService: $fileService ?? $this->createMock(FileService::class),
 			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
 			translationHandler: $this->createMock(TranslationHandler::class),
 			linkedEntityEnricher: $this->createMock(LinkedEntityEnricher::class),
@@ -146,12 +151,64 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 		$this->assertSame([(string)self::OPEN], array_column($rendered->getFiles(), 'id'));
 	}//end testTheRenderedFilesLeaveTheRestrictedFileOut()
 
+	public function testTheLightweightFileIdsLeaveTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+
+		$rendered = $this->call($this->renderer(), 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testTheLightweightFileIdsLeaveTheRestrictedFileOut()
+
+	public function testThePagePrefetchLeavesTheRestrictedFileOut(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+		$renderer = $this->renderer();
+
+		$this->call($renderer, 'prefetchPageFileIds', [[$object], []]);
+		$rendered = $this->call($renderer, 'setLightweightFileIds', [$object]);
+
+		$this->assertSame([self::OPEN], $rendered->getFiles());
+	}//end testThePagePrefetchLeavesTheRestrictedFileOut()
+
+	public function testTheListRowsLeaveTheRestrictedFileOut(): void {
+		$rows = [['@self' => ['id' => 'c0ffee00-0000-4000-8000-000000000001']]];
+
+		$this->renderer()->attachLightweightFilesToRows($rows);
+
+		$this->assertSame([self::OPEN], $rows[0]['@self']['files']);
+	}//end testTheListRowsLeaveTheRestrictedFileOut()
+
 	public function testAFileTypedPropertyDoesNotHydrateTheRestrictedFile(): void {
 		$renderer = $this->renderer();
 
 		$this->assertNull($this->call($renderer, 'getFileObject', [self::RESTRICTED]));
 		$this->assertSame((string)self::OPEN, $this->call($renderer, 'getFileObject', [self::OPEN])['id']);
 	}//end testAFileTypedPropertyDoesNotHydrateTheRestrictedFile()
+
+	public function testABase64PropertyDoesNotReadTheRestrictedFile(): void {
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getSize')->willReturn(4);
+		$file->method('getContent')->willReturn('body');
+		$file->method('getMimeType')->willReturn('application/pdf');
+
+		$fileService = $this->createMock(FileService::class);
+		$reads = [];
+		$fileService->method('getFileById')->willReturnCallback(
+			static function (int $id) use (&$reads, $file): \OCP\Files\File {
+				$reads[] = $id;
+				return $file;
+			}
+		);
+		$renderer = $this->renderer($fileService);
+
+		$this->assertNull($this->call($renderer, 'getFileAsBase64', [self::RESTRICTED]));
+		$this->assertSame(
+			'data:application/pdf;base64,' . base64_encode('body'),
+			$this->call($renderer, 'getFileAsBase64', [self::OPEN])
+		);
+		$this->assertSame([self::OPEN], $reads);
+	}//end testABase64PropertyDoesNotReadTheRestrictedFile()
 
 	public function testAnAccessLinkNeverDescribesARestrictedFile(): void {
 		$store = $this->createMock(FileRestrictionStore::class);

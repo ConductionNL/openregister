@@ -1,0 +1,182 @@
+{
+    "Configuration: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "Configuration: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "Configuration: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    },
+    "Endpoints: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "Endpoints: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "Endpoints: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    },
+    "FileText: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "FileText: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "FileText: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    },
+    "Organisation: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "Organisation: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "Organisation: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    },
+    "Registers: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "Registers: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "Registers: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    },
+    "Sources: admin": {
+        "calls": [
+            {
+                "userSession.getUser": "alice"
+            },
+            {
+                "groupManager.isAdmin": "alice"
+            }
+        ],
+        "admin": true
+    },
+    "Sources: no user": {
+        "calls": [
+            {
+                "userSession.getUser": null
+            }
+        ],
+        "admin": false
+    },
+    "Sources: non-admin": {
+        "calls": [
+            {
+                "userSession.getUser": "bob"
+            },
+            {
+                "groupManager.isAdmin": "bob"
+            }
+        ],
+        "admin": false
+    }
+}

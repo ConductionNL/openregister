@@ -166,6 +166,19 @@ class TenantKeyService {
 	}//end rotateTenantKey()
 
 	/**
+	 * Whether a tenant has an active key, without creating one.
+	 *
+	 * @param string $tenantId Tenant identifier
+	 *
+	 * @return bool True when an active key row exists.
+	 *
+	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 */
+	public function hasActiveKey(string $tenantId): bool {
+		return $this->fetchActiveRow(tenantId: $tenantId) !== null;
+	}//end hasActiveKey()
+
+	/**
 	 * Fetch the active key row for a tenant, or null if none exists.
 	 *
 	 * @param string $tenantId Tenant identifier

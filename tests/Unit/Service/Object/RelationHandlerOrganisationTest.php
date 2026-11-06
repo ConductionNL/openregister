@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\RelationLookup;
 
 /**
  * The organisation boundary of the related-objects list.
@@ -101,13 +102,12 @@ class RelationHandlerOrganisationTest extends TestCase {
 		$handler = new RelationHandler(
 			objectEntityMapper: $magic,
 			schemaMapper: $schemaMapper,
-			performanceHandler: $this->createMock(originalClassName: PerformanceHandler::class),
 			rbacHandler: $rbac,
 			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			registerMapper: $registerMapper
 		);
 
-		$result = $handler->getUses(objectId: 'lead-1', _multitenancy: $multitenancy);
+		$result = $handler->getUses(lookup: (new RelationLookup(objectId: 'lead-1'))->filteredBy(rbac: true, multitenancy: $multitenancy));
 
 		return array_map(static fn (array $row): string => (string)($row['@self']['id'] ?? $row['id'] ?? ''), $result['results']);
 	}//end uses()

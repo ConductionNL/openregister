@@ -95,7 +95,7 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 		}
 
 		$logs = $this->createMock(EndpointLogMapper::class);
-		foreach (['findByEndpoint', 'findAll', 'getStatistics', 'getStatisticsForEndpoint', 'countByEndpoint', 'count', 'countAll'] as $method) {
+		foreach (['findByEndpoint', 'findPageWithin', 'findAll', 'getStatistics', 'getStatisticsForEndpoint', 'countByEndpoint', 'count', 'countAll'] as $method) {
 			if (method_exists(EndpointLogMapper::class, $method) === false) {
 				continue;
 			}
@@ -103,6 +103,10 @@ class EndpointsControllerAnswersGoldenTest extends TestCase {
 			$logs->method($method)->willReturnCallback(function (...$args) use ($method, $fail) {
 				$this->calls[] = ['endpointLogMapper.' . $method => $this->plain(args: $args)];
 				$this->failOn(fail: $fail);
+				if ($method === 'findPageWithin') {
+					return [[], 0];
+				}
+
 				return str_starts_with($method, 'count') === true ? 1 : (str_starts_with($method, 'get') === true ? ['total' => 1] : []);
 			});
 		}

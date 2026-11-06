@@ -111,22 +111,6 @@ interface FileMapperInterface {
 	public function incrementDownloadCount(int $fileId): File;
 
 	/**
-	 * Acquire a DB-backed lock on a Nextcloud file. Pass null for
-	 * `lockedBy` to release. The cache-backed `FileLockHandler` is
-	 * the canonical lock mechanism today; this surface lets operators
-	 * who prefer DB persistence over the distributed-cache TTL pattern
-	 * opt in.
-	 *
-	 * @param int $fileId The Nextcloud filecache fileid.
-	 * @param string|null $lockedBy User ID acquiring the lock, or null to release.
-	 * @param \DateTime|null $lockedAt Acquisition timestamp, or null to release.
-	 * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
-	 *
-	 * @return File The updated entity.
-	 */
-	public function setLockForFile(int $fileId, ?string $lockedBy, ?\DateTime $lockedAt, ?\DateTime $lockExpires): File;
-
-	/**
 	 * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
 	 * One round trip vs. N+1.
 	 *
@@ -387,22 +371,6 @@ interface FileMapperInterface {
 	 * @return int Number of untracked files
 	 */
 	public function countUntrackedFiles(): int;
-
-	/**
-	 * Set file ownership at database level.
-	 *
-	 * @param int $fileId The file ID to change ownership for
-	 * @param string $userId The user ID to set as owner
-	 *
-	 * @return bool True if ownership was updated successfully, false otherwise
-	 *
-	 * @throws \Exception If the ownership update fails
-	 *
-	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
-	 * @TODO: where files exist but can't be accessed due to permission problems.
-	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-	 */
-	public function setFileOwnership(int $fileId, string $userId): bool;
 
 	/**
 	 * Insert through the mapper (QBMapper).

@@ -205,7 +205,7 @@ class AppHostSettingsService {
 				$this->appId,
 				$before,
 				$after,
-				$this->secretConfigKeys()
+				$this->secretKeysFor(auditor: $auditor, changedKeys: array_keys(array_merge($before, $after)))
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
@@ -344,6 +344,59 @@ class AppHostSettingsService {
 
 		return $service;
 	}//end featureToggles()
+
+	/**
+	 * The secret keys to mask: the hook's, plus those the register configuration declares.
+	 *
+	 * A declaration is an entry `"<key>": {"x-openregister-secret": true}` at
+	 * the top level of the app's register document. When the document cannot be
+	 * read in full, nobody can tell which keys it declares, so every changed key
+	 * is masked: the trail is append-only and a value on it stays there.
+	 *
+	 * @param object             $auditor     The settings auditor.
+	 * @param array<int, string> $changedKeys The keys of this save.
+	 *
+	 * @return array<int, string> The secret keys.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/apphost-settings-plane/spec.md
+	 */
+	private function secretKeysFor(object $auditor, array $changedKeys): array {
+		$keys = $this->secretConfigKeys();
+		if (method_exists($auditor, 'secretKeysIn') === false) {
+			return $keys;
+		}
+
+		$data = $this->readableRegisterConfiguration();
+		if ($data === null) {
+			return array_values(array_unique(array_merge($keys, $changedKeys)));
+		}
+
+		return array_values(array_unique(array_merge($keys, $auditor->secretKeysIn($data))));
+	}//end secretKeysFor()
+
+	/**
+	 * The register configuration, or null when it could not be read in full.
+	 *
+	 * @return array<string, mixed>|null The configuration.
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/apphost-settings-plane/spec.md
+	 */
+	private function readableRegisterConfiguration(): ?array {
+		try {
+			$resolved = $this->resolveRegisterConfiguration();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				sprintf('[AppHost:%s] Register configuration unreadable: %s', $this->appId, $e->getMessage())
+			);
+			return null;
+		}
+
+		if (is_array($resolved[0]) === false || ($resolved[2] ?? true) === false) {
+			return null;
+		}
+
+		return $resolved[0];
+	}//end readableRegisterConfiguration()
 
 	/**
 	 * Which of this app's config keys hold a secret.

@@ -457,6 +457,30 @@ class NoteService {
 	}//end readVisibility()
 
 	/**
+	 * Refuse a note that does not hang on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param int    $noteId     The note the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when the note is elsewhere or does not exist.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireNoteOf(string $objectUuid, int $noteId): void {
+		try {
+			$comment = $this->commentsManager->get((string)$noteId);
+		} catch (CommentsNotFoundException $e) {
+			throw new Exception('Note not found', 404);
+		}
+
+		if ($comment->getObjectType() !== self::OBJECT_TYPE || $comment->getObjectId() !== $objectUuid) {
+			throw new Exception('Note not found', 404);
+		}
+	}//end requireNoteOf()
+
+	/**
 	 * Delete a note by its ID.
 	 *
 	 * @param int $noteId The ID of the note to delete

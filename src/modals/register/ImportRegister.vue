@@ -602,12 +602,64 @@ import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import Import from 'vue-material-design-icons/Import.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import { freshState } from '../../services/initialState.js'
+import {
+	registerSelect,
+	schemaPicker,
+	scopeOption,
+} from '../../services/scopeSelect.js'
 
 const FILE_TYPE_LABELS = {
 	json: 'JSON Configuration',
 	xlsx: 'Excel Spreadsheet',
 	xls: 'Excel Spreadsheet',
 	csv: 'CSV Data',
+}
+
+const LARGE_FILE = 500 * 1024
+
+/**
+ * Whether the selections a file type needs before import are made.
+ */
+const SCOPE_NEEDED = {
+	json: () => true,
+	xlsx: (picked) => !!picked.selectedRegisterValue,
+	xls: (picked) => !!picked.selectedRegisterValue,
+	csv: (picked) => !!picked.selectedRegisterValue && !!picked.selectedSchemaValue,
+}
+
+/**
+ * The state the import modal returns to when it closes.
+ */
+const CLOSED_STATE = {
+	selectedFile: null,
+	loading: false,
+	success: false,
+	error: null,
+	includeObjects: true,
+	validation: true,
+	events: false,
+	rbac: true,
+	multi: true,
+	importSummary: null,
+	importResults: null,
+	expandedSheets: {},
+	expandedErrors: {},
+	isHeartbeatActive: false,
+	heartbeatStatus: null,
+}
+
+/**
+ * The ids of a register's schemas, as strings; a schema may be an id or an
+ * object with an id.
+ *
+ * @param {object} register The register
+ * @return {Array<string>} The ids
+ */
+function registerSchemaIds(register) {
+	return (register.schemas || []).map((schema) =>
+		String(typeof schema === 'object' && schema !== null ? schema.id : schema),
+	)
 }
 
 export default {
@@ -672,25 +724,7 @@ export default {
 		 * @spec exclude computed display helper building register select options
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
+			return registerSelect(registerStore.registerList)
 		},
 
 		/**
@@ -698,73 +732,27 @@ export default {
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
-
-			// Convert register schemas to strings for comparison.
 			// Schema IDs can be either numbers or objects with an id property.
-			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(
-				(schema) => {
-					// If schema is an object with an id property, extract it; otherwise use the value directly.
-					const schemaId =
-						typeof schema === 'object' && schema !== null
-							? schema.id
-							: schema
-					return String(schemaId)
-				},
+			const ids = registerSchemaIds(registerStore.registerItem)
+			return schemaPicker(
+				schemaStore.schemaList.filter((schema) =>
+					ids.includes(String(schema.id)),
+				),
 			)
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) => {
-						// Convert schema ID to string for comparison.
-						const schemaId = String(schema.id)
-						return registerSchemaIds.includes(schemaId)
-					})
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
 		},
 
 		/**
 		 * @spec exclude computed display helper for selected register value
 		 */
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
+			return scopeOption(registerStore.registerItem, 'register')
 		},
 
 		/**
 		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
+			return scopeOption(schemaStore.schemaItem, 'schema')
 		},
 
 		/**
@@ -838,21 +826,24 @@ export default {
 		 */
 		handleFileUpload(event) {
 			const file = event.target.files[0]
-			if (!file) {
-				this.selectedFile = null
-				this.error = null
-				return
-			}
+			this.error = file ? this.fileTypeError(file) : null
+			this.selectedFile = file && !this.error ? file : null
+		},
 
+		/**
+		 * Why a file cannot be imported, or null when its type is allowed.
+		 *
+		 * @param {File} file The chosen file
+		 * @return {string|null} The error
+		 * @spec exclude file-input UI handler with client-side validation
+		 */
+		fileTypeError(file) {
 			const extension = this.getFileExtension(file.name)
-			if (!this.allowedFileTypes.includes(extension)) {
-				this.error = `Invalid file type: ${file.name}. Please select a ${this.allowedFileTypes.map((e) => '.' + e).join(', ')} file.`
-				this.selectedFile = null
-				return
+			if (this.allowedFileTypes.includes(extension)) {
+				return null
 			}
-
-			this.selectedFile = file
-			this.error = null
+			const types = this.allowedFileTypes.map((e) => '.' + e).join(', ')
+			return `Invalid file type: ${file.name}. Please select a ${types} file.`
 		},
 
 		/**
@@ -862,21 +853,7 @@ export default {
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
-			this.selectedFile = null
-			this.loading = false
-			this.success = false
-			this.error = null
-			this.includeObjects = true // Reset to default
-			this.validation = true // Reset to default
-			this.events = false // Reset to default
-			this.rbac = true // Reset to default
-			this.multi = true // Reset to default
-			this.importSummary = null
-			this.importResults = null
-			this.expandedSheets = {} // Reset expanded state
-			this.expandedErrors = {} // Reset expanded errors state
-			this.isHeartbeatActive = false // Reset heartbeat state
-			this.heartbeatStatus = null // Reset heartbeat status
+			Object.assign(this, freshState(CLOSED_STATE))
 		},
 
 		/**
@@ -902,46 +879,54 @@ export default {
 				this.error = 'Please select a valid file to import'
 				return
 			}
-
 			this.loading = true
 			this.error = null
-
 			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
-			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
-			if (isLargeFile) {
+			if (this.selectedFile.size > LARGE_FILE) {
 				this.isHeartbeatActive = true
 			}
-
 			try {
-				// Call importRegister with heartbeat status monitoring
-				const result = await registerStore.importRegister(
-					this.selectedFile,
-					// Heartbeat status callback
-					(status) => {
-						this.heartbeatStatus = status
-					},
-				)
-
-				// Store the import summary from the backend response
-				this.importSummary =
-					result?.responseData?.summary || result?.summary || null
-				this.importResults =
-					result?.responseData?.summary || result?.summary || null
-				this.success = true
-
-				// Turn off loading immediately after import completes
-				// The register refresh will happen in the background
-				this.loading = false
-
-				// Do not auto-close; let user review the summary and close manually
+				await this.runImport()
 			} catch (error) {
-				console.error('ImportRegister: Import failed:', error)
-				this.error = error.message || 'Failed to import register'
-				this.loading = false
+				this.importFailed(error)
 			} finally {
 				// Always disable heartbeat indicator when import ends
 				this.isHeartbeatActive = false
 			}
+		},
+
+		/**
+		 * Show why the import failed.
+		 *
+		 * @param {Error} error The failure
+		 * @spec exclude modal submit handler delegating to registerStore.importRegister
+		 */
+		importFailed(error) {
+			console.error('ImportRegister: Import failed:', error)
+			this.error = error.message || 'Failed to import register'
+			this.loading = false
+		},
+
+		/**
+		 * Import the file and keep the backend's summary for review; the modal
+		 * stays open until the user closes it.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude modal submit handler delegating to registerStore.importRegister
+		 */
+		async runImport() {
+			const result = await registerStore.importRegister(
+				this.selectedFile,
+				(status) => {
+					this.heartbeatStatus = status
+				},
+			)
+			const summary = result?.responseData?.summary || result?.summary || null
+			this.importSummary = summary
+			this.importResults = summary
+			this.success = true
+			// The register refresh happens in the background
+			this.loading = false
 		},
 
 		/**
@@ -964,28 +949,29 @@ export default {
 		 * @spec exclude select-change UI handler updating register/schema stores
 		 */
 		async handleRegisterChange(option) {
-			if (!option) {
-				registerStore.setRegisterItem(null)
-				schemaStore.setSchemaItem(null)
-				return
-			}
-
-			registerStore.setRegisterItem(option)
+			registerStore.setRegisterItem(option || null)
 			schemaStore.setSchemaItem(null)
+			// Always refresh the schema list when the register has schemas: they
+			// might not be loaded yet or might have changed.
+			if (option && (option.schemas || []).length > 0) {
+				await this.refreshSchemas()
+			}
+		},
 
-			// Always refresh schema list when register changes to ensure we have all schemas.
-			// This is important because schemas might not be loaded yet or might have changed.
-			const registerSchemas = option.schemas || []
-			if (registerSchemas.length > 0) {
-				this.schemaLoading = true
-				try {
-					// Load all schemas to ensure we have the ones for this register.
-					await schemaStore.refreshSchemaList()
-				} catch (error) {
-					console.error('Error loading schemas:', error)
-				} finally {
-					this.schemaLoading = false
-				}
+		/**
+		 * Reload the schema list, showing the schema picker as loading meanwhile.
+		 *
+		 * @return {Promise<void>}
+		 * @spec exclude select-change UI handler updating register/schema stores
+		 */
+		async refreshSchemas() {
+			this.schemaLoading = true
+			try {
+				await schemaStore.refreshSchemaList()
+			} catch (error) {
+				console.error('Error loading schemas:', error)
+			} finally {
+				this.schemaLoading = false
 			}
 		},
 
@@ -1009,19 +995,10 @@ export default {
 		 */
 		checkDataCompleted() {
 			if (!this.selectedFile) return false
-			if (this.getFileExtension(this.selectedFile?.name) === 'json') {
-				return true
-			}
-			if (
-				this.getFileExtension(this.selectedFile?.name) === 'xlsx'
-				|| this.getFileExtension(this.selectedFile?.name) === 'xls'
-			) {
-				return !!this.selectedRegisterValue
-			}
-			if (this.getFileExtension(this.selectedFile?.name) === 'csv') {
-				return !!this.selectedRegisterValue && !!this.selectedSchemaValue
-			}
-			return false
+			const extension = this.getFileExtension(this.selectedFile.name)
+			if (!Object.hasOwn(SCOPE_NEEDED, extension)) return false
+			const isComplete = SCOPE_NEEDED[extension]
+			return isComplete(this)
 		},
 
 		/**

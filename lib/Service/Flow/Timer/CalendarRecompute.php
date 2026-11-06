@@ -204,11 +204,7 @@ class CalendarRecompute {
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
 	private function outcomeFor(FlowTimer $timer, string $slug, callable $supersede): string {
-		$verdict = $this->dependency->verdictFor(
-			timerCalendarSlug: $timer->getCalendarSlug(),
-			organisation: $timer->getOrganisation(),
-			changedSlug: $slug
-		);
+		$verdict = $this->dependency->verdictFor(timer: $timer, changedSlug: $slug);
 
 		if ($verdict === CalendarDependency::UNRESOLVABLE) {
 			return 'unresolvable';

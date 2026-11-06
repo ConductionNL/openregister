@@ -887,22 +887,24 @@ class FileService {
 	}//end getUser()
 
 	/**
-	 * Check file ownership and fix it if needed to prevent "File not found" errors.
+	 * Gate access to a file node on readability.
 	 *
-	 * @param Node $file The file node to check ownership for
+	 * Despite the name this never changes ownership: the delegate checks
+	 * `Node::isReadable()` and throws when the session cannot read the node.
+	 * The former repair path (`ownFile()` → `FileMapper::setFileOwnership()`)
+	 * renamed the whole `home::openregister` storage to the session user and
+	 * is gone (WOO-582).
+	 *
+	 * @param Node $file The file node to check access for
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If ownership check/fix fails
-	 *
-	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
-	 * @TODO: where files exist but can't be accessed due to permission problems.
-	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
+	 * @throws NotPermittedException If the session cannot read the node
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
 	 *
-	 * @spec exclude Ownership-guard delegation; throws when the current user does not own the node, no standalone business logic.
+	 * @spec exclude Readability-guard delegation; throws when the session cannot read the node, no standalone business logic.
 	 */
 	public function checkOwnership(Node $file): void {
 		$this->fileValidationHandler->checkOwnership(file: $file);
@@ -1755,134 +1757,6 @@ class FileService {
 			zipName: $zipName
 		);
 	}//end createObjectFilesZip()
-
-	/**
-	 * /**
-	 * Debug method to find a file by its ID anywhere in the OpenRegister folder structure
-	 *
-	 * @param int $fileId The file ID to search for
-	 *
-	 * @return (float|int|string)[]|null File information or null if not found
-	 *
-	 * @psalm-return array{id: int, name: string, path: string,
-	 *     type: string, mimetype: string, size: float|int,
-	 *     parent_id: int, parent_path: string}|null
-	 *
-	 * @spec exclude Diagnostic/debug helper for troubleshooting file lookups; not a product behavior.
-	 */
-	public function debugFindFileById(int $fileId): ?array {
-		try {
-			$userFolder = $this->getOpenRegisterUserFolder();
-			$nodes = $userFolder->getById($fileId);
-
-			if (empty($nodes) === true) {
-				$this->logger->info(
-					message: "[FileService] debugFindFileById: No file found with ID: $fileId",
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-					]
-				);
-				return null;
-			}
-
-			$file = $nodes[0];
-			$fileInfo = [
-				'id' => $file->getId(),
-				'name' => $file->getName(),
-				'path' => $file->getPath(),
-				'type' => $file->getType(),
-				'mimetype' => $file->getMimeType(),
-				'size' => $file->getSize(),
-				'parent_id' => $file->getParent()->getId(),
-				'parent_path' => $file->getParent()->getPath(),
-			];
-
-			$this->logger->info(
-				message: "[FileService] debugFindFileById: Found file with ID $fileId: " . json_encode($fileInfo),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			return $fileInfo;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: "[FileService] debugFindFileById: Error finding file by ID $fileId: " . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			return null;
-		}//end try
-	}//end debugFindFileById()
-
-	/**
-	 * Debug method to list all files in an object's folder
-	 * //end try
-	 *
-	 * //end foreach
-	 *
-	 * @param ObjectEntity $object The object to list files for
-	 *
-	 * @return (float|int|string)[][]
-	 *
-	 * @psalm-return list<array{id: int, mimetype: string, name: string,
-	 *     path: string, size: float|int, type: string}>
-	 *
-	 * @spec exclude Diagnostic/debug helper for troubleshooting object-file listings; not a product behavior.
-	 */
-	public function debugListObjectFiles(ObjectEntity $object): array {
-		try {
-			$objectFolder = $this->getObjectFolder(objectEntity: $object);
-
-			if ($objectFolder === null) {
-				$objectId = $object->getId();
-				$msg = '[FileService] debugListObjectFiles: Could not get object folder for object ID: ' . $objectId;
-				$this->logger->warning(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
-				return [];
-			}
-
-			$files = $objectFolder->getDirectoryListing();
-			$fileList = [];
-
-			foreach ($files as $file) {
-				$fileInfo = [
-					'id' => $file->getId(),
-					'name' => $file->getName(),
-					'path' => $file->getPath(),
-					'type' => $file->getType(),
-					'mimetype' => $file->getMimeType(),
-					'size' => $file->getSize(),
-				];
-				$fileList[] = $fileInfo;
-			}
-
-			$objectId = $object->getId();
-			$fileCount = count($fileList);
-			$filesJson = json_encode($fileList);
-			$this->logger->info(
-				message: "[FileService] debugListObjectFiles: Object $objectId folder contains $fileCount files: $filesJson",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			return $fileList;
-		} catch (Exception $e) {
-			$objectId = $object->getId();
-			$errorMsg = $e->getMessage();
-			$this->logger->error(
-				message: "[FileService] debugListObjectFiles: Error listing files for object $objectId: $errorMsg",
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-				]
-			);
-			return [];
-		}//end try
-	}//end debugListObjectFiles()
 
 	/**
 	 * Creates a folder for an ObjectEntity and returns the folder ID without updating the object.

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Service\EndpointService;
@@ -33,9 +34,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -105,18 +104,11 @@ class EndpointsController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * User session for authentication checks.
+	 * The session bundle, which answers the admin check.
 	 *
-	 * @var IUserSession User session instance
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for admin-role checks.
-	 *
-	 * @var IGroupManager Group manager instance
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor
@@ -149,8 +141,7 @@ class EndpointsController extends Controller {
 		$this->endpointLogMapper = $endpointLogMapper;
 		$this->endpointService = $endpointService;
 		$this->logger = $session->logger;
-		$this->userSession = $session->userSession;
-		$this->groupManager = $session->groupManager;
+		$this->session = $session;
 	}//end __construct()
 
 	/**
@@ -159,12 +150,7 @@ class EndpointsController extends Controller {
 	 * @return bool True when the active session user belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -512,6 +498,8 @@ class EndpointsController extends Controller {
 	 * Retrieves endpoint execution logs with optional filtering by endpoint ID.
 	 * Supports pagination via limit and offset parameters.
 	 * Returns logs for specific endpoint if endpoint_id provided, otherwise all logs.
+	 * A non-admin only sees logs of endpoints visible to them (the organisation-scoped
+	 * endpoint list); an endpoint_id outside that list yields an empty result.
 	 *
 	 * @NoAdminRequired
 	 *
@@ -603,6 +591,8 @@ class EndpointsController extends Controller {
 	 *
 	 * @return JSONResponse The updated endpoint.
 	 *
+	 * @throws DoesNotExistException When no endpoint has this id; the caller answers 404.
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
 	private function updateEndpoint(int $id): JSONResponse {
@@ -620,6 +610,8 @@ class EndpointsController extends Controller {
 	 * @param int $id The endpoint.
 	 *
 	 * @return JSONResponse A 204.
+	 *
+	 * @throws DoesNotExistException When no endpoint has this id; the caller answers 404.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
@@ -663,7 +655,7 @@ class EndpointsController extends Controller {
 	}//end page()
 
 	/**
-	 * One page of logs with the total count, of one endpoint or of all.
+	 * One page of logs with the total count, of one endpoint or of all, limited to visible endpoints for a non-admin.
 	 *
 	 * @param int|null $endpointId The endpoint, or null for all endpoints.
 	 *
@@ -673,6 +665,17 @@ class EndpointsController extends Controller {
 	 */
 	private function logPage(?int $endpointId): JSONResponse {
 		[$limit, $offset] = $this->page();
+		if ($this->isCurrentUserAdmin() === false) {
+			$visibleIds = array_map(static fn (Endpoint $endpoint): int => (int)$endpoint->getId(), $this->endpointMapper->findAll());
+			[$logs, $total] = $this->endpointLogMapper->findPageWithin(
+				visibleIds: $visibleIds,
+				endpointId: $endpointId,
+				limit: $limit,
+				offset: $offset
+			);
+			return new JSONResponse(data: ['results' => $logs, 'total' => $total], statusCode: 200);
+		}
+
 		if ($endpointId === null) {
 			$logs = $this->endpointLogMapper->findAll(limit: $limit, offset: $offset);
 			$total = count($this->endpointLogMapper->findAll(limit: null, offset: null));

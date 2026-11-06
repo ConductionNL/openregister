@@ -67,6 +67,7 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\EmptyValueStripper
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectStore

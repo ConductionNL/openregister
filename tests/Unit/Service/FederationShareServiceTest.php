@@ -342,52 +342,50 @@ class FederationShareServiceTest extends TestCase {
 	}//end testAFailingOrganisationLookupLeavesNoOrganisation()
 
 	/**
-	 * ensureObjectShare returns the existing share and never creates a duplicate.
+	 * An incoming share is recorded as pending, and no remote value decides its status.
 	 *
 	 * @return void
 	 */
-	public function testEnsureObjectShareIsIdempotent(): void {
-		$existing = new FederatedShare();
-		$this->shareMapper->method('findOutgoingObjectShare')->willReturn($existing);
-		$this->shareMapper->expects($this->never())->method('createFromArray');
-
-		$result = $this->service->ensureObjectShare(
-			'urn:uuid:1',
-			'1',
-			'2',
-			'partner@remote.example'
+	public function testAnIncomingShareIsRecordedAsPending(): void {
+		$captured = [];
+		$this->shareMapper->method('createFromArray')->willReturnCallback(
+			function (array $data) use (&$captured): FederatedShare {
+				$captured = $data;
+				return new FederatedShare();
+			}
 		);
 
-		$this->assertSame($existing, $result);
-	}//end testEnsureObjectShareIsIdempotent()
-
-	/**
-	 * ensureObjectShare creates an object-scope share when none exists yet.
-	 *
-	 * @return void
-	 */
-	public function testEnsureObjectShareCreatesWhenMissing(): void {
-		$captured = null;
-		$this->shareMapper->method('findOutgoingObjectShare')->willReturn(null);
-		$this->shareMapper->expects($this->once())
-			->method('createFromArray')
-			->willReturnCallback(
-				function (array $data) use (&$captured): FederatedShare {
-					$captured = $data;
-					return new FederatedShare();
-				}
-			);
-
-		$this->service->ensureObjectShare(
-			'urn:uuid:9',
-			'1',
-			'2',
-			'partner@remote.example',
-			'read'
+		$this->service->recordIncomingShare(
+			[
+				'remoteInstanceUrl' => 'https://remote.example',
+				'remoteProviderId'  => 'p-1',
+				'shareToken'        => 'tok',
+				'register'          => 2,
+				'schema'            => 3,
+				'objectUri'         => 'u',
+				'sharedWith'        => 'bob',
+				'status'            => 'accepted',
+				'direction'         => 'outgoing',
+			]
 		);
 
-		$this->assertSame('object', $captured['scope']);
-		$this->assertSame('urn:uuid:9', $captured['objectUri']);
-		$this->assertSame('partner@remote.example', $captured['sharedWith']);
-	}//end testEnsureObjectShareCreatesWhenMissing()
+		$this->assertSame(
+			[
+				'direction'         => 'incoming',
+				'remoteInstanceUrl' => 'https://remote.example',
+				'remoteProviderId'  => 'p-1',
+				'shareToken'        => 'tok',
+				'scope'             => 'schema',
+				'register'          => 2,
+				'schema'            => 3,
+				'objectUri'         => 'u',
+				'permissions'       => 'read',
+				'organisation'      => 'org-a',
+				'sharedWith'        => 'bob',
+				'status'            => 'pending',
+			],
+			$captured
+		);
+	}//end testAnIncomingShareIsRecordedAsPending()
+
 }//end class

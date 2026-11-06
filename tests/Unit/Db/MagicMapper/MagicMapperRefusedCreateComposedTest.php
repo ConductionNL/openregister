@@ -48,6 +48,10 @@ use Psr\Log\LoggerInterface;
  * honours the WHERE conditions it is given.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\EmptyPropertyClaim
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
@@ -64,6 +68,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableHandler
+ * @uses \OCA\OpenRegister\Event\AbstractPreWriteObjectEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent

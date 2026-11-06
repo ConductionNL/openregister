@@ -31,6 +31,8 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<EmailLink>
  */
 class EmailLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use DeleteLinksByObjectUuidTrait;
 	use CountLinksByObjectUuidTrait;
 
@@ -163,6 +165,28 @@ class EmailLinkMapper extends QBMapper {
 	}//end findBySender()
 
 	/**
+	 * The object uuids linked to a mail, by its RFC `Message-ID`.
+	 *
+	 * @param string $rfcMessageId The `Message-ID`, with its angle brackets.
+	 *
+	 * @return string[] The object uuids, each once.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function objectUuidsByRfcMessageId(string $rfcMessageId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectDistinct('object_uuid')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('rfc_message_id', $qb->createNamedParameter($rfcMessageId)));
+
+		$result = $qb->executeQuery();
+		$uuids = $result->fetchAll(\PDO::FETCH_COLUMN);
+		$result->closeCursor();
+
+		return array_map('strval', $uuids);
+	}//end objectUuidsByRfcMessageId()
+
+	/**
 	 * Find a specific email link by object UUID and mail message ID.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -171,22 +195,12 @@ class EmailLinkMapper extends QBMapper {
 	 * @return EmailLink|null The link or null if not found.
 	 */
 	public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq(
-					'mail_message_id',
-					$qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
-				)
-			);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'mail_message_id', value: $mailMessageId));
+		if ($link instanceof EmailLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndMessage()
 
 	/**

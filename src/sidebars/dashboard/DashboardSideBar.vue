@@ -285,6 +285,7 @@ import {
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import formatBytes from '../../services/formatBytes.js'
+import { scopePickers } from '../../services/scopePickers.js'
 
 export default {
 	name: 'DashboardSideBar',
@@ -295,6 +296,8 @@ export default {
 		NcLoadingIcon,
 		Magnify,
 	},
+
+	mixins: [scopePickers],
 
 	data() {
 		return {
@@ -311,104 +314,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Build the register dropdown options for the dashboard filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
-
 		/**
 		 * Flatten the object metadata map into column descriptors for display.
 		 *

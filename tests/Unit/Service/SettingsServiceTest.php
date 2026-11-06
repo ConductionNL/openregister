@@ -20,7 +20,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -71,9 +70,6 @@ class SettingsServiceTest extends TestCase {
 	/** @var SchemaCacheHandler|MockObject */
 	private $schemaCacheService;
 
-	/** @var FacetCacheHandler|MockObject */
-	private $facetCacheHandler;
-
 	/** @var ICacheFactory|MockObject */
 	private $cacheFactory;
 
@@ -115,7 +111,6 @@ class SettingsServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheHandler = $this->createMock(FacetCacheHandler::class);
 		$this->searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->db = $this->createMock(IDBConnection::class);

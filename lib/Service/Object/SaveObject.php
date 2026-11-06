@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
@@ -62,6 +63,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
+use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
@@ -778,8 +780,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
+		if (is_numeric($cleanReference) === true || UuidFormat::isCanonical(value: $cleanReference) === true) {
 			try {
 				$schema = $this->getCachedSchema(schemaId: $cleanReference);
 				$schemaId = (string)$schema->getId();
@@ -890,8 +891,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === 1) {
+		if (is_numeric($reference) === true || UuidFormat::isCanonical(value: $reference) === true) {
 			try {
 				$register = $this->registerMapper->find($reference);
 				return (string)$register->getId();
@@ -1112,17 +1112,17 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Check for standard UUID pattern (8-4-4-4-12 format).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isCanonical(value: $value) === true) {
 			return true;
 		}
 
 		// Check for UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+		if (UuidFormat::isHex32(value: $value) === true) {
 			return true;
 		}
 
 		// Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.) - with dashes.
-		if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isPrefixed(value: $value) === true) {
 			return true;
 		}
 
@@ -1226,7 +1226,7 @@ class SaveObject implements SaveObjectInterface {
 		// Process each relation (key = property path, value = related UUID).
 		foreach ($relations as $propertyPath => $relatedUuid) {
 			if (is_string($relatedUuid) === false
-				|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $relatedUuid) !== 1
+				|| UuidFormat::isCanonical(value: $relatedUuid) === false
 			) {
 				continue;
 			}
@@ -2660,10 +2660,12 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		$this->assertMayCascadeCreate(
-			schema: $this->getCachedSchema(schemaId: $schemaId),
-			register: (is_int($register) === true || is_string($register) === true) ? (string)$register : null
-		);
+		$cascadeRegister = null;
+		if (is_int($register) === true || is_string($register) === true) {
+			$cascadeRegister = (string)$register;
+		}
+
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: $cascadeRegister);
 
 		// Use silent mode for cascaded sub-objects to improve performance.
 		// This skips audit trail creation for each sub-object, reducing database writes.
@@ -3351,6 +3353,7 @@ class SaveObject implements SaveObjectInterface {
 		$call->flags->dedupOverride = $_dedupOverride;
 		$call->flags->owner = $_owner;
 		$this->takeDedupOverrideFromBody(call: $call);
+		$this->readClientCauseAttempt(call: $call);
 
 		// Resolve schema and register to entity objects.
 		[$call->schema, $call->schemaId, $call->register, $call->registerId] = $this->resolveSchemaAndRegister(
@@ -3392,6 +3395,38 @@ class SaveObject implements SaveObjectInterface {
 
 		unset($call->data[DedupCreatePolicy::OVERRIDE_KEY]);
 	}//end takeDedupOverrideFromBody()
+
+	/**
+	 * Read the client-cause mark from the object's `@self`.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function readClientCauseAttempt(ObjectSaveCall $call): void {
+		$call->flags->clientCauseAttempt = (($call->selfData[WriteCause::CLIENT_ATTEMPT_KEY] ?? false) === true);
+	}//end readClientCauseAttempt()
+
+	/**
+	 * Note a client-cause attempt against the object this save wrote.
+	 *
+	 * Runs before that object's audit row is built, and only for the save the
+	 * mark came in on: an object cascaded from it is a save of its own.
+	 *
+	 * @param ObjectSaveCall $call   The save call.
+	 * @param ObjectEntity   $object The object it wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 */
+	private function noteClientCauseAttempt(ObjectSaveCall $call, ObjectEntity $object): void {
+		if ($call->flags->clientCauseAttempt === true) {
+			WriteCause::noteClientAttempt(objectUuid: (string)$object->getUuid());
+		}
+	}//end noteClientCauseAttempt()
 
 	/**
 	 * Save an object once its register and schema are resolved.
@@ -3512,7 +3547,8 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * The stored object a save updates, or null when the save creates.
 	 *
-	 * An auto-generated UUID marks a create, so no lookup runs for it.
+	 * Whether a write creates is decided here, by the stored row alone: nothing a
+	 * caller sends says so.
 	 *
 	 * @param ObjectSaveCall $call The save call.
 	 *
@@ -3523,22 +3559,13 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function existingObjectForSave(ObjectSaveCall $call): ?ObjectEntity {
-		$isAutoGeneratedUuid = ($call->selfData['_autoGeneratedUuid'] ?? false) === true;
-		if ($isAutoGeneratedUuid === true) {
-			$this->logSaveLookup(
-				call: $call,
-				message: '[SaveObject] UUID is auto-generated, skipping existing object lookup (CREATE operation)'
-			);
-			return null;
-		}
-
 		if ($call->uuid === null) {
 			return null;
 		}
 
 		$this->logSaveLookup(
 			call: $call,
-			message: '[SaveObject] UUID provided and not auto-generated, checking for existing object (UPDATE operation)'
+			message: '[SaveObject] UUID provided, checking for existing object'
 		);
 
 		// Always disable RBAC and multitenancy for internal object lookup
@@ -3671,6 +3698,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function updateExistingForSave(ObjectSaveCall $call, ObjectEntity $existingObject): ObjectEntity {
+		$this->noteClientCauseAttempt(call: $call, object: $existingObject);
 		$frameKey = $this->enterSaveFrame(call: $call);
 		try {
 			$call->selfData = $this->selfDataForUpdate(selfData: $call->selfData, _rbac: $call->flags->rbac);
@@ -4496,6 +4524,7 @@ class SaveObject implements SaveObjectInterface {
 			$action = 'update';
 		}
 
+		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
 		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
 
 		$savedEntity->setLastLog($log->jsonSerialize());

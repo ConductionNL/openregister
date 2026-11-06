@@ -95,6 +95,52 @@ class FederationShareService {
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
 	public function createOutgoingShare(array $params): FederatedShare {
+		$data = $this->outgoingShareData(params: $params);
+		$refusal = $this->grantor->refusal(share: (new FederatedShare())->hydrate(object: $data));
+		if ($refusal !== null) {
+			throw new NotAuthorizedException(message: $refusal);
+		}
+
+		return $this->shareMapper->createFromArray(data: $data);
+	}//end createOutgoingShare()
+
+	/**
+	 * The validated record of an outgoing share, owned by the current user and active organisation.
+	 *
+	 * Outgoing token shares are immediately usable; an OCM share moves to
+	 * 'accepted' once the remote confirms, but the local grant stands.
+	 *
+	 * @param array<string, mixed> $params The share parameters.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When the scope, permissions or query filter are invalid.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function outgoingShareData(array $params): array {
+		$grant = $this->outgoingGrant(params: $params);
+		return ['direction' => 'outgoing', 'shareToken' => $this->mintToken()] + $grant + [
+			'organisation' => $this->activeOrganisationUuid(),
+			'owner' => $this->grantor->userId(),
+			'sharedWith' => ($params['sharedWith'] ?? null),
+			'remoteInstanceUrl' => ($params['remoteInstanceUrl'] ?? null),
+			'status' => 'accepted',
+		];
+	}//end outgoingShareData()
+
+	/**
+	 * What an outgoing share grants, validated: its scope, target and permissions.
+	 *
+	 * @param array<string, mixed> $params The share parameters.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws InvalidArgumentException When the scope, permissions or query filter are invalid.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function outgoingGrant(array $params): array {
 		$scope = (string)($params['scope'] ?? 'schema');
 		if (in_array($scope, self::SCOPES, true) === false) {
 			throw new InvalidArgumentException('Invalid share scope: ' . $scope);
@@ -105,33 +151,23 @@ class FederationShareService {
 			throw new InvalidArgumentException('Invalid permissions: ' . $permissions);
 		}
 
-		$this->assertQueryFilterKeepsItsTarget(queryFilter: ($params['queryFilter'] ?? null));
+		$queryFilter = ($params['queryFilter'] ?? null);
+		$this->assertQueryFilterKeepsItsTarget(queryFilter: $queryFilter);
+		return ['scope' => $scope] + $this->shareTarget(params: $params) + ['queryFilter' => $queryFilter, 'permissions' => $permissions];
+	}//end outgoingGrant()
 
-		$data = [
-			'direction' => 'outgoing',
-			'shareToken' => $this->mintToken(),
-			'scope' => $scope,
-			'register' => ($params['register'] ?? null),
-			'schema' => ($params['schema'] ?? null),
-			'objectUri' => ($params['objectUri'] ?? null),
-			'queryFilter' => ($params['queryFilter'] ?? null),
-			'permissions' => $permissions,
-			'organisation' => $this->activeOrganisationUuid(),
-			'owner' => $this->grantor->userId(),
-			'sharedWith' => ($params['sharedWith'] ?? null),
-			'remoteInstanceUrl' => ($params['remoteInstanceUrl'] ?? null),
-			// Outgoing token shares are immediately usable; an OCM share moves to
-			// 'accepted' once the remote confirms, but the local grant stands.
-			'status' => 'accepted',
-		];
-
-		$refusal = $this->grantor->refusal(share: (new FederatedShare())->hydrate(object: $data));
-		if ($refusal !== null) {
-			throw new NotAuthorizedException(message: $refusal);
-		}
-
-		return $this->shareMapper->createFromArray(data: $data);
-	}//end createOutgoingShare()
+	/**
+	 * What a share points at.
+	 *
+	 * @param array<string, mixed> $params The share parameters.
+	 *
+	 * @return array{register: mixed, schema: mixed, objectUri: mixed}
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function shareTarget(array $params): array {
+		return ['register' => ($params['register'] ?? null), 'schema' => ($params['schema'] ?? null), 'objectUri' => ($params['objectUri'] ?? null)];
+	}//end shareTarget()
 
 	/**
 	 * Refuse a query filter that is not a list of conditions, or that names its own register or schema.
@@ -168,61 +204,18 @@ class FederationShareService {
 	 * @return FederatedShare The persisted incoming share (status 'pending').
 	 */
 	public function recordIncomingShare(array $params): FederatedShare {
-		$data = [
-			'direction' => 'incoming',
-			'remoteInstanceUrl' => ($params['remoteInstanceUrl'] ?? null),
-			'remoteProviderId' => ($params['remoteProviderId'] ?? null),
-			'shareToken' => (string)($params['shareToken'] ?? $this->mintToken()),
-			'scope' => (string)($params['scope'] ?? 'schema'),
-			'register' => ($params['register'] ?? null),
-			'schema' => ($params['schema'] ?? null),
-			'objectUri' => ($params['objectUri'] ?? null),
-			'permissions' => (string)($params['permissions'] ?? 'read'),
-			'organisation' => $this->activeOrganisationUuid(),
-			'sharedWith' => ($params['sharedWith'] ?? null),
-			'status' => 'pending',
-		];
-
-		return $this->shareMapper->createFromArray(data: $data);
-	}//end recordIncomingShare()
-
-	/**
-	 * Ensure an outgoing object-scope share exists for a uri + target.
-	 *
-	 * Idempotent: returns the existing share when one is already present (so the
-	 * federate-share flow action can fire on every save without duplicating).
-	 *
-	 * @param string $objectUri The shared object's uri/uuid.
-	 * @param string|null $register The register id/slug.
-	 * @param string|null $schema The schema id/slug.
-	 * @param string $sharedWith The federated target (slug@host).
-	 * @param string $permissions 'read' or 'read-write'.
-	 *
-	 * @return FederatedShare The existing or newly created share.
-	 */
-	public function ensureObjectShare(
-		string $objectUri,
-		?string $register,
-		?string $schema,
-		string $sharedWith,
-		string $permissions = 'read',
-	): FederatedShare {
-		$existing = $this->shareMapper->findOutgoingObjectShare(objectUri: $objectUri, sharedWith: $sharedWith);
-		if ($existing !== null) {
-			return $existing;
-		}
-
-		return $this->createOutgoingShare(
-			params: [
-				'scope' => 'object',
-				'register' => $register,
-				'schema' => $schema,
-				'objectUri' => $objectUri,
-				'sharedWith' => $sharedWith,
-				'permissions' => $permissions,
+		$remote = ['remoteInstanceUrl' => ($params['remoteInstanceUrl'] ?? null), 'remoteProviderId' => ($params['remoteProviderId'] ?? null)];
+		$origin = ['direction' => 'incoming'] + $remote + ['shareToken' => (string)($params['shareToken'] ?? $this->mintToken())];
+		$grant = ['scope' => (string)($params['scope'] ?? 'schema')] + $this->shareTarget(params: $params);
+		return $this->shareMapper->createFromArray(
+			data: $origin + $grant + [
+				'permissions' => (string)($params['permissions'] ?? 'read'),
+				'organisation' => $this->activeOrganisationUuid(),
+				'sharedWith' => ($params['sharedWith'] ?? null),
+				'status' => 'pending',
 			]
 		);
-	}//end ensureObjectShare()
+	}//end recordIncomingShare()
 
 	/**
 	 * List federated shares, optionally by direction.
@@ -242,18 +235,29 @@ class FederationShareService {
 			$filters['direction'] = $direction;
 		}
 
-		$listed = [];
-		foreach ($this->shareMapper->findAll(limit: null, offset: null, filters: $filters) as $share) {
-			$row = $share->jsonSerialize();
-			if ($this->grantor->refusal(share: $share) !== null) {
-				$row['shareToken'] = null;
-			}
+		return array_map(
+			fn (FederatedShare $share): array => $this->listedRow(share: $share),
+			$this->shareMapper->findAll(limit: null, offset: null, filters: $filters)
+		);
+	}//end listShares()
 
-			$listed[] = $row;
+	/**
+	 * One listed share; its token is withheld from a caller who does not hold every right it grants.
+	 *
+	 * @param FederatedShare $share The share.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function listedRow(FederatedShare $share): array {
+		$row = $share->jsonSerialize();
+		if ($this->grantor->refusal(share: $share) !== null) {
+			$row['shareToken'] = null;
 		}
 
-		return $listed;
-	}//end listShares()
+		return $row;
+	}//end listedRow()
 
 	/**
 	 * Set the status of a share (e.g. accept, decline, revoke).

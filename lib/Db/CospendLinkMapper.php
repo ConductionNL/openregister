@@ -21,17 +21,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class CospendLinkMapper
  *
  * @template-extends QBMapper<CospendLink>
+ * @method list<CospendLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class CospendLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -50,39 +51,21 @@ class CospendLinkMapper extends QBMapper {
 	 * project rows pass billId = null which the query matches with an
 	 * IS NULL predicate.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $entryType The entry type (`project`|`bill`).
-	 * @param string $projectId The Cospend project id.
-	 * @param int|null $billId The Cospend bill id, or null for projects.
+	 * @param string          $objectUuid The object UUID.
+	 * @param CospendEntryKey $entry      The entry type, project and bill.
 	 *
 	 * @return CospendLink|null The existing link or null.
 	 */
-	public function findDuplicate(
-		string $objectUuid,
-		string $entryType,
-		string $projectId,
-		?int $billId,
-	): ?CospendLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('entry_type', $qb->createNamedParameter($entryType)))
-			->andWhere($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)));
-
-		if ($billId === null) {
-			$qb->andWhere($qb->expr()->isNull('bill_id'));
+	public function findDuplicate(string $objectUuid, CospendEntryKey $entry): ?CospendLink {
+		$key  = (new LinkColumn(name: 'entry_type', value: $entry->entryType))
+			->also(column: new LinkColumn(name: 'project_id', value: $entry->projectId))
+			->also(column: new LinkColumn(name: 'bill_id', value: $entry->billId()));
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: $key);
+		if ($link instanceof CospendLink) {
+			return $link;
 		}
 
-		if ($billId !== null) {
-			$qb->andWhere($qb->expr()->eq('bill_id', $qb->createNamedParameter($billId, IQueryBuilder::PARAM_INT)));
-		}
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findDuplicate()
 
 	/**
@@ -97,11 +80,6 @@ class CospendLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndId(string $objectUuid, int $entryId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('id', $qb->createNamedParameter($entryId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'id', value: $entryId));
 	}//end deleteByObjectAndId()
 }//end class

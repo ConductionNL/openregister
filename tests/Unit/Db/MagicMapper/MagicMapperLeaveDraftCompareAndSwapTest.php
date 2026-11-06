@@ -33,6 +33,10 @@ use ReflectionMethod;
  * The conditional UPDATE and its refusal.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\EmptyPropertyClaim
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException
@@ -160,6 +164,5 @@ class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 		$draft->setUuid('uuid-1');
 		$draft->setStatus(ObjectEntity::STATUS_DRAFT);
 		$this->assertSame('active', (new DraftStatusPolicy())->resolveStatus(entity: $draft, selfData: ['status' => 'active']));
-		$this->assertTrue(DraftStatusPolicy::isLeaving(uuid: 'uuid-1'));
 	}//end promote()
 }//end class

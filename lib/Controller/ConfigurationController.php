@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
@@ -38,9 +39,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -111,18 +110,11 @@ class ConfigurationController extends Controller {
 	private IAppManager $appManager;
 
 	/**
-	 * User session for admin checks
+	 * The session bundle, which answers the admin check.
 	 *
-	 * @var IUserSession
+	 * @var ControllerSession
 	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for admin checks
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
+	private readonly ControllerSession $session;
 
 	/**
 	 * Constructor
@@ -137,8 +129,7 @@ class ConfigurationController extends Controller {
 		ConfigurationControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
-		$this->userSession = $services->session->userSession;
-		$this->groupManager = $services->session->groupManager;
+		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
 		$this->configurationService = $services->domain->configurationService;
@@ -155,12 +146,7 @@ class ConfigurationController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**

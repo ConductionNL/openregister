@@ -712,6 +712,7 @@ return [
         ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails/send',  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/direct/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[^/]+']],
         ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
+        ['name' => 'emails#resolve',  'url' => '/api/emails/resolve',                               'verb' => 'POST'],
         ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
         ['name' => 'emailLinks#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'emailLinks#link',    'url' => '/api/objects/{register}/{schema}/{id}/emails',           'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -1261,6 +1262,7 @@ return [
         ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#affected',    'url' => '/api/objects/{register}/{schema}/{id}/affected',                   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#tree',        'url' => '/api/objects/{register}/{schema}/{id}/tree',                       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.

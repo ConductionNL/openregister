@@ -52,6 +52,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
+ * @uses \OCA\OpenRegister\Controller\Support\StringTypedPatch
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\ObjectsControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\ObjectStore

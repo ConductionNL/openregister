@@ -1,5 +1,330 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`LlmConfiguration.loadChatStats keeps the stats when the store fails 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 4,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads empty stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads full stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 3,
+  "totalConversations": 5,
+  "totalMessages": 8
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads nothing stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 9
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
+exports[`LlmConfiguration.loadChatStats reads partial stats 1`] = `
+"{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 2,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}"
+`;
+
 exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on a failing request 1`] = `
 {
   "calls": [
@@ -19,7 +344,6 @@ exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on a failing reque
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -92,7 +416,6 @@ exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on a successful an
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -165,7 +488,6 @@ exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on an unsuccessful
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -238,7 +560,6 @@ exports[`LlmConfiguration.loadDatabaseInfo keeps the defaults on no data 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -306,7 +627,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend database 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -376,7 +696,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend failing 1`] =
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -446,7 +765,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend php 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -516,7 +834,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads bare with backend unset 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -586,7 +903,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads full with backend database 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -662,7 +978,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads full with backend failing 1`] =
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -738,7 +1053,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads full with backend php 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -814,7 +1128,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads full with backend unset 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -890,7 +1203,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend database 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -962,7 +1274,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend failing 1
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1033,7 +1344,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend php 1`] =
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1104,7 +1414,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noPlugin with backend unset 1`]
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1175,7 +1484,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend database 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1247,7 +1555,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend failing 1
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1319,7 +1626,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend php 1`] =
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1391,7 +1697,6 @@ exports[`LlmConfiguration.loadDatabaseInfo reads noVector with backend unset 1`]
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1462,7 +1767,6 @@ exports[`LlmConfiguration.loadSettings keeps the defaults when the store fails 1
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1543,7 +1847,6 @@ exports[`LlmConfiguration.loadSettings loads embed fireworks chat fireworks 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1624,7 +1927,6 @@ exports[`LlmConfiguration.loadSettings loads embed fireworks chat ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1705,7 +2007,6 @@ exports[`LlmConfiguration.loadSettings loads embed fireworks chat openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1786,7 +2087,6 @@ exports[`LlmConfiguration.loadSettings loads embed fireworks chat other 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1866,7 +2166,6 @@ exports[`LlmConfiguration.loadSettings loads embed fireworks chat undefined 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -1947,7 +2246,6 @@ exports[`LlmConfiguration.loadSettings loads embed ollama chat fireworks 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2028,7 +2326,6 @@ exports[`LlmConfiguration.loadSettings loads embed ollama chat ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2109,7 +2406,6 @@ exports[`LlmConfiguration.loadSettings loads embed ollama chat openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2190,7 +2486,6 @@ exports[`LlmConfiguration.loadSettings loads embed ollama chat other 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2270,7 +2565,6 @@ exports[`LlmConfiguration.loadSettings loads embed ollama chat undefined 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2351,7 +2645,6 @@ exports[`LlmConfiguration.loadSettings loads embed openai chat fireworks 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2432,7 +2725,6 @@ exports[`LlmConfiguration.loadSettings loads embed openai chat ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2513,7 +2805,6 @@ exports[`LlmConfiguration.loadSettings loads embed openai chat openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2594,7 +2885,6 @@ exports[`LlmConfiguration.loadSettings loads embed openai chat other 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2674,7 +2964,6 @@ exports[`LlmConfiguration.loadSettings loads embed openai chat undefined 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2755,7 +3044,6 @@ exports[`LlmConfiguration.loadSettings loads embed other chat fireworks 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2836,7 +3124,6 @@ exports[`LlmConfiguration.loadSettings loads embed other chat ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2917,7 +3204,6 @@ exports[`LlmConfiguration.loadSettings loads embed other chat openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -2998,7 +3284,6 @@ exports[`LlmConfiguration.loadSettings loads embed other chat other 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3078,7 +3363,6 @@ exports[`LlmConfiguration.loadSettings loads embed other chat undefined 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3158,7 +3442,6 @@ exports[`LlmConfiguration.loadSettings loads embed undefined chat fireworks 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3238,7 +3521,6 @@ exports[`LlmConfiguration.loadSettings loads embed undefined chat ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3318,7 +3600,6 @@ exports[`LlmConfiguration.loadSettings loads embed undefined chat openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3398,7 +3679,6 @@ exports[`LlmConfiguration.loadSettings loads embed undefined chat other 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3477,7 +3757,6 @@ exports[`LlmConfiguration.loadSettings loads embed undefined chat undefined 1`] 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3548,7 +3827,6 @@ exports[`LlmConfiguration.loadSettings loads empty config for fireworks 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3619,7 +3897,6 @@ exports[`LlmConfiguration.loadSettings loads empty config for ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3690,7 +3967,6 @@ exports[`LlmConfiguration.loadSettings loads empty config for openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3758,7 +4034,6 @@ exports[`LlmConfiguration.loadSettings loads empty-string providers 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3839,7 +4114,6 @@ exports[`LlmConfiguration.loadSettings loads full config for fireworks 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -3920,7 +4194,6 @@ exports[`LlmConfiguration.loadSettings loads full config for ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4001,7 +4274,6 @@ exports[`LlmConfiguration.loadSettings loads full config for openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4069,7 +4341,6 @@ exports[`LlmConfiguration.loadSettings loads missing config for fireworks 1`] = 
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4137,7 +4408,6 @@ exports[`LlmConfiguration.loadSettings loads missing config for ollama 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4205,7 +4475,6 @@ exports[`LlmConfiguration.loadSettings loads missing config for openai 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4271,7 +4540,6 @@ exports[`LlmConfiguration.loadSettings loads no settings 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4337,7 +4605,6 @@ exports[`LlmConfiguration.loadVectorStats does nothing while the LLM is disabled
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4403,7 +4670,6 @@ exports[`LlmConfiguration.loadVectorStats marks the connection down on a failure
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": true,
  "llmErrorMessage": "timeout",
  "llmConnectionStatus": "Disconnected",
@@ -4469,7 +4735,6 @@ exports[`LlmConfiguration.loadVectorStats marks the connection down on a failure
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": true,
  "llmErrorMessage": "Failed to connect to LLM service",
  "llmConnectionStatus": "Disconnected",
@@ -4536,7 +4801,6 @@ exports[`LlmConfiguration.loadVectorStats reads byTypeZero 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Connected",
@@ -4599,7 +4863,6 @@ exports[`LlmConfiguration.loadVectorStats reads byTypeZero 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4667,7 +4930,6 @@ exports[`LlmConfiguration.loadVectorStats reads empty 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Disconnected",
@@ -4730,7 +4992,6 @@ exports[`LlmConfiguration.loadVectorStats reads empty 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4798,7 +5059,6 @@ exports[`LlmConfiguration.loadVectorStats reads filesOnly 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Connected",
@@ -4861,7 +5121,6 @@ exports[`LlmConfiguration.loadVectorStats reads filesOnly 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -4929,7 +5188,6 @@ exports[`LlmConfiguration.loadVectorStats reads flat 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Disconnected",
@@ -4992,7 +5250,6 @@ exports[`LlmConfiguration.loadVectorStats reads flat 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5060,7 +5317,6 @@ exports[`LlmConfiguration.loadVectorStats reads nested 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Connected",
@@ -5123,7 +5379,6 @@ exports[`LlmConfiguration.loadVectorStats reads nested 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5191,7 +5446,6 @@ exports[`LlmConfiguration.loadVectorStats reads none 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5254,7 +5508,6 @@ exports[`LlmConfiguration.loadVectorStats reads none 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5322,7 +5575,6 @@ exports[`LlmConfiguration.loadVectorStats reads objectsOnly 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Connected",
@@ -5385,7 +5637,6 @@ exports[`LlmConfiguration.loadVectorStats reads objectsOnly 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5453,7 +5704,6 @@ exports[`LlmConfiguration.loadVectorStats reads stringStorage 1`] = `
  },
  "saving": false,
  "loadingStats": false,
- "vectorizing": false,
  "llmError": true,
  "llmErrorMessage": "stats.storage?.total_mb?.toFixed is not a function",
  "llmConnectionStatus": "Disconnected",
@@ -5516,7 +5766,6 @@ exports[`LlmConfiguration.loadVectorStats reads stringStorage 1`] = `
  },
  "saving": false,
  "loadingStats": true,
- "vectorizing": false,
  "llmError": false,
  "llmErrorMessage": "",
  "llmConnectionStatus": "Unknown",
@@ -5567,5 +5816,242 @@ exports[`LlmConfiguration.loadVectorStats reads stringStorage 1`] = `
   "progressPercentage": 0
  }
 }",
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo fails to refresh 1`] = `
+{
+  "during": undefined,
+  "error": [
+    [
+      "Failed to refresh database information",
+    ],
+  ],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [],
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo fails to reload 1`] = `
+{
+  "during": true,
+  "error": [
+    [
+      "Failed to refresh database information",
+    ],
+  ],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [],
+}
+`;
+
+exports[`LlmConfiguration.refreshDatabaseInfo refreshes 1`] = `
+{
+  "during": true,
+  "error": [],
+  "posted": [
+    [
+      "/apps/openregister/api/settings/database/refresh",
+    ],
+  ],
+  "state": "{
+ "llmSettings": {
+  "enabled": false,
+  "provider": null,
+  "apiEndpoint": "",
+  "apiKey": "",
+  "model": null,
+  "temperature": 0.7,
+  "maxTokens": 2000
+ },
+ "saving": false,
+ "loadingStats": false,
+ "llmError": false,
+ "llmErrorMessage": "",
+ "llmConnectionStatus": "Unknown",
+ "showLLMConfigDialog": false,
+ "showFileManagementDialog": false,
+ "showObjectManagementDialog": false,
+ "showObjectVectorizationModal": false,
+ "showFileVectorizationModal": false,
+ "providerConfig": {
+  "embeddingProvider": null,
+  "embeddingModel": null,
+  "chatProvider": null,
+  "chatModel": null
+ },
+ "databaseInfo": {
+  "type": "Unknown",
+  "version": "Unknown",
+  "vectorSupport": false,
+  "recommendedPlugin": null,
+  "performanceNote": null,
+  "extensions": [],
+  "hybridSearch": null,
+  "lastUpdated": null
+ },
+ "refreshingDatabase": false,
+ "chatStats": {
+  "totalAgents": 0,
+  "totalConversations": 0,
+  "totalMessages": 0
+ },
+ "vectorStats": {
+  "totalVectors": 0,
+  "objectVectors": 0,
+  "fileVectors": 0,
+  "storageMB": "0.0"
+ },
+ "fileStats": {
+  "totalFiles": 0,
+  "vectorizedFiles": 0,
+  "filesExtracted": 0,
+  "pendingFiles": 0,
+  "totalChunks": 0
+ },
+ "objectStats": {
+  "totalObjects": 0,
+  "vectorizedObjects": 0,
+  "pendingObjects": 0,
+  "progressPercentage": 0
+ }
+}",
+  "success": [
+    [
+      "Database information refreshed",
+    ],
+  ],
 }
 `;

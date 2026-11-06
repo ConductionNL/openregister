@@ -370,7 +370,6 @@ class FlowService {
 		// uneditable.
 		if ($this->graphSignature(flow: $flow) !== $graphBefore) {
 			(new FlowLifecycleGuard(
-				$this->runs,
 				$this->container->get(FlowNodePreflight::class),
 				$this->logger
 			))->refuseEditUnlessDraft(
@@ -584,7 +583,6 @@ class FlowService {
 		$inheritable = [
 			'retentionDays' => ['setRetentionDays', static fn ($value): int => max(1, (int)$value)],
 			'auditEnabled' => ['setAuditEnabled', static fn ($value): bool => (bool)$value],
-			'oversightEnabled' => ['setOversightEnabled', static fn ($value): bool => (bool)$value],
 		];
 
 		foreach ($inheritable as $key => [$setter, $cast]) {

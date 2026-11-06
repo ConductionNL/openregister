@@ -18,11 +18,8 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 6
     },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
-      "count": 8
+      "count": 7
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -352,18 +349,17 @@
       "count": 1
     }
   },
-  "src/modals/deleted/PurgeMultiple.vue": {
+  "src/modals/deleted/BulkSelectionDialog.vue": {
     "@nextcloud/no-deprecated-library-props": {
       "count": 1
-    },
+    }
+  },
+  "src/modals/deleted/PurgeMultiple.vue": {
     "vue/prefer-define-options": {
       "count": 1
     }
   },
   "src/modals/deleted/RestoreMultiple.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -423,9 +419,6 @@
     }
   },
   "src/modals/logs/ClearAuditTrails.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -434,9 +427,6 @@
     }
   },
   "src/modals/logs/DeleteAuditTrail.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -460,9 +450,6 @@
     }
   },
   "src/modals/object/DeleteObject.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -570,9 +557,6 @@
     }
   },
   "src/modals/organisation/DeleteOrganisation.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -633,9 +617,6 @@
     }
   },
   "src/modals/register/DeleteRegister.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -665,9 +646,6 @@
     }
   },
   "src/modals/schema/DeleteSchema.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -763,18 +741,7 @@
       "count": 1
     }
   },
-  "src/modals/settings/FileManagementModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
-    "no-console": {
-      "count": 1
-    }
-  },
   "src/modals/settings/FileVectorizationModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
       "count": 2
     }
@@ -799,19 +766,13 @@
     }
   },
   "src/modals/settings/ObjectManagementModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
-      "count": 3
+      "count": 2
     }
   },
   "src/modals/settings/ObjectVectorizationModal.vue": {
-    "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 1
-    },
     "no-console": {
-      "count": 4
+      "count": 3
     }
   },
   "src/modals/settings/RebaseConfirmationModal.vue": {
@@ -824,10 +785,22 @@
       "count": 1
     }
   },
-  "src/modals/source/DeleteSource.vue": {
-    "@nextcloud/no-deprecated-library-props": {
+  "src/modals/settings/vectorization/VectorizationActions.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
-    },
+    }
+  },
+  "src/modals/settings/vectorization/VectorizationSaveActions.vue": {
+    "@nextcloud/l10n-enforce-ellipsis": {
+      "count": 1
+    }
+  },
+  "src/modals/settings/vectorization/objectVectorizationApi.js": {
+    "no-console": {
+      "count": 1
+    }
+  },
+  "src/modals/source/DeleteSource.vue": {
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -842,9 +815,6 @@
   },
   "src/modals/source/ViewSource.vue": {
     "@nextcloud/no-deprecated-library-props": {
-      "count": 2
-    },
-    "no-console": {
       "count": 1
     },
     "vue/prefer-define-options": {
@@ -927,11 +897,8 @@
     }
   },
   "src/sidebars/register/RegisterSideBar.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
-      "count": 3
+      "count": 2
     },
     "vue/prefer-define-options": {
       "count": 1
@@ -1228,11 +1195,8 @@
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 1
     },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
-      "count": 6
+      "count": 5
     },
     "vue/match-component-import-name": {
       "count": 1
@@ -1244,9 +1208,6 @@
   "src/views/register/RegistersIndex.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
       "count": 2
-    },
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
     },
     "no-console": {
       "count": 3
