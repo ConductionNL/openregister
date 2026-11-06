@@ -23,6 +23,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowSync;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleReleaseReader;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -61,6 +62,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Publishes applications and ticks the scheduler, with only the database faked.
@@ -121,9 +123,14 @@ abstract class ManifestScheduleHarness extends TestCase {
 	protected string $slugsAnswer = 'buildiq';
 
 	/**
+	 * Whether the audit table refuses a write.
+	 */
+	protected bool $auditFails = false;
+
+	/**
 	 * The version object the application's production version points at.
 	 */
-	protected ObjectEntity $version;
+	protected ?ObjectEntity $version;
 
 	protected LoggerInterface&MockObject $logger;
 
@@ -135,6 +142,8 @@ abstract class ManifestScheduleHarness extends TestCase {
 	protected array $warnings = [];
 
 	protected ApplicationPublishListener $listener;
+
+	protected ScheduleRefusals $refusals;
 
 	protected FlowLocator $locator;
 
@@ -161,13 +170,18 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn () => $this->user());
 
+<<<<<<< HEAD
+=======
+		$container = $this->container(flowMapper: $flowMapper);
+		$this->refusals = new ScheduleRefusals($this->logger);
+>>>>>>> feat/schedule-flow-apply
 		$membership = new FlowTenantMembership($this->organisations());
 		$container = $this->container(flowMapper: $flowMapper, membership: $membership);
 		$sync = new ScheduleFlowSync(
 			new ScheduleFlowStore($flowMapper, $versions, $flowService, new FlowTriggerValidator($container, $this->logger)),
 			$membership,
 			new ScheduleAuditTrail($this->auditMapper()),
-			$this->logger
+			$this->refusals
 		);
 		$listenerContainer = $this->createConfiguredMock(ContainerInterface::class, ['get' => $sync]);
 		$this->listener = new ApplicationPublishListener($this->reader($session), $listenerContainer, $this->logger);
@@ -190,7 +204,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 * @return void
 	 */
 	protected function publish(array $schedules, ?string $organisation = self::ORGANISATION): void {
-		$this->version = $this->object(['manifest' => ['schedules' => $schedules]], self::VERSION);
+		$this->version = $this->object(['application' => 'app-1', 'manifest' => ['schedules' => $schedules]], self::VERSION);
 
 		$before = $this->object(['slug' => 'crm'], 'app-1');
 		$after = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-1');
@@ -285,7 +299,15 @@ abstract class ManifestScheduleHarness extends TestCase {
 		};
 		$mapper->method('insert')->willReturnCallback($store);
 		$mapper->method('update')->willReturnCallback($store);
-		$mapper->method('findAllFlows')->willReturnCallback(fn () => array_values($this->flows));
+		$mapper->method('findAllFlows')->willReturnCallback(
+			fn (?string $app = null, ?string $applicationSlug = null) => array_values(
+				array_filter(
+					$this->flows,
+					static fn (Flow $flow) => ($app === null || $flow->getApp() === $app)
+						&& ($applicationSlug === null || $flow->getApplicationSlug() === $applicationSlug)
+				)
+			)
+		);
 		$mapper->method('findScheduled')->willReturnCallback(
 			fn () => array_values(array_filter($this->flows, static fn (Flow $flow) => $flow->getEnabled() === true))
 		);
@@ -348,6 +370,10 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$mapper->method('applyRetentionExpiry')->willReturnArgument(0);
 		$mapper->method('insert')->willReturnCallback(
 			function (AuditTrail $entry): AuditTrail {
+				if ($this->auditFails === true) {
+					throw new RuntimeException('audit down');
+				}
+
 				$this->audit[] = $entry;
 				return $entry;
 			}
