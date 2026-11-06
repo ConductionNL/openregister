@@ -123,14 +123,19 @@ class ScheduleReleaseReader {
 	 * @return ScheduleRelease The publish.
 	 */
 	private function releaseOfApplication(ObjectEntity $application): ScheduleRelease {
+		$publisher = $this->publisher();
 		$production = $this->productionOf(data: $application->getObject());
-		$manifest = [];
-		if ($production !== '') {
-			$version = $this->load(uuid: $production, schema: self::VERSION);
-			$manifest = $this->manifestOf(data: ($version?->getObject() ?? []));
+		if ($production === '') {
+			return new ScheduleRelease(application: $application, manifest: [], publisher: $publisher);
 		}
 
-		return new ScheduleRelease(application: $application, manifest: $manifest, publisher: $this->publisher());
+		$data = ($this->load(uuid: $production, schema: self::VERSION)?->getObject() ?? []);
+		if (($data['application'] ?? null) !== $application->getUuid()) {
+			$reason = 'The production version cannot be read, or belongs to another application.';
+			return new ScheduleRelease(application: $application, manifest: [], publisher: $publisher, refusal: $reason);
+		}
+
+		return new ScheduleRelease(application: $application, manifest: $this->manifestOf(data: $data), publisher: $publisher);
 	}//end releaseOfApplication()
 
 	/**
