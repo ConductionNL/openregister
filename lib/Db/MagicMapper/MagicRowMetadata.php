@@ -22,11 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use DateTimeImmutable;
-use DateTimeInterface;
-use DateTimeZone;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Rbac\RuleColumns;
 use Psr\Container\ContainerInterface;
 
@@ -252,12 +248,8 @@ final class MagicRowMetadata {
 	/**
 	 * A metadata value as its column stores it; datetime fields become UTC 'Y-m-d H:i:s'.
 	 *
-	 * A DateTime is converted to the column's
-	 * timezone before formatting, because format() renders in the instance's own timezone
-	 * and a non-UTC value would be read back as UTC (WOO-567). This is done inline rather
-	 * than through DateTimeNormalizer so the path works without a resolvable container. A
-	 * string goes through DateTimeNormalizer, so empty input becomes null rather than now
-	 * and a non-UTC offset is converted rather than dropped.
+	 * Empty text becomes null rather than now, and a non-UTC offset is converted
+	 * rather than dropped (WOO-567): a metadata date is an instant.
 	 *
 	 * @param string $field The metadata field
 	 * @param mixed  $value The value from `@self`
@@ -269,17 +261,7 @@ final class MagicRowMetadata {
 			return $value;
 		}
 
-		if ($value instanceof DateTimeInterface) {
-			return DateTimeImmutable::createFromInterface($value)
-				->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE))
-				->format(DateTimeNormalizer::DATABASE_FORMAT);
-		}
-
-		if (is_string($value) === true) {
-			return $this->container->get(DateTimeNormalizer::class)->formatForDatabase($value);
-		}
-
-		return $value;
+		return (new MagicPropertyDate(container: $this->container))->stored(value: $value, format: 'date-time');
 	}//end storedValue()
 
 	/**

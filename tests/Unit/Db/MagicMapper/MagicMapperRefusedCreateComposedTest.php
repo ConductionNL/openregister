@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPropertyDate
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
