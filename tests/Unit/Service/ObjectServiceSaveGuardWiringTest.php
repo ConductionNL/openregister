@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -35,6 +36,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator
  * @uses   \OCA\OpenRegister\Service\Hinge\LensResolver
  * @uses   \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
  * @uses   \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses   \OCA\OpenRegister\Service\Object\RepeatingGroupValidator
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
@@ -71,6 +73,7 @@ class ObjectServiceSaveGuardWiringTest extends TestCase {
 		(new ReflectionProperty(ObjectService::class, 'currentSchema'))->setValue($service, $schema);
 		(new ReflectionProperty(ObjectService::class, 'logger'))->setValue($service, $this->createMock(LoggerInterface::class));
 		(new ReflectionProperty(ObjectService::class, 'saveHandler'))->setValue($service, $handler);
+		(new ReflectionProperty(ObjectService::class, 'dateTimeNormalizer'))->setValue($service, $this->createMock(DateTimeNormalizer::class));
 
 		return (new ReflectionMethod(ObjectService::class, 'prepareObjectForSave'))
 			->invoke($service, $object, ['uuid' => null, 'isCreate' => true]);
