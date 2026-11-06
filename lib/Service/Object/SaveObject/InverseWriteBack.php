@@ -101,7 +101,7 @@ final class InverseWriteBack {
 			return false;
 		}
 
-		return self::levels(definition: $property) !== null;
+		return self::levels(definition: $property) !== [];
 	}//end writesBack()
 
 	/**
@@ -120,28 +120,25 @@ final class InverseWriteBack {
 	 *
 	 * @param array $definition The property definition.
 	 *
-	 * @return array{0: array, 1: array}|null The level with the inverse property and target schema, the
-	 *                                        level with the register and removal flag; null when none.
+	 * @return array The level with the inverse property and target schema, then the level with
+	 *               the register and removal flag; empty when the definition does not write back.
 	 */
-	private static function levels(array $definition): ?array {
+	private static function levels(array $definition): array {
 		if (self::declaresOnProperty(definition: $definition) === true) {
 			return [$definition, $definition];
 		}
 
 		$items = ($definition['items'] ?? []);
 		if (($items['inversedBy'] ?? null) === null) {
-			return null;
+			return [];
 		}
 
-		if (($items['writeBack'] ?? null) === true) {
-			return [$items, $items];
+		$flags = (($items['writeBack'] ?? null) === true) ? $items : $definition;
+		if (($flags['writeBack'] ?? null) !== true) {
+			return [];
 		}
 
-		if (($definition['writeBack'] ?? null) === true) {
-			return [$items, $definition];
-		}
-
-		return null;
+		return [$items, $flags];
 	}//end levels()
 
 	/**
@@ -152,22 +149,18 @@ final class InverseWriteBack {
 	 * @return void
 	 */
 	private function writeProperty(CascadeRun $run): void {
-		$targets = ($run->data[$run->property] ?? null);
-		if (empty($targets) === true) {
+		$ids = self::targetIds(targets: $run->data[$run->property] ?? null);
+		if ($ids === []) {
 			return;
 		}
 
 		$settings = self::settings(run: $run);
 		$link = $this->link(settings: $settings, source: $run->parent);
-		$ids = self::targetIds(targets: $targets);
-		if ($link === null || empty($ids) === true) {
+		if ($link === []) {
 			return;
 		}
 
-		foreach ($ids as $id) {
-			$this->writeToTarget(reference: (string)$id, link: $link);
-		}
-
+		$this->writeToTargets(ids: $ids, link: $link);
 		if ($settings->removeFromSource === true) {
 			unset($run->data[$run->property]);
 		}
@@ -183,7 +176,7 @@ final class InverseWriteBack {
 	private static function settings(CascadeRun $run): WriteBackSettings {
 		$settings = new WriteBackSettings();
 		$levels = self::levels(definition: $run->definition);
-		if ($levels === null) {
+		if ($levels === []) {
 			return $settings;
 		}
 
@@ -202,17 +195,17 @@ final class InverseWriteBack {
 	 * @param WriteBackSettings $settings The settings.
 	 * @param ObjectEntity      $source   The object written back.
 	 *
-	 * @return array{inverseProperty: mixed, register: mixed, schema: string, source: string|null}|null Null when
-	 *                                       the settings are incomplete or the target schema is unknown.
+	 * @return array The inverse property, register, schema and source; empty when the settings
+	 *               are incomplete or the target schema is unknown.
 	 */
-	private function link(WriteBackSettings $settings, ObjectEntity $source): ?array {
+	private function link(WriteBackSettings $settings, ObjectEntity $source): array {
 		if (self::complete(settings: $settings) === false) {
-			return null;
+			return [];
 		}
 
 		$schemaId = $this->lookups->schemaId(reference: $settings->targetSchema);
 		if ($schemaId === null) {
-			return null;
+			return [];
 		}
 
 		return [
@@ -259,6 +252,20 @@ final class InverseWriteBack {
 	}//end targetIds()
 
 	/**
+	 * Add the parent to the inverse property of each target.
+	 *
+	 * @param array $ids  The target identifiers.
+	 * @param array $link The inverse relation.
+	 *
+	 * @return void
+	 */
+	private function writeToTargets(array $ids, array $link): void {
+		foreach ($ids as $id) {
+			$this->writeToTarget(reference: (string)$id, link: $link);
+		}
+	}//end writeToTargets()
+
+	/**
 	 * Add the parent to one target's inverse property and save the target.
 	 *
 	 * The target is saved by the uuid of the row found: the reference may be its
@@ -278,16 +285,28 @@ final class InverseWriteBack {
 				return;
 			}
 
-			$this->saver->saveObject(
-				register: $link['register'],
-				schema: $link['schema'],
-				data: array_replace($target->getObject(), [$link['inverseProperty'] => self::withSource(target: $target, link: $link)]),
-				uuid: $uuid
-			);
+			$this->saveTarget(target: $target, link: $link);
 		} catch (Exception $e) {
 			return;
 		}
 	}//end writeToTarget()
+
+	/**
+	 * Save a target by its own uuid, with the source in its inverse property.
+	 *
+	 * @param ObjectEntity $target The target.
+	 * @param array        $link   The inverse relation.
+	 *
+	 * @return void
+	 */
+	private function saveTarget(ObjectEntity $target, array $link): void {
+		$this->saver->saveObject(
+			register: $link['register'],
+			schema: $link['schema'],
+			data: array_replace($target->getObject(), [$link['inverseProperty'] => self::withSource(target: $target, link: $link)]),
+			uuid: $target->getUuid()
+		);
+	}//end saveTarget()
 
 	/**
 	 * A target's inverse property as a list that holds the source.
