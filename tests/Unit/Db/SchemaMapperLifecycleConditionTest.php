@@ -48,6 +48,10 @@ use ReflectionMethod;
 
 /**
  * Save-time policy for lifecycle conditions.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  */
 class SchemaMapperLifecycleConditionTest extends TestCase {
 
@@ -90,7 +94,7 @@ class SchemaMapperLifecycleConditionTest extends TestCase {
 		);
 		$schema->setConfiguration(['x-openregister-lifecycle' => $lifecycle]);
 
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateLifecycleAnnotation');
+		$method = new ReflectionMethod(SchemaMapper::class, 'cleanObject');
 		$method->invoke($this->mapper, $schema);
 	}//end validate()
 
