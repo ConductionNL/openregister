@@ -63,6 +63,8 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	private const NOT_OBJECT_SERVICE = [
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
+		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],
+		'lib/Service/Object/SaveObject/InverseWriteBack.php' => ['writeToTarget'],
 	];
 
 	/**
