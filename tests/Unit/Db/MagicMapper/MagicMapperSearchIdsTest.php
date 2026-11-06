@@ -40,7 +40,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * An id list handed to searchObjects(), countSearchObjects() or
- * searchObjectsPaginated() reaches the table search as `_ids`.
+ * searchObjectsPaginated() reaches the table search as `_ids`, and a `uses`
+ * value as `_relations_contains`.
  */
 class MagicMapperSearchIdsTest extends TestCase {
 
@@ -204,6 +205,92 @@ class MagicMapperSearchIdsTest extends TestCase {
 
 		$this->assertSame([[]], $this->tableIds());
 	}//end testAnEmptyIdsKeyInTheQueryStaysAsItWas()
+
+	/**
+	 * The `_relations_contains` every table query carried.
+	 *
+	 * @return array<int, mixed> One entry per table query.
+	 */
+	private function tableUses(): array {
+		return array_map(static fn (array $query): mixed => ($query['_relations_contains'] ?? 'none'), $this->tableQueries);
+	}//end tableUses()
+
+	/**
+	 * A search keeps to the objects that use the given object.
+	 *
+	 * @return void
+	 */
+	public function testASearchKeepsToWhatUsesTheObject(): void {
+		$this->mapper()->searchObjects(query: self::SCOPE, uses: 'u');
+
+		$this->assertSame(['u'], $this->tableUses());
+	}//end testASearchKeepsToWhatUsesTheObject()
+
+	/**
+	 * A count keeps to the objects that use the given object.
+	 *
+	 * @return void
+	 */
+	public function testACountKeepsToWhatUsesTheObject(): void {
+		$this->mapper()->countSearchObjects(query: self::SCOPE, uses: 'u');
+
+		$this->assertSame(['u'], $this->tableUses());
+	}//end testACountKeepsToWhatUsesTheObject()
+
+	/**
+	 * A paginated search keeps its page and its total to what uses the object.
+	 *
+	 * @return void
+	 */
+	public function testAPaginatedSearchKeepsPageAndTotalToWhatUsesTheObject(): void {
+		$this->mapper()->searchObjectsPaginated(searchQuery: self::SCOPE, countQuery: self::SCOPE, uses: 'u');
+
+		$this->assertSame(['u', 'u'], $this->tableUses());
+	}//end testAPaginatedSearchKeepsPageAndTotalToWhatUsesTheObject()
+
+	/**
+	 * A findAll keeps to the objects that use the given object.
+	 *
+	 * @return void
+	 */
+	public function testAFindAllKeepsToWhatUsesTheObject(): void {
+		$this->mapper()->findAll(uses: 'u', register: new Register(), schema: new Schema());
+
+		$this->assertSame(['u'], $this->tableUses());
+	}//end testAFindAllKeepsToWhatUsesTheObject()
+
+	/**
+	 * A relation the query asks for stays: the objects have to use both.
+	 *
+	 * @return void
+	 */
+	public function testUsesAddsToTheQuerysOwnRelation(): void {
+		$this->mapper()->searchObjects(query: (self::SCOPE + ['_relations_contains' => 'a']), uses: 'u');
+
+		$this->assertSame([['a', 'u']], $this->tableUses());
+	}//end testUsesAddsToTheQuerysOwnRelation()
+
+	/**
+	 * The same relation twice is one relation.
+	 *
+	 * @return void
+	 */
+	public function testUsesEqualToTheQuerysOwnRelationStaysOne(): void {
+		$this->mapper()->searchObjects(query: (self::SCOPE + ['_relations_contains' => 'u']), uses: 'u');
+
+		$this->assertSame(['u'], $this->tableUses());
+	}//end testUsesEqualToTheQuerysOwnRelationStaysOne()
+
+	/**
+	 * An empty `uses` names no object, as an empty relation filter does.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyUsesNarrowsNothing(): void {
+		$this->mapper()->searchObjects(query: self::SCOPE, uses: '');
+
+		$this->assertSame(['none'], $this->tableUses());
+	}//end testAnEmptyUsesNarrowsNothing()
 
 	/**
 	 * Without ids the query is left as it came.
