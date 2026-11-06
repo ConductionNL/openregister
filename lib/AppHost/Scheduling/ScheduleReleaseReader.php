@@ -29,10 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
-use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
@@ -47,11 +44,6 @@ use Throwable;
  */
 class ScheduleReleaseReader {
 	/**
-	 * The canonical slug of the register holding applications.
-	 */
-	private const REGISTER = 'buildiq';
-
-	/**
 	 * The application schema slug.
 	 */
 	private const APPLICATION = 'application';
@@ -65,16 +57,12 @@ class ScheduleReleaseReader {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Reads the other half of a publish.
-	 * @param RegisterMapper $registers Names an object's register.
-	 * @param SchemaMapper $schemas Names an object's schema.
-	 * @param RegisterSlugResolverInterface $slugs Finds the slug this instance carries.
+	 * @param ApplicationRegister $register Places an object in the applications register.
 	 * @param IUserSession $session Who is publishing.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly RegisterSlugResolverInterface $slugs,
+		private readonly ApplicationRegister $register,
 		private readonly IUserSession $session,
 	) {
 	}//end __construct()
@@ -93,14 +81,14 @@ class ScheduleReleaseReader {
 		$after = $object->getObject();
 		$prior = ($before?->getObject() ?? []);
 		if ($this->productionOf(data: $after) !== $this->productionOf(data: $prior)
-			&& $this->isA(object: $object, schema: self::APPLICATION) === true
+			&& $this->register->holds(object: $object, schema: self::APPLICATION) === true
 		) {
 			return $this->releaseOfApplication(application: $object);
 		}
 
 		if ($before !== null
 			&& $this->schedulesOf(data: $after) !== $this->schedulesOf(data: $prior)
-			&& $this->isA(object: $object, schema: self::VERSION) === true
+			&& $this->register->holds(object: $object, schema: self::VERSION) === true
 		) {
 			return $this->releaseOfVersion(version: $object);
 		}
@@ -119,7 +107,7 @@ class ScheduleReleaseReader {
 	 */
 	public function releaseOfDeleted(ObjectEntity $object): ?ScheduleRelease {
 		if ($this->productionOf(data: $object->getObject()) === ''
-			|| $this->isA(object: $object, schema: self::APPLICATION) === false
+			|| $this->register->holds(object: $object, schema: self::APPLICATION) === false
 		) {
 			return null;
 		}
@@ -171,51 +159,17 @@ class ScheduleReleaseReader {
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
 	 */
 	private function load(string $uuid, string $schema): ?ObjectEntity {
-		$register = $this->register();
+		$register = $this->register->slug();
 		if ($uuid === '' || $register === null) {
 			return null;
 		}
 
 		try {
-			return WriteCause::asLookup(fn () => $this->objects->find(
-				id: $uuid,
-				register: $register,
-				schema: $schema,
-				_rbac: false,
-				_multitenancy: false
-			));
+			return WriteCause::asLookup(fn () => $this->objects->find(id: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false));
 		} catch (Throwable $e) {
 			return null;
 		}
 	}//end load()
-
-	/**
-	 * Whether an object is of this schema in the applications register.
-	 *
-	 * @param ObjectEntity $object The object.
-	 * @param string $schema The schema slug.
-	 *
-	 * @return bool False for a same-named schema in any other register.
-	 */
-	private function isA(ObjectEntity $object, string $schema): bool {
-		try {
-			$register = $this->registers->find(id: (string)$object->getRegister(), _rbac: false, _multitenancy: false);
-			$found = $this->schemas->find(id: (string)$object->getSchema(), _rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			return false;
-		}
-
-		return $register->getSlug() === $this->register() && $found->getSlug() === $schema;
-	}//end isA()
-
-	/**
-	 * The slug the applications register has on this instance.
-	 *
-	 * @return string|null The slug, or null when the instance has none.
-	 */
-	private function register(): ?string {
-		return $this->slugs->slugOrNull(canonical: self::REGISTER);
-	}//end register()
 
 	/**
 	 * The signed-in user.
