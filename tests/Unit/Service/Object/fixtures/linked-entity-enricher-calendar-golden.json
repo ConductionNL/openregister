@@ -107,112 +107,112 @@
     },
     "queries": [
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "event"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "todo"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "bare"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "nodata"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "missing"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "throw"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 0,
                 "event"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 12,
                 "a/b"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "event"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "todo"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "bare"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "nodata"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "missing"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 7,
                 "throw"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 0,
                 "event"
             ]
         ],
         [
-            "SELECT calendardata FROM oc_calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
             [
                 12,
                 "a/b"
