@@ -1075,5 +1075,4 @@ export default {
 	color: var(--color-primary);
 	margin-top: 40px;
 }
-
 </style>

@@ -1486,7 +1486,6 @@ export default {
 
 @include error-text-rules;
 
-
 @media (prefers-reduced-motion: reduce) {
 	.object-item {
 		transition: none;
