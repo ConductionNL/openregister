@@ -101,6 +101,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
  */
 class ObjectServiceCascadeScopeTest extends TestCase {
 
