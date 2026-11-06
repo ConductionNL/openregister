@@ -167,6 +167,18 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->assertStringEndsWith('weekly', $this->flow()->getName());
 	}
 
+	public function testAFlowAnAuthorDrewForTheApplicationIsNotRemoved(): void {
+		$drawn = new Flow();
+		$drawn->setUuid('drawn');
+		$drawn->setApp('openregister');
+		$drawn->setApplicationSlug('app-1');
+		$this->flows['drawn'] = $drawn;
+
+		$this->publish([]);
+
+		$this->assertArrayHasKey('drawn', $this->flows);
+	}
+
 	public function testDeletingTheApplicationRemovesItsFlows(): void {
 		$this->publish([$this->schedule()]);
 
