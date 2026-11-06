@@ -46,8 +46,11 @@ namespace OCA\OpenRegister\Files\Service\Sharing;
 
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -131,7 +134,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * has no rules of its own here: it belongs to an object and inherits them.
 	 * A view link resolves to no single object, so this answers null for one.
 	 *
-	 * @param AccessLink $link The link.
+	 * @param AccessLinkInterface $link The link.
 	 *
 	 * @return ObjectEntity|null The object, or null.
 	 *
@@ -194,7 +197,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * What the link serves, filtered, or null when the subject is gone.
 	 *
-	 * @param AccessLink $link The link.
+	 * @param AccessLinkInterface $link The link.
 	 * @param ObjectEntityInterface|null $object The subject, when the caller already resolved it.
 	 *
 	 * @return array<string, mixed>|null The body, or null when there is nothing to serve.
@@ -235,7 +238,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	/**
 	 * The objects a view link serves, each filtered.
 	 *
-	 * @param AccessLink $link The link.
+	 * @param AccessLinkInterface $link The link.
 	 *
 	 * @return array<string, mixed>|null The body, or null when the view is gone.
 	 *
@@ -298,7 +301,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * with the same audience get the same projection, from here, rather than a
 	 * second allow-list that drifts.
 	 *
-	 * @param ObjectEntity $object The object.
+	 * @param ObjectEntityInterface $object The object.
 	 *
 	 * @return array<string, mixed> The published projection.
 	 *

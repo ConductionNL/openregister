@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**

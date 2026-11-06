@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Db\AccessLink;
+use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
