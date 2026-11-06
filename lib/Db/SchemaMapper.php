@@ -32,12 +32,14 @@ use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
@@ -414,7 +416,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->warnAboutAmbiguousIdentifier(id: $id, rows: $rows);
 
 		// Resolve schema composition if present (allOf, oneOf, anyOf).
-		$schema = $this->resolveSchemaExtension(schema: Schema::fromRow($rows[0]));
+		$schema = $this->composition()->resolve(schema: Schema::fromRow($rows[0]));
 
 		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
 		$this->findCache[$cacheKey] = $schema;
@@ -619,7 +621,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
 	}//end findByApplicationAndSlug()
 
 	/**
@@ -666,7 +668,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$result->closeCursor();
 
 		return array_map(
-			fn (array $row): Schema => $this->resolveSchemaExtension(schema: Schema::fromRow($row)),
+			fn (array $row): Schema => $this->composition()->resolve(schema: Schema::fromRow($row)),
 			$rows
 		);
 	}//end findAllByApplicationAndSlug()
@@ -723,7 +725,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
 	}//end findBySlugInIds()
 
 
@@ -775,7 +777,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
-		return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
 	}//end findInIds()
 
 	/**
@@ -1588,7 +1590,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
-		// NOTE: Circular reference validation is done during resolveSchemaExtension().
+		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
 		$schema = $this->extractSchemaDelta(schema: $schema);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
@@ -1639,7 +1641,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
 		// This ensures we only store the differences, not the full resolved schema.
-		// NOTE: Circular reference validation is done during resolveSchemaExtension().
+		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
 		$entity = $this->extractSchemaDelta(schema: $entity);
 
 		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
@@ -2070,149 +2072,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end hasReferenceToSchema()
 
 	/**
-	 * Resolve schema composition by merging referenced schemas
-	 *
-	 * This method implements JSON Schema composition patterns conforming to the specification:
-	 * 1. Handles 'allOf' - instance must validate against ALL schemas (multiple inheritance)
-	 * 2. Handles 'oneOf' - instance must validate against EXACTLY ONE schema
-	 * 3. Handles 'anyOf' - instance must validate against AT LEAST ONE schema
-	 *
-	 * The method enforces the Liskov Substitution Principle:
-	 * - Extended schemas can ONLY ADD constraints, never relax them
-	 * - Metadata (title, description, order) can be overridden
-	 * - Validation rules (type, format, enum, min/max, pattern) cannot be relaxed
-	 *
-	 * @param Schema $schema The schema to resolve
-	 * @param array $visited Array of visited schema IDs to prevent circular references
-	 *
-	 * @throws \Exception If circular reference is detected or referenced schema not found
-	 *
-	 * @return Schema The resolved schema with merged properties
-	 */
-	private function resolveSchemaExtension(Schema $schema, array $visited = []): Schema {
-		// Get current schema identifier for tracking.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		// Check for circular references.
-		if (in_array($currentId, $visited) === true) {
-			throw new Exception("Circular schema composition detected: schema '{$currentId}' creates a loop");
-		}
-
-		// Add current schema to visited list.
-		$visited[] = $currentId;
-
-		// Check for composition patterns (in order of precedence).
-		$allOf = $schema->getAllOf();
-		$oneOf = $schema->getOneOf();
-		$anyOf = $schema->getAnyOf();
-
-		// If schema has allOf, resolve it (most common for extension/inheritance).
-		if ($allOf !== null && count($allOf) > 0) {
-			return $this->resolveAllOf(schema: $schema, allOf: $allOf, visited: $visited);
-		}
-
-		// If schema has oneOf, resolve it.
-		if ($oneOf !== null && count($oneOf) > 0) {
-			return $this->resolveOneOf(schema: $schema, oneOf: $oneOf, visited: $visited);
-		}
-
-		// If schema has anyOf, resolve it.
-		if ($anyOf !== null && count($anyOf) > 0) {
-			return $this->resolveAnyOf(schema: $schema, anyOf: $anyOf, visited: $visited);
-		}
-
-		// No composition - return schema as-is.
-		return $schema;
-	}//end resolveSchemaExtension()
-
-	/**
-	 * Resolve allOf composition pattern
-	 *
-	 * Instance must validate against ALL referenced schemas.
-	 * This is the recommended pattern for schema extension/inheritance.
-	 * Properties from all schemas are merged with the child schema.
-	 *
-	 * @param Schema $schema The child schema
-	 * @param array $allOf Array of schema identifiers to merge
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found or circular reference detected
-	 *
-	 * @return Schema Resolved schema with all properties merged
-	 */
-	private function resolveAllOf(Schema $schema, array $allOf, array $visited): Schema {
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		// Start with empty properties and required fields.
-		$mergedProperties = [];
-		$mergedRequired = [];
-
-		// Iterate through each referenced schema in allOf.
-		foreach ($allOf as $parentRef) {
-			// Skip empty or null references.
-			if (empty($parentRef) === true) {
-				continue;
-			}
-
-			// Skip inline constraint schemas. JSON Schema allows an allOf entry to be an
-			// inline schema object ({ "required": [...] }, { "properties": {...} }), not
-			// only a $ref to another schema. OpenRegister's composition model treats
-			// allOf/oneOf/anyOf as a list of schema IDENTIFIERS, so only string/int
-			// entries are references to load — an array entry is a constraint that stands
-			// on its own and must not be handed to loadSchema() (which would fatal on the
-			// array). This unblocked openconnector's register import, silently broken by
-			// lti_deployment's `oneOf: [{required, not}, ...]` XOR constraint.
-			if (is_string($parentRef) === false && is_int($parentRef) === false) {
-				continue;
-			}
-
-			// Check for self-reference.
-			if ($parentRef === $currentId || $parentRef === $schema->getId()
-				|| $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in allOf");
-			}
-
-			// Load and resolve the parent schema.
-			$parentSchema = $this->loadSchema(identifier: $parentRef);
-			$parentSchema = $this->resolveSchemaExtension(
-				schema: $parentSchema,
-				visited: $visited
-			);
-
-			// Merge properties from this parent.
-			$mergedProperties = $this->mergeSchemaProperties(
-				parentProperties: $mergedProperties,
-				childProperties: $parentSchema->getProperties()
-			);
-
-			// Merge required fields (union - must satisfy all).
-			$mergedRequired = array_unique(
-				array_merge($mergedRequired, $parentSchema->getRequired())
-			);
-		}//end foreach
-
-		// Now merge child schema properties on top (child can add constraints).
-		$childProperties = $schema->getProperties();
-		$mergedProperties = (new SchemaPropertyInheritance(schemaId: (string)$currentId))->mergeProperties(
-			parentProperties: $mergedProperties,
-			childProperties: $childProperties
-		);
-
-		// Merge child required fields (can only add, not remove).
-		$mergedRequired = array_unique(
-			array_merge($mergedRequired, $schema->getRequired())
-		);
-
-		// Create resolved schema.
-		$resolvedSchema = clone $schema;
-		$resolvedSchema->setProperties($mergedProperties);
-		$resolvedSchema->setRequired($mergedRequired);
-
-		return $resolvedSchema;
-	}//end resolveAllOf()
-
-	/**
 	 * Get property source metadata for a schema
 	 *
 	 * Returns metadata about each property indicating whether it's native (defined in this schema)
@@ -2226,11 +2085,32 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *     array{source: 'native'|'inherited', inheritedFrom: string|null}>
 	 */
 	public function getPropertySourceMetadata(Schema $schema): array {
+		$nativeProperties = $this->storedProperties(schema: $schema);
 		$metadata = [];
-		$nativeProperties = [];
+		foreach (array_keys($schema->getProperties()) as $propName) {
+			$metadata[$propName] = ['source' => 'native', 'inheritedFrom' => null];
+			if (isset($nativeProperties[$propName]) === false) {
+				$metadata[$propName] = [
+					'source' => 'inherited',
+					'inheritedFrom' => $this->composition()->propertySource(
+						propertyName: (string)$propName,
+						parentRefs: ($schema->getAllOf() ?? [])
+					),
+				];
+			}
+		}
 
-		// Get the raw schema data from database to see what properties it actually stores.
-		// This is necessary because the resolved schema has merged properties.
+		return $metadata;
+	}//end getPropertySourceMetadata()
+
+	/**
+	 * The properties a schema stores itself, as the resolved schema has them merged.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<mixed> The stored properties, empty when they cannot be read.
+	 */
+	private function storedProperties(Schema $schema): array {
 		try {
 			$this->traceRead(method: 'getPropertySourceMetadata');
 
@@ -2242,166 +2122,71 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			$row = $result->fetch();
 			$result->closeCursor();
 
-			if ($row !== false && ($row['properties'] ?? null) !== null) {
-				$nativeProperties = json_decode($row['properties'], true) ?? [];
-			}
+			return (json_decode((($row['properties'] ?? null) ?? 'null'), true) ?? []);
 		} catch (Exception $e) {
-			// If we can't get raw data, use current properties.
-			$nativeProperties = [];
-		}//end try
-
-		$allProperties = $schema->getProperties();
-		$allOf = $schema->getAllOf() ?? [];
-
-		foreach ($allProperties as $propName => $propDef) {
-			// Suppress unused variable warning for $propDef - only processing property names.
-			unset($propDef);
-			$isNative = isset($nativeProperties[$propName]);
-
-			$source = 'inherited';
-			if ($isNative === true) {
-				$source = 'native';
-			}
-
-			$inheritedFrom = null;
-			if ($isNative === false) {
-				$inheritedFrom = $this->findPropertySource(
-					propertyName: $propName,
-					parentRefs: $allOf
-				);
-			}
-
-			$metadata[$propName] = [
-				'source' => $source,
-				'inheritedFrom' => $inheritedFrom,
-			];
-		}//end foreach
-
-		return $metadata;
-	}//end getPropertySourceMetadata()
+			return [];
+		}
+	}//end storedProperties()
 
 	/**
-	 * Find which parent schema a property was inherited from
+	 * Composition over the schemas this mapper loads.
 	 *
-	 * @param string $propertyName The property name to search for
-	 * @param array $parentRefs Array of parent schema references
-	 *
-	 * @return string|null The parent schema ID/UUID/slug, or null if not found
+	 * @return SchemaComposition
 	 */
-	private function findPropertySource(string $propertyName, array $parentRefs): ?string {
-		foreach ($parentRefs as $parentRef) {
-			// Skip empty or null references.
-			if (empty($parentRef) === true) {
-				continue;
-			}
+	private function composition(): SchemaComposition {
+		return new SchemaComposition(
+			loadSchema: fn (string|int $identifier): Schema => $this->loadSchema(identifier: $identifier)
+		);
+	}//end composition()
 
+	/**
+	 * A composed schema reduced to what it adds to its parents.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return Schema
+	 */
+	private function extractSchemaDelta(Schema $schema): Schema {
+		return $this->composition()->extractDelta(schema: $schema);
+	}//end extractSchemaDelta()
+
+	/**
+	 * Find schemas that compose with a given schema.
+	 *
+	 * Returns the uuids of the schemas that reference the given schema in their
+	 * allOf, oneOf or anyOf composition patterns.
+	 *
+	 * @param int|string  $schemaIdentifier The ID, UUID, or slug of the schema.
+	 * @param string|null $knownUuid        Pre-known UUID to avoid redundant lookups.
+	 * @param string|null $knownSlug        Pre-known slug to avoid redundant lookups.
+	 *
+	 * @return array Array of schema UUIDs that compose with this schema
+	 *
+	 * @psalm-return list{0?: mixed,...}
+	 */
+	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array {
+		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
+		if ($knownUuid === null && $knownSlug === null) {
 			try {
-				$parentSchema = $this->loadSchema(identifier: $parentRef);
-				$parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
-
-				if (isset($parentSchema->getProperties()[$propertyName]) === true) {
-					return (string)$parentRef;
-				}
+				$targetSchema = $this->find(id: $schemaIdentifier);
 			} catch (Exception $e) {
-				// Parent not found, continue.
-				continue;
+				return [];
 			}
+
+			$identifiers = [(string)$targetSchema->getId(), $targetSchema->getUuid(), $targetSchema->getSlug()];
 		}
 
-		return null;
-	}//end findPropertySource()
+		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->referencing(identifiers: $identifiers);
+	}//end findExtendedBy()
 
 	/**
-	 * Resolve oneOf composition pattern
+	 * Find all schema extension relationships in a single scan.
 	 *
-	 * Instance must validate against EXACTLY ONE referenced schema.
-	 * This pattern is used for mutually exclusive options.
-	 * Properties from each schema are kept separate (not merged).
-	 *
-	 * @param Schema $schema The schema with oneOf
-	 * @param array $oneOf Array of schema identifiers
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found
-	 *
-	 * @return Schema The schema with resolved oneOf references
+	 * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
 	 */
-	private function resolveOneOf(Schema $schema, array $oneOf, array $visited): Schema {
-		// For oneOf, we don't merge properties - each option stands alone.
-		// Just validate that all referenced schemas exist and resolve them.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		foreach ($oneOf as $ref) {
-			// Skip inline constraint schemas — a oneOf entry may be an inline schema object
-			// ({ "required": [...], "not": {...} }) rather than a $ref to another schema.
-			// Only string/int entries are schema identifiers to load. See resolveAllOf.
-			if (is_string($ref) === false && is_int($ref) === false) {
-				continue;
-			}
-
-			if ($ref === $currentId || $ref === $schema->getId()
-				|| $ref === $schema->getUuid() || $ref === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in oneOf");
-			}
-
-			// Load and resolve referenced schema (validates it exists).
-			$referencedSchema = $this->loadSchema(identifier: $ref);
-			$this->resolveSchemaExtension(
-				schema: $referencedSchema,
-				visited: $visited
-			);
-		}//end foreach
-
-		// Return schema as-is (oneOf schemas are not merged).
-		return $schema;
-	}//end resolveOneOf()
-
-	/**
-	 * Resolve anyOf composition pattern
-	 *
-	 * Instance must validate against AT LEAST ONE referenced schema.
-	 * This pattern provides flexible composition.
-	 * Properties from each schema are kept separate (not merged).
-	 *
-	 * @param Schema $schema The schema with anyOf
-	 * @param array $anyOf Array of schema identifiers
-	 * @param array $visited Visited schemas for circular reference detection
-	 *
-	 * @throws \Exception If referenced schema not found
-	 *
-	 * @return Schema The schema with resolved anyOf references
-	 */
-	private function resolveAnyOf(Schema $schema, array $anyOf, array $visited): Schema {
-		// For anyOf, we don't merge properties - each option stands alone.
-		// Just validate that all referenced schemas exist and resolve them.
-		$currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
-
-		foreach ($anyOf as $ref) {
-			// Skip inline constraint schemas — an anyOf entry may be an inline schema
-			// object rather than a $ref. Only string/int entries are identifiers. See
-			// resolveAllOf.
-			if (is_string($ref) === false && is_int($ref) === false) {
-				continue;
-			}
-
-			if ($ref === $currentId || $ref === $schema->getId()
-				|| $ref === $schema->getUuid() || $ref === $schema->getSlug()
-			) {
-				throw new Exception("Schema '{$currentId}' cannot reference itself in anyOf");
-			}
-
-			// Load and resolve referenced schema (validates it exists).
-			$referencedSchema = $this->loadSchema(identifier: $ref);
-			$this->resolveSchemaExtension(
-				schema: $referencedSchema,
-				visited: $visited
-			);
-		}//end foreach
-
-		// Return schema as-is (anyOf schemas are not merged).
-		return $schema;
-	}//end resolveAnyOf()
+	public function findAllExtendedBy(): array {
+		return (new ExtendedByReads(db: $this->db, tableName: $this->getTableName()))->reverseMap();
+	}//end findAllExtendedBy()
 
 	/**
 	 * Load a schema by ID, UUID, or slug
@@ -2421,22 +2206,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			$this->traceRead(method: 'loadSchema');
 
 			$qb = $this->db->getQueryBuilder();
-			$matches = [
-				$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
-				$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
-			];
-			// Compare `id` only for an integer: PostgreSQL refuses a uuid or slug
-			// bound as an integer for the whole query (live pass O4, 5 Oct).
-			if (is_int($identifier) === true || ctype_digit($identifier) === true) {
-				$matches[] = $qb->expr()->eq(
-					'id',
-					$qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT)
-				);
-			}
-
 			$qb->select('*')
 				->from('openregister_schemas')
-				->where($qb->expr()->orX(...$matches));
+				->where($qb->expr()->orX(...$this->identifierMatches(qb: $qb, identifier: $identifier)));
 
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
@@ -2445,612 +2217,29 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end loadSchema()
 
 	/**
-	 * Merge parent and child schema properties (without validation)
+	 * The conditions that match a schema by uuid, slug or, for an integer, id.
 	 *
-	 * This method performs a deep merge of schema properties where:
-	 * - Properties present in both parent and child: child values override parent values
-	 * - Properties only in parent: included in result
-	 * - Properties only in child: included in result
-	 * - For nested properties (objects), performs recursive merge
+	 * Compares `id` only for an integer: PostgreSQL refuses a uuid or slug bound
+	 * as an integer for the whole query (live pass O4, 5 Oct).
 	 *
-	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use SchemaPropertyInheritance::mergeProperties() for extension scenarios.
+	 * @param IQueryBuilder $qb         The query.
+	 * @param string|int    $identifier Schema ID, UUID, or slug.
 	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties (overrides)
+	 * @return array<int, mixed>
 	 *
-	 * @return array Merged properties array
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
-	private function mergeSchemaProperties(array $parentProperties, array $childProperties): array {
-		// Start with parent properties as the base.
-		$merged = $parentProperties;
-
-		// Apply child properties on top (overriding parent where present).
-		foreach ($childProperties as $propertyName => $propertyDefinition) {
-			$mergedExists = ($merged[$propertyName] ?? null) !== null;
-			$bothArrays = is_array($propertyDefinition) === true && is_array($merged[$propertyName] ?? null) === true;
-			if ($mergedExists === true && $bothArrays === true) {
-				// If property exists in both and both are arrays, perform deep merge.
-				$merged[$propertyName] = $this->deepMergeProperty(
-					parentProperty: $merged[$propertyName],
-					childProperty: $propertyDefinition
-				);
-				continue;
-			}
-
-			// Otherwise, child property completely replaces parent property.
-			$merged[$propertyName] = $propertyDefinition;
+	private function identifierMatches(IQueryBuilder $qb, string|int $identifier): array {
+		$matches = [
+			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+			$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+		];
+		if (is_int($identifier) === true || ctype_digit($identifier) === true) {
+			$matches[] = $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT));
 		}
 
-		return $merged;
-	}//end mergeSchemaProperties()
-
-	/**
-	 * Perform deep merge of a single property definition (WITHOUT validation)
-	 *
-	 * This method recursively merges property definitions, allowing child schemas
-	 * to override specific aspects of a property while preserving others.
-	 *
-	 * NOTE: This method does NOT enforce Liskov Substitution Principle.
-	 * Use SchemaPropertyInheritance for extension scenarios.
-	 *
-	 * Examples:
-	 * - Parent has 'minLength': 5, child has 'maxLength': 100 -> both are preserved
-	 * - Parent has 'title': 'Name', child has 'title': 'Full Name' -> child overrides
-	 * - For nested objects/arrays, performs recursive merge
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition (overrides)
-	 *
-	 * @return array Merged property definition
-	 */
-	private function deepMergeProperty(array $parentProperty, array $childProperty): array {
-		$merged = $parentProperty;
-
-		foreach ($childProperty as $key => $value) {
-			if (($merged[$key] ?? null) === null || is_array($value) === false || is_array($merged[$key]) === false) {
-				// Scalar values: child overrides parent.
-				$merged[$key] = $value;
-				continue;
-			}
-
-			// Recursively merge nested arrays.
-			// Special handling for 'properties' and 'items' which need deep merge.
-			if ($key !== 'properties' && $key !== 'items') {
-				// For other arrays (like enum, required at property level), child replaces parent.
-				$merged[$key] = $value;
-				continue;
-			}
-
-			$merged[$key] = $this->deepMergeProperty(
-				parentProperty: $merged[$key],
-				childProperty: $value
-			);
-		}
-
-		return $merged;
-	}//end deepMergeProperty()
-
-	/**
-	 * Extract the delta (differences) between parent schemas and child schema properties
-	 *
-	 * This method is called before saving a schema that uses composition.
-	 * It removes any properties that are identical to the parent(s), keeping only
-	 * the differences (delta) in the child schema. This ensures we only store
-	 * what's actually changed, making schema composition more maintainable.
-	 *
-	 * Supports:
-	 * - allOf: Extracts delta against all parent schemas (merged)
-	 * - oneOf/anyOf: No delta extraction (properties not merged)
-	 *
-	 * @param Schema $schema The schema to extract delta from
-	 *
-	 * @throws \Exception If parent schema cannot be loaded
-	 *
-	 * @return Schema The schema with only delta properties
-	 */
-	private function extractSchemaDelta(Schema $schema): Schema {
-		// Get composition patterns.
-		$allOf = $schema->getAllOf();
-		$oneOf = $schema->getOneOf();
-		$anyOf = $schema->getAnyOf();
-
-		// For oneOf and anyOf, no delta extraction (properties not merged).
-		if (($oneOf !== null && count($oneOf) > 0)
-			|| ($anyOf !== null && count($anyOf) > 0)
-		) {
-			return $schema;
-		}
-
-		// For allOf, extract delta against all parents.
-		if ($allOf !== null && count($allOf) > 0) {
-			return $this->extractAllOfDelta(
-				schema: $schema,
-				allOf: $allOf
-			);
-		}
-
-		// No composition - return as-is.
-		return $schema;
-	}//end extractSchemaDelta()
-
-	/**
-	 * Extract delta for allOf composition (multiple parents)
-	 *
-	 * Merges all parent schemas and extracts only the differences
-	 * in the child schema.
-	 *
-	 * ## `allOf` is not only a parent list (openregister#2534)
-	 *
-	 * This method used to treat EVERY `allOf` entry as a schema identifier and
-	 * hand it straight to `loadSchema(string|int)`. In JSON Schema an `allOf`
-	 * entry is a SUBSCHEMA, and only some of them name another schema. The
-	 * common non-naming case is a conditional:
-	 *
-	 *     "allOf": [ { "if": {...}, "then": {}, "else": { "required": [...] } } ]
-	 *
-	 * which is an array, so the call raised a TypeError. The `catch (Exception)`
-	 * below did not stop it — a TypeError is an `Error`, not an `Exception` —
-	 * so it escaped as HTTP 500 from `POST /api/schemas`, and any schema
-	 * carrying a conditional was simply unimportable. Measured on scholiq
-	 * 2026-08-16: the CI seed had grown a documented workaround for it
-	 * ("created schema \"lesson\" WITHOUT its top-level allOf — OpenRegister
-	 * 500s on composed schemas; conditional validation dropped for this
-	 * fixture") — a fixture comment describing a bug nobody had filed.
-	 *
-	 * `parentIdentifierFromAllOfEntry()` now decides what an entry IS, and a
-	 * subschema that names no parent contributes nothing to a PARENT delta and
-	 * is skipped rather than crashed on. The catch is widened to `\Throwable`
-	 * so the next unexpected shape degrades to "no delta extraction" — which is
-	 * what the comment there already promised.
-	 *
-	 * @param Schema $schema The child schema
-	 * @param array $allOf Array of `allOf` subschemas; the ones that name a
-	 *                     parent schema are merged, the rest are skipped.
-	 *
-	 * @return Schema Schema with only delta properties
-	 */
-	private function extractAllOfDelta(Schema $schema, array $allOf): Schema {
-		try {
-			// Start with empty merged parent properties.
-			$mergedParentProps = [];
-			$mergedParentRequired = [];
-
-			// Load and merge all parent schemas.
-			foreach ($allOf as $entry) {
-				$parentRef = $this->parentIdentifierFromAllOfEntry(entry: $entry);
-
-				// Not a parent reference (an inline conditional or subschema),
-				// or an empty one — nothing to merge from it.
-				if ($parentRef === null) {
-					continue;
-				}
-
-				$parentSchema = $this->loadSchema(identifier: $parentRef);
-
-				// Recursively resolve parent to get its full properties.
-				if ($parentSchema->getAllOf() !== null) {
-					$parentSchema = $this->resolveSchemaExtension(schema: $parentSchema);
-				}
-
-				// Merge this parent's properties into the accumulated parent properties.
-				$mergedParentProps = $this->mergeSchemaProperties(
-					parentProperties: $mergedParentProps,
-					childProperties: $parentSchema->getProperties()
-				);
-
-				// Merge required fields.
-				$mergedParentRequired = array_unique(
-					array_merge($mergedParentRequired, $parentSchema->getRequired())
-				);
-			}//end foreach
-
-			// Extract only the properties that differ from merged parents.
-			$deltaProperties = $this->extractPropertyDelta(
-				parentProperties: $mergedParentProps,
-				childProperties: $schema->getProperties()
-			);
-
-			// Extract only the required fields that differ from merged parents.
-			$deltaRequired = array_diff(
-				$schema->getRequired(),
-				$mergedParentRequired
-			);
-
-			// Update the schema with delta only.
-			$schema->setProperties($deltaProperties);
-			$schema->setRequired(array_values($deltaRequired));
-			// Re-index array.
-			return $schema;
-		} catch (\Throwable $e) {
-			// If a parent schema doesn't exist yet (e.g. during import Pass 1),
-			// return the schema without delta extraction. The full properties are
-			// preserved and delta will be correctly extracted during Pass 2 (update)
-			// when all schemas exist in the database.
-			//
-			// `\Throwable`, not `Exception`: this net was written to keep an
-			// unresolvable parent from failing an import, and a TypeError from a
-			// composition shape it did not expect is the same situation — but it
-			// is an `Error`, so it used to sail straight through and 500 the
-			// request (openregister#2534). Delta extraction is an OPTIMISATION;
-			// nothing it can fail at justifies refusing to store the schema.
-			return $schema;
-		}//end try
-	}//end extractAllOfDelta()
-
-	/**
-	 * The parent schema identifier an `allOf` entry names, or null if it names none.
-	 *
-	 * Three shapes are accepted, and the third is the one that matters:
-	 *
-	 *   1. a scalar — `"person"`, `42`, a uuid — OpenRegister's own shorthand
-	 *      for "extend this schema", which is what the whole allOf-delta
-	 *      mechanism was built around;
-	 *   2. `{"$ref": "..."}` — standard JSON Schema. The last path segment is
-	 *      taken, so `#/components/schemas/Person` resolves to `Person`, which
-	 *      is what `loadSchema` matches against id / uuid / slug;
-	 *   3. anything else — `{"if": …, "then": …, "else": …}`, an inline
-	 *      `{"properties": …}`, a `$ref` that is not a string. These are valid
-	 *      JSON Schema and name NO parent, so they contribute nothing to a
-	 *      parent delta. Returning null skips them; before, they reached
-	 *      `loadSchema(string|int)` as an array and 500'd the request.
-	 *
-	 * @param mixed $entry One element of a schema's `allOf` array.
-	 *
-	 * @return string|int|null The parent identifier, or null when the entry
-	 *                         names no parent schema.
-	 */
-	private function parentIdentifierFromAllOfEntry(mixed $entry): string|int|null {
-		if (is_string($entry) === true || is_int($entry) === true) {
-			if ($entry === '' || $entry === 0) {
-				return null;
-			}
-
-			return $entry;
-		}
-
-		if (is_array($entry) === true && isset($entry['$ref']) === true
-			&& is_string($entry['$ref']) === true && $entry['$ref'] !== ''
-		) {
-			$ref = $entry['$ref'];
-			$offset = 0;
-			$lastSlash = strrpos($ref, '/');
-			if ($lastSlash !== false) {
-				$offset = ($lastSlash + 1);
-			}
-
-			$segment = substr($ref, $offset);
-			if ($segment === '') {
-				return null;
-			}
-
-			return $segment;
-		}
-
-		return null;
-	}//end parentIdentifierFromAllOfEntry()
-
-	/**
-	 * Extract properties that differ from parent
-	 *
-	 * This method compares child properties with parent properties and returns
-	 * only the properties that are new or different.
-	 *
-	 * @param array $parentProperties Parent schema properties
-	 * @param array $childProperties Child schema properties
-	 *
-	 * @return array Properties that differ from parent (delta)
-	 */
-	private function extractPropertyDelta(array $parentProperties, array $childProperties): array {
-		$delta = [];
-
-		foreach ($childProperties as $propertyName => $childProperty) {
-			// If property doesn't exist in parent, it's new - include in delta.
-			if (isset($parentProperties[$propertyName]) === false) {
-				$delta[$propertyName] = $childProperty;
-				continue;
-			}
-
-			// If property exists in parent, check if it's different.
-			$parentProperty = $parentProperties[$propertyName];
-
-			// Deep comparison: if properties are different, include in delta.
-			if ($this->arePropertiesDifferent(
-				parentProperty: $parentProperty,
-				childProperty: $childProperty
-			) === true
-			) {
-				// For objects with nested properties, extract nested delta.
-				if (is_array($childProperty) === false || is_array($parentProperty) === false) {
-					$delta[$propertyName] = $childProperty;
-					continue;
-				}
-
-				$delta[$propertyName] = $this->extractNestedPropertyDelta(
-					parentProperty: $parentProperty,
-					childProperty: $childProperty
-				);
-			}
-
-			// If properties are identical, don't include in delta.
-		}//end foreach
-
-		return $delta;
-	}//end extractPropertyDelta()
-
-	/**
-	 * Check if two property definitions are different
-	 *
-	 * Performs deep comparison of property definitions to determine if they differ.
-	 *
-	 * @param mixed $parentProperty Parent property definition
-	 * @param mixed $childProperty Child property definition
-	 *
-	 * @return bool True if properties are different
-	 */
-	private function arePropertiesDifferent($parentProperty, $childProperty): bool {
-		// Use JSON encoding for deep comparison.
-		// This handles arrays, nested objects, and scalar values uniformly.
-		return json_encode($parentProperty) !== json_encode($childProperty);
-	}//end arePropertiesDifferent()
-
-	/**
-	 * Extract nested property delta for object properties
-	 *
-	 * When a property is an object with nested properties, extract only
-	 * the nested properties that differ from the parent.
-	 *
-	 * @param array $parentProperty Parent property definition
-	 * @param array $childProperty Child property definition
-	 *
-	 * @return array Property definition with only delta fields
-	 */
-	private function extractNestedPropertyDelta(array $parentProperty, array $childProperty): array {
-		$delta = [];
-
-		foreach ($childProperty as $key => $value) {
-			if (isset($parentProperty[$key]) === false) {
-				// New field in child.
-				$delta[$key] = $value;
-			} elseif ($this->arePropertiesDifferent(
-				parentProperty: $parentProperty[$key],
-				childProperty: $value
-			) === true
-			) {
-				// Changed field.
-				if ($key !== 'properties' || is_array($value) === false || is_array($parentProperty[$key]) === false) {
-					$delta[$key] = $value;
-					continue;
-				}
-
-				// Recursively extract delta for nested properties.
-				$delta[$key] = $this->extractPropertyDelta(
-					parentProperties: $parentProperty[$key],
-					childProperties: $value
-				);
-			}//end if
-		}//end foreach
-
-		return $delta;
-	}//end extractNestedPropertyDelta()
-
-	/**
-	 * Find schemas that compose with a given schema
-	 *
-	 * Returns an array of schema UUIDs for schemas that reference the given schema
-	 * in their allOf, oneOf, or anyOf composition patterns.
-	 *
-	 * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug Pre-known slug to avoid redundant lookups.
-	 *
-	 * @return array Array of schema UUIDs that compose with this schema
-	 *
-	 * @psalm-return list{0?: mixed,...}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
-	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array {
-		// Use pre-known values when available to avoid a redundant find() query per schema.
-		$targetId = (string)$schemaIdentifier;
-		$targetUuid = $knownUuid;
-		$targetSlug = $knownSlug;
-
-		if ($knownUuid === null && $knownSlug === null) {
-			// Fallback: fetch the schema to get all its identifiers.
-			try {
-				$targetSchema = $this->find(id: $schemaIdentifier);
-			} catch (Exception $e) {
-				return [];
-			}
-
-			$targetId = (string)$targetSchema->getId();
-			$targetUuid = $targetSchema->getUuid();
-			$targetSlug = $targetSchema->getSlug();
-		}
-
-		// Build query to find schemas that reference this schema in composition.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('uuid')
-			->from($this->getTableName());
-
-		// Add conditions for all possible ways to reference the schema.
-		$orConditions = [];
-
-		// Check in allOf field (JSON array).
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('all_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		// Check in oneOf field (JSON array).
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('one_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		// Check in anyOf field (JSON array).
-		// Note: $targetId is cast to (string), so it can never be null, only empty string.
-		if ($targetId !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetId . '"%'));
-		}
-
-		if ($targetUuid !== null && $targetUuid !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetUuid . '"%'));
-		}
-
-		if ($targetSlug !== null && $targetSlug !== '') {
-			$orConditions[] = $qb->expr()->like('any_of', $qb->createNamedParameter('%"' . $targetSlug . '"%'));
-		}
-
-		if (empty($orConditions) === true) {
-			return [];
-		}
-
-		$qb->where($qb->expr()->orX(...$orConditions));
-
-		$result = $qb->executeQuery();
-		$uuids = [];
-
-		while (($row = $result->fetch()) !== false) {
-			if (($row['uuid'] ?? null) !== null) {
-				$uuids[] = $row['uuid'];
-			}
-		}
-
-		$result->closeCursor();
-
-		return $uuids;
-	}//end findExtendedBy()
-
-	/**
-	 * Find all schema extension relationships in a single query
-	 *
-	 * Scans all schemas for allOf/oneOf/anyOf references and builds a reverse map
-	 * of which schemas extend which. Replaces N individual findExtendedBy() calls
-	 * with 1 query.
-	 *
-	 * @return array<int, string[]> Map of targetSchemaId => [extendingSchemaUuid, ...]
-	 */
-	public function findAllExtendedBy(): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('id', 'uuid', 'slug', 'all_of', 'one_of', 'any_of')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->isNotNull('all_of'),
-					$qb->expr()->isNotNull('one_of'),
-					$qb->expr()->isNotNull('any_of')
-				)
-			);
-
-		$result = $qb->executeQuery();
-
-		// Build lookup of all schemas by id/uuid/slug for resolving references.
-		// We need a second query to get all schemas for reference resolution.
-		$allSchemasQb = $this->db->getQueryBuilder();
-		$allSchemasQb->select('id', 'uuid', 'slug')
-			->from($this->getTableName());
-		$allSchemasResult = $allSchemasQb->executeQuery();
-
-		$schemaLookup = [];
-		while (($row = $allSchemasResult->fetch()) !== false) {
-			$schemaLookup[(string)$row['id']] = (int)$row['id'];
-			if (($row['uuid'] ?? null) !== null) {
-				$schemaLookup[$row['uuid']] = (int)$row['id'];
-			}
-
-			if (($row['slug'] ?? null) !== null) {
-				$schemaLookup[$row['slug']] = (int)$row['id'];
-			}
-		}
-
-		$allSchemasResult->closeCursor();
-
-		// Build the reverse map: targetSchemaId => [extendingSchemaUuid, ...].
-		$extendedByMap = [];
-
-		while (($row = $result->fetch()) !== false) {
-			$extendingUuid = $row['uuid'] ?? null;
-			if ($extendingUuid === null) {
-				continue;
-			}
-
-			// Collect all referenced identifiers from allOf, oneOf, anyOf.
-			$references = [];
-			foreach (['all_of', 'one_of', 'any_of'] as $field) {
-				$value = $row[$field] ?? null;
-				if ($value === null) {
-					continue;
-				}
-
-				$decoded = json_decode(json: $value, associative: true);
-				if (is_array($decoded) === true) {
-					$references = array_merge($references, $decoded);
-				}
-			}
-
-			// Resolve each reference to a schema ID and add to reverse map.
-			//
-			// 🔴 THROUGH THE SHARED RESOLVER, NOT `(string)$entry`. An `allOf`
-			// entry is a SCHEMA OBJECT in standard JSON Schema — `{"$ref":
-			// "person"}` — and casting one to string yields the literal
-			// "Array", which matches no key in $schemaLookup. So this loop
-			// resolved nothing and said nothing, while emitting a PHP notice
-			// per row:
-			//
-			//   Array to string conversion at lib/Db/SchemaMapper.php#4148
-			//   GET /index.php/apps/openregister/api/schemas?_limit=1000
-			//
-			// Measured across the fleet's descriptors: 236 allOf/oneOf/anyOf
-			// entries, ALL of them objects, NOT ONE a bare string. The reverse
-			// map this function exists to build was therefore empty for every
-			// real schema — an "extended by" relationship that is never found
-			// rather than one that errors.
-			//
-			// `parentIdentifierFromAllOfEntry()` already encodes the three
-			// shapes that occur (scalar shorthand, `{"$ref": …}` with its last
-			// path segment, and everything else naming no parent). Its own
-			// docblock records that an earlier caller passed arrays through and
-			// 500'd; this one passed them through and went quiet instead.
-			foreach ($references as $entry) {
-				$identifier = $this->parentIdentifierFromAllOfEntry(entry: $entry);
-				if ($identifier === null) {
-					continue;
-				}
-
-				$ref = (string)$identifier;
-				if (isset($schemaLookup[$ref]) === true) {
-					$targetId = $schemaLookup[$ref];
-					$extendedByMap[$targetId][] = $extendingUuid;
-				}
-			}
-		}//end while
-
-		$result->closeCursor();
-
-		// Deduplicate UUIDs per target schema.
-		foreach ($extendedByMap as $targetId => $uuids) {
-			$extendedByMap[$targetId] = array_values(array_unique($uuids));
-		}
-
-		return $extendedByMap;
-	}//end findAllExtendedBy()
+		return $matches;
+	}//end identifierMatches()
 
 	/**
 	 * Return the IDs of all schemas whose `searchable` flag is false.

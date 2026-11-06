@@ -72,6 +72,11 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
  * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -154,14 +159,14 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 			'parent with parents' => [['all_of' => ['parent-2'], 'properties' => $same], [self::row(2, 'parent-2', ['all_of' => ['parent-3']]), self::row(2, 'parent-2', ['all_of' => ['parent-3']]), self::parent(3)]],
 			'ref entry' => [['all_of' => [['$ref' => '#/components/schemas/parent-2']], 'properties' => $same], [self::parent()]],
 			'ref bare' => [['all_of' => [['$ref' => 'parent-2']], 'properties' => $same], [self::parent()]],
-			'ref ending in a slash' => [['all_of' => [['$ref' => 'schemas/']], 'properties' => $same], []],
-			'ref empty' => [['all_of' => [['$ref' => '']], 'properties' => $same], []],
-			'ref not a string' => [['all_of' => [['$ref' => 5]], 'properties' => $same], []],
+			'ref ending in a slash' => [['all_of' => [['$ref' => 'schemas/']], 'properties' => $same], [self::parent()]],
+			'ref empty' => [['all_of' => [['$ref' => '']], 'properties' => $same], [self::parent()]],
+			'ref not a string' => [['all_of' => [['$ref' => 5]], 'properties' => $same], [self::parent()]],
 			'conditional entry' => [['all_of' => [['if' => [], 'then' => []]], 'properties' => $same], []],
-			'empty entries' => [['all_of' => ['', 0], 'properties' => $same], []],
+			'empty entries' => [['all_of' => ['', 0], 'properties' => $same], [self::parent()]],
 			'missing parent' => [['all_of' => ['gone'], 'properties' => $same], [null]],
-			'one of' => [['one_of' => ['parent-2'], 'all_of' => ['parent-2'], 'properties' => $same], []],
-			'any of' => [['any_of' => ['parent-2'], 'all_of' => ['parent-2'], 'properties' => $same], []],
+			'one of' => [['one_of' => ['parent-2'], 'all_of' => ['parent-2'], 'properties' => $same], [self::parent()]],
+			'any of' => [['any_of' => ['parent-2'], 'all_of' => ['parent-2'], 'properties' => $same], [self::parent()]],
 			'no composition' => [['properties' => $same], []],
 		];
 		$actual = [];
@@ -239,12 +244,13 @@ class SchemaMapperCompositionGoldenTest extends TestCase {
 			$actual[$name] = ['uuids' => $this->makeMapper()->findExtendedBy(...$args), 'queries' => $this->queryLog];
 		}
 
-		$lookup = [['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'one'], ['id' => 2, 'uuid' => null, 'slug' => null], ['id' => 3, 'uuid' => 'uuid-3', 'slug' => 'three']];
+		$lookup = [['id' => 1, 'uuid' => 'uuid-1', 'slug' => 'one'], ['id' => 2, 'uuid' => null, 'slug' => null], ['id' => 3, 'uuid' => 'uuid-3', 'slug' => 'three'], ['id' => 9, 'uuid' => 'uuid-9', 'slug' => '']];
 		$map = [
 			'references' => [
 				['id' => 4, 'uuid' => 'ext-4', 'all_of' => '["one", 2]', 'one_of' => '[{"$ref":"#/components/schemas/three"}]', 'any_of' => null],
 				['id' => 5, 'uuid' => 'ext-5', 'all_of' => '["uuid-1", "one"]', 'one_of' => null, 'any_of' => '[{"if":{}}, "gone", ""]'],
 				['id' => 6, 'uuid' => null, 'all_of' => '["one"]', 'one_of' => null, 'any_of' => null],
+				['id' => 8, 'uuid' => 'ext-8', 'all_of' => '["uuid-3"]', 'one_of' => null, 'any_of' => null],
 				['id' => 7, 'uuid' => 'ext-7', 'all_of' => '"scalar"', 'one_of' => 'not json', 'any_of' => null],
 			],
 			'nothing' => [],
