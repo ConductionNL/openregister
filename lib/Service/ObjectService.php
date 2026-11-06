@@ -3062,8 +3062,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         // Strip @self from the incoming payload before comparing — the rules
         // are for business properties only.
-        $candidate = $object;
-        unset($candidate['@self']);
+        $candidate = array_diff_key($object, ['@self' => true]);
 
         $readOnly  = $this->readOnlyViolations(candidate: $candidate, existingData: $existingData);
         $immutable = $this->immutableViolations(candidate: $candidate, existingData: $existingData);
