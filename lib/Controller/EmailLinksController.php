@@ -64,6 +64,7 @@ class EmailLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param EmailLinkService $emailLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
+	 * @param PermissionHandler $permissions Answers the object update right
 	 */
 	public function __construct(
 		string $appName,
