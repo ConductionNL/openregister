@@ -25,6 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics;
+use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
@@ -1850,68 +1853,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @psalm-return array{total: int, size: int}
 	 */
 	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(
-				$qb->createFunction('COUNT(id) as total'),
-				$qb->createFunction('COALESCE(SUM(size), 0) as size')
-			)
-				->from($this->getTableName());
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->exclude = $exclude;
 
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			// Add exclusions if provided.
-			if (empty($exclude) === false) {
-				foreach ($exclude as $combination) {
-					$orConditions = $qb->expr()->orX();
-
-					// Handle register exclusion.
-					if (($combination['register'] ?? null) !== null) {
-						$orConditions->add($qb->expr()->isNull('register'));
-						$orConditions->add(
-							$qb->expr()->neq(
-								'register',
-								$qb->createNamedParameter(
-									$combination['register'],
-									IQueryBuilder::PARAM_INT
-								)
-							)
-						);
-					}
-
-					// Handle schema exclusion.
-					if (($combination['schema'] ?? null) !== null) {
-						$orConditions->add($qb->expr()->isNull('schema'));
-						$orConditions->add(
-							$qb->expr()->neq(
-								'schema',
-								$qb->createNamedParameter(
-									$combination['schema'],
-									IQueryBuilder::PARAM_INT
-								)
-							)
-						);
-					}//end if
-
-					// Add the OR conditions to the main query.
-					if ($orConditions->count() > 0) {
-						$qb->andWhere($orConditions);
-					}//end if
-				}//end foreach
-			}//end if
-
-			$result = $qb->executeQuery()->fetch();
-
-			return [
-				'total' => (int)($result['total'] ?? 0),
-				'size' => (int)($result['size'] ?? 0),
-			];
-		} catch (\Exception $e) {
-			return [
-				'total' => 0,
-				'size' => 0,
-			];
-		}//end try
+		return $this->statistics()->totals(scope: $scope);
 	}//end getStatistics()
 
 	/**
@@ -1953,77 +1898,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		?int $registerId = null,
 		?int $schemaId = null,
 	): array {
-		try {
-			$qb = $this->db->getQueryBuilder();
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->from = $from;
+		$scope->till = $till;
 
-			// Main query for orphaned audit trails.
-			$qb->select(
-				$qb->createFunction('DATE(created) as date'),
-				'action',
-				$qb->createFunction('COUNT(*) as count')
-			)
-				->from($this->getTableName())
-				->groupBy('date', 'action')
-				->orderBy('date', 'ASC');
-
-			// Add date range filters if provided.
-			if ($from !== null) {
-				$fromParam = $qb->createNamedParameter($from->format('Y-m-d'), IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->gte('created', $fromParam));
-			}
-
-			if ($till !== null) {
-				$tillParam = $qb->createNamedParameter($till->format('Y-m-d'), IQueryBuilder::PARAM_STR);
-				$qb->andWhere($qb->expr()->lte('created', $tillParam));
-			}
-
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			$results = $qb->executeQuery()->fetchAll();
-
-			// Process results into chart format.
-			$dateData = [];
-			$actions = ['create', 'update', 'delete','read'];
-
-			// Initialize data structure.
-			foreach ($results as $row) {
-				$date = $row['date'];
-				if (isset($dateData[$date]) === false) {
-					$dateData[$date] = array_fill_keys($actions, 0);
-				}
-
-				$dateData[$date][$row['action']] = (int)$row['count'];
-			}
-
-			// Sort dates and ensure all dates in range are included.
-			ksort($dateData);
-
-			// Prepare series data.
-			$series = [];
-			foreach ($actions as $action) {
-				$series[] = [
-					'name' => ucfirst($action),
-					'data' => array_values(
-						array_map(
-							function ($data) use ($action) {
-								return $data[$action];
-							},
-							$dateData
-						)
-					),
-				];
-			}
-
-			return [
-				'labels' => array_keys($dateData),
-				'series' => $series,
-			];
-		} catch (\Exception $e) {
-			return [
-				'labels' => [],
-				'series' => [],
-			];
-		}//end try
+		return $this->actionStatistics()->actionChart(scope: $scope);
 	}//end getActionChartData()
 
 	/**
@@ -2039,70 +1918,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *     deletes: int, reads: int}
 	 */
 	public function getDetailedStatistics(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
-		try {
-			// Get total count.
-			$totalStats = $this->getStatistics(registerId: $registerId, schemaId: $schemaId);
-			$total = $totalStats['total'];
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->hours = $hours;
 
-			// Get recent action counts.
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(
-				'action',
-				$qb->createFunction('COUNT(*) as count')
-			)
-				->from($this->getTableName())
-				->where($this->createdWithinHours(qb: $qb, hours: $hours))
-				->groupBy('action');
+		$total = $this->getStatistics(registerId: $registerId, schemaId: $schemaId)['total'];
 
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			$results = $qb->executeQuery()->fetchAll();
-
-			// Initialize action counts.
-			$actionCounts = [
-				'creates' => 0,
-				'updates' => 0,
-				'deletes' => 0,
-				'reads' => 0,
-			];
-
-			// Process results.
-			foreach ($results as $row) {
-				$action = $row['action'];
-				$count = (int)$row['count'];
-
-				switch ($action) {
-					case 'create':
-						$actionCounts['creates'] = $count;
-						break;
-					case 'update':
-						$actionCounts['updates'] = $count;
-						break;
-					case 'delete':
-						$actionCounts['deletes'] = $count;
-						break;
-					case 'read':
-						$actionCounts['reads'] = $count;
-						break;
-				}
-			}
-
-			return [
-				'total' => $total,
-				'creates' => $actionCounts['creates'],
-				'updates' => $actionCounts['updates'],
-				'deletes' => $actionCounts['deletes'],
-				'reads' => $actionCounts['reads'],
-			];
-		} catch (\Exception $e) {
-			return [
-				'total' => 0,
-				'creates' => 0,
-				'updates' => 0,
-				'deletes' => 0,
-				'reads' => 0,
-			];
-		}//end try
+		return $this->actionStatistics()->windowedActions(scope: $scope, total: $total);
 	}//end getDetailedStatistics()
 
 	/**
@@ -2119,23 +1940,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
 	public function countByActionPrefix(string $prefix): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('action', $qb->createFunction('COUNT(*) AS count'))
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'))
-			)
-			->groupBy('action');
-
-		$result = $qb->executeQuery();
-		$counts = [];
-		while (($row = $result->fetch()) !== false) {
-			$counts[(string) $row['action']] = (int) $row['count'];
-		}
-
-		$result->closeCursor();
-
-		return $counts;
+		return $this->actionStatistics()->countByActionPrefix(prefix: $prefix);
 	}//end countByActionPrefix()
 
 	/**
@@ -2158,54 +1963,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *     delete: int, read: int}
 	 */
 	public function getActionCounts(?int $registerId = null, ?int $schemaId = null): array {
-		$counts = [
-			'create' => 0,
-			'update' => 0,
-			'delete' => 0,
-			'read' => 0,
-		];
-
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(
-				'action',
-				$qb->createFunction('COUNT(*) as count')
-			)
-				->from($this->getTableName())
-				->groupBy('action');
-
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			$result = $qb->executeQuery();
-			$results = $result->fetchAll();
-			$result->closeCursor();
-
-			$total = 0;
-			foreach ($results as $row) {
-				$count = (int)$row['count'];
-				$total += $count;
-
-				$action = (string)($row['action'] ?? '');
-				if (array_key_exists($action, $counts) === true) {
-					$counts[$action] = $count;
-				}
-			}
-
-			return ['total' => $total] + $counts;
-		} catch (\Exception $e) {
-			// Zeros are indistinguishable from an empty system in the UI, so the
-			// failure has to be traceable in the log.
-			$this->logger->error(
-				'Failed to count audit trails by action: ' . $e->getMessage(),
-				[
-					'exception' => $e,
-					'registerId' => $registerId,
-					'schemaId' => $schemaId,
-				]
-			);
-
-			return ['total' => 0] + $counts;
-		}//end try
+		return $this->actionStatistics()->lifetimeActions(scope: new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId));
 	}//end getActionCounts()
 
 	/**
@@ -2220,49 +1978,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @psalm-return array{actions: list<array{count: int, name: mixed}>}
 	 */
 	public function getActionDistribution(?int $registerId = null, ?int $schemaId = null, ?int $hours = 24): array {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(
-				'action',
-				$qb->createFunction('COUNT(*) as count')
-			)
-				->from($this->getTableName())
-				->where($this->createdWithinHours(qb: $qb, hours: $hours))
-				->groupBy('action');
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->hours = $hours;
 
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			$results = $qb->executeQuery()->fetchAll();
-
-			// Calculate total for percentages.
-			$total = 0;
-			$actionData = [];
-
-			foreach ($results as $row) {
-				$count = (int)$row['count'];
-				$total += $count;
-				$actionData[] = [
-					'name' => $row['action'],
-					'count' => $count,
-				];
-			}
-
-			// Calculate percentages.
-			foreach ($actionData as &$action) {
-				$action['percentage'] = 0;
-				if ($total > 0) {
-					$action['percentage'] = round(($action['count'] / $total) * 100, 2);
-				}
-			}
-
-			return [
-				'actions' => $actionData,
-			];
-		} catch (\Exception $e) {
-			return [
-				'actions' => [],
-			];
-		}//end try
+		return $this->actionStatistics()->actionDistribution(scope: $scope);
 	}//end getActionDistribution()
 
 	/**
@@ -2278,45 +1997,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
 	 */
 	public function getMostActiveObjects(?int $registerId = null, ?int $schemaId = null, ?int $limit = 10, ?int $hours = 24): array {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(
-				'object',
-				$qb->createFunction('COUNT(*) as count')
-			)
-				->from($this->getTableName())
-				->where($this->createdWithinHours(qb: $qb, hours: $hours))
-				->groupBy('object')
-				->orderBy('count', 'DESC');
+		$scope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
+		$scope->limit = $limit;
+		$scope->hours = $hours;
 
-			$this->filterByIds(qb: $qb, idsByColumn: ['register' => $registerId, 'schema' => $schemaId]);
-
-			// Apply limit.
-			if ($limit !== null) {
-				$qb->setMaxResults($limit);
-			}
-
-			$results = $qb->executeQuery()->fetchAll();
-
-			// Format results.
-			$objects = [];
-			foreach ($results as $row) {
-				$objects[] = [
-					'id' => $row['object'],
-					'name' => 'Object ' . $row['object'],
-					// Could be enhanced to get actual object name.
-					'count' => (int)$row['count'],
-				];
-			}
-
-			return [
-				'objects' => $objects,
-			];
-		} catch (\Exception $e) {
-			return [
-				'objects' => [],
-			];
-		}//end try
+		return $this->statistics()->mostActiveObjects(scope: $scope);
 	}//end getMostActiveObjects()
 
 	/**
@@ -2654,59 +2339,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array
 	 */
 	public function getStatisticsGroupedBySchema(array $schemaIds): array {
-		$emptyStats = [
-			'total' => 0,
-			'size' => 0,
-		];
-
-		if (empty($schemaIds) === true) {
-			return [];
-		}
-
-		try {
-			$qb = $this->db->getQueryBuilder();
-
-			$stringIds = array_map('strval', $schemaIds);
-			$paramType = IQueryBuilder::PARAM_STR_ARRAY;
-
-			$qb->select(
-				'schema',
-				$qb->createFunction('COUNT(id) as total'),
-				$qb->createFunction('COALESCE(SUM(size), 0) as size')
-			)
-				->from($this->getTableName())
-				->where($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, $paramType)))
-				->groupBy('schema');
-
-			$result = $qb->executeQuery();
-			$statsMap = [];
-
-			while (($row = $result->fetch()) !== false) {
-				$schemaKey = (int)$row['schema'];
-				$statsMap[$schemaKey] = [
-					'total' => (int)($row['total'] ?? 0),
-					'size' => (int)($row['size'] ?? 0),
-				];
-			}
-
-			$result->closeCursor();
-
-			// Fill in empty stats for schemas with no audit trails.
-			foreach ($schemaIds as $schemaId) {
-				if (isset($statsMap[$schemaId]) === false) {
-					$statsMap[$schemaId] = $emptyStats;
-				}
-			}
-
-			return $statsMap;
-		} catch (\Exception $e) {
-			$statsMap = [];
-			foreach ($schemaIds as $schemaId) {
-				$statsMap[$schemaId] = $emptyStats;
-			}
-
-			return $statsMap;
-		}//end try
+		return $this->statistics()->totalsPerSchema(schemaIds: $schemaIds);
 	}//end getStatisticsGroupedBySchema()
 
 	/**
@@ -3634,36 +3267,22 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findLatestReadsByUser()
 
 	/**
-	 * Narrow a query to the given id per column; a null id adds no condition.
+	 * The aggregate reads over this table.
 	 *
-	 * The register and schema columns are VARCHAR(255) holding ids as strings.
-	 *
-	 * @param IQueryBuilder            $qb          The query to narrow.
-	 * @param array<string, int|null> $idsByColumn Column name => id or null.
-	 *
-	 * @return void
+	 * @return AuditTrailStatistics
 	 */
-	private function filterByIds(IQueryBuilder $qb, array $idsByColumn): void {
-		foreach ($idsByColumn as $column => $id) {
-			if ($id !== null) {
-				$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter((string)$id, IQueryBuilder::PARAM_STR)));
-			}
-		}
-	}//end filterByIds()
+	private function statistics(): AuditTrailStatistics {
+		return new AuditTrailStatistics(db: $this->db, tableName: $this->getTableName());
+	}//end statistics()
 
 	/**
-	 * The condition that a row was created within the last $hours hours.
+	 * The reads that count audit actions.
 	 *
-	 * @param IQueryBuilder $qb    The query the condition is for.
-	 * @param int|null      $hours The number of hours to look back.
-	 *
-	 * @return string The condition.
+	 * @return AuditActionStatistics
 	 */
-	private function createdWithinHours(IQueryBuilder $qb, ?int $hours): string {
-		$since = (new DateTime())->modify("-{$hours} hours")->format('Y-m-d H:i:s');
-
-		return $qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_STR));
-	}//end createdWithinHours()
+	private function actionStatistics(): AuditActionStatistics {
+		return new AuditActionStatistics(db: $this->db, tableName: $this->getTableName(), logger: $this->logger);
+	}//end actionStatistics()
 
 	/**
 	 * Render a stored `created` value as ISO 8601.

@@ -35,6 +35,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
+ * @covers \OCA\OpenRegister\Db\AuditTrail\AuditTrailStatistics
+ * @covers \OCA\OpenRegister\Db\AuditTrail\AuditActionStatistics
+ * @covers \OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope
  */
 class AuditTrailStatisticsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
