@@ -3564,22 +3564,37 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array {
-		$objectData = new Dot($objectData);
+		$run = new ExtendDotRun();
+		$run->data = new Dot($objectData);
+		$run->depth = $depth;
 		if ($depth >= 10) {
-			return $objectData->all();
+			return $run->data->all();
 		}
 
-		$wildcardExtends = array_filter(
-			$_extend,
-			function (string $key) {
-				return str_contains($key, '.$.');
-			}
-		);
+		foreach (self::takeWildcardExtends(extend: $_extend) as $root => $extends) {
+			$run->key = (string)$root;
+			$run->keyExtends = $extends;
+			$this->extendWildcardRoot(run: $run);
+		}
+
+		return $run->data->all();
+	}//end handleWildcardExtends()
+
+	/**
+	 * Take the wildcard entries off an extend list, grouped by the list property they apply to.
+	 *
+	 * @param array $extend The extend list; its wildcard entries leave it.
+	 *
+	 * @return array<string, array> The extends below each root, keeping a named override's path.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function takeWildcardExtends(array &$extend): array {
+		$wildcardExtends = array_filter($extend, fn (string $key) => str_contains($key, '.$.'));
 
 		$extendedRoots = [];
-
 		foreach ($wildcardExtends as $key => $wildcardExtend) {
-			unset($_extend[$key]);
+			unset($extend[$key]);
 
 			[$root, $extends] = explode(separator: '.$.', string: $wildcardExtend, limit: 2);
 
@@ -3592,22 +3607,31 @@ class RenderObject {
 			$extendedRoots[$root][$path] = $extends;
 		}
 
-		foreach ($extendedRoots as $root => $extends) {
-			$data = $objectData->get(key: $root);
-			if (is_iterable($data) === false) {
-				continue;
-			}
+		return $extendedRoots;
+	}//end takeWildcardExtends()
 
-			foreach ($data as $key => $date) {
-				$tmpExtends = $extends;
-				$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $depth);
-			}
-
-			$objectData->set($root, $data);
+	/**
+	 * Extend every entry of the list at the run's key with the key's nested extends.
+	 *
+	 * @param ExtendDotRun $run The extend pass, on one wildcard root.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendWildcardRoot(ExtendDotRun $run): void {
+		$data = $run->data->get(key: $run->key);
+		if (is_iterable($data) === false) {
+			return;
 		}
 
-		return $objectData->all();
-	}//end handleWildcardExtends()
+		foreach ($data as $key => $date) {
+			$tmpExtends = $run->keyExtends;
+			$data[$key] = $this->handleExtendDot(data: $date, _extend: $tmpExtends, depth: $run->depth);
+		}
+
+		$run->data->set($run->key, $data);
+	}//end extendWildcardRoot()
 
 	/**
 	 * Handle extends on a dot array
@@ -3759,23 +3783,14 @@ class RenderObject {
 	 */
 	private function extendDotListItem(ExtendDotRun $run, mixed $identifier): mixed {
 		if (is_array($identifier) === true) {
-			if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-				return $this->applyLinkExposure(rendered: $identifier, descriptor: $run->descriptor);
-			}
-
-			return null;
+			return $this->exposedListItem(run: $run, item: $identifier);
 		}
 
 		$object = $this->getObject(id: $identifier);
 		if ($object === null) {
-			$this->logger->debug(
+			$this->logExtendMiss(
 				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $identifier,
-					'context' => 'extend_array_processing',
-				]
+				context: ['identifier' => $identifier, 'context' => 'extend_array_processing']
 			);
 			return $identifier;
 		}
@@ -3786,6 +3801,38 @@ class RenderObject {
 
 		return $this->renderExtendedObject(run: $run, object: $object);
 	}//end extendDotListItem()
+
+	/**
+	 * A list entry that is already an array: an extended object gets the link exposure, anything else is dropped.
+	 *
+	 * @param ExtendDotRun $run  The extend pass, on one key.
+	 * @param array        $item The list entry.
+	 *
+	 * @return array|null The projected entry, or null to drop it.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function exposedListItem(ExtendDotRun $run, array $item): ?array {
+		if (isset($item['id']) === true || isset($item['@self']) === true) {
+			return $this->applyLinkExposure(rendered: $item, descriptor: $run->descriptor);
+		}
+
+		return null;
+	}//end exposedListItem()
+
+	/**
+	 * Log a reference the extend could not find.
+	 *
+	 * @param string $message The log message.
+	 * @param array  $context The identifier and the extend path it was on.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function logExtendMiss(string $message, array $context): void {
+		$this->logger->debug(message: $message, context: ['file' => __FILE__, 'line' => __LINE__] + $context);
+	}//end logExtendMiss()
 
 	/**
 	 * Render an extended object one level deeper, with the key's nested extends and link exposure.
@@ -3830,27 +3877,17 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extendDotSingle(ExtendDotRun $run, mixed $value): void {
-		if (is_string($value) === true
-			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true)
-		) {
+		if (self::isReservedValue(value: $value) === true) {
 			return;
 		}
 
-		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-			$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
-			$value = end($pathExploded);
-		}
+		$value = self::identifierOf(value: $value);
 
 		$object = $this->getObject(id: $value);
 		if ($object === null) {
-			$this->logger->debug(
+			$this->logExtendMiss(
 				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'identifier' => $value,
-					'context' => 'extend_single_processing',
-				]
+				context: ['identifier' => $value, 'context' => 'extend_single_processing']
 			);
 			return;
 		}
@@ -3863,6 +3900,39 @@ class RenderObject {
 
 		self::storeExtended(run: $run, value: $rendered);
 	}//end extendDotSingle()
+
+	/**
+	 * Whether a value is a string starting with '@' or '_', which an extend leaves alone.
+	 *
+	 * @param mixed $value The value at the key.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isReservedValue(mixed $value): bool {
+		return is_string($value) === true
+			&& (str_starts_with(haystack: $value, needle: '@') === true || str_starts_with(haystack: $value, needle: '_') === true);
+	}//end isReservedValue()
+
+	/**
+	 * The identifier a value names: the last path segment of a URL, else the value itself.
+	 *
+	 * @param mixed $value The value at the key.
+	 *
+	 * @return mixed The identifier.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function identifierOf(mixed $value): mixed {
+		if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+			return $value;
+		}
+
+		$pathExploded = explode('/', parse_url($value, PHP_URL_PATH));
+
+		return end($pathExploded);
+	}//end identifierOf()
 
 
 	/**
@@ -3975,12 +4045,10 @@ class RenderObject {
 
 		// Add register and schema context to @self if requested.
 		if (in_array('@self.register', $_extend) === true || in_array('@self.schema', $_extend) === true) {
-			$self = $objectData['@self'] ?? [];
-			foreach ($this->extendedSelf(entity: $entity, extend: $_extend) as $key => $value) {
-				$self[$key] = $value;
-			}
-
-			$objectData['@self'] = $self;
+			$objectData['@self'] = array_replace(
+				($objectData['@self'] ?? []),
+				$this->extendedSelf(entity: $entity, extend: $_extend)
+			);
 		}
 
 		// Object-source relations first: a property whose `$ref` targets a
@@ -3989,37 +4057,65 @@ class RenderObject {
 		// looked up against native object storage and can match an unrelated
 		// object entirely. Resolved keys are removed from $_extend so the
 		// generic path below never sees them.
-		[$objectData, $_extend] = $this->extendObjectSourceRefs(
-			entity: $entity,
-			_extend: $_extend,
-			objectData: $objectData,
-			depth: $context->depth,
-			visitedIds: ($context->visitedIds ?? [])
-		);
+		$run = self::sourceRefRun(entity: $entity, context: $context);
+		$run->objectData = $objectData;
+		$this->extendObjectSourceRefs(run: $run);
 
-		// **PERFORMANCE OPTIMIZATION**: Batch preload all UUIDs that will be extended.
-		// This collects all UUIDs from the properties that will be extended and loads
-		// them in a SINGLE database query, instead of one query per UUID.
-		// PERF-8: during a full page render renderEntities() has already batch-preloaded
-		// every extend UUID for the whole page into $objectsCache, so re-collecting and
-		// re-preloading per row is wasted CPU. Skip it at depth 0 while a page render is
-		// active; nested (depth > 0) extends still preload their own children.
-		if (($this->pageRenderActive === true && $context->depth === 0) === false) {
-			$this->preloadExtendTargets(
-				entity: $entity,
-				uuids: $this->collectUuidsForExtend(objectData: $objectData, extend: $_extend)
-			);
-		}
+		$this->preloadOwnExtendTargets(run: $run);
 
 		return $this->handleExtendDot(
-			data: $objectData,
-			_extend: $_extend,
+			data: $run->objectData,
+			_extend: $run->extend,
 			depth: $context->depth,
-			allFlag: in_array('all', $_extend, true),
+			allFlag: in_array('all', $run->extend, true),
 			visitedIds: $context->visitedIds,
 			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
 	}//end extendObject()
+
+	/**
+	 * The object-source pass for an entity's extend list.
+	 *
+	 * @param ObjectEntity  $entity  The entity being extended.
+	 * @param RenderContext $context The render options.
+	 *
+	 * @return SourceRefRun The pass, without the object data.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function sourceRefRun(ObjectEntity $entity, RenderContext $context): SourceRefRun {
+		$run = new SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $context->extend;
+		$run->depth = $context->depth;
+		$run->visitedIds = ($context->visitedIds ?? []);
+
+		return $run;
+	}//end sourceRefRun()
+
+	/**
+	 * Batch preload all UUIDs the extend will resolve, in a SINGLE database query.
+	 *
+	 * During a full page render renderEntities() has already batch-preloaded every
+	 * extend UUID for the whole page into $objectsCache, so depth 0 skips it while a
+	 * page render is active; nested (depth > 0) extends still preload their own children.
+	 *
+	 * @param SourceRefRun $run The finished object-source pass.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function preloadOwnExtendTargets(SourceRefRun $run): void {
+		if ($this->pageRenderActive === true && $run->depth === 0) {
+			return;
+		}
+
+		$this->preloadExtendTargets(
+			entity: $run->entity,
+			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend)
+		);
+	}//end preloadOwnExtendTargets()
 
 	/**
 	 * The register and schema of an entity that its extend list asks to put on @self.
@@ -4135,48 +4231,42 @@ class RenderObject {
 	 * Explicit extend keys only: `_extend=all` does not traverse object-source
 	 * references (their raw keys are preserved un-expanded).
 	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param array<int, string> $_extend The requested extends.
-	 * @param array<string, mixed> $objectData The object data (mutated copy).
-	 * @param int $depth The current render depth.
-	 * @param array<int, string> $visitedIds Circular-reference guard.
+	 * @param SourceRefRun $run The pass over an entity; resolved references land in its data, their keys leave its extends.
 	 *
-	 * @return array{0: array<string, mixed>, 1: array<int, string>} [objectData, remaining extends].
+	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 */
-	private function extendObjectSourceRefs(
-		ObjectEntity $entity,
-		array $_extend,
-		array $objectData,
-		int $depth,
-		array $visitedIds,
-	): array {
-		if ($this->objectSourceRegistry === null || $_extend === []) {
-			return [$objectData, $_extend];
+	private function extendObjectSourceRefs(SourceRefRun $run): void {
+		if ($this->objectSourceRegistry === null || $run->extend === []) {
+			return;
 		}
 
-		$schema = $this->getSchema(id: $entity->getSchema());
-		if ($schema === null) {
-			return [$objectData, $_extend];
-		}
-
-		$run = new SourceRefRun();
-		$run->entity = $entity;
-		$run->extend = $_extend;
-		$run->objectData = $objectData;
-		$run->depth = $depth;
-		$run->visitedIds = $visitedIds;
-		foreach (($schema->getProperties() ?? []) as $name => $definition) {
-			if (is_array($definition) === true && in_array($name, $run->extend, true) === true
-				&& $this->sourceRefTarget(run: $run, definition: $definition) === true
-			) {
+		$schema = $this->getSchema(id: $run->entity->getSchema());
+		foreach (($schema?->getProperties() ?? []) as $name => $definition) {
+			if ($this->isSourceRefProperty(run: $run, property: [$name => $definition]) === true) {
 				$this->resolveSourceRefProperty(run: $run, name: $name);
 			}
 		}
-
-		return [$run->objectData, $run->extend];
 	}//end extendObjectSourceRefs()
+
+	/**
+	 * Whether an extended property references an enabled object source.
+	 *
+	 * @param SourceRefRun $run      The pass; receives the target, provider, config and register.
+	 * @param array        $property The property definition, keyed by the property name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function isSourceRefProperty(SourceRefRun $run, array $property): bool {
+		$definition = reset($property);
+
+		return is_array($definition) === true
+			&& in_array(key($property), $run->extend, true) === true
+			&& $this->sourceRefTarget(run: $run, definition: $definition) === true;
+	}//end isSourceRefProperty()
 
 	/**
 	 * Find the enabled object-source provider a property's `$ref` points at, and the entity's register.
@@ -4193,28 +4283,38 @@ class RenderObject {
 	 */
 	private function sourceRefTarget(SourceRefRun $run, array $definition): bool {
 		$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
-		if (is_int($ref) === false && (is_string($ref) === false || $ref === '')) {
+		if (self::isSchemaRef(ref: $ref) === false) {
 			return false;
 		}
 
 		$run->target = $this->getSchema(id: $ref);
 		$objectSource = $run->target?->getObjectSource();
-		if ($run->target === null || $objectSource === null) {
+		if ($objectSource === null) {
 			return false;
 		}
 
 		$run->provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
-		if ($run->provider === null || $run->provider->isEnabled() === false) {
+		if ($run->provider?->isEnabled() !== true) {
 			return false;
 		}
 
-		if ($run->register === null) {
-			$run->register = $this->getRegister(id: $run->entity->getRegister());
-		}
-
+		$run->register ??= $this->getRegister(id: $run->entity->getRegister());
 		$run->config = ($objectSource['config'] ?? []);
 		return $run->register !== null;
 	}//end sourceRefTarget()
+
+	/**
+	 * Whether a `$ref` value can name a schema: an integer or a non-empty string.
+	 *
+	 * @param mixed $ref The `$ref` value.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private static function isSchemaRef(mixed $ref): bool {
+		return is_int($ref) === true || (is_string($ref) === true && $ref !== '');
+	}//end isSchemaRef()
 
 	/**
 	 * Resolve one property's raw external keys through its provider, and take the property off the extend list.
@@ -4304,42 +4404,40 @@ class RenderObject {
 		$dataDot = new Dot($objectData);
 
 		foreach ($extend as $key) {
-			// Skip special keys.
-			if (str_starts_with($key, '@') === true) {
-				continue;
-			}
-
 			// Get the base property name (before any dots for nested extends).
 			$baseProp = explode('.', $key)[0];
 
-			if ($dataDot->has($baseProp) === false) {
-				continue;
+			// Skip special keys.
+			if (str_starts_with($key, '@') === false && $dataDot->has($baseProp) === true) {
+				$uuids = array_merge($uuids, $this->uuidsIn(value: $dataDot->get($baseProp)));
 			}
-
-			$value = $dataDot->get($baseProp);
-
-			// Handle array of UUIDs.
-			if (is_array($value) === true) {
-				foreach ($value as $item) {
-					// Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs
-					// (e.g., GEMMA ArchiMate UUIDs which have non-standard variant bits).
-					if (is_string($item) === true && $this->isUuidLike(value: $item) === true) {
-						$uuids[] = $item;
-					}
-				}
-
-				continue;
-			}
-
-			// Handle single UUID.
-			// Use regex-based UUID validation to support non-RFC 4122 compliant UUIDs.
-			if (is_string($value) === true && $this->isUuidLike(value: $value) === true) {
-				$uuids[] = $value;
-			}
-		}//end foreach
+		}
 
 		return array_unique($uuids);
 	}//end collectUuidsForExtend()
+
+	/**
+	 * The UUIDs in a property value: a single one, or the ones in a list.
+	 *
+	 * Validates with a regex to support non-RFC 4122 compliant UUIDs (e.g.,
+	 * GEMMA ArchiMate UUIDs which have non-standard variant bits).
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return array The UUIDs.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function uuidsIn(mixed $value): array {
+		$candidates = [$value];
+		if (is_array($value) === true) {
+			$candidates = $value;
+		}
+
+		return array_values(
+			array_filter($candidates, fn ($item) => is_string($item) === true && $this->isUuidLike(value: $item) === true)
+		);
+	}//end uuidsIn()
 
 	/**
 	 * The inverse relation batch loader.
