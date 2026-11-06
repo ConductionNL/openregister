@@ -67,6 +67,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
  * @uses \OCA\OpenRegister\Service\Object\CascadeDeleteOrigin
  * @uses \OCA\OpenRegister\Service\AuditRetentionResolver
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class IntegrityAndFileAuditExpiryTest extends TestCase {
 

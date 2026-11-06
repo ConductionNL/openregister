@@ -70,10 +70,15 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -99,6 +104,7 @@ use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -1561,6 +1567,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			]
 		);
 
+		$query = (new MagicUnionOrder(isPostgres: false))->orderable(
+			query: $query,
+			columns: $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs)
+		);
+
 		// OPTIMIZATION: Use UNION ALL for multi-table search in a single query.
 		// This is MUCH faster than looping through tables individually.
 		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
@@ -1829,7 +1840,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
-		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $query) . $this->unionLimitClause(query: $query);
+		// The batch orders on what it projects: a column of another batch is null in all of its rows.
+		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
+		$unionSql = implode(' UNION ALL ', $parts) . $this->unionOrderByClause(query: $orderQuery) . $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
@@ -1955,46 +1968,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end unionOrderByClause()
 
 	/**
-	 * The LIMIT/OFFSET clause of a union.
-	 *
-	 * Both values are cast and clamped here, so raw user input cannot reach
-	 * the interpolated SQL string (SQL injection via _limit / _offset).
-	 *
-	 * Unlimited omits the clause rather than interpolating a large number:
-	 * this SQL is concatenated, not bound, and a sentinel like PHP_INT_MAX
-	 * is a number some databases reject.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return string The clause with a leading space, or an empty string.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
-	 */
-	private function unionLimitClause(array $query): string {
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		if ($normalisedLimit !== null) {
-			// A NUMERIC limit is still clamped to the documented maximum. That
-			// clamp is a deliberate protection (objects-crud: "List page size is
-			// bounded by a hard maximum") against a client loading an
-			// arbitrarily large result set by accident. `_limit=false` is the
-			// explicit opt-in, and the only way past the bound.
-			$limit = min($normalisedLimit, self::MAX_PAGE_SIZE);
-			return " LIMIT {$limit} OFFSET {$offset}";
-		}
-
-		// MySQL and MariaDB reject a bare OFFSET without a LIMIT, so an
-		// offset with no limit still needs the clause. The upper bound is
-		// the largest value the syntax accepts, which is the documented
-		// idiom for "everything from here on".
-		if ($offset > 0) {
-			return ' LIMIT 18446744073709551615 OFFSET ' . $offset;
-		}
-
-		return '';
-	}//end unionLimitClause()
-
-	/**
 	 * Resolve the ORDER BY keys for a cross-schema UNION search.
 	 *
 	 * Returns one entry per key, in order, each carrying the SQL expression to
@@ -2008,145 +1981,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$orderParams = $query['_order'] ?? [];
-		$uuidColumn = self::METADATA_PREFIX . 'uuid';
-
-		$keys = [];
-		if (empty($orderParams) === false && is_array($orderParams) === true) {
-			foreach ($orderParams as $field => $direction) {
-				$dir = 'ASC';
-				if (strtoupper((string)$direction) === 'DESC') {
-					$dir = 'DESC';
-				}
-
-				// Special handling for _relevance: map to _search_score in UNION queries.
-				// The _relevance column is used by MagicSearchHandler for single-table
-				// queries, but UNION queries use _search_score for relevance scoring.
-				if ($field === '_relevance') {
-					// Skip _relevance ordering if no search term (nothing to order by).
-					if ($hasSearch === true) {
-						$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => $dir];
-					}
-
-					continue;
-				}
-
-				// Translate field name to column name.
-				$rowKey = $this->sanitizeColumnName(name: $field);
-				$columnName = $rowKey;
-				if (str_starts_with($field, '@self.') === true) {
-					// Metadata fields: sanitize the bare name, then validate against
-					// the known METADATA_PREFIX column allowlist before quoting.
-					// Without this allowlist, raw user input was concatenated into
-					// the UNION SQL (SQL injection via ORDER BY).
-					$sanitizedMeta = $this->sanitizeColumnName(name: substr($field, 6));
-					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
-					if (in_array($candidateColumn, array_keys(MagicMetadataColumns::ALL), true) === false) {
-						// Unknown metadata column - skip this ORDER BY clause entirely.
-						continue;
-					}
-
-					$rowKey = $candidateColumn;
-					$columnName = $this->quoteIdentifier(name: $candidateColumn, isPostgres: $isPostgres);
-				} elseif (str_starts_with($field, '_') === false) {
-					// Non-metadata fields - property columns are included in UNION queries.
-					// The column must exist in the SELECT for ordering to work.
-					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
-					$columnName = $this->quoteIdentifier(name: $rowKey, isPostgres: $isPostgres);
-				}//end if
-
-				$keys[] = ['row' => $rowKey, 'sql' => $columnName, 'dir' => $dir];
-			}//end foreach
-		} elseif ($hasSearch === true) {
-			// Default to search score ordering when no _order specified but search is present.
-			$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => 'DESC'];
-		}//end if
-
-		// BUG-DB-4: a stable tiebreaker so rows that compare equal on the
-		// requested order keep a deterministic order across pages, and so a
-		// query with no usable order still pages deterministically.
-		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
-
-		return $keys;
+		return (new MagicUnionOrder(isPostgres: $isPostgres))->keys(query: $query);
 	}//end buildUnionOrderKeys()
 
 	/**
-	 * Sort merged rows from several UNION batches on the SQL's own order keys.
-	 *
-	 * Each batch is already ordered by its own statement; merging them is not.
-	 * A row that a batch did not project (a property column another schema
-	 * owns) sorts as null, which is what the UNION's `NULL AS alias` arm would
-	 * have produced.
-	 *
-	 * @param array $rows      Merged raw rows.
-	 * @param array $orderKeys Keys from buildUnionOrderKeys().
-	 *
-	 * @return array Rows in the merged order.
-	 */
-	private function sortUnionRows(array $rows, array $orderKeys): array {
-		usort(
-			$rows,
-			static function (array $left, array $right) use ($orderKeys): int {
-				foreach ($orderKeys as $key) {
-					$leftValue = ($left[$key['row']] ?? null);
-					$rightValue = ($right[$key['row']] ?? null);
-
-					// Cast to string and let the spaceship operator decide: PHP
-					// compares two NUMERIC strings numerically, so a score of
-					// "0.9" still beats "0.75" and "1.0E-5" still loses to
-					// "0.0001", while a missing column (null, cast to "") is
-					// compared as text instead of silently becoming zero.
-					$comparison = ((string)$leftValue <=> (string)$rightValue);
-
-					if ($comparison !== 0) {
-						if ($key['dir'] === 'DESC') {
-							return -$comparison;
-						}
-
-						return $comparison;
-					}
-				}
-
-				return 0;
-			}
-		);
-
-		return $rows;
-	}//end sortUnionRows()
-
-	/**
 	 * The per-batch query: page one, wide enough to cover the caller's page.
-	 *
-	 * Every batch answers the same question over its own arms, so each has to
-	 * reach as far as `offset + limit` for the merged set to be able to serve
-	 * the requested page. A batch asked for only `limit` rows could not
-	 * contribute the last row of a later page even when it owns it.
-	 *
-	 * An unlimited query stays unlimited: there is nothing to over-fetch to.
 	 *
 	 * @param array $query Search parameters.
 	 *
 	 * @return array The query to run per batch.
 	 */
 	private function buildUnionBatchQuery(array $query): array {
-		$batchQuery = $query;
-		$batchQuery['_offset'] = 0;
-
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit !== null) {
-			// The batch runner clamps this to MAX_PAGE_SIZE, the same bound the
-			// single-statement path applies, so paging past that bound is
-			// truncated identically either way.
-			$batchQuery['_limit'] = (max(0, (int)($query['_offset'] ?? 0)) + $normalisedLimit);
-		}
-
-		return $batchQuery;
+		return $this->unionPage(query: $query)->batchQuery();
 	}//end buildUnionBatchQuery()
 
 	/**
@@ -2163,19 +2011,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array The merged page.
 	 */
 	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
-		$rows = $this->sortUnionRows(
-			rows: $rows,
-			orderKeys: $this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres)
-		);
+		$order = new MagicUnionOrder(isPostgres: $isPostgres);
 
-		$offset = max(0, (int)($query['_offset'] ?? 0));
-		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
-		if ($normalisedLimit === null) {
-			return array_slice($rows, $offset);
-		}
-
-		return array_slice($rows, $offset, min($normalisedLimit, self::MAX_PAGE_SIZE));
+		return $this->unionPage(query: $query)->cut(rows: $order->sorted(rows: $rows, orderKeys: $order->keys(query: $query)));
 	}//end mergeUnionBatchRows()
+
+	/**
+	 * The page of a union search.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return MagicUnionPage The page.
+	 */
+	private function unionPage(array $query): MagicUnionPage {
+		return new MagicUnionPage(query: $query, maxSize: self::MAX_PAGE_SIZE);
+	}//end unionPage()
 
 	/**
 	 * Convert raw UNION rows to ObjectEntity objects.
@@ -2522,15 +2372,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$pageQuery = $query;
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
-		// The UNION path's own order keys, so both paths answer the same
-		// question in the same order. Every table is asked for its rows in
-		// that order, closed by the uuid; on its own default (`_id`) a table's
-		// first `offset + limit` rows are not the ones the merged page needs.
-		// The platform only changes how the SQL is quoted; the row keys read
-		// here are the same on every database.
-		$orderKeys = $this->buildUnionOrderKeys(query: $pageQuery, isPostgres: false);
-		$propertyFields = $this->orderedPropertyFields(query: $pageQuery);
-		$query['_order'] = $this->buildSequentialTableOrder(orderKeys: $orderKeys, propertyFields: $propertyFields);
+		// Every table is asked for its rows in the UNION path's order, closed by
+		// the uuid; on its own default (`_id`) a table's first `offset + limit`
+		// rows are not the ones the merged page needs.
+		$order = new MagicSequentialOrder(query: $pageQuery);
+		$query['_order'] = $order->tableOrder();
 
 		$allResults = [];
 		foreach ($registerSchemaPairs as $pair) {
@@ -2544,11 +2390,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// Order the merged rows on the same keys, with the same comparator, as
 		// the UNION path merges its batches; a search term orders by score.
-		$allResults = $this->sortSequentialResults(
-			results: $allResults,
-			orderKeys: $orderKeys,
-			propertyFields: $propertyFields
-		);
+		$allResults = $order->sorted(results: $allResults);
 
 		// The caller's page, cut once from the merged rows.
 		$allResults = array_slice(
@@ -2651,162 +2493,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $results;
 	}//end searchSequentialTable()
-
-	/**
-	 * The property fields a query orders by, keyed by their column name.
-	 *
-	 * The UNION order keys name a property by its sanitized column; the
-	 * single-table query and the object data both use the property's own
-	 * name. This maps one back to the other.
-	 *
-	 * @param array $query Search parameters.
-	 *
-	 * @return array<string, string> Column name => property name.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function orderedPropertyFields(array $query): array {
-		$orderParams = ($query['_order'] ?? []);
-		if (is_array($orderParams) === false) {
-			return [];
-		}
-
-		$fields = [];
-		foreach (array_keys($orderParams) as $field) {
-			$field = (string) $field;
-			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
-				continue;
-			}
-
-			$fields[$this->sanitizeColumnName(name: $field)] = $field;
-		}
-
-		return $fields;
-	}//end orderedPropertyFields()
-
-	/**
-	 * Translate the UNION order keys into the `_order` of one table's query.
-	 *
-	 * The score is `_relevance` there, a metadata column is `@self.<name>`
-	 * and a property is its own name. A key neither form can name is left
-	 * out, as the UNION path leaves out an unknown metadata column.
-	 *
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<string, string> The single-table `_order`.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function buildSequentialTableOrder(array $orderKeys, array $propertyFields): array {
-		$metadataColumns = MagicMetadataColumns::ALL;
-		$order = [];
-		foreach ($orderKeys as $key) {
-			$field = null;
-			if ($key['row'] === '_search_score') {
-				$field = '_relevance';
-			} elseif (isset($propertyFields[$key['row']]) === true) {
-				$field = $propertyFields[$key['row']];
-			} elseif (array_key_exists($key['row'], $metadataColumns) === true) {
-				$field = '@self.' . substr($key['row'], strlen(self::METADATA_PREFIX));
-			}
-
-			if ($field !== null && isset($order[$field]) === false) {
-				$order[$field] = $key['dir'];
-			}
-		}
-
-		return $order;
-	}//end buildSequentialTableOrder()
-
-	/**
-	 * Order merged entities on the UNION path's keys with its comparator.
-	 *
-	 * Each entity is projected onto the row keys the UNION statement would
-	 * have produced, sorted with sortUnionRows(), and put back in that order.
-	 *
-	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
-	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
-	 * @param array<string, string>                                    $propertyFields Column name => property name.
-	 *
-	 * @return array<int, ObjectEntity> The entities in the merged order.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sortSequentialResults(array $results, array $orderKeys, array $propertyFields): array {
-		$rows = [];
-		foreach (array_values($results) as $index => $entity) {
-			$row = ['__index' => $index];
-			foreach ($orderKeys as $key) {
-				$row[$key['row']] = $this->sequentialOrderValue(
-					entity: $entity,
-					rowKey: $key['row'],
-					propertyFields: $propertyFields
-				);
-			}
-
-			$rows[] = $row;
-		}
-
-		$results = array_values($results);
-		$sorted = [];
-		foreach ($this->sortUnionRows(rows: $rows, orderKeys: $orderKeys) as $row) {
-			$sorted[] = $results[$row['__index']];
-		}
-
-		return $sorted;
-	}//end sortSequentialResults()
-
-	/**
-	 * The value an entity holds for one UNION order key.
-	 *
-	 * The score is the one the row carries (`_search_score` in its data, else
-	 * its relevance as a fraction), 0 without one. A metadata column reads the
-	 * entity's own field, a property column the object's value; dates compare
-	 * as `Y-m-d H:i:s.u`, arrays as JSON, and a missing value is null, which
-	 * sorts where the UNION's `NULL AS alias` arm puts it.
-	 *
-	 * @param ObjectEntity          $entity         The entity.
-	 * @param string                $rowKey         The UNION row key.
-	 * @param array<string, string> $propertyFields Column name => property name.
-	 *
-	 * @return mixed The comparable value.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
-	 */
-	private function sequentialOrderValue(ObjectEntity $entity, string $rowKey, array $propertyFields): mixed {
-		$value = null;
-		if ($rowKey === '_search_score') {
-			$data = $entity->getObject();
-			$value = 0;
-			if (isset($data['_search_score']) === true) {
-				$value = (float) $data['_search_score'];
-			} elseif ($entity->getRelevance() !== null) {
-				$value = ($entity->getRelevance() / 100);
-			}
-		} elseif (isset($propertyFields[$rowKey]) === true) {
-			$value = ($entity->getObject()[$propertyFields[$rowKey]] ?? null);
-		} elseif (str_starts_with($rowKey, self::METADATA_PREFIX) === true) {
-			$field = lcfirst(str_replace('_', '', ucwords(substr($rowKey, strlen(self::METADATA_PREFIX)), '_')));
-			if (property_exists($entity, $field) === true) {
-				$value = $entity->{'get' . ucfirst($field)}();
-			}
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return $value->format('Y-m-d H:i:s.u');
-		}
-
-		if (is_bool($value) === true) {
-			return (int) $value;
-		}
-
-		if (is_array($value) === true) {
-			return json_encode($value);
-		}
-
-		return $value;
-	}//end sequentialOrderValue()
 
 	/**
 	 * Get cache key for register+schema combination
@@ -4497,6 +4183,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end fetchRows()
 
 	/**
+	 * The slug column of a register+schema table, or null without a table.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return MagicSlugTable|null
+	 */
+	private function slugTable(Register $register, Schema $schema): ?MagicSlugTable {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return null;
+		}
+
+		return new MagicSlugTable(db: $this->db, tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema));
+	}//end slugTable()
+
+	/**
 	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
 	 *
 	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
@@ -4511,26 +4213,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
 	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'slug', self::METADATA_PREFIX . 'uuid')
-			->from($tableName)
-			->where($qb->expr()->like(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->orderBy(self::METADATA_PREFIX . 'id', 'ASC')
-			->setMaxResults($limit);
-		$result = $qb->executeQuery();
-		$matches = [];
-		while (($row = $result->fetch()) !== false) {
-			$matches[] = ['slug' => (string)$row[self::METADATA_PREFIX . 'slug'], 'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid']];
-		}
-
-		$result->closeCursor();
-		return $matches;
+		return ($this->slugTable(register: $register, schema: $schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
 	}//end findSlugsByPrefix()
 
 	/**
@@ -4572,28 +4255,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $slug,
 		?string $excludeUuid=null,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid')
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug)))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->setMaxResults(1);
-		if ($excludeUuid !== null) {
-			$qb->andWhere($qb->expr()->neq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($excludeUuid)));
-		}
-
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $uuids;
+		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
 	/**
@@ -4614,46 +4276,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
-		$state = ['holders' => [], 'stored' => []];
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return $state;
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$queries = [
-			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($wanted) => $wanted !== null && $wanted !== '')))],
-			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($uuid) => $uuid !== null && $uuid !== '')))],
-		];
-		foreach ($queries as $kind => [$column, $values]) {
-			foreach (array_chunk($values, 1000) as $chunk) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($uuidCol, $slugCol)
-					->from($tableName)
-					->where($qb->expr()->in($column, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-					->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-				$result = $qb->executeQuery();
-				while (($row = $result->fetch()) !== false) {
-					$rowSlug = $row[$slugCol];
-					if ($kind === 'holders') {
-						$state['holders'][(string)$rowSlug][] = (string)$row[$uuidCol];
-						continue;
-					}
-
-					$storedSlug = null;
-					if ($rowSlug !== null && $rowSlug !== '') {
-						$storedSlug = (string)$rowSlug;
-					}
-
-					$state['stored'][(string)$row[$uuidCol]] = $storedSlug;
-				}
-
-				$result->closeCursor();
-			}
-		}
-
-		return $state;
+		return ($this->slugTable(register: $register, schema: $schema)?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
 	}//end findSlugState()
 
 	/**
@@ -4669,54 +4292,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findDuplicateSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-
-		// Grouped case-folded: on a case-insensitive collation `Hello-World` and
-		// `hello-world` are one slug, and the save paths compare them that way.
-		$sub = $this->db->getQueryBuilder();
-		$folded = $sub->func()->lower($slugCol);
-		$sub->selectAlias($folded, 'slug_key')
-			->from($tableName)
-			->where($sub->expr()->isNotNull($slugCol))
-			->andWhere($sub->expr()->neq($slugCol, $sub->createNamedParameter('')))
-			->andWhere($sub->expr()->isNull($deletedCol))
-			->groupBy($folded)
-			->having('COUNT(*) > 1');
-		$result = $sub->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[] = (string)$row['slug_key'];
-		}
-
-		$result->closeCursor();
-		if ($slugs === []) {
-			return [];
-		}
-
-		$duplicates = [];
-		foreach (array_chunk($slugs, 1000) as $chunk) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-				->from($tableName)
-				->where($qb->expr()->in($qb->func()->lower($slugCol), $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-				->andWhere($qb->expr()->isNull($deletedCol))
-				->orderBy(self::METADATA_PREFIX . 'created', 'ASC')
-				->addOrderBy(self::METADATA_PREFIX . 'id', 'ASC');
-			$rows = $qb->executeQuery();
-			while (($row = $rows->fetch()) !== false) {
-				$duplicates[mb_strtolower((string)$row[$slugCol])][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-			}
-
-			$rows->closeCursor();
-		}
-
-		return $duplicates;
+		return ($this->slugTable(register: $register, schema: $schema)?->duplicates() ?? []);
 	}//end findDuplicateSlugs()
 
 	/**
@@ -4732,25 +4308,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findAllSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->isNotNull($slugCol))
-			->andWhere($qb->expr()->neq($slugCol, $qb->createNamedParameter('')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-		$result = $qb->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $slugs;
+		return ($this->slugTable(register: $register, schema: $schema)?->all() ?? []);
 	}//end findAllSlugs()
 
 	/**
@@ -4784,96 +4342,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		int $afterId,
 		int $pageSize,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+		$table = $this->slugTable(register: $register, schema: $schema);
+		if ($table === null) {
 			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
 		}
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$result = $this->slugBackfillQuery(tableName: $tableName, afterId: $afterId, pageSize: $pageSize)->executeQuery();
-		$page = [];
-		$fetched = 0;
-		$lastId = $afterId;
-		while (($row = $result->fetch()) !== false) {
-			$fetched++;
-			$lastId = (int)$row[self::METADATA_PREFIX . 'id'];
-			$entry = $this->slugBackfillEntry(row: $row, register: $register, schema: $schema, tableName: $tableName);
-			if ($entry !== null) {
-				$page[] = $entry;
-			}
-		}
+		$convert = fn (array $row): ?ObjectEntity => $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
-		$result->closeCursor();
-		return ['rows' => $page, 'fetched' => $fetched, 'lastId' => $lastId];
+		return (new MagicSlugBackfill(table: $table, convert: $convert, logger: $this->logger))->page(afterId: $afterId, pageSize: $pageSize);
 	}//end findSlugBackfillPage()
-
-	/**
-	 * The next page of live rows without a slug, in `_id` order.
-	 *
-	 * @param string $tableName The magic table.
-	 * @param int    $afterId   Last `_id` of the previous page.
-	 * @param int    $pageSize  Rows per page.
-	 *
-	 * @return IQueryBuilder The query.
-	 */
-	private function slugBackfillQuery(string $tableName, int $afterId, int $pageSize): IQueryBuilder {
-		$idCol = 't.' . self::METADATA_PREFIX . 'id';
-		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($tableName, 't')
-			->where($qb->expr()->gt($idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
-			// Only rows without a slug: a set slug is never rewritten by the backfill.
-			->andWhere($qb->expr()->orX($qb->expr()->isNull($slugCol), $qb->expr()->eq($slugCol, $qb->createNamedParameter(''))))
-			->orderBy($idCol, 'ASC')
-			->setMaxResults($pageSize);
-
-		return $qb;
-	}//end slugBackfillQuery()
-
-	/**
-	 * One backfill row as the planner reads it, or null (logged) when it cannot be converted.
-	 *
-	 * @param array<string, mixed> $row       The table row.
-	 * @param Register             $register  The register.
-	 * @param Schema               $schema    The schema.
-	 * @param string               $tableName The magic table (log context).
-	 *
-	 * @return array{id: int, uuid: string, slug: string|null, created: string|null, object: array}|null
-	 */
-	private function slugBackfillEntry(array $row, Register $register, Schema $schema, string $tableName): ?array {
-		$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
-		if ($entity === null) {
-			$this->logger->warning(
-				sprintf(
-					'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
-					(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
-					$tableName
-				),
-				['app' => 'openregister', 'path' => 'backfill']
-			);
-			return null;
-		}
-
-		$entry = [
-			'id' => (int)$row[self::METADATA_PREFIX . 'id'],
-			'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
-			'slug' => null,
-			'created' => null,
-			'object' => $entity->getObject() ?? [],
-		];
-		$slug = ($row[self::METADATA_PREFIX . 'slug'] ?? null);
-		if ($slug !== null && $slug !== '') {
-			$entry['slug'] = (string)$slug;
-		}
-
-		$created = ($row[self::METADATA_PREFIX . 'created'] ?? null);
-		if ($created !== null) {
-			$entry['created'] = (string)$created;
-		}
-
-		return $entry;
-	}//end slugBackfillEntry()
 
 	/**
 	 * Write one object's slug column directly, for the slug backfill.
@@ -4899,19 +4376,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $uuid,
 		string $slug,
 	): int {
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->set($slugCol, $qb->createNamedParameter($slug))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull($slugCol),
-					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
-				)
-			);
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
-		return $qb->executeStatement();
+		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
 
 	/**

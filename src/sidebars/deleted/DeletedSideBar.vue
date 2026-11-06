@@ -177,11 +177,7 @@ import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import eventBus from '../../eventBus.js'
-import {
-	addDateRange,
-	addScope,
-	routeDate,
-} from '../../services/routeQuery.js'
+import { addDateRange, addScope, routeDate } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
 import { routeBoundFilters } from '../routeBoundFilters.js'
 
@@ -256,8 +252,7 @@ export default {
 		},
 	},
 
-	watch: {
-	},
+	watch: {},
 
 	/**
 	 * @spec exclude Lifecycle plumbing; loads lists/statistics and seeds state from the route, delegating to already-annotated methods.
@@ -414,13 +409,7 @@ export default {
 
 @include filter-group-rules;
 
-.filter-hint {
-	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
+@include filter-hint-rules;
 
 .loading-stats {
 	display: flex;

@@ -47,7 +47,7 @@ final class NativeAggregationQuery {
 	 *
 	 * @param string $platform  The platform short name: postgres, mysql or sqlite
 	 * @param string $quote     The identifier quote character of the platform
-	 * @param string $tableName The magic table name, without the `oc_` prefix
+	 * @param string $tableName The magic table name, without the table prefix
 	 * @param string $metric    The aggregate metric
 	 */
 	public function __construct(
@@ -83,14 +83,14 @@ final class NativeAggregationQuery {
 	}//end quoted()
 
 	/**
-	 * The quoted, `oc_`-prefixed table name.
+	 * The quoted table name, carrying the `*PREFIX*` placeholder the connection resolves.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public function table(): string {
-		return $this->quoted(column: 'oc_'.$this->tableName);
+		return $this->quoted(column: '*PREFIX*'.$this->tableName);
 	}//end table()
 
 	/**

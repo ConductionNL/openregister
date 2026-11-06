@@ -49,6 +49,7 @@ use ReflectionClass;
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Formats\UuidFormat
+ * @uses \OCA\OpenRegister\Support\OrderParameter
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
@@ -261,7 +262,15 @@ class ExplicitRevealTest extends TestCase {
 	 */
 	public function testFilterAndSortOnItAreRefused(): void {
 		$reveal = new ExplicitReveal();
-		foreach ([['citizenServiceNumber' => self::BSN], ['_order' => ['citizenServiceNumber' => 'asc']], ['_order' => '{"citizenServiceNumber":"desc"}']] as $query) {
+		$queries = [
+			['citizenServiceNumber' => self::BSN],
+			['_order' => ['citizenServiceNumber' => 'asc']],
+			['_order' => '{"citizenServiceNumber":"desc"}'],
+			['_order' => ['citizenServiceNumber']],
+			['_order' => '[{"field":"citizenServiceNumber","direction":"DESC"}]'],
+			['_order' => 'citizenServiceNumber:desc'],
+		];
+		foreach ($queries as $query) {
 			try {
 				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
 				$this->fail('refused: ' . json_encode($query));

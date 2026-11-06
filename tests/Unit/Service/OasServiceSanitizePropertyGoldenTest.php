@@ -7,15 +7,12 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\OasService;
-use OCP\IURLGenerator;
+use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Golden test for OasService::sanitizePropertyDefinition().
+ * Golden test for OasPropertySanitizer::sanitize().
  *
  * Each case is one property definition. The sanitized definition, key order
  * included, is compared with fixtures/oas-sanitize-property-golden.json.
@@ -116,13 +113,7 @@ class OasServiceSanitizePropertyGoldenTest extends TestCase {
 	#[DataProvider('cases')]
 	public function testSanitizePropertyDefinitionMatchesGolden(mixed $definition): void {
 		$name = $this->dataName();
-		$service = new OasService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IURLGenerator::class)
-		);
-		$method = new \ReflectionMethod($service, 'sanitizePropertyDefinition');
-		$actual = $method->invoke($service, $definition);
+		$actual = (new OasPropertySanitizer())->sanitize(definition: $definition);
 
 		$golden = [];
 		if (is_file(self::FIXTURE) === true) {
