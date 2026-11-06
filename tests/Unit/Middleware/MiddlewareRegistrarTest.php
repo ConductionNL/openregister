@@ -44,6 +44,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\TenantQuotaMiddleware',
 				'OCA\OpenRegister\Middleware\OasValidationMiddleware',
 				'OCA\OpenRegister\Middleware\RevealAuditMiddleware',
+				'OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware',
 				'OCA\OpenRegister\Middleware\RateLimitMiddleware',
 				'OCA\OpenRegister\Middleware\PublicApiCorsMiddleware',
 				'OCA\OpenRegister\Middleware\ChatCompatMiddleware',
@@ -58,6 +59,9 @@ class MiddlewareRegistrarTest extends TestCase {
 			],
 			actual: $registered
 		);
-		$this->assertSame(expected: ['OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware'], actual: $globals);
+		$this->assertSame(
+			expected: ['OCA\OpenRegister\Middleware\ScheduleRefusalMiddleware', 'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware'],
+			actual: $globals
+		);
 	}//end testRegistersTheMiddlewaresInOrder()
 }//end class

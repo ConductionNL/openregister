@@ -242,6 +242,7 @@ class CalendarProvider extends AbstractIntegrationProvider {
 		$parts = explode('/', $entityId, 2);
 		if (count($parts) === 2) {
 			[$calendarId, $eventUri] = $parts;
+			$this->calendarEventService->requireEventOf(objectUuid: $objectId, calendarId: $calendarId, eventUri: $eventUri);
 			$this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
 			return;
 		}

@@ -168,17 +168,17 @@ parameters:
 		-
 			message: "#^Dead catch \\- OCA\\\\OpenRegister\\\\Exception\\\\NotAuthorizedException is never thrown in the try block\\.$#"
 			count: 1
-			path: lib/Controller/AggregationController.php
+			path: lib/Search/Controller/AggregationController.php
 
 		-
 			message: "#^Offset 'cached' on array\\{name\\: string, metric\\: string, field\\: string\\|null, value\\?\\: float\\|int\\|null, groups\\?\\: array\\<int, array\\{key\\: mixed, value\\: float\\|int\\|null\\}\\>\\} on left side of \\?\\? does not exist\\.$#"
 			count: 1
-			path: lib/Controller/AggregationController.php
+			path: lib/Search/Controller/AggregationController.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Controller/AggregationController.php
+			path: lib/Search/Controller/AggregationController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AnonymisationBackendController\\:\\:getBackendState\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|403, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{entityRecognitionEnabled\\: bool, activeMethod\\: string, effectiveMethod\\: string, backends\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
@@ -601,144 +601,144 @@ parameters:
 			path: lib/Controller/ConversationController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: string, scope\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: string, scope\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{status\\: string, message\\: string, timestamp\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:calculate\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{status\\: 'error'\\|'success', message\\?\\: string, timestamp\\: string, scope\\?\\: array\\{register\\: array\\{id\\: int, title\\: string\\|null\\}\\|null, schema\\: array\\{id\\: int, title\\: string\\|null\\}\\|null\\}, results\\?\\: array\\{objects\\: array, logs\\: array, total\\: array\\{processed\\: mixed, failed\\: mixed\\}\\}, summary\\?\\: array\\{total_processed\\: mixed, total_failed\\: mixed, success_rate\\: float\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{status\\: string, message\\: string, timestamp\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array\\<int, \\(int\\|string\\)\\>, series\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array\\<int, \\(int\\|string\\)\\>, series\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, \\(int\\|string\\)\\>, series\\?\\: array\\<int, array\\{data\\: array\\<int, int\\>, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{actions\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{actions\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailActionDistribution\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, actions\\?\\: array\\<int, array\\{count\\: int, name\\: mixed\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{total\\: int, creates\\: int, updates\\: int, deletes\\: int, reads\\: int\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{total\\: int, creates\\: int, updates\\: int, deletes\\: int, reads\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getAuditTrailStatistics\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, total\\?\\: int, creates\\?\\: int, updates\\?\\: int, deletes\\?\\: int, reads\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{objects\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{objects\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getMostActiveObjects\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, objects\\?\\: array\\<int, array\\{count\\: int, id\\: mixed, name\\: string\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array, series\\: array\\<int\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array, series\\: array\\<int\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsByRegisterChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array, series\\: array\\<int\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array, series\\: array\\<int\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySchemaChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array, series\\?\\: array\\<int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array\\<int, string\\>, series\\: array\\<int, int\\>\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{labels\\: array\\<int, string\\>, series\\: array\\<int, int\\>\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:getObjectsBySizeChart\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, labels\\?\\: array\\<int, '0\\-1 KB'\\|'1\\-10 KB'\\|'10\\-100 KB'\\|'100 KB\\-1 MB'\\|'\\> 1 MB'\\>, series\\?\\: array\\<int, int\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{registers\\: array\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{registers\\: array\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, registers\\?\\: array\\<int, array\\{id\\: 'orphaned'\\|'totals'\\|int, uuid\\?\\: string\\|null, slug\\?\\: string\\|null, title\\: string\\|null, version\\?\\: string\\|null, description\\: string\\|null, schemas\\: array\\<int, array\\{id\\: int, uuid\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, version\\: string\\|null, description\\: string\\|null, summary\\: string\\|null, icon\\: string\\|null, \\.\\.\\.\\}\\>, source\\?\\: string\\|null, \\.\\.\\.\\}\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DashboardController\\:\\:page\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\DashboardController\\:\\:page\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\TemplateResponse\\<200, array\\{\\}\\>\\.$#"
 			count: 2
-			path: lib/Controller/DashboardController.php
+			path: lib/Search/Controller/DashboardController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DeletedController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\?\\: int, page\\?\\: int, pages\\?\\: 1\\|float, limit\\?\\: int\\|null, offset\\?\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, page\\: mixed, pages\\: float\\|int, limit\\: mixed, offset\\: mixed\\}, array\\{\\}\\>\\.$#"
@@ -1076,14 +1076,14 @@ parameters:
 			path: lib/Controller/FilesController.php
 
 		-
-			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
 			count: 2
-			path: lib/Controller/GraphQLController.php
+			path: lib/Search/Controller/GraphQLController.php
 
 		-
-			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
 			count: 2
-			path: lib/Controller/GraphQLController.php
+			path: lib/Search/Controller/GraphQLController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Controller\\\\HeartbeatController\\:\\:heartbeat\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: 'alive', timestamp\\: int\\<1, max\\>, message\\: 'Heartbeat…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{status\\: string, timestamp\\: int, message\\: string\\}, array\\{\\}\\>\\.$#"
@@ -1717,14 +1717,14 @@ parameters:
 			path: lib/Controller/ScopesController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SearchController\\:\\:search\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, array\\{id\\: mixed, name\\: mixed, type\\: 'object', url\\: mixed, source\\: 'openregister'\\}\\>, total\\: int, facets\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: string, url\\: mixed, source\\: string\\}\\>, total\\: mixed, facets\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Search\\\\Controller\\\\SearchController\\:\\:search\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, array\\{id\\: mixed, name\\: mixed, type\\: 'object', url\\: mixed, source\\: 'openregister'\\}\\>, total\\: int, facets\\: array\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: string, url\\: mixed, source\\: string\\}\\>, total\\: mixed, facets\\: array\\{\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/SearchController.php
+			path: lib/Search/Controller/SearchController.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
 			count: 1
-			path: lib/Controller/SearchController.php
+			path: lib/Search/Controller/SearchController.php
 
 		-
 			message: "#^Offset 'limit' on array\\{results\\: array, total\\: int, page\\: float\\|int\\<1, max\\>, pages\\: int, limit\\: int\\<1, max\\>, offset\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
@@ -3793,31 +3793,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$objectMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Edepot/TransferListService.php
-
-		-
-			message: "#^Call to method login\\(\\) on an unknown class phpseclib3\\\\Net\\\\SFTP\\.$#"
-			count: 2
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Call to static method load\\(\\) on an unknown class phpseclib3\\\\Crypt\\\\PublicKeyLoader\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Instantiated class phpseclib3\\\\Net\\\\SFTP not found\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\Transport\\\\SftpTransport\\:\\:createSftpConnection\\(\\) has invalid return type phpseclib3\\\\Net\\\\SFTP\\.$#"
-			count: 2
-			path: lib/Service/Edepot/Transport/SftpTransport.php
-
-		-
-			message: "#^Variable \\$logged might not be defined\\.$#"
-			count: 1
-			path: lib/Service/Edepot/Transport/SftpTransport.php
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between string and false will always evaluate to false\\.$#"

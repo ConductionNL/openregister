@@ -498,6 +498,29 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	}//end linkEvent()
 
 	/**
+	 * Refuse an event that is not one of the caller's events on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param string $calendarId The calendar the caller named.
+	 * @param string $eventUri   The event the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
+		foreach ($this->getEventsForObject(objectUuid: $objectUuid) as $event) {
+			if ((string)$event['calendarId'] === $calendarId && $event['id'] === $eventUri) {
+				return;
+			}
+		}
+
+		throw new Exception('Calendar event not found', 404);
+	}//end requireEventOf()
+
+	/**
 	 * Unlink an event from an object (remove X-OPENREGISTER-* properties).
 	 *
 	 * @param string $calendarId The calendar ID
@@ -565,6 +588,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 */
 	public function deleteEvent(string $calendarId, string $eventUri): void {
 		$calendarIdInt = (int)$calendarId;
+		$this->refuseSomebodyElsesCalendar(calendarId: $calendarIdInt);
+
 		$existing = $this->calDavBackend->getCalendarObject($calendarIdInt, $eventUri);
 
 		if ($existing === null) {
@@ -573,6 +598,26 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 
 		$this->calDavBackend->deleteCalendarObject($calendarIdInt, $eventUri);
 	}//end deleteEvent()
+
+	/**
+	 * Refuse a calendar the session user does not own.
+	 *
+	 * The id comes from a link row any reader of the object can see, so holding
+	 * it says nothing about the calendar.
+	 *
+	 * @param int $calendarId The calendar id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not the caller's.
+	 */
+	private function refuseSomebodyElsesCalendar(int $calendarId): void {
+		$user = $this->userSession->getUser();
+		$calendar = $this->calDavBackend->getCalendarById($calendarId);
+		if ($user === null || ($calendar['principaluri'] ?? null) !== 'principals/users/' . $user->getUID()) {
+			throw new Exception('Calendar event not found', 404);
+		}
+	}//end refuseSomebodyElsesCalendar()
 
 	/**
 	 * Unlink all events for an object (used during cleanup).
