@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 /**
  * The `_search_score` expression of a UNION arm.
  *
- * pg_trgm similarity() on PostgreSQL with the extension, ILIKE on PostgreSQL
- * without it, LIKE on MariaDB/MySQL.
+ * PostgreSQL scores by pg_trgm similarity() when the extension is there and
+ * by ILIKE when it is not; MariaDB and MySQL score by LIKE.
  *
  * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
  */
