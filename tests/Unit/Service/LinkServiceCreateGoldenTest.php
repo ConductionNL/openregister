@@ -123,7 +123,13 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps = $this->createMock(IAppManager::class);
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->rowBuilder($row));
+		// The first query is the account-owner lookup, the next the message.
+		$answers = [['user_id' => $uid2]];
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function () use (&$answers, $row) {
+				return $this->rowBuilder(array_shift($answers) ?? $row);
+			}
+		);
 		$service = new EmailLinkService($mapper, $apps, $db, $this->session($uid2), $this->createMock(LoggerInterface::class));
 
 		$this->assertGolden(
@@ -144,7 +150,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$apps->method('isEnabledForUser')->willReturn(true);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(
-			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>'])
+			fn () => $this->rowBuilder(['id' => 7, 'uid' => 'u', 'subject' => 'Hello', 'message_id' => '<a1@x>', 'user_id' => 'alice'])
 		);
 		$service = new EmailLinkService($mapper, $apps, $db, $this->session('alice'), $this->createMock(LoggerInterface::class));
 
