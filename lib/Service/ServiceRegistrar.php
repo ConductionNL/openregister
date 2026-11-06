@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\Integration\TimeProvider as IntegrationTimeProvider;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
@@ -238,16 +237,6 @@ final class ServiceRegistrar {
 		$context->registerService(FolderManagementHandler::class, self::buildFolderManagementHandler(...));
 
 		$context->registerService(TaskService::class, self::buildTaskService(...));
-
-
-		$context->registerService(
-			\OCA\OpenRegister\Service\Integration\TimeProvider::class,
-			function (ContainerInterface $container) {
-				return new IntegrationTimeProvider(
-					appConfig: $container->get('OCP\IAppConfig')
-				);
-			}
-		);
 	}//end registerObjectServices()
 
 	/**

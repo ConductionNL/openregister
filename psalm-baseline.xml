@@ -131,15 +131,6 @@
       <code><![CDATA[CardDavBackend]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Service/Edepot/Transport/SftpTransport.php">
-    <UndefinedClass>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[$sftp]]></code>
-      <code><![CDATA[\phpseclib3\Net\SFTP]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/ExportService.php">
     <StringIncrement>
       <code><![CDATA[$col]]></code>
