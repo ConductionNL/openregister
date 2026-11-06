@@ -190,8 +190,9 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 */
 	private function accessibleObjectService(): \OCA\OpenRegister\Service\ObjectService {
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectService->method('getObject')
-			->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('o-uuid');
+		$objectService->method('getObject')->willReturn($object);
 		$objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		return $objectService;
 	}//end accessibleObjectService()
@@ -444,6 +445,54 @@ class ObjectIntegrationsControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_OK, $controller->show('r', 's', 'o', 'stub', 'e')->getStatus());
 	}//end testReadsNeedNoUpdateRight()
+
+	public function testProvidersReceiveTheResolvedUuidNotTheRouteId(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$controller->index('r', 's', 'my-slug', 'stub');
+		$controller->update('r', 's', 'my-slug', 'stub', 'e');
+		$controller->destroy('r', 's', 'my-slug', 'stub', 'e');
+
+		$this->assertSame('o-uuid', $stub->listCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->updateCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->deleteCalled['objectId']);
+	}//end testProvidersReceiveTheResolvedUuidNotTheRouteId()
+
+	public function testALinkOfAnotherObjectAnswers404Not500(): void {
+		$contacts = $this->createMock(\OCA\OpenRegister\Service\ContactService::class);
+		$contacts->expects($this->once())
+			->method('unlinkContact')
+			->with(77, 'o-uuid')
+			->willThrowException(new \Exception('Contact link not found', 404));
+		$contacts->method('updateRole')->willThrowException(new \Exception('Contact link not found', 404));
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(
+			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
+				$contacts,
+				$this->createMock(\OCP\App\IAppManager::class),
+				$this->createMock(\OCP\IL10N::class)
+			)
+		);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->update('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+	}//end testALinkOfAnotherObjectAnswers404Not500()
+
+	public function testAnObjectWithoutAUuidIsNotFound(): void {
+		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, objectService: $objectService);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame([], $stub->deleteCalled);
+	}//end testAnObjectWithoutAUuidIsNotFound()
 
 	public function testUnknownIntegrationReturns404(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
