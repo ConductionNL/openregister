@@ -48,6 +48,7 @@ use Psr\Container\ContainerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
  * @uses \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Service\Object\FileWriteGuard
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Exception\LockedException
@@ -222,6 +223,28 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
 	}//end testFrozenObjectRefusesRevert()
+
+	/**
+	 * An archived object refuses a revert until it is restored, and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-an-archived-object-refuses-writes-to-its-data-req-oas-002
+	 */
+	public function testArchivedObjectRefusesRevert(): void {
+		$this->current->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
+
+		$this->magic->expects($this->never())->method('update');
+		$this->audit->expects($this->never())->method('revertObject');
+		$this->audit->expects($this->never())->method('createAuditTrail');
+
+		try {
+			$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
+			$this->fail('The revert went through');
+		} catch (ObjectStateWriteException $e) {
+			$this->assertSame('archived', $e->getState());
+		}
+	}//end testArchivedObjectRefusesRevert()
 
 	/**
 	 * Without update permission on the object the revert is refused before the lock is looked at, and nothing is written.

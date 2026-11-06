@@ -132,7 +132,7 @@ class RevertHandler {
 	 * @throws DoesNotExistException If object not found
 	 * @throws NotAuthorizedException If user not authorized
 	 * @throws LockedException If object is locked
-	 * @throws ObjectStateWriteException If the object is frozen
+	 * @throws ObjectStateWriteException If the object is archived or frozen
 	 * @throws ValidationException If the restored data fails the current schema
 	 * @throws \Exception If reversion fails
 	 *
@@ -165,12 +165,13 @@ class RevertHandler {
 
 	/**
 	 * Refuse a revert the caller may not make, in this order: no update
-	 * permission on the object, a lock held by someone else, a frozen object.
+	 * permission on the object, a lock held by someone else, an archived or
+	 * frozen object.
 	 *
 	 * Lock ownership is decided by the one production predicate, so a
 	 * run-held lock refuses the run's own runAs user here as at every other
-	 * guard. The freeze refuses a revert as SaveObject refuses every other
-	 * write to a frozen object (#4105).
+	 * guard. The archive and the freeze refuse a revert as SaveObject refuses
+	 * every other write to such an object (#4105).
 	 *
 	 * @param array $context The object, register and schema from the lookup
 	 *
@@ -178,9 +179,7 @@ class RevertHandler {
 	 *
 	 * @throws NotAuthorizedException If the caller may not update the object
 	 * @throws LockedException If someone else holds the object's lock
-	 * @throws ObjectStateWriteException If the object is frozen
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectStateWriteException::frozen() is the one named constructor every write guard refuses with
+	 * @throws ObjectStateWriteException If the object is archived or frozen
 	 */
 	private function assertMayRevert(array $context): void {
 		$object = $context['object'];
@@ -192,9 +191,7 @@ class RevertHandler {
 			throw new LockedException(message: sprintf('Object is locked by %s', (string)$object->describeLockHolder()));
 		}
 
-		if ($object->isFrozen() === true) {
-			throw ObjectStateWriteException::frozen($object);
-		}
+		(new FileWriteGuard())->assertWritable(object: $object);
 	}//end assertMayRevert()
 
 	/**
