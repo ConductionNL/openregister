@@ -27,7 +27,9 @@ namespace Unit\Middleware;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Middleware\MaintenanceModeHeldException;
 use OCA\OpenRegister\Middleware\MaintenanceModeMiddleware;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
@@ -82,9 +84,28 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOperationsConsoleIsNotClosedByTheModeItControls(): void {
-		$this->middleware(true)->beforeController(OperationsConsoleController::class, 'maintenance');
+		$this->middleware(true)->beforeController(OperationsConsoleController::class, 'index');
 
 		$this->addToAssertionCount(1);
+	}
+
+	/**
+	 * The controller that LEAVES the mode is reachable while it holds.
+	 *
+	 * Since consistency and maintenance moved out of the console controller,
+	 * the leave action lives on OperationsMaintenanceController. With only the
+	 * console class allowed, DELETE /api/operations/maintenance was refused by
+	 * the mode it lifts, and the instance stayed shut.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testTheModeCanBeLeftWhileItHolds(): void {
+		$this->middleware(true)->beforeController(OperationsMaintenanceController::class, 'maintenance');
+		$this->middleware(true)->beforeController(OperationsConsistencyController::class, 'consistency');
+
+		$this->addToAssertionCount(2);
 	}
 
 	/**
