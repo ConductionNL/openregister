@@ -128,6 +128,16 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
+ * @uses \OCA\OpenRegister\Event\PermissionsDeclaringEvent
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\MatrixRowWhere
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
@@ -353,6 +363,42 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 
 		$this->assertSame(json_decode((string) file_get_contents($fixture), true), $actual);
 	}//end testFarSchemaLookupMatchesGolden()
+
+	/**
+	 * The authorization block, the reveal audit and a hierarchy over the schema's own identities.
+	 */
+	public function testAccessDeclarationsMatchGolden(): void {
+		$self = ['type' => 'string', '$ref' => 'uuid-1'];
+		$cases = [
+			'grant' => [['read' => ['team']], [], []],
+			'unknown verb' => [['bogus' => ['team']], [], []],
+			'grant and deny the same' => [['read' => ['team'], 'deny' => ['read' => ['team']]], [], []],
+			'matrix on a missing field' => [['read' => ['team'], 'matrix' => ['field' => 'afdeling', 'userSource' => ['groups' => true], 'rows' => [['group' => 'team', 'value' => 'x']]]], [], []],
+			'matrix with no rows' => [['matrix' => []], [], []],
+			'read rule without audit' => [[], [], ['a' => ['authorization' => ['read' => []]]]],
+			'audit with an empty read' => [[], [], ['a' => ['authorization' => ['audit' => true, 'read' => []]]]],
+			'audit false' => [[], [], ['a' => ['authorization' => ['audit' => false]]]],
+			'hierarchy on itself by uuid' => [[], ['x-openregister-hierarchy' => ['parent' => 'up', 'property' => 'up']], ['up' => $self]],
+			'hierarchy on another schema' => [[], ['x-openregister-hierarchy' => ['parent' => 'up', 'property' => 'up']], ['up' => ['type' => 'string', '$ref' => 'other']]],
+		];
+		$actual = [];
+		foreach ($cases as $name => [$authorization, $configuration, $properties]) {
+			$this->logs = [];
+			$this->queuedRows = [];
+			$schema = new Schema();
+			$schema->setId(1);
+			$schema->setUuid('uuid-1');
+			$schema->setSlug('golden');
+			$schema->setTitle('Golden Schema');
+			$schema->setConfiguration($configuration);
+			$schema->setProperties($properties);
+			$schema->setAuthorization($authorization);
+			$outcome = $this->saved($schema);
+			$actual[$name] = ['thrown' => ($outcome['thrown'] ?? null), 'logs' => $outcome['logs']];
+		}
+
+		$this->assertGolden($actual, 'schema-mapper-save-access-golden.json');
+	}//end testAccessDeclarationsMatchGolden()
 
 	/**
 	 * What the save fills in depends on what the schema already carries.

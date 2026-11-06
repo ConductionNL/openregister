@@ -14,7 +14,6 @@ import {
 			v-if="navigationStore.modal === 'viewObject'"
 			:name="getModalTitle()"
 			size="large"
-			:canClose="true"
 			@update:open="handleDialogClose">
 			<div class="formContainer viewObjectDialog">
 				<!-- Register/Schema Selection (for new objects with multiple options) -->

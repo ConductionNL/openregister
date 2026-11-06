@@ -39,11 +39,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -225,7 +225,6 @@ class RenderObject {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
 	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -264,7 +263,6 @@ class RenderObject {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
@@ -378,93 +376,6 @@ class RenderObject {
 
 		return $writeOnly;
 	}//end getWriteOnlyProperties()
-
-	/**
-	 * Enrich `recurrence`-typed properties with their upcoming occurrences.
-	 *
-	 * For every property declared as `type: recurrence` whose value is a non-empty
-	 * RRULE string, this attaches a sibling virtual field `_occurrences` listing
-	 * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
-	 * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
-	 * itself is preserved unchanged for round-trip integrity. When the object
-	 * declares exactly one recurrence property, `_occurrences` is attached at the
-	 * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
-	 * collisions.
-	 *
-	 * @param array $objectData The object data being rendered.
-	 * @param Schema $schema The schema for the object.
-	 *
-	 * @return array The object data, possibly enriched with occurrence lists.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array {
-		$properties = $schema->getProperties() ?? [];
-
-		// Collect recurrence properties present in the object with a string value.
-		$recurrenceProps = [];
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$type = null;
-			if (is_array($propertyConfig) === true) {
-				$type = ($propertyConfig['type'] ?? null);
-			} elseif (is_object($propertyConfig) === true) {
-				$type = ($propertyConfig->type ?? null);
-			}
-
-			if ($type !== 'recurrence') {
-				continue;
-			}
-
-			$value = ($objectData[$propertyName] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				$recurrenceProps[$propertyName] = $value;
-			}
-		}//end foreach
-
-		if (empty($recurrenceProps) === true) {
-			return $objectData;
-		}
-
-		$count = $this->resolveOccurrenceCount();
-		$validator = new ExtendedFieldTypeValidator();
-		$single = (count($recurrenceProps) === 1);
-
-		foreach ($recurrenceProps as $propertyName => $rrule) {
-			$occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
-			$key = $propertyName . '_occurrences';
-			if ($single === true) {
-				$key = '_occurrences';
-			}
-
-			$objectData[$key] = $occurrences;
-		}
-
-		return $objectData;
-	}//end enrichRecurrenceOccurrences()
-
-	/**
-	 * Resolve the requested number of recurrence occurrences from the request.
-	 *
-	 * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
-	 * 1..100 by the validator). Falls back to the default when no request is
-	 * available (e.g. in unit-test construction without an injected IRequest).
-	 *
-	 * @return int The requested occurrence count.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function resolveOccurrenceCount(): int {
-		if ($this->request === null) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		$raw = $this->request->getParam('recurrenceOccurrences', null);
-		if ($raw === null || is_numeric($raw) === false) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		return (int)$raw;
-	}//end resolveOccurrenceCount()
 
 	/**
 	 * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
@@ -642,58 +553,75 @@ class RenderObject {
 
 		foreach ($rows as &$row) {
 			if ($row instanceof ObjectEntity === true) {
-				$schemaId = $row->getSchema();
-				if ($schemaId === null) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row->getRegister();
-				$register = null;
-				if ($registerId !== null) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$resolved = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row->getObject(),
-					schema: $schema,
-					register: $register
-				);
-				$row->setObject($resolved);
+				$this->translateEntityRow(row: $row);
 				continue;
-			}//end if
+			}
 
 			if (is_array($row) === true) {
-				$schemaId = $row['@self']['schema'] ?? null;
-				if (is_int($schemaId) === false && is_string($schemaId) === false) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row['@self']['register'] ?? null;
-				$register = null;
-				if (is_int($registerId) === true || is_string($registerId) === true) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$row = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row,
-					schema: $schema,
-					register: $register
-				);
-			}//end if
-		}//end foreach
+				$row = $this->translateArrayRow(row: $row);
+			}
+		}
 
 		unset($row);
 	}//end resolveTranslationsForRows()
+
+	/**
+	 * Resolve the translations of one entity row; without a known schema it stays as it is.
+	 *
+	 * @param ObjectEntity $row The row, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateEntityRow(ObjectEntity $row): void {
+		$schema = null;
+		if ($row->getSchema() !== null) {
+			$schema = $this->getSchema(id: $row->getSchema());
+		}
+
+		if ($schema === null) {
+			return;
+		}
+
+		$register = null;
+		if ($row->getRegister() !== null) {
+			$register = $this->getRegister(id: $row->getRegister());
+		}
+
+		$row->setObject(
+			$this->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+		);
+	}//end translateEntityRow()
+
+	/**
+	 * Resolve the translations of one serialized row; without a known schema it stays as it is.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return array The row with its translations resolved.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateArrayRow(array $row): array {
+		$schemaId = $row['@self']['schema'] ?? null;
+		$schema = null;
+		if (is_int($schemaId) === true || is_string($schemaId) === true) {
+			$schema = $this->getSchema(id: $schemaId);
+		}
+
+		if ($schema === null) {
+			return $row;
+		}
+
+		$registerId = $row['@self']['register'] ?? null;
+		$register = null;
+		if (is_int($registerId) === true || is_string($registerId) === true) {
+			$register = $this->getRegister(id: $registerId);
+		}
+
+		return $this->translationHandler->resolveTranslationsForRender(objectData: $row, schema: $schema, register: $register);
+	}//end translateArrayRow()
 
 	/**
 	 * Resolve the declared lenses on a batch of un-rendered list rows.
@@ -2621,7 +2549,7 @@ class RenderObject {
 			$entity->setObject($objectData);
 		}
 
-		$objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $schema);
+		$objectData = (new RecurrenceOccurrences(request: $this->request))->enrich(objectData: $objectData, schema: $schema);
 		$entity->setObject($objectData);
 
 		return $objectData;
@@ -2830,7 +2758,15 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->applyVirtualCalculations(entity: $entity, schema: $schema, data: $objectData);
+		$calculations = new VirtualCalculations(evaluator: $this->calculationEvaluator, logger: $this->logger);
+
+		return array_replace(
+			$objectData,
+			$calculations->values(
+				calculations: VirtualCalculations::declaredBy(schema: $schema),
+				payload: (new CalculationPayload())->withSelf(data: $objectData, entity: $entity)
+			)
+		);
 	}//end applyRequestedCalculations()
 
 	/**
@@ -3577,79 +3513,6 @@ class RenderObject {
 		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
 		return $rule->forProperty(body: $preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
-
-	/**
-	 * Apply virtual (materialise:false) calculations declared on the
-	 * schema to the given data array. Materialised calculations are
-	 * persisted on save and skipped here.
-	 *
-	 * @param ObjectEntity $entity The object being rendered (used for @self.* refs).
-	 * @param Schema|null $schema The schema definition (may be null).
-	 * @param array<string, mixed> $data The current rendered data array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array {
-		if ($schema === null) {
-			return $data;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$calcs = ($config['x-openregister-calculations'] ?? null);
-		if (is_array($calcs) === false || count($calcs) === 0) {
-			return $data;
-		}
-
-		$created = $entity->getCreated();
-		$updated = $entity->getUpdated();
-
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(\DateTimeInterface::ATOM);
-		}
-
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
-		}
-
-		$payload = $data;
-		$payload['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-
-		foreach ($calcs as $name => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
-
-			// Skip materialised — already in $data from save-time listener.
-			if (($spec['materialise'] ?? false) === true) {
-				continue;
-			}
-
-			try {
-				$value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
-				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format(\DateTimeInterface::ATOM);
-				}
-
-				$data[(string)$name] = $value;
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string)$name, $e->getMessage())
-				);
-			}
-		}//end foreach
-
-		return $data;
-	}//end applyVirtualCalculations()
 
 	/**
 	 * Handle extends containing a wildcard ($)
@@ -4560,7 +4423,7 @@ class RenderObject {
 		}
 
 		// If it's a UUID, try to find the schema by UUID.
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === true) {
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === 1) {
 			try {
 				$schema = $this->schemaMapper->find($cleanSchemaRef);
 				return (string)$schema->getId();

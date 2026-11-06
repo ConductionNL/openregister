@@ -312,10 +312,10 @@ class EmailService implements EmailServiceInterface {
 		try {
 			// The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
 			$sql = 'SELECT mb.account_id, m.id AS message_id
-                     FROM oc_mail_messages m
-                     JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
-                     JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
-                     JOIN oc_mail_accounts ma ON ma.id = mb.account_id
+                     FROM *PREFIX*mail_messages m
+                     JOIN *PREFIX*mail_recipients r ON r.message_id = m.id AND r.type = 0
+                     JOIN *PREFIX*mail_mailboxes mb ON mb.id = m.mailbox_id
+                     JOIN *PREFIX*mail_accounts ma ON ma.id = mb.account_id
                      WHERE LOWER(r.email) = LOWER(?) AND ma.user_id = ?
                      LIMIT 200';
 			$stmt = $this->db->prepare($sql);
