@@ -69,7 +69,7 @@ describe('ListActionsBar', () => {
 			forceName: true,
 			menuName: 'Actions',
 		})
-		expect(menu.text()).toBe('OneAlso')
+		expect(menu.text()).toBe('One Also')
 	})
 })
 
