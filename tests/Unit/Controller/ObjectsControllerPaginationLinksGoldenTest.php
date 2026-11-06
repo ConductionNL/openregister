@@ -49,9 +49,7 @@ class ObjectsControllerPaginationLinksGoldenTest extends TestCase {
 			'/api/objects/1/2?_limit=2',
 			'/api/objects/1/2?page=3',
 			'/api/objects/1/2?_limit=2&page=3',
-			'/api/objects/1/2?_page=3',
 			'/api/objects/1/2?search=page%3D1',
-			'/api/objects/1/2?xpage=4',
 		];
 		$out = [];
 		foreach ($uris as $uri) {
@@ -62,6 +60,36 @@ class ObjectsControllerPaginationLinksGoldenTest extends TestCase {
 
 		return $out;
 	}//end cases()
+
+	/**
+	 * A URI whose page parameter the links have to rewrite or leave alone.
+	 *
+	 * @return array<string, array{0: string, 1: string, 2: string}>
+	 */
+	public static function rewrites(): array {
+		return [
+			'_page' => ['/api?_page=2', '/api?_page=3', '/api?_page=1'],
+			'_page after another parameter' => ['/api?_limit=2&_page=2', '/api?_limit=2&_page=3', '/api?_limit=2&_page=1'],
+			'_page before another parameter' => ['/api?_page=2&_limit=2', '/api?_page=3&_limit=2', '/api?_page=1&_limit=2'],
+			'both spellings' => ['/api?_page=2&page=2', '/api?_page=3&page=3', '/api?_page=1&page=1'],
+			'a page with no number' => ['/api?page=&_limit=2', '/api?page=3&_limit=2', '/api?page=1&_limit=2'],
+			'a parameter ending in page' => ['/api?xpage=4', '/api?xpage=4&page=3', '/api?xpage=4&page=1'],
+		];
+	}//end rewrites()
+
+	/**
+	 * `next` and `prev` move off the current page whatever spells the parameter.
+	 *
+	 * @param string $uri  The request URI, read at page 2 of 3.
+	 * @param string $next The expected next link.
+	 * @param string $prev The expected previous link.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('rewrites')]
+	public function testLinksRewriteThePageParameter(string $uri, string $next, string $prev): void {
+		$this->assertSame(['next' => $next, 'prev' => $prev], $this->links(uri: $uri, page: 2, pages: 3));
+	}//end testLinksRewriteThePageParameter()
 
 	/**
 	 * The links paginate() answers for a request URI and a page position.

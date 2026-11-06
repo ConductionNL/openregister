@@ -185,6 +185,7 @@ class ExternalGrantGuard {
 			$lapsing[] = [
 				'action' => $found['action'],
 				'principal' => $this->principalOf(entry: $found['entry']),
+				'holders' => $this->holdersOf(entry: $found['entry']),
 				'endsAt' => date(DATE_ATOM, $ends),
 				'daysLeft' => (int)ceil((($ends - $now->getTimestamp()) / 86400)),
 			];
@@ -284,6 +285,31 @@ class ExternalGrantGuard {
 
 		return $ends;
 	}//end endOf()
+
+	/**
+	 * Who holds a grant, read by the entry's own keys and compared as access enforcement compares them.
+	 *
+	 * An entry naming both a user and a group is held by both. The ids are kept
+	 * exactly as written, so a padded id resolves to nobody here as it grants
+	 * nobody there.
+	 *
+	 * @param array<string, mixed> $entry The external entry.
+	 *
+	 * @return array<int, array{kind: string, id: string}> The holders.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private function holdersOf(array $entry): array {
+		$holders = [];
+		foreach (['user', 'group'] as $kind) {
+			$id = ($entry[$kind] ?? null);
+			if (is_string($id) === true && $id !== '') {
+				$holders[] = ['kind' => $kind, 'id' => $id];
+			}
+		}
+
+		return $holders;
+	}//end holdersOf()
 
 	/**
 	 * The principal an entry names, for the refusal to be actionable.

@@ -1,0 +1,221 @@
+{
+    "pending batch / rows": {
+        "thrown": "BadFunctionCallException: memberCount is not a valid attribute",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 40, 1",
+            "#1 expr.gt(id, :p2, NULL)",
+            "#1 andWhere(gt(id, :p2, NULL))",
+            "#1 expr.isNull(applied_at)",
+            "#1 andWhere(isNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(25)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pending batch / empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 40, 1",
+            "#1 expr.gt(id, :p2, NULL)",
+            "#1 andWhere(gt(id, :p2, NULL))",
+            "#1 expr.isNull(applied_at)",
+            "#1 andWhere(isNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(25)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pending batch from start / rows": {
+        "thrown": "BadFunctionCallException: memberCount is not a valid attribute",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 0, 1",
+            "#1 expr.gt(id, :p2, NULL)",
+            "#1 andWhere(gt(id, :p2, NULL))",
+            "#1 expr.isNull(applied_at)",
+            "#1 andWhere(isNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "pending batch from start / empty": {
+        "result": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 0, 1",
+            "#1 expr.gt(id, :p2, NULL)",
+            "#1 andWhere(gt(id, :p2, NULL))",
+            "#1 expr.isNull(applied_at)",
+            "#1 andWhere(isNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "walked count / rows": {
+        "result": 3,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), member_count)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 40, 1",
+            "#1 expr.lte(id, :p2, NULL)",
+            "#1 andWhere(lte(id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "walked count / empty": {
+        "result": 0,
+        "queries": [
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), member_count)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = 40, 1",
+            "#1 expr.lte(id, :p2, NULL)",
+            "#1 andWhere(lte(id, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts by outcome / rows": {
+        "result": {
+            "applied": 3,
+            "failed": 2
+        },
+        "queries": [
+            "#1 select(outcome)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), member_count)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 groupBy(outcome)",
+            "#1 executeQuery()"
+        ]
+    },
+    "counts by outcome / empty": {
+        "result": [],
+        "queries": [
+            "#1 select(outcome)",
+            "#1 func.count(id, )",
+            "#1 selectAlias(count(id, ), member_count)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 groupBy(outcome)",
+            "#1 executeQuery()"
+        ]
+    },
+    "by job and object / rows": {
+        "thrown": "BadFunctionCallException: memberCount is not a valid attribute",
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = obj-3, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "by job and object / empty": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 param :p2 = obj-3, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 andWhere(eq(object_uuid, :p2, NULL))",
+            "#1 setMaxResults(1)",
+            "#1 executeQuery()"
+        ]
+    },
+    "written uuids / rows": {
+        "result": [
+            "obj-1",
+            "obj-2"
+        ],
+        "queries": [
+            "#1 select(object_uuid)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 expr.isNotNull(applied_at)",
+            "#1 andWhere(isNotNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "written uuids / empty": {
+        "result": [],
+        "queries": [
+            "#1 select(object_uuid)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 expr.isNotNull(applied_at)",
+            "#1 andWhere(isNotNull(applied_at))",
+            "#1 orderBy(id, ASC)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all uuids / rows": {
+        "result": [
+            "obj-1",
+            "obj-2"
+        ],
+        "queries": [
+            "#1 select(object_uuid)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "all uuids / empty": {
+        "result": [],
+        "queries": [
+            "#1 select(object_uuid)",
+            "#1 from(openregister_bulk_job_members, NULL)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(job_id, :p1, NULL)",
+            "#1 where(eq(job_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

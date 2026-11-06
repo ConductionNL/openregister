@@ -48,6 +48,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @uses   \OCA\OpenRegister\Service\PropertyAccessRequest
