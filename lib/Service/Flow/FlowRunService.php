@@ -664,7 +664,7 @@ class FlowRunService implements FlowRunServiceInterface {
 		// this guard the nodes BEFORE the first object write still ran, so a
 		// flow could send mail and then fail to record why.
 		if ($attribution['user'] === null) {
-			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger);
+			$refusal = new FlowUnattributed(flowId: $flowId, trigger: $trigger, reason: ($attribution['refusal'] ?? null));
 
 			$this->logger->warning(
 				message: '[FlowRunService] Refused to queue an unattributed run',

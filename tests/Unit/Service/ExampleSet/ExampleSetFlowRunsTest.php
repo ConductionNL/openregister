@@ -286,7 +286,7 @@ class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 			'a claim by someone else'         => [$wait, [self::hearingTask(extra: ['claimedBy' => '{{cast:sanne.uid}}'])], 'claimedBy is the assignee'],
 			'a claim in the future'           => [
 				$wait,
-				[self::hearingTask(extra: ['claimedAt' => '2099-01-01T09:00:00+01:00'])],
+				[self::hearingTask(extra: ['claimedAt' => date('c', strtotime('+10 years'))])],
 				'claimedAt lies in the future',
 			],
 			'a claim that is no date'         => [$wait, [self::hearingTask(extra: ['claimedAt' => 'gisteren'])], 'claimedAt "gisteren" is not a date'],

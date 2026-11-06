@@ -36,6 +36,9 @@ use OCA\OpenRegister\Service\Archival\AnonymisationSweep;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
+// RecordingTarget is declared with the run's tests.
+require_once __DIR__ . '/AnonymisationRunTest.php';
+
 /**
  * Tests for AnonymisationSweep.
  */

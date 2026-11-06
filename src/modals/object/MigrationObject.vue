@@ -12,7 +12,7 @@ import {
 	<NcDialog
 		:name="`Migrate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Source and Target Information -->
 		<div class="migration-overview">
 			<div class="source-info">
