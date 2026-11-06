@@ -280,12 +280,33 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
-		$this->db->expects($this->never())->method('beginTransaction');
+		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(ObjectStateWriteException::class);
 
 		$this->service->deleteObjectsByRegister(register: $this->register([42, 43]));
 	}//end testOneFrozenRowRefusesTheWholeRegisterAndDeletesNothing()
+
+	/**
+	 * A row frozen as the transaction opens still refuses: the check reads inside it.
+	 *
+	 * @return void
+	 */
+	public function testARowFrozenAsTheTransactionOpensRefusesTheRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->db->method('beginTransaction')->willReturnCallback(
+			function (): void {
+				$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
+			}
+		);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+		$this->db->expects($this->once())->method('rollBack');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testARowFrozenAsTheTransactionOpensRefusesTheRegister()
 
 	/**
 	 * An archived row refuses a table delete as well.
