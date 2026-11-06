@@ -1915,7 +1915,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 */
 	private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array {
 		// Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-		$schemaObject = $this->transformSchemaForValidation(schemaObject: $schemaObject, currentSchemaSlug: ($schema?->getSlug() ?? ''));
+		$schemaObject = $this->transformSchemaForValidation(schemaObject: $schemaObject, currentSchemaSlug: self::slugOf(schema: $schema));
 
 		// Collect computed property names BEFORE cleaning: the cleaning step
 		// strips the per-property `computed` marker.
@@ -1934,6 +1934,21 @@ class ValidateObject implements ValidateObjectInterface {
 
 		return ['schemaObject' => $schemaObject, 'computed' => $computedProperties, 'required' => $requiredFields];
 	}//end prepareSchemaForValidation()
+
+	/**
+	 * The slug for circular reference detection; an entity without a slug is a TypeError.
+	 *
+	 * @param Schema|null $schema The schema.
+	 *
+	 * @return string The slug, empty without a schema.
+	 */
+	private static function slugOf(?Schema $schema): string {
+		if ($schema === null) {
+			return '';
+		}
+
+		return $schema->getSlug();
+	}//end slugOf()
 
 	/**
 	 * The required list without computed properties; an empty list is dropped from the schema.
