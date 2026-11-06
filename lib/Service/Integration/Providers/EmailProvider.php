@@ -136,11 +136,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 		$paging = new EmailListPaging(filters: $filters);
 
 		try {
-			$result = $this->emailService->getEmailsForObject(
-				objectUuid: $objectId,
-				limit: $paging->limit(),
-				offset: $paging->offset()
-			);
+			$result = $this->emailService->getEmailsForObject(objectUuid: $objectId, limit: $paging->limit(), offset: $paging->offset());
 		} catch (Throwable $e) {
 			return ['items' => [], 'total' => 0, 'nextCursor' => null];
 		}
