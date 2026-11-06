@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\ObjectService;
@@ -1204,6 +1205,27 @@ class BulkControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->assertSame(409, $this->controller->deleteRegister('1')->getStatus());
+	}
+
+	/**
+	 * A locked row answers 423 on each table route.
+	 *
+	 * @return void
+	 */
+	public function testATableDeleteOverALockedRowIsRefusedWith423(): void {
+		$object = new ObjectEntity();
+		$object->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'bob']);
+		$refusal = LockedException::forObject($object);
+		$this->stubAdminUser();
+		$this->setupResolveSuccess();
+		$this->stubSchemaLookup(2);
+		$this->objectService->method('deleteObjectsBySchema')->willThrowException($refusal);
+		$this->objectService->method('deleteObjectsByRegister')->willThrowException($refusal);
+		$this->request->method('getParams')->willReturn([]);
+
+		$this->assertSame(423, $this->controller->deleteSchemaObjects('my-register', 'my-schema')->getStatus());
+		$this->assertSame(423, $this->controller->deleteSchema('1', '2')->getStatus());
+		$this->assertSame(423, $this->controller->deleteRegister('1')->getStatus());
 	}
 
 	/**

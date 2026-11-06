@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -285,6 +286,38 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 
 		$this->service->deleteObjectsByRegister(register: $this->register([42, 43]));
 	}//end testOneFrozenRowRefusesTheWholeRegisterAndDeletesNothing()
+
+	/**
+	 * An archived row refuses a table delete as well.
+	 *
+	 * @return void
+	 */
+	public function testAnArchivedRowRefusesTheWholeRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->rows[42][0]->setArchived(['by' => 'anna', 'at' => '2026-09-12T00:00:00+00:00', 'reason' => 'closed']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+
+		$this->expectException(ObjectStateWriteException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testAnArchivedRowRefusesTheWholeRegister()
+
+	/**
+	 * A locked row refuses a table delete as well.
+	 *
+	 * @return void
+	 */
+	public function testALockedRowRefusesTheWholeRegister(): void {
+		$this->givenSchema(id: 42, uuids: ['a-1']);
+		$this->rows[42][0]->setLocked(['kind' => ObjectEntity::LOCK_KIND_USER, 'user' => 'bob']);
+
+		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
+
+		$this->expectException(LockedException::class);
+
+		$this->service->deleteObjectsByRegister(register: $this->register([42]));
+	}//end testALockedRowRefusesTheWholeRegister()
 
 	/**
 	 * A frozen row past the first chunk refuses as well.

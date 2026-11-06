@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 
@@ -51,31 +52,36 @@ final class WholeTableRows {
 	}//end __construct()
 
 	/**
-	 * Refuse when a row of the table is frozen, before any row is touched.
+	 * Refuse when a row of the table is frozen, archived or locked, before any row is touched.
 	 *
 	 * The mapper primitive empties the table in one statement, so the object deleting
-	 * event that refuses a frozen row on every other delete never fires there.
+	 * event that refuses such a row on every other delete never fires there. A lock of
+	 * the caller's own refuses too: this door takes rows of every holder at once.
 	 *
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
 	 *
 	 * @return void
 	 *
-	 * @throws ObjectStateWriteException When a row is frozen.
+	 * @throws ObjectStateWriteException When a row is frozen or archived.
+	 * @throws LockedException When a row is locked.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) forObject() is the exception's named constructor, as in SaveObject.
 	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-frozen-record-cannot-be-deleted
 	 */
-	public function assertNoneFrozen(Register $register, Schema $schema): void {
+	public function assertNoneKept(Register $register, Schema $schema): void {
 		if ($this->mapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 			return;
 		}
 
 		foreach ($this->all(register: $register, schema: $schema) as $object) {
-			if ($object->isFrozen() === true) {
-				(new FileWriteGuard())->assertWritable(object: $object);
+			(new FileWriteGuard())->assertWritable(object: $object);
+			if ($object->isLocked() === true) {
+				throw LockedException::forObject($object);
 			}
 		}
-	}//end assertNoneFrozen()
+	}//end assertNoneKept()
 
 	/**
 	 * Every row of one table, soft-deleted ones included, chunk by chunk.

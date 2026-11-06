@@ -162,7 +162,7 @@ class SchemaDeletionService {
 		$schema = $this->schemaMapper->find(id: $schemaId);
 
 		$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-		$this->tableRows()->assertNoneFrozen(register: $register, schema: $schema);
+		$this->tableRows()->assertNoneKept(register: $register, schema: $schema);
 
 		$result = $this->deleteObjectsOfPair(
 			register: $register,
@@ -257,7 +257,7 @@ class SchemaDeletionService {
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-			$this->tableRows()->assertNoneFrozen(register: $register, schema: $schema);
+			$this->tableRows()->assertNoneKept(register: $register, schema: $schema);
 		}
 
 		$deletedCount = 0;
