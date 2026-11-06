@@ -114,7 +114,7 @@ class CalculationEvaluatorGoldenTest extends TestCase {
 			'dateDiff now' => ['dateDiff' => ['from' => 'now', 'to' => 'now', 'unit' => 'years']], 'dateDiff null key' => ['dateDiff' => ['from' => null, 'to' => null, 'unit' => 'days']],
 			'dateAdd bare' => ['dateAdd' => 'x'], 'dateAdd no date' => ['dateAdd' => ['amount' => 1, 'unit' => 'days']], 'dateAdd no shape' => ['dateAdd' => ['date' => '2024-01-01']],
 			'dateAdd amount only' => ['dateAdd' => ['date' => '2024-01-01', 'amount' => 1]], 'dateAdd unit only' => ['dateAdd' => ['date' => '2024-01-01', 'unit' => 'days']],
-			'dateAdd bad date' => ['dateAdd' => ['date' => 'not a date', 'amount' => 1, 'unit' => 'days']], 'dateAdd null date' => ['dateAdd' => ['date' => $p('nothing'), 'duration' => 'P1D']],
+			'dateAdd bad date' => ['dateAdd' => ['date' => 'not-a-date', 'amount' => 1, 'unit' => 'days']], 'dateAdd null date' => ['dateAdd' => ['date' => $p('nothing'), 'duration' => 'P1D']],
 			'dateAdd duration' => ['dateAdd' => ['date' => '2024-01-31', 'duration' => 'P1M']], 'dateAdd bad duration' => ['dateAdd' => ['date' => '2024-01-31', 'duration' => 'nope']],
 			'dateAdd empty duration' => ['dateAdd' => ['date' => '2024-01-31', 'duration' => '']], 'dateAdd int duration' => ['dateAdd' => ['date' => '2024-01-31', 'duration' => 5]],
 			'dateAdd both shapes' => ['dateAdd' => ['date' => '2024-01-31', 'duration' => 'P1D', 'amount' => 5, 'unit' => 'years']],
