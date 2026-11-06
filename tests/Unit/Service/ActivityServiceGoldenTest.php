@@ -40,7 +40,10 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
+ * @covers \OCA\OpenRegister\Notifications\Service\ActivityEntries
+ * @covers \OCA\OpenRegister\Notifications\Service\ActivityEntry
  * @covers \OCA\OpenRegister\Notifications\Service\ActivityService
+ * @covers \OCA\OpenRegister\Notifications\Service\ActivitySubject
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
@@ -117,7 +120,7 @@ class ActivityServiceGoldenTest extends TestCase {
 	}//end login()
 
 	private function service(?SchemaMapper $schemas = null, ?DeepLinkRegistryService $links = null): ActivityService {
-		return new ActivityService($this->manager, $this->session, $this->urls, $this->logger, $schemas, $links);
+		return new ActivityService($this->manager, $this->session, new \OCA\OpenRegister\Notifications\Service\ActivityEntries($this->urls, $this->logger, $schemas, $links), $this->logger);
 	}//end service()
 
 	private function object(?string $owner = 'owner'): ObjectEntity {
