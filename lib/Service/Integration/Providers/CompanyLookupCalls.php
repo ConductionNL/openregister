@@ -105,6 +105,18 @@ trait CompanyLookupCalls {
 			$query[self::LIST_PARAMS['_search']] = $search;
 		}
 
+		return $query + $this->listPaging(filters: $filters);
+	}//end listQuery()
+
+	/**
+	 * The paging filters as the register's query params.
+	 *
+	 * @param array<string,mixed> $filters `_limit`, `_page`.
+	 *
+	 * @return array<string,string> The query params.
+	 */
+	private function listPaging(array $filters): array {
+		$query = [];
 		$limit = (int)($filters['_limit'] ?? 0);
 		if ($limit > 0) {
 			$query[self::LIST_PARAMS['_limit']] = (string)min(100, $limit);
@@ -116,7 +128,7 @@ trait CompanyLookupCalls {
 		}
 
 		return $query;
-	}//end listQuery()
+	}//end listPaging()
 
 	/**
 	 * The entries that are rows, renumbered.
