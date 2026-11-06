@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
+use OCA\OpenRegister\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
@@ -2589,10 +2590,12 @@ class FilesController extends Controller {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}
 
-			$width = (int)($this->request->getParam('width') ?? 256);
-			$height = (int)($this->request->getParam('height') ?? 256);
+			$size = new PreviewSize(
+				width: (int)($this->request->getParam('width') ?? 256),
+				height: (int)($this->request->getParam('height') ?? 256)
+			);
 
-			$preview = $this->fileService->getPreviewHandler()->getPreview($file, $width, $height);
+			$preview = $this->fileService->getPreviewHandler()->getPreview(file: $file, size: $size);
 
 			$response = new StreamResponse($preview->read());
 			$response->addHeader('Content-Type', $preview->getMimeType());

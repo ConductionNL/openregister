@@ -107,6 +107,17 @@ function stores(state) {
 }
 
 /**
+ * A component's computeds, its mixins' included.
+ *
+ * @param {object} component The component
+ * @return {object} The computeds
+ */
+function computedOf(component) {
+	const mixed = (component.mixins || []).map((mixin) => mixin.computed)
+	return Object.assign({}, ...mixed, component.computed)
+}
+
+/**
  * A sidebar context with its data, computeds as getters and methods.
  *
  * @param {object} component The sidebar
@@ -116,7 +127,7 @@ function stores(state) {
 function sidebar(component, route) {
 	const ctx = { ...component.data.call({ t: (a, s) => s }), $route: route }
 	ctx.$router = { replace: (to) => mockLog.push(['router.replace', to]) }
-	for (const [name, getter] of Object.entries(component.computed || {})) {
+	for (const [name, getter] of Object.entries(computedOf(component))) {
 		Object.defineProperty(ctx, name, {
 			get: () =>
 				(typeof getter === 'function' ? getter : getter.get).call(ctx),
@@ -208,7 +219,7 @@ describe('route sidebars golden', () => {
 				searchTrailStore.searchTrailList = list
 				const ctx = sidebar(component, { path, query: {} })
 				out.push(
-					'userOptions' in (component.computed || {})
+					'userOptions' in computedOf(component)
 						? ctx.userOptions
 						: 'none',
 				)
