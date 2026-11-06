@@ -130,6 +130,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

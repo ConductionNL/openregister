@@ -57,11 +57,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  * @uses   \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses   \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
- * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
- * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
- * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck
  */
 class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 
@@ -97,7 +93,7 @@ class UnknownMetadataConditionSaveRefusalTest extends TestCase {
 		$db->setAccessible(true);
 		$db->setValue($mapper, $connection);
 
-		$method = $reflection->getMethod('checkAccessDeclarations');
+		$method = $reflection->getMethod('validateAuthorizationDeny');
 		$method->setAccessible(true);
 		$method->invoke($mapper, $entity);
 	}//end validateAsTheSaveDoes()

@@ -29,6 +29,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\AuthorizationBlockCheck;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck;
@@ -1236,14 +1237,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return void
 	 */
 	private function checkAccessDeclarations(Schema $schema): void {
-		$access = new AccessDeclarationChecks(db: $this->db, eventDispatcher: $this->eventDispatcher, logger: $this->logger);
-		$access->checkDeny(schema: $schema);
+		$this->validateAuthorizationDeny(schema: $schema);
+		$access = new AccessDeclarationChecks(logger: $this->logger);
 		$access->checkHierarchy(schema: $schema);
 		$access->checkDepartmentMatrix(schema: $schema);
 		$access->checkRevealAudit(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkReversibility(schema: $schema);
 		(new SubjectDeclarationRefusals())->checkReview(schema: $schema);
 	}//end checkAccessDeclarations()
+
+	/**
+	 * Refuse an authorization block that cannot hold; RegisterMapper has its own of this name.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function validateAuthorizationDeny(Schema $schema): void {
+		(new AuthorizationBlockCheck(db: $this->db, eventDispatcher: $this->eventDispatcher))->check(schema: $schema);
+	}//end validateAuthorizationDeny()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
