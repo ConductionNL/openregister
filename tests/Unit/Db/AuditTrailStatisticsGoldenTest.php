@@ -155,6 +155,51 @@ class AuditTrailStatisticsGoldenTest extends TestCase {
 	}//end testGroupedAndFailingReadsMatchGolden()
 
 	/**
+	 * Dates arrive in any order, a list of no ids asks nothing, an empty
+	 * exclusion adds no condition, and a failing second read loses the total too.
+	 */
+	public function testEdgesOfTheReads(): void {
+		$this->queuedRows = [[
+			['date' => '2026-01-03', 'action' => 'read', 'count' => '1'],
+			['date' => '2026-01-01', 'action' => 'create', 'count' => '2'],
+		]];
+		$this->assertSame(['2026-01-01', '2026-01-03'], $this->mapper()->getActionChartData()['labels']);
+
+		$this->queryLog = [];
+		$this->mapper()->getStatisticsGroupedBySchema([]);
+		$this->assertSame([], $this->queryLog);
+
+		$this->queuedRows = [[]];
+		$this->mapper()->getStatistics(null, null, [[]]);
+		$this->assertSame([], preg_grep('/andWhere/', $this->queryLog));
+
+		$calls = 0;
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function () use (&$calls) {
+				$calls++;
+				if ($calls > 1) {
+					throw new \Exception('database down');
+				}
+
+				return $this->recordingBuilder();
+			}
+		);
+		$this->queuedRows = [[['total' => '7', 'size' => '1']]];
+		$mapper = new AuditTrailMapper(
+			$db,
+			$this->createMock(ContainerInterface::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IRequest::class),
+			new NullLogger()
+		);
+		$this->assertSame(
+			['total' => 0, 'creates' => 0, 'updates' => 0, 'deletes' => 0, 'reads' => 0],
+			$mapper->getDetailedStatistics()
+		);
+	}//end testEdgesOfTheReads()
+
+	/**
 	 * A mapper whose database refuses every query, logging into $logged.
 	 *
 	 * @param array<int, array<string, mixed>> $logged The log lines.
