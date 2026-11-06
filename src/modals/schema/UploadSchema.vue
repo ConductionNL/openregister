@@ -8,7 +8,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		v-if="navigationStore.modal === 'uploadSchema'"
 		name="Upload Schema"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Schema successfully uploaded</p>
 		</NcNoteCard>

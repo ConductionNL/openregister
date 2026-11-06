@@ -15,7 +15,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully downloaded</p>
 		</NcNoteCard>

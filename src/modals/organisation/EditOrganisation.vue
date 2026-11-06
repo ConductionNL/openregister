@@ -11,7 +11,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 				: t('openregister', 'Create Organisation')
 		"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
