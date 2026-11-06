@@ -87,6 +87,27 @@ class ScheduleFlowStore {
 	}//end ofApplication()
 
 	/**
+	 * Whether any compiled flow carries the name of an application with this slug.
+	 *
+	 * For reporting only: it says nothing about which organisation published.
+	 *
+	 * @param string $slug The application slug.
+	 *
+	 * @return bool True when one does.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function hasFlowsNamedFor(string $slug): bool {
+		foreach ($this->mapper->findAllFlows(app: Flow::APP_MANIFEST_SCHEDULE, limit: self::PAGE) as $flow) {
+			if (str_starts_with((string)$flow->getName(), $slug . ': ') === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasFlowsNamedFor()
+
+	/**
 	 * Write a compiled flow, creating it or updating the stored one.
 	 *
 	 * @param CompiledScheduleFlow $compiled The flow.
