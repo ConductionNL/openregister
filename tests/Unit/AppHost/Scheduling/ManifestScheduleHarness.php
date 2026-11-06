@@ -170,11 +170,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn () => $this->user());
 
-<<<<<<< HEAD
-=======
-		$container = $this->container(flowMapper: $flowMapper);
 		$this->refusals = new ScheduleRefusals($this->logger);
->>>>>>> feat/schedule-flow-apply
 		$membership = new FlowTenantMembership($this->organisations());
 		$container = $this->container(flowMapper: $flowMapper, membership: $membership);
 		$sync = new ScheduleFlowSync(
