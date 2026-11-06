@@ -47,6 +47,7 @@ final class ReferenceLoopCheckTest extends TestCase {
 		return [
 			'itself'         => [['a' => $self], ['/properties/a']],
 			'a pair'         => [['a' => ['$ref' => '#/properties/b'], 'b' => $self], ['/properties/a', '/properties/b']],
+			'a way into one' => [['p' => ['$ref' => '#/properties/a'], 'a' => ['$ref' => '#/properties/b'], 'b' => $self], ['/properties/a', '/properties/b']],
 			'through allOf'  => [['a' => ['allOf' => [$self]]], ['/properties/a/allOf/0']],
 			'through anyOf'  => [['a' => ['anyOf' => [['type' => 'string'], $self]]], ['/properties/a/anyOf/1']],
 			'through oneOf'  => [['a' => ['oneOf' => [$self]]], ['/properties/a/oneOf/0']],
