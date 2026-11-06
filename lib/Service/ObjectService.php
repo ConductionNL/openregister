@@ -205,6 +205,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 {
 
     /**
+     * Why a transferred object refuses a write.
+     */
+    private const TRANSFERRED_MESSAGE = 'This object has been transferred to the e-Depot and is read-only.';
+
+    /**
      * The current register context.
      *
      * @var Register|null
@@ -3555,11 +3560,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $this->rejectIfViewBacked(operation: 'delete');
 
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-            $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-            throw new AppendOnlyException(
-                schemaIdentifier: $schemaSlug,
-                operation: 'delete'
-            );
+            throw $this->appendOnlyDeleteRefusal(schema: $this->currentSchema);
         }
 
         if ($this->currentSchema !== null
@@ -3576,6 +3577,21 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
         }
     }//end rejectRefusedDelete()
+
+    /**
+     * The refusal of a delete on an append-only schema.
+     *
+     * @param Schema $schema The append-only schema.
+     *
+     * @return AppendOnlyException
+     */
+    private function appendOnlyDeleteRefusal(Schema $schema): AppendOnlyException
+    {
+        return new AppendOnlyException(
+            schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()),
+            operation: 'delete'
+        );
+    }//end appendOnlyDeleteRefusal()
 
     /**
      * Whether a delete with these flags is bound by the caller's organisation.
@@ -4014,13 +4030,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 _multitenancy: $_multitenancy
             );
 
-            $retention = ($object->getRetention() ?? []);
-            // Both vocabularies: stored data is not migrated, so an install
-            // that transferred a record before GAP A4 holds `overgebracht`.
-            if (in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true) === true) {
-                throw new OcpDoesNotExistException(
-                    'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
-                );
+            if ($this->isTransferred(object: $object) === true) {
+                throw new OcpDoesNotExistException('OBJECT_TRANSFERRED: '.self::TRANSFERRED_MESSAGE);
             }
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Re-throw if it's our transfer exception.
@@ -4031,6 +4042,23 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             // Object doesn't exist yet (new object), no check needed.
         }//end try
     }//end rejectIfTransferred()
+
+    /**
+     * Whether an object has been transferred to the e-Depot.
+     *
+     * Both vocabularies count: stored data is not migrated, so an install that
+     * transferred a record before GAP A4 holds `overgebracht`.
+     *
+     * @param ObjectEntity $object The object.
+     *
+     * @return bool
+     */
+    private function isTransferred(ObjectEntity $object): bool
+    {
+        $retention = ($object->getRetention() ?? []);
+
+        return in_array(($retention['archiefstatus'] ?? ''), RecordState::TRANSFERRED_ALIASES, true);
+    }//end isTransferred()
 
     /**
      * Whether a write with this uuid on an append-only schema would touch a stored object.
@@ -6099,18 +6127,55 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             }
         }
 
+        return ($this->bulkDeleteStateRefusal(row: $scope['row'], schema: $gateSchema)
+            ?? $this->bulkDeleteArchivalRefusal(scope: $scope, schema: $gateSchema));
+    }//end bulkDeleteRefusal()
+
+    /**
+     * The archival refusal of a bulk-delete row, or null; a draft is not an archival record.
+     *
+     * @param array  $scope  The row's scope.
+     * @param Schema $schema The row's schema.
+     *
+     * @return array|null The skip reason, or null.
+     */
+    private function bulkDeleteArchivalRefusal(array $scope, Schema $schema): ?array
+    {
         if ($scope['draft'] === true) {
             return null;
         }
 
         try {
-            $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
+            $this->rejectIfArchivalImmutable(schema: $schema, retentionSweep: false);
         } catch (ArchivalImmutableException $archivalRefusal) {
             return $archivalRefusal->toResponseBody();
         }
 
         return null;
-    }//end bulkDeleteRefusal()
+    }//end bulkDeleteArchivalRefusal()
+
+    /**
+     * Why a bulk-delete row may not go whatever its draft status, or null.
+     *
+     * The same two refusals deleteObject() gives, asked of the row and its own schema.
+     *
+     * @param ObjectEntity $row    The stored row.
+     * @param Schema       $schema The row's schema.
+     *
+     * @return array|null The skip reason, or null.
+     */
+    private function bulkDeleteStateRefusal(ObjectEntity $row, Schema $schema): ?array
+    {
+        if ($this->isTransferred(object: $row) === true) {
+            return ['error' => 'OBJECT_TRANSFERRED', 'message' => self::TRANSFERRED_MESSAGE];
+        }
+
+        if ($schema->isAppendOnly() === true) {
+            return $this->appendOnlyDeleteRefusal(schema: $schema)->toResponseBody();
+        }
+
+        return null;
+    }//end bulkDeleteStateRefusal()
 
     /**
      * Record a deleted bulk-delete row, its cascade count and its scope pair for cache invalidation.
