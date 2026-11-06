@@ -344,7 +344,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			new TimeseriesRequestValidator()
 		);
 
-		$generator = new SchemaGenerator($registerMapper, $schemaMapper, $this->session(signedIn: $signedIn));
+		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn));
 		$generator->setResolver($resolver);
 
 		$uuid = (string)$this->record()->getUuid();

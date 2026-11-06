@@ -122,6 +122,39 @@ class CalendarEventServiceTest extends TestCase {
 		$this->service->deleteEvent('7', 'event.ics');
 	}
 
+	/**
+	 * A user with calendar 1 holding one event linked to `abc-123`.
+	 *
+	 * @return void
+	 */
+	private function setupOneLinkedEvent(): void {
+		$this->setupUser();
+		$this->setupCalendar();
+		$this->calDavBackend->method('getCalendarObjects')->willReturn([['uri' => 'event1.ics']]);
+		$this->calDavBackend->method('getCalendarObject')->willReturn(['calendardata' => $this->buildVevent('abc-123')]);
+	}
+
+	public function testRequireEventOfAcceptsAnEventLinkedToTheObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->service->requireEventOf('abc-123', '1', 'event1.ics');
+		$this->addToAssertionCount(1);
+	}
+
+	public function testRequireEventOfRefusesAnEventOfAnotherObject(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('other', '1', 'event1.ics');
+	}
+
+	public function testRequireEventOfRefusesACalendarThatIsNotTheCallers(): void {
+		$this->setupOneLinkedEvent();
+
+		$this->expectExceptionCode(404);
+		$this->service->requireEventOf('abc-123', '99', 'event1.ics');
+	}
+
 	public function testGetEventsForObjectSkipsNonMatching(): void {
 		$this->setupUser();
 		$this->setupCalendar();
