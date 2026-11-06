@@ -10,7 +10,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 <template>
 	<NcDialog
 		:name="`Validate ${selectedObjects.length} object${selectedObjects.length !== 1 ? 's' : ''}`"
-		:canClose="false"
+		noClose
 		size="normal">
 		<!-- Object Selection Review -->
 		<div v-if="success === null" class="validate-step">

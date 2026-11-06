@@ -95,6 +95,10 @@ class SaveObjectReferenceValidationTest extends TestCase {
 	}//end buildHandler()
 
 	private function invoke(SaveObject $handler, string $methodName, array $args): mixed {
+		if ($methodName === 'validateReferences' || $methodName === 'validateReferenceExists') {
+			return ReferenceValidationCalls::{$methodName}($handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		return $reflection->invokeArgs($handler, array_values($args));

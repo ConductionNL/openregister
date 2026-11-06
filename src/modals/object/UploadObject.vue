@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Upload Object" size="normal" :canClose="false">
+	<NcDialog name="Upload Object" size="normal" noClose>
 		<NcNoteCard v-if="success" type="success">
 			<p>Object successfully uploaded</p>
 		</NcNoteCard>
