@@ -170,7 +170,7 @@ final class ExtendedByReads {
 	private function targetsOf(array $row, array $lookup): array {
 		$targets = [];
 		foreach ($this->referencesOf(row: $row) as $entry) {
-			$identifier = (new ParentReference())->of(entry: $entry);
+			$identifier = (new ParentReference())->fromEntry(entry: $entry);
 			if ($identifier !== null && isset($lookup[(string)$identifier]) === true) {
 				$targets[] = $lookup[(string)$identifier];
 			}
