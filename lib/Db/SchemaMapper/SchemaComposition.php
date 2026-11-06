@@ -177,15 +177,65 @@ final class SchemaComposition {
 	 * @return array{properties: array<mixed>, required: array<mixed>}
 	 */
 	private function resolvedParents(Schema $schema, array $visited): array {
+		$load = $this->parentLoader(schema: $schema, visited: $visited);
+		$loaders = [$load, $this->tolerantLoader(child: $schema, load: $load)];
 		$merged = self::NOTHING_MERGED;
-		foreach (array_filter($this->namedEntries(entries: $schema->getAllOf())) as $parentRef) {
-			$this->assertNotSelf(schema: $schema, ref: $parentRef);
-			$parent = $this->resolve(schema: ($this->loadSchema)($parentRef), visited: $visited);
-			$merged = $this->withParent(merged: $merged, parent: $parent);
+		foreach ($schema->getAllOf() as $entry) {
+			$ref = (new ParentReference())->fromEntry(entry: $entry);
+			if (empty($ref) === false) {
+				$loader = $loaders[(int)is_array($entry)];
+				$merged = $this->withParent(merged: $merged, parent: $loader($ref));
+			}
 		}
 
 		return $merged;
 	}//end resolvedParents()
+
+	/**
+	 * Loads and resolves a parent of the given schema, refusing the schema itself.
+	 *
+	 * @param Schema       $schema  The child schema.
+	 * @param array<mixed> $visited Visited schemas for circular reference detection.
+	 *
+	 * @return Closure(int|string): Schema
+	 */
+	private function parentLoader(Schema $schema, array $visited): Closure {
+		return function (int|string $ref) use ($schema, $visited): Schema {
+			$this->assertNotSelf(schema: $schema, ref: $ref);
+			return $this->resolve(schema: ($this->loadSchema)($ref), visited: $visited);
+		};
+	}//end parentLoader()
+
+	/**
+	 * Loads the parent a `{"$ref": ...}` entry names, or null when it cannot be applied.
+	 *
+	 * The save reduces a schema to its delta against this parent, so the read has
+	 * to merge it back. Such an entry was never required to resolve, and an import
+	 * may reference a schema that does not exist yet, so a parent that is missing,
+	 * loops, is the schema itself or is relaxed by the child leaves the schema
+	 * readable instead of refusing the read.
+	 *
+	 * @param Schema  $child The child schema.
+	 * @param Closure $load  Loads a parent; throws when it cannot.
+	 *
+	 * @return Closure(int|string): (Schema|null)
+	 *
+	 * @spec openspec/specs/schema-import/spec.md
+	 */
+	private function tolerantLoader(Schema $child, Closure $load): Closure {
+		return function (int|string $ref) use ($child, $load): ?Schema {
+			try {
+				$parent = $load($ref);
+				(new SchemaPropertyInheritance(schemaId: (string)$this->idOf(schema: $child)))->mergeProperties(
+					parentProperties: $parent->getProperties(),
+					childProperties: $child->getProperties()
+				);
+				return $parent;
+			} catch (Exception $e) {
+				return null;
+			}
+		};
+	}//end tolerantLoader()
 
 	/**
 	 * Every oneOf or else anyOf option must exist and resolve; properties stay separate.
@@ -318,11 +368,15 @@ final class SchemaComposition {
 	 * The merged parents so far with one more: its properties merged, its required fields added.
 	 *
 	 * @param array{properties: array<mixed>, required: array<mixed>} $merged The parents so far.
-	 * @param Schema                                                  $parent The resolved parent.
+	 * @param Schema|null                                             $parent The resolved parent, if any.
 	 *
 	 * @return array{properties: array<mixed>, required: array<mixed>}
 	 */
-	private function withParent(array $merged, Schema $parent): array {
+	private function withParent(array $merged, ?Schema $parent): array {
+		if ($parent === null) {
+			return $merged;
+		}
+
 		return [
 			'properties' => (new PropertyMerge())->merge(parentProperties: $merged['properties'], childProperties: $parent->getProperties()),
 			'required' => array_unique(array_merge($merged['required'], $parent->getRequired())),
