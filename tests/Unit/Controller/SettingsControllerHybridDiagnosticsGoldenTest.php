@@ -10,7 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
@@ -107,7 +107,7 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 				return new stdClass();
 			}
 
-			$chunks = $this->createMock(ChunkMapper::class);
+			$chunks = $this->createMock(ChunkMapperInterface::class);
 			$chunks->method('countAll')->willReturn(70);
 			$chunks->method('countVectorized')->willReturn(55);
 			return $chunks;

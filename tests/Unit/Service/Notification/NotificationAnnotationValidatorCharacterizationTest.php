@@ -151,7 +151,7 @@ class NotificationAnnotationValidatorCharacterizationTest extends TestCase {
 			'origin-app-int'         => self::schema(['r' => self::rule(['originApp' => 3])]),
 			'origin-app-ok'          => self::schema(['r' => self::rule(['originApp' => 'dossiq'])]),
 			'actions-not-array'      => self::schema(['r' => self::rule(['actions' => 'x'])]),
-			'actions-too-many'       => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'a'], 'target' => ['kind' => 'url', 'url' => 'https://a.b']], ['label' => 'b'], ['target' => ['kind' => 'nope']]]])]),
+			'actions-too-many'       => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'a'], 'target' => ['kind' => 'url', 'href' => 'https://example.test/a', 'url' => 'https://a.b']], ['label' => 'b'], ['target' => ['kind' => 'nope']]]])]),
 			'actions-task-verb'      => self::schema(['r' => self::rule(['actions' => [['label' => ['en' => 'Claim'], 'target' => ['kind' => 'task-verb', 'verb' => 'steal']]]])]),
 			'subject-missing'        => self::schema(['r' => self::rule(['subject' => null])]),
 			'subject-int'            => self::schema(['r' => self::rule(['subject' => 5])]),

@@ -45,6 +45,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityReferencingGoldenTest extends TestCase {
 

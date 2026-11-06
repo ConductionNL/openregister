@@ -436,9 +436,6 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcActionButton,
 	NcActions,
@@ -466,6 +463,11 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import {
+	checkConfigurationVersion,
+	sourceTypeLabel,
+	syncStatusText,
+} from '../../services/configurationDisplay.js'
 
 export default {
 	name: 'ConfigurationsIndex',
@@ -597,6 +599,10 @@ export default {
 	},
 
 	methods: {
+		checkVersion: checkConfigurationVersion,
+		getSourceTypeLabel: sourceTypeLabel,
+		getSyncStatusText: syncStatusText,
+
 		/**
 		 * Toggle selection state for every configuration in the current list.
 		 *
@@ -680,61 +686,6 @@ export default {
 		},
 
 		/**
-		 * Map a source-type id to a human label.
-		 *
-		 * @spec exclude UI plumbing — static label lookup for display.
-		 * @param {string} sourceType - source type id
-		 * @return {string} display label
-		 */
-		getSourceTypeLabel(sourceType) {
-			const labels = {
-				local: 'Local',
-				github: 'GitHub',
-				gitlab: 'GitLab',
-				url: 'URL',
-			}
-			return labels[sourceType] || 'Unknown'
-		},
-
-		/**
-		 * Check a configuration's remote version and refresh the list.
-		 *
-		 * @spec exclude UI plumbing — thin POST + toast + list refresh; configuration sync contract owned elsewhere.
-		 * @param {object} configuration - configuration row
-		 * @return {Promise<void>}
-		 */
-		async checkVersion(configuration) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-					),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', {
-							local: response.data.localVersion,
-							remote: response.data.remoteVersion,
-						}),
-					)
-				} else {
-					showSuccess(t('openregister', 'Configuration is up to date'))
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError(
-					t('openregister', 'Failed to check version: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			}
-		},
-
-		/**
 		 * Open the view-configuration modal for a row.
 		 *
 		 * @spec exclude UI plumbing — store-set + modal dispatch.
@@ -793,39 +744,6 @@ export default {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
-		},
-
-		/**
-		 * Build a relative sync-status label for a configuration.
-		 *
-		 * @spec exclude UI plumbing — display formatter computing relative time.
-		 * @param {object} configuration - configuration row
-		 * @return {string} display label
-		 */
-		getSyncStatusText(configuration) {
-			if (
-				configuration.syncStatus === 'success'
-				&& configuration.lastSyncDate
-			) {
-				const now = new Date()
-				const lastSync = new Date(configuration.lastSyncDate)
-				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
-
-				if (diffInHours < 1) {
-					return 'Synced just now'
-				} else if (diffInHours < 24) {
-					return `Synced ${diffInHours}h ago`
-				} else {
-					const diffInDays = Math.floor(diffInHours / 24)
-					return `Synced ${diffInDays}d ago`
-				}
-			} else if (configuration.syncStatus === 'failed') {
-				return 'Sync failed'
-			} else if (configuration.syncStatus === 'pending') {
-				return 'Sync pending'
-			} else {
-				return 'Never synced'
-			}
 		},
 	},
 }

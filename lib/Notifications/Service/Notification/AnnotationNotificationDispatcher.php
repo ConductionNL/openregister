@@ -2534,12 +2534,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		if ($kind === 'url') {
-			$href = (string)($target['href'] ?? '');
-			if (filter_var($href, FILTER_VALIDATE_URL) === false) {
-				return null;
-			}
-
-			return $href;
+			return (new LinkableUrl())->orNull(href: (string)($target['href'] ?? ''));
 		}
 
 		if ($kind === 'route') {

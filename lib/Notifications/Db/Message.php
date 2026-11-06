@@ -29,7 +29,7 @@ use DateTime;
 use JsonSerializable;
 use OCP\AppFramework\Db\Entity;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * Message entity class
