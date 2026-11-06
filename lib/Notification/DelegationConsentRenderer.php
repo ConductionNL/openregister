@@ -207,7 +207,7 @@ class DelegationConsentRenderer extends SubjectRenderer {
 			->setParsedLabel($draft->l->t('Allow'))
 			->setLink($base . '?allow=1', 'POST')
 			->setPrimary(true);
-		$draft->notification->addAction($action);
+		$draft->notification->addParsedAction($action);
 	}//end addAllow()
 
 	/**
@@ -226,6 +226,6 @@ class DelegationConsentRenderer extends SubjectRenderer {
 			->setParsedLabel($draft->l->t('Deny'))
 			->setLink($base . '?allow=0', 'POST')
 			->setPrimary(false);
-		$draft->notification->addAction($action);
+		$draft->notification->addParsedAction($action);
 	}//end addDeny()
 }//end class
