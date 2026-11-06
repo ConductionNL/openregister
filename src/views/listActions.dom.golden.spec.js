@@ -402,7 +402,12 @@ describe('list page action menus golden', () => {
 		globalThis.listRows = PAGES[page].rows ?? []
 		globalThis.storeLists = PAGES[page].lists
 		globalThis.listLog = []
-		window.OC = { getCurrentUser: () => ({ uid: 'me' }) }
+		window.OC = {
+			getCurrentUser: () => ({ uid: 'me' }),
+			dialogs: {
+				info: (text, title) => globalThis.listLog.push(['info', title]),
+			},
+		}
 		window.open = (url) => globalThis.listLog.push(['open', url])
 		window.confirm = () => false
 		const wrapper = mount(PAGES[page].component, {
