@@ -2261,6 +2261,7 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		$validator = new Validator();
+		$validator->setParser(RefLoopGuardParser::schemaParser());
 		$validator->setMaxErrors(100);
 
 		// Register custom format validators using our helper method that supports named parameters.
