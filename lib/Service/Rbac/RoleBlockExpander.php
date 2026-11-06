@@ -89,7 +89,7 @@ final class RoleBlockExpander {
 
 		if (empty($definitions) === true) {
 			$this->warn(message: 'Schema has role references but register has no role definitions', context: []);
-			return $this->grantNothingWhenEmpty(authorization: $authorization);
+			return self::grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		$this->roles = $this->rolesByName(definitions: $definitions);
@@ -98,7 +98,7 @@ final class RoleBlockExpander {
 			$this->assign(roleName: $roleName, groups: $groups);
 		}
 
-		return $this->grantNothingWhenEmpty(authorization: $this->block);
+		return self::grantNothingWhenEmpty(authorization: $this->block);
 	}//end expand()
 
 	/**
@@ -265,7 +265,8 @@ final class RoleBlockExpander {
 	 * the fail-safe one: the canonical verbs are listed with nobody in them. The block is
 	 * non-empty, so an unlisted verb is refused as well, and the administrator and owner
 	 * bypasses still apply. A denial is loud and fixed by declaring the roles; a grant is
-	 * silent.
+	 * silent. EffectiveAuthorization reads the same rule, so the OAS describes the schema
+	 * the way it is enforced.
 	 *
 	 * @param array<string, mixed> $authorization The block after expansion.
 	 *
@@ -273,7 +274,7 @@ final class RoleBlockExpander {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function grantNothingWhenEmpty(array $authorization): array {
+	public static function grantNothingWhenEmpty(array $authorization): array {
 		if ($authorization !== []) {
 			return $authorization;
 		}
