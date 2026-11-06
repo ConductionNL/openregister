@@ -41,16 +41,31 @@ final class ScheduleRelease {
 	 * @param ObjectEntity $application The application object.
 	 * @param array<string, mixed> $manifest The production manifest; empty when nothing is in production.
 	 * @param string|null $publisher The signed-in user, or null when nobody published.
+	 * @param string|null $refusal Why this publish cannot be applied, when it is known before applying.
 	 */
 	public function __construct(
 		public readonly ObjectEntity $application,
 		public readonly array $manifest,
 		public readonly ?string $publisher,
+		public readonly ?string $refusal = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * The application's slug, which keys its compiled flows.
+	 * The application's uuid, which keys its compiled flows.
+	 *
+	 * Not its slug: that is a data property, and two organisations may use the same one.
+	 *
+	 * @return string The object uuid.
+	 *
+	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
+	 */
+	public function applicationUuid(): string {
+		return (string)$this->application->getUuid();
+	}//end applicationUuid()
+
+	/**
+	 * The name people recognise the application by.
 	 *
 	 * @return string The slug, or the object uuid when it carries none.
 	 *
@@ -62,7 +77,7 @@ final class ScheduleRelease {
 			return $slug;
 		}
 
-		return (string)$this->application->getUuid();
+		return $this->applicationUuid();
 	}//end slug()
 
 	/**
@@ -91,7 +106,7 @@ final class ScheduleRelease {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function flowUuid(string $scheduleId): string {
-		$hash = md5('apphost-schedule:' . $this->slug() . ':' . $scheduleId);
+		$hash = md5('apphost-schedule:' . $this->applicationUuid() . ':' . $scheduleId);
 		$variant = dechex((hexdec($hash[16]) & 0x3) | 0x8);
 
 		return sprintf(

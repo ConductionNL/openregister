@@ -32,7 +32,6 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -49,13 +48,13 @@ class ScheduleFlowSync {
 	 * @param ScheduleFlowStore $store The compiled flows.
 	 * @param FlowTenantMembership $membership Answers whether the publisher is in the organisation.
 	 * @param ScheduleAuditTrail $audit Records identity changes.
-	 * @param LoggerInterface $logger Refusals.
+	 * @param ScheduleRefusals $refusals Logs a refusal and keeps it for the response.
 	 */
 	public function __construct(
 		private readonly ScheduleFlowStore $store,
 		private readonly FlowTenantMembership $membership,
 		private readonly ScheduleAuditTrail $audit,
-		private readonly LoggerInterface $logger,
+		private readonly ScheduleRefusals $refusals,
 	) {
 	}//end __construct()
 
@@ -69,12 +68,17 @@ class ScheduleFlowSync {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function apply(ScheduleRelease $release): void {
+		if ($release->refusal !== null) {
+			$this->refusals->refuse(release: $release, reason: $release->refusal);
+			return;
+		}
+
 		$schedules = $this->schedulesOf(release: $release);
 		if ($schedules !== [] && $this->mayPublish(release: $release) === false) {
 			return;
 		}
 
-		$stored = $this->store->ofApplication(slug: $release->slug());
+		$stored = $this->store->ofApplication(application: $release->applicationUuid());
 		foreach ($schedules as $schedule) {
 			$this->applySchedule(compiled: $this->compile(schedule: $schedule, release: $release), stored: $stored);
 			unset($stored[$release->flowUuid(scheduleId: $schedule->id)]);
@@ -99,7 +103,7 @@ class ScheduleFlowSync {
 			cron: new CronScheduleEvaluator()
 		);
 		foreach ($manifest->diagnostics as $diagnostic) {
-			$this->refuse(release: $release, reason: $diagnostic);
+			$this->refusals->refuse(release: $release, reason: $diagnostic);
 		}
 
 		return $manifest->schedules;
@@ -116,17 +120,17 @@ class ScheduleFlowSync {
 		$publisher = $release->publisher;
 		$organisation = $release->organisation();
 		if ($publisher === null) {
-			$this->refuse(release: $release, reason: 'Nobody signed in published it.');
+			$this->refusals->refuse(release: $release, reason: 'Nobody signed in published it.');
 			return false;
 		}
 
 		if ($organisation === null) {
-			$this->refuse(release: $release, reason: 'The application has no organisation.');
+			$this->refusals->refuse(release: $release, reason: 'The application has no organisation.');
 			return false;
 		}
 
 		if ($this->membership->isMember(uid: $publisher, organisation: $organisation) === false) {
-			$this->refuse(release: $release, reason: 'The publisher is not a member of its organisation.');
+			$this->refusals->refuse(release: $release, reason: 'The publisher is not a member of its organisation.');
 			return false;
 		}
 
@@ -144,13 +148,13 @@ class ScheduleFlowSync {
 	private function compile(ScheduleDescriptor $schedule, ScheduleRelease $release): ?CompiledScheduleFlow {
 		$cron = $schedule->cronExpression();
 		if ($cron === null) {
-			$this->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": no exact cron for its interval.');
+			$this->refusals->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": no exact cron for its interval.');
 			return null;
 		}
 
 		$node = (new ScheduleActionNodes())->flowNode(schedule: $schedule);
 		if ($node === null) {
-			$this->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": action or argument not allowed.');
+			$this->refusals->refuse(release: $release, reason: 'Schedule "' . $schedule->id . '": action or argument not allowed.');
 			return null;
 		}
 
@@ -177,31 +181,25 @@ class ScheduleFlowSync {
 			return;
 		}
 
-		$previous = $flow?->scheduledRunAs();
 		try {
+			$this->recordIdentity(compiled: $compiled, previous: $flow?->scheduledRunAs());
 			$this->store->write(compiled: $compiled, stored: $flow);
 		} catch (Throwable $e) {
-			$this->refuse(release: $compiled->release, reason: $e->getMessage());
-			return;
-		}
-
-		if ($previous !== $compiled->release->publisher) {
-			$this->audit->recordRunAs(compiled: $compiled, previous: $previous);
+			$this->refusals->refuse(release: $compiled->release, reason: $e->getMessage());
 		}
 	}//end applySchedule()
 
 	/**
-	 * Log a refusal.
+	 * Audit a changed identity, before the write: no identity changes unaudited.
 	 *
-	 * @param ScheduleRelease $release The publish.
-	 * @param string $reason Why.
+	 * @param CompiledScheduleFlow $compiled The flow.
+	 * @param string|null $previous The stored identity.
 	 *
 	 * @return void
 	 */
-	private function refuse(ScheduleRelease $release, string $reason): void {
-		$this->logger->warning(
-			message: '[AppHost\\Scheduling] Schedule refused: ' . $reason,
-			context: ['application' => $release->slug(), 'publisher' => $release->publisher]
-		);
-	}//end refuse()
+	private function recordIdentity(CompiledScheduleFlow $compiled, ?string $previous): void {
+		if ($previous !== $compiled->release->publisher) {
+			$this->audit->recordRunAs(compiled: $compiled, previous: $previous);
+		}
+	}//end recordIdentity()
 }//end class

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @covers \OCA\OpenRegister\AppHost\Scheduling\CompiledScheduleFlow
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleRelease
  * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleAuditTrail
+ * @covers \OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals
  * @covers \OCA\OpenRegister\Service\Flow\FlowTenantMembership
  * @covers \OCA\OpenRegister\Db\Flow
  * @uses   \OCA\OpenRegister\AppHost\Scheduling\CronScheduleEvaluator
@@ -59,6 +60,7 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowStateBinding
  * @uses   \OCA\OpenRegister\Service\Flow\FlowScheduleService
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTriggerValidator
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowUnattributed
  * @uses   \OCA\OpenRegister\Service\WriteCause
  */
 class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
@@ -68,7 +70,7 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$flow = $this->flow();
 		$this->assertSame(Flow::TRIGGER_SCHEDULE, $flow->getTrigger());
 		$this->assertSame('0 3 * * *', $flow->getCron());
-		$this->assertSame('crm', $flow->getApplicationSlug());
+		$this->assertSame('app-1', $flow->getApplicationSlug());
 		$this->assertSame([[$flow->getUuid(), 'pieter']], $this->published);
 
 		$this->assertSame([$flow->getUuid()], $this->tick());
@@ -331,6 +333,7 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->assertSame('0 3 * * *', $this->flow()->getCron());
 	}
 
+<<<<<<< HEAD
 	public function testAMemberWhoLeftStopsTheScheduleWithTheReasonOnTheFlow(): void {
 		$this->publish([$this->schedule()]);
 		$this->members = ['quinten'];
@@ -347,10 +350,109 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->publish([$this->schedule()]);
 		$this->members = ['quinten'];
 		$this->tick();
+=======
+	/**
+	 * Publish, as quinten in org-b, an application with the same slug as app-1.
+	 *
+	 * @param array<int, array<string, mixed>> $schedules The manifest's schedules.
+	 *
+	 * @return void
+	 */
+	private function publishSameSlugInOtherOrganisation(array $schedules): void {
+		$this->version = $this->object(['application' => 'app-2', 'manifest' => ['schedules' => $schedules]], self::VERSION);
+		$after = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-2');
+		$after->setOrganisation('org-b');
+		$this->session = 'quinten';
+
+		$this->listener->handle(new ObjectUpdatedEvent($after, $this->object(['slug' => 'crm'], 'app-2')));
+	}
+
+	/**
+	 * The flow of one application.
+	 *
+	 * @param string $application The application uuid.
+	 *
+	 * @return array<int, Flow> Its flows.
+	 */
+	private function flowsOf(string $application): array {
+		return array_values(
+			array_filter($this->flows, static fn (Flow $flow) => $flow->getApplicationSlug() === $application)
+		);
+	}
+
+	public function testTheSameSlugInAnotherOrganisationGetsItsOwnFlow(): void {
+		$this->publish([$this->schedule()]);
+
+		$this->publishSameSlugInOtherOrganisation([$this->schedule()]);
+
+		$this->assertCount(2, $this->flows);
+		$this->assertSame(self::ORGANISATION, $this->flowsOf('app-1')[0]->getOrganisation());
+		$this->assertSame('pieter', $this->flowsOf('app-1')[0]->scheduledRunAs());
+		$this->assertSame('org-b', $this->flowsOf('app-2')[0]->getOrganisation());
+	}
+
+	public function testTheSameSlugInAnotherOrganisationCannotRemoveAFlow(): void {
+		$this->publish([$this->schedule()]);
+
+		$this->publishSameSlugInOtherOrganisation([$this->schedule(['id' => 'other'])]);
+
+		$this->assertCount(1, $this->flowsOf('app-1'));
+	}
+
+	public function testDeletingTheSameSlugInAnotherOrganisationLeavesAFlow(): void {
+		$this->publish([$this->schedule()]);
+
+		$other = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-2');
+		$this->listener->handle(new ObjectDeletedEvent($other));
+
+		$this->assertCount(1, $this->flowsOf('app-1'));
+	}
+
+	public function testAVersionOfAnotherApplicationIsRefusedAndRemovesNothing(): void {
+		$this->publish([$this->schedule()]);
+
+		$foreign = ['application' => 'app-9', 'manifest' => ['schedules' => [$this->schedule(['cron' => '0 9 * * *'])]]];
+		$this->version = $this->object($foreign, 'version-2');
+		$after = $this->object(['slug' => 'crm', 'productionVersion' => 'version-2'], 'app-1');
+		$after->setOrganisation(self::ORGANISATION);
+		$before = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-1');
+		$this->listener->handle(new ObjectUpdatedEvent($after, $before));
+
+		$this->assertSame('0 3 * * *', $this->flow()->getCron());
+		$this->assertStringContainsString('another application', $this->refusals->all()[0]);
+	}
+
+	public function testAVersionThatCannotBeReadRemovesNothing(): void {
+		$this->publish([$this->schedule()]);
+
+		$this->version = null;
+		$after = $this->object(['slug' => 'crm', 'productionVersion' => 'version-2'], 'app-1');
+		$before = $this->object(['slug' => 'crm', 'productionVersion' => self::VERSION], 'app-1');
+		$this->listener->handle(new ObjectUpdatedEvent($after, $before));
+
+		$this->assertCount(1, $this->flows);
+		$this->assertCount(1, $this->refusals->all());
+	}
+
+	public function testAnApplicationMovedToAnotherOrganisationTakesItsFlowAlong(): void {
+		$this->members = ['pieter'];
+		$this->publish([$this->schedule()]);
+
+		$this->publish([$this->schedule()], 'org-b');
+
+		$this->assertSame('org-b', $this->flow()->getOrganisation());
+		$this->assertCount(1, $this->published);
+	}
+
+	public function testAnAuditFailureChangesNoIdentityAndLeavesTheOtherSchedules(): void {
+		$this->publish([$this->schedule()]);
+		$this->auditFails = true;
+>>>>>>> feat/schedule-flow-apply
 		$this->session = 'quinten';
 
 		$this->publish([$this->schedule()]);
 
+<<<<<<< HEAD
 		$this->assertTrue($this->flow()->getEnabled());
 		$this->assertNull($this->flow()->getStatus());
 		$this->tick();
@@ -363,5 +465,17 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 		$this->members = [];
 
 		$this->assertCount(1, $this->tick());
+=======
+		$this->assertSame('pieter', $this->flow()->scheduledRunAs());
+		$this->assertStringContainsString('audit down', $this->refusals->all()[0]);
+	}
+
+	public function testARefusalIsKeptForTheResponse(): void {
+		$this->session = null;
+
+		$this->publish([$this->schedule()]);
+
+		$this->assertSame(['Nobody signed in published it.'], $this->refusals->all());
+>>>>>>> feat/schedule-flow-apply
 	}
 }

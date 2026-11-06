@@ -66,17 +66,17 @@ class ScheduleFlowStore {
 	/**
 	 * The compiled flows of an application, by uuid.
 	 *
-	 * @param string $slug The application slug.
+	 * @param string $application The application uuid, which the flows carry as their `applicationSlug`.
 	 *
 	 * @return array<string, Flow> The flows. A flow an author drew is never among them.
 	 *
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
-	public function ofApplication(string $slug): array {
+	public function ofApplication(string $application): array {
 		$flows = [];
 		$found = $this->mapper->findAllFlows(
 			app: Flow::APP_MANIFEST_SCHEDULE,
-			applicationSlug: $slug,
+			applicationSlug: $application,
 			limit: self::PAGE
 		);
 		foreach ($found as $flow) {
