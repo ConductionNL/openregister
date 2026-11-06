@@ -34,6 +34,7 @@ use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
+use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
@@ -4622,73 +4623,7 @@ class ObjectsController extends Controller {
 	 * @return array The same envelope with `url` stamped on each resolvable record.
 	 */
 	private function stampObjectUrls(array $result): array {
-		if ($this->linkedData->deepLinkRegistry === null
-			|| isset($result['results']) === false
-			|| is_array($result['results']) === false
-		) {
-			return $result;
-		}
-
-		foreach ($result['results'] as $index => $record) {
-			// Normalise entities to their serialized array form.
-			if (is_object($record) === true && method_exists($record, 'jsonSerialize') === true) {
-				$record = $record->jsonSerialize();
-			}
-
-			if (is_array($record) === false) {
-				continue;
-			}
-
-			$self = ($record['@self'] ?? []);
-			$uuid = ($self['id'] ?? ($record['id'] ?? null));
-			$registerId = ($self['register'] ?? null);
-			$schemaId = ($self['schema'] ?? null);
-
-			if ($uuid === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
-				$result['results'][$index] = $record;
-				continue;
-			}
-
-			try {
-				$flat = array_merge(
-					$record,
-					[
-						'uuid' => $uuid,
-						'id' => $uuid,
-						'register' => $registerId,
-						'schema' => $schemaId,
-					]
-				);
-
-				$url = $this->linkedData->deepLinkRegistry->resolveUrl(
-					registerId: (int)$registerId,
-					schemaId: (int)$schemaId,
-					objectData: $flat
-				);
-
-				if ($url === null && $this->linkedData->relationUrlGenerator !== null) {
-					$url = $this->linkedData->relationUrlGenerator->linkToRoute(
-						'openregister.objects.show',
-						[
-							'register' => $registerId,
-							'schema' => $schemaId,
-							'id' => $uuid,
-						]
-					);
-				}
-
-				if ($url !== null) {
-					$record['url'] = $url;
-				}
-			} catch (\Throwable $e) {
-				// Defensive: never let URL resolution break the relation response.
-				$this->logger->debug('Relation URL resolution failed: ' . $e->getMessage());
-			}//end try
-
-			$result['results'][$index] = $record;
-		}//end foreach
-
-		return $result;
+		return (new RelationUrlStamper(linkedData: $this->linkedData, logger: $this->logger))->stamped(result: $result);
 	}//end stampObjectUrls()
 
 	/**
