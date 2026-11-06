@@ -28,15 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use Closure;
-use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use DateTimeZone;
-use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -45,6 +41,8 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
+use OCA\OpenRegister\Service\Import\ImportValueCaster;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCP\IGroupManager;
@@ -160,6 +158,13 @@ class ImportService implements ObjectImporterInterface {
 	private readonly \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec;
 
 	/**
+	 * Casts cell values by schema type.
+	 *
+	 * @var ImportValueCaster
+	 */
+	private readonly ImportValueCaster $valueCaster;
+
+	/**
 	 * Constructor for the ImportService
 	 *
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper
@@ -189,6 +194,8 @@ class ImportService implements ObjectImporterInterface {
 		$this->logger = $logger;
 		$this->groupManager = $groupManager;
 		$this->translationCsvCodec = $translationCsvCodec;
+
+		$this->valueCaster = new ImportValueCaster();
 
 		// Initialize cache arrays to prevent issues.
 		$this->schemaPropertiesCache = [];
@@ -1812,7 +1819,7 @@ class ImportService implements ObjectImporterInterface {
 		foreach (array_filter($rowData, static fn ($value): bool => $value !== null && $value !== '') as $key => $value) {
 			$selfPropertyName = $this->selfColumnProperty(key: $key, isAdmin: $isAdmin);
 			if ($selfPropertyName !== null) {
-				$selfColumns[$selfPropertyName] = $this->transformSelfProperty(propertyName: $selfPropertyName, value: $value);
+				$selfColumns[$selfPropertyName] = $this->valueCaster->castSelfProperty(propertyName: $selfPropertyName, value: $value);
 			}
 
 			$firstChar = ((string)$key)[0] ?? '';
@@ -1836,7 +1843,7 @@ class ImportService implements ObjectImporterInterface {
 		$schemaProperties = $this->cachedSchemaProperties(schema: $schema);
 		foreach ($columns as $key => $value) {
 			if (($schemaProperties[$key] ?? null) !== null) {
-				$columns[$key] = $this->transformValueByType(value: $value, propertyDef: $schemaProperties[$key]);
+				$columns[$key] = $this->valueCaster->cast(value: $value, propertyDef: $schemaProperties[$key]);
 			}
 		}
 
@@ -1898,73 +1905,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end isRowImporterAdmin()
 
 	/**
-	 * Transform datetime values from various formats to MySQL datetime format
-	 *
-	 * @param string $value The datetime value to transform
-	 *
-	 * @return string The transformed datetime value in MySQL format
-	 */
-	private function transformDateTimeValue(string $value): string {
-		// Early return if already in MySQL datetime format (Y-m-d H:i:s).
-		if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value) === 1) {
-			return $value;
-		}
-
-		// Handle ISO 8601 format with timezone (e.g., "2025-01-01T00:00:00+00:00").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $value) === 1) {
-			try {
-				$dateTime = new DateTime($value);
-				// BUG-SVC-5: normalise to UTC before stripping the offset, so
-				// an offset-bearing timestamp persists the correct instant
-				// instead of its local wall-clock reading (e.g. +05:00 input
-				// must shift back five hours, not just drop the offset).
-				$dateTime->setTimezone(new DateTimeZone('UTC'));
-				return $dateTime->format(format: 'Y-m-d H:i:s');
-			} catch (Exception $e) {
-				// Fallback to original value if parsing fails.
-				return $value;
-			}
-		}
-
-		// Handle ISO 8601 format without timezone (e.g., "2025-01-01T00:00:00").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/', $value) === 1) {
-			try {
-				$dateTime = new DateTime($value);
-				return $dateTime->format(format: 'Y-m-d H:i:s');
-			} catch (Exception $e) {
-				// Fallback to original value if parsing fails.
-				return $value;
-			}
-		}
-
-		// Handle date-only format (e.g., "2025-01-01").
-		if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-			return $value . ' 00:00:00';
-		}
-
-		// Return original value if no transformation needed.
-		return $value;
-	}//end transformDateTimeValue()
-
-	/**
-	 * Transform @self properties based on their type
-	 *
-	 * @param string $propertyName The name of the @self property
-	 * @param string $value The value to transform
-	 *
-	 * @return string The transformed value
-	 */
-	private function transformSelfProperty(string $propertyName, string $value): string {
-		// Transform datetime properties to MySQL datetime format.
-		if (in_array($propertyName, ['published', 'created', 'updated'], true) === true) {
-			return $this->transformDateTimeValue(value: $value);
-		}
-
-		// Return original value for other properties.
-		return $value;
-	}//end transformSelfProperty()
-
-	/**
 	 * Transform Excel row data to object format for batch saving
 	 *
 	 * @param array $rowData Row data from Excel
@@ -2005,7 +1945,7 @@ class ImportService implements ObjectImporterInterface {
 			return $objectData;
 		}
 
-		return $this->transformObjectBySchema(objectData: $objectData, schema: $schema);
+		return $this->valueCaster->castObject(objectData: $objectData, properties: $schema->getProperties());
 	}//end transformExcelRowToObject()
 
 	/**
@@ -2099,202 +2039,6 @@ class ImportService implements ObjectImporterInterface {
 	}//end getSchemaBySlug()
 
 	/**
-	 * Transform object data based on schema property definitions
-	 *
-	 * This method transforms string values from Excel to the expected types defined in the schema.
-	 * It handles type conversion for integers, numbers, booleans, arrays, and objects.
-	 *
-	 * @param array $objectData The object data to transform
-	 * @param Schema $schema The schema containing property definitions
-	 *
-	 * @return array The transformed object data
-	 *
-	 * @phpstan-return array<string, mixed>
-	 * @psalm-return   array<string, mixed>
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function transformObjectBySchema(array $objectData, Schema $schema): array {
-		// NO ERROR SUPPRESSION: Let schema transformation errors bubble up immediately!
-		$schemaProperties = $schema->getProperties();
-		$transformedData = [];
-
-		foreach ($objectData as $propertyName => $value) {
-			// Skip @self array - it's handled separately.
-			if ($propertyName === '@self') {
-				$transformedData[$propertyName] = $value;
-				continue;
-			}
-
-			// Get property definition from schema.
-			$propertyDef = $schemaProperties[$propertyName] ?? null;
-
-			if ($propertyDef === null) {
-				// Property not in schema, keep as is.
-				$transformedData[$propertyName] = $value;
-				continue;
-			}
-
-			// Transform based on type.
-			$transformedData[$propertyName] = $this->transformValueByType(value: $value, propertyDef: $propertyDef);
-		}
-
-		return $transformedData;
-	}//end transformObjectBySchema()
-
-	/**
-	 * Transform a value based on its property definition type
-	 *
-	 * @param mixed $value The value to transform
-	 * @param array $propertyDef The property definition from the schema
-	 *
-	 * @return mixed The transformed value
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type transformation switch requires branches for each data type
-	 * @SuppressWarnings(PHPMD.StaticAccess)         ObjectHandling::relates() is the established enum-style helper idiom
-	 */
-	private function transformValueByType($value, array $propertyDef) {
-		// If value is empty or null, return as is.
-		if ($value === null || $value === '') {
-			return $value;
-		}
-
-		$type = $propertyDef['type'] ?? 'string';
-
-		switch ($type) {
-			case 'integer':
-				return (int)$value;
-			case 'number':
-				return (float)$value;
-			case 'boolean':
-				return $this->stringToBoolean(value: $value);
-			case 'array':
-				return $this->stringToArray(value: $value);
-			case 'object':
-				// Check if this is a related-object that should store UUID strings directly.
-				if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
-					&& ObjectHandling::relates($propertyDef['objectConfiguration']['handling']) === true
-				) {
-					// For related objects, store UUID strings directly instead of wrapping in objects.
-					return (string)$value;
-				}
-				return $this->stringToObject(value: $value);
-			default:
-				return (string)$value;
-		}//end switch
-	}//end transformValueByType()
-
-	/**
-	 * Convert string to boolean
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return bool The boolean value
-	 */
-	private function stringToBoolean($value): bool {
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		$value = strtolower(trim((string)$value));
-		return in_array($value, ['true', '1', 'yes', 'on', 'enabled']);
-	}//end stringToBoolean()
-
-	/**
-	 * Convert string to object
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return array|object The object value
-	 */
-	private function stringToObject($value) {
-		if (is_array($value) === true || is_object($value) === true) {
-			return $value;
-		}
-
-		$value = trim((string)$value);
-
-		// Try to parse as JSON first.
-		if (str_starts_with($value, '{') === true && str_ends_with($value, '}') === true) {
-			$decoded = json_decode($value, true);
-			if (json_last_error() === JSON_ERROR_NONE) {
-				return $decoded;
-			}
-		}
-
-		// If not JSON, return as single-key object.
-		return ['value' => $value];
-	}//end stringToObject()
-
-	/**
-	 * Convert string to array handling multiple formats
-	 *
-	 * This method handles various array formats:
-	 * - Comma-separated: 1,2,3
-	 * - Quoted comma-separated: "1","2","3"
-	 * - JSON arrays: ["1","2","3"]
-	 * - Mixed formats
-	 *
-	 * @param mixed $value The value to convert
-	 *
-	 * @return array The array value
-	 *
-	 * @phpstan-return array<int|string, mixed>
-	 * @psalm-return   array<int|string, mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array parsing requires branches for JSON, CSV, quoted formats
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple array format detection paths needed
-	 */
-	private function stringToArray($value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false) {
-			return [$value];
-		}
-
-		$value = trim($value);
-
-		// Empty string returns empty array.
-		if ($value === '') {
-			return [];
-		}
-
-		// Try JSON first.
-		if (str_starts_with($value, '[') === true && str_ends_with($value, ']') === true) {
-			$decoded = json_decode($value, true);
-			if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-				return $decoded;
-			}
-		}
-
-		// Handle comma-separated values.
-		if (str_contains($value, ',') === true) {
-			$parts = explode(',', $value);
-			$result = [];
-
-			foreach ($parts as $part) {
-				$part = trim($part);
-
-				// Remove surrounding quotes.
-				if ((str_starts_with($part, '"') === true && str_ends_with($part, '"') === true)
-					|| (str_starts_with($part, "'") === true && str_ends_with($part, "'") === true)
-				) {
-					$part = substr($part, 1, -1);
-				}
-
-				$result[] = $part;
-			}
-
-			return $result;
-		}
-
-		// Single value - return as array with one element.
-		return [$value];
-	}//end stringToArray()
-
-	/**
 	 * Clear all internal caches to prevent issues between imports
 	 *
 	 * @return void
@@ -2348,109 +2092,9 @@ class ImportService implements ObjectImporterInterface {
 	 *
 	 * @phpstan-param array<string, array{errors?: array<int, mixed>}> $summary
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec openspec/specs/data-import-export/spec.md#import-must-provide-detailed-error-reporting-with-downloadable-error-files
 	 */
 	public function serializeErrorsToCsv(array $summary): string {
-		$errors = [];
-
-		foreach ($summary as $sheetTitle => $sheetData) {
-			if (is_array($sheetData) === false) {
-				continue;
-			}
-
-			$sheetErrors = $sheetData['errors'] ?? [];
-			if (is_array($sheetErrors) === false || count($sheetErrors) === 0) {
-				continue;
-			}
-
-			foreach ($sheetErrors as $error) {
-				if (is_array($error) === false) {
-					$error = ['error' => (string)$error];
-				}
-
-				$originalValue = ($error['object'] ?? ($error['original_value'] ?? ''));
-				$errors[] = [
-					'sheet' => (string)($error['sheet'] ?? $sheetTitle),
-					'row' => (string)($error['row'] ?? ''),
-					'field' => (string)($error['field'] ?? ($error['type'] ?? '')),
-					'error_message' => (string)($error['error'] ?? ''),
-					'original_value' => $this->stringifyOriginalValue(value: $originalValue),
-				];
-			}//end foreach
-		}//end foreach
-
-		if (count($errors) === 0) {
-			return '';
-		}
-
-		$headers = ['sheet', 'row', 'field', 'error_message', 'original_value'];
-
-		$stream = fopen('php://temp', 'r+');
-		if ($stream === false) {
-			return '';
-		}
-
-		// Excel needs the UTF-8 BOM to detect encoding.
-		fwrite($stream, "\xEF\xBB\xBF");
-		fputcsv($stream, $headers);
-
-		foreach ($errors as $row) {
-			fputcsv(
-				$stream,
-				[
-					$row['sheet'],
-					$row['row'],
-					$row['field'],
-					$row['error_message'],
-					$row['original_value'],
-				]
-			);
-		}
-
-		rewind($stream);
-		$csv = stream_get_contents($stream);
-		fclose($stream);
-
-		if ($csv === false) {
-			return '';
-		}
-
-		return $csv;
+		return (new ImportErrorsCsv())->render(summary: $summary);
 	}//end serializeErrorsToCsv()
-
-	/**
-	 * Stringify the `original_value` carried by an error entry.
-	 *
-	 * Errors collected by the import pipeline embed either a row-level scalar
-	 * (e.g. a malformed cell), an associative array (the parsed object that
-	 * failed validation), or nothing at all. A single CSV cell needs a stable
-	 * string projection of all three.
-	 *
-	 * @param mixed $value The raw value lifted off the error envelope.
-	 *
-	 * @return string Compact string representation suitable for a CSV cell.
-	 */
-	private function stringifyOriginalValue(mixed $value): string {
-		if ($value === null || $value === '') {
-			return '';
-		}
-
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		if (is_array($value) === true || is_object($value) === true) {
-			$encoded = json_encode($value, (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-			if ($encoded === false) {
-				return '';
-			}
-
-			return $encoded;
-		}
-
-		return '';
-	}//end stringifyOriginalValue()
 }//end class
