@@ -2190,6 +2190,147 @@
             }
         }
     },
+    "name field integer": {
+        "logs": [
+            [
+                "warning",
+                "[OpenRegister.SchemaMapper] Dropped 1 unknown x-openregister-* key(s) on schema \"golden-schema\": objectNameField. Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.",
+                []
+            ]
+        ],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [],
+            "properties": {
+                "5": {
+                    "type": "string"
+                }
+            },
+            "configuration": null
+        }
+    },
+    "name field true": {
+        "logs": [
+            [
+                "warning",
+                "[OpenRegister.SchemaMapper] Dropped 1 unknown x-openregister-* key(s) on schema \"golden-schema\": objectNameField. Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.",
+                []
+            ]
+        ],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "objectNameField": "name"
+            }
+        }
+    },
+    "name field list": {
+        "logs": [
+            [
+                "warning",
+                "[OpenRegister.SchemaMapper] Dropped 1 unknown x-openregister-* key(s) on schema \"golden-schema\": objectNameField. Typo? See Schema::ANNOTATION_VOCABULARY for the declared keys.",
+                []
+            ]
+        ],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "objectNameField": "name"
+            }
+        }
+    },
+    "property not an array": {
+        "thrown": "TypeError",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [],
+            "properties": {
+                "a": "nonsense"
+            },
+            "configuration": null
+        }
+    },
     "hinge with two keys": {
         "logs": [
             [
