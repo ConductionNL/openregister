@@ -270,6 +270,7 @@ import Sync from 'vue-material-design-icons/Sync.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import { sourceTypeLabel, syncStatusText } from '../../services/configurationDisplay.js'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
@@ -680,6 +681,9 @@ export default {
 	},
 
 	methods: {
+		getSourceTypeLabel: sourceTypeLabel,
+		getSyncStatusText: syncStatusText,
+
 		/**
 		 * Check if this discovered configuration is already imported in the backend
 		 * Makes an API call to check by appId and stores the full config
@@ -735,56 +739,6 @@ export default {
 				this.importedConfigId = null
 			} finally {
 				this.checkingImportStatus = false
-			}
-		},
-
-		/**
-		 * Get source type label
-		 *
-		 * @param {string} sourceType Source type
-		 * @return {string}
-		 * @spec exclude source-type label display helper, UI plumbing
-		 */
-		getSourceTypeLabel(sourceType) {
-			const labels = {
-				local: 'Local',
-				github: 'GitHub',
-				gitlab: 'GitLab',
-				url: 'URL',
-			}
-			return labels[sourceType] || 'Unknown'
-		},
-
-		/**
-		 * Get sync status text
-		 *
-		 * @param {object} configuration Configuration object
-		 * @return {string}
-		 * @spec exclude sync-status display formatter, UI plumbing
-		 */
-		getSyncStatusText(configuration) {
-			if (
-				configuration.syncStatus === 'success'
-				&& configuration.lastSyncDate
-			) {
-				const now = new Date()
-				const lastSync = new Date(configuration.lastSyncDate)
-				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
-
-				if (diffInHours < 1) {
-					return 'Synced just now'
-				} else if (diffInHours < 24) {
-					return `Synced ${diffInHours}h ago`
-				} else {
-					const diffInDays = Math.floor(diffInHours / 24)
-					return `Synced ${diffInDays}d ago`
-				}
-			} else if (configuration.syncStatus === 'failed') {
-				return 'Sync failed'
-			} else if (configuration.syncStatus === 'pending') {
-				return 'Sync pending'
-			} else {
-				return 'Never synced'
 			}
 		},
 
