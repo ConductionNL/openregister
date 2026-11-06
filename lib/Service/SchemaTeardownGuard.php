@@ -136,18 +136,29 @@ final class SchemaTeardownGuard {
 			return;
 		}
 
-		$subject = new ObjectEntity();
-		$subject->setUuid($schema->getUuid());
-		$subject->setSchema((string)$schema->getId());
-
 		$this->audit->createAuditTrailEntry(
-			object: $subject,
+			object: self::auditSubject(schema: $schema),
 			action: SchemaDeletionService::ACTION_FORCED_TEARDOWN,
 			context: ['schemaSlug' => $schema->getSlug(), 'keptRows' => $keptRows, 'archivalSchema' => $archival],
 			actorId: self::ACTOR,
 			actorName: self::ACTOR
 		);
 	}//end recordForced()
+
+	/**
+	 * The object an entry about a schema hangs on.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return ObjectEntity An unsaved object carrying the schema's uuid and id.
+	 */
+	private static function auditSubject(Schema $schema): ObjectEntity {
+		$subject = new ObjectEntity();
+		$subject->setUuid($schema->getUuid());
+		$subject->setSchema((string)$schema->getId());
+
+		return $subject;
+	}//end auditSubject()
 
 	/**
 	 * Count every row of a magic table, including soft-deleted ones.
