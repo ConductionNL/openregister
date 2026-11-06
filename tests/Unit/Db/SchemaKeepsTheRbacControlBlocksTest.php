@@ -61,6 +61,10 @@ use ReflectionMethod;
  * Save-time survival of the hierarchy annotation and the department matrix.
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 

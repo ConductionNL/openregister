@@ -28,17 +28,13 @@ use DateTime;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
+use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
-use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
@@ -46,16 +42,10 @@ use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
@@ -71,12 +61,7 @@ use OCA\OpenRegister\Service\Relation\LinkExposure;
 use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
-use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
-use OCA\OpenRegister\Service\Rules\DependentValueValidator;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
@@ -1167,6 +1152,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	private function cleanObject(Schema $schema): void {
 		$advisory = new AdvisoryAnnotationChecks(logger: $this->logger);
+		$records = new RecordAnnotationRefusals(logger: $this->logger);
+		$exchange = new ExchangeAnnotationRefusals();
+		$declarations = new PropertyDeclarationRefusals();
 		$this->cleanRefProperties(schema: $schema);
 		$this->ensureSchemaIdentifiers(schema: $schema);
 		$this->validateConfigurationFields(schema: $schema);
@@ -1174,33 +1162,33 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->autoPopulateConfigurationFields(schema: $schema);
 		$this->validateLifecycleAnnotation(schema: $schema);
 		$this->validateMacroActions(schema: $schema);
-		$this->validateMdtoMappingAnnotation(schema: $schema);
+		$records->checkMdtoMapping(schema: $schema);
 		$advisory->checkAggregations(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
 		$this->validateConsentAnnotation(schema: $schema);
 		$this->validateRelationAnnotation(schema: $schema);
-		$this->validateDependentValueTables(schema: $schema);
+		$declarations->checkDependentValues(schema: $schema);
 		$advisory->checkQuality(schema: $schema);
 		$advisory->checkDedup(schema: $schema);
-		$this->validateUniqueHintAnnotation(schema: $schema);
+		$records->checkUniqueHint(schema: $schema);
 		$advisory->checkHinge(schema: $schema);
 		$advisory->checkSurvivorship(schema: $schema);
 		$advisory->checkMerge(schema: $schema);
 		$advisory->checkParty(schema: $schema);
 		$advisory->checkNotifications(schema: $schema);
-		$this->validateWidgetsAnnotation(schema: $schema);
-		$this->validateArchivalAnnotation(schema: $schema);
-		$this->validateHandoffAnnotation(schema: $schema);
-		$this->validateHandoffContractBinding(schema: $schema);
-		$this->validateMcpAnnotation(schema: $schema);
+		$records->checkWidgets(schema: $schema);
+		$records->checkArchival(schema: $schema);
+		$exchange->checkHandoff(schema: $schema);
+		$exchange->checkHandoffContract(schema: $schema);
+		$exchange->checkMcp(schema: $schema);
 		$this->validateRegistryAnnotation(schema: $schema);
-		$this->validateExternalLinksAnnotation(schema: $schema);
-		$this->validateExtendingFormAnnotation(schema: $schema);
+		$records->checkExternalLinks(schema: $schema);
+		$declarations->checkExtendingForm(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
 		$this->validateHierarchyAnnotation(schema: $schema);
 		$this->validateDepartmentMatrix(schema: $schema);
 		$this->validateRevealAudit(schema: $schema);
-		$this->validateReversibilityDeclaration(schema: $schema);
+		$declarations->checkReversibility(schema: $schema);
 		$this->validateReviewDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -1274,31 +1262,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return $checked;
 	}//end withoutDeclaredActions()
-
-	/**
-	 * Refuse a schema that declares an action reversible that cannot be.
-	 *
-	 * Validated here rather than in the controller because this is the one
-	 * choke point the create, update and file-upload paths all pass through,
-	 * the same reason the relation declarations are checked here.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @return void
-	 *
-	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
-	 *
-	 * @spec openspec/specs/bulk-action-jobs/spec.md
-	 */
-	private function validateReversibilityDeclaration(Schema $schema): void {
-		$errors = (new ReversibilityAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
-
-		if ($errors === []) {
-			return;
-		}
-
-		throw new ReversibilityDeclarationException(errors: $errors);
-	}//end validateReversibilityDeclaration()
 
 	/**
 	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
@@ -1510,58 +1473,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			. implode(' ', $messages)
 		);
 	}//end validateLifecycleAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-mdto-mapping` annotation.
-	 *
-	 * 🔴 EVERY ERROR HERE REFUSES THE SAVE, unlike the lifecycle block above.
-	 * Two reasons. The key is new, so no register ships one and refusing breaks
-	 * no existing import, which is exactly the argument that made the lifecycle
-	 * condition codes blocking. And a mapping stored broken is worse than no
-	 * mapping: `MdtoPreconditions` refuses a transfer the moment a schema
-	 * declares a mapping that does not fill a mandatory element, so an
-	 * administrator who saved a typo would find out when a transfer they had
-	 * scheduled stopped, with the schema editor having reported success.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the mapping names an element MDTO does not have, a
-	 *                   property the schema does not declare, no source, two
-	 *                   sources, or leaves a mandatory element unfilled.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
-	 */
-	private function validateMdtoMappingAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$mapping = ($configuration[ElementMappingValidator::ANNOTATION_KEY] ?? null);
-		if (is_array($mapping) === false) {
-			return;
-		}
-
-		$validator = new ElementMappingValidator(catalogue: new MdtoElementCatalogue());
-		$errors = $validator->validate(
-			mapping: $mapping,
-			properties: ($schema->getProperties() ?? [])
-		);
-
-		if (count($errors) === 0) {
-			return;
-		}
-
-		// "Invalid" is load-bearing: SchemasController maps the exception to a
-		// 400 by matching that word, and the codes ride along so a client can
-		// tell which rule refused.
-		$details = array_map(
-			static fn (array $err): string => '[' . $err['code'] . '] ' . $err['message'],
-			$errors
-		);
-
-		throw new Exception(
-			'Invalid ' . ElementMappingValidator::ANNOTATION_KEY . ' declaration: ' . implode(' ', $details)
-		);
-	}//end validateMdtoMappingAnnotation()
 
 	/**
 	 * Validate declared calculations, from the annotation and from the properties.
@@ -1850,228 +1761,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end schemaForReference()
 
 	/**
-	 * Validate the two property-level rule annotations this change adds.
-	 *
-	 * REFUSES, it does not warn. A table naming a property the schema does not
-	 * declare, or a value the controlling property cannot take, does not fail
-	 * loudly at object save: it constrains nothing, and the object it was
-	 * written to guard saves cleanly. Storing it advisory would be storing a
-	 * rule its author believes is enforced.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * `x-openregister-default-expression` rides along for the same reason: an
-	 * expression the evaluator cannot dispatch does not fail at save, it fails
-	 * on the first create, one object at a time, for whoever happens to be
-	 * using the register that day.
-	 *
-	 * @throws DependentValueDeclarationException When a declaration is malformed or names nothing.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The expression shape check reads one constant
-	 *   operator table and holds no state; it is the same walk the evaluator dispatches on.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function validateDependentValueTables(Schema $schema): void {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $properties === []) {
-			return;
-		}
-
-		$errors = array_merge(
-			(new DependentValueValidator())->validate(['properties' => $properties]),
-			ExpressionDefaultResolver::validateDeclarations(properties: $properties)
-		);
-		if ($errors === []) {
-			return;
-		}
-
-		throw new DependentValueDeclarationException(errors: $errors);
-	}//end validateDependentValueTables()
-
-	/**
-	 * Validate the optional `x-openregister-extends-form` annotation.
-	 *
-	 * An app whose own form authors schema properties declares which
-	 * vocabulary keys that form forwards. A key nobody defines is refused
-	 * naming it, in both directions: a type the vocabulary does not hold fails
-	 * the property, and a forwarded key it does not hold fails the
-	 * declaration. Silence here is how an app ends up narrowing a platform
-	 * contract by ten capabilities and nobody can tell it was deliberate.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws PropertyVocabularyException When a declaration forwards a key the vocabulary does not hold.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 */
-	private function validateExtendingFormAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($configuration) === false) {
-			$configuration = [];
-		}
-
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
-
-		$declarations = new ExtendingFormDeclaration();
-		$found = $declarations->fromSchema(configuration: $configuration, properties: $properties);
-		if ($found === []) {
-			return;
-		}
-
-		$errors = [];
-		foreach ($found as $path => $annotation) {
-			$errors = array_merge($errors, $declarations->validate(annotation: $annotation, path: $path));
-		}
-
-		if ($errors === []) {
-			return;
-		}
-
-		$keys = implode(', ', array_map(static fn (array $error): string => $error['key'], $errors));
-		throw new PropertyVocabularyException(
-			message: 'Invalid ' . ExtendingFormDeclaration::ANNOTATION . " declaration: '{$keys}'. "
-			. 'Read /api/schemas/property-vocabulary for the keys a form may forward.',
-			errors: $errors
-		);
-	}//end validateExtendingFormAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-unique-hint` annotation.
-	 *
-	 * FATAL, unlike {@see AdvisoryAnnotationChecks::checkDedup()}, which
-	 * degrades a malformed block to a logged warning. The difference is the
-	 * cost of being wrong. A malformed dedup block costs a duplicate sweep you
-	 * can re-run; a nomination of a property that does not exist costs a
-	 * uniqueness alert that silently never fires, and the only symptom is a
-	 * second case on the same KvK number found months later or never. The
-	 * administrator who typed the name is the one person who can fix it, and
-	 * they are still holding the form.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws UniqueHintException When a nomination names a property the schema does not declare.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
-	 */
-	private function validateUniqueHintAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (array_key_exists('x-openregister-unique-hint', $configuration) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-unique-hint' => $configuration['x-openregister-unique-hint'],
-		];
-
-		$errors = (new UniqueHintAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-
-		throw new UniqueHintException(
-			message: 'x-openregister-unique-hint: ' . implode(' ', $messages),
-			errors: $errors
-		);
-	}//end validateUniqueHintAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-widgets` annotation.
-	 *
-	 * Schemas that pre-declare widgets (e.g. the `dashboard` schema in
-	 * the `reports` register) carry the array under
-	 * `configuration['x-openregister-widgets']`. Operators see shape
-	 * errors at schema-save time rather than at first render.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 */
-	private function validateWidgetsAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-widgets'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = ['x-openregister-widgets' => $annotation];
-
-		$errors = (new WidgetAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $errors);
-		throw new Exception('x-openregister-widgets: ' . implode(' ', $messages));
-	}//end validateWidgetsAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-archival` annotation.
-	 *
-	 * The annotation is stored under `configuration['x-openregister-archival']`.
-	 * Errors are aggregated by ArchivalAnnotationValidator and thrown here as
-	 * a single message so callers see a clear schema-save failure.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	private function validateArchivalAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = ['x-openregister-archival' => $annotation];
-
-		$findings = (new ArchivalAnnotationValidator())->validate(schema: $shape);
-		$split = ArchivalAnnotationValidator::partition(findings: $findings);
-
-		// An UNKNOWN key is surfaced and ignored, never fatal — the same rule
-		// R07 applies to an unknown `x-openregister-*` key one level up
-		// (logDroppedAnnotationKeys). It declares nothing, so dropping it loses
-		// nothing, whereas refusing it refuses the whole schema: at import time
-		// that costs the register every object of that schema, and the operator
-		// sees it as a seeding failure several layers away from the annotation.
-		if (count($split['warnings']) > 0) {
-			$this->logger->warning(
-				sprintf(
-					'[OpenRegister.SchemaMapper] Ignored %d unknown x-openregister-archival key(s) on schema "%s": %s',
-					count($split['warnings']),
-					(string)($schema->getSlug() ?? ''),
-					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
-				)
-			);
-		}
-
-		if (count($split['errors']) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
-		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
-	}//end validateArchivalAnnotation()
-
-	/**
 	 * Refuse `audit: true` on a property nobody is kept out of (row 5.6).
 	 *
 	 * THE REFUSAL IS THE POINT OF THE FEATURE. An audited reveal answers "who
@@ -2234,167 +1923,6 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception(HierarchyGrantExpander::ANNOTATION . ': ' . implode(' ', $messages));
 	}//end validateHierarchyAnnotation()
-
-	/**
-	 * Refuse a broken `x-openregister-external-links` declaration at save.
-	 *
-	 * This one throws rather than warns, and the reason is the feature's own
-	 * failure mode. A link whose placeholder cannot be filled is HIDDEN by
-	 * design, because a URL with `{bagId}` still in it is a broken link that
-	 * looks like a working one. That makes a misspelt placeholder and an object
-	 * with no value indistinguishable at render: an author would read a 200,
-	 * see no link, and have no way to tell which of the two happened. The save
-	 * is the only moment the two can be told apart, so it is the only moment
-	 * worth refusing at.
-	 *
-	 * @param Schema $schema The schema being saved.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception When a declaration cannot produce a link.
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
-	 */
-	private function validateExternalLinksAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
-		if ($annotation === null) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			ExternalLinkResolver::ANNOTATION => $annotation,
-		];
-
-		$errors = (new ExternalLinkAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		throw new Exception(ExternalLinkResolver::ANNOTATION . ': ' . implode(' ', $errors));
-	}//end validateExternalLinksAnnotation()
-
-	/**
-	 * Validate the optional `x-openregister-handoff` annotation (ADR-051).
-	 *
-	 * The annotation is stored under `configuration['x-openregister-handoff']`.
-	 * A malformed handoff declaration REJECTS the schema (contract: schema-save
-	 * validation SHALL reject with the typed handoff-* error codes) — unlike
-	 * advisory annotations, a broken handoff would otherwise surface as a
-	 * runtime conversion failure on user action.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/semantic-object-handoff/spec.md
-	 *   (Requirement: `x-openregister-handoff` declarative dialect)
-	 */
-	private function validateHandoffAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-handoff'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-handoff' => $annotation,
-			'x-openregister-lifecycle' => ($configuration['x-openregister-lifecycle'] ?? null),
-		];
-
-		$errors = (new HandoffAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('x-openregister-handoff: ' . implode(' ', $messages));
-	}//end validateHandoffAnnotation()
-
-	/**
-	 * Validate the optional `handoffContract` binding block (ADR-051,
-	 * provider side). Stored at `configuration['handoffContract']`; when
-	 * present, every mandatory contract field of each bound kind must map to
-	 * an existing own property — otherwise the schema is rejected with
-	 * `handoff-contract-incomplete` listing the missing fields. A schema that
-	 * implements a kind with NO binding block passes untouched (it is simply
-	 * not a handoff provider).
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the binding block is incomplete or malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: Implementer omits a mandatory contract field)
-	 */
-	private function validateHandoffContractBinding(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		if (array_key_exists('handoffContract', $configuration) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'handoffContract' => $configuration['handoffContract'],
-			'implements' => ($configuration['implements'] ?? null),
-			'jsonld' => ($configuration['jsonld'] ?? null),
-			'x-schema-org' => ($configuration['x-schema-org'] ?? null),
-		];
-
-		$errors = (new HandoffContractBindingValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('handoffContract: ' . implode(' ', $messages));
-	}//end validateHandoffContractBinding()
-
-	/**
-	 * Validate the optional `x-openregister-mcp` annotation (ADR-063).
-	 *
-	 * The annotation is stored under `configuration['x-openregister-mcp']`.
-	 * This change defines and validates the declaration only — no MCP tool
-	 * is emitted and no serving surface is altered by this validator (that
-	 * is the `or-mcp-derived-tool-provider` change). A malformed block
-	 * fails the schema save loudly, consistent with every sibling
-	 * `x-openregister-*` dialect validator.
-	 *
-	 * @param Schema $schema Schema to validate.
-	 *
-	 * @throws Exception When the annotation is malformed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
-	 */
-	private function validateMcpAnnotation(Schema $schema): void {
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-mcp'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		$shape = [
-			'properties' => ($schema->getProperties() ?? []),
-			'x-openregister-mcp' => $annotation,
-		];
-
-		$errors = (new McpAnnotationValidator())->validate($shape);
-		if (count($errors) === 0) {
-			return;
-		}
-
-		$messages = array_map(static fn (array $err) => $err['code'] . ': ' . $err['message'], $errors);
-		throw new Exception('x-openregister-mcp: ' . implode(' ', $messages));
-	}//end validateMcpAnnotation()
 
 	/**
 	 * Validate the optional `x-openregister-registry` annotation.

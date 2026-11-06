@@ -41,6 +41,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  * @uses \OCA\OpenRegister\Exception\UniqueHintException
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator
@@ -71,6 +72,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Flow\MacroActionBinding
  * @uses \OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator
+ * @uses \OCA\OpenRegister\Service\Handoff\HandoffKindContracts
  * @uses \OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms
@@ -104,6 +106,9 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
@@ -211,6 +216,23 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 			'action destroy reversible' => [['x-openregister-action' => ['purge' => ['name' => 'Purge', 'kind' => 'destroy', 'reversible' => true]]], self::PROPERTIES],
 			'action flow' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow']]], self::PROPERTIES],
 			'action macro' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'macro' => ['flow' => 'a-flow']]]], self::PROPERTIES],
+			'mdto property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'name']]], self::PROPERTIES],
+			'mdto unknown property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'nope']]], self::PROPERTIES],
+			'handoff lifecycle state' => [
+				[
+					'x-openregister-handoff' => [['id' => 'send', 'trigger' => 'lifecycle:nope']],
+					'x-openregister-lifecycle' => ['field' => 'status', 'property' => 'status'],
+				],
+				self::PROPERTIES,
+			],
+			'contract implements' => [['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract jsonld' => [['jsonld' => ['type' => 'https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract schema org' => [['x-schema-org' => 'https://openregister.app/ns#Case', 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'extends form on schema and property' => [
+				['x-openregister-extends-form' => ['forwards' => ['nope-a']]],
+				['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]],
+			],
+			'extends form on property' => [[], ['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]]],
 			'hinge with two keys' => [['x-openregister-lenses' => ['bogus' => true], 'x-openregister-list' => 'x'], self::PROPERTIES],
 		];
 		foreach (self::ANNOTATIONS as $key) {
