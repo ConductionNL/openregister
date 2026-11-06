@@ -9,6 +9,8 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DatabaseException;
 use OCP\IRequest;
@@ -23,7 +25,7 @@ use RuntimeException;
  *
  * Every case records each service call and log line, without file and line,
  * and the answer, and compares them with fixtures/objects-bulk-routes-golden.json.
- * The routes answer a database failure themselves; any other failure leaves them.
+ * The routes answer their own failures; an external source's failure leaves them for ObjectSourceErrorMiddleware.
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -136,24 +138,95 @@ class ObjectsControllerBulkRoutesGoldenTest extends TestCase {
 		$this->compareResponse(key: 'stats ' . $this->dataName(), response: $this->controller(request: $request, service: $service)->getObjectVectorizationStats());
 	}
 
-	public function testOtherFailuresLeaveTheRoutes(): void {
+	/**
+	 * @return array<string, array{0: \Throwable}>
+	 */
+	public static function nonDatabaseFailures(): array {
+		return [
+			'exception' => [new RuntimeException('secret detail')],
+			'error' => [new \TypeError('secret detail')],
+		];
+	}
+
+	#[DataProvider('nonDatabaseFailures')]
+	public function testVectorizeBatchAnswersAnyFailure(\Throwable $failure): void {
 		$service = $this->service();
-		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new RuntimeException('validate'));
-		$service->method('vectorizeBatchObjects')->willThrowException(new RuntimeException('vectorize'));
-		$service->method('getVectorizationStatistics')->willThrowException(new RuntimeException('stats'));
+		$service->method('vectorizeBatchObjects')->willThrowException($failure);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn([]);
-		$request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'views' ? null : 1);
+
+		$this->assertGenericFailure($this->controller(request: $request, service: $service)->vectorizeBatch());
+	}
+
+	#[DataProvider('nonDatabaseFailures')]
+	public function testVectorizationStatsAnswerAnyFailure(\Throwable $failure): void {
+		$service = $this->service();
+		$service->method('getVectorizationStatistics')->willThrowException($failure);
+
+		$this->assertGenericFailure(
+			$this->controller(request: $this->createMock(IRequest::class), service: $service)->getObjectVectorizationStats()
+		);
+	}
+
+	public function testValidateAnswersAnotherException(): void {
+		$service = $this->service();
+		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new RuntimeException('validate'));
+
+		$response = $this->controller(request: $this->validationRequest(), service: $service)->validate();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['success' => false, 'error' => 'validate', 'message' => 'Validation failed'], $response->getData());
+	}
+
+	public function testValidateLeavesAnErrorToTheServer(): void {
+		$service = $this->service();
+		$service->method('validateAndSaveObjectsBySchema')->willThrowException(new \TypeError('internal'));
+
+		$this->expectException(\TypeError::class);
+		$this->controller(request: $this->validationRequest(), service: $service)->validate();
+	}
+
+	/**
+	 * @return array<string, array{0: \Exception}>
+	 */
+	public static function externalSourceFailures(): array {
+		return [
+			'read' => [new DbalObjectSourceException('source down', 503)],
+			'write' => [new DbalWriteException('source refused', 409)],
+		];
+	}
+
+	#[DataProvider('externalSourceFailures')]
+	public function testExternalSourceFailuresLeaveTheRoutes(\Exception $failure): void {
+		$service = $this->service();
+		$service->method('validateAndSaveObjectsBySchema')->willThrowException($failure);
+		$service->method('vectorizeBatchObjects')->willThrowException($failure);
+		$service->method('getVectorizationStatistics')->willThrowException($failure);
+		$request = $this->validationRequest();
+		$request->method('getParams')->willReturn([]);
 		$controller = $this->controller(request: $request, service: $service);
 
-		foreach (['validate' => 'validate', 'vectorizeBatch' => 'vectorize', 'getObjectVectorizationStats' => 'stats'] as $route => $message) {
+		foreach (['validate', 'vectorizeBatch', 'getObjectVectorizationStats'] as $route) {
 			try {
 				$controller->$route();
 				$this->fail($route . ' answered');
-			} catch (RuntimeException $failure) {
-				$this->assertSame($message, $failure->getMessage());
+			} catch (\Exception $caught) {
+				$this->assertSame($failure, $caught, $route);
 			}
 		}
+	}
+
+	private function validationRequest(): IRequest&\PHPUnit\Framework\MockObject\MockObject {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(static fn (string $key) => $key === 'views' ? null : 1);
+		return $request;
+	}
+
+	private function assertGenericFailure(JSONResponse $response): void {
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['success' => false, 'error' => 'Internal server error'], $response->getData());
+		$logged = array_column($this->calls, 'error');
+		$this->assertSame('[ObjectsController] Vectorization route failed', $logged[0][0] ?? null);
 	}
 
 	private function service(): ObjectOperationsInterface&\PHPUnit\Framework\MockObject\MockObject {
