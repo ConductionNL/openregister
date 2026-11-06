@@ -101,6 +101,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses \OCA\OpenRegister\Service\Object\ObjectFindScope
+ * @uses \OCA\OpenRegister\Service\Object\ObjectFindTarget
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
