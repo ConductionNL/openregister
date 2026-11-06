@@ -145,7 +145,8 @@ final class MagicTableIndexer {
 	}//end createPlatformIndexes()
 
 	/**
-	 * Create the indexes each schema property asks for.
+	 * Create the indexes each schema property asks for; an entry that is not
+	 * a property definition has no column, so it gets no index.
 	 *
 	 * @param MagicTableIndexRun $run    The index-creation pass.
 	 * @param Schema             $schema The schema.
@@ -155,6 +156,10 @@ final class MagicTableIndexer {
 	private function createSchemaIndexes(MagicTableIndexRun $run, Schema $schema): void {
 		$sql = new MagicColumnSql(isPostgres: $run->isPostgres);
 		foreach ($schema->getProperties() as $propertyName => $propertyConfig) {
+			if (is_array($propertyConfig) === false) {
+				continue;
+			}
+
 			$run->column = $this->sanitizeColumnName(name: $propertyName);
 			$run->quotedColumn = $sql->quote(name: $run->column);
 			$this->createPropertyIndexes(run: $run, propertyConfig: $propertyConfig);
