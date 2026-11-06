@@ -80,6 +80,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
+use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -4682,7 +4683,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         try {
-            $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
+            $result['@self']['names'] = (new ResultNameCollector(cacheHandler: $this->cacheHandler))->namesFor(
+                results: $resultsToProcess
+            );
         } catch (\Throwable $e) {
             $errFile = $e->getFile();
             $errLine = $e->getLine();
@@ -5224,198 +5227,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         return $this->permissionHandler;
     }//end getPermissionHandler()
-
-    /**
-     * Collect UUID-to-name mappings for all related objects in search results.
-     *
-     * This method extracts all UUIDs from the search results (relations, object properties)
-     * and resolves them to human-readable names using the CacheHandler.
-     *
-     * @param array $results Array of rendered objects or ObjectEntity instances from search.
-     *
-     * @return array<string, string> Map of UUID to name.
-     *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     */
-    private function collectNamesForResults(array $results): array
-    {
-        $uuids = [];
-
-        $count = 0;
-        foreach ($results as $result) {
-            $count++;
-
-            // For ObjectEntity instances, access relations directly without full serialization.
-            // This avoids triggering expensive render operations.
-            if ($result instanceof \OCA\OpenRegister\Db\ObjectEntity) {
-                $this->collectUuidsFromEntity(entity: $result, uuids: $uuids);
-                continue;
-            }//end if
-
-            // Handle already-serialized arrays.
-            if (is_array($result) === false) {
-                continue;
-            }
-
-            $this->collectUuidsFromArrayResult(resultData: $result, uuids: $uuids);
-        }//end foreach
-
-        // Remove duplicates.
-        $uuids = array_unique($uuids);
-
-        if (empty($uuids) === true) {
-            return [];
-        }
-
-        // Resolve all UUIDs to names using CacheHandler.
-        $names = $this->cacheHandler->getMultipleObjectNames($uuids);
-        return $names;
-    }//end collectNamesForResults()
-
-    /**
-     * Collect UUIDs from an ObjectEntity instance.
-     *
-     * Extracts UUIDs from the entity's relations, metadata fields (organisation, owner),
-     * and object data without triggering full serialization.
-     *
-     * @param \OCA\OpenRegister\Db\ObjectEntity $entity The object entity to extract UUIDs from.
-     * @param array                             $uuids  Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromEntity(\OCA\OpenRegister\Db\ObjectEntity $entity, array &$uuids): void
-    {
-        // Get relations directly from entity.
-        $relations = $entity->getRelations();
-        if (is_array($relations) === true) {
-            $this->collectUuidsFromRelations(relations: $relations, uuids: $uuids);
-        }
-
-        // Collect from metadata fields (organisation, owner).
-        // These are UUID references to related objects that the frontend needs names for.
-        $organisation = $entity->getOrganisation();
-        if (is_string($organisation) === true && $this->isUuidFormat(value: $organisation) === true) {
-            $uuids[] = $organisation;
-        }
-
-        $owner = $entity->getOwner();
-        if (is_string($owner) === true && $this->isUuidFormat(value: $owner) === true) {
-            $uuids[] = $owner;
-        }
-
-        // Get object data directly without triggering full serialization.
-        $objectData = $entity->getObject();
-        if (is_array($objectData) === true) {
-            $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-        }
-    }//end collectUuidsFromEntity()
-
-    /**
-     * Collect UUIDs from an already-serialized array result.
-     *
-     * Handles the nested @self structure, extracting UUIDs from relations,
-     * metadata fields, and object data properties.
-     *
-     * @param array $resultData The serialized result array.
-     * @param array $uuids      Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromArrayResult(array $resultData, array &$uuids): void
-    {
-        // Get the actual object data - handle nested @self structure.
-        $objectData = $resultData;
-        if (isset($resultData['@self']) === true && is_array($resultData['@self']) === true) {
-            // Collect from relations in @self.
-            $relations = $resultData['@self']['relations'] ?? [];
-            if (is_array($relations) === true) {
-                $this->collectUuidsFromRelations(relations: $relations, uuids: $uuids);
-            }
-
-            // Collect from metadata fields in @self (organisation, owner).
-            // These are UUID references to related objects that the frontend needs names for.
-            $metadataFields = ['organisation', 'owner'];
-            foreach ($metadataFields as $field) {
-                $value = $resultData['@self'][$field] ?? null;
-                if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
-                    $uuids[] = $value;
-                }
-            }
-
-            // Use the object data from @self if present.
-            if (isset($resultData['@self']['object']) === true && is_array($resultData['@self']['object']) === true) {
-                $objectData = $resultData['@self']['object'];
-            }
-        }//end if
-
-        // Collect UUIDs from object properties. $objectData is always an array
-        // by this point, so the old is_array() guard could never skip the call.
-        $this->collectUuidsFromObjectData(data: $objectData, uuids: $uuids);
-    }//end collectUuidsFromArrayResult()
-
-    /**
-     * Collect UUIDs from a relations array.
-     *
-     * Relations can be either direct UUID strings or arrays of UUID strings.
-     * This method handles both formats and appends found UUIDs to the collection.
-     *
-     * @param array $relations The relations array to scan for UUIDs.
-     * @param array $uuids     Reference to array collecting UUIDs.
-     *
-     * @return void
-     */
-    private function collectUuidsFromRelations(array $relations, array &$uuids): void
-    {
-        foreach ($relations as $relation) {
-            if (is_string($relation) === true && $this->isUuidFormat(value: $relation) === true) {
-                $uuids[] = $relation;
-            } else if (is_array($relation) === true) {
-                foreach ($relation as $uuid) {
-                    if (is_string($uuid) === true && $this->isUuidFormat(value: $uuid) === true) {
-                        $uuids[] = $uuid;
-                    }
-                }
-            }
-        }//end foreach
-    }//end collectUuidsFromRelations()
-
-    /**
-     * Recursively collect UUIDs from object data.
-     *
-     * @param array $data  The object data to scan.
-     * @param array $uuids Reference to array collecting UUIDs.
-     * @param int   $depth Current recursion depth.
-     *
-     * @return void
-     */
-    private function collectUuidsFromObjectData(array $data, array &$uuids, int $depth=0): void
-    {
-        // Only process top-level to avoid recursion issues.
-        if ($depth > 0) {
-            return;
-        }
-
-        foreach ($data as $key => $value) {
-            // Skip metadata keys.
-            if ($key === '@self' || $key === 'id' || $key === '_id' || $key === 'object') {
-                continue;
-            }
-
-            // Only look at top-level string UUIDs.
-            if (is_string($value) === true && $this->isUuidFormat(value: $value) === true) {
-                $uuids[] = $value;
-            } else if (is_array($value) === true) {
-                // Only look at arrays of UUIDs (not nested objects).
-                foreach ($value as $item) {
-                    if (is_string($item) === true && $this->isUuidFormat(value: $item) === true) {
-                        $uuids[] = $item;
-                    }
-
-                    // Skip nested arrays completely.
-                }
-            }
-        }
-    }//end collectUuidsFromObjectData()
 
     /**
      * Check if a string is in UUID format.
