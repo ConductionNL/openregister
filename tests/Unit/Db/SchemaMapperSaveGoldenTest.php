@@ -123,6 +123,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
  * @uses \OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
