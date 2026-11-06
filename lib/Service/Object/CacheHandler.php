@@ -1067,6 +1067,18 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			$this->clearSearchCache();
 		}
 
+		$this->logSchemaCleared(change: $change, startTime: $startTime);
+	}//end clearSchemaRelatedCaches()
+
+	/**
+	 * Log a schema-wide clearing.
+	 *
+	 * @param ObjectChange $change    The change.
+	 * @param float        $startTime When the clearing started.
+	 *
+	 * @return void
+	 */
+	private function logSchemaCleared(ObjectChange $change, float $startTime): void {
 		$strategy = 'global_fallback';
 		if ($change->schemaId !== null) {
 			$strategy = 'schema_targeted';
@@ -1080,7 +1092,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				'strategy' => $strategy,
 			]
 		);
-	}//end clearSchemaRelatedCaches()
+	}//end logSchemaCleared()
 
 	/**
 	 * Clear the distributed search cache for a change that names a schema.
@@ -1128,7 +1140,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		?int $schemaId = null,
 	): void {
 		$startTime = microtime(true);
-		$change    = (new ObjectChange(object: $object, operation: $operation))->in(registerId: $registerId, schemaId: $schemaId);
+		$change    = (new ObjectChange(object: $object, operation: $operation))->within(registerId: $registerId, schemaId: $schemaId);
 
 		$this->refreshChangedObject(change: $change);
 		$this->clearSchemaRelatedCaches(change: $change);

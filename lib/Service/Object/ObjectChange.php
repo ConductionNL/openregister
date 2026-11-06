@@ -70,12 +70,12 @@ final class ObjectChange {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	public function in(?int $registerId, ?int $schemaId): self {
+	public function within(?int $registerId, ?int $schemaId): self {
 		$this->registerId = ($registerId ?? self::idOf(value: $this->object?->getRegister()));
 		$this->schemaId   = ($schemaId ?? self::idOf(value: $this->object?->getSchema()));
 
 		return $this;
-	}//end in()
+	}//end within()
 
 	/**
 	 * What a log line reports about the change.
