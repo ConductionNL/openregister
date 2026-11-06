@@ -48,6 +48,9 @@ use RuntimeException;
  * render, and that constants win.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveLookups
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceText
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\RegisterReferenceLookup
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema

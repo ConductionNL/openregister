@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceCheck;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
@@ -203,6 +204,13 @@ class SaveObject implements SaveObjectInterface {
 	private ObjectVersionHandler $versionHandler;
 
 	/**
+	 * Finds and keeps the schemas and registers of a save; built on first use.
+	 *
+	 * @var SaveLookups|null
+	 */
+	private ?SaveLookups $lookups = null;
+
+	/**
 	 * Decides object slugs (#4037), built from the mappers already passed in.
 	 *
 	 * @var ObjectSlugHandler
@@ -218,37 +226,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @var array<string, array>
 	 */
 	private array $createdSubObjects = [];
-
-	/**
-	 * Request-scoped cache for resolved schemas.
-	 *
-	 * Caches Schema entities by their ID to avoid repeated database lookups
-	 * when creating multiple sub-objects of the same type during cascade operations.
-	 * This significantly improves POST performance for objects with many sub-objects.
-	 *
-	 * @var array<int|string, Schema>
-	 */
-	private array $schemaCache = [];
-
-	/**
-	 * Request-scoped cache for resolved registers.
-	 *
-	 * Caches Register entities by their ID to avoid repeated database lookups
-	 * during cascade operations.
-	 *
-	 * @var array<int|string, Register>
-	 */
-	private array $registerCache = [];
-
-	/**
-	 * Request-scoped cache for resolved schema references (slug -> ID).
-	 *
-	 * Caches the mapping from schema slugs/references to their numeric IDs
-	 * to avoid repeated findAll() calls during cascade operations.
-	 *
-	 * @var array<string, string|null>
-	 */
-	private array $schemaReferenceCache = [];
 
 	/**
 	 * Request-scoped cache for reference-existence verdicts.
@@ -678,10 +655,17 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	public function clearAllCaches(): void {
 		$this->createdSubObjects = [];
-		$this->schemaCache = [];
-		$this->registerCache = [];
-		$this->schemaReferenceCache = [];
+		$this->lookups()->clear();
 	}//end clearAllCaches()
+
+	/**
+	 * The schema and register lookups of this save handler.
+	 *
+	 * @return SaveLookups
+	 */
+	private function lookups(): SaveLookups {
+		return $this->lookups ??= new SaveLookups(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper);
+	}//end lookups()
 
 	/**
 	 * Get a cached schema by ID, or fetch and cache it.
@@ -695,12 +679,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedSchema(int|string $schemaId): Schema {
-		$cacheKey = (string)$schemaId;
-		if (isset($this->schemaCache[$cacheKey]) === false) {
-			$this->schemaCache[$cacheKey] = $this->schemaMapper->find(id: $schemaId);
-		}
-
-		return $this->schemaCache[$cacheKey];
+		return $this->lookups()->schema(schemaId: $schemaId);
 	}//end getCachedSchema()
 
 	/**
@@ -715,12 +694,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function getCachedRegister(int|string $registerId): Register {
-		$cacheKey = (string)$registerId;
-		if (isset($this->registerCache[$cacheKey]) === false) {
-			$this->registerCache[$cacheKey] = $this->registerMapper->find(id: $registerId);
-		}
-
-		return $this->registerCache[$cacheKey];
+		return $this->lookups()->register(registerId: $registerId);
 	}//end getCachedRegister()
 
 	/**
@@ -755,181 +729,11 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// Check the reference cache first (performance optimization for cascade operations).
-		// When creating many sub-objects of the same type, this avoids repeated lookups.
-		if (isset($this->schemaReferenceCache[$reference]) === true) {
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		$cleanReference = $this->removeQueryParameters(reference: $reference);
-
-		// Also check cache with cleaned reference.
-		if ($cleanReference !== $reference && isset($this->schemaReferenceCache[$cleanReference]) === true) {
-			$this->schemaReferenceCache[$reference] = $this->schemaReferenceCache[$cleanReference];
-			return $this->schemaReferenceCache[$reference];
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($cleanReference) === true || UuidFormat::isCanonical(value: $cleanReference) === true) {
-			try {
-				$schema = $this->getCachedSchema(schemaId: $cleanReference);
-				$schemaId = (string)$schema->getId();
-				$this->schemaReferenceCache[$reference] = $schemaId;
-				return $schemaId;
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $cleanReference;
-		if (str_contains($cleanReference, '/') === true) {
-			// For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens".
-			$slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-		}
-
-		// Try to find schema by slug (case-insensitive).
-		// Use findAll() once and cache the results for subsequent lookups.
-		try {
-			$schemas = $this->schemaMapper->findAll();
-			// Cache all schemas by slug for future lookups.
-			foreach ($schemas as $schema) {
-				// A schema with no slug cannot be found BY slug, and feeding
-				// the null on to strtolower()/strcasecmp() is deprecated in
-				// PHP 8.1 and a TypeError in PHP 9. Skipping it is what the
-				// loop was already doing in effect, just noisily.
-				if ($schema->getSlug() === null) {
-					continue;
-				}
-
-				$schemaSlug = strtolower($schema->getSlug());
-				$schemaId = (string)$schema->getId();
-				// Cache the schema entity.
-				$this->schemaCache[$schemaId] = $schema;
-				// Cache the slug -> ID mapping.
-				$this->schemaReferenceCache['#/components/schemas/' . $schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schema->getSlug()] = $schemaId;
-				$this->schemaReferenceCache[$schemaSlug] = $schemaId;
-
-				if (strcasecmp($schema->getSlug(), $slug) === 0) {
-					$this->schemaReferenceCache[$reference] = $schemaId;
-					return $schemaId;
-				}
-			}
-		} catch (Exception $e) {
-			// Schema not found.
-		}//end try
-
-		// Try direct slug match as last resort.
-		try {
-			// SchemaMapper->find() supports id, uuid, and slug via orX().
-			// find() throws when there is no match; the catch below is the
-			// "not found" path, so no null test is needed here.
-			$schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			$schemaId = (string)$schema->getId();
-			$this->schemaCache[$schemaId] = $schema;
-			$this->schemaReferenceCache[$reference] = $schemaId;
-			return $schemaId;
-		} catch (Exception $e) {
-			// Schema not found.
-		}
-
-		// Cache the null result too to avoid repeated lookups for invalid references.
-		$this->schemaReferenceCache[$reference] = null;
-		return null;
+		return $this->lookups()->schemaId(reference: $reference);
 	}//end resolveSchemaReference()
-
-	/**
-	 * Removes query parameters from a reference string.
-	 *
-	 * @param string $reference The reference string that may contain query parameters
-	 *
-	 * @return string The reference string without query parameters
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function removeQueryParameters(string $reference): string {
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-		if (str_contains($reference, '?') === true) {
-			return substr($reference, 0, strpos($reference, '?'));
-		}
-
-		return $reference;
-	}//end removeQueryParameters()
-
-	/**
-	 * Resolves a register reference to a register ID.
-	 *
-	 * This method handles various types of register references:
-	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
-	 * - Slug references: "publication", "voorzieningen"
-	 * - URL references: "http://example.com/api/registers/34"
-	 *
-	 * For path and URL references, it extracts the last part and matches against register slugs (case-insensitive).
-	 *
-	 * @param string $reference The register reference to resolve
-	 *
-	 * @return null|numeric-string The resolved register ID or null if not found
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function resolveRegisterReference(string $reference): ?string {
-		if (empty($reference) === true) {
-			return null;
-		}
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($reference) === true || UuidFormat::isCanonical(value: $reference) === true) {
-			try {
-				$register = $this->registerMapper->find($reference);
-				return (string)$register->getId();
-			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
-			}
-		}
-
-		// Extract the last part of path/URL references.
-		$slug = $reference;
-		if (str_contains($reference, '/') === true) {
-			// For references like "http://example.com/registers/publication".
-			$slug = substr($reference, strrpos($reference, '/') + 1);
-		}
-
-		// Try to find register by slug (case-insensitive).
-		try {
-			$registers = $this->registerMapper->findAll();
-			foreach ($registers as $register) {
-				if (strcasecmp($register->getSlug(), $slug) === 0) {
-					return (string)$register->getId();
-				}
-			}
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		// Try direct slug match as last resort.
-		try {
-			// RegisterMapper->find() supports id, uuid, and slug via orX().
-			$register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
-			return (string)$register->getId();
-		} catch (Exception $e) {
-			// Register not found.
-		}
-
-		return null;
-	}//end resolveRegisterReference()
 
 	/**
 	 * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
@@ -3982,62 +3786,14 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @throws Exception If schema or register cannot be resolved
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function resolveSchemaAndRegister(
 		Schema|int|string $schema,
 		Register|int|string|null $register,
 	): array {
-		// Initialize IDs before conditional assignment.
-		$schemaId = null;
-		$registerId = null;
-
-		// Resolve schema using request-scoped cache for performance.
-		// This avoids repeated database lookups when creating multiple sub-objects of the same type.
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-			// Cache the schema entity for potential reuse.
-			$this->schemaCache[(string)$schemaId] = $schema;
-		} elseif (is_string($schema) === true) {
-			// Resolve schema reference if it's a string (uses cached reference lookup).
-			$schemaId = $this->resolveSchemaReference(reference: $schema);
-			if ($schemaId === null) {
-				throw new Exception("Could not resolve schema reference: $schema");
-			}
-
-			// Use cached schema lookup instead of direct mapper call.
-			$schema = $this->getCachedSchema(schemaId: $schemaId);
-		} else {
-			// Only the integer-ID case is left after the Schema and string arms
-			// above, so no is_int() re-test — use the cached lookup.
-			$schemaId = $schema;
-			$schema = $this->getCachedSchema(schemaId: $schema);
-		}
-
-		// Resolve register using request-scoped cache for performance.
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-			// Cache the register entity for potential reuse.
-			$this->registerCache[(string)$registerId] = $register;
-		} elseif (is_string($register) === true) {
-			// Resolve register reference if it's a string.
-			$registerId = $this->resolveRegisterReference(reference: $register);
-			if ($registerId === null) {
-				throw new Exception("Could not resolve register reference: $register");
-			}
-
-			// Use cached register lookup instead of direct mapper call.
-			$register = $this->getCachedRegister(registerId: $registerId);
-		} elseif (is_int($register) === true) {
-			// It's an integer ID - use cached lookup.
-			$registerId = $register;
-			$register = $this->getCachedRegister(registerId: $register);
-		} elseif ($register === null) {
-			// Register is NULL (e.g., for seedData objects) - leave as NULL.
-			$registerId = null;
-		}//end if
+		[$schema, $schemaId] = $this->lookups()->schemaWithId(schema: $schema);
+		[$register, $registerId] = $this->lookups()->registerWithId(register: $register);
 
 		return [$schema, $schemaId, $register, $registerId];
 	}//end resolveSchemaAndRegister()
