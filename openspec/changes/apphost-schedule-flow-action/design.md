@@ -28,7 +28,7 @@ Applying compares each desired flow with the stored one:
 | different | schedule | draft, write, validate, publish the next version |
 | flow | schedule gone | delete with its runs and versions (`FlowService::deleteStored`) |
 
-`enabled: false` keeps the flow and switches it off. A schedule refused for its own reason (bad cadence, action not allowed) is logged and leaves any earlier flow for that id alone: the manifest does still name it.
+`enabled: false` keeps the flow and switches it off. A schedule refused for its interval or action is logged and leaves any earlier flow for that id alone: the manifest does still name it. An entry that does not parse has no reliable id, so it counts as gone.
 
 Because `runAs` is in the graph, a publish by someone else writes a new flow version, and that version names them in `publishedBy`.
 
