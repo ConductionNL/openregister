@@ -26,9 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Chat;
 
 use LLPhant\Chat\OllamaChat;
 use LLPhant\Exception\MissingFeatureException;
-use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
-use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Mcp\Service\Chat\StreamYieldChannel;
+use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;

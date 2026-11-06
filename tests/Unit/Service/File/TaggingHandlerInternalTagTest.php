@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCP\IUserSession;
 use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * The internal `object:<uuid>` tag is created hidden and not assignable; a
  * user's own tag keeps being created visible and assignable.
  *
- * @covers \OCA\OpenRegister\Service\File\TaggingHandler
+ * @covers \OCA\OpenRegister\Files\Service\File\TaggingHandler
  */
 class TaggingHandlerInternalTagTest extends TestCase {
 
