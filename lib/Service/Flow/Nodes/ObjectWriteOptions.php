@@ -127,7 +127,7 @@ final class ObjectWriteOptions {
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public static function option(array $config, string $key): string {
+	public function option(array $config, string $key): string {
 		$allowed = self::OPTIONS[$key];
 		$value = ($config[$key] ?? null);
 		if (is_string($value) === true && in_array($value, $allowed, true) === true) {
