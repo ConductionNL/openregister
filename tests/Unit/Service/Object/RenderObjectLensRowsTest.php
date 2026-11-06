@@ -96,7 +96,6 @@ class RenderObjectLensRowsTest extends TestCase {
 			schemaMapper: $schemaMapper,
 			systemTagManager: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagManager::class),
 			systemTagMapper: $this->createMock(originalClassName: \OCP\SystemTag\ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class),
 			objectCacheService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\Object\CacheHandler::class),
 			propertyRbacHandler: $this->createMock(originalClassName: \OCA\OpenRegister\Service\PropertyRbacHandler::class),
 			logger: $this->createMock(originalClassName: \Psr\Log\LoggerInterface::class),

@@ -118,7 +118,6 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 			$this->createMock(ISystemTagManager::class),
 			$this->createMock(ISystemTagObjectMapper::class),
 			$this->createMock(CacheHandler::class),
-			$this->createMock(CacheHandler::class),
 			$this->createMock(PropertyRbacHandler::class),
 			$this->logger,
 			$this->createMock(FileService::class),

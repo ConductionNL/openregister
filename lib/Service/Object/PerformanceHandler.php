@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use Psr\Log\LoggerInterface;
 
 /**
  * PerformanceHandler class
@@ -44,56 +43,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Performance monitoring methods require per-metric branching
  */
 class PerformanceHandler {
-	/**
-	 * PerformanceHandler constructor.
-	 *
-	 * @param LoggerInterface $logger Logger for performance monitoring.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		private readonly LoggerInterface $logger,
-	) {
-	}//end __construct()
-
-	/**
-	 * Optimize request for performance
-	 *
-	 * Analyzes the query and applies various optimizations:
-	 * - Detects simple requests for fast-path processing
-	 * - Limits destructive extend operations
-	 * - Preloads critical entities for cache warmup
-	 *
-	 * @param array<string, mixed> $query The search query (passed by reference).
-	 * @param array<string, mixed> $perfTimings Performance timing array (passed by reference).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function optimizeRequestForPerformance(array &$query, array &$perfTimings): void {
-		$optimizeStart = microtime(true);
-
-		// **OPTIMIZATION 1**: Fast path for simple requests.
-		if ($this->isSimpleRequest(query: $query) === true) {
-			$query['_fast_path'] = true;
-			$this->logger->debug(
-				message: '[PerformanceHandler] 🚀 FAST PATH: Simple request detected',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'benefit' => 'skip_heavy_processing', 'estimatedSaving' => '200-300ms']
-			);
-		}
-
-		// **OPTIMIZATION 2**: Limit destructive extend operations.
-		if (empty($query['_extend']) === false) {
-			$this->optimizeExtendInQuery(query: $query);
-		}
-
-		// **OPTIMIZATION 3**: Preload critical entities for cache warmup.
-		$this->preloadCriticalEntities(query: $query);
-
-		$perfTimings['request_optimization'] = round((microtime(true) - $optimizeStart) * 1000, 2);
-	}//end optimizeRequestForPerformance()
-
 	/**
 	 * Determine if this is a simple request that can use the fast path
 	 *
@@ -201,49 +150,6 @@ class PerformanceHandler {
 		// - Remove duplicate extends.
 		return $extend;
 	}//end optimizeExtendQueries()
-
-	/**
-	 * Optimize extend operations within a query.
-	 *
-	 * Counts the original extend fields, applies optimization, and logs any reduction.
-	 *
-	 * @param array<string, mixed> $query The search query (passed by reference).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function optimizeExtendInQuery(array &$query): void {
-		// The string count runs first, as it always has: an array `_extend` fails here.
-		$originalExtendCount = count(array_filter(array_map('trim', explode(',', $query['_extend']))));
-		if (is_array($query['_extend']) === true) {
-			$originalExtendCount = count($query['_extend']);
-		}
-
-		$query['_extend'] = $this->optimizeExtendQueries(extend: $query['_extend']);
-		$newExtendCount = count($query['_extend']);
-		if ($newExtendCount < $originalExtendCount) {
-			$this->logExtendReduction(original: $originalExtendCount, optimized: $newExtendCount);
-		}
-	}//end optimizeExtendInQuery()
-
-	/**
-	 * Log that the extend list of a query was shortened.
-	 *
-	 * @param int $original  Extend count before.
-	 * @param int $optimized Extend count after.
-	 *
-	 * @return void
-	 */
-	private function logExtendReduction(int $original, int $optimized): void {
-		$this->logger->info(
-			message: '[PerformanceHandler] ⚡ EXTEND OPTIMIZATION: Reduced extend complexity',
-			context: [
-				'file' => __FILE__, 'line' => __LINE__, 'original' => $original, 'optimized' => $optimized,
-				'estimatedSaving' => ($original - $optimized) * (100) . 'ms',
-			]
-		);
-	}//end logExtendReduction()
 
 	/**
 	 * Preload critical entities for cache warmup

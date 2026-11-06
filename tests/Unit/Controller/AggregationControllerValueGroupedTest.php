@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\AggregationController;
+use OCA\OpenRegister\Search\Controller\AggregationController;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
@@ -31,7 +31,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @coversDefaultClass \OCA\OpenRegister\Controller\AggregationController
+ * @coversDefaultClass \OCA\OpenRegister\Search\Controller\AggregationController
  */
 class AggregationControllerValueGroupedTest extends TestCase {
 
