@@ -27,6 +27,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Db\Schema\InversedByNormaliser
+ * @uses   \OCA\OpenRegister\Db\Schema\SchemaPropertyDocument
  */
 class SchemaDocumentGoldenTest extends TestCase {
 
@@ -66,6 +68,10 @@ class SchemaDocumentGoldenTest extends TestCase {
 			'draft dropped' => ['draft' => ['title' => 'x'], 'title' => 'T'],
 			'exportable' => ['exportable' => true],
 			'metadata' => ['metadata' => ['a' => 1]],
+			'authorization valid' => ['authorization' => ['read' => ['public'], 'update' => ['editors']]],
+			'authorization refused' => ['authorization' => ['read' => 'public']],
+			'authorization unknown action' => ['authorization' => ['nothing' => ['public']]],
+			'authorization null' => ['authorization' => null],
 			'inversed string' => $inversed('field'),
 			'inversed legacy' => $inversed(['id' => 'field']),
 			'inversed list' => $inversed(['a', 'b']),
