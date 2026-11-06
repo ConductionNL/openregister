@@ -33,6 +33,8 @@ interface ChatStreamChannelInterface {
 	 * @param callable $callback Receives the delta string.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function onToken(callable $callback): void;
 
@@ -42,6 +44,8 @@ interface ChatStreamChannelInterface {
 	 * @param callable $callback Receives the payload array.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function onToolCall(callable $callback): void;
 
@@ -51,6 +55,8 @@ interface ChatStreamChannelInterface {
 	 * @param callable $callback Receives the payload array.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function onToolResult(callable $callback): void;
 
@@ -60,6 +66,8 @@ interface ChatStreamChannelInterface {
 	 * @param string $delta The delta text.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function emitToken(string $delta): void;
 
@@ -69,6 +77,8 @@ interface ChatStreamChannelInterface {
 	 * @param array $payload The tool call payload.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function emitToolCall(array $payload): void;
 
@@ -78,6 +88,8 @@ interface ChatStreamChannelInterface {
 	 * @param array $payload The tool result payload.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function emitToolResult(array $payload): void;
 }//end interface
