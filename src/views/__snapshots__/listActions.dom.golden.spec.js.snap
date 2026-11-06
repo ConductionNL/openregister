@@ -2077,6 +2077,56 @@ exports[`list page action menus golden searchTrails 2`] = `
       "searchTrailStore.refreshSearchTrailList",
     ],
   ],
+  [
+    "t:View Details",
+    [
+      "info",
+      "t:Search Trail Details",
+    ],
+  ],
+  [
+    "t:Rerun Search",
+    [
+      "push",
+      {
+        "name": "search",
+        "query": {
+          "q": "a",
+          "register": undefined,
+          "schema": undefined,
+        },
+      },
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "searchTrailStore.setSearchTrailItem",
+      1,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSearchTrail",
+    ],
+  ],
+  [
+    "t:View Details",
+    [
+      "info",
+      "t:Search Trail Details",
+    ],
+  ],
+  [
+    "Delete",
+    [
+      "searchTrailStore.setSearchTrailItem",
+      2,
+    ],
+    [
+      "navigationStore.setDialog",
+      "deleteSearchTrail",
+    ],
+  ],
 ]
 `;
 

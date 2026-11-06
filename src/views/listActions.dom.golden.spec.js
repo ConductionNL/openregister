@@ -407,6 +407,7 @@ describe('list page action menus golden', () => {
 			dialogs: {
 				info: (text, title) => globalThis.listLog.push(['info', title]),
 			},
+			Notification: { showTemporary: () => {} },
 		}
 		window.open = (url) => globalThis.listLog.push(['open', url])
 		window.confirm = () => false
