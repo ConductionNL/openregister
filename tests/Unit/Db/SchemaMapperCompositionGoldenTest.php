@@ -44,6 +44,30 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Calculation\PropertyCalculations
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Flow\MacroActionBinding
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition
+ * @uses \OCA\OpenRegister\Service\Rbac\MetadataConditionFindings
+ * @uses \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
+ * @uses \OCA\OpenRegister\Service\Rbac\RuleColumns
+ * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
+ * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
+ * @uses \OCA\OpenRegister\Service\Rules\DependentValueValidator
+ * @uses \OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver
+ * @uses \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
