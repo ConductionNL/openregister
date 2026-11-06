@@ -72,6 +72,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
@@ -940,7 +942,8 @@ class SaveObjects {
 			?? $this->deletedRowRefusal(run: $run)
 			?? $this->draftRefusal(run: $run)
 			?? $this->appendOnlyRefusal(run: $run)
-			?? $this->permissionRefusal(run: $run));
+			?? $this->permissionRefusal(run: $run)
+			?? $this->storedStateRefusal(run: $run));
 		if ($refusal !== null) {
 			return [$row, $refusal];
 		}
@@ -1162,6 +1165,39 @@ class SaveObjects {
 
 		return 'Permission denied for action ' . $run->rowAction . ' on schema ' . $run->rowSchema->getSlug();
 	}//end permissionRefusal()
+
+	/**
+	 * The refusal for an update to a stored row that is locked, archived or frozen, or null.
+	 *
+	 * The bulk writer skips SaveObject::findAndValidateExistingObject, so the same three
+	 * states are refused here, with the same message and for every caller. Asked after the
+	 * permission, so a caller without the update right learns nothing about the lock.
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass
+	 *
+	 * @return string|null
+	 */
+	private function storedStateRefusal(BulkSafeguardRun $run): ?string {
+		$stored = $run->rowExisting;
+		if ($stored === null) {
+			return null;
+		}
+
+		$writingRun = $this->rowRules?->runContext?->currentRunUuid();
+		if ($stored->isLockedBySomeoneElse(userId: $run->userId(), runUuid: $writingRun) === true) {
+			return LockedException::forObject($stored)->getMessage();
+		}
+
+		if ($stored->isArchived() === true) {
+			return ObjectStateWriteException::archived($stored)->getMessage();
+		}
+
+		if ($stored->isFrozen() === true) {
+			return ObjectStateWriteException::frozen($stored)->getMessage();
+		}
+
+		return null;
+	}//end storedStateRefusal()
 
 	/**
 	 * The refusal when the row fails Opis JSON-Schema validation, or null.
