@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
+use OCA\OpenRegister\Controller\Support\OrganisationTypeDiagnostic;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\AppFramework\Controller;
@@ -126,6 +127,13 @@ use RuntimeException;
  *   dependencies that cannot be cohesively grouped without hiding the NC DI contract.
  */
 class SettingsController extends Controller {
+
+	/**
+	 * What the type filtering diagnostic answers without a stackiq register.
+	 *
+	 * @var string
+	 */
+	private const NO_STACKIQ_REGISTER = 'No stackiq register on this instance under any of its known slugs.';
 
 	/*
 	 * There is no $objectService property: getObjectService() below assigned it
@@ -897,122 +905,14 @@ class SettingsController extends Controller {
 	 */
 	public function debugTypeFiltering(): JSONResponse {
 		try {
-			// Get services.
-			$objectService = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
-
-			// Set register and schema context. The register slug is RESOLVED,
-			// not written: stackiq's repair step renames it from
-			// `voorzieningen` to `stackiq` per instance, and reading with the
-			// name this instance does not carry returns an empty set that this
-			// endpoint would have rendered as "no organisations". That is the
-			// wrong answer for a diagnostic whose whole job is to say whether
-			// filtering works.
-			$slugResolver = $this->container->get(\OCA\OpenRegister\Contract\RegisterSlugResolverInterface::class);
-			$register = $slugResolver->slugOrNull(canonical: 'stackiq');
-			if ($register === null) {
-				return new JSONResponse(
-					data: ['error' => 'No stackiq register on this instance under any of its known slugs.'],
-					statusCode: 404
-				);
+			$results = (new OrganisationTypeDiagnostic(container: $this->container))->report();
+			if ($results === null) {
+				return new JSONResponse(data: ['error' => self::NO_STACKIQ_REGISTER], statusCode: 404);
 			}
-
-			$objectService->setRegister($register);
-			$objectService->setSchema('organisation');
-
-			$results = [
-				'all_organizations' => $this->organisationsOfType(objectService: $objectService, types: []),
-				'type_samenwerking' => $this->organisationsOfType(objectService: $objectService, types: ['samenwerking']),
-				'type_community' => $this->organisationsOfType(objectService: $objectService, types: ['community']),
-				'type_both' => $this->organisationsOfType(
-					objectService: $objectService,
-					types: ['samenwerking', 'community']
-				),
-				'direct_database_query' => $this->organisationsByNameInDatabase(),
-			];
 
 			return new JSONResponse(data: $results);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()], statusCode: 500);
+		}
 	}//end debugTypeFiltering()
-
-	/**
-	 * Search the organisation schema in the database, optionally filtered on type.
-	 *
-	 * The unfiltered search also returns each organisation's object data.
-	 *
-	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService The object service, set to the organisation schema.
-	 * @param list<string>  $types         The types to filter on; empty for no filter.
-	 *
-	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
-	 */
-	private function organisationsOfType(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService, array $types): array {
-		$query = [
-			'_limit' => 10,
-			'_page' => 1,
-			'_source' => 'database',
-		];
-		if ($types !== []) {
-			$query['type'] = $types;
-		}
-
-		$found = $objectService->searchObjectsPaginated($query);
-		$organisations = [];
-		foreach ($found['results'] as $org) {
-			$objectData = $org->getObject();
-			$summary = [
-				'id' => $org->getId(),
-				'name' => $org->getName(),
-				'type' => $objectData['type'] ?? 'NO TYPE',
-			];
-			if ($types === []) {
-				$summary['object_data'] = $objectData;
-			}
-
-			$organisations[] = $summary;
-		}
-
-		return ['count' => count($found['results']), 'organizations' => $organisations];
-	}//end organisationsOfType()
-
-	/**
-	 * Read the objects named like Samenwerking or Community straight from the objects table.
-	 *
-	 * @return array{count: int<0, max>, organizations: list<array<string, mixed>>}
-	 */
-	private function organisationsByNameInDatabase(): array {
-		$connection = $this->container->get(\OCP\IDBConnection::class);
-		$qb = $connection->getQueryBuilder();
-		$qb->select('o.id', 'o.name', 'o.object')
-			->from('openregister_objects', 'o')
-			->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
-			->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
-
-		// NC's IResult does not expose Doctrine's fetchAllAssociative() on every
-		// supported server (absent on NC 32), and a fetch() that answers NULL never
-		// satisfies `!== false`, so the loop ends on anything that is not a row.
-		$stmt = $qb->executeQuery();
-		$organisations = [];
-		$row = $stmt->fetch();
-		while (is_array($row) === true) {
-			$objectData = json_decode($row['object'], true);
-			$organisations[] = [
-				'id' => $row['id'],
-				'name' => $row['name'],
-				'type' => $objectData['type'] ?? 'NO TYPE',
-				'object_json' => $row['object'],
-			];
-			$row = $stmt->fetch();
-		}
-
-		$stmt->closeCursor();
-
-		return ['count' => count($organisations), 'organizations' => $organisations];
-	}//end organisationsByNameInDatabase()
 }//end class
