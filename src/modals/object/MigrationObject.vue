@@ -1,11 +1,6 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
-import {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-} from '../../store/store.js'
+import { navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -318,7 +313,7 @@ import {
 		</div>
 
 		<template #actions>
-			<NcButton @click="closeModal">
+			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -392,6 +387,9 @@ import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import SelectedObjectsList from '../../components/shared/SelectedObjectsList.vue'
+import selectedObjectsDialog, {
+	refreshObjectLists,
+} from './selectedObjectsDialog.js'
 
 export default {
 	name: 'MigrationObject',
@@ -410,11 +408,12 @@ export default {
 		FileTreeOutline,
 	},
 
+	mixins: [selectedObjectsDialog],
+
 	data() {
 		return {
 			step: 1, // 1: confirm selection, 2: select target register/schema, 3: property mapping, 4: report
 			loading: false,
-			selectedObjects: [],
 			availableRegisters: [],
 			availableSchemas: [],
 			targetRegister: null,
@@ -467,13 +466,10 @@ export default {
 		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeMigration() {
-			// Get selected objects from the store or navigation context
-			this.selectedObjects = objectStore.selectedObjects || []
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-				return
+			this.initializeSelection()
+			if (this.selectedObjects.length > 0) {
+				this.loadAvailableRegisters()
 			}
-			this.loadAvailableRegisters()
 		},
 
 		/**
@@ -528,19 +524,6 @@ export default {
 				return
 			}
 			await this.loadSchemaProperties()
-		},
-
-		/**
-		 * @param {string|number} objectId
-		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			if (this.selectedObjects.length === 0) {
-				this.closeModal()
-			}
 		},
 
 		/**
@@ -672,15 +655,14 @@ export default {
 					},
 				)
 
+				const result = await response.json().catch(() => ({}))
 				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
+					throw new Error(result.error)
 				}
 
-				this.migrationResult = await response.json()
+				this.migrationResult = result
 				this.step = 4
-
-				// Refresh the object list
-				objectStore.refreshObjectList()
+				refreshObjectLists()
 			} catch (error) {
 				console.error('Error performing migration:', error)
 				this.migrationResult = {
@@ -696,7 +678,7 @@ export default {
 		/**
 		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
 		 */
-		closeModal() {
+		closeDialog() {
 			navigationStore.setModal(false)
 		},
 
@@ -928,7 +910,6 @@ export default {
 }
 
 @include loading-container;
-
 
 @include report-section;
 
