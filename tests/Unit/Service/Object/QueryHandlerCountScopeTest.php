@@ -8,17 +8,11 @@ declare(strict_types=1);
 namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\Object\ContentSearchHandler;
-use OCA\OpenRegister\Service\Object\FacetHandler;
-use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Object\SearchQueryHandler;
-use OCP\AppFramework\IAppContainer;
-use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 /**
  * The organisation a count runs under.
@@ -50,17 +44,17 @@ class QueryHandlerCountScopeTest extends TestCase {
 		$performance = $this->createStub(PerformanceOptimizationHandler::class);
 		$performance->method('getActiveOrganisationForContext')->willReturn($organisation);
 
-		return new QueryHandler(
-			$mapper,
-			$this->createStub(GetObject::class),
-			$this->createStub(RenderObject::class),
-			$this->createStub(SearchQueryHandler::class),
-			$this->createStub(FacetHandler::class),
-			$performance,
-			$this->createStub(ContentSearchHandler::class),
-			$this->createStub(IAppContainer::class),
-			$this->createStub(LoggerInterface::class),
-			$this->createStub(IRequest::class)
-		);
+		$args = [];
+		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
+			$type   = $param->getType()->getName();
+			$args[] = match (true) {
+				$type === MagicMapperInterface::class => $mapper,
+				$type === PerformanceOptimizationHandler::class => $performance,
+				$param->isOptional() === true => $param->getDefaultValue(),
+				default => $this->createStub($type),
+			};
+		}
+
+		return new QueryHandler(...$args);
 	}//end handler()
 }//end class

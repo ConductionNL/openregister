@@ -26,25 +26,18 @@ namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
-use OCA\OpenRegister\Service\Object\ContentSearchHandler;
-use OCA\OpenRegister\Service\Object\FacetHandler;
-use OCA\OpenRegister\Service\Object\GetObject;
-use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
-use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\SearchReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
-use OCP\AppFramework\IAppContainer;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -133,7 +126,7 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 			}
 
 			$this->assertInstanceOf(ReflectionNamedType::class, $type);
-			if (in_array($type->getName(), [MagicMapper::class, \OCA\OpenRegister\Db\MagicMapperInterface::class], true) === true) {
+			if (in_array($type->getName(), [MagicMapper::class, MagicMapperInterface::class], true) === true) {
 				$args[] = $this->mapper;
 				continue;
 			}
@@ -165,23 +158,25 @@ class ViewAlertCountsTheViewQueryTest extends TestCase {
 	 * @return QueryHandler
 	 */
 	private function realQueryHandler(): QueryHandler {
-		return new QueryHandler(
-			$this->mapper,
-			$this->createMock(GetObject::class),
-			$this->createMock(RenderObject::class),
-			$this->createMock(SearchQueryHandler::class),
-			$this->createMock(FacetHandler::class),
-			$this->createMock(PerformanceOptimizationHandler::class),
-			$this->createMock(ContentSearchHandler::class),
-			$this->createMock(IAppContainer::class),
-			new NullLogger(),
-			$this->createMock(IRequest::class),
-			referenceResolver: new SearchReferenceResolver(
-				$this->createMock(RegisterMapperInterface::class),
-				$this->createMock(SchemaMapperInterface::class),
-				new NullLogger()
-			)
+		$resolver = new SearchReferenceResolver(
+			$this->createMock(RegisterMapperInterface::class),
+			$this->createMock(SchemaMapperInterface::class),
+			new NullLogger()
 		);
+
+		$args = [];
+		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
+			$type = $param->getType();
+			$this->assertInstanceOf(ReflectionNamedType::class, $type);
+			$args[] = match (true) {
+				$type->getName() === MagicMapperInterface::class => $this->mapper,
+				$type->getName() === SearchReferenceResolver::class => $resolver,
+				$param->isOptional() === true => $param->getDefaultValue(),
+				default => $this->createMock($type->getName()),
+			};
+		}
+
+		return new QueryHandler(...$args);
 	}//end realQueryHandler()
 
 	/**
