@@ -240,7 +240,7 @@ class EscalationLadderService {
 	 */
 	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
 		$earliest = null;
-		foreach ($this->ordered(rungs: $rungs, instantOf: fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar)) as $entry) {
+		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
 			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true) {
 				continue;
 			}
@@ -270,7 +270,7 @@ class EscalationLadderService {
 	 */
 	public function dueRungs(array $rungs, DateTimeInterface $fireAt, DateTimeInterface $now, array $firedKeys, WorkingCalendar $calendar): array {
 		$due = [];
-		foreach ($this->ordered(rungs: $rungs, instantOf: fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar)) as $entry) {
+		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
 			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true || $entry['at'] > $now) {
 				continue;
 			}
@@ -374,6 +374,18 @@ class EscalationLadderService {
 			$entries
 		);
 	}//end ordered()
+
+	/**
+	 * The function that places a rung on the timeline of one fire moment.
+	 *
+	 * @param DateTimeInterface $fireAt   The fire moment.
+	 * @param WorkingCalendar   $calendar The resolved calendar.
+	 *
+	 * @return Closure(array<string, mixed>): DateTimeImmutable The rung's instant.
+	 */
+	private function instantOf(DateTimeInterface $fireAt, WorkingCalendar $calendar): Closure {
+		return fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar);
+	}//end instantOf()
 
 	/**
 	 * Order two entries by instant, declared position breaking a tie.

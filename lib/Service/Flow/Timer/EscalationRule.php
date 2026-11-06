@@ -150,7 +150,12 @@ final class EscalationRule {
 		$priority = (string)($this->rule['priority'] ?? 'medium');
 		if (in_array($priority, EscalationLadderService::PRIORITIES, true) === false) {
 			throw new FlowTimerValidationException(
-				message: sprintf("Escalation rule #%d has priority '%s'; use one of %s.", $this->index, $priority, implode(', ', EscalationLadderService::PRIORITIES))
+				message: sprintf(
+					"Escalation rule #%d has priority '%s'; use one of %s.",
+					$this->index,
+					$priority,
+					implode(', ', EscalationLadderService::PRIORITIES)
+				)
 			);
 		}
 
