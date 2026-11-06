@@ -46,6 +46,13 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver
+ * @uses \OCA\OpenRegister\Service\Archival\UnestablishedValues
+ * @uses \OCA\OpenRegister\Service\Object\RenderContext
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses \OCA\OpenRegister\Service\Relation\LinkExposure
+ * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class RenderObjectInverseReadCheckTest extends TestCase {
 	private const PARENT = '11111111-1111-4111-8111-111111111111';
