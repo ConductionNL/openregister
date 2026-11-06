@@ -2387,7 +2387,7 @@ class RenderObject {
 	 */
 	private function checkInverseReads(bool $checked): void {
 		if ($checked !== $this->inverseReadChecked) {
-			$this->inverseSupport()->cache->clear();
+			$this->inverseSupport()->objects->cache->clear();
 		}
 
 		$this->inverseReadChecked = $checked;
@@ -4489,16 +4489,20 @@ class RenderObject {
 		$this->inverseSupport = new InverseRenderSupport(
 			mapper: $this->objectEntityMapper,
 			logger: $this->logger,
-			cache: new InverseRelationCache(
-				remember: function (ObjectEntity $object): void {
-					$this->objectsCache[$object->getUuid()] = $object;
-				}
+			schemas: new InverseSchemaLookups(
+				find: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
+				resolveId: fn (string $ref): string => $this->resolveSchemaReference(schemaRef: $ref)
 			),
-			schemaLookup: fn (int|string $id): ?Schema => $this->getSchema(id: $id),
-			schemaIdLookup: fn (string $ref): string => $this->resolveSchemaReference(schemaRef: $ref),
-			render: fn (ObjectEntity $object): array => $this->renderRelated(object: $object),
-			rememberBehind: fn (array $objects) => $this->cacheReferencingObjects(objects: $objects),
-			readable: fn (array $objects): array => $this->readableInverseObjects(objects: $objects),
+			objects: new InverseObjectHooks(
+				cache: new InverseRelationCache(
+					remember: function (ObjectEntity $object): void {
+						$this->objectsCache[$object->getUuid()] = $object;
+					}
+				),
+				render: fn (ObjectEntity $object): array => $this->renderRelated(object: $object),
+				rememberBehind: fn (array $objects) => $this->cacheReferencingObjects(objects: $objects),
+				readable: fn (array $objects): array => $this->readableInverseObjects(objects: $objects)
+			),
 		);
 
 		return $this->inverseSupport;

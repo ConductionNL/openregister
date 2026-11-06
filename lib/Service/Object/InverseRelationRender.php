@@ -77,7 +77,7 @@ class InverseRelationRender {
 	private function lookupFor(ObjectEntity $entity): InverseLookup {
 		$lookup = new InverseLookup();
 		$lookup->entity = $entity;
-		$schema = ($this->support->schemaLookup)($entity->getSchema());
+		$schema = ($this->support->schemas->find)($entity->getSchema());
 		if ($schema !== null) {
 			$lookup->inversedProperties = $this->preload->getInversedProperties(schema: $schema);
 		}
@@ -101,13 +101,13 @@ class InverseRelationRender {
 	 */
 	private function warmCache(InverseLookup $lookup): bool {
 		$propertyNames = array_keys($lookup->inversedProperties);
-		if ($this->support->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames) === true) {
+		if ($this->support->objects->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames) === true) {
 			return true;
 		}
 
 		$this->preload->preloadInverseRelationships(entities: [$lookup->entity], extend: $propertyNames);
 
-		return $this->support->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames);
+		return $this->support->objects->cache->hasCachedInverse(entity: $lookup->entity, propertyNames: $propertyNames);
 	}//end warmCache()
 
 	/**
@@ -124,10 +124,10 @@ class InverseRelationRender {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function fromReferencingObjects(InverseLookup $lookup, array $objectData): array {
-		$lookup->referencingObjects = ($this->support->readable)(
+		$lookup->referencingObjects = ($this->support->objects->readable)(
 			$this->findInverseReferencingObjects(entity: $lookup->entity, inversedProperties: $lookup->inversedProperties)
 		);
-		($this->support->rememberBehind)($lookup->referencingObjects);
+		($this->support->objects->rememberBehind)($lookup->referencingObjects);
 
 		return $this->applyInverseLookup(lookup: $lookup, objectData: $objectData);
 	}//end fromReferencingObjects()
@@ -223,7 +223,7 @@ class InverseRelationRender {
 			return '';
 		}
 
-		return ($this->support->schemaIdLookup)($targetSchemaRef);
+		return ($this->support->schemas->resolveId)($targetSchemaRef);
 	}//end targetSchemaIdOf()
 
 	/**
@@ -271,7 +271,7 @@ class InverseRelationRender {
 			}
 
 			$objectData[$propertyName] = $this->inverseValue(
-				objects: $this->support->cache->cachedObjects(entityUuid: $entityUuid, propName: $propertyName),
+				objects: $this->support->objects->cache->cachedObjects(entityUuid: $entityUuid, propName: $propertyName),
 				isArray: ($propertyConfig['type'] ?? null) === 'array'
 			);
 		}
@@ -290,7 +290,7 @@ class InverseRelationRender {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function inverseValue(array $objects, bool $isArray): ?array {
-		$renderedObjects = array_map($this->support->render, $objects);
+		$renderedObjects = array_map($this->support->objects->render, $objects);
 		if ($isArray === true) {
 			return $renderedObjects;
 		}
@@ -344,7 +344,7 @@ class InverseRelationRender {
 		// Use the current schema if no target is specified.
 		$target->schemaId = $entity->getSchema();
 		if ($declared['schema'] !== null) {
-			$target->schemaId = ($this->support->schemaIdLookup)($declared['schema']);
+			$target->schemaId = ($this->support->schemas->resolveId)($declared['schema']);
 		}
 
 		return $target;

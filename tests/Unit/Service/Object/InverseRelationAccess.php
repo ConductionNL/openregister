@@ -58,7 +58,7 @@ trait InverseRelationAccess {
 		$method->setAccessible(true);
 		$part = $method->invoke($handler);
 
-		return $getter === 'cache' ? $part->cache : $part;
+		return $getter === 'cache' ? $part->objects->cache : $part;
 	}
 
 	/**

@@ -21,10 +21,7 @@
  */
 namespace OCA\OpenRegister\Service\Object;
 
-use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -39,24 +36,16 @@ final class InverseRenderSupport {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapperInterface               $mapper         The object mapper.
-	 * @param LoggerInterface                    $logger         The logger.
-	 * @param InverseRelationCache               $cache          The objects found to point back.
-	 * @param Closure(int|string): (Schema|null) $schemaLookup   Finds a schema by id, through the renderer's cache.
-	 * @param Closure(string): string            $schemaIdLookup Resolves a schema reference to a schema id.
-	 * @param Closure(ObjectEntity): array       $render         Renders a related object to its full data.
-	 * @param Closure(ObjectEntity[]): void      $rememberBehind Keeps objects in the renderer's cache without replacing any.
-	 * @param Closure(ObjectEntity[]): array     $readable       Keeps the objects the caller may read.
+	 * @param MagicMapperInterface $mapper  The object mapper.
+	 * @param LoggerInterface      $logger  The logger.
+	 * @param InverseSchemaLookups $schemas How schemas are found.
+	 * @param InverseObjectHooks   $objects What happens to the objects found.
 	 */
 	public function __construct(
 		public readonly MagicMapperInterface $mapper,
 		public readonly LoggerInterface $logger,
-		public readonly InverseRelationCache $cache,
-		public readonly Closure $schemaLookup,
-		public readonly Closure $schemaIdLookup,
-		public readonly Closure $render,
-		public readonly Closure $rememberBehind,
-		public readonly Closure $readable,
+		public readonly InverseSchemaLookups $schemas,
+		public readonly InverseObjectHooks $objects,
 	) {
 	}//end __construct()
 }//end class

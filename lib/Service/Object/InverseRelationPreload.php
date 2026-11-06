@@ -144,7 +144,7 @@ class InverseRelationPreload {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function extendedInverseProperties(ObjectEntity $entity, array $extend): array {
-		$schema = ($this->support->schemaLookup)($entity->getSchema());
+		$schema = ($this->support->schemas->find)($entity->getSchema());
 		if ($schema === null) {
 			return [];
 		}
@@ -271,8 +271,8 @@ class InverseRelationPreload {
 			return;
 		}
 
-		$targetSchemaId = ($this->support->schemaIdLookup)($inverseConfig['targetSchemaRef']);
-		if (empty($targetSchemaId) === true || ($this->support->schemaLookup)($targetSchemaId) === null) {
+		$targetSchemaId = ($this->support->schemas->resolveId)($inverseConfig['targetSchemaRef']);
+		if (empty($targetSchemaId) === true || ($this->support->schemas->find)($targetSchemaId) === null) {
 			return;
 		}
 
@@ -292,12 +292,12 @@ class InverseRelationPreload {
 	 */
 	private function loadBatch(InverseBatch $batch): void {
 		try {
-			$referencingObjects = ($this->support->readable)($this->batchLoadReferencingObjects(batch: $batch));
+			$referencingObjects = ($this->support->objects->readable)($this->batchLoadReferencingObjects(batch: $batch));
 
 			// Empty entries for every entity keep the render off the slow per-entity
 			// findByRelation() path, which scans all magic tables with LIKE.
-			$this->support->cache->initializeInverseCacheEntries(entityUuids: $batch->entityUuids, propName: $batch->propName);
-			$this->support->cache->indexReferencingObjects(referencingObjects: $referencingObjects, batch: $batch);
+			$this->support->objects->cache->initializeInverseCacheEntries(entityUuids: $batch->entityUuids, propName: $batch->propName);
+			$this->support->objects->cache->indexReferencingObjects(referencingObjects: $referencingObjects, batch: $batch);
 			$this->logBatchLoaded(batch: $batch, found: count($referencingObjects));
 		} catch (Exception $e) {
 			$this->support->logger->warning(
