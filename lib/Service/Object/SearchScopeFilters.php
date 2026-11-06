@@ -130,19 +130,10 @@ final class SearchScopeFilters {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function readReferenceList(array $references, string $kind): array {
-		$ids = [];
-		foreach ($references as $item) {
-			if (is_int($item) === false && is_string($item) === false) {
-				continue;
-			}
+		$readable = array_filter($references, static fn (mixed $item): bool => is_int($item) || is_string($item));
+		$ids = array_map(fn (int|string $item): ?int => $this->readReference(reference: $item, kind: $kind), $readable);
 
-			$id = $this->readReference(reference: $item, kind: $kind);
-			if ($id !== null) {
-				$ids[] = $id;
-			}
-		}
-
-		return $ids;
+		return array_values(array_filter($ids, static fn (?int $id): bool => $id !== null));
 	}//end readReferenceList()
 
 	/**
