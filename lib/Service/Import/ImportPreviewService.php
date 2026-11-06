@@ -657,7 +657,7 @@ class ImportPreviewService {
 	private function persistDecision(ImportPreview $preview, array $row, array $decision): void {
 		$entity = new ImportPreviewRow();
 		$entity->setPreviewId((int)$preview->getId());
-		$entity->setRowNumber((int)$row['row']);
+		$entity->setSourceRow((int)$row['row']);
 		$entity->setDecision((string)$decision['decision']);
 		$entity->setReason($decision['reason']);
 		$entity->setTargetUuid($decision['targetUuid']);
@@ -689,7 +689,7 @@ class ImportPreviewService {
 			decision: ImportPreviewRow::DECISION_REFUSE
 		) as $row) {
 			$refusals[] = [
-				'row' => $row->getRowNumber(),
+				'row' => $row->getSourceRow(),
 				'reason' => $row->getReason(),
 				'candidates' => ($row->getCandidates() ?? []),
 			];
