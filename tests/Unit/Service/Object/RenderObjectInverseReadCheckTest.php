@@ -14,7 +14,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FileService;
@@ -160,7 +160,6 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 			schemaMapper: $schemas,
 			systemTagManager: $this->createMock(ISystemTagManager::class),
 			systemTagMapper: $this->createMock(ISystemTagObjectMapper::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
 			objectCacheService: $this->createMock(CacheHandler::class),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
 			logger: new NullLogger(),

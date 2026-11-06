@@ -55,7 +55,6 @@ class NoteServiceTest extends TestCase {
 			$this->commentsManager,
 			$this->userSession,
 			$this->userManager,
-			$this->logger,
 			$this->visibility,
 			$this->versions
 		);

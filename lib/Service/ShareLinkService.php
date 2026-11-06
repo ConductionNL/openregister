@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -115,14 +115,12 @@ class ShareLinkService {
 	/**
 	 * Constructor.
 	 *
-	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger.
 	 * @param ContainerInterface|null $container Optional server-container override (tests only).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 		?ContainerInterface $container = null,
 	) {

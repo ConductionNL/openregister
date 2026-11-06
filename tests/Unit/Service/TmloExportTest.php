@@ -101,8 +101,6 @@ class TmloExportTest extends TestCase {
 		);
 
 		$this->service = new TmloService(
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SchemaMapper::class),
 			$this->createMock(LoggerInterface::class),
 			$generator
 		);

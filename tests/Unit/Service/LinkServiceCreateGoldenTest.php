@@ -222,7 +222,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				\OCA\OpenRegister\Service\File\FileRestrictionGuard::class => new class {
+				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard::class => new class {
 					public function readableNodes(array $nodes): array {
 						return $nodes;
 					}
@@ -231,7 +231,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);
-		$service = new ShareLinkService($l10n, $this->createMock(LoggerInterface::class), $container);
+		$service = new ShareLinkService( $this->createMock(LoggerInterface::class), $container);
 
 		$this->assertGolden(
 			function () use ($service, &$calls, $fileId, $shareType, $shareWith, $permissions, $password, $expiration) {

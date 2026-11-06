@@ -121,8 +121,6 @@ class TextExtractionServiceExtractObjectGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$entityHandler,
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
 			$this->createMock(SettingsService::class),
 			$this->createMock(RiskLevelService::class),
 			$this->createMock(EmlParser::class),

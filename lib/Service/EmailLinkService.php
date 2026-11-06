@@ -129,7 +129,7 @@ class EmailLinkService implements EmailLinkReaderInterface {
 	public function __construct(
 		private readonly EmailLinkMapper $mapper,
 		private readonly IAppManager $appManager,
-		private readonly IDBConnection $db,
+		IDBConnection $db,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
