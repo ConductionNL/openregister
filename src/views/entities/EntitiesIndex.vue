@@ -2,34 +2,11 @@
 	<NcAppContent>
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Entities') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage and view detected entities from files and objects',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Entities')"
+				:description="t('openregister', 'Manage and view detected entities from files and objects')"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
@@ -317,7 +294,6 @@ import {
 	NcActionButton,
 	NcActions,
 	NcAppContent,
-	NcButton,
 	NcCheckboxRadioSwitch,
 	NcEmptyContent,
 	NcLoadingIcon,
@@ -325,8 +301,8 @@ import {
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import eventBus from '../../eventBus.js'
 import { navigationStore } from '../../store/store.js'
@@ -345,16 +321,15 @@ import { navigationStore } from '../../store/store.js'
 export default {
 	name: 'EntitiesIndex',
 	components: {
+		FilterToggleHeader,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		NcCheckboxRadioSwitch,
 		AccountOutline,
 		Refresh,
-		FilterVariant,
 		EyeOutline,
 		DotsHorizontal,
 		PaginationComponent,
@@ -652,11 +627,9 @@ export default {
 
 @include view-container-2;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
 
-@include view-header-title-rules;
+@include view-actions-bar;
+@include view-info;
 
 .viewTotalCount {
 	font-weight: 600;
