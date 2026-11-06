@@ -32,11 +32,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use DateTime;
-use OCA\OpenRegister\Db\File;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\File;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Lock\ILock;
 use OCP\Files\Lock\ILockManager;
@@ -51,7 +51,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
- * @uses   \OCA\OpenRegister\Db\File
+ * @uses   \OCA\OpenRegister\Files\Db\File
  */
 class FileFormattingHandlerFormatFileGoldenTest extends TestCase {
 

@@ -20,14 +20,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load Deck cards')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Deck app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -109,11 +105,11 @@ SPDX-License-Identifier: EUPL-1.2
 
 <script>
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
 import { storeRelationTab } from './relationTab.js'
 
@@ -132,10 +128,10 @@ export default {
 	name: 'DeckTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		TableLarge,
 		TableLargePlus,
 		TableRemove,

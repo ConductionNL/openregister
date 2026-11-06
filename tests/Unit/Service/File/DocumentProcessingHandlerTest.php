@@ -3,7 +3,7 @@
 /**
  * DocumentProcessingHandlerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\DocumentProcessingHandler}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler}
  * covering the `structurePreservation` accessor's non-PDF branch
  * (REQ-ORTPR-003: no PDF structure tree is involved, so the accessor MUST
  * return null and the HTTP block MUST be omitted).
@@ -27,10 +27,10 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\OfficeDocumentSanitizer;
+use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
