@@ -44,9 +44,12 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider
  * @covers \OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider
+ * @covers \OCA\OpenRegister\AppHost\Search\SchemaSearchPage
+ * @covers \OCA\OpenRegister\AppHost\SchemaScopedProvider
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses   \OCA\OpenRegister\Service\WriteCause
  * @uses   \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
  */
 class SchemaScopedProvidersGoldenTest extends TestCase {
