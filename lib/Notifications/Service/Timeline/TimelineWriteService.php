@@ -228,7 +228,18 @@ class TimelineWriteService {
 	 */
 	private function derive(WrittenEntry $written, array $data): void {
 		$this->recordReferences(written: $written);
+		$this->applyMentions(written: $written, data: $data);
+	}//end derive()
 
+	/**
+	 * Notify and subscribe whoever an entry named, without risking the entry.
+	 *
+	 * @param WrittenEntry        $written The entry just written.
+	 * @param array<string,mixed> $data    The payload, for the register and schema labels.
+	 *
+	 * @return void
+	 */
+	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
 			$this->mentions->apply(
 				object: $written->object,
@@ -243,7 +254,7 @@ class TimelineWriteService {
 				['exception' => $e]
 			);
 		}
-	}//end derive()
+	}//end applyMentions()
 
 	/**
 	 * Record what an entry's text points at, without risking the entry.

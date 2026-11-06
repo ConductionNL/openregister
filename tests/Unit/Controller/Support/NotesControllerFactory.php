@@ -45,8 +45,8 @@ final class NotesControllerFactory {
 				objectService: $objectService,
 				visibility: $visibility,
 				timeline: $timeline,
+				entries: $entries,
 			),
-			$entries,
 		];
 	}
 
