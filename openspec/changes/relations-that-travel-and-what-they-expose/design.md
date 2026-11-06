@@ -32,6 +32,12 @@ who already has access is unaffected. The alternative, a link as a grant,
 turns every relation into an access-control decision made by whoever
 declared the schema.
 
+The intersection covers the object as well as its properties: a link does not
+carry a reader to a record they cannot read, in their own organisation or
+another. The reference stays an identifier. Metadata counts too: `@self` keeps
+the identity of the far record, and a display field such as `name` only when
+its value is shown anyway.
+
 ## D-5: withheld, not absent
 
 A property outside the declared set reads as withheld. `objects-as-the-hinge-between-cases`

@@ -420,4 +420,30 @@ final class LinkExposureWiringTest extends TestCase {
 			$this->refusalsFor($this->mapperResolving($this->farSchema()), $this->schemaLinkingTo(null))
 		);
 	}//end testALinkWithNoDeclaredSetIsNotRefused()
+
+	/**
+	 * Of `@self` the identity stays, and a display field only when its value is shown anyway.
+	 *
+	 * @return void
+	 */
+	public function testTheEnvelopeKeepsTheIdentityAndWhatIsShownAnyway(): void {
+		$self = [
+			'id' => 'uuid-1',
+			'register' => 1,
+			'schema' => 9,
+			'name' => 'shown',
+			'summary' => 'private',
+			'description' => 'uuid-1',
+			'image' => LinkExposure::WITHHELD,
+			'slug' => '9',
+			'owner' => 'alice',
+			'relations' => ['geheim' => 'uuid-2'],
+		];
+		$shown = ['status' => 'shown', 'nested' => ['a' => 1], 'geheim' => LinkExposure::WITHHELD];
+
+		$this->assertSame(
+			['id' => 'uuid-1', 'register' => 1, 'schema' => 9, 'name' => 'shown', 'description' => 'uuid-1'],
+			(new LinkExposure())->envelope(self: $self, shown: $shown)
+		);
+	}
 }//end class

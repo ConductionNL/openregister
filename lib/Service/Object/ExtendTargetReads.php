@@ -50,11 +50,9 @@ final class ExtendTargetReads {
 	private bool $multitenancy = true;
 
 	/**
-	 * Objects the caller may not read, by identifier.
+	 * Identifiers of objects the caller may not read, so each is asked once.
 	 *
-	 * Kept apart from the render's cache: only a link that declares an exposure may show them.
-	 *
-	 * @var array<int|string, ObjectEntity>
+	 * @var array<int|string, true>
 	 */
 	private array $refused = [];
 
@@ -108,28 +106,27 @@ final class ExtendTargetReads {
 	/**
 	 * Remember an object the caller may not read.
 	 *
-	 * @param int|string   $id     The identifier it was asked for by.
-	 * @param ObjectEntity $object The object.
+	 * @param int|string $id The identifier it was asked for by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function refuse(int|string $id, ObjectEntity $object): void {
-		$this->refused[$id] = $object;
+	public function refuse(int|string $id): void {
+		$this->refused[$id] = true;
 	}//end refuse()
 
 	/**
-	 * The refused object behind an identifier, if it was refused.
+	 * Whether the object behind an identifier was refused.
 	 *
 	 * @param int|string $id The identifier.
 	 *
-	 * @return ObjectEntity|null The object, or null when it was not refused.
+	 * @return bool True when it was refused.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function refused(int|string $id): ?ObjectEntity {
-		return ($this->refused[$id] ?? null);
+	public function refused(int|string $id): bool {
+		return isset($this->refused[$id]);
 	}//end refused()
 
 	/**
