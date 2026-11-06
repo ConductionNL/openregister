@@ -132,7 +132,8 @@ class FlowTriggerIdSlugMatchTest extends TestCase {
 			$triggerMapper,
 			$this->createMock(ObjectService::class),
 			new NullLogger(),
-			$versionMapper
+			$versionMapper,
+			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
 		);
 
 		$runner = $this->createMock(FlowRunService::class);

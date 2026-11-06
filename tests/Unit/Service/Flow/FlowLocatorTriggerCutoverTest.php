@@ -70,7 +70,8 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 			triggerMapper: $this->triggerMapper,
 			objectService: $this->createMock(ObjectService::class),
 			logger: $this->logger,
-			versions: $this->publishedVersions()
+			versions: $this->publishedVersions(),
+			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
 		);
 
 	}//end setUp()
@@ -144,7 +145,8 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 			triggerMapper: $this->triggerMapper,
 			objectService: $this->createMock(ObjectService::class),
 			logger: $this->logger,
-			versions: $versions
+			versions: $versions,
+			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
 		);
 
 		$this->assertSame(
@@ -174,7 +176,8 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 			triggerMapper: $this->triggerMapper,
 			objectService: $this->createMock(ObjectService::class),
 			logger: $this->logger,
-			versions: $versions
+			versions: $versions,
+			membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
 		);
 
 		$this->assertSame(

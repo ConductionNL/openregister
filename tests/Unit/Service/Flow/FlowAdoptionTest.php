@@ -209,7 +209,8 @@ class FlowAdoptionTest extends TestCase {
 				$triggerMapper,
 				$this->createMock(ObjectService::class),
 				new NullLogger(),
-				$versionMapper
+				$versionMapper,
+				membership: $this->createMock(\OCA\OpenRegister\Service\Flow\FlowTenantMembership::class)
 			);
 
 			$this->assertSame(

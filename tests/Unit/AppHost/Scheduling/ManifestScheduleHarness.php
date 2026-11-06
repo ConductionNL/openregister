@@ -175,7 +175,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		);
 		$this->listener = new ApplicationPublishListener($this->reader($session), $sync, $this->logger);
 
-		$this->locator = $this->flowLocator(flowMapper: $flowMapper);
+		$this->locator = $this->flowLocator(flowMapper: $flowMapper, membership: $membership);
 		$this->scheduler = new FlowScheduleService(
 			$this->locator,
 			$this->flowRunService(container: $container),
@@ -394,16 +394,18 @@ abstract class ManifestScheduleHarness extends TestCase {
 	 * The locator over the flow table.
 	 *
 	 * @param FlowMapper $flowMapper The table.
+	 * @param FlowTenantMembership $membership The membership check.
 	 *
 	 * @return FlowLocator The locator.
 	 */
-	private function flowLocator(FlowMapper $flowMapper): FlowLocator {
+	private function flowLocator(FlowMapper $flowMapper, FlowTenantMembership $membership): FlowLocator {
 		return new FlowLocator(
 			$flowMapper,
 			$this->createMock(FlowTriggerMapper::class),
 			$this->createMock(ObjectOperationsInterface::class),
 			$this->logger,
-			$this->createMock(FlowVersionMapper::class)
+			$this->createMock(FlowVersionMapper::class),
+			$membership
 		);
 	}
 

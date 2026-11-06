@@ -305,4 +305,38 @@ class ManifestScheduleEndToEndTest extends ManifestScheduleHarness {
 
 		$this->assertSame('0 3 * * *', $this->flow()->getCron());
 	}
+
+	public function testAMemberWhoLeftStopsTheScheduleWithTheReasonOnTheFlow(): void {
+		$this->publish([$this->schedule()]);
+		$this->members = ['quinten'];
+
+		$this->assertSame([], $this->tick());
+
+		$this->assertSame([], $this->runs);
+		$this->assertFalse($this->flow()->getEnabled());
+		$this->assertSame(Flow::STATUS_ERROR, $this->flow()->getStatus());
+		$this->assertStringContainsString('"pieter"', (string)$this->flow()->getStatusMessage());
+	}
+
+	public function testPublishingAgainRestoresAScheduleStoppedForItsTenant(): void {
+		$this->publish([$this->schedule()]);
+		$this->members = ['quinten'];
+		$this->tick();
+		$this->session = 'quinten';
+
+		$this->publish([$this->schedule()]);
+
+		$this->assertTrue($this->flow()->getEnabled());
+		$this->assertNull($this->flow()->getStatus());
+		$this->tick();
+		$this->assertSame('quinten', $this->runs[0]->getRunAs());
+	}
+
+	public function testAFlowAnAuthorDrewIsNotAskedForMembership(): void {
+		$this->publish([$this->schedule()]);
+		$this->flow()->setApp('openregister');
+		$this->members = [];
+
+		$this->assertCount(1, $this->tick());
+	}
 }
