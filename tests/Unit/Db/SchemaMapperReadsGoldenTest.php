@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -39,6 +40,8 @@ use ReflectionClass;
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\ParentReference
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads
  */
 class SchemaMapperReadsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -162,7 +165,7 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 	 * @return array<int, string>
 	 */
 	private function readTrace(): array {
-		$holder = new ReflectionClass(SchemaMapper::class);
+		$holder = new ReflectionClass(SchemaReadTrace::class);
 		$holder->setStaticPropertyValue('perfTrace', true);
 		$holder->setStaticPropertyValue('perfCounts', []);
 		$this->queuedRows = [[]];
