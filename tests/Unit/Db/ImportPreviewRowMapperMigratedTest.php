@@ -5,7 +5,7 @@
  *
  * A mocked query builder accepts any column name, so the mapper could order by
  * a column the table does not have. This test runs the mapper's queries as SQL
- * against the migrated table: the source row number lives in `row_no`, not in
+ * against the migrated table: the source row number lives in `source_row`, not in
  * `row_number`, which is reserved on MariaDB (#4909), and both readers return
  * rows in source order.
  *
@@ -43,10 +43,10 @@ class ImportPreviewRowMapperMigratedTest extends TestCase {
 
 		// Stored out of source order, with one row of another preview.
 		$rows = [
-			['preview_id' => 7, 'row_no' => 3, 'decision' => ImportPreviewRow::DECISION_UPDATE],
-			['preview_id' => 7, 'row_no' => 1, 'decision' => ImportPreviewRow::DECISION_CREATE],
-			['preview_id' => 8, 'row_no' => 1, 'decision' => ImportPreviewRow::DECISION_CREATE],
-			['preview_id' => 7, 'row_no' => 2, 'decision' => ImportPreviewRow::DECISION_CREATE, 'applied_at' => '2026-11-06 10:00:00'],
+			['preview_id' => 7, 'source_row' => 3, 'decision' => ImportPreviewRow::DECISION_UPDATE],
+			['preview_id' => 7, 'source_row' => 1, 'decision' => ImportPreviewRow::DECISION_CREATE],
+			['preview_id' => 8, 'source_row' => 1, 'decision' => ImportPreviewRow::DECISION_CREATE],
+			['preview_id' => 7, 'source_row' => 2, 'decision' => ImportPreviewRow::DECISION_CREATE, 'applied_at' => '2026-11-06 10:00:00'],
 		];
 		foreach ($rows as $row) {
 			$this->database->insert('openregister_import_preview_rows', $row);
@@ -61,7 +61,7 @@ class ImportPreviewRowMapperMigratedTest extends TestCase {
 	 * @return int[]
 	 */
 	private static function rowNumbers(array $rows): array {
-		return array_map(static fn (ImportPreviewRow $row): int => $row->getRowNo(), $rows);
+		return array_map(static fn (ImportPreviewRow $row): int => $row->getSourceRow(), $rows);
 	}//end rowNumbers()
 
 	/**
@@ -69,15 +69,15 @@ class ImportPreviewRowMapperMigratedTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	public function testTheTableHasRowNoAndNotRowNumber(): void {
+	public function testTheTableHasSourceRowAndNotRowNumber(): void {
 		$columns = array_map(
 			static fn ($column): string => trim($column->getName(), '"`'),
 			$this->database->connection()->createSchemaManager()->listTableColumns('openregister_import_preview_rows')
 		);
 
-		$this->assertContains('row_no', $columns);
+		$this->assertContains('source_row', $columns);
 		$this->assertNotContains('row_number', $columns);
-	}//end testTheTableHasRowNoAndNotRowNumber()
+	}//end testTheTableHasSourceRowAndNotRowNumber()
 
 	/**
 	 * A preview's rows come back in source order, and only that preview's.
