@@ -54,7 +54,6 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -167,7 +166,7 @@ abstract class ManifestScheduleHarness extends TestCase {
 		$membership = new FlowTenantMembership($this->organisations());
 		$sync = new ScheduleFlowSync(
 			new ScheduleFlowStore($flowMapper, $versions, $flowService, new FlowTriggerValidator($container, $this->logger)),
-			new ScheduleActionAllowList($this->createMock(IAppManager::class)),
+			new ScheduleActionAllowList(),
 			new CronScheduleEvaluator(),
 			$membership,
 			new ScheduleAuditTrail($this->auditMapper()),

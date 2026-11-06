@@ -17,4 +17,4 @@
 
 ## 4. Clean up
 - [x] 4.1 Report on-disk schedules as refused
-- [ ] 4.2 Delete `ScheduleReconciler` (#5806) and whatever else in `lib/AppHost/Scheduling/` stays without a caller
+- [x] 4.2 Delete `ScheduleReconciler` (#5806) and whatever else in `lib/AppHost/Scheduling/` stays without a caller
