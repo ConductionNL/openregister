@@ -346,6 +346,25 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->assertSame('direct-schema', $result);
 	}
 
+	public function testExtractTargetRefReadsReferenceSchemaFromItems(): void {
+		$result = $this->invokeMethod('extractTargetRef', [
+			['type' => 'array', 'items' => ['referenceSchema' => 'code-list']],
+		]);
+		$this->assertSame('code-list', $result);
+	}
+
+	public function testAStoredJsonNullIsNoDeletion(): void {
+		$this->setPrivateProperty('schemaRegisterMap', ['5' => new \OCA\OpenRegister\Db\Register()]);
+		$this->setPrivateProperty('schemaCache', ['5' => new \OCA\OpenRegister\Db\Schema()]);
+
+		$entity = $this->invokeMethod('referencingEntity', [
+			['_uuid' => 'row-1', '_register' => '1', '_schema' => '5', '_deleted' => 'null'],
+			['sourceSchemaId' => '5', 'property' => 'owner', 'value' => 'target-1'],
+		]);
+
+		$this->assertNull($entity->getDeleted());
+	}
+
 	public function testExtractTargetRefReturnsNullForEmptyItems(): void {
 		$result = $this->invokeMethod('extractTargetRef', [
 			['type' => 'array', 'items' => ['type' => 'string']],
