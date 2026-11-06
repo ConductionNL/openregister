@@ -194,7 +194,7 @@
       <code><![CDATA[$vtodo->{'X-OPENREGISTER-DATA'}]]></code>
     </UndefinedPropertyFetch>
   </file>
-  <file src="lib/Service/TextExtraction/SpreadsheetExtractor.php">
+  <file src="lib/Files/Service/TextExtraction/SpreadsheetExtractor.php">
     <StringIncrement>
       <code><![CDATA[$col]]></code>
     </StringIncrement>

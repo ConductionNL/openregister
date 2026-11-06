@@ -52,7 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;

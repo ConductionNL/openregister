@@ -10,7 +10,7 @@
  * no schema, and the object route's first act is to resolve all three.
  *
  * Why it is this small. The STORAGE was already anchor-agnostic.
- * {@see \OCA\OpenRegister\Service\NoteService} writes Nextcloud comments
+ * {@see \OCA\OpenRegister\Files\Service\NoteService} writes Nextcloud comments
  * with `object_type = 'openregister'` and `object_id = <uuid string>`; it
  * takes a bare uuid and asks nothing about what that uuid names. So a task
  * note and an object note are the same row in the same table, read back by
@@ -68,7 +68,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;

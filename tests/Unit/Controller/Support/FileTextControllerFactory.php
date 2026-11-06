@@ -35,15 +35,15 @@ final class FileTextControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\TextExtractionService $textExtractor,
+		\OCA\OpenRegister\Files\Service\TextExtractionService $textExtractor,
 		\OCA\OpenRegister\Service\FileService $fileService,
 		\OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
 		\Psr\Log\LoggerInterface $logger,
-		\OCA\OpenRegister\Service\File\ManualEntityService $manualEntityService,
+		\OCA\OpenRegister\Files\Service\File\ManualEntityService $manualEntityService,
 		\OCP\IUserSession $userSession,
 		\OCP\Files\IRootFolder $rootFolder,
 		\OCP\IGroupManager $groupManager,
-		?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	): array {
 		return [
 			$appName,

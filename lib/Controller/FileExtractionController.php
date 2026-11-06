@@ -27,10 +27,10 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Controller\Support\FileExtractionListing;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -119,9 +119,9 @@ class FileExtractionController extends Controller {
 	/**
 	 * The object read rule for an object's file.
 	 *
-	 * @var ?\OCA\OpenRegister\Service\File\FileReadScope
+	 * @var ?\OCA\OpenRegister\Files\Service\File\FileReadScope
 	 */
-	private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope;
+	private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope;
 
 	/**
 	 * Constructor

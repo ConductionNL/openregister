@@ -35,15 +35,15 @@ final class FileExtractionControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\TextExtractionService $textExtractor,
+		\OCA\OpenRegister\Files\Service\TextExtractionService $textExtractor,
 		\OCA\OpenRegister\Search\Service\VectorizationServiceInterface $vectorizationService,
-		\OCA\OpenRegister\Db\ChunkMapper $chunkMapper,
+		\OCA\OpenRegister\Files\Db\ChunkMapper $chunkMapper,
 		\OCA\OpenRegister\Db\EntityRelationMapper $entityRelationMapper,
-		\OCA\OpenRegister\Service\RiskLevelService $riskLevelService,
+		\OCA\OpenRegister\Files\Service\RiskLevelService $riskLevelService,
 		\OCP\Files\IRootFolder $rootFolder,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
-		?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	): array {
 		return [
 			$appName,

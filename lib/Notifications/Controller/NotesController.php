@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
 use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;

@@ -23,7 +23,7 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Service\NotificationService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\Notification\IManager;
