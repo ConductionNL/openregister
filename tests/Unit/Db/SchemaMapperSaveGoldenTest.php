@@ -119,6 +119,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
