@@ -59,6 +59,7 @@ use Psr\Log\LoggerInterface;
  * because the reference was resolved before the mapper saw it.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\SearchReferenceResolver
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
  */
 class SearchReferenceResolutionTest extends TestCase {
 
