@@ -40,8 +40,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @method int|null getPreviewId()
  * @method void setPreviewId(?int $previewId)
- * @method int getRowNumber()
- * @method void setRowNumber(int $rowNumber)
+ * @method int getRowNo()
+ * @method void setRowNo(int $rowNo)
  * @method string|null getDecision()
  * @method void setDecision(?string $decision)
  * @method string|null getReason()
@@ -109,11 +109,11 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	protected ?int $previewId = null;
 
 	/**
-	 * The 1-based row number in the source file.
+	 * The 1-based row number in the source file (column `row_no`).
 	 *
 	 * @var integer
 	 */
-	protected int $rowNumber = 0;
+	protected int $rowNo = 0;
 
 	/**
 	 * The decision.
@@ -169,7 +169,7 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 	 */
 	public function __construct() {
 		$this->addType(fieldName: 'previewId', type: 'integer');
-		$this->addType(fieldName: 'rowNumber', type: 'integer');
+		$this->addType(fieldName: 'rowNo', type: 'integer');
 		$this->addType(fieldName: 'decision', type: 'string');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'targetUuid', type: 'string');
@@ -198,7 +198,7 @@ class ImportPreviewRow extends Entity implements JsonSerializable {
 		return [
 			'id' => $this->id,
 			'previewId' => $this->previewId,
-			'row' => $this->rowNumber,
+			'row' => $this->rowNo,
 			'decision' => $this->decision,
 			'reason' => $this->reason,
 			'targetUuid' => $this->targetUuid,

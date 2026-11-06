@@ -106,7 +106,11 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 			$table = $schema->createTable('openregister_import_preview_rows');
 			$table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
 			$table->addColumn('preview_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-			$table->addColumn('row_number', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
+			// The source file's 1-based row number. Not `row_number`: that is a
+			// reserved word on MariaDB, and Doctrine does not quote it there, so
+			// the CREATE TABLE failed (#4909). Version1Date20261106120000
+			// renames the column on installs that already have the old name.
+			$table->addColumn('row_no', Types::INTEGER, ['notnull' => true, 'default' => 0, 'unsigned' => true]);
 			$table->addColumn('decision', Types::STRING, ['notnull' => true, 'length' => 16, 'default' => 'create']);
 			$table->addColumn('reason', Types::TEXT, ['notnull' => false]);
 			$table->addColumn('target_uuid', Types::STRING, ['notnull' => false, 'length' => 36]);
@@ -122,7 +126,7 @@ class Version1Date20260915050000 extends SimpleMigrationStep {
 			$table->setPrimaryKey(['id']);
 			$table->addIndex(['preview_id'], 'idx_or_improw_preview');
 			$table->addIndex(['preview_id', 'decision'], 'idx_or_improw_decision');
-			$table->addUniqueIndex(['preview_id', 'row_number'], 'idx_or_improw_unique');
+			$table->addUniqueIndex(['preview_id', 'row_no'], 'idx_or_improw_unique');
 
 			$output->info('Created openregister_import_preview_rows table');
 		}//end if
