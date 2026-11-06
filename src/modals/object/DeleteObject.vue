@@ -4,7 +4,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteObject'"
 		:name="
 			'Delete '
@@ -17,8 +17,22 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| objectStore.objectItem?.id
 				|| 'Object')
 		"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="
+			n(
+				'openregister',
+				'Object successfully deleted',
+				'Objects successfully deleted',
+				1,
+			)
+		"
+		:closeLabel="success === null ? 'Cancel' : 'Close'"
+		confirmLabel="Delete"
+		@cancel="closeDialog"
+		@confirm="deleteObject()">
 		<p v-if="success === null">
 			Do you want to permanently delete
 			<span v-if="objectStore.objectItem?.['@self']?.schema?.title"
@@ -32,83 +46,22 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			}}</b
 			>? This action cannot be undone.
 		</p>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>
-				{{
-					n(
-						'openregister',
-						'Object successfully deleted',
-						'Objects successfully deleted',
-						1,
-					)
-				}}
-			</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success === null ? 'Cancel' : 'Close' }}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="deleteObject()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteObject',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: null,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(null)],
 
 	methods: {
-		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * @spec exclude Modal action plumbing — delegates deletion to objectStore.deleteObject (lifecycle owned elsewhere).
 		 */
