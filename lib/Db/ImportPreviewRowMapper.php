@@ -60,7 +60,7 @@ class ImportPreviewRowMapper extends QBMapper {
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('preview_id', $qb->createNamedParameter($previewId, IQueryBuilder::PARAM_INT)))
-			->orderBy('row_number', 'ASC');
+			->orderBy('source_row', 'ASC');
 
 		if ($decision !== null) {
 			$qb->andWhere($qb->expr()->eq('decision', $qb->createNamedParameter($decision)));
@@ -96,7 +96,7 @@ class ImportPreviewRowMapper extends QBMapper {
 					)
 				)
 			)
-			->orderBy('row_number', 'ASC');
+			->orderBy('source_row', 'ASC');
 
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);

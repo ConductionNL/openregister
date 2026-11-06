@@ -203,6 +203,7 @@ class EmailService implements EmailServiceInterface {
 		$link->setMailAccountId($mailAccountId);
 		$link->setMailMessageId($mailMessageId);
 		$link->setMailMessageUid($messageData['uid'] ?? null);
+		$link->setRfcMessageId(EmailLink::storableMessageId(messageId: ($messageData['rfcMessageId'] ?? null)));
 		$link->setSubject($messageData['subject'] ?? null);
 		$link->setSender($messageData['sender'] ?? null);
 		$link->setSenderName($messageData['senderName'] ?? null);
@@ -377,7 +378,7 @@ class EmailService implements EmailServiceInterface {
 	private function fetchMailMessage(int $messageId, int $accountId): ?array {
 		try {
 			$qb = $this->db->getQueryBuilder();
-			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
+			$qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at', 'm.message_id')
 				->addSelect('r.email as sender_email', 'r.label as sender_label')
 				->from('mail_messages', 'm')
 				->leftJoin(
@@ -415,6 +416,7 @@ class EmailService implements EmailServiceInterface {
 
 			return [
 				'uid' => (string)($row['uid'] ?? ''),
+				'rfcMessageId' => $row['message_id'] ?? null,
 				'subject' => $row['subject'] ?? null,
 				'sender' => $row['sender_email'] ?? null,
 				'senderName' => $row['sender_label'] ?? null,
