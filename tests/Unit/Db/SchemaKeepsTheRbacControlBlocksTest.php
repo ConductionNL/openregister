@@ -78,6 +78,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  */
 class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 
@@ -130,7 +132,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateHierarchy(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateHierarchyAnnotation');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateHierarchy()
 
@@ -632,7 +634,7 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 	 * @return void
 	 */
 	private function validateDeny(Schema $schema): void {
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateAuthorizationDeny');
+		$method = new ReflectionMethod(SchemaMapper::class, 'checkAccessDeclarations');
 		$method->invoke($this->mapper, $schema);
 	}//end validateDeny()
 

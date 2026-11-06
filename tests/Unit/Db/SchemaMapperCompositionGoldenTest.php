@@ -78,6 +78,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  */
 class SchemaMapperCompositionGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

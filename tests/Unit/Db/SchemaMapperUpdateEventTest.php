@@ -64,6 +64,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\AccessDeclarationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals
  */
 class SchemaMapperUpdateEventTest extends TestCase {
 	/**
