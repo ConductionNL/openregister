@@ -815,7 +815,6 @@
                 "error",
                 "[FacetHandler] Failed to get facetable fields from schema properties",
                 {
-                    "file": "FacetHandler.php",
                     "error": "properties unreadable",
                     "schemaId": "unknown"
                 }

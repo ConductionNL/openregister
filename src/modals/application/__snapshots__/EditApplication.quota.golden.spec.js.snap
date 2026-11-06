@@ -1,0 +1,426 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`application quota fields golden updateBandwidthQuota stores what the field says 1`] = `
+[
+  [
+    undefined,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    0,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "0",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "5",
+    {
+      "bandwidth": 5242880,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    7,
+    {
+      "bandwidth": 7340032,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "2.9",
+    {
+      "bandwidth": 2097152,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "x",
+    {
+      "bandwidth": NaN,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+]
+`;
+
+exports[`application quota fields golden updateGroupQuota stores what the field says 1`] = `
+[
+  [
+    undefined,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    0,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "0",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "5",
+    {
+      "bandwidth": 0,
+      "groups": 5,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    7,
+    {
+      "bandwidth": 0,
+      "groups": 7,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "2.9",
+    {
+      "bandwidth": 0,
+      "groups": 2,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "x",
+    {
+      "bandwidth": 0,
+      "groups": NaN,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+]
+`;
+
+exports[`application quota fields golden updateRequestQuota stores what the field says 1`] = `
+[
+  [
+    undefined,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    0,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "0",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "5",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 5,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    7,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 7,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "2.9",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 2,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "x",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": NaN,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+]
+`;
+
+exports[`application quota fields golden updateStorageQuota stores what the field says 1`] = `
+[
+  [
+    undefined,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    0,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "0",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "5",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 5242880,
+      "users": 0,
+    },
+  ],
+  [
+    7,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 7340032,
+      "users": 0,
+    },
+  ],
+  [
+    "2.9",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 2097152,
+      "users": 0,
+    },
+  ],
+  [
+    "x",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": NaN,
+      "users": 0,
+    },
+  ],
+]
+`;
+
+exports[`application quota fields golden updateUserQuota stores what the field says 1`] = `
+[
+  [
+    undefined,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    0,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "0",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 0,
+    },
+  ],
+  [
+    "5",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 5,
+    },
+  ],
+  [
+    7,
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 7,
+    },
+  ],
+  [
+    "2.9",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": 2,
+    },
+  ],
+  [
+    "x",
+    {
+      "bandwidth": 0,
+      "groups": 0,
+      "requests": 0,
+      "storage": 0,
+      "users": NaN,
+    },
+  ],
+]
+`;

@@ -45,7 +45,6 @@ exports[`settings store initial state matches the golden state 1`] = `
  "flowOptions": {
   "retentionDays": 31,
   "auditEnabled": false,
-  "oversightEnabled": true,
   "killSwitch": false
  },
  "retentionOptions": {
