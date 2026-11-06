@@ -265,11 +265,7 @@ import {
 	routeDate,
 } from '../../services/routeQuery.js'
 import { applyRouteScope } from '../../services/routeScope.js'
-import {
-	registerSelect,
-	schemaSelect,
-	scopeOption,
-} from '../../services/scopeSelect.js'
+import { scopePickers } from '../../services/scopePickers.js'
 import {
 	addJoinedValues,
 	addPresent,
@@ -329,6 +325,8 @@ export default {
 		FilterOffOutline,
 	},
 
+	mixins: [scopePickers],
+
 	data() {
 		return {
 			actionOptions: [
@@ -369,34 +367,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		registerOptions() {
-			return registerSelect(registerStore.registerList)
-		},
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		schemaOptions() {
-			return schemaSelect(registerStore.registerItem, schemaStore.schemaList)
-		},
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		selectedRegisterValue() {
-			return scopeOption(registerStore.registerItem, 'register')
-		},
-
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		selectedSchemaValue() {
-			return scopeOption(schemaStore.schemaItem, 'schema')
-		},
-
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */

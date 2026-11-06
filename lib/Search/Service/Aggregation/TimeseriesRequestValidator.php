@@ -318,9 +318,7 @@ class TimeseriesRequestValidator {
 		}
 
 		$errors = (new AggregationMetricsAnnotationValidator())->validate(
-			name: 'ad-hoc',
-			metrics: $normalised,
-			propKeys: $allowed
+			declaration: new MetricsDeclaration(name: 'ad-hoc', metrics: $normalised, propKeys: $allowed)
 		);
 
 		if ($errors !== []) {

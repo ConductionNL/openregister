@@ -55,6 +55,8 @@ use OCP\IDBConnection;
 
 /**
  * DB-backed read-state mapper — the only read-state implementation.
+ *
+ * @template-extends QBMapper<NotificationReadStateEntity>
  */
 class NotificationReadStateMapper extends QBMapper {
 	/**
@@ -85,9 +87,20 @@ class NotificationReadStateMapper extends QBMapper {
 		try {
 			return $this->findByUserAndNotification(userId: $userId, notificationId: $notificationId);
 		} catch (DoesNotExistException) {
-			// Fall through to insert.
+			return $this->insertReadState(userId: $userId, notificationId: $notificationId);
 		}
 
+	}//end markRead()
+
+	/**
+	 * Insert the read-state row for a (userId, notificationId) tuple.
+	 *
+	 * @param string $userId The user UID.
+	 * @param string $notificationId The notification id.
+	 *
+	 * @return NotificationReadStateEntity The inserted entity, or the row a concurrent request inserted first.
+	 */
+	private function insertReadState(string $userId, string $notificationId): NotificationReadStateEntity {
 		$entity = new NotificationReadStateEntity();
 		$entity->setUserId($userId);
 		$entity->setNotificationId($notificationId);
@@ -106,7 +119,7 @@ class NotificationReadStateMapper extends QBMapper {
 			return $this->findByUserAndNotification(userId: $userId, notificationId: $notificationId);
 		}
 
-	}//end markRead()
+	}//end insertReadState()
 
 	/**
 	 * Reverse a markRead — bring the notification back to unread.
@@ -119,12 +132,8 @@ class NotificationReadStateMapper extends QBMapper {
 	public function markUnread(string $userId, string $notificationId): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
-			->where(
-				$qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
-			)
-			->andWhere(
-				$qb->expr()->eq('notification_id', $qb->createNamedParameter($notificationId, IQueryBuilder::PARAM_STR))
-			);
+			->where($this->userIs(qb: $qb, userId: $userId))
+			->andWhere($this->notificationIs(qb: $qb, notificationId: $notificationId));
 
 		return ($qb->executeStatement() > 0);
 	}//end markUnread()
@@ -161,12 +170,8 @@ class NotificationReadStateMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
-			)
-			->andWhere(
-				$qb->expr()->eq('notification_id', $qb->createNamedParameter($notificationId, IQueryBuilder::PARAM_STR))
-			)
+			->where($this->userIs(qb: $qb, userId: $userId))
+			->andWhere($this->notificationIs(qb: $qb, notificationId: $notificationId))
 			->setMaxResults(1);
 
 		/*
@@ -176,4 +181,30 @@ class NotificationReadStateMapper extends QBMapper {
 		$entity = $this->findEntity(query: $qb);
 		return $entity;
 	}//end findByUserAndNotification()
+
+	/**
+	 * Condition matching the given user.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param string        $userId The user UID.
+	 *
+	 * @return string
+	 */
+	private function userIs(IQueryBuilder $qb, string $userId): string {
+		return $qb->expr()->eq('user_id', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR));
+
+	}//end userIs()
+
+	/**
+	 * Condition matching the given notification.
+	 *
+	 * @param IQueryBuilder $qb             The query being built.
+	 * @param string        $notificationId The notification id.
+	 *
+	 * @return string
+	 */
+	private function notificationIs(IQueryBuilder $qb, string $notificationId): string {
+		return $qb->expr()->eq('notification_id', $qb->createNamedParameter($notificationId, IQueryBuilder::PARAM_STR));
+
+	}//end notificationIs()
 }//end class

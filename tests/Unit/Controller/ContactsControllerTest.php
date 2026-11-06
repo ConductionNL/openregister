@@ -48,6 +48,9 @@ class ContactsControllerTest extends TestCase {
 	private ContactsController $controller;
 	private bool $mayUpdate = true;
 
+	/** @var array<int, string> The actions the permission handler was asked about. */
+	private array $askedActions = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -60,7 +63,12 @@ class ContactsControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->personLinks = $this->createMock(PersonLinkService::class);
 		$this->permissions = $this->createMock(PermissionHandler::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(fn (): bool => $this->mayUpdate);
+		$this->permissions->method('hasPermission')->willReturnCallback(
+			function (Schema $schema, string $action): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $this->mayUpdate : true;
+			}
+		);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
 
 		$this->l10n->method('t')->willReturnCallback(
@@ -528,6 +536,8 @@ class ContactsControllerTest extends TestCase {
 		foreach ($responses as $action => $response) {
 			$this->assertSame(403, $response->getStatus(), $action);
 		}
+
+		$this->assertSame(array_fill(0, 5, 'update'), $this->askedActions, 'the right asked is update, not read');
 	}
 
 	/**

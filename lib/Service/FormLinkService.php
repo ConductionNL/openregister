@@ -34,6 +34,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapper;
+use OCA\OpenRegister\Db\FormSubmissionRef;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -278,7 +279,10 @@ class FormLinkService {
 			throw new Exception('No user logged in', 401);
 		}
 
-		$existing = $this->formLinkMapper->findSubmissionLink($objectUuid, $formId, $submissionId);
+		$existing = $this->formLinkMapper->findSubmissionLink(
+			objectUuid: $objectUuid,
+			submission: new FormSubmissionRef(formId: $formId, submissionId: $submissionId)
+		);
 		if ($existing !== null) {
 			return $existing;
 		}
@@ -333,7 +337,10 @@ class FormLinkService {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the unlink-submission contract is owned by the integration-forms capability.
 	 */
 	public function unlinkSubmission(string $objectUuid, int $formId, int $submissionId): bool {
-		$link = $this->formLinkMapper->findSubmissionLink($objectUuid, $formId, $submissionId);
+		$link = $this->formLinkMapper->findSubmissionLink(
+			objectUuid: $objectUuid,
+			submission: new FormSubmissionRef(formId: $formId, submissionId: $submissionId)
+		);
 		if ($link === null) {
 			return false;
 		}

@@ -60,6 +60,13 @@
          handler cannot disagree again: a service would let one of them be
          constructed with a different implementation, which is the drift the
          class was written to end. -->
+    <!-- StaticAccess: an exception on the terms above.
+
+         `\OCA\OpenRegister\Formats\UuidFormat` answers one question about one
+         string: is this a uuid, and in which shape. It holds no state and has
+         no collaborators. It is static because the same pattern was written
+         inline at thirty sites; a service would have to be injected into value
+         objects and static helpers that have no constructor to take it. -->
     <!-- StaticAccess: a fourth exception, on the terms above.
 
          `\OCA\OpenRegister\Support\PermissionBit` maps an action onto the core
@@ -140,7 +147,7 @@
         <properties>
             <property
                 name="exceptions"
-                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Support\PermissionBit,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\OCA\OpenRegister\Db\StoredEntity,\DateTimeImmutable,\DateTimeZone"/>
+                value="\OCA\OpenRegister\Support\FleetAppId,\OCA\OpenRegister\Support\QueryLimit,\OCA\OpenRegister\Support\FilterParams,\OCA\OpenRegister\Support\PermissionBit,\OCA\OpenRegister\Formats\UuidFormat,\OCA\OpenRegister\Service\View\ViewAlert,\OCA\OpenRegister\Service\Flow\MacroActionBinding,\OCA\OpenRegister\Service\Flow\FlowNextHint,\OCA\OpenRegister\Service\Flow\Timer\ServiceHours,\OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar,\OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration,\OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration,\OCA\OpenRegister\Service\Search\HistoryPredicate,\OCA\OpenRegister\Service\Search\DictionaryExpansion,\OCA\OpenRegister\Service\Search\SearchDictionary,\OCA\OpenRegister\Service\Rules\RuleDescriptor,\OCA\OpenRegister\Service\Rbac\TokenGrant,\OCA\OpenRegister\Db\StoredEntity,\DateTimeImmutable,\DateTimeZone"/>
         </properties>
     </rule>
 </ruleset>

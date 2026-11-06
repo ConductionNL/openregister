@@ -100,10 +100,7 @@ class SftpTransport implements TransportInterface {
 					]
 				);
 
-				return new TransportResult(
-					success: true,
-					transferReference: $remotePath
-				);
+				return new TransportResult(transferReference: $remotePath);
 			}//end if
 
 			throw new RuntimeException(

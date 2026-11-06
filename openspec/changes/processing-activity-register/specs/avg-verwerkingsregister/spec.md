@@ -363,3 +363,33 @@ MUST receive 401/403 without disclosing log content.
 #### Scenario: Unauthenticated access is rejected
 - **WHEN** a verwerkingen endpoint is called without a valid bearer token
 - **THEN** the response MUST be 401 and no log content may be disclosed
+
+### Requirement: Processing-log entries MUST NOT be erased on request and MUST stay available to subject access until retention ends (OR-PA-10)
+
+A processing-log entry MUST stay stored until the retention period of
+OR-PA-6 ends (default 3 years), also when the data subject asks for
+erasure, because the accountability duty takes precedence over the
+request. No erasure flow MUST delete, anonymise or reduce a
+processing-log entry, and the retention prune is the only way an entry
+leaves the log. Erasing the object the entry is about MUST leave the
+entry in place. Subject access MUST keep working: the per-subject
+extract of OR-PA-7 MUST return the entries of that subject for as long
+as they are stored.
+
+**Note:** this rests on a product decision, not yet on legal advice.
+Legal MUST confirm it before this change is archived.
+
+#### Scenario: An erasure request leaves the processing log unchanged
+- **GIVEN** processing-log entries exist for a data subject and their retention period has not ended
+- **WHEN** an erasure request for that subject is carried out
+- **THEN** those entries MUST stay stored, unchanged
+
+#### Scenario: Subject access still returns the entries after an erasure request
+- **GIVEN** an erasure request for a data subject has been carried out and their entries are within retention
+- **WHEN** an FG-role user generates the per-subject extract for that subject
+- **THEN** the extract MUST contain those entries
+
+#### Scenario: Entries of an erased subject leave at the end of retention
+- **GIVEN** an entry of a data subject whose erasure request was carried out earlier
+- **WHEN** the retention prune job runs after the retention period of that entry has ended
+- **THEN** the entry MUST be permanently removed, like any other expired entry
