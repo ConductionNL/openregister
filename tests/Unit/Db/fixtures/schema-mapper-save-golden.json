@@ -1552,6 +1552,402 @@
             }
         }
     },
+    "mdto property": {
+        "thrown": "Exception: Invalid x-openregister-mdto-mapping declaration: [mdto-mapping-missing-mandatory] MDTO demands \"identificatie\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"waardering\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"archiefvormer\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"beperkingGebruik\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "x-openregister-mdto-mapping": {
+                    "naam": {
+                        "property": "name"
+                    }
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "mdto unknown property": {
+        "thrown": "Exception: Invalid x-openregister-mdto-mapping declaration: [mdto-mapping-unknown-property] The mapping for \"naam\" reads property \"nope\", which this schema does not declare. [mdto-mapping-missing-mandatory] MDTO demands \"identificatie\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"waardering\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"archiefvormer\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused. [mdto-mapping-missing-mandatory] MDTO demands \"beperkingGebruik\" (minOccurs=\"1\" in MDTO-XML1.0.1.xsd) and this mapping does not fill it. A transfer of objects of this schema would be refused.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "x-openregister-mdto-mapping": {
+                    "naam": {
+                        "property": "nope"
+                    }
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "handoff lifecycle state": {
+        "thrown": "Exception: x-openregister-handoff: handoff-bad-target-type: Handoff \"send\": `targetSemanticType` must be an absolute kind URI (e.g. \"https://openregister.app/ns#Case\"). handoff-bad-trigger: Handoff \"send\": lifecycle state \"nope\" is not declared in the schema's lifecycle enum (open, closed). handoff-bad-annotation: Handoff \"send\": a non-empty `mapping` object is required.",
+        "logs": [
+            [
+                "warning",
+                "x-openregister-lifecycle annotation on schema \"golden-schema\" is invalid; it was stored as written and the lifecycle listener still acts on it: x-openregister-lifecycle is missing required key \"initial\". x-openregister-lifecycle is missing required key \"transitions\".",
+                []
+            ]
+        ],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "x-openregister-handoff": [
+                    {
+                        "id": "send",
+                        "trigger": "lifecycle:nope"
+                    }
+                ],
+                "x-openregister-lifecycle": {
+                    "field": "status",
+                    "property": "status"
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "contract implements": {
+        "thrown": "Exception: handoffContract: handoff-contract-incomplete: handoffContract[\"https://openregister.app/ns#Case\"] must be a non-empty {contractField: ownProperty} map; missing mandatory fields: title, summary, channel, source.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "implements": [
+                    "https://openregister.app/ns#Case"
+                ],
+                "handoffContract": {
+                    "https://openregister.app/ns#Case": []
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "contract jsonld": {
+        "thrown": "Exception: handoffContract: handoff-contract-incomplete: handoffContract[\"https://openregister.app/ns#Case\"] must be a non-empty {contractField: ownProperty} map; missing mandatory fields: title, summary, channel, source.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "jsonld": {
+                    "type": "https://openregister.app/ns#Case"
+                },
+                "handoffContract": {
+                    "https://openregister.app/ns#Case": []
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "contract schema org": {
+        "thrown": "Exception: handoffContract: handoff-contract-incomplete: handoffContract[\"https://openregister.app/ns#Case\"] must be a non-empty {contractField: ownProperty} map; missing mandatory fields: title, summary, channel, source.",
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "open",
+                        "closed"
+                    ]
+                },
+                "startDate": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "count": {
+                    "type": "integer",
+                    "facetable": "TRUE "
+                },
+                "link": {
+                    "type": "string",
+                    "$ref": "far-schema",
+                    "relation": {
+                        "type": "owns",
+                        "exposes": [
+                            "nope"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "x-schema-org": "https://openregister.app/ns#Case",
+                "handoffContract": {
+                    "https://openregister.app/ns#Case": []
+                },
+                "objectNameField": "name"
+            }
+        }
+    },
+    "extends form on schema and property": {
+        "thrown": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException: Invalid x-openregister-extends-form declaration: 'definitions, definitions'. Read /api/schemas/property-vocabulary for the keys a form may forward.",
+        "errors": [
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "configuration/x-openregister-extends-form",
+                "message": "'x-openregister-extends-form' at 'configuration/x-openregister-extends-form' must name its 'definitions', or the form renders no fields."
+            },
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "properties/a/x-openregister-extends-form",
+                "message": "'x-openregister-extends-form' at 'properties/a/x-openregister-extends-form' must name its 'definitions', or the form renders no fields."
+            }
+        ],
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [],
+            "properties": {
+                "a": {
+                    "type": "string",
+                    "x-openregister-extends-form": {
+                        "forwards": [
+                            "nope-b"
+                        ]
+                    }
+                }
+            },
+            "configuration": {
+                "x-openregister-extends-form": {
+                    "forwards": [
+                        "nope-a"
+                    ]
+                }
+            }
+        }
+    },
+    "extends form on property": {
+        "thrown": "OCA\\OpenRegister\\Service\\Schemas\\PropertyVocabularyException: Invalid x-openregister-extends-form declaration: 'definitions'. Read /api/schemas/property-vocabulary for the keys a form may forward.",
+        "errors": [
+            {
+                "code": "extends-form-no-definitions",
+                "key": "definitions",
+                "path": "properties/a/x-openregister-extends-form",
+                "message": "'x-openregister-extends-form' at 'properties/a/x-openregister-extends-form' must name its 'definitions', or the form renders no fields."
+            }
+        ],
+        "logs": [],
+        "schema": {
+            "hasUuid": true,
+            "slug": "golden-schema",
+            "version": "0.0.1",
+            "source": "internal",
+            "required": [],
+            "properties": {
+                "a": {
+                    "type": "string",
+                    "x-openregister-extends-form": {
+                        "forwards": [
+                            "nope-b"
+                        ]
+                    }
+                }
+            },
+            "configuration": null
+        }
+    },
     "hinge with two keys": {
         "logs": [
             [

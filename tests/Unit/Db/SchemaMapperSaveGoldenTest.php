@@ -213,6 +213,23 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 			'action destroy reversible' => [['x-openregister-action' => ['purge' => ['name' => 'Purge', 'kind' => 'destroy', 'reversible' => true]]], self::PROPERTIES],
 			'action flow' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'flow' => 'a-flow']]], self::PROPERTIES],
 			'action macro' => [['x-openregister-action' => ['run' => ['name' => 'Run', 'macro' => ['flow' => 'a-flow']]]], self::PROPERTIES],
+			'mdto property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'name']]], self::PROPERTIES],
+			'mdto unknown property' => [['x-openregister-mdto-mapping' => ['naam' => ['property' => 'nope']]], self::PROPERTIES],
+			'handoff lifecycle state' => [
+				[
+					'x-openregister-handoff' => [['id' => 'send', 'trigger' => 'lifecycle:nope']],
+					'x-openregister-lifecycle' => ['field' => 'status', 'property' => 'status'],
+				],
+				self::PROPERTIES,
+			],
+			'contract implements' => [['implements' => ['https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract jsonld' => [['jsonld' => ['type' => 'https://openregister.app/ns#Case'], 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'contract schema org' => [['x-schema-org' => 'https://openregister.app/ns#Case', 'handoffContract' => ['https://openregister.app/ns#Case' => []]], self::PROPERTIES],
+			'extends form on schema and property' => [
+				['x-openregister-extends-form' => ['forwards' => ['nope-a']]],
+				['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]],
+			],
+			'extends form on property' => [[], ['a' => ['type' => 'string', 'x-openregister-extends-form' => ['forwards' => ['nope-b']]]]],
 			'hinge with two keys' => [['x-openregister-lenses' => ['bogus' => true], 'x-openregister-list' => 'x'], self::PROPERTIES],
 		];
 		foreach (self::ANNOTATIONS as $key) {
