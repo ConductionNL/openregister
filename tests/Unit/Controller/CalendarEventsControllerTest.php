@@ -35,7 +35,9 @@ use OCA\OpenRegister\Controller\CalendarEventsController;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -59,11 +61,25 @@ class CalendarEventsControllerTest extends TestCase {
 	 */
 	private const OBJ_UUID = 'obj-uuid-1';
 
+	private bool $mayUpdate = true;
+
+	/** @var array<int, string> The actions the permission handler was asked about. */
+	private array $askedActions = [];
+
 	protected function setUp(): void {
 		$this->calendarEventService = $this->createMock(CalendarEventService::class);
 		$this->calendarLinkService = $this->createMock(CalendarLinkService::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->request = $this->createMock(IRequest::class);
+
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new Schema());
+		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (Schema $schema, string $action): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $this->mayUpdate : true;
+			}
+		);
 
 		$this->controller = new CalendarEventsController(
 			'openregister',
@@ -71,6 +87,7 @@ class CalendarEventsControllerTest extends TestCase {
 			$this->calendarEventService,
 			$this->calendarLinkService,
 			$this->objectService,
+			$permissions,
 		);
 
 		// ObjectEntity uses __call magic via the Nextcloud Entity base
@@ -97,6 +114,41 @@ class CalendarEventsControllerTest extends TestCase {
 		$link->setCalendarId(7);
 		$link->setSummary('Kickoff');
 		return $link;
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function writes(): array {
+		return ['create' => ['create'], 'link' => ['link'], 'unlink' => ['unlink'], 'destroy' => ['destroy']];
+	}
+
+	/**
+	 * @dataProvider writes
+	 */
+	public function testEveryWriteNeedsTheObjectUpdateRight(string $write): void {
+		$this->mayUpdate = false;
+		$this->calendarLinkService->expects($this->never())->method('createAndLinkEvent');
+		$this->calendarLinkService->expects($this->never())->method('unlinkEvent');
+		$this->calendarEventService->expects($this->never())->method('deleteEvent');
+
+		$response = match ($write) {
+			'create' => $this->controller->create('r', 's', 'i'),
+			'link' => $this->controller->link('r', 's', 'i'),
+			'unlink' => $this->controller->unlink('r', 's', 'i', 'uid'),
+			'destroy' => $this->controller->destroy('r', 's', 'i', 'event.ics'),
+		};
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame(['update'], $this->askedActions);
+	}
+
+	public function testDestroyInACalendarOfSomebodyElseIsNotFound(): void {
+		$this->calendarLinkService->method('getLinkedEvents')->willReturn([['id' => 'event.ics', 'calendarId' => 7, 'uid' => 'u']]);
+		$this->calendarEventService->method('deleteEvent')->willThrowException(new \Exception('Calendar event not found', 404));
+		$this->calendarLinkService->expects($this->never())->method('unlinkEvent');
+
+		$this->assertSame(404, $this->controller->destroy('r', 's', 'i', 'event.ics')->getStatus());
 	}
 
 	public function testLinkRequiresPayload(): void {

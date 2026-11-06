@@ -26,8 +26,10 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -43,6 +45,7 @@ use OCP\IRequest;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class CalendarEventsController extends Controller {
+	use ChecksObjectUpdateRight;
 
 	/**
 	 * Calendar event service (legacy X-OR-* CalDAV custom properties).
@@ -73,6 +76,7 @@ class CalendarEventsController extends Controller {
 	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
 	 * @param CalendarLinkService $calendarLinkService Calendar link service (Tier-2)
 	 * @param ObjectOperationsInterface $objectService Object service
+	 * @param PermissionHandler $permissions Answers the object update right
 	 *
 	 * @return void
 	 */
@@ -82,6 +86,7 @@ class CalendarEventsController extends Controller {
 		ObjectCalendarEventsInterface $calendarEventService,
 		CalendarLinkService $calendarLinkService,
 		ObjectOperationsInterface $objectService,
+		private readonly PermissionHandler $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -146,6 +151,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			$data = $this->request->getParams();
 
 			if (empty($data['summary']) === true) {
@@ -193,6 +202,10 @@ class CalendarEventsController extends Controller {
 			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
+			}
+
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
 			}
 
 			$data = $this->request->getParams();
@@ -248,6 +261,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			$this->calendarLinkService->unlinkEvent(
 				objectUuid: $object->getUuid(),
 				eventUid: $eventUid
@@ -289,6 +306,10 @@ class CalendarEventsController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
+			if ($this->mayUpdate(object: $object) === false) {
+				return new JSONResponse(['error' => 'You may not change this object, so you cannot change its events.'], 403);
+			}
+
 			// Find the event in the unioned link list to recover its calendarId.
 			$events = $this->calendarLinkService->getLinkedEvents($object->getUuid());
 			$calendarId = null;
@@ -324,7 +345,12 @@ class CalendarEventsController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(['error' => $e->getMessage()], $status);
 		}//end try
 	}//end destroy()
 

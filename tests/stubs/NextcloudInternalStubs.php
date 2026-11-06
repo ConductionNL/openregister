@@ -535,6 +535,7 @@ if (class_exists(\OCA\DAV\CalDAV\CalDavBackend::class) === false) {
 	eval('namespace OCA\DAV\CalDAV;
     class CalDavBackend {
         public function getCalendarsForUser(string $principal): array { return []; }
+        public function getCalendarById(int $calendarId): ?array { return null; }
         public function createCalendar(string $principal, string $name, array $properties): int { return 0; }
         public function createCalendarObject(int $calendarId, string $objectUri, string $data): string { return ""; }
         public function getCalendarObjects(int $calendarId): array { return []; }

@@ -565,6 +565,8 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	 */
 	public function deleteEvent(string $calendarId, string $eventUri): void {
 		$calendarIdInt = (int)$calendarId;
+		$this->refuseSomebodyElsesCalendar(calendarId: $calendarIdInt);
+
 		$existing = $this->calDavBackend->getCalendarObject($calendarIdInt, $eventUri);
 
 		if ($existing === null) {
@@ -573,6 +575,26 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 
 		$this->calDavBackend->deleteCalendarObject($calendarIdInt, $eventUri);
 	}//end deleteEvent()
+
+	/**
+	 * Refuse a calendar the session user does not own.
+	 *
+	 * The id comes from a link row any reader of the object can see, so holding
+	 * it says nothing about the calendar.
+	 *
+	 * @param int $calendarId The calendar id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not the caller's.
+	 */
+	private function refuseSomebodyElsesCalendar(int $calendarId): void {
+		$user = $this->userSession->getUser();
+		$calendar = $this->calDavBackend->getCalendarById($calendarId);
+		if ($user === null || ($calendar['principaluri'] ?? null) !== 'principals/users/' . $user->getUID()) {
+			throw new Exception('Calendar event not found', 404);
+		}
+	}//end refuseSomebodyElsesCalendar()
 
 	/**
 	 * Unlink all events for an object (used during cleanup).
