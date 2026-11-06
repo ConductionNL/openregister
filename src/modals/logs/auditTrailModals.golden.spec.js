@@ -15,14 +15,38 @@ jest.mock('@nextcloud/l10n', () => ({
 	translatePlural: (app, one) => one,
 }))
 jest.mock('@nextcloud/vue', () => ({ __esModule: true }))
-jest.mock('vue-material-design-icons/Close.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/CompareHorizontal.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/ContentCopy.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Delete.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Eye.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/InformationOutline.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Pencil.vue', () => ({ __esModule: true, default: {} }))
-jest.mock('vue-material-design-icons/Plus.vue', () => ({ __esModule: true, default: {} }))
+jest.mock('vue-material-design-icons/Close.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/CompareHorizontal.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/ContentCopy.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Delete.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Eye.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/InformationOutline.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Pencil.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
+jest.mock('vue-material-design-icons/Plus.vue', () => ({
+	__esModule: true,
+	default: {},
+}))
 jest.mock('../../store/store.js', () => ({
 	auditTrailStore: { auditTrailItem: null },
 	navigationStore: { dialog: null, setDialog: jest.fn() },
@@ -101,7 +125,9 @@ describe.each([
 
 	it('formats dates and changes', () => {
 		const vm = modal(component)
-		expect([null, '', 'nonsense'].map((date) => vm.formatDate(date))).toMatchSnapshot()
+		expect(
+			[null, '', 'nonsense'].map((date) => vm.formatDate(date)),
+		).toMatchSnapshot()
 		expect(vm.formatDate('2026-01-02T03:04:05Z')).toBe(
 			new Date('2026-01-02T03:04:05Z').toLocaleString(),
 		)

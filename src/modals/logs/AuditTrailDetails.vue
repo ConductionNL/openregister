@@ -303,7 +303,6 @@ export default {
 				)
 			}
 		},
-
 	},
 }
 </script>
