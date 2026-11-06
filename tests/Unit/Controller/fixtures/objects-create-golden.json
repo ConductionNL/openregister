@@ -878,6 +878,85 @@
             }
         ]
     },
+    "save multipart decodes": {
+        "status": 201,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "@self": {
+                "id": "new-uuid",
+                "slug": null,
+                "name": "new-uuid",
+                "description": null,
+                "summary": null,
+                "image": null,
+                "uri": null,
+                "version": null,
+                "register": null,
+                "schema": null,
+                "schemaVersion": null,
+                "files": [],
+                "relations": [],
+                "locked": null,
+                "owner": null,
+                "organisation": null,
+                "groups": [],
+                "authorization": [],
+                "folder": null,
+                "application": null,
+                "validation": [],
+                "quality": [],
+                "geo": [],
+                "retention": [],
+                "tmlo": [],
+                "size": null,
+                "updated": null,
+                "lastUserActivity": null,
+                "created": null,
+                "deleted": [],
+                "archived": [],
+                "frozen": [],
+                "status": null,
+                "source": null,
+                "mail": null,
+                "contacts": null,
+                "notes": null,
+                "todos": null,
+                "calendar": null,
+                "talk": null,
+                "deck": null
+            },
+            "id": "new-uuid"
+        },
+        "calls": [
+            "clearCreatedSubObjects",
+            {
+                "saveObject": [
+                    {
+                        "list": [
+                            "a"
+                        ],
+                        "text": "plain"
+                    },
+                    [],
+                    3,
+                    7,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
     "save plain body": {
         "status": 201,
         "headers": {

@@ -105,6 +105,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			'admin' => [['title' => 'x'], ['admin' => true]],
 			'reserved keys go' => [['title' => 'x', '_extend' => 'a', '@self' => ['slug' => 's', 'owner' => 'o'], '@type' => 't', 'uuid' => 'u', 'register' => 'r', 'schema' => 's'], []],
 			'json strings decode' => [['list' => '["a"]', 'map' => '{"a":1}', 'text' => 'plain'], []],
+			'multipart decodes' => [['list' => '["a"]', 'text' => 'plain'], ['contentType' => 'multipart/form-data; boundary=x']],
 			'insert only' => [['title' => 'x', '_failIfExists' => 'true'], []],
 			'duplicate override' => [['title' => 'x', '_dedupOverride' => '1'], []],
 			'blank upsert key' => [['title' => 'x', '_upsertOn' => '   '], []],
@@ -233,6 +234,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 		$request->method('getParam')->willReturnCallback(fn (string $key, $default = null) => ($params[$key] ?? $default));
+		$request->method('getHeader')->willReturn(($setup['contentType'] ?? ''));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message): void {
 			$this->calls[] = ['error' => $message];
