@@ -24,8 +24,6 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Fills what a schema must carry when its author left it out.
  *
- * Not strict_types: a property that is no array fails on the typed parameter here as it did inside SchemaMapper.
- *
  * @spec exclude schema save plumbing moved out of SchemaMapper, not a capability of its own
  */
 final class SchemaDefaults {
@@ -71,7 +69,7 @@ final class SchemaDefaults {
 
 		$requiredFields = [];
 		foreach ($schema->getProperties() as $propertyKey => $property) {
-			if ($this->isRequired(property: $property) === true) {
+			if (is_array($property) === true && $this->isRequired(property: $property) === true) {
 				$requiredFields[] = $propertyKey;
 			}
 		}
