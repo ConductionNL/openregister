@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Service;
 use DateTimeInterface;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -171,7 +172,7 @@ class ShareLinkService {
 		$rows = [];
 		$seen = [];
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
@@ -451,7 +452,7 @@ class ShareLinkService {
 
 		$files = [];
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
@@ -488,6 +489,26 @@ class ShareLinkService {
 
 		return $manager;
 	}//end getShareManager()
+
+	/**
+	 * The folder's children the caller may read, by the file restrictions.
+	 *
+	 * Fails closed: without the guard nothing is listed.
+	 *
+	 * @param Folder $folder The folder.
+	 *
+	 * @return array<int, Node> The readable children.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 */
+	private function readableChildren(Folder $folder): array {
+		$guard = $this->lookup(serviceName: FileRestrictionGuard::class);
+		if ($guard === null) {
+			return [];
+		}
+
+		return $guard->readableNodes(nodes: $folder->getDirectoryListing());
+	}//end readableChildren()
 
 	/**
 	 * Resolve the object's NC folder via FileService,
@@ -535,7 +556,7 @@ class ShareLinkService {
 		}
 
 		$count = 0;
-		foreach ($folder->getDirectoryListing() as $node) {
+		foreach ($this->readableChildren(folder: $folder) as $node) {
 			if ($count >= self::MAX_NODES) {
 				break;
 			}
