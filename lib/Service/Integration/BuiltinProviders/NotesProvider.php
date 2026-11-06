@@ -170,6 +170,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$message = (string)($payload['message'] ?? '');
 		return $this->noteService->updateNote(noteId: (int)$entityId, message: $message);
 	}//end update()
@@ -187,6 +188,7 @@ class NotesProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-13
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+		$this->noteService->requireNoteOf(objectUuid: $objectId, noteId: (int)$entityId);
 		$this->noteService->deleteNote(noteId: (int)$entityId);
 	}//end delete()
 }//end class
