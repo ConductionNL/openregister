@@ -84,6 +84,18 @@ class FlowRunMapperSummaryTest extends TestCase {
 		$this->assertSame(['lastRun' => null, 'runsSince' => 0], $summary['flow-b']);
 	}
 
+	public function testTheLastRunSaysHowItEndedAndServesNoLog(): void {
+		$run = $this->latestRun('flow-a', FlowRun::STATUS_STOPPED);
+		$run->setLog([['transition' => 'end', 'status' => 'stopped', 'checkId' => null]]);
+		$mapper = $this->mapper(['flow-a' => 1], [$run]);
+
+		$lastRun = $mapper->summarizeByFlow(['flow-a'], new DateTime('-7 days'))['flow-a']['lastRun'];
+
+		$this->assertSame('stopped', $lastRun['status']);
+		$this->assertSame('completed', $lastRun['outcome']);
+		$this->assertArrayNotHasKey('log', $lastRun);
+	}
+
 	public function testRowsForFlowsNobodyAskedAboutAreIgnored(): void {
 		$mapper = $this->mapper(['flow-x' => 9], [$this->latestRun('flow-x', FlowRun::STATUS_COMPLETED)]);
 
