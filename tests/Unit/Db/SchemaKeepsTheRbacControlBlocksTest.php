@@ -69,6 +69,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
