@@ -2,34 +2,11 @@
 	<NcAppContent :showDetails="sidebarOpen" @update:showDetails="toggleSidebar">
 		<div class="viewContainer">
 			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Files') }}
-					</h1>
-					<NcButton
-						variant="tertiary"
-						:aria-label="t('openregister', 'Toggle search sidebar')"
-						@click="toggleSidebar">
-						<template #icon>
-							<FilterVariant :size="20" />
-						</template>
-						{{
-							sidebarOpen
-								? t('openregister', 'Hide Filters')
-								: t('openregister', 'Show Filters')
-						}}
-					</NcButton>
-				</div>
-				<p>
-					{{
-						t(
-							'openregister',
-							'Manage and monitor file text extraction status',
-						)
-					}}
-				</p>
-			</div>
+			<FilterToggleHeader
+				:title="t('openregister', 'Files')"
+				:description="t('openregister', 'Manage and monitor file text extraction status')"
+				:sidebarOpen="sidebarOpen"
+				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
 			<div class="viewActionsBar">
@@ -210,24 +187,12 @@
 				</table>
 
 				<!-- Pagination -->
-				<div v-if="totalFiles > limit" class="pagination">
-					<NcButton :disabled="offset === 0" @click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{
-							t('openregister', 'Page {current} of {total}', {
-								current: currentPage,
-								total: totalPages,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalFiles"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<OffsetPager
+					:offset="offset"
+					:limit="limit"
+					:total="totalFiles"
+					@previous="previousPage"
+					@next="nextPage" />
 			</div>
 		</div>
 
@@ -253,15 +218,16 @@ import {
 	NcActionButton,
 	NcActions,
 	NcAppContent,
-	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import OffsetPager from '../../components/shared/OffsetPager.vue'
 import FilesSidebar from '../../components/FilesSidebar.vue'
+import { offsetPaging } from '../offsetPaging.js'
 
 /**
  * Main view for managing and monitoring file text extraction status
@@ -269,18 +235,20 @@ import FilesSidebar from '../../components/FilesSidebar.vue'
 export default {
 	name: 'FilesIndex',
 	components: {
+		OffsetPager,
+		FilterToggleHeader,
 		NcAppContent,
 		NcActions,
 		NcActionButton,
-		NcButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileDocumentOutline,
 		Refresh,
 		AlertCircleOutline,
-		FilterVariant,
 		FilesSidebar,
 	},
+
+	mixins: [offsetPaging('totalFiles', 'loadFiles')],
 
 	data() {
 		return {
@@ -299,25 +267,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Get current page number
-		 *
-		 * @spec exclude list-view pagination current-page helper (computed)
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
-		},
-
-		/**
-		 * Get total number of pages
-		 *
-		 * @spec exclude list-view pagination total-pages helper (computed)
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalFiles / this.limit)
-		},
 	},
 
 	mounted() {
@@ -450,32 +399,6 @@ export default {
 		},
 
 		/**
-		 * Go to previous page
-		 *
-		 * @spec exclude list-view pagination previous-page handler
-		 * @return {void}
-		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadFiles()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @spec exclude list-view pagination next-page handler
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalFiles) {
-				this.offset += this.limit
-				this.loadFiles()
-			}
-		},
-
-		/**
 		 * Retry extraction for a failed file
 		 *
 		 * @spec exclude list-view row-action wiring; POSTs a re-extract request and reloads
@@ -596,11 +519,9 @@ export default {
 
 @include view-container-2;
 
-.viewHeader {
-	margin-bottom: 20px;
-}
 
-@include view-header-title-rules;
+@include view-actions-bar;
+@include view-info;
 
 .viewTotalCount {
 	font-weight: 600;
@@ -756,5 +677,4 @@ export default {
 	width: 50px;
 }
 
-@include pagination-rules;
 </style>

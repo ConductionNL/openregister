@@ -1,0 +1,23 @@
+{
+    "no properties": false,
+    "scalar property": false,
+    "no ref": false,
+    "other ref": false,
+    "exact id": true,
+    "integer id": true,
+    "other integer": false,
+    "exact uuid": true,
+    "exact slug": true,
+    "component path": true,
+    "bare schemas path": true,
+    "ends in slug": true,
+    "uuid in url": true,
+    "ref is a list": false,
+    "nested": true,
+    "nested scalar": false,
+    "items": true,
+    "items nested": true,
+    "items scalar": false,
+    "second property": true,
+    "empty slug and uuid": false
+}
