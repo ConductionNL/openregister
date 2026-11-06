@@ -111,7 +111,7 @@ final class LifecycleAnnotationCheck {
 			return;
 		}
 
-		$annotation->refuseInvalid(errors: $this->blocking(errors: $errors));
+		$annotation->faults()->refuseInvalid(errors: $this->blocking(errors: $errors));
 		$this->logger->warning(
 			$annotation->label() . ' is invalid; it was stored as written and the lifecycle listener still acts on it: '
 			. implode(' ', array_map(static fn (array $err) => $err['message'], $errors))

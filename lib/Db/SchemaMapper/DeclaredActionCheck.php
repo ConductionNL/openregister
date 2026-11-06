@@ -89,6 +89,8 @@ final class DeclaredActionCheck {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When a declared action is malformed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The shape refusals are pure readers of the declaration.
 	 */
 	private function checkShapeOnly(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -110,6 +112,8 @@ final class DeclaredActionCheck {
 	 * @param array<string, mixed> $configuration The schema configuration.
 	 *
 	 * @return array<ObjectActionDefinition>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionDefinition::parse is the named constructor of a value object.
 	 */
 	private function runnable(array $configuration): array {
 		return array_filter(
