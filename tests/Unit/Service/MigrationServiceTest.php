@@ -34,7 +34,6 @@ class MigrationServiceTest extends TestCase {
 			$this->magicMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->db,
 			$this->logger
 		);
 	}

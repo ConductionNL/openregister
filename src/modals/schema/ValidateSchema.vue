@@ -287,7 +287,6 @@ export default {
 
 	computed: {
 		// A <script setup> binding is not on `this`, and a watch path reads `this`.
-		navigationStore: () => navigationStore,
 		schemaStore: () => schemaStore,
 
 		/**
@@ -326,23 +325,6 @@ export default {
 					this.loadObjectCount()
 				}
 			},
-
-			immediate: true,
-		},
-
-		// Watch for dialog state changes to load count when dialog becomes visible
-		'navigationStore.dialog': {
-			/**
-			 * @param {string|boolean} newDialog
-			 * @spec exclude UI watcher — loads the object count when the dialog opens.
-			 */
-			handler(newDialog) {
-				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
-					this.loadObjectCount()
-				}
-			},
-
-			immediate: true,
 		},
 	},
 

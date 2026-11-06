@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ImportDuplicates;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -282,7 +283,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$reg1, $reg2]);
 
-		$result = $this->invokeMethod($this->handler, 'getDuplicateRegisterInfo', ['dup-reg']);
+		$result = (new ImportDuplicates($this->registerMapper, $this->schemaMapper, $this->logger))->describeRegisters('dup-reg');
 
 		$this->assertStringContainsString('2024-01-15 10:30:00', $result);
 		$this->assertStringContainsString('2024-02-20 14:00:00', $result);
@@ -306,7 +307,7 @@ class ImportHandlerCoverageTest extends TestCase {
 		$this->registerMapper->method('findAll')
 			->willReturn([$reg1, $reg2]);
 
-		$result = $this->invokeMethod($this->handler, 'getDuplicateRegisterInfo', ['dup-reg']);
+		$result = (new ImportDuplicates($this->registerMapper, $this->schemaMapper, $this->logger))->describeRegisters('dup-reg');
 
 		$this->assertStringContainsString('unknown', $result);
 

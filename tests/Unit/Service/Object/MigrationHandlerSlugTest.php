@@ -86,9 +86,6 @@ class MigrationHandlerSlugTest extends TestCase {
 
 		$handler = new MigrationHandler(
 			$mapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SaveObject::class),
 			$utility,
 			$manip,
 			new NullLogger()

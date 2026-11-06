@@ -24,10 +24,10 @@
 namespace OCA\OpenRegister\Notification;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
-use OCP\Notification\IAction;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 use OCP\Notification\UnknownNotificationException;
@@ -85,25 +85,8 @@ class Notifier implements INotifier {
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	private function renderEditedTemplate(INotification $notification, string $languageCode): ?INotification {
-		if ($this->templates === null) {
-			return null;
-		}
-
-		$event = $notification->getSubject();
-		if ($this->templates->knows(event: $event) === false) {
-			return null;
-		}
-
-		if ($this->templates->hasEdit(event: $event) === false) {
-			return null;
-		}
-
-		$rendered = $this->templates->render(
-			event: $event,
-			locale: $languageCode,
-			variables: $notification->getSubjectParameters()
-		);
-		if ($rendered === null || $rendered['subject'] === '') {
+		$rendered = $this->editedText(notification: $notification, languageCode: $languageCode);
+		if ($rendered === null) {
 			return null;
 		}
 
@@ -115,6 +98,47 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end renderEditedTemplate()
+
+	/**
+	 * The text of this event's template, when an administrator changed it and it has a subject.
+	 *
+	 * @param INotification $notification The notification being prepared.
+	 * @param string $languageCode The reader's language.
+	 *
+	 * @return array<string, string>|null The subject and body, or null when there is no edit.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 */
+	private function editedText(INotification $notification, string $languageCode): ?array {
+		$event = $notification->getSubject();
+		if ($this->isEdited(event: $event) === false) {
+			return null;
+		}
+
+		$rendered = $this->templates->render(event: $event, locale: $languageCode, variables: $notification->getSubjectParameters());
+		if ($rendered === null || $rendered['subject'] === '') {
+			return null;
+		}
+
+		return $rendered;
+	}//end editedText()
+
+	/**
+	 * Whether an administrator changed the words of this event's shipped template.
+	 *
+	 * @param string $event The event name.
+	 *
+	 * @return bool Whether the event has an edit.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 */
+	private function isEdited(string $event): bool {
+		if ($this->templates === null || $this->templates->knows(event: $event) === false) {
+			return false;
+		}
+
+		return $this->templates->hasEdit(event: $event);
+	}//end isEdited()
 
 	/**
 	 * The display name for a uid, falling back to the uid itself.
@@ -198,50 +222,56 @@ class Notifier implements INotifier {
 
 		$l = $this->factory->get('openregister', $languageCode);
 
-		// A DISPATCH TABLE RATHER THAN A SWITCH. One branch per subject made
-		// this method's complexity grow by one with every notification the app
-		// learned to send, and it hit the ceiling on the eighth. A lookup does
-		// not grow at all, and it puts the whole set of renderable subjects on
-		// one screen.
-		//
-		// Unknown subjects are not an error worth logging loudly: object
-		// lifecycle subjects (object_created / object_updated /
-		// object_transitioned) are rendered by AnnotationNotifier, not here.
-		// An administrator's edit of this event's shipped template wins over
-		// the renderer below, which is what makes the shipped set editable
-		// rather than merely present. When nothing has been edited the registry
-		// answers nothing and the app's own renderer runs, unchanged.
+		// An administrator's edit of this event's shipped template wins over the
+		// renderers, which is what makes the shipped set editable rather than
+		// merely present.
 		$edited = $this->renderEditedTemplate(notification: $notification, languageCode: $languageCode);
 		if ($edited !== null) {
 			return $edited;
 		}
 
+		return $this->renderSubject(notification: $notification, l: $l);
+	}//end prepare()
+
+	/**
+	 * Hand the notification to the renderer of its subject.
+	 *
+	 * Object lifecycle subjects (object_created, object_updated, object_transitioned)
+	 * are rendered by AnnotationNotifier, so an unknown subject is routine.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param IL10N $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 * @throws UnknownNotificationException If no renderer knows the subject
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function renderSubject(INotification $notification, IL10N $l): INotification {
+		$renderers = [
+			new ArchivalSubjectRenderer(urlGenerator: $this->urlGenerator),
+			new ReportSubjectRenderer(urlGenerator: $this->urlGenerator),
+			new WorkSubjectRenderer(urlGenerator: $this->urlGenerator),
+		];
+		foreach ($renderers as $renderer) {
+			$rendered = $renderer->render(notification: $notification, l: $l);
+			if ($rendered !== null) {
+				return $rendered;
+			}
+		}
+
 		$handler = match ($notification->getSubject()) {
-			'configuration_update_available' => $this->prepareConfigurationUpdate(...),
-			'handoff_drain_failed' => $this->prepareHandoffDrainFailed(...),
-			'scheduled_report_delivered' => $this->prepareScheduledReportDelivered(...),
-			'scheduled_report_failed' => $this->prepareScheduledReportFailed(...),
 			'audit_export_ready' => $this->prepareAuditExportReady(...),
 			'delegation_consent_requested' => $this->prepareDelegationConsentRequested(...),
 			'credential_relink_needed' => $this->prepareCredentialRelinkNeeded(...),
-			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
-			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
-			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
-			'timeline_mention' => $this->prepareTimelineMention(...),
 			'object_ownership_changed' => $this->prepareOwnershipChanged(...),
 			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
-			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
-			'form_unpublished' => $this->prepareFormUnpublished(...),
 			'external_grant_lapsing' => $this->prepareExternalGrantLapsing(...),
-			default => null,
+			default => throw new UnknownNotificationException('Unknown subject'),
 		};
 
-		if ($handler === null) {
-			throw new UnknownNotificationException('Unknown subject');
-		}
-
 		return $handler(notification: $notification, l: $l);
-	}//end prepare()
+	}//end renderSubject()
 
 	/**
 	 * Render "a security setting changed".
@@ -325,211 +355,6 @@ class Notifier implements INotifier {
 
 		return $this->withAppIcon(notification: $notification);
 	}//end prepareOwnershipChanged()
-
-	/**
-	 * Render "somebody named you in a note".
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 */
-	private function prepareTimelineMention(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$objectTitle = (string) ($parameters['objectTitle'] ?? '');
-		$author = (string) ($parameters['author'] ?? '');
-
-		$notification->setParsedSubject($l->t('You were named in a note'));
-
-		$notification->setParsedMessage(
-			$l->t('%1$s named you in a note on "%2$s". You now follow it, so you will hear about what happens next.', [$author, $objectTitle])
-		);
-
-		if ($author === '') {
-			$notification->setParsedMessage(
-				$l->t('A note on "%1$s" names you. You now follow it, so you will hear about what happens next.', [$objectTitle])
-			);
-		}
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareTimelineMention()
-
-	/**
-	 * Render "the retention sweep kept records that are under a legal hold".
-	 *
-	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS. An unknown subject
-	 * throws out of prepare(), so a job that sends one is telling nobody. The
-	 * destruction case below had exactly that problem since it was written.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	private function prepareRetentionHoldsSkipped(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$schemaSlug = (string)($parameters['schemaSlug'] ?? 'unknown');
-		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
-
-		$notification->setParsedSubject(
-			$l->t('Retention sweep kept records that are under a legal hold')
-		);
-
-		$notification->setParsedMessage(
-			$l->n(
-				'The retention sweep on "%2$s" reached %1$d record past its retention period and left '
-				. 'it in place, because a legal hold is on it. Release the hold when the case it '
-				. 'belongs to is closed, and the next sweep will destroy it.',
-				'The retention sweep on "%2$s" reached %1$d records past their retention period and '
-				. 'left them in place, because a legal hold is on them. Release the holds when the '
-				. 'cases they belong to are closed, and the next sweep will destroy them.',
-				$skippedCount,
-				[$skippedCount, $schemaSlug]
-			)
-		);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareRetentionHoldsSkipped()
-
-	/**
-	 * Render "the destruction list skipped records that are under a legal hold".
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	private function prepareDestructionHoldsSkipped(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$listUuid = (string)($parameters['listUuid'] ?? 'unknown');
-		$skippedCount = (int)($parameters['skippedCount'] ?? 0);
-
-		$notification->setParsedSubject(
-			$l->t('Destruction list kept records that are under a legal hold')
-		);
-
-		$notification->setParsedMessage(
-			$l->n(
-				'%1$d record on destruction list %2$s was not destroyed, because a legal hold is on '
-				. 'it. Release the hold and run the list again, or take the record off the list.',
-				'%1$d records on destruction list %2$s were not destroyed, because a legal hold is on '
-				. 'them. Release the holds and run the list again, or take the records off the list.',
-				$skippedCount,
-				[$skippedCount, $listUuid]
-			)
-		);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareDestructionHoldsSkipped()
-
-	/**
-	 * Render "records are waiting on your decision".
-	 *
-	 * The reminder the review process rests on: a destruction list entry with a
-	 * named reviewer and nobody asking is an entry that waits forever.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
-	 */
-	private function prepareDestructionReviewPending(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$pendingCount = (int)($parameters['pendingCount'] ?? 0);
-
-		$notification->setParsedSubject(
-			$l->t('Records are waiting on your archiving decision')
-		);
-
-		$notification->setParsedMessage(
-			$l->n(
-				'%n record on a destruction list is assigned to you and has not been answered yet. '
-				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
-				. 'answer is recorded against your name.',
-				'%n records on destruction lists are assigned to you and have not been answered yet. '
-				. 'Each one is destroyed, kept for longer, or transferred to an e-Depot, and the '
-				. 'answer is recorded against your name.',
-				$pendingCount
-			)
-		);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareDestructionReviewPending()
-
-	/**
-	 * Prepare configuration update notification.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function prepareConfigurationUpdate(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$title = $parameters['configurationTitle'] ?? 'Configuration';
-		$notification->setParsedSubject($l->t('Configuration update available: %s', [$title]));
-		$versions = [$parameters['newVersion'] ?? 'unknown', $title, $parameters['currentVersion'] ?? 'unknown'];
-		$notification->setParsedMessage($l->t('A new version (%s) of configuration "%s" is available. Current version: %s', $versions));
-		$this->withAppIcon(notification: $notification);
-
-		if (($parameters['configurationId'] ?? null) !== null) {
-			$url = $this->urlGenerator->linkToRouteAbsolute(routeName: 'openregister.dashboard.page') . '#/configurations/' . $parameters['configurationId'];
-			$notification->addAction($this->primaryAction(notification: $notification, label: $l->t('View'))->setLink(link: $url, requestType: 'GET'));
-		}
-
-		return $notification;
-	}//end prepareConfigurationUpdate()
-
-	/**
-	 * Prepare the queue-mode handoff drain-failure notification (ADR-051):
-	 * a parked handoff could not execute when a provider appeared — the
-	 * requester lost create permission or the mapped object failed target
-	 * validation. The requester is informed so the parked work is never
-	 * silently lost.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
-	 *   (Scenario: No provider installed, queue mode)
-	 */
-	private function prepareHandoffDrainFailed(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-
-		$handoffId = $parameters['handoffId'] ?? 'handoff';
-		$targetKind = $parameters['targetKind'] ?? '';
-		$status = $parameters['status'] ?? 'failed';
-
-		$notification->setParsedSubject(
-			$l->t('Queued handoff "%s" could not be executed', [$handoffId])
-		);
-
-		$reason = $l->t('The target schema rejected the converted object.');
-		if ($status === 'failed-permission') {
-			$reason = $l->t('You no longer have permission to create objects in the providing schema.');
-		}
-
-		$notification->setParsedMessage(
-			$l->t(
-				'Your queued handoff to "%s" was attempted when a provider became available, but failed: %s',
-				[$targetKind, $reason]
-			)
-		);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareHandoffDrainFailed()
 
 	/**
 	 * Render a connected account whose grant the provider has revoked.
@@ -694,65 +519,6 @@ class Notifier implements INotifier {
 	}//end prepareDelegationConsentRequested()
 
 	/**
-	 * Prepare the scheduled-report success notification (scheduled-report-jobs,
-	 * extended by scheduled-report-email-delivery): a recurring export ran
-	 * and was delivered to Nextcloud Files, email, or both, per the report's
-	 * `deliveryMode`. Reuses this single subject for every mode — `mode` and
-	 * `emailFailureReason` (set when Files succeeded but the email leg
-	 * failed, i.e. `lastStatus: email_failed`) are optional parameters so no
-	 * new subject was needed.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 */
-	private function prepareScheduledReportDelivered(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$reportName = $parameters['reportName'] ?? 'Scheduled report';
-		$notification->setParsedSubject($l->t('Scheduled report "%s" delivered', [$reportName]));
-		$notification->setParsedMessage($this->reportDeliveredMessage(parameters: $parameters, l: $l));
-		$this->withAppIcon(notification: $notification);
-
-		if (($parameters['mode'] ?? 'files') !== 'email') {
-			$folder = '/' . trim((string)($parameters['folder'] ?? 'Reports/'), '/');
-			$filesUrl = $this->urlGenerator->linkToRouteAbsolute(routeName: 'files.view.index') . '?dir=' . rawurlencode($folder);
-			$notification->addAction(
-				$this->primaryAction(notification: $notification, label: $l->t('Open Files'))->setLink(link: $filesUrl, requestType: 'GET')
-			);
-		}
-
-		return $notification;
-	}//end prepareScheduledReportDelivered()
-
-	/**
-	 * The message of a delivered scheduled report, by delivery mode, with any email failure noted.
-	 *
-	 * @param array<string, mixed> $parameters The notification's subject parameters
-	 * @param mixed $l The localization instance
-	 *
-	 * @return string The message
-	 */
-	private function reportDeliveredMessage(array $parameters, $l): string {
-		$reportName = $parameters['reportName'] ?? 'Scheduled report';
-		$saved = [$reportName, $parameters['folder'] ?? 'Reports/', $parameters['filename'] ?? ''];
-		$message = match ($parameters['mode'] ?? 'files') {
-			'email' => $l->t('Your scheduled report "%s" ran and was emailed to its recipients.', [$reportName]),
-			'both' => $l->t('Your scheduled report "%s" ran, was saved to %s%s, and emailed to its recipients.', $saved),
-			default => $l->t('Your scheduled report "%s" ran and was saved to %s%s', $saved),
-		};
-
-		$emailFailureReason = $parameters['emailFailureReason'] ?? null;
-		if (is_string($emailFailureReason) === true && $emailFailureReason !== '') {
-			$message .= ' ' . $l->t('Note: email delivery failed (%s).', [$emailFailureReason]);
-		}
-
-		return $message;
-	}//end reportDeliveredMessage()
-
-	/**
 	 * Prepare the notification for a large audit trail export that was saved
 	 * to the requester's Files by AuditTrailExportJob.
 	 *
@@ -786,107 +552,6 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareAuditExportReady()
-
-	/**
-	 * Prepare the scheduled-report failure notification (scheduled-report-jobs):
-	 * a recurring export failed (row-cap exceeded or any other error) and was
-	 * not retried automatically.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 */
-	private function prepareScheduledReportFailed(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-
-		$reportName = $parameters['reportName'] ?? 'Scheduled report';
-		$reason = $parameters['reason'] ?? 'Unknown error';
-
-		$notification->setParsedSubject(
-			$l->t('Scheduled report "%s" failed', [$reportName])
-		);
-
-		$notification->setParsedMessage(
-			$l->t('Your scheduled report "%s" could not be generated: %s', [$reportName, $reason])
-		);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareScheduledReportFailed()
-
-	/**
-	 * Render "a saved view's count crossed its threshold".
-	 *
-	 * The sentence says which side of the line the count is on, because a
-	 * team lead watching a backlog grow and a planner watching free beds run
-	 * out read the same numbers in opposite directions.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-alert-fires-once-per-crossing-and-re-arms
-	 */
-	private function prepareViewAlertCrossed(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-
-		$view = (string)($parameters['view'] ?? '');
-		$count = (string)($parameters['count'] ?? '');
-		$threshold = (string)($parameters['threshold'] ?? '');
-
-		$notification->setParsedSubject($l->t('%1$s is at %2$s', [$view, $count]));
-
-		$message = $l->t('The view %1$s counts %2$s, at or below its threshold of %3$s.', [$view, $count, $threshold]);
-		if (($parameters['operator'] ?? '') === 'gte') {
-			$message = $l->t('The view %1$s counts %2$s, at or above its threshold of %3$s.', [$view, $count, $threshold]);
-		}
-
-		$notification->setParsedMessage($message);
-
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareViewAlertCrossed()
-
-	/**
-	 * Render "your form was taken offline" for the author of a form a schema change broke.
-	 *
-	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
-	 * throws out of prepare(), so the author would learn of the unpublish only
-	 * when a resident reports the form gone.
-	 *
-	 * @param INotification $notification The notification to prepare
-	 * @param mixed $l The localization instance
-	 *
-	 * @return INotification The prepared notification
-	 *
-	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
-	 */
-	private function prepareFormUnpublished(INotification $notification, $l): INotification {
-		$parameters = $notification->getSubjectParameters();
-		$title = (string)($parameters['formTitle'] ?? '');
-		$schema = (string)($parameters['schema'] ?? '');
-		$count = (string)($parameters['count'] ?? '');
-
-		$notification->setParsedSubject($l->t('Your form "%1$s" was taken offline', [$title]));
-		$notification->setParsedMessage(
-			$l->t('A change to "%1$s" left %2$s problems in the form. Fix them and publish the form again.', [$schema, $count])
-		);
-		return $this->withAppIcon(notification: $notification);
-	}//end prepareFormUnpublished()
-
-	/**
-	 * A new primary action on the notification, labelled; the caller sets its link and adds it.
-	 *
-	 * @param INotification $notification The notification being prepared
-	 * @param string $label The action label
-	 *
-	 * @return IAction The action
-	 */
-	private function primaryAction(INotification $notification, string $label): IAction {
-		return $notification->createAction()->setLabel($label)->setPrimary(true);
-	}//end primaryAction()
 
 	/**
 	 * Set the app icon on a prepared notification.
