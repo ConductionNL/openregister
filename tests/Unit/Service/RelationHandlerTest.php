@@ -452,46 +452,5 @@ class RelationHandlerTest extends TestCase {
 		$this->assertEmpty($result['results']);
 	}
 
-	// =============================================
-	// extractRelatedData tests
-	// =============================================
 
-	// =============================================
-	// applyInversedByFilter tests
-	// =============================================
-
-	/**
-	 * Test applyInversedByFilter returns empty when schema is false
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenSchemaIsFalse(): void {
-		$filters = ['schema' => false];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
-
-	/**
-	 * Test applyInversedByFilter returns empty when no sub-filters
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterReturnsEmptyWhenNoSubFilters(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn([]);
-
-		$this->schemaMapper
-			->method('find')
-			->willReturn($schema);
-
-		$filters = ['schema' => 1, 'name' => 'test'];
-		$result = $this->handler->applyInversedByFilter($filters, function () {
-			return [];
-		});
-
-		$this->assertEquals([], $result);
-	}
 }

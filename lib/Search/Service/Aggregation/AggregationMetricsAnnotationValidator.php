@@ -85,24 +85,22 @@ class AggregationMetricsAnnotationValidator {
 	 * message names the entry's index because "some field is wrong" is not
 	 * actionable across a list.
 	 *
-	 * @param string             $name     The aggregation name, for messages.
-	 * @param mixed              $metrics  The declared `metrics` value.
-	 * @param array<int, string> $propKeys Property names the schema declares.
+	 * @param MetricsDeclaration $declaration The declared `metrics` value, its aggregation and schema properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> Validation errors.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function validate(string $name, mixed $metrics, array $propKeys): array {
+	public function validate(MetricsDeclaration $declaration): array {
+		$metrics = $declaration->metrics;
 		if (is_array($metrics) === false || $metrics === [] || array_is_list($metrics) === false) {
-			$message = sprintf('Aggregation "%s" metrics must be a non-empty list of {metric, field?} objects.', $name);
+			$message = sprintf('Aggregation "%s" metrics must be a non-empty list of {metric, field?} objects.', $declaration->name);
 			return [['code' => 'aggregation-metrics-malformed', 'message' => $message]];
 		}
 
 		$errors = [];
 		foreach ($metrics as $index => $entry) {
-			$site = new MetricEntrySite(name: $name, index: (int)$index, propKeys: $propKeys);
-			$errors = array_merge($errors, $this->validateEntry(site: $site, entry: $entry));
+			$errors = array_merge($errors, $this->validateEntry(site: $declaration->siteAt(index: (int)$index), entry: $entry));
 		}
 
 		return $errors;

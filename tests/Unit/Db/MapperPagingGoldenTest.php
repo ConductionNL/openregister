@@ -29,6 +29,8 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
+use OCA\OpenRegister\Db\OutcomeFilter;
+use OCA\OpenRegister\Db\QueryPage;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\SchemaChangelogMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
@@ -59,6 +61,7 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\WebhookLogMapper
  * @covers \OCA\OpenRegister\Db\WebhookMapper
  * @uses   \OCA\OpenRegister\Db\QueryPage
+ * @uses   \OCA\OpenRegister\Db\OutcomeFilter
  */
 class MapperPagingGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -101,7 +104,7 @@ class MapperPagingGoldenTest extends TestCase {
 		$actual = [];
 		foreach (self::sites() as $site => [$class, $method, $args]) {
 			foreach (self::pages() as $pageName => $page) {
-				$actual["{$site} / {$pageName}"] = $this->read(class: $class, call: [$method, $args + $page]);
+				$actual["{$site} / {$pageName}"] = $this->read(class: $class, call: [$method, self::withPage(args: $args, page: $page)]);
 			}
 		}
 
@@ -121,11 +124,24 @@ class MapperPagingGoldenTest extends TestCase {
 
 	public function testEveryPagedReadSetsBothBounds(): void {
 		foreach (self::sites() as $site => [$class, $method, $args]) {
-			$calls = preg_replace('/^#\d+ /', '', $this->read(class: $class, call: [$method, $args + ['limit' => 5, 'offset' => 20]])['queries']);
+			$calls = preg_replace('/^#\d+ /', '', $this->read(class: $class, call: [$method, self::withPage(args: $args, page: ['limit' => 5, 'offset' => 20])])['queries']);
 			$this->assertContains('setMaxResults(5)', $calls, $site);
 			$this->assertContains('setFirstResult(20)', $calls, $site);
 		}
 	}//end testEveryPagedReadSetsBothBounds()
+
+	/**
+	 * The call arguments for a page; outcome lists take the outcome and page as one filter.
+	 */
+	private static function withPage(array $args, array $page): array {
+		if (array_key_exists('outcome', $args) === false) {
+			return $args + $page;
+		}
+
+		$filter = new OutcomeFilter(outcome: $args['outcome'], page: new QueryPage(limit: $page['limit'] ?? null, offset: $page['offset'] ?? null));
+		unset($args['outcome']);
+		return $args + ['filter' => $filter];
+	}//end withPage()
 
 	private function read(string $class, array $call): array {
 		[$method, $args] = $call;

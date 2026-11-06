@@ -45,6 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TextBlockService {
+	use OptionalPayloadString;
 
 	/**
 	 * The placeholder form, matching the message templates.
@@ -224,25 +225,4 @@ class TextBlockService {
 
 		return $this->groupManager->getUserGroupIds($user);
 	}//end callerGroups()
-
-	/**
-	 * Read one optional string off a payload.
-	 *
-	 * @param array<string,mixed> $data The payload.
-	 * @param string              $key  The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function stringOrNull(array $data, string $key): ?string {
-		if (isset($data[$key]) === false || is_string($data[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($data[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
 }//end class

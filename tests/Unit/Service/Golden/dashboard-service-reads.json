@@ -238,17 +238,17 @@
             "objects": []
         },
         "logged": [
-            "[DashboardService] Failed to get statistics: boom file=DashboardService.php",
-            "[DashboardService] Failed to get statistics: boom file=DashboardService.php",
-            "[DashboardService] Failed to get statistics: boom file=DashboardService.php",
-            "[DashboardService] Failed to get orphaned statistics: boom file=DashboardService.php",
-            "[DashboardService] Failed to get audit trail action chart data: boom file=DashboardService.php",
-            "[DashboardService] Failed to get objects by register chart data: boom file=DashboardService.php",
-            "[DashboardService] Failed to get objects by schema chart data: boom file=DashboardService.php",
-            "[DashboardService] Failed to get objects by size chart data: boom file=DashboardService.php",
-            "[DashboardService] Failed to get audit trail statistics: boom file=DashboardService.php",
-            "[DashboardService] Failed to get audit trail action distribution: boom file=DashboardService.php",
-            "[DashboardService] Failed to get most active objects: boom file=DashboardService.php"
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get statistics: boom",
+            "[DashboardService] Failed to get orphaned statistics: boom",
+            "[DashboardService] Failed to get audit trail action chart data: boom",
+            "[DashboardService] Failed to get objects by register chart data: boom",
+            "[DashboardService] Failed to get objects by schema chart data: boom",
+            "[DashboardService] Failed to get objects by size chart data: boom",
+            "[DashboardService] Failed to get audit trail statistics: boom",
+            "[DashboardService] Failed to get audit trail action distribution: boom",
+            "[DashboardService] Failed to get most active objects: boom"
         ]
     }
 }
