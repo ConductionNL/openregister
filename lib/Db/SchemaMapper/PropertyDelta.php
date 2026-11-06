@@ -37,7 +37,7 @@ final class PropertyDelta {
 	 *
 	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
 	 */
-	public function of(array $parentProperties, array $childProperties): array {
+	public function between(array $parentProperties, array $childProperties): array {
 		$delta = $this->newOrDifferent(parent: $parentProperties, child: $childProperties);
 		foreach ($delta as $propertyName => $childProperty) {
 			if (is_array($childProperty) === true && is_array(($parentProperties[$propertyName] ?? null)) === true) {
@@ -46,7 +46,7 @@ final class PropertyDelta {
 		}
 
 		return $delta;
-	}//end of()
+	}//end between()
 
 	/**
 	 * The differing fields of a changed property; nested `properties` keep only their own delta.
@@ -59,7 +59,7 @@ final class PropertyDelta {
 	private function ofObject(array $parent, array $child): array {
 		$delta = $this->newOrDifferent(parent: $parent, child: $child);
 		if (is_array(($delta['properties'] ?? null)) === true && is_array(($parent['properties'] ?? null)) === true) {
-			$delta['properties'] = $this->of(parentProperties: $parent['properties'], childProperties: $delta['properties']);
+			$delta['properties'] = $this->between(parentProperties: $parent['properties'], childProperties: $delta['properties']);
 		}
 
 		return $delta;

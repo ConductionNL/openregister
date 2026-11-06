@@ -49,7 +49,7 @@ final class ParentReference {
 	 *
 	 * @spec exclude moved unchanged from SchemaMapper, which named no spec for it
 	 */
-	public function of(mixed $entry): string|int|null {
+	public function fromEntry(mixed $entry): string|int|null {
 		if (is_string($entry) === true || is_int($entry) === true) {
 			return $this->scalar(entry: $entry);
 		}
@@ -59,7 +59,7 @@ final class ParentReference {
 		}
 
 		return null;
-	}//end of()
+	}//end fromEntry()
 
 	/**
 	 * A scalar entry, unless it is empty.
