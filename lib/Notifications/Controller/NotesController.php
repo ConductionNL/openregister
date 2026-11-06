@@ -291,11 +291,7 @@ class NotesController extends Controller {
 			// is worse than no index, because it looks like a hit.
 			$this->services->timeline->rewrite(
 				object: $object,
-				rewrite: new NoteRewrite(
-					commentId: (int)$noteId,
-					message: $write['message'],
-					visibility: $write['visibility']
-				)
+				rewrite: new NoteRewrite(commentId: (int)$noteId, message: $write['message'], visibility: $write['visibility'])
 			);
 
 			if ($write['previous'] !== null) {
@@ -452,7 +448,7 @@ class NotesController extends Controller {
 			// Read the record BEFORE the note goes, so its references can be
 			// forgotten by id: after the delete there is nothing left to look
 			// the entry up by.
-			$entry = $this->services->entries->entryForNote(commentId: (int)$noteId);
+			$entry = $this->services->timeline->entryForNote(commentId: (int)$noteId);
 
 			$this->noteService->deleteNote((int)$noteId);
 

@@ -253,6 +253,13 @@ class TimelineWriteServiceTest extends TestCase {
 		$this->assertSame('entry-a', $entry?->getUuid());
 	}
 
+	public function testTheRecordBehindANoteComesFromTheEntries(): void {
+		$entry = new TimelineEntry();
+		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
+
+		$this->assertSame($entry, $this->service->entryForNote(41));
+	}
+
 	public function testForgettingANoteForgetsWhatItPointedAt(): void {
 		$this->references->expects($this->once())->method('forget')->with('entry-a');
 		$this->entries->expects($this->once())->method('forgetNote')->with(41);

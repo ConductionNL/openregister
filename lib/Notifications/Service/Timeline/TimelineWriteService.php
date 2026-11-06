@@ -194,6 +194,19 @@ class TimelineWriteService {
 	}//end projectNote()
 
 	/**
+	 * The record behind one note, when there is one.
+	 *
+	 * @param integer $commentId The comment.
+	 *
+	 * @return TimelineEntry|null The record, or null for a note written before this change.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function entryForNote(int $commentId): ?TimelineEntry {
+		return $this->entries->entryForNote(commentId: $commentId);
+	}//end entryForNote()
+
+	/**
 	 * Forget the record, and what it pointed at, behind a deleted note.
 	 *
 	 * @param integer     $commentId The deleted comment.

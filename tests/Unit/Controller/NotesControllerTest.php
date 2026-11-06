@@ -15,7 +15,6 @@ use OCA\OpenRegister\Notifications\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -35,7 +34,6 @@ class NotesControllerTest extends TestCase {
 	private ObjectService&MockObject $objectService;
 	private TimelineVisibilityService&MockObject $visibility;
 	private TimelineWriteService&MockObject $timeline;
-	private TimelineEntryService&MockObject $entries;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -56,7 +54,6 @@ class NotesControllerTest extends TestCase {
 		// the notes endpoint keeps its own shape and its own answers, which is
 		// exactly what task 1.3 asks for.
 		$this->timeline = $this->createMock(TimelineWriteService::class);
-		$this->entries = $this->createMock(TimelineEntryService::class);
 
 		$this->controller = NotesControllerFactory::create(
 			'openregister',
@@ -64,8 +61,7 @@ class NotesControllerTest extends TestCase {
 			$this->noteService,
 			$this->objectService,
 			$this->visibility,
-			$this->timeline,
-			$this->entries
+			$this->timeline
 		);
 	}
 
@@ -390,7 +386,7 @@ class NotesControllerTest extends TestCase {
 
 		$entry = new \OCA\OpenRegister\Notifications\Db\TimelineEntry();
 		$entry->setUuid('entry-a');
-		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
+		$this->timeline->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
 		$this->timeline->expects($this->once())->method('forgetNote')->with(41, 'entry-a');
 
 		$this->assertTrue($this->controller->destroy('zaken', 'zaak', 'uuid-123', '41')->getData()['success']);
