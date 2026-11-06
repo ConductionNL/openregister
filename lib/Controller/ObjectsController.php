@@ -6697,7 +6697,7 @@ class ObjectsController extends Controller {
 		);
 
 		return new JSONResponse(
-			data: ['success' => false, 'error' => $failure->getMessage(), 'message' => 'Validation failed'],
+			data: ['success' => false, 'error' => 'Internal server error', 'message' => 'Validation failed'],
 			statusCode: 500
 		);
 	}//end validationFailureResponse()
