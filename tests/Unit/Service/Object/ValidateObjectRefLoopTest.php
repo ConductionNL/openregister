@@ -20,10 +20,14 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\RefLoopGuard;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
+use Opis\JsonSchema\Errors\ValidationError;
+use Opis\JsonSchema\KeywordValidator;
+use Opis\JsonSchema\ValidationContext;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -116,6 +120,24 @@ class ValidateObjectRefLoopTest extends TestCase {
 		$this->assertFalse($validate(['a' => 1, 'b' => 'wide']));
 		$this->assertFalse($validate(['a' => 'wide', 'b' => 1]));
 		$this->assertTrue($validate(['a' => 1, 'b' => 2]));
+	}
+
+	/**
+	 * The guard forgets a place when it leaves it, so a later validation is asked again.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardAsksAgainAfterLeaving(): void {
+		$error = $this->createMock(ValidationError::class);
+		$next = $this->createMock(KeywordValidator::class);
+		$next->expects($this->exactly(2))->method('validate')->willReturn($error);
+		$context = $this->createMock(ValidationContext::class);
+		$context->method('fullDataPath')->willReturn(['a']);
+		$guard = new RefLoopGuard();
+		$guard->setNext($next);
+
+		$this->assertSame($error, $guard->validate($context));
+		$this->assertSame($error, $guard->validate($context));
 	}
 
 	/**
