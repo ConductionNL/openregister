@@ -38,7 +38,11 @@ use OCP\ICacheFactory;
 class JwtValidator {
 
 	/**
-	 * Map of JWT HMAC algorithm names to hash_hmac algorithm strings.
+	 * The HMAC algorithms, mapped to the hash each one uses.
+	 *
+	 * The keys mark an algorithm as HS*; the signature itself is checked by
+	 * HmacJwsVerifier (web-token). Kept as a public constant for callers
+	 * that read it.
 	 *
 	 * @var array<string, string>
 	 */
@@ -59,10 +63,10 @@ class JwtValidator {
 	 * The shortest HMAC secret each algorithm accepts, in bytes.
 	 *
 	 * RFC 7518 §3.2: a key of the same size as the hash output or larger MUST
-	 * be used. hash_hmac() itself takes any key, an empty one included, and
-	 * an empty or guessable secret lets anyone mint a token for the consumer.
-	 * The web-token library integriq verified with before gate 23 refused
-	 * these as "Invalid key length."; this keeps that refusal.
+	 * be used; an empty or guessable secret lets anyone mint a token for the
+	 * consumer. web-token refuses these as "Invalid key length.", but its
+	 * JWSVerifier turns that exception into false, so this list is checked
+	 * first to give the refusal a named reason.
 	 */
 	public const HMAC_MIN_KEY_BYTES = [
 		'HS256' => 32,
@@ -207,6 +211,7 @@ class JwtValidator {
 	 *
 	 * HS* uses the key as the shared secret; RS* and PS* use it as an RSA
 	 * public key: a PEM, or a base64-encoded PEM (the form integriq stores).
+	 * Both go through web-token with only the pinned algorithm loaded.
 	 *
 	 * @param string $token     The compact JWS.
 	 * @param string $algorithm The pinned algorithm.
@@ -227,8 +232,7 @@ class JwtValidator {
 				return false;
 			}
 
-			$expected = hash_hmac(self::HMAC_MAP[$algorithm], $parts[0] . '.' . $parts[1], $key, true);
-			return hash_equals($expected, (string)base64_decode(strtr($parts[2], '-_', '+/')));
+			return (new HmacJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: $key);
 		}
 
 		return (new RsaJwsVerifier())->verify(token: $token, algorithm: $algorithm, key: $key);
