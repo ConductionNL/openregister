@@ -111,6 +111,17 @@ class LifecycleAnnotationValidatorGoldenTest extends TestCase {
 			'graph mode malformed' => ['annotation' => ['field' => 'status', 'graph' => ['x' => 1], 'transitions' => []]],
 			'graph empty falls back to static' => ['annotation' => $base + ['graph' => []]],
 			'graph not an array falls back to static' => ['annotation' => $base + ['graph' => 'steps']],
+			'authorization empty group' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => ['']]]] + $base],
+			'authorization empty role' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => [['role' => '']]]]] + $base],
+			'authorization object without role' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => [['x' => 'y']]]]] + $base],
+			'authorization number role' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => [['role' => 5]]]]] + $base],
+			'authorization group and role' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => ['admins', ['role' => 'chair']]]]] + $base],
+			'authorization number entry' => ['annotation' => ['transitions' => ['open' => $open + ['authorization' => ['admins', 7]]]] + $base],
+			'create states known and unknown' => ['annotation' => $base + ['createStates' => ['open', 'ghost', 5, null]]],
+			'message map with only a default locale' => ['annotation' => ['transitions' => ['open' => $open + ['message' => ['defaultLocale' => 'nl']]]] + $base],
+			'initial object empty from' => ['annotation' => ['field' => 'status', 'initial' => ['from' => '', 'field' => 'x'], 'graph' => ['x' => 1]]],
+			'initial object empty field' => ['annotation' => ['field' => 'status', 'initial' => ['from' => 'x', 'field' => ''], 'graph' => ['x' => 1]]],
+			'initial object number from' => ['annotation' => ['field' => 'status', 'initial' => ['from' => 5, 'field' => 'x'], 'provider' => 'app.lifecycle']],
 			'numeric action' => ['annotation' => ['transitions' => [3 => ['from' => ['nope'], 'to' => 'gone']]] + $base],
 		];
 

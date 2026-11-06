@@ -15,23 +15,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\FacetHandler;
-use OCA\OpenRegister\Service\Object\FacetResponseCache;
+use OCA\OpenRegister\Service\Object\FacetListing;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 
 /**
  * Column names on the hierarchy and facet paths.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\HierarchyDescender
- * @covers \OCA\OpenRegister\Service\Object\FacetHandler
+ * @covers \OCA\OpenRegister\Service\Object\FacetListing
+ * @covers \OCA\OpenRegister\Service\Object\FacetEntry
  */
 class StoredColumnNameTest extends TestCase {
 
@@ -70,18 +67,12 @@ class StoredColumnNameTest extends TestCase {
 	 * @return void
 	 */
 	public function testFacetIndexFieldIsTheStoredColumn(): void {
-		$handler = new FacetHandler(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(FacetResponseCache::class),
-			$this->createMock(LoggerInterface::class)
-		);
 		$facets = [];
 		foreach (array_keys(self::NAMES) as $property) {
 			$facets[$property] = ['type' => 'terms', 'buckets' => []];
 		}
 
-		$transformed = (new ReflectionMethod(FacetHandler::class, 'transformFacetsToStandardFormat'))->invoke($handler, $facets);
+		$transformed = (new FacetListing(facetableConfig: []))->format(facets: $facets);
 
 		foreach (self::NAMES as $property => $column) {
 			$this->assertSame($column, $transformed[$property]['index_field'] ?? null, $property);

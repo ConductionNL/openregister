@@ -16,7 +16,7 @@
  *
  *  - `skip_anonymization`: boolean flag set by the operator to
  *    exclude this specific occurrence from the anonymise pass.
- *    `EntityRelationMapper::markAsAnonymized` skips rows where
+ *    `EntityRelationMapper::markAsAnonymizedWithPlaceholders` skips rows where
  *    this flag is true; the anonymise flow does not redact them
  *    and they retain `anonymized = false`.
  *

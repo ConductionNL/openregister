@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkControllerServices;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
@@ -298,8 +299,7 @@ class ObjectShareLinkController extends Controller {
 			return null;
 		}
 
-		$uuidPattern = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
-		if ($name === '' || preg_match($uuidPattern, $name) !== 1) {
+		if (UuidFormat::isCanonical(value: $name) === false) {
 			return null;
 		}
 
