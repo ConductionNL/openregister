@@ -46,7 +46,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Empty state -->
 		<NcEmptyContent
-			v-else-if="cards.length === 0"
+			v-else-if="items.length === 0"
 			:name="t('openregister', 'No Deck cards linked to this object')"
 			:description="
 				t(
@@ -62,7 +62,7 @@ SPDX-License-Identifier: EUPL-1.2
 		<!-- Linked cards list -->
 		<ul v-else class="deck-tab__list">
 			<li
-				v-for="card in cards"
+				v-for="card in items"
 				:key="card.ref || card.deckRef || card.id"
 				class="deck-tab__item">
 				<div class="deck-tab__icon">
@@ -108,7 +108,6 @@ SPDX-License-Identifier: EUPL-1.2
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
@@ -116,6 +115,7 @@ import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
+import { storeRelationTab } from './relationTab.js'
 
 /**
  * DeckTab — display + manage Nextcloud Deck cards linked to an OpenRegister object.
@@ -142,53 +142,9 @@ export default {
 		CloseCircleOutline,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
-
-	data() {
-		return {
-			error: false,
-			errorMessage: '',
-			store: useDeckRelationsStore(),
-		}
-	},
+	mixins: [storeRelationTab(useDeckRelationsStore)],
 
 	computed: {
-		/**
-		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
-		 */
-		key() {
-			return `${this.register}:${this.schema}:${this.objectId}`
-		},
-
-		/**
-		 * @spec exclude computed read of linked deck cards from store; deck-relations contract owned by integration-deck capability
-		 */
-		cards() {
-			return this.store.byObject[this.key] || []
-		},
-
-		/**
-		 * @spec exclude computed read of loading state from store, UI plumbing
-		 */
-		loading() {
-			return !!this.store.loading[this.key]
-		},
-
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */
@@ -197,59 +153,13 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param {string} newId
-			 * @spec exclude watcher refetching deck cards on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchCards()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
-		/**
-		 * Fetch linked Deck cards for the current object via the per-object store.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
-		 * @return {Promise<void>}
-		 */
-		async fetchCards() {
-			this.error = false
-			this.errorMessage = ''
-			try {
-				await this.store.fetch(this.register, this.schema, this.objectId)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
 		/**
 		 * @param {object} card
 		 * @spec exclude store passthrough unlinking card + change emit; deck-relations contract owned by integration-deck capability
 		 */
-		async unlinkCard(card) {
-			const ref = card.ref || card.deckRef || card.id
-			try {
-				await this.store.unlink(
-					this.register,
-					this.schema,
-					this.objectId,
-					ref,
-				)
-				this.$emit('deck-changed', this.cards.length)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
+		unlinkCard(card) {
+			return this.unlink(card.ref || card.deckRef || card.id, 'deck-changed')
 		},
 
 		/**
@@ -257,27 +167,6 @@ export default {
 		 */
 		openCreateDialog() {
 			this.$emit('add-deck-card')
-		},
-
-		/**
-		 * @param {string} value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch {
-				return value
-			}
 		},
 	},
 }
