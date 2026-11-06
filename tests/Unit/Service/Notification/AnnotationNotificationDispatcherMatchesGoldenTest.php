@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden characterization test for AnnotationNotificationDispatcher::matches().
+ * Golden characterization test for NotificationTriggerMatcher::matches().
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Notification
@@ -19,9 +19,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Runs matches() over every combination of a trigger corpus, a list of active
@@ -30,8 +29,8 @@ use ReflectionMethod;
  * per event (the empty event is keyed `(empty)`), one character per context: T (true), F (false) or E (error).
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
- * @uses \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ThresholdOperators
  */
 final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 
@@ -130,20 +129,15 @@ final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 	 * Every trigger answers each event and context as recorded.
 	 *
 	 * @return void
-	 *
-	 * @covers ::matches
 	 */
 	public function testMatchesAgreesWithGolden(): void {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'matches');
-		$dispatcher = (new \ReflectionClass(AnnotationNotificationDispatcher::class))->newInstanceWithoutConstructor();
-
 		$actual = [];
 		foreach (self::triggers() as $name => $triggerSpec) {
 			foreach (self::EVENTS as $event) {
 				$answers = '';
 				foreach (self::contexts() as $context) {
 					try {
-						$answers .= ($method->invoke($dispatcher, $triggerSpec, $event, $context) === true) ? 'T' : 'F';
+						$answers .= ((new NotificationTriggerMatcher(trigger: $event, context: $context))->matches(triggerSpec: $triggerSpec) === true) ? 'T' : 'F';
 					} catch (\Throwable $e) {
 						$answers .= 'E';
 					}
