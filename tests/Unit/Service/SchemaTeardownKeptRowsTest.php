@@ -49,8 +49,10 @@ use RuntimeException;
  * The cascade reads its rows first and refuses, unless the operator forces it.
  *
  * @covers \OCA\OpenRegister\Service\SchemaDeletionService
+ * @covers \OCA\OpenRegister\Service\SchemaTeardownGuard
  * @covers \OCA\OpenRegister\Service\SchemaTeardownOverride
  * @covers \OCA\OpenRegister\Service\WholeTableRows
+ * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Register

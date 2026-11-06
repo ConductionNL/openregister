@@ -29,15 +29,11 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
-use OCA\OpenRegister\Exception\LockedException;
-use OCA\OpenRegister\Exception\ObjectStateWriteException;
-use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -95,13 +91,6 @@ class SchemaDeletionService {
 	 * @var string
 	 */
 	public const ACTION_FORCED_TEARDOWN = 'schema.teardown_forced';
-
-	/**
-	 * Actor of a forced teardown: only the command line can force one.
-	 *
-	 * @var string
-	 */
-	private const FORCED_TEARDOWN_ACTOR = 'occ';
 
 	/**
 	 * Trigger context for objects removed because their schema is being deleted.
@@ -165,7 +154,7 @@ class SchemaDeletionService {
 	 * @param string $triggeredBy Audit trigger context.
 	 *
 	 * @throws ArchivalImmutableException If the schema declares `x-openregister-archival`.
-	 * @throws \Exception If the register or schema cannot be resolved, or deletion fails.
+	 * @throws Throwable If the register or schema cannot be resolved, or deletion fails.
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, schema_id: int} The deletion result.
 	 *
@@ -262,7 +251,7 @@ class SchemaDeletionService {
 	 * @param string $triggeredBy Audit trigger context.
 	 *
 	 * @throws ArchivalImmutableException If any schema of the register is archival (nothing is deleted).
-	 * @throws \Exception If a delete fails (everything is rolled back).
+	 * @throws Throwable If a delete fails (everything is rolled back).
 	 *
 	 * @return array{deleted_count: int, deleted_uuids: array<int, string>, register_id: int} The deletion result.
 	 *
@@ -357,10 +346,7 @@ class SchemaDeletionService {
 	 * @param SchemaTeardownOverride $override What an operator lifted from the CLI; nothing by default.
 	 *
 	 * @throws ArchivalImmutableException If the schema is archival and no override was given.
-	 * @throws ObjectStateWriteException If a row is frozen or archived and no override was given.
-	 * @throws LockedException If a row is locked and no override was given.
-	 * @throws ValidationException If a table nothing can read holds rows and no override was given.
-	 * @throws \Exception If phase 1 fails (nothing is deleted).
+	 * @throws Throwable If a kept row refuses, see {@see SchemaTeardownGuard::assertNoneKept()}, or phase 1 fails (nothing is deleted).
 	 *
 	 * @return array{deletedCount: int, deletedUuids: array<int, string>, tableDropped: bool} The cascade result.
 	 *
@@ -387,7 +373,7 @@ class SchemaDeletionService {
 		// ---- Phase 1: one transaction. ----
 		$this->db->beginTransaction();
 		try {
-			$this->recordForcedTeardown(schema: $schema, keptRows: $forcedRows);
+			$this->teardownGuard()->recordForced(schema: $schema, keptRows: $forcedRows);
 
 			foreach ($tables as $entry) {
 				if ($entry['register'] === null) {
@@ -457,10 +443,6 @@ class SchemaDeletionService {
 	/**
 	 * How many rows of the schema refuse a teardown unless it is forced.
 	 *
-	 * A table nothing can read counts in full, or as one row when it cannot even be
-	 * counted: the guard stays on the side of the data, as in
-	 * {@see self::countObjectsCascadeWouldDelete()}.
-	 *
 	 * @param Schema $schema The schema to count for.
 	 *
 	 * @return int The number of frozen, archived, locked or unreadable rows.
@@ -468,34 +450,11 @@ class SchemaDeletionService {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
 	 */
 	public function countKeptRows(Schema $schema): int {
-		$total = 0;
-
-		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
-			$total += $this->keptRowsOfTable(entry: $entry, schema: $schema);
-		}
-
-		return $total;
+		return $this->teardownGuard()->countKept(
+			tables: $this->resolveMagicTablesForSchema(schema: $schema),
+			schema: $schema
+		);
 	}//end countKeptRows()
-
-	/**
-	 * The kept rows of one magic table.
-	 *
-	 * @param array{registerId: int, register: Register|null, tableName: string} $entry  The table.
-	 * @param Schema                                                             $schema The schema.
-	 *
-	 * @return int The number of kept rows in that table.
-	 */
-	private function keptRowsOfTable(array $entry, Schema $schema): int {
-		try {
-			if ($entry['register'] === null) {
-				return $this->countAllRows(tableName: $entry['tableName']);
-			}
-
-			return $this->tableRows()->countKept(register: $entry['register'], schema: $schema);
-		} catch (Throwable $e) {
-			return 1;
-		}
-	}//end keptRowsOfTable()
 
 	/**
 	 * Refuse the teardown, or report how many kept rows the override lifts.
@@ -504,79 +463,19 @@ class SchemaDeletionService {
 	 * @param SchemaTeardownOverride $override What the operator lifted.
 	 *
 	 * @return int The kept rows that will be destroyed, 0 when none are lifted.
-	 *
-	 * @throws ObjectStateWriteException If a row is frozen or archived.
-	 * @throws LockedException If a row is locked.
-	 * @throws ValidationException If a table nothing can read holds rows.
 	 */
 	private function keptRowsLifted(Schema $schema, SchemaTeardownOverride $override): int {
 		if ($override->keptRows === true) {
 			return $this->countKeptRows(schema: $schema);
 		}
 
-		foreach ($this->resolveMagicTablesForSchema(schema: $schema) as $entry) {
-			if ($entry['register'] === null) {
-				$this->rejectUnreadableRows(tableName: $entry['tableName']);
-				continue;
-			}
-
-			$this->tableRows()->assertNoneKept(register: $entry['register'], schema: $schema);
-		}
+		$this->teardownGuard()->assertNoneKept(
+			tables: $this->resolveMagicTablesForSchema(schema: $schema),
+			schema: $schema
+		);
 
 		return 0;
 	}//end keptRowsLifted()
-
-	/**
-	 * Refuse a table that outlives its register and still holds rows.
-	 *
-	 * Its rows cannot be read through a Register, so nothing can say they are not frozen.
-	 *
-	 * @param string $tableName The magic table.
-	 *
-	 * @return void
-	 *
-	 * @throws ValidationException If the table holds rows.
-	 */
-	private function rejectUnreadableRows(string $tableName): void {
-		if ($this->countAllRows(tableName: $tableName) === 0) {
-			return;
-		}
-
-		throw new ValidationException(
-			message: 'Cannot remove this schema: magic table ' . $tableName . ' holds rows of a register that '
-				. 'no longer exists, so they cannot be checked for a freeze, an archive or a lock.'
-		);
-	}//end rejectUnreadableRows()
-
-	/**
-	 * Write the one audit entry of a forced teardown, when it removes something protected.
-	 *
-	 * The entry is about the schema, so it carries the schema's uuid and no object id.
-	 * Under `occ` there is no session; the actor says so instead of reading as `system`.
-	 *
-	 * @param Schema $schema   The schema being torn down.
-	 * @param int    $keptRows The kept rows that will be destroyed.
-	 *
-	 * @return void
-	 */
-	private function recordForcedTeardown(Schema $schema, int $keptRows): void {
-		$archival = $schema->hasArchivalAnnotation();
-		if ($keptRows === 0 && $archival === false) {
-			return;
-		}
-
-		$subject = new ObjectEntity();
-		$subject->setUuid($schema->getUuid());
-		$subject->setSchema((string)$schema->getId());
-
-		$this->auditTrailMapper->createAuditTrailEntry(
-			object: $subject,
-			action: self::ACTION_FORCED_TEARDOWN,
-			context: ['schemaSlug' => $schema->getSlug(), 'keptRows' => $keptRows, 'archivalSchema' => $archival],
-			actorId: self::FORCED_TEARDOWN_ACTOR,
-			actorName: self::FORCED_TEARDOWN_ACTOR
-		);
-	}//end recordForcedTeardown()
 
 	/**
 	 * How many objects `cascadeDeleteSchema()` would destroy.
@@ -659,7 +558,7 @@ class SchemaDeletionService {
 			$droppable = [];
 
 			foreach ($tables as $entry) {
-				$rowCount = $this->countAllRows(tableName: $entry['tableName']);
+				$rowCount = $this->teardownGuard()->countAllRows(tableName: $entry['tableName']);
 				if ($rowCount > 0) {
 					$this->logger->warning(
 						message: '[SchemaDeletionService] Keeping non-empty magic table of a deleted schema',
@@ -749,6 +648,15 @@ class SchemaDeletionService {
 			operation: $operation
 		);
 	}//end rejectIfArchivalImmutable()
+
+	/**
+	 * The guard of a schema teardown.
+	 *
+	 * @return SchemaTeardownGuard
+	 */
+	private function teardownGuard(): SchemaTeardownGuard {
+		return new SchemaTeardownGuard(rows: $this->tableRows(), db: $this->db, audit: $this->auditTrailMapper);
+	}//end teardownGuard()
 
 	/**
 	 * The rows of the magic tables this service empties.
@@ -941,26 +849,4 @@ class SchemaDeletionService {
 
 		return $allDropped;
 	}//end dropTables()
-
-	/**
-	 * Count every row of a magic table, including soft-deleted ones.
-	 *
-	 * @param string $tableName The magic table name.
-	 *
-	 * @return int The row count (0 when the table does not exist).
-	 */
-	private function countAllRows(string $tableName): int {
-		if ($this->db->tableExists($tableName) === false) {
-			return 0;
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select($qb->func()->count('*'))->from($tableName);
-
-		$result = $qb->executeQuery();
-		$count = (int)$result->fetchOne();
-		$result->closeCursor();
-
-		return $count;
-	}//end countAllRows()
 }//end class
