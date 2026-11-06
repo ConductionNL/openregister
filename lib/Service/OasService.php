@@ -36,7 +36,6 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
@@ -411,8 +410,8 @@ class OasService {
 	 *
 	 * @return array<string, mixed> The complete OpenAPI specification array
 	 *
-	 * @throws \Exception When base OAS file cannot be read or parsed
-	 * @throws OasValidationException In strict mode, when the generated OAS has validation errors
+	 * @throws \Exception When base OAS file cannot be read or parsed, or, as an OasValidationException,
+	 *                    in strict mode when the generated OAS has validation errors
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
@@ -445,7 +444,7 @@ class OasService {
 
 		$invalid = $this->checkOas();
 		if ($strict === true && $invalid === true) {
-			throw $this->strictFailure();
+			throw $this->report->strictFailure();
 		}
 
 		return $this->oas;
@@ -484,20 +483,6 @@ class OasService {
 
 		return $this->report->hasErrors();
 	}//end checkOas()
-
-	/**
-	 * The refusal of an invalid document in strict mode; the report stays available via getLastValidationReport().
-	 *
-	 * @return OasValidationException The exception to throw.
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function strictFailure(): OasValidationException {
-		return new OasValidationException(
-			message: 'Generated OAS failed strict validation: ' . count($this->report->getErrors()) . ' error(s)',
-			report: $this->report,
-		);
-	}//end strictFailure()
 
 	/**
 	 * The schemas the registers use, each loaded once, indexed by id.
