@@ -19,6 +19,7 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -430,6 +431,32 @@ class NotesControllerTest extends TestCase {
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
 
 		$this->assertSame(403, $result->getStatus());
+	}
+
+	/**
+	 * The manage answer reaches the note service as the visibility service gave it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	#[TestWith([true])]
+	#[TestWith([false])]
+	public function testAnEditCarriesTheManageAnswer(bool $mayManage): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->visibility->expects($this->once())
+			->method('mayManageObject')
+			->with($object)
+			->willReturn($mayManage);
+
+		$this->noteService->expects($this->once())
+			->method('updateNote')
+			->with(5, 'rewritten', null, $mayManage)
+			->willReturn(['id' => 5, 'versionCount' => 1]);
+
+		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
 	}
 
 	/**

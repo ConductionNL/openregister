@@ -158,6 +158,17 @@ class TimelineEntryServiceTest extends TestCase {
 		$this->assertNotNull($entry->getUuid());
 	}
 
+	public function testAnAuthorInThePayloadIsIgnored(): void {
+		$this->signIn();
+		$this->echoInsert();
+		$this->kinds->method('validateFields')->willReturn([]);
+		$this->kinds->method('carriesFollowUp')->willReturn(false);
+
+		$entry = $this->service->record($this->object(), ['message' => 'Gebeld', 'author' => 'someone-else']);
+
+		$this->assertSame('handler', $entry->getAuthor());
+	}
+
 	public function testAnEntryWithNoKindIsAPlainNoteWithNothingOnIt(): void {
 		$this->signIn();
 		$this->echoInsert();
