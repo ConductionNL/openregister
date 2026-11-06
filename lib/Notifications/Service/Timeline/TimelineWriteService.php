@@ -262,10 +262,7 @@ class TimelineWriteService {
 				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[TimelineWriteService] Mentions in entry '.$written->uuid().' could not be applied',
-				['exception' => $e]
-			);
+			$this->logger->warning('[TimelineWriteService] Mentions in entry '.$written->uuid().' could not be applied', ['exception' => $e]);
 		}
 	}//end applyMentions()
 
