@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
@@ -70,6 +71,23 @@ class SearchQueryHandler {
 	 * @var string
 	 */
 	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
+
+	/**
+	 * The parameters that filter on an object's metadata, moved into `@self`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const METADATA_FIELDS = [
+		'register',
+		'schema',
+		'uuid',
+		'organisation',
+		'owner',
+		'application',
+		'created',
+		'updated',
+		'deleted',
+	];
 
 	/**
 	 * The id an `_unread=true` query falls back to when there is no caller.
@@ -380,14 +398,23 @@ class SearchQueryHandler {
 			return false;
 		}
 
-		try {
-			$entity = $this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
-			return false;
-		}
-
-		return ($entity->getObjectSource() !== null);
+		return ($this->schemaOrNull(reference: $schema)?->getObjectSource() !== null);
 	}//end schemaHasObjectSource()
+
+	/**
+	 * Read one schema, answering null when it cannot be read.
+	 *
+	 * @param mixed $reference The schema reference, as a schema list may hold it.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaOrNull(mixed $reference): ?Schema {
+		try {
+			return $this->schemaMapper->find(id: $reference, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaOrNull()
 
 	/**
 	 * Whether the target schema declares a property literally named `filter`.
@@ -408,23 +435,9 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
 	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
-		if ($schema === null) {
-			return false;
-		}
-
-		$schemaRefs = [$schema];
-		if (is_array($schema) === true) {
-			$schemaRefs = $schema;
-		}
-
-		foreach ($schemaRefs as $schemaRef) {
-			try {
-				$entity = $this->schemaMapper->find(id: $schemaRef, _rbac: false, _multitenancy: false);
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			if (array_key_exists(FilterParams::FILTER_KEY, ($entity->getProperties() ?? [])) === true) {
+		foreach ((array)$schema as $schemaRef) {
+			$properties = ($this->schemaOrNull(reference: $schemaRef)?->getProperties() ?? []);
+			if (array_key_exists(FilterParams::FILTER_KEY, $properties) === true) {
 				return true;
 			}
 		}
@@ -522,10 +535,6 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function readReference(int|string $reference, string $kind): ?int {
-		if (is_int($reference) === true && $reference > 0) {
-			return $reference;
-		}
-
 		$trimmed = trim((string)$reference);
 		if ($trimmed === '') {
 			return null;
@@ -535,12 +544,24 @@ class SearchQueryHandler {
 			return (int)$trimmed;
 		}
 
+		throw $this->unreadableReference(reference: $trimmed, kind: $kind);
+	}//end readReference()
+
+	/**
+	 * The refusal of a reference this handler cannot read.
+	 *
+	 * @param string $reference The trimmed reference.
+	 * @param string $kind      Either `register` or `schema`.
+	 *
+	 * @return RegisterNotFoundException|SchemaNotFoundException The refusal.
+	 */
+	private function unreadableReference(string $reference, string $kind): RegisterNotFoundException|SchemaNotFoundException {
 		if ($kind === 'register') {
-			throw new RegisterNotFoundException(registerSlugOrId: $trimmed);
+			return new RegisterNotFoundException(registerSlugOrId: $reference);
 		}
 
-		throw new SchemaNotFoundException(schemaSlugOrId: $trimmed);
-	}//end readReference()
+		return new SchemaNotFoundException(schemaSlugOrId: $reference);
+	}//end unreadableReference()
 
 	/**
 	 * Build search query from request parameters
@@ -566,29 +587,9 @@ class SearchQueryHandler {
 		int|string|array|null $schema = null,
 		?array $ids = null,
 	): array {
-		$params = $this->filterableParams(
-			params: $this->liftBracketFilterUnlessDeclared(
-				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
-				schema: $schema
-			)
-		);
-
-		$parts = $this->splitSearchParams(
-			params: $params,
-			self: $this->scopeFilters(register: $register, schema: $schema)
-		);
-
-		// STEP 2b: expand a branch filter into the concepts it stands for.
-		// `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root
-		// plus every narrower concept under it), walked at query time and
-		// bounded by depth, so moving a concept in the scheme changes what the
-		// filter matches with no reindex anywhere.
-		$objectFilters = $parts->objectFilters;
-		if ($this->codedFilters !== null) {
-			$objectFilters = $this->codedFilters->expand(filters: $objectFilters, schemaRef: $schema);
-		}
-
-		$query = array_merge(['@self' => $parts->self], $objectFilters);
+		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
+		$parts = $this->splitSearchParams(params: $params, self: $this->scopeFilters(register: $register, schema: $schema));
+		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
 
 		if ($ids !== null) {
 			$query['_ids'] = $ids;
@@ -596,19 +597,62 @@ class SearchQueryHandler {
 
 		$query = $this->mergeSpecialParams(query: $query, special: $parts->special);
 
-		// The `_watching=true` lens, applied AFTER `_ids` is normalised to an
-		// array so the two can intersect rather than fight.
-		$query = $this->applyWatchingLens(query: $query);
-
-		// The `_unread=true` lens, after the watching lens so that "unread among
-		// what I follow" narrows twice rather than one overwriting the other.
-		$query = $this->applyUnreadLens(query: $query);
-
-		// The `_favourite=true` and `_recent=true` lenses, last, so that every
-		// earlier lens has already narrowed `_ids` and these two compose with it
-		// rather than replacing it.
-		return $this->applyPersonalLenses(query: $query);
+		return $this->applyLenses(query: $query);
 	}//end buildSearchQuery()
+
+	/**
+	 * The request parameters a search can filter on, under their real names.
+	 *
+	 * @param array                 $requestParams The request parameters.
+	 * @param int|string|array|null $schema        The schema, or schemas, searched.
+	 *
+	 * @return array The parameters.
+	 */
+	private function searchableParams(array $requestParams, int|string|array|null $schema): array {
+		return $this->filterableParams(
+			params: $this->liftBracketFilterUnlessDeclared(
+				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
+				schema: $schema
+			)
+		);
+	}//end searchableParams()
+
+	/**
+	 * Expand a branch filter into the concepts it stands for.
+	 *
+	 * `?categorie[branch]=<uri>` becomes `categorie` IN (the branch root plus
+	 * every narrower concept under it), walked at query time and bounded by
+	 * depth, so moving a concept in the scheme changes what the filter matches
+	 * with no reindex anywhere.
+	 *
+	 * @param array                 $filters The object filters.
+	 * @param int|string|array|null $schema  The schema, or schemas, searched.
+	 *
+	 * @return array The filters.
+	 */
+	private function expandedFilters(array $filters, int|string|array|null $schema): array {
+		if ($this->codedFilters === null) {
+			return $filters;
+		}
+
+		return $this->codedFilters->expand(filters: $filters, schemaRef: $schema);
+	}//end expandedFilters()
+
+	/**
+	 * Apply the lenses, in the order that lets them narrow each other.
+	 *
+	 * The watching lens comes after `_ids` is normalised to an array, so the
+	 * two intersect. The unread lens comes next, so "unread among what I follow"
+	 * narrows twice. The personal lenses come last, so they compose with every
+	 * earlier narrowing of `_ids` rather than replacing it.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return array The query.
+	 */
+	private function applyLenses(array $query): array {
+		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
+	}//end applyLenses()
 
 	/**
 	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
@@ -625,18 +669,11 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function restoreDottedParams(array $requestParams, int|string|array|null $schema): array {
-		$isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+		$keepsUnderscores = $this->schemaHasObjectSource(schema: $schema);
 
 		$tree = new DottedParamTree();
 		foreach ($requestParams as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$tree->set(key: $key, value: $value);
-				continue;
-			}
-
-			if (str_contains($key, '_') === true
-				&& ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
-			) {
+			if ($this->nestsAtUnderscores(key: $key, keepsUnderscores: $keepsUnderscores) === true) {
 				$tree->nest(key: $key, value: $value);
 				continue;
 			}
@@ -646,6 +683,22 @@ class SearchQueryHandler {
 
 		return $tree->params;
 	}//end restoreDottedParams()
+
+	/**
+	 * Whether the underscores in a parameter name stand for dots PHP mangled.
+	 *
+	 * @param string $key              The parameter name.
+	 * @param bool   $keepsUnderscores Whether the schema's columns are flat snake_case.
+	 *
+	 * @return bool True when the name nests.
+	 */
+	private function nestsAtUnderscores(string $key, bool $keepsUnderscores): bool {
+		if (str_starts_with(haystack: $key, needle: '_') === true || str_contains($key, '_') === false) {
+			return false;
+		}
+
+		return ($keepsUnderscores === false || str_starts_with(haystack: $key, needle: '@') === true);
+	}//end nestsAtUnderscores()
 
 	/**
 	 * Read the bracket spelling `filter[x]=v` as `x=v`, as the aggregation endpoints do (openregister#3611).
@@ -733,35 +786,13 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function splitSearchParams(array $params, array $self): SearchQueryParts {
-		$metadataFields = [
-			'register',
-			'schema',
-			'uuid',
-			'organisation',
-			'owner',
-			'application',
-			'created',
-			'updated',
-			'deleted',
-		];
-		$specialParams = [];
-		$objectFilters = [];
+		$metadata = array_flip(self::METADATA_FIELDS);
 
-		foreach ($params as $key => $value) {
-			if (str_starts_with(haystack: $key, needle: '_') === true) {
-				$specialParams[$key] = $value;
-			} elseif (in_array(needle: $key, haystack: $metadataFields) === true) {
-				if (isset($self[$key]) === false) {
-					$self[$key] = $value;
-				}
-
-				continue;
-			}
-
-			$objectFilters[$key] = $value;
-		}
-
-		return new SearchQueryParts(self: $self, special: $specialParams, objectFilters: $objectFilters);
+		return new SearchQueryParts(
+			self: ($self + array_intersect_key($params, $metadata)),
+			special: array_filter($params, static fn (string $key): bool => str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY),
+			objectFilters: array_diff_key($params, $metadata)
+		);
 	}//end splitSearchParams()
 
 	/**
