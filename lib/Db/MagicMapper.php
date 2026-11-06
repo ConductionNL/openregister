@@ -5971,111 +5971,89 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $dispatchEvents = true,
 		bool $failIfExists = false,
 	): ObjectEntity {
-		// Dispatch creating event (pre-save hook). A refusal is held until the write knows whether
-		// this is a create at all: over a taken identifier it is an update, judged by the update guards.
+		// A refusal is held until the write knows whether this is a create at all:
+		// over a taken identifier it is an update, judged by the update guards.
 		$refusal = null;
 		if ($dispatchEvents === true) {
 			$refusal = $this->runCreatingHooks(entity: $entity);
 		}
 
-		// Ensure table exists.
 		$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
+		$write = [
+			'register' => $register,
+			'schema' => $schema,
+			'table' => $this->getTableNameForRegisterSchema(register: $register, schema: $schema),
+			'failIfExists' => $failIfExists,
+			'refusal' => $refusal,
+		];
 		$this->logger->debug(
 			message: '[MagicMapper] Inserting object entity into register+schema table',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $entity->getUuid(),
-				'tableName' => $tableName,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $entity->getUuid(), 'tableName' => $write['table']]
 		);
 
-		// Set register and schema on entity if not already set.
+		$write['data'] = $this->insertableObject(entity: $entity, write: $write);
+
+		[$uuid, $insertedId] = $this->writeClaimingIdentifier(entity: $entity, write: $write);
+
+		// Event dispatching is handled by the public insert/update/delete methods.
+		$entity->setId($insertedId ?? $this->storedIdAfterLostInsert(uuid: $uuid, tableName: $write['table']));
+
+		return $entity;
+	}//end insertObjectEntity()
+
+	/**
+	 * The object as table data, with its register, schema and uuid filled in.
+	 *
+	 * @param ObjectEntity $entity The object being created.
+	 * @param array        $write  `register` and `schema`.
+	 *
+	 * @return array The serialised object.
+	 */
+	private function insertableObject(ObjectEntity $entity, array $write): array {
 		if ($entity->getRegister() === null) {
-			$entity->setRegister((string)$register->getId());
+			$entity->setRegister((string)$write['register']->getId());
 		}
 
 		if ($entity->getSchema() === null) {
-			$entity->setSchema((string)$schema->getId());
+			$entity->setSchema((string)$write['schema']->getId());
 		}
 
-		// Ensure entity has a UUID before serialization.
-		$entityUuid = $entity->getUuid();
-		if ($entityUuid === null || $entityUuid === '') {
-			$entityUuid = Uuid::v4()->toRfc4122();
-			$entity->setUuid($entityUuid);
+		if ($entity->getUuid() === null || $entity->getUuid() === '') {
+			$entity->setUuid(Uuid::v4()->toRfc4122());
 		}
 
-		// Convert entity to array for table storage.
-		$objectArray = $entity->jsonSerialize();
+		return $entity->jsonSerialize();
+	}//end insertableObject()
 
-		// Save to table, learning the generated `_id` from the INSERT itself.
-		[$uuid, $insertedId] = $this->writeClaimingIdentifier(
-			entity: $entity,
-			write: [
-				'data' => $objectArray,
-				'register' => $register,
-				'schema' => $schema,
-				'table' => $tableName,
-				'failIfExists' => $failIfExists,
-				'refusal' => $refusal,
-			]
+	/**
+	 * The `_id` of a row whose INSERT lost a uuid race and was applied as an update.
+	 *
+	 * The only write that costs a read: a won INSERT reports its own generated
+	 * key. Keeping the lost-write check matters: the alternative is returning an
+	 * entity with a null id to a caller with no way to tell a write landed,
+	 * which is exactly what #2212 turned out to be.
+	 *
+	 * @param string $uuid      The uuid written.
+	 * @param string $tableName The table.
+	 *
+	 * @throws Exception When the row is not in the table.
+	 *
+	 * @return int The stored id.
+	 */
+	private function storedIdAfterLostInsert(string $uuid, string $tableName): int {
+		$row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
+		if ($row !== null) {
+			return (int)$row[self::METADATA_PREFIX . 'id'];
+		}
+
+		$this->logger->error(
+			message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'tableName' => $tableName]
 		);
 
-		// Update entity UUID if it was generated.
-		if ($entity->getUuid() === null) {
-			$entity->setUuid($uuid);
-		}
-
-		// No read-back. The INSERT reported its own generated key, which is the
-		// only thing the old re-read could tell us that we did not already hold:
-		// `_id` is this table's sole database-generated column, and `_created` /
-		// `_updated` have no column default, so PHP wrote them and they are
-		// already on this entity.
-		//
-		// `_id` is also not the identity callers use — saveObjectToRegisterSchemaTable()
-		// returns the UUID, which PHP generates above. So this is the entity's
-		// internal key catching up, not the object becoming addressable.
-		if ($insertedId !== null) {
-			$entity->setId($insertedId);
-
-			// NOTE: Event dispatching is handled by the public insert/update/delete methods.
-			// Do NOT dispatch ObjectCreatedEvent here.
-			return $entity;
-		}
-
-		// $insertedId is null only when the INSERT lost a uuid race and was
-		// applied as an update instead. Rare, and the only path that still costs
-		// a read — a raw row fetch, not the hydrating one. Keeping the lost-write
-		// check here matters: the alternative is returning an entity with a null
-		// id to a caller with no way to tell a write landed, which is exactly
-		// what #2212 turned out to be.
-		$row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-		if ($row === null) {
-			$this->logger->error(
-				message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'tableName' => $tableName,
-				]
-			);
-
-			throw new Exception(
-				sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
-			);
-		}
-
-		$entity->setId((int)$row[self::METADATA_PREFIX . 'id']);
-
-		// NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
-		// Do NOT dispatch ObjectCreatedEvent here.
-		return $entity;
-	}//end insertObjectEntity()
+		throw new Exception(sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName));
+	}//end storedIdAfterLostInsert()
 
 	/**
 	 * Write a create, claiming its identifier.
