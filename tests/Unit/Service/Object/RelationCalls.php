@@ -18,14 +18,16 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
+use ReflectionMethod;
 
 /**
  * Stands in for the private SaveObject entries the relation tests call.
  */
 final class RelationCalls {
 
-	public const METHODS = ['isReference', 'updateObjectRelations'];
+	public const METHODS = ['isReference', 'updateObjectRelations', 'updateInverseRelations'];
 
 	/**
 	 * Whether a value looks like a reference: value.
@@ -53,4 +55,18 @@ final class RelationCalls {
 
 		return $entity;
 	}//end updateObjectRelations()
+
+	/**
+	 * Write the inverse relations of a saved object: entity, register, schema.
+	 *
+	 * @param SaveObject $handler The handler.
+	 * @param array      $args    The arguments, in that order.
+	 *
+	 * @return void
+	 */
+	public static function updateInverseRelations(SaveObject $handler, array $args): void {
+		[$entity, $register, $schema] = array_values($args);
+		$inverse = (new ReflectionMethod(SaveObject::class, 'inverseRelations'))->invoke($handler);
+		$inverse->update(saved: $entity, write: new InverseRelationWrite(register: $register, schema: $schema));
+	}//end updateInverseRelations()
 }//end class
