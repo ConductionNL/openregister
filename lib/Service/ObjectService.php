@@ -115,6 +115,7 @@ use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Service\Object\SaveAccessRequest;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -2467,19 +2468,32 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         // A create rule may carry a `match` on the object being created, so the
         // create question is asked about the incoming data (openregister#4094).
-        $incoming = $this->buildIncomingObjectForCreateCheck(object: $object);
+        return $this->authoriseSave(
+            request: new SaveAccessRequest(
+                uuid: $uuid,
+                rbac: $_rbac,
+                incoming: $this->buildIncomingObjectForCreateCheck(object: $object),
+                multitenancy: $_multitenancy
+            )
+        );
+    }//end checkSavePermissions()
 
+    /**
+     * Ask the permission a save needs: create without a uuid, otherwise by what the uuid resolves to.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The uuid of the stored row the write lands on, null for a create.
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function authoriseSave(SaveAccessRequest $request): ?string
+    {
         // No UUID provided, this is a CREATE operation.
-        if ($uuid === null) {
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'create',
-                userId: null,
-                objectOwner: null,
-                _rbac: $_rbac,
-                object: $incoming,
-                register: $this->currentRegisterId()
-            );
+        if ($request->uuid === null) {
+            $this->assertMayCreate(request: $request);
             return null;
         }
 
@@ -2493,55 +2507,112 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // check is made against. Not finding it here means the same thing it has
         // always meant — treat the write as a create with a caller-chosen UUID.
         try {
-            $existingObject = $this->objectMapper->find(
-                identifier: $uuid,
-                register: $this->currentRegister,
-                schema: $this->currentSchema
-            );
-            // This is an UPDATE operation.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'update',
-                userId: null,
-                objectOwner: $existingObject->getOwner(),
-                _rbac: $_rbac,
-                object: $existingObject
-            );
-            return $existingObject->getUuid();
+            return $this->assertMayUpdateStored(request: $request);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Not found FOR THIS CALLER: new, or stored and hidden from them.
-            $hidden = $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+            return $this->assertMayWriteUnseen(request: $request);
+        }
+    }//end authoriseSave()
 
-            // Object not found for this caller: a CREATE operation with specific UUID.
-            $this->checkPermission(
-                schema: $this->currentSchema,
-                action: 'create',
-                userId: null,
-                objectOwner: null,
-                _rbac: $_rbac,
-                object: $incoming,
-                register: $this->currentRegisterId()
-            );
+    /**
+     * Ask the create permission, about the incoming data.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return void
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayCreate(SaveAccessRequest $request): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'create',
+            userId: null,
+            objectOwner: null,
+            _rbac: $request->rbac,
+            object: $request->incoming,
+            register: $this->currentRegisterId()
+        );
+    }//end assertMayCreate()
 
-            // Stored but hidden: the write lands on that row, so it must keep to
-            // the caller's organisations and pass the update rule against it.
-            if ($hidden !== null) {
-                $this->refuseAWriteOntoAnAppendOnlyRow();
-                $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $_multitenancy);
-                $this->checkPermission(
-                    schema: $this->currentSchema,
-                    action: 'update',
-                    userId: null,
-                    objectOwner: $hidden->getOwner(),
-                    _rbac: $_rbac,
-                    object: $hidden
-                );
-                return $hidden->getUuid();
-            }
-        }//end try
+    /**
+     * Ask the update permission, about a stored row.
+     *
+     * @param ObjectEntity $stored The row the write lands on.
+     * @param bool         $_rbac  Whether to apply RBAC checks.
+     *
+     * @return void
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayUpdate(ObjectEntity $stored, bool $_rbac): void
+    {
+        $this->checkPermission(
+            schema: $this->currentSchema,
+            action: 'update',
+            userId: null,
+            objectOwner: $stored->getOwner(),
+            _rbac: $_rbac,
+            object: $stored
+        );
+    }//end assertMayUpdate()
 
-        return null;
-    }//end checkSavePermissions()
+    /**
+     * Find the row a uuid names for this caller and ask the update permission on it.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The stored row's uuid.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the caller does not see such a row.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayUpdateStored(SaveAccessRequest $request): ?string
+    {
+        $existingObject = $this->objectMapper->find(
+            identifier: $request->uuid,
+            register: $this->currentRegister,
+            schema: $this->currentSchema
+        );
+
+        $this->assertMayUpdate(stored: $existingObject, _rbac: $request->rbac);
+
+        return $existingObject->getUuid();
+    }//end assertMayUpdateStored()
+
+    /**
+     * Ask the permissions of a write to a uuid the caller does not see: new, or stored and hidden.
+     *
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return string|null The hidden row's uuid, null for a create with a caller-chosen uuid.
+     *
+     * @throws Exception If permission check fails
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function assertMayWriteUnseen(SaveAccessRequest $request): ?string
+    {
+        $hidden = $this->refuseSomebodyElsesDraft(uuid: $request->uuid, _rbac: $request->rbac);
+
+        $this->assertMayCreate(request: $request);
+        if ($hidden === null) {
+            return null;
+        }
+
+        // Stored but hidden: the write lands on that row, so it must keep to
+        // the caller's organisations and pass the update rule against it.
+        $this->refuseAWriteOntoAnAppendOnlyRow();
+        $this->refuseAnotherOrganisationsRow(hidden: $hidden, _multitenancy: $request->multitenancy);
+        $this->assertMayUpdate(stored: $hidden, _rbac: $request->rbac);
+
+        return $hidden->getUuid();
+    }//end assertMayWriteUnseen()
 
     /**
      * Refuse a write onto a stored row the caller cannot read when the schema is append-only.
@@ -2984,11 +3055,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
     {
-        if ($uuid === null || $this->currentSchema === null) {
-            return;
-        }
-
-        $existingData = $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+        $existingData = $this->writeRuleBaseline(object: $object, uuid: $uuid);
         if ($existingData === null) {
             return;
         }
@@ -2998,44 +3065,101 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $candidate = $object;
         unset($candidate['@self']);
 
+        $readOnly  = $this->readOnlyViolations(candidate: $candidate, existingData: $existingData);
+        $immutable = $this->immutableViolations(candidate: $candidate, existingData: $existingData);
+        if ($readOnly === [] && $immutable === []) {
+            return;
+        }
+
+        $this->logWriteRuleRefusal(uuid: $uuid, violations: array_merge($readOnly, $immutable));
+
+        // ValidationException's `$errors` argument is typed `?ValidationError`
+        // (Opis), not an arbitrary array — pass null and let the message +
+        // log entry carry the violation detail.
+        throw new ValidationException(message: $this->describeWriteRuleRefusal(readOnly: $readOnly, immutable: $immutable));
+    }//end enforceReadOnlyOnUpdate()
+
+    /**
+     * The stored data an update's write rules compare against, null when no rule applies.
+     *
+     * @param array       $object The incoming object.
+     * @param string|null $uuid   The object uuid, null for a create.
+     *
+     * @return array|null The stored business properties.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function writeRuleBaseline(array $object, ?string $uuid): ?array
+    {
+        if ($uuid === null || $this->currentSchema === null) {
+            return null;
+        }
+
+        return $this->storedDataForWriteRules(object: $object, uuid: $uuid);
+    }//end writeRuleBaseline()
+
+    /**
+     * The readOnly properties an update would change.
+     *
+     * @param array $candidate    The incoming business properties.
+     * @param array $existingData The stored business properties.
+     *
+     * @return array The violations.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function readOnlyViolations(array $candidate, array $existingData): array
+    {
         // `readOnly` means a client may not write the field; a trusted system
         // operation is what stamps it, so it is not refused there. `immutable`
         // below still holds for everyone.
-        $violations = [];
-        if (SystemOperationContext::isActive() === false) {
-            $violations = $this->validateHandler->validateReadOnlyConstraints(
-                incomingObject: $candidate,
-                existingObject: $existingData,
-                schema: $this->currentSchema
-            );
+        if (SystemOperationContext::isActive() === true) {
+            return [];
         }
 
-        // `immutable: true` is checked here rather than in a second private
-        // method so it reuses the record this one already loaded. Two methods
-        // would mean two `find()` calls on every update, and the second would
-        // eventually be the one somebody forgot to call.
-        $immutableViolations = $this->validateHandler->validateImmutableConstraints(
+        return $this->validateHandler->validateReadOnlyConstraints(
             incomingObject: $candidate,
             existingObject: $existingData,
             schema: $this->currentSchema
         );
+    }//end readOnlyViolations()
 
-        if ($violations === [] && $immutableViolations === []) {
-            return;
-        }
+    /**
+     * The immutable properties an update would change.
+     *
+     * `immutable: true` is checked here rather than in a second private
+     * method so it reuses the record this one already loaded. Two methods
+     * would mean two `find()` calls on every update, and the second would
+     * eventually be the one somebody forgot to call.
+     *
+     * @param array $candidate    The incoming business properties.
+     * @param array $existingData The stored business properties.
+     *
+     * @return array The violations.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function immutableViolations(array $candidate, array $existingData): array
+    {
+        return $this->validateHandler->validateImmutableConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+    }//end immutableViolations()
 
-        $parts = [];
-        if ($violations !== []) {
-            $parts[] = $this->describeViolations(violations: $violations, verb: 'modify readOnly');
-        }
-
-        if ($immutableViolations !== []) {
-            $parts[]    = $this->describeViolations(violations: $immutableViolations, verb: 'change immutable');
-            $violations = array_merge($violations, $immutableViolations);
-        }
-
-        $message = implode('. ', $parts);
-
+    /**
+     * Log an update refused by readOnly or immutable rules.
+     *
+     * @param string $uuid       The object uuid.
+     * @param array  $violations The readOnly violations, then the immutable ones.
+     *
+     * @return void
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function logWriteRuleRefusal(string $uuid, array $violations): void
+    {
         $this->logger->info(
             message: '[ObjectService] readOnly / immutable enforcement rejected UPDATE',
             context: [
@@ -3046,12 +3170,31 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 'violations' => $violations,
             ]
         );
+    }//end logWriteRuleRefusal()
 
-        // ValidationException's `$errors` argument is typed `?ValidationError`
-        // (Opis), not an arbitrary array — pass null and let the message +
-        // log entry carry the violation detail.
-        throw new ValidationException(message: $message);
-    }//end enforceReadOnlyOnUpdate()
+    /**
+     * The message of an update refused by readOnly or immutable rules.
+     *
+     * @param array $readOnly  The readOnly violations.
+     * @param array $immutable The immutable violations.
+     *
+     * @return string The message.
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     */
+    private function describeWriteRuleRefusal(array $readOnly, array $immutable): string
+    {
+        $parts = [];
+        if ($readOnly !== []) {
+            $parts[] = $this->describeViolations(violations: $readOnly, verb: 'modify readOnly');
+        }
+
+        if ($immutable !== []) {
+            $parts[] = $this->describeViolations(violations: $immutable, verb: 'change immutable');
+        }
+
+        return implode('. ', $parts);
+    }//end describeWriteRuleRefusal()
 
     /**
      * Load the stored business data the write rules compare against.
