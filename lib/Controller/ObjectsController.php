@@ -43,6 +43,8 @@ use OCA\OpenRegister\Controller\Support\MagicMappedTable;
 use OCA\OpenRegister\Controller\Support\ObjectsRouteScope;
 use OCA\OpenRegister\Controller\Support\ObjectsTableRead;
 use OCA\OpenRegister\Controller\Support\ObjectVersionGuard;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
+use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
@@ -84,8 +86,6 @@ use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
-use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -2773,26 +2773,75 @@ class ObjectsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 600, period: 60)]
-	public function referenceOptions(
-		string $id,
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function referenceOptions(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		$property = (string)($this->request->getParam('property') ?? '');
 		if (trim($property) === '') {
-			return new JSONResponse(
-				data: ['message' => 'Name the property whose options you want, with ?property=<name>.'],
-				statusCode: 400
-			);
+			return new JSONResponse(data: ['message' => 'Name the property whose options you want, with ?property=<name>.'], statusCode: 400);
 		}
 
+		return $this->optionsFor(
+			ask: new ReferenceOptionsAsk(id: $id, register: $register, schema: $schema, property: $property),
+			objectService: $objectService
+		);
+	}//end referenceOptions()
+
+	/**
+	 * The options once the property is known.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record and property.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The options, or why there are none.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsFor(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): JSONResponse {
+		$schemaEntity = $this->optionsSchema(ask: $ask, objectService: $objectService);
+		if ($schemaEntity instanceof JSONResponse) {
+			return $schemaEntity;
+		}
+
+		$answer = new ReferenceOptionsAnswer(request: $this->request, logger: $this->logger, lookup: $this->storedForOptions(...), search: $objectService);
+
 		try {
-			$resolved = $this->resolveRegisterSchemaIds(
-				register: $register,
-				schema: $schema,
-				objectService: $objectService
-			);
+			return $answer->answer(ask: $ask, schema: $schemaEntity);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ask->id);
+		}
+	}//end optionsFor()
+
+	/**
+	 * The record as it stands, read as a lookup in the caller's scope.
+	 *
+	 * @param ReferenceOptionsAsk $ask The record.
+	 *
+	 * @return ObjectEntity|null The stored record.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
+		return WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $ask->id,
+			files: false,
+			register: $ask->register,
+			schema: $ask->schema,
+			_render: false
+		));
+	}//end storedForOptions()
+
+	/**
+	 * The schema of the record a reference-options read is about.
+	 *
+	 * @param ReferenceOptionsAsk $ask The register and schema in the URL.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return Schema|JSONResponse The schema, or a 404.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function optionsSchema(ReferenceOptionsAsk $ask, ObjectOperationsInterface $objectService): Schema|JSONResponse {
+		try {
+			$resolved = $this->resolveRegisterSchemaIds(register: $ask->register, schema: $ask->schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
@@ -2802,102 +2851,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['message' => 'Schema not found.'], statusCode: 404);
 		}
 
-		// The record as it stands. A read the caller may not make answers the
-		// same 404 it would anywhere else, so this endpoint cannot be used to
-		// confirm an object exists.
-		$record = [];
-		try {
-			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_render: false
-			));
-			if ($stored !== null) {
-				$record = $stored->getObject();
-			}
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
-			);
-		}
-
-		if (is_array($record) === false) {
-			$record = [];
-		}
-
-		$draft = $this->request->getParam('_draft');
-		if (is_array($draft) === true) {
-			$record = array_merge($record, $draft);
-		}
-
-		$reader = new ReferenceOptionsReader();
-
-		try {
-			$plan = $reader->plan(schema: $schemaEntity, property: $property, record: $record);
-		} catch (ReferenceFilterException $e) {
-			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 422);
-		}
-
-		if ($reader->isAnswerable(plan: $plan) === false) {
-			return new JSONResponse(
-				data: [
-					'results' => [],
-					'total' => 0,
-					'needs' => $plan['needs'],
-					'filter' => $plan['filter'],
-					'message' => sprintf(
-						'Choose %s first; there are no options until then.',
-						implode(' and ', $plan['needs'])
-					),
-				]
-			);
-		}
-
-		$target = ($plan['target'] ?? []);
-		if (is_string(($target['schema'] ?? null)) === false) {
-			return new JSONResponse(
-				data: ['message' => sprintf('\'%s\' does not name a schema to read options from.', $property)],
-				statusCode: 422
-			);
-		}
-
-		$limit = $reader->limitFor(requested: $this->request->getParam('_limit'));
-		$offset = (int)($this->request->getParam('_offset') ?? 0);
-		$query = $reader->queryFor(plan: $plan, limit: $limit, offset: $offset);
-
-		try {
-			// Point the service at the REFERENCED register and schema. Without
-			// this the search would run against the record's own schema and
-			// answer a confidently wrong list.
-			$objectService->setRegister(($target['register'] ?? $register));
-			$objectService->setSchema($target['schema']);
-
-			// `_rbac` stays on. The options a picker offers are objects, and a
-			// picker is not a way to see objects you may not see.
-			$options = $objectService->searchObjectsPaginated(query: $query);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ObjectsController] A reference-options read failed',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
-			);
-
-			return new JSONResponse(
-				data: ['message' => 'The options for this field could not be read.'],
-				statusCode: 500
-			);
-		}
-
-		$options['filtered'] = $plan['filtered'];
-		$options['filter'] = $plan['filter'];
-		$options['needs'] = [];
-
-		return new JSONResponse(data: $options);
-	}//end referenceOptions()
+		return $schemaEntity;
+	}//end optionsSchema()
 
 	/**
 	 * Shows a specific object from a register and schema
