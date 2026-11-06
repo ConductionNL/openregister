@@ -1006,26 +1006,43 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(404, $result->getStatus());
 	}
 
-	public function testLogsThrowsWhenFindFails(): void {
+	/**
+	 * @return array<string, array{0: \Exception, 1: int}>
+	 */
+	public static function logsLookupFailures(): array {
+		return [
+			'database' => [new DBException('Connection lost'), 1],
+			'other' => [new Exception('Not found'), 1],
+			'plain miss' => [new \OCP\AppFramework\Db\DoesNotExistException('Gone'), 0],
+		];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('logsLookupFailures')]
+	public function testLogsAnswers404WhenFindFails(Exception $failure, int $errorLines): void {
 		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
 		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('setRegister')->willReturnSelf();
-		$this->objectService->method('getSchema')->willReturn(1);
-		$this->objectService->method('getRegister')->willReturn(1);
-		$this->objectService->method('find')
-			->willThrowException(new Exception('Not found'));
+		$this->objectService->method('find')->willThrowException($failure);
+		$this->logger->expects($this->exactly($errorLines))->method('error');
 
-		// logs() catches Exception from find and returns 404
-		try {
-			$result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
-			$this->assertSame(404, $result->getStatus());
-		} catch (Exception $e) {
-			// If exception propagates, that is also valid behavior
-			$this->assertSame('Not found', $e->getMessage());
-		}
+		$result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['message' => 'Object not found'], $result->getData());
+	}
+
+	public function testLogsLeavesAnExternalSourceFailureToTheMiddleware(): void {
+		$this->setupAdminUser();
+		$failure = new \OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException('source down', 503);
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('find')->willThrowException($failure);
+
+		$this->expectExceptionObject($failure);
+		$this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
 	}
 
 	// --- import() register-level additional tests ---
