@@ -93,6 +93,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+
 		/**
 		 * @spec exclude UI state helper — reports whether any audit-trail filter is active.
 		 */
