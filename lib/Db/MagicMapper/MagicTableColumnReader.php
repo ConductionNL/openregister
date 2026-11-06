@@ -116,18 +116,29 @@ final class MagicTableColumnReader {
 	private function definitions(array $rows): array {
 		$definitions = [];
 		foreach ($rows as $column) {
-			$definitions[$column['column_name']] = [
-				'name' => $column['column_name'],
-				'type' => $column['data_type'],
-				'sqlType' => $column['column_type'] ?? $column['data_type'],
-				'length' => $column['character_maximum_length'],
-				'precision' => $column['numeric_precision'] ?? null,
-				'scale' => $column['numeric_scale'] ?? null,
-				'nullable' => $column['is_nullable'] === 'YES',
-				'default' => $column['column_default'],
-			];
+			$definitions[$column['column_name']] = $this->definition(column: $column);
 		}
 
 		return $definitions;
 	}//end definitions()
+
+	/**
+	 * The column definition of one information_schema row.
+	 *
+	 * @param array $column The row.
+	 *
+	 * @return (bool|mixed)[] Column definition.
+	 */
+	private function definition(array $column): array {
+		return [
+			'name' => $column['column_name'],
+			'type' => $column['data_type'],
+			'sqlType' => $column['column_type'] ?? $column['data_type'],
+			'length' => $column['character_maximum_length'],
+			'precision' => $column['numeric_precision'] ?? null,
+			'scale' => $column['numeric_scale'] ?? null,
+			'nullable' => $column['is_nullable'] === 'YES',
+			'default' => $column['column_default'],
+		];
+	}//end definition()
 }//end class
