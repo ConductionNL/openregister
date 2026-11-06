@@ -3144,34 +3144,42 @@ class ObjectsController extends Controller {
 	 * one is a 409, none is a 404. So a slug the caller can see only once
 	 * never reveals a second holder it cannot see.
 	 *
-	 * @param string $id       The identifier as the caller sent it.
-	 * @param array  $resolved The resolved register and schema (`registerEntity`, `schemaEntity`).
-	 * @param bool   $rbac     Whether RBAC applies to this caller.
-	 * @param bool   $multi    Whether multitenancy applies to this caller.
+	 * @param ObjectUpdate $patch The target and the caller's scope.
 	 *
 	 * @return ObjectEntity|JSONResponse The object, or the 409/404 response.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) rbac and multi are the caller's access flags, passed through.
 	 */
-	private function findReadableForPatch(string $id, array $resolved, bool $rbac, bool $multi): ObjectEntity|JSONResponse {
+	private function findReadableForPatch(ObjectUpdate $patch): ObjectEntity|JSONResponse {
 		try {
-			return $this->objectService->findSilent(
-				id: $id,
-				_extend: [],
-				files: false,
-				register: $resolved['registerEntity'],
-				schema: $resolved['schemaEntity'],
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
+			return $this->silentPatchRead(patch: $patch);
 		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
+			return $this->ambiguousIdentifierResponse(id: $patch->target->id);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 	}//end findReadableForPatch()
+
+	/**
+	 * Read the object a patch merges into, without an audit entry.
+	 *
+	 * @param ObjectUpdate $patch The target and the caller's scope.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function silentPatchRead(ObjectUpdate $patch): ObjectEntity {
+		return $this->objectService->findSilent(
+			id: $patch->target->id,
+			_extend: [],
+			files: false,
+			register: $patch->target->resolved['registerEntity'],
+			schema: $patch->target->resolved['schemaEntity'],
+			_rbac: $patch->caller->scoped,
+			_multitenancy: $patch->caller->scoped
+		);
+	}//end silentPatchRead()
 
 	/**
 	 * Add the actions this caller may take on the record being returned.
@@ -3670,6 +3678,17 @@ class ObjectsController extends Controller {
 	}//end writeCaller()
 
 	/**
+	 * The caller of a write that takes no uploads.
+	 *
+	 * @return WriteCaller The scope.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function caller(): WriteCaller {
+		return new WriteCaller(uploaded: [], scoped: ($this->isCurrentUserAdmin() === false));
+	}//end caller()
+
+	/**
 	 * The stored object a PUT replaces, or the refusal.
 	 *
 	 * @param ObjectUpdate $update The update asked for.
@@ -3814,11 +3833,24 @@ class ObjectsController extends Controller {
 		$e = $exception;
 
 		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
-			$e instanceof ObjectStateWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS),
+			$e instanceof ObjectStateWriteException => $this->stateRefusal(exception: $e),
 			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
 			default => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
 		});
 	}//end updateRefusal()
+
+	/**
+	 * The 409 of an archived or frozen object, with the reason.
+	 *
+	 * @param ObjectStateWriteException $exception The refusal.
+	 *
+	 * @return JSONResponse The 409.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function stateRefusal(ObjectStateWriteException $exception): JSONResponse {
+		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
+	}//end stateRefusal()
 
 	/**
 	 * Patches (partially updates) an existing object
@@ -3847,196 +3879,160 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function patch(
-		string $register,
-		string $schema,
-		string $id,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			// Resolve slugs to numeric IDs consistently.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
 
-		// Get patch data from request and filter parameters.
-		$patchData = $this->request->getParams();
+		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
+		$patch = new ObjectUpdate(target: $target, object: $this->submittableBody(object: $this->request->getParams()), caller: $this->caller());
+		$this->logPatchScope(patch: $patch);
 
-		// Filter out special parameters and reserved fields.
-		$patchData = array_filter(
-			$patchData,
-			fn ($key) => str_starts_with($key, '_') === false
-				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
-				&& in_array($key, ['uuid', 'register', 'schema']) === false,
-			ARRAY_FILTER_USE_KEY
-		);
-
-		// Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-		$patchData = $this->normalizeFormDataValues(data: $patchData);
-
-		// Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
-		$patchData = $this->sanitiseSelfMetadata(data: $patchData);
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		$multi = $isAdmin === false;
-
-		// Log RBAC/multitenancy settings for debugging.
-		$this->logger->debug(
-			message: '[ObjectsController] PATCH: RBAC/Multitenancy settings',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'id' => $id,
-				'isAdmin' => $isAdmin,
-				'rbac' => $rbac,
-				'multi' => $multi,
-			]
-		);
-
-		// Update the object with merged data.
 		try {
-			// The object is read in the caller's own scope, as PUT reads it, so
-			// an object the caller may not read answers 404 before the lock,
-			// the version check or the merge can say anything about it.
-			$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
-			if ($existingObject instanceof JSONResponse) {
-				return $existingObject;
-			}
-
-			// The lock answers BEFORE the optimistic-concurrency check, before
-			// the merge and before validation, exactly as it does on PUT.
-			// Ordering is the whole point: a caller told their payload is
-			// invalid, or handed a bare 500, when the real answer is "alice
-			// holds this" has been sent to fix the wrong thing.
-			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
-			if ($lockRefusal !== null) {
-				return $lockRefusal;
-			}
-
-			// Optimistic concurrency (fix-object-patch-lost-update): PATCH is a
-			// read-merge-write, so two concurrent PATCHes can silently clobber each
-			// other's untouched fields. A caller that read the object may pass the
-			// `updated` value it saw as `_expectedUpdated` (If-Match semantics); if
-			// the stored object changed since, the caller is working from stale data
-			// and the write is rejected with 409 instead of overwriting the newer
-			// version. Opt-in: callers that omit `_expectedUpdated` behave as before.
-			// Read from the raw request: the patchData filter strips `_`-prefixed keys.
-			$this->noteClientSuppliedCause(object: $existingObject);
-
-			$conflict = $this->versionGuard()->refusal(
-				stored: $existingObject,
-				write: new SentWrite(data: $patchData, schema: $resolved['schemaEntity'])
-			);
-			if ($conflict !== null) {
-				return $conflict;
-			}
-
-			// Get the existing object data and merge with patch data.
-			$existingData = $existingObject->getObject();
-			$mergedData = array_merge($existingData ?? [], $patchData);
-
-			// The read decoded, so the write re-encodes. Only keys the caller
-			// did NOT send are restored — see restoreStringTypedValues().
-			$mergedData = $this->restoreStringTypedValues(
-				mergedData: $mergedData,
-				patch: new StringTypedPatch(schema: $resolved['schemaEntity'], suppliedKeys: array_keys($patchData))
-			);
-
-			// Use the object service to validate and update the object.
-			$objectEntity = $objectService->saveObject(
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				object: $mergedData,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				uuid: ($existingObject->getUuid() ?? $id)
-			);
-
-			$this->logger->debug(
-				message: '[ObjectsController] PATCH: saveObject succeeded',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-					'status' => $objectEntity->getObject()['status'] ?? 'unknown',
-				]
-			);
-
-			// A save is a check-in: the writer's own lock goes back, and the
-			// entity we are about to serialise stops claiming it.
-			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
-
-			$this->logger->debug(
-				message: '[ObjectsController] PATCH: Starting to prepare response',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Return the successfully saved object directly.
-			// We already have it in memory from saveObject(), no need to re-fetch.
-			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
-		} catch (AppendOnlyException $exception) {
-			// Reject patch on append-only schema with HTTP 405.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
-		} catch (TranslationTargetConflictException $exception) {
-			// Structured 400 per the exception's own documented contract
-			// (i18n-api-language-negotiation): a language-keyed body for a
-			// translatable property collided with X-Translation-Target-Language.
-			// Emitted here so the { "error": { "code": ... } } shape survives
-			// instead of being flattened by the generic validation handler.
-			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
-		} catch (ValidationException|CustomValidationException $exception) {
-			// Handle validation errors.
-			$this->logger->warning(
-				message: '[ObjectsController] Validation exception in patch',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $exception->getMessage(),
-				]
-			);
-			return $objectService->handleValidationException(exception: $exception);
-		} catch (HookStoppedException $exception) {
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
-				statusCode: 422
-			);
-		} catch (ObjectStateWriteException $exception) {
-			// An archived or frozen object refuses the write with 409 and the
-			// reason, as a revert does; it fell into the generic handler (#4161).
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $exception) {
-			// A lock taken between this handler's pre-read and the save reaches
-			// here as the service-layer guard's typed refusal. Caught before
-			// generic \Exception so it answers 423 naming the holder rather
-			// than falling into the hardcoded 500 that made a locked PATCH
-			// look like a server fault.
-			return $this->lockedResponse(exception: $exception);
-		} catch (FolderAccessDeniedException $exception) {
-			// MUST be caught before generic \Exception. See `self-folder-access-control` spec.
-			return $this->folderAccessDeniedResponse(exception: $exception);
-		} catch (NotAuthorizedException $exception) {
-			// The rules refused this caller the update: 403 with the reason, as
-			// PUT and DELETE answer. It fell into the generic handler and came
-			// back as a 500 that read like a server fault (planninq live pass P4).
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+			return $this->patchedResponse(patch: $patch);
 		} catch (\Exception $exception) {
-			// Handle all other exceptions (including RBAC permission errors).
-			$this->logger->error(
-				message: '[ObjectsController] Unexpected exception in patch',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $exception->getMessage(),
-					'trace' => $exception->getTraceAsString(),
-				]
-			);
-			// SEC-CTRL-7: do not leak internal exception detail on 500.
-			return $this->errorResponse(e: $exception);
-		}//end try
+			return ($this->knownPatchRefusal(exception: $exception, objectService: $objectService) ?? $this->unexpectedPatchFailure(exception: $exception));
+		}
 	}//end patch()
+
+	/**
+	 * Log the scope a PATCH runs in.
+	 *
+	 * @param ObjectUpdate $patch The patch asked for.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function logPatchScope(ObjectUpdate $patch): void {
+		$scoped = $patch->caller->scoped;
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'id' => $patch->target->id, 'isAdmin' => ($scoped === false), 'rbac' => $scoped, 'multi' => $scoped];
+		$this->logger->debug(message: '[ObjectsController] PATCH: RBAC/Multitenancy settings', context: $context);
+	}//end logPatchScope()
+
+	/**
+	 * Merge, save and answer a PATCH.
+	 *
+	 * @param ObjectUpdate $patch The patch asked for.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function patchedResponse(ObjectUpdate $patch): JSONResponse {
+		$existing = $this->findReadableForPatch(patch: $patch);
+		if ($existing instanceof JSONResponse) {
+			return $existing;
+		}
+
+		$refusal = ($this->lockRefusalResponse(existingObject: $existing) ?? $this->versionRefusal(patch: $patch, existing: $existing));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$objectEntity = $this->mergedPatch(patch: $patch, existing: $existing)->saved(uuid: ($existing->getUuid() ?? $patch->target->id));
+		$this->logPatchSaved(object: $objectEntity);
+		$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
+		$this->logger->debug(message: '[ObjectsController] PATCH: Starting to prepare response', context: ['file' => __FILE__, 'line' => __LINE__]);
+
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
+	}//end patchedResponse()
+
+	/**
+	 * Log a saved PATCH.
+	 *
+	 * @param ObjectEntity $object The saved object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function logPatchSaved(ObjectEntity $object): void {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $object->getUuid(), 'status' => ($object->getObject()['status'] ?? 'unknown')];
+		$this->logger->debug(message: '[ObjectsController] PATCH: saveObject succeeded', context: $context);
+	}//end logPatchSaved()
+
+	/**
+	 * The 409 for a PATCH made from a stale read, or null.
+	 *
+	 * @param ObjectUpdate $patch The patch asked for.
+	 * @param ObjectEntity $existing The stored object.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function versionRefusal(ObjectUpdate $patch, ObjectEntity $existing): ?JSONResponse {
+		$this->noteClientSuppliedCause(object: $existing);
+
+		return $this->versionGuard()->refusal(
+			stored: $existing,
+			write: new SentWrite(data: $patch->object, schema: $patch->target->resolved['schemaEntity'])
+		);
+	}//end versionRefusal()
+
+	/**
+	 * The patch with the stored data under it.
+	 *
+	 * The read decoded, so the write re-encodes: only keys the caller did NOT send
+	 * are restored.
+	 *
+	 * @param ObjectUpdate $patch The patch asked for.
+	 * @param ObjectEntity $existing The stored object.
+	 *
+	 * @return ObjectUpdate The write that replaces the object.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	private function mergedPatch(ObjectUpdate $patch, ObjectEntity $existing): ObjectUpdate {
+		$merged = $this->restoreStringTypedValues(
+			mergedData: array_merge(($existing->getObject() ?? []), $patch->object),
+			patch: new StringTypedPatch(schema: $patch->target->resolved['schemaEntity'], suppliedKeys: array_keys($patch->object))
+		);
+
+		return new ObjectUpdate(target: $patch->target, object: $merged, caller: $patch->caller);
+	}//end mergedPatch()
+
+	/**
+	 * The refusal both patch routes answer the same way, or null.
+	 *
+	 * An archived or frozen object refuses with 409 and the reason; a refusal by
+	 * the rules answers 403 with that reason.
+	 *
+	 * @param \Exception $exception The failure.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function knownPatchRefusal(\Exception $exception, ObjectOperationsInterface $objectService): ?JSONResponse {
+		$e = $exception;
+
+		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
+			$e instanceof ObjectStateWriteException => $this->stateRefusal(exception: $e),
+			$e instanceof NotAuthorizedException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN),
+			default => null,
+		});
+	}//end knownPatchRefusal()
+
+	/**
+	 * Log a failed PATCH and answer without its detail.
+	 *
+	 * @param \Exception $exception The failure.
+	 *
+	 * @return JSONResponse The answer.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function unexpectedPatchFailure(\Exception $exception): JSONResponse {
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception->getMessage(), 'trace' => $exception->getTraceAsString()];
+		$this->logger->error(message: '[ObjectsController] Unexpected exception in patch', context: $context);
+
+		return $this->errorResponse(e: $exception);
+	}//end unexpectedPatchFailure()
 
 	/**
 	 * Partially updates an existing object via POST with multipart file upload support.
@@ -4062,135 +4058,51 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function postPatch(
-		string $register,
-		string $schema,
-		string $id,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		try {
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 404);
 		}
 
-		// Get patch data from request and filter parameters.
-		$patchData = $this->request->getParams();
-		$patchData = array_filter(
-			$patchData,
-			fn ($key) => str_starts_with($key, '_') === false
-				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
-				&& in_array($key, ['uuid', 'register', 'schema', 'id']) === false,
-			ARRAY_FILTER_USE_KEY
-		);
-
-		// Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-		$patchData = $this->normalizeFormDataValues(data: $patchData);
-
-		// Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
-		$patchData = $this->sanitiseSelfMetadata(data: $patchData);
-
-		// Extract uploaded files — works because this is a POST request.
-		$uploadedFiles = $this->extractAllUploadedFiles();
-		if (empty($uploadedFiles) === false) {
-			$uploadedFilesValue = $uploadedFiles;
-		} else {
-			$uploadedFilesValue = null;
-		}
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		$multi = $isAdmin === false;
+		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
+		$body = array_diff_key($this->submittableBody(object: $this->request->getParams()), ['id' => true]);
+		$patch = new ObjectUpdate(target: $target, object: $body, caller: $this->writeCaller());
 
 		try {
-			// The object to merge with is read in the caller's own scope, as
-			// PATCH and PUT read it.
-			$existingObject = $this->findReadableForPatch(id: $id, resolved: $resolved, rbac: $rbac, multi: $multi);
-			if ($existingObject instanceof JSONResponse) {
-				return $existingObject;
-			}
-
-			// The lock answers BEFORE the merge and before validation, exactly
-			// as it does on PUT. Reached through the same guard, so the two
-			// doors to one object cannot drift apart again.
-			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
-			if ($lockRefusal !== null) {
-				return $lockRefusal;
-			}
-
-			// Merge existing data with patch data (patch semantics).
-			$existingData = $existingObject->getObject();
-			$mergedData = array_merge($existingData ?? [], $patchData);
-
-			// The read decoded, so the write re-encodes. Only keys the caller
-			// did NOT send are restored — see restoreStringTypedValues().
-			$mergedData = $this->restoreStringTypedValues(
-				mergedData: $mergedData,
-				patch: new StringTypedPatch(schema: $resolved['schemaEntity'], suppliedKeys: array_keys($patchData))
-			);
-
-			$objectService->clearCreatedSubObjects();
-
-			$objectEntity = $objectService->saveObject(
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				object: $mergedData,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				uuid: ($existingObject->getUuid() ?? $id),
-				uploadedFiles: $uploadedFilesValue
-			);
-
-			// A save is a check-in: the writer's own lock goes back, and the
-			// entity we are about to serialise stops claiming it.
-			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
-
-			return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
-		} catch (AppendOnlyException $exception) {
-			// Reject post-patch on append-only schema with HTTP 405.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
-		} catch (TranslationTargetConflictException $exception) {
-			// Structured 400 per the exception's own documented contract
-			// (i18n-api-language-negotiation): a language-keyed body for a
-			// translatable property collided with X-Translation-Target-Language.
-			// Emitted here so the { "error": { "code": ... } } shape survives
-			// instead of being flattened by the generic validation handler.
-			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
-		} catch (ValidationException|CustomValidationException $exception) {
-			return $objectService->handleValidationException(exception: $exception);
-		} catch (HookStoppedException $exception) {
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
-				statusCode: 422
-			);
-		} catch (ObjectStateWriteException $exception) {
-			// An archived or frozen object refuses the write with 409 and the
-			// reason, as a revert does; it fell into the generic handler (#4161).
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $exception) {
-			// A lock taken between this handler's pre-read and the save reaches
-			// here as the service-layer guard's typed refusal. Caught before
-			// generic \Exception so it answers 423 naming the holder rather
-			// than falling into the hardcoded 500 that made a locked PATCH
-			// look like a server fault.
-			return $this->lockedResponse(exception: $exception);
-		} catch (FolderAccessDeniedException $exception) {
-			// MUST be caught before generic \Exception so a @self.folder
-			// denial on the post-patch path returns 403 with the structured
-			// body (no folder-id oracle) — same contract as create/update/patch.
-			// See the `self-folder-access-control` spec.
-			return $this->folderAccessDeniedResponse(exception: $exception);
-		} catch (NotAuthorizedException $exception) {
-			// The rules refused this caller the update: 403 with the reason, as
-			// PUT and DELETE answer. It fell into the generic handler and came
-			// back as a 500 that read like a server fault (planninq live pass P4).
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+			return $this->postPatchedResponse(patch: $patch);
 		} catch (\Exception $exception) {
-			// SEC-CTRL-7: do not leak internal exception detail on 500.
-			return $this->errorResponse(e: $exception);
-		}//end try
+			return ($this->knownPatchRefusal(exception: $exception, objectService: $objectService) ?? $this->errorResponse(e: $exception));
+		}
 	}//end postPatch()
+
+	/**
+	 * Merge, save and answer a POST patch, which also takes file uploads.
+	 *
+	 * @param ObjectUpdate $patch The patch asked for.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function postPatchedResponse(ObjectUpdate $patch): JSONResponse {
+		$existing = $this->findReadableForPatch(patch: $patch);
+		if ($existing instanceof JSONResponse) {
+			return $existing;
+		}
+
+		$refusal = $this->lockRefusalResponse(existingObject: $existing);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$merged = $this->mergedPatch(patch: $patch, existing: $existing);
+		$patch->target->objectService->clearCreatedSubObjects();
+		$objectEntity = $merged->saved(uuid: ($existing->getUuid() ?? $patch->target->id));
+		$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
+
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()));
+	}//end postPatchedResponse()
 
 	/**
 	 * Deletes an object
