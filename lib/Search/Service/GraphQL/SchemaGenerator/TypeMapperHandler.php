@@ -138,9 +138,7 @@ class TypeMapperHandler {
 	 * @param callable $objectTypeFactory Gets/creates an ObjectType for a schema
 	 * @param callable $fieldNameConverter Converts a slug to a GraphQL field name
 	 * @param callable $typeNameConverter Converts a slug to a PascalCase type name
-	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
-	 *                                               last so no construction site shifts; absent, a governed
-	 *                                               property is withheld, which is the safe direction.
+	 * @param PropertyRbacHandler $propertyRbac Withholds a property the caller may not read
 	 */
 	public function __construct(
 		array $scalars,
@@ -148,10 +146,7 @@ class TypeMapperHandler {
 		callable $objectTypeFactory,
 		callable $fieldNameConverter,
 		callable $typeNameConverter,
-		// LAST AND NULLABLE so every existing construction keeps working. The
-		// container always supplies it; null happens only in a hand-built test,
-		// and then a GOVERNED property is withheld, which is the safe direction.
-		private readonly ?PropertyRbacHandler $propertyRbac = null,
+		private readonly PropertyRbacHandler $propertyRbac,
 	) {
 		$this->scalars = $scalars;
 		$this->refResolver = $refResolver;
