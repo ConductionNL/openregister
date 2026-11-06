@@ -171,6 +171,10 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
 		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
 			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
 		}

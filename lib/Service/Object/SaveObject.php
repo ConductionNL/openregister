@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
 use OCA\OpenRegister\Service\Object\SaveObject\LifecycleSeed;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferencePropertyRun;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScanRun;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamRun;
 use OCA\OpenRegister\Service\Object\SaveObject\WriteBackSettings;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -288,6 +289,13 @@ class SaveObject implements SaveObjectInterface {
 	 * @var array<string, list<array{0: string[], 1: array}>>
 	 */
 	private array $pendingOrphans = [];
+
+	/**
+	 * Finds the relations in object data; built on first use.
+	 *
+	 * @var RelationScanner|null
+	 */
+	private ?RelationScanner $relationScanner = null;
 
 	/**
 	 * Applies the schema's defaults; built on first use.
@@ -657,6 +665,15 @@ class SaveObject implements SaveObjectInterface {
 	}//end lookups()
 
 	/**
+	 * The relation scanner of this save handler.
+	 *
+	 * @return RelationScanner
+	 */
+	private function relationScanner(): RelationScanner {
+		return $this->relationScanner ??= new RelationScanner(urls: $this->urlGenerator);
+	}//end relationScanner()
+
+	/**
 	 * The schema defaults of this save handler.
 	 *
 	 * @return PropertyDefaults
@@ -778,236 +795,8 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$scan = new RelationScanRun();
-		$scan->schema = $schema;
-
-		try {
-			$scan->schemaProperties = $this->relationScanProperties(schema: $schema);
-			foreach ($data as $key => $value) {
-				// Skip if key is not a string or is empty.
-				if (is_string($key) === false || empty($key) === true) {
-					continue;
-				}
-
-				$scan->key = $key;
-				$scan->path = $key;
-				if (($prefix !== '') === true) {
-					$scan->path = $prefix . '.' . $key;
-				}
-
-				if (is_array($value) === true && empty($value) === false) {
-					$this->scanListForRelations(scan: $scan, value: $value);
-				} elseif (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-					$this->scanStringForRelation(scan: $scan, value: $value);
-				}
-			}
-		} catch (Exception $e) {
-			// Error scanning for relations: the relations found so far are kept.
-		}//end try
-
-		return $scan->relations;
+		return $this->relationScanner()->scan(data: $data, scan: new RelationScanRun(prefix: $prefix, schema: $schema));
 	}//end scanForRelations()
-
-	/**
-	 * The property definitions of the schema a relation scan reads, or null without a (readable) schema.
-	 *
-	 * @param Schema|null $schema The schema, if any.
-	 *
-	 * @return array|null The property definitions.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function relationScanProperties(?Schema $schema): ?array {
-		if ($schema === null) {
-			return null;
-		}
-
-		try {
-			$schemaObject = json_decode(json_encode($schema->getSchemaObject($this->urlGenerator)), associative: true);
-			return $schemaObject['properties'] ?? [];
-		} catch (Exception $e) {
-			// Continue without schema properties if parsing fails.
-			return null;
-		}
-	}//end relationScanProperties()
-
-	/**
-	 * Scan a list value for relations: nested objects recursively, strings by the property kind.
-	 *
-	 * In an array-of-objects property every non-empty string is a relation;
-	 * elsewhere only strings that look like a reference are.
-	 *
-	 * @param RelationScanRun $scan  The scan, on one key.
-	 * @param array           $value The list.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function scanListForRelations(RelationScanRun $scan, array $value): void {
-		$isArrayOfObjects = self::isArrayOfObjectsProperty(propertyConfig: ($scan->schemaProperties[$scan->key] ?? null));
-
-		foreach ($value as $index => $item) {
-			$itemPath = $scan->path . '.' . $index;
-			if (is_array($item) === true) {
-				$scan->relations = array_merge(
-					$scan->relations,
-					$this->scanForRelations(data: $item, prefix: $itemPath, schema: $scan->schema)
-				);
-				continue;
-			}
-
-			if (is_string($item) === false || empty($item) === true) {
-				continue;
-			}
-
-			if ($isArrayOfObjects === true
-				|| (trim($item) !== '' && $this->isReference(value: $item) === true)
-			) {
-				$scan->relations[$itemPath] = $item;
-			}
-		}//end foreach
-	}//end scanListForRelations()
-
-	/**
-	 * Whether a property definition is an array of objects.
-	 *
-	 * @param mixed $propertyConfig The property definition, or null.
-	 *
-	 * @return bool True for an array whose items are objects.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isArrayOfObjectsProperty(mixed $propertyConfig): bool {
-		return $propertyConfig
-			&& ($propertyConfig['type'] ?? '') === 'array'
-			&& isset($propertyConfig['items']['type'])
-			&& $propertyConfig['items']['type'] === 'object';
-	}//end isArrayOfObjectsProperty()
-
-	/**
-	 * Record a string value as a relation when its schema property declares one, or when it looks like a reference.
-	 *
-	 * A 'text' property with format uuid, uri or url, or an 'object' property, is always a relation.
-	 *
-	 * @param RelationScanRun $scan  The scan, on one key.
-	 * @param string          $value The value.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function scanStringForRelation(RelationScanRun $scan, string $value): void {
-		$treatAsRelation = false;
-		$propertyConfig = ($scan->schemaProperties[$scan->key] ?? null);
-		if ($scan->schemaProperties !== null && $propertyConfig !== null) {
-			$propertyType = $propertyConfig['type'] ?? '';
-			$propertyFormat = $propertyConfig['format'] ?? '';
-			$treatAsRelation = ($propertyType === 'text' && in_array($propertyFormat, ['uuid', 'uri', 'url']) === true)
-				|| $propertyType === 'object';
-		}
-
-		if ($treatAsRelation === false) {
-			$treatAsRelation = $this->isReference(value: $value);
-		}
-
-		if ($treatAsRelation === true) {
-			$scan->relations[$scan->path] = $value;
-		}
-	}//end scanStringForRelation()
-
-	/**
-	 * Determines if a string value should be treated as a reference to another object
-	 *
-	 * This method checks for various reference patterns including:
-	 * - Standard UUIDs (e.g., "dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4")
-	 * - Prefixed IDs (e.g., "id-819c2fe5-db4e-4b6f-8071-6a63fd400e34")
-	 * - URLs
-	 * - Other identifier patterns
-	 *
-	 * @param string $value The string value to check
-	 *
-	 * @return bool True if the value should be treated as a reference
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function isReference(string $value): bool {
-		$value = trim($value);
-
-		// Empty strings are not references.
-		if (empty($value) === true) {
-			return false;
-		}
-
-		// Check for standard UUID pattern (8-4-4-4-12 format).
-		if (UuidFormat::isCanonical(value: $value) === true) {
-			return true;
-		}
-
-		// Check for UUID without dashes (32 hex chars).
-		if (UuidFormat::isHex32(value: $value) === true) {
-			return true;
-		}
-
-		// Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.) - with dashes.
-		if (UuidFormat::isPrefixed(value: $value) === true) {
-			return true;
-		}
-
-		// Check for prefixed UUID patterns without dashes (e.g., "id-32hexchars").
-		if (preg_match('/^[a-z]+-[0-9a-f]{32}$/i', $value) === 1) {
-			return true;
-		}
-
-		// Check for numeric IDs.
-		if (preg_match('/^[0-9]+$/', $value) === 1) {
-			return true;
-		}
-
-		// Check for URLs.
-		if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-			return true;
-		}
-
-		// Check for other common ID patterns, but be more selective to avoid false positives.
-		// Only consider strings that look like identifiers, not regular text.
-		if (preg_match('/^[a-z0-9][a-z0-9_-]{7,}$/i', $value) === 1) {
-			// Must contain at least one hyphen or underscore (indicating it's likely an ID).
-			// AND must not contain spaces or common text words.
-			$hasHyphenUndscr = (strpos($value, '-') !== false || strpos($value, '_') !== false);
-			$hasNoSpaces = preg_match('/\s/', $value) === 0;
-			$commonWords = ['applicatie', 'systeemsoftware', 'open-source', 'closed-source'];
-			$isNotCommonWord = in_array(strtolower($value), $commonWords, true) === false;
-			if ($hasHyphenUndscr === true && $hasNoSpaces === true && $isNotCommonWord === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isReference()
-
-	/**
-	 * Updates the relations property of an object entity
-	 *
-	 * @param ObjectEntity $objectEntity The object entity to update
-	 * @param array $data The object data to scan for relations
-	 * @param Schema|null $schema The schema to check property definitions against
-	 *
-	 * @return ObjectEntity The updated object entity
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema = null): ObjectEntity {
-		// Scan for relations in the object data.
-		$relations = $this->scanForRelations(data: $data, prefix: '', schema: $schema);
-
-		// Set the relations on the object entity.
-		$objectEntity->setRelations($relations);
-
-		return $objectEntity;
-	}//end updateObjectRelations()
 
 	/**
 	 * Updates inverse relations on related objects (bidirectional relationship management).
@@ -4187,11 +3976,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Update object relations.
 		try {
-			$objectEntity = $this->updateObjectRelations(
-				objectEntity: $objectEntity,
-				data: $preparedData,
-				schema: $schema
-			);
+			$objectEntity->setRelations($this->scanForRelations(data: $preparedData, prefix: '', schema: $schema));
 		} catch (Exception $e) {
 			// CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
 			$hint = 'This indicates invalid relation data or schema configuration problems.';
@@ -4419,12 +4204,7 @@ class SaveObject implements SaveObjectInterface {
 		// Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
 		// Update object relations (result currently unused but operation has side effects).
 		try {
-			// $objectEntity = $this->updateObjectRelations($existingObject, $preparedData, $schema);
-			$this->updateObjectRelations(
-				objectEntity: $existingObject,
-				data: $preparedData,
-				schema: $schema
-			);
+			$existingObject->setRelations($this->scanForRelations(data: $preparedData, prefix: '', schema: $schema));
 		} catch (Exception $e) {
 			// CRITICAL FIX: Relation processing failures indicate serious data integrity issues!
 			$hint = 'This indicates invalid relation data or schema configuration problems.';
