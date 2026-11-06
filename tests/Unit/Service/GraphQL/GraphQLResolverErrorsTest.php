@@ -145,7 +145,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 	public function testSingleNotFoundNamesTheTitle(): void {
 		$resolver = $this->resolver();
 		$this->getObject->method('find')->willThrowException(new DoesNotExistException('gone'));
-		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), null, ['id' => 'obj-1']));
+		$error = $this->errorOf(fn () => $resolver->resolveSingle($this->schema('Zaak'), ['id' => 'obj-1']));
 		$this->assertSame(["Zaak with ID 'obj-1' not found", ['code' => 'NOT_FOUND'], null], $this->parts($error));
 	}//end testSingleNotFoundNamesTheTitle()
 
