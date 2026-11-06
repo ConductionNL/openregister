@@ -95,7 +95,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				<SchemaStatsBlock
 					:objectCount="0"
 					:objectStats="null"
-					:loading="false"
+					:loading="countLoading"
 					:title="t('openregister', 'Objects in schema')" />
 			</div>
 		</div>
@@ -183,6 +183,7 @@ export default {
 			error: false,
 			success: false,
 			deletionResult: null,
+			countLoading: true,
 			objectCount: 0,
 			objectStats: null,
 			hardDelete: [],
@@ -221,6 +222,7 @@ export default {
 		 * @spec exclude form-state loader for schema object count via schemaStore
 		 */
 		async loadObjectCount() {
+			this.countLoading = true
 			try {
 				if (schemaStore.schemaItem?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
@@ -234,6 +236,8 @@ export default {
 				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
 				this.objectCount = 0
 				this.objectStats = null
+			} finally {
+				this.countLoading = false
 			}
 		},
 
