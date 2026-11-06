@@ -254,67 +254,128 @@
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden bad expiration": {
         "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
+            "Exception",
+            "Invalid expiration date",
+            400
         ],
         "calls": []
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden email share, blank password": {
-        "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
-        ],
-        "calls": []
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    4
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    1
+                ],
+                [
+                    "setSharedWith",
+                    "x@y.nl"
+                ]
+            ]
+        }
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden file outside folder": {
         "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
+            "Exception",
+            "File does not belong to this object",
+            404
         ],
         "calls": []
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden group without recipient": {
         "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
+            "Exception",
+            "shareWith is required for this share type",
+            400
         ],
         "calls": []
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden link with password and expiry": {
-        "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
-        ],
-        "calls": []
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    3
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    17
+                ],
+                [
+                    "setPassword",
+                    "secret"
+                ],
+                [
+                    "setExpirationDate",
+                    "2026-12-24T00:00:00+00:00"
+                ]
+            ]
+        }
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden manager refuses": {
         "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
+            "Exception",
+            "sharing disabled",
+            400
         ],
         "calls": []
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden unsupported type": {
         "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
+            "Exception",
+            "Unsupported share type",
+            400
         ],
         "calls": []
     },
     "LinkServiceCreateGoldenTest::testCreateShareGolden user share": {
-        "error": [
-            "TypeError",
-            "OCA\\OpenRegister\\Service\\ShareDraft::withRecipient(): Argument #2 ($permissions) must be of type int, MockObject_PermissionHandler_e5a6a9e1 given, called in /home/rubenlinde/sig-lanes/secfix/openregister/tests/Unit/Service/LinkServiceCreateGoldenTest.php on line 256",
-            0
-        ],
-        "calls": []
+        "result": {
+            "returnsBuiltShare": true,
+            "calls": [
+                [
+                    "setNode",
+                    "node#10"
+                ],
+                [
+                    "setShareType",
+                    0
+                ],
+                [
+                    "setSharedBy",
+                    "openregister"
+                ],
+                [
+                    "setPermissions",
+                    1
+                ],
+                [
+                    "setSharedWith",
+                    "bob"
+                ]
+            ]
+        }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden bad message id": {
         "error": [
