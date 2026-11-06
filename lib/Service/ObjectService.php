@@ -7351,139 +7351,143 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?IUser $currentUser=null
     ): ObjectEntity {
         // A PATCH SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // The saveObject() it delegates to now restores too, so without this the
-        // only context left behind would be the one patchObject() set itself.
+        // The saveObject() it delegates to restores too, so without this the only
+        // context left behind would be the one patchObject() set itself.
         // See restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        return $this->preservingScope(
+            operation: function () use ($objectId, $data, $register, $schema, $_rbac, $_multitenancy, $currentUser): ObjectEntity {
+                // Resolve the caller's scope onto the service context first, so the
+                // lookup below and the save that follows both see the same one.
+                $this->setContextFromParameters(register: $register, schema: $schema);
 
-        try {
-            // Resolve the caller's scope onto the service context first, so the
-            // lookup below and the save that follows both see the same one.
-            $this->setContextFromParameters(
-                register: $register,
-                schema: $schema
-            );
+                $existing = $this->findPatchTarget(
+                    objectId: $objectId,
+                    target: new ObjectFindTarget(register: $register, schema: $schema)
+                );
 
-            // Scoped lookup when both halves of the scope are known — that targets
-            // exactly one magic table. Otherwise the legacy cross-table resolve,
-            // which every existing caller relies on. Note the identifier is passed
-            // through unchanged: casting a uuid to int resolves to an unrelated row.
-            $scopedRegister = null;
-            $scopedSchema   = null;
-            if ($register !== null && $schema !== null) {
-                $scopedRegister = $this->currentRegister;
-                $scopedSchema   = $this->currentSchema;
+                // Address the save at the object we actually resolved, not at whatever
+                // form of the identifier the caller happened to hold.
+                $merged       = $this->patchedBody(existing: $existing, data: $data);
+                $merged['id'] = ($existing->getUuid() ?? $objectId);
+
+                return $this->saveObject(
+                    object: $merged,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    currentUser: $currentUser
+                );
             }
-
-            $existing = $this->objectMapper->find(
-                identifier: $objectId,
-                register: $scopedRegister,
-                schema: $scopedSchema
-            );
-
-            $merged = (new PatchDataMerge())->merge(
-                stored: (array) $existing->getObject(),
-                patch: $data
-            );
-
-            // The read decoded, so the write has to re-encode. A `type: string`
-            // property whose stored value looks like JSON comes back from
-            // getObject() as an ARRAY (SchemaTypeConverter::convertString), and
-            // feeding that array back in makes validation refuse a patch that
-            // never mentioned the property. Only keys the caller did NOT supply
-            // are restored — see restoreStringTypedValues() for why.
-            $merged = $this->restoreStringTypedValues(
-                data: $merged,
-                existing: $existing,
-                suppliedKeys: array_keys($data)
-            );
-
-            // Address the save at the object we actually resolved, not at whatever
-            // form of the identifier the caller happened to hold.
-            $merged['id'] = ($existing->getUuid() ?? $objectId);
-
-            return $this->saveObject(
-                object: $merged,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                currentUser: $currentUser
-            );
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end patchObject()
 
     /**
-     * Restore the stored form of string-typed properties the read path decoded.
+     * Finds the stored object a patch applies to.
      *
-     * Thin resolver around `SchemaTypeConverter::restoreStringTypedValues()`,
-     * which owns the rule. All this does is find the schema whose property
-     * declarations say which keys are string-typed.
+     * A scoped lookup when both halves of the scope are known: that targets exactly one
+     * magic table. Otherwise the legacy cross-table resolve, which every existing caller
+     * relies on. The identifier is passed through unchanged: casting a uuid to int
+     * resolves to an unrelated row.
      *
-     * The schema lookup runs with RBAC and multitenancy off: it reads type
-     * declarations to persist an object correctly, not data on the caller's
-     * behalf, and `saveObject()` still applies every check to the write itself.
-     * Leaving them on would make the repair depend on the caller's schema
-     * permissions, so the defect would come back for exactly the callers least
-     * able to diagnose it.
+     * @param string           $objectId The identifier the caller holds.
+     * @param ObjectFindTarget $target   The register and schema the call names.
      *
-     * If the schema or the converter cannot be resolved the data is returned
-     * unchanged, which leaves the pre-existing loud validation refusal in
-     * place. That is the intended failure direction: never swallow, never
-     * silently rewrite.
+     * @return ObjectEntity The stored object.
      *
-     * @param array        $data         The merged object data about to be saved.
-     * @param ObjectEntity $existing     The object as it was read.
-     * @param array        $suppliedKeys Keys the caller actually sent.
-     *
-     * @return array The data with untouched string-typed JSON values restored.
-     *
-     * @spec openspec/specs/schema-driven-read-coercion/spec.md
+     * @spec exclude Private step of patchObject(); the rights are checked by the saveObject() it ends in.
      */
-    private function restoreStringTypedValues(array $data, ObjectEntity $existing, array $suppliedKeys): array
+    private function findPatchTarget(string $objectId, ObjectFindTarget $target): ObjectEntity
+    {
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($target->register !== null && $target->schema !== null) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        return $this->objectMapper->find(
+            identifier: $objectId,
+            register: $scopedRegister,
+            schema: $scopedSchema
+        );
+    }//end findPatchTarget()
+
+    /**
+     * Merges a patch over the stored data and re-encodes what the read decoded.
+     *
+     * A `type: string` property whose stored value looks like JSON comes back from
+     * getObject() as an ARRAY (SchemaTypeConverter::convertString), and feeding that array
+     * back in makes validation refuse a patch that never mentioned the property. Only keys
+     * the caller did NOT supply are restored: a value the caller sent is theirs, and the
+     * write has to judge it as sent.
+     *
+     * @param ObjectEntity $existing The stored object.
+     * @param array        $data     The fields the caller supplied.
+     *
+     * @phpstan-param array<string, mixed> $data
+     * @psalm-param   array<string, mixed> $data
+     *
+     * @return array The body to save.
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return   array<string, mixed>
+     *
+     * @spec exclude Private step of patchObject(); merge behaviour owned by PatchDataMerge.
+     */
+    private function patchedBody(ObjectEntity $existing, array $data): array
+    {
+        $merged = (new PatchDataMerge())->merge(stored: (array) $existing->getObject(), patch: $data);
+
+        $restorer = $this->stringTypeRestorer(existing: $existing);
+        if ($restorer === null) {
+            return $merged;
+        }
+
+        return $restorer['converter']->restoreStringTypedValues(
+            data: $merged,
+            properties: ($restorer['schema']->getProperties() ?? []),
+            suppliedKeys: array_keys($data)
+        );
+    }//end patchedBody()
+
+    /**
+     * The schema and converter that restore string-typed values, when both can be had.
+     *
+     * A container may answer with something other than a converter, or with nothing at
+     * all. Null keeps the data unchanged, and with it the pre-existing refusal; calling
+     * a method on null would turn a patch into a fatal.
+     *
+     * @param ObjectEntity $existing The stored object.
+     *
+     * @return array{schema: Schema, converter: SchemaTypeConverter}|null The pair, or null.
+     *
+     * @spec exclude Private step of patchObject(); conversion owned by SchemaTypeConverter.
+     */
+    private function stringTypeRestorer(ObjectEntity $existing): ?array
     {
         $schemaId = $existing->getSchema();
         if ($schemaId === null) {
-            return $data;
+            return null;
         }
 
         try {
-            $schema = $this->schemaMapper->find(
-                $schemaId,
-                _rbac: false,
-                _multitenancy: false
-            );
-
+            $schema    = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
             $converter = $this->container->get(SchemaTypeConverter::class);
         } catch (\Throwable $restoreError) {
             $this->logger->warning(
                 message: '[ObjectService] Could not restore string-typed values before the save',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'schema' => $schemaId,
-                    'exception' => $restoreError->getMessage(),
-                ]
+                context: ['schema' => $schemaId, 'exception' => $restoreError->getMessage()]
             );
-            return $data;
+            return null;
         }
 
-        // A container may answer with something other than a converter, or with
-        // nothing at all. Returning the data unchanged keeps the pre-existing
-        // refusal; calling a method on null would turn a patch into a fatal.
         if (($converter instanceof SchemaTypeConverter) === false) {
-            return $data;
+            return null;
         }
 
-        return $converter->restoreStringTypedValues(
-            data: $data,
-            properties: ($schema->getProperties() ?? []),
-            suppliedKeys: $suppliedKeys
-        );
-    }//end restoreStringTypedValues()
+        return ['schema' => $schema, 'converter' => $converter];
+    }//end stringTypeRestorer()
 
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS
