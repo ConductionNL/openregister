@@ -506,6 +506,24 @@ class TablesObjectSourceProviderTest extends TestCase {
 	}//end testAQueryScansBoundedAndReadsColumnsOnce()
 
 	/**
+	 * A query on a View-bound schema scans that View, never the whole table.
+	 *
+	 * @return void
+	 */
+	public function testAQueryOnAViewScansTheView(): void {
+		[$register, $schema] = $this->binding();
+		$this->reader->method('listColumns')->willReturn($this->columns());
+		$this->reader->expects($this->exactly(2))
+			->method('findRows')
+			->with((new TablesReadScope(5, 'alice'))->withView(viewId: 9)->withPage(limit: 1000, offset: 0))
+			->willReturn([]);
+
+		$config = ['tableId' => 5, 'viewId' => 9];
+		$this->provider()->findAll($register, $schema, ['search' => 'x'], $config);
+		$this->provider()->count($register, $schema, ['search' => 'x'], $config);
+	}//end testAQueryOnAViewScansTheView()
+
+	/**
 	 * A scan that reaches the cap says so: rows past it were not considered.
 	 *
 	 * @return void
