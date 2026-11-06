@@ -123,6 +123,11 @@ class LinksControllersGoldenTest extends TestCase {
 			return $mock;
 		}
 
+		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandler::class) {
+			$mock->method('hasPermission')->willReturn(true);
+			return $mock;
+		}
+
 		if (in_array($class, [ObjectService::class, \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class], true) === true) {
 			if ($context['scenario'] === 'missing') {
 				$mock->method('getObject')->willReturn(null);
@@ -132,6 +137,7 @@ class LinksControllersGoldenTest extends TestCase {
 				$mock->method('getObject')->willReturn($context['object']);
 			}
 
+			$mock->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
 			return $mock;
 		}
 
