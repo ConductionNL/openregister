@@ -1435,7 +1435,8 @@ class ObjectsControllerCoverageTest extends TestCase {
 	 * Exercises lines 1643-1657 (webhook error catch block).
 	 * Uses a fresh controller with a custom webhookService mock.
 	 */
-	public function testCreateContinuesWhenWebhookFails(): void {
+	#[\PHPUnit\Framework\Attributes\DataProvider('webhookFailures')]
+	public function testCreateContinuesWhenWebhookFails(\Throwable $webhookException): void {
 		$this->setupAdminUser();
 
 		$registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
@@ -1447,9 +1448,6 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
 		// Create a fresh webhookService mock with interceptRequest throwing.
-		// Note: the controller's catch block uses `Exception` which resolves to OCP\DB\Exception
-		// due to the `use OCP\DB\Exception;` import at the top of ObjectsController.
-		$webhookException = new \OCP\DB\Exception('Webhook down');
 		$failingWebhookService = $this->createMock(WebhookService::class);
 		$failingWebhookService->method('interceptRequest')
 			->willThrowException($webhookException);
@@ -1485,9 +1483,23 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('saveObject')->willReturn($objectEntity);
 
+		$this->logger->expects($this->once())->method('error')
+			->with(message: '[ObjectsController] Webhook interception failed', context: $this->anything());
+
 		$result = $controller->create('1', '2', $this->objectService);
 
 		$this->assertSame(201, $result->getStatus());
+	}
+
+	/**
+	 * @return array<string, array{0: \Throwable}>
+	 */
+	public static function webhookFailures(): array {
+		return [
+			'database' => [new \OCP\DB\Exception('Webhook down')],
+			'other exception' => [new \RuntimeException('Webhook down')],
+			'error' => [new \TypeError('Webhook down')],
+		];
 	}
 
 	// =========================================================================

@@ -83,6 +83,8 @@ use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
@@ -103,7 +105,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\DB\Exception;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -112,6 +113,7 @@ use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -3265,7 +3267,7 @@ class ObjectsController extends Controller {
 					request: $this->request,
 					eventType: 'object.creating'
 				);
-			} catch (Exception $e) {
+			} catch (\Throwable $e) {
 				// Log error but continue with original request if webhook fails.
 				// This ensures webhook failures don't break the API.
 				$this->logger->error(
@@ -4249,7 +4251,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with success or error.
 	 *
-	 * @throws Exception
+	 * @throws \Exception
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
@@ -4706,8 +4708,8 @@ class ObjectsController extends Controller {
 			}
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+		} catch (\Exception $e) {
+			return $this->historyLookupFailureResponse(failure: $e);
 		}
 
 		// Normalize and compare register.
@@ -6027,7 +6029,7 @@ class ObjectsController extends Controller {
 					unlink($zipInfo['path']);
 				}
 
-				throw new Exception('Failed to read ZIP file content');
+				throw new RuntimeException('Failed to read ZIP file content');
 			}
 
 			// Clean up temporary file after reading.
@@ -6102,8 +6104,8 @@ class ObjectsController extends Controller {
 			$result = $this->objectService->vectorizeBatchObjects(_views: $views, _batchSize: $batchSize);
 
 			return new JSONResponse(data: ['success' => true, 'data' => $result]);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		} catch (\Throwable $e) {
+			return $this->vectorizationFailureResponse(failure: $e);
 		}
 	}//end vectorizeBatch()
 
@@ -6134,8 +6136,8 @@ class ObjectsController extends Controller {
 			$stats = $this->objectService->getVectorizationStatistics(_views: $views);
 
 			return new JSONResponse(data: ['success' => true, 'stats' => $stats]);
-		} catch (Exception $e) {
-			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		} catch (\Throwable $e) {
+			return $this->vectorizationFailureResponse(failure: $e);
 		}
 	}//end getObjectVectorizationStats()
 
@@ -6165,7 +6167,7 @@ class ObjectsController extends Controller {
 			}
 
 			return $this->validationResponse(window: $window, result: $this->validatedChunk(window: $window));
-		} catch (Exception $e) {
+		} catch (\Exception $e) {
 			return $this->validationFailureResponse(failure: $e);
 		}
 	}//end validate()
@@ -6240,13 +6242,16 @@ class ObjectsController extends Controller {
 	/**
 	 * Log a failed bulk validation and answer it.
 	 *
-	 * @param Exception $failure The failure.
+	 * @param \Exception $failure The failure.
 	 *
 	 * @return JSONResponse The 500 answer.
 	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private function validationFailureResponse(Exception $failure): JSONResponse {
+	private function validationFailureResponse(\Exception $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
 		$this->logger->error(
 			message: '[ObjectsController] Bulk validation failed',
 			context: [
@@ -6262,6 +6267,67 @@ class ObjectsController extends Controller {
 			statusCode: 500
 		);
 	}//end validationFailureResponse()
+
+	/**
+	 * Log a failed vectorization route and answer it without the failure's text.
+	 *
+	 * @param \Throwable $failure The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function vectorizationFailureResponse(\Throwable $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
+		$this->logger->error(
+			message: '[ObjectsController] Vectorization route failed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
+		);
+
+		return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+	}//end vectorizationFailureResponse()
+
+	/**
+	 * Answer an object history lookup that failed with a 404, logging anything but a plain miss.
+	 *
+	 * @param \Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 404 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function historyLookupFailureResponse(\Exception $failure): JSONResponse {
+		$this->rethrowExternalSourceFailure(failure: $failure);
+		if ($failure instanceof DoesNotExistException === false) {
+			$this->logger->error(
+				message: '[ObjectsController] Object history lookup failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
+			);
+		}
+
+		return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+	}//end historyLookupFailureResponse()
+
+	/**
+	 * Let an external source's failure leave the route: ObjectSourceErrorMiddleware answers it with its own status.
+	 *
+	 * @param \Throwable $failure The failure a route caught.
+	 *
+	 * @return void
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException When the failure is one of these.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function rethrowExternalSourceFailure(\Throwable $failure): void {
+		if ($failure instanceof DbalObjectSourceException || $failure instanceof DbalWriteException) {
+			throw $failure;
+		}
+	}//end rethrowExternalSourceFailure()
 
 	/**
 	 * Collect UUID-to-name mappings for all related objects in a response.
