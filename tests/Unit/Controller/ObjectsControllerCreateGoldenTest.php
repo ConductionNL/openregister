@@ -59,6 +59,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Controller\Support\LinkedDataServices
  * @covers \OCA\OpenRegister\Controller\Support\ObjectCreate
  * @covers \OCA\OpenRegister\Controller\Support\ObjectCreateControls
+ * @covers \OCA\OpenRegister\Controller\Support\WriteCaller
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectStore
  * @uses   \OCA\OpenRegister\Controller\Support\ObjectTransfer

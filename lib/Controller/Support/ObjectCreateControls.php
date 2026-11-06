@@ -55,9 +55,8 @@ final class ObjectCreateControls {
 	/**
 	 * Read the controls.
 	 *
-	 * @param IRequest     $request  The request.
-	 * @param array<mixed> $uploaded The uploaded files.
-	 * @param bool         $rbac     Whether RBAC applies to the caller.
+	 * @param IRequest    $request The request.
+	 * @param WriteCaller $caller  The caller's scope and uploads.
 	 *
 	 * @return void
 	 *
@@ -65,26 +64,10 @@ final class ObjectCreateControls {
 	 */
 	public function __construct(
 		IRequest $request,
-		public readonly array $uploaded,
-		public readonly bool $rbac,
+		public readonly WriteCaller $caller,
 	) {
 		$this->failIfExists = filter_var($request->getParam('_failIfExists', false), FILTER_VALIDATE_BOOLEAN);
 		$this->dedupOverride = filter_var($request->getParam('_dedupOverride', false), FILTER_VALIDATE_BOOLEAN);
 		$this->upsertOn = trim((string)$request->getParam('_upsertOn', ''));
 	}//end __construct()
-
-	/**
-	 * The uploaded files, or null when there are none.
-	 *
-	 * @return array<mixed>|null The files.
-	 *
-	 * @spec openspec/specs/objects-crud/spec.md
-	 */
-	public function uploads(): ?array {
-		if ($this->uploaded === []) {
-			return null;
-		}
-
-		return $this->uploaded;
-	}//end uploads()
 }//end class

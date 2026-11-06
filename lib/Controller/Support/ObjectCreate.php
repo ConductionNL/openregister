@@ -67,10 +67,10 @@ final class ObjectCreate {
 			object: $body,
 			register: $this->resolved['register'],
 			schema: $this->resolved['schema'],
-			_rbac: $this->controls->rbac,
+			_rbac: $this->controls->caller->scoped,
 			_multitenancy: true,
 			uuid: $uuid,
-			uploadedFiles: $this->controls->uploads(),
+			uploadedFiles: $this->controls->caller->uploads(),
 			failIfExists: $this->controls->failIfExists,
 			_dedupOverride: $this->controls->dedupOverride
 		);

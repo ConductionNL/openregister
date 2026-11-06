@@ -46,6 +46,8 @@ use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
 use OCA\OpenRegister\Controller\Support\MagicMappedTable;
 use OCA\OpenRegister\Controller\Support\ObjectsRouteScope;
 use OCA\OpenRegister\Controller\Support\ObjectsTableRead;
+use OCA\OpenRegister\Controller\Support\ObjectTarget;
+use OCA\OpenRegister\Controller\Support\ObjectUpdate;
 use OCA\OpenRegister\Controller\Support\ObjectVersionGuard;
 use OCA\OpenRegister\Controller\Support\ReferenceOptionsAnswer;
 use OCA\OpenRegister\Controller\Support\ReferenceOptionsAsk;
@@ -53,6 +55,7 @@ use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Controller\Support\SentWrite;
 use OCA\OpenRegister\Controller\Support\ShownEntity;
 use OCA\OpenRegister\Controller\Support\VersionClaim;
+use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
@@ -3258,7 +3261,7 @@ class ObjectsController extends Controller {
 		}
 
 		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema));
-		$controls = new ObjectCreateControls(request: $this->request, uploaded: $this->extractAllUploadedFiles(), rbac: ($this->isCurrentUserAdmin() === false));
+		$controls = new ObjectCreateControls(request: $this->request, caller: $this->writeCaller());
 		$create = new ObjectCreate(object: $object, resolved: $resolved, objectService: $objectService, controls: $controls);
 
 		return ($this->upsertRefusal(create: $create) ?? $this->createdResponse(create: $create));
@@ -3620,210 +3623,202 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function update(
-		string $register,
-		string $schema,
-		string $id,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function update(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
 
 		try {
-			// Resolve slugs to numeric IDs consistently.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
-		// Get object data from request parameters.
-		$object = $this->request->getParams();
-
-		// Filter out special parameters and reserved fields.
-		// @todo shouldn't this be part of the object service?
-		// Allow @self metadata to pass through for organization activation.
-		$object = array_filter(
-			$object,
-			fn ($key) => str_starts_with($key, '_') === false
-				&& (str_starts_with($key, '@') === false || in_array($key, self::SUBMITTABLE_RESERVED_KEYS, true) === true)
-				&& in_array($key, ['uuid', 'register', 'schema']) === false,
-			ARRAY_FILTER_USE_KEY
-		);
-
-		// Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
-		$object = $this->normalizeFormDataValues(data: $object);
-
-		// Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
-		$object = $this->sanitiseSelfMetadata(data: $object);
-
-		// Extract uploaded files from multipart/form-data using Request object.
-		$uploadedFiles = $this->extractAllUploadedFiles();
-
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = $isAdmin === false;
-		// If admin, disable RBAC.
-		$multi = $isAdmin === false;
-		// If admin, disable multitenancy.
-		// Check if the object exists and can be updated (silent read - no audit trail).
-		// @todo shouldn't this be part of the object service?
-		try {
-			// Scope the lookup to the register and schema the URL named. Passing
-			// null here made this an UNSCOPED lookup, which resolves a UUID by
-			// UNION-ing every magic table on the instance (2,728 of them on the
-			// development instance) — the single largest cost in an update, and
-			// pure waste: the check immediately below asserts the object is in
-			// this exact register and schema anyway. A UUID belonging to another
-			// scope now raises DoesNotExistException and returns the same 404 it
-			// would have got from that check.
-			$existingObject = $this->objectService->findSilent(
-				id: $id,
-				_extend: [],
-				files: false,
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				_rbac: $rbac,
-				_multitenancy: $multi
-			);
-
-			// Get the resolved register and schema IDs from the ObjectService.
-			// This ensures proper handling of both numeric IDs and slug identifiers.
-			$resolvedRegisterId = $objectService->getRegister();
-			// Returns the current register ID.
-			$resolvedSchemaId = $objectService->getSchema();
-			// Returns the current schema ID.
-			// Verify that the object belongs to the specified register and schema.
-			if ((int)$existingObject->getRegister() !== $resolvedRegisterId
-				|| (int)$existingObject->getSchema() !== $resolvedSchemaId
-			) {
-				return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
-			}
-
-			// Check if the object is locked. This used to be the ONE live lock
-			// guard in the codebase, written inline here; PATCH and POST-patch
-			// had none and answered 400 or 500 instead. The guard now lives in
-			// `lockRefusalResponse()` and all three doors call it, so there is
-			// one comparison and one refusal rather than three spellings.
-			$lockRefusal = $this->lockRefusalResponse(existingObject: $existingObject);
-			if ($lockRefusal !== null) {
-				return $lockRefusal;
-			}
-
-			// 🔴 A FULL REPLACE ASSERTS EXACTLY AS A PARTIAL UPDATE DOES
-			// (REQ-CSO-003). This used to be PATCH-only, which made the
-			// guarantee a property of the VERB rather than of the write: a
-			// client that sent `_expectedUpdated` on a PUT got no assertion at
-			// all, silently, and overwrote whatever had landed meanwhile. The
-			// two doors now call one method, so they cannot answer differently.
-			$this->noteClientSuppliedCause(object: $existingObject);
-
-			$conflict = $this->versionGuard()->refusal(
-				stored: $existingObject,
-				write: new SentWrite(data: $object, schema: $resolved['schemaEntity'])
-			);
-			if ($conflict !== null) {
-				return $conflict;
-			}
-		} catch (DoesNotExistException $exception) {
-			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
-		} catch (NotAuthorizedException $exception) {
-			// Handle RBAC permission errors specifically.
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
-		} catch (MultipleObjectsReturnedException $exception) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $exception) {
-			// Log unexpected exceptions for debugging.
-			$this->logger->error(
-				message: '[ObjectsController] Unexpected exception in update findSilent',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $exception->getMessage(),
-					'trace' => $exception->getTraceAsString(),
-				]
-			);
-			// SEC-CTRL-7: do not leak internal exception detail on 500.
-			return $this->errorResponse(e: $exception);
-		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $e) {
-			// If there's an issue getting the user ID, continue without the lock check.
-		}//end try
-
-		// Determine uploaded files value.
-		$uploadedFilesValue = null;
-		if (empty($uploadedFiles) === false) {
-			$uploadedFilesValue = $uploadedFiles;
+		$update = $this->updateOf(target: new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService));
+		$existing = $this->writableObject(update: $update);
+		if ($existing instanceof JSONResponse) {
+			return $existing;
 		}
 
-		// Update the object.
+		return $this->updatedResponse(update: $update, existing: $existing);
+	}//end update()
+
+	/**
+	 * The update this request asks for.
+	 *
+	 * @param ObjectTarget $target The object aimed at.
+	 *
+	 * @return ObjectUpdate The update.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function updateOf(ObjectTarget $target): ObjectUpdate {
+		return new ObjectUpdate(
+			target: $target,
+			object: $this->submittableBody(object: $this->request->getParams()),
+			caller: $this->writeCaller()
+		);
+	}//end updateOf()
+
+	/**
+	 * The caller's part of a write.
+	 *
+	 * @return WriteCaller The uploads and the scope.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function writeCaller(): WriteCaller {
+		return new WriteCaller(uploaded: $this->extractAllUploadedFiles(), scoped: ($this->isCurrentUserAdmin() === false));
+	}//end writeCaller()
+
+	/**
+	 * The stored object a PUT replaces, or the refusal.
+	 *
+	 * @param ObjectUpdate $update The update asked for.
+	 *
+	 * @return ObjectEntity|JSONResponse The object.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function writableObject(ObjectUpdate $update): ObjectEntity|JSONResponse {
 		try {
-			// The write targets the object the caller's own read resolved, by its
-			// uuid: the save looks the identifier up again without the caller's
-			// scope, and the URL id alone can name another row there.
-			$objectEntity = $objectService->saveObject(
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				object: $object,
-				_rbac: $rbac,
-				_multitenancy: $multi,
-				uuid: ($existingObject->getUuid() ?? $id),
-				uploadedFiles: $uploadedFilesValue
-			);
+			$existing = $this->silentlyRead(update: $update);
 
-			// A save is a check-in: the writer's own lock goes back, and the
-			// entity we are about to serialise stops claiming it.
+			return ($this->preWriteRefusal(update: $update, existing: $existing) ?? $existing);
+		} catch (\Exception $exception) {
+			return $this->readBeforeWriteRefusal(exception: $exception, id: $update->target->id);
+		}
+	}//end writableObject()
+
+	/**
+	 * Read the object without an audit entry, scoped to the register and schema in the URL.
+	 *
+	 * An unscoped lookup resolves a uuid by UNION-ing every magic table on the
+	 * instance. A uuid from another scope raises DoesNotExistException here.
+	 *
+	 * @param ObjectUpdate $update The update asked for.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function silentlyRead(ObjectUpdate $update): ObjectEntity {
+		return $this->objectService->findSilent(
+			id: $update->target->id,
+			_extend: [],
+			files: false,
+			register: $update->target->resolved['register'],
+			schema: $update->target->resolved['schema'],
+			_rbac: $update->caller->scoped,
+			_multitenancy: $update->caller->scoped
+		);
+	}//end silentlyRead()
+
+	/**
+	 * Why this object may not be replaced: another scope, a lock or a stale version.
+	 *
+	 * A full replace asserts the expected version exactly as a partial update does.
+	 *
+	 * @param ObjectUpdate $update The update asked for.
+	 * @param ObjectEntity $existing The stored object.
+	 *
+	 * @return JSONResponse|null The refusal, or null.
+	 *
+	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-every-write-path-asserts-the-expected-version-req-cso-003
+	 */
+	private function preWriteRefusal(ObjectUpdate $update, ObjectEntity $existing): ?JSONResponse {
+		if ($update->target->holds(object: $existing) === false) {
+			return new JSONResponse(data: ['error' => 'Object not found in specified register/schema'], statusCode: 404);
+		}
+
+		$lockRefusal = $this->lockRefusalResponse(existingObject: $existing);
+		if ($lockRefusal !== null) {
+			return $lockRefusal;
+		}
+
+		$this->noteClientSuppliedCause(object: $existing);
+
+		return $this->versionGuard()->refusal(
+			stored: $existing,
+			write: new SentWrite(data: $update->object, schema: $update->target->resolved['schemaEntity'])
+		);
+	}//end preWriteRefusal()
+
+	/**
+	 * The answer to a read that failed before a write.
+	 *
+	 * @param \Exception $exception The failure.
+	 * @param string $id The identifier in the URL.
+	 *
+	 * @return JSONResponse The refusal. An unexpected failure answers without its detail.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function readBeforeWriteRefusal(\Exception $exception, string $id): JSONResponse {
+		$e = $exception;
+		if ($e instanceof DoesNotExistException || $e instanceof NotAuthorizedException || $e instanceof MultipleObjectsReturnedException) {
+			return match (true) {
+				$e instanceof DoesNotExistException => new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404),
+				$e instanceof NotAuthorizedException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
+				default => $this->ambiguousIdentifierResponse(id: $id),
+			};
+		}
+
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()];
+		$this->logger->error(message: '[ObjectsController] Unexpected exception in update findSilent', context: $context);
+
+		return $this->errorResponse(e: $e);
+	}//end readBeforeWriteRefusal()
+
+	/**
+	 * Save the replacement and answer with it.
+	 *
+	 * The write targets the object the caller's own read resolved, by its uuid:
+	 * the save looks the identifier up again without the caller's scope, and the
+	 * URL id alone can name another row there. A save is a check-in, so the
+	 * writer's own lock goes back.
+	 *
+	 * @param ObjectUpdate $update The update asked for.
+	 * @param ObjectEntity $existing The stored object.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function updatedResponse(ObjectUpdate $update, ObjectEntity $existing): JSONResponse {
+		try {
+			$objectEntity = $update->saved(uuid: ($existing->getUuid() ?? $update->target->id));
 			$this->releaseOwnLockAfterWrite(objectEntity: $objectEntity);
-
 			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
-
-			// Return the successfully saved object directly.
 			$body = $objectEntity->jsonSerialize();
-
 			\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.out');
 
 			return new JSONResponse(data: $body);
-		} catch (AppendOnlyException $exception) {
-			// Reject update on append-only schema with HTTP 405.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
-		} catch (TranslationTargetConflictException $exception) {
-			// Structured 400 per the exception's own documented contract
-			// (i18n-api-language-negotiation): a language-keyed body for a
-			// translatable property collided with X-Translation-Target-Language.
-			// Emitted here so the { "error": { "code": ... } } shape survives
-			// instead of being flattened by the generic validation handler.
-			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
-		} catch (ValidationException|CustomValidationException $exception) {
-			// Handle validation errors.
-			return $objectService->handleValidationException(exception: $exception);
-		} catch (HookStoppedException $exception) {
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
-				statusCode: 422
-			);
-		} catch (ObjectStateWriteException $exception) {
-			// An archived or frozen object refuses the write with 409 and the
-			// reason, as a revert does; it fell into the generic handler (#4161).
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
-		} catch (LockedException $exception) {
-			// A lock taken between this handler's pre-read and the save reaches
-			// here as the service-layer guard's typed refusal. Caught before
-			// generic \Exception so it answers 423 naming the holder rather
-			// than falling into the hardcoded 500 that made a locked PATCH
-			// look like a server fault.
-			return $this->lockedResponse(exception: $exception);
-		} catch (FolderAccessDeniedException $exception) {
-			// MUST be caught before generic \Exception. See `self-folder-access-control` spec.
-			return $this->folderAccessDeniedResponse(exception: $exception);
 		} catch (\Exception $exception) {
-			// Handle all other exceptions (including RBAC permission errors).
-			// Sanitized external-write failures carry their own 4xx status
-			// (dbal-virtual-registers-crud) — never flatten them to 403.
-			if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
-				return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
-			}
+			return $this->updateRefusal(exception: $exception, objectService: $update->target->objectService);
+		}
+	}//end updatedResponse()
 
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
-		}//end try
-	}//end update()
+	/**
+	 * The answer to a failed PUT.
+	 *
+	 * An archived or frozen object refuses with 409 and the reason. Anything no
+	 * write route recognises is a 403, including RBAC refusals.
+	 *
+	 * @param \Exception $exception The failure.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function updateRefusal(\Exception $exception, ObjectOperationsInterface $objectService): JSONResponse {
+		$e = $exception;
+
+		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
+			$e instanceof ObjectStateWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS),
+			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
+			default => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
+		});
+	}//end updateRefusal()
 
 	/**
 	 * Patches (partially updates) an existing object
