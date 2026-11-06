@@ -373,22 +373,6 @@ interface FileMapperInterface {
 	public function countUntrackedFiles(): int;
 
 	/**
-	 * Set file ownership at database level.
-	 *
-	 * @param int $fileId The file ID to change ownership for
-	 * @param string $userId The user ID to set as owner
-	 *
-	 * @return bool True if ownership was updated successfully, false otherwise
-	 *
-	 * @throws \Exception If the ownership update fails
-	 *
-	 * @TODO: This is a hack to fix NextCloud file ownership issues on production
-	 * @TODO: where files exist but can't be accessed due to permission problems.
-	 * @TODO: This should be removed once the underlying NextCloud rights issue is resolved.
-	 */
-	public function setFileOwnership(int $fileId, string $userId): bool;
-
-	/**
 	 * Insert through the mapper (QBMapper).
 	 *
 	 * @param File $entity The entity.
