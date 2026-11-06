@@ -419,9 +419,6 @@
     }
   },
   "src/modals/logs/ClearAuditTrails.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -430,9 +427,6 @@
     }
   },
   "src/modals/logs/DeleteAuditTrail.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -456,9 +450,6 @@
     }
   },
   "src/modals/object/DeleteObject.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -566,9 +557,6 @@
     }
   },
   "src/modals/organisation/DeleteOrganisation.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -629,9 +617,6 @@
     }
   },
   "src/modals/register/DeleteRegister.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
@@ -661,9 +646,6 @@
     }
   },
   "src/modals/schema/DeleteSchema.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "no-console": {
       "count": 1
     },
@@ -819,9 +801,6 @@
     }
   },
   "src/modals/source/DeleteSource.vue": {
-    "@nextcloud/no-deprecated-library-props": {
-      "count": 1
-    },
     "vue/prefer-define-options": {
       "count": 1
     }
