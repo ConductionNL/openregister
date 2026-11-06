@@ -94,7 +94,7 @@ class XwikiProviderGoldenTest extends TestCase {
 	 * @return XwikiProvider The provider.
 	 */
 	private function provider(array $answers, ?array $links = null): XwikiProvider {
-		$router = $this->createMock(originalClassName: ExternalIntegrationRouterInterface::class);
+		$router = $this->createMock(ExternalIntegrationRouterInterface::class);
 		$router->method('call')->willReturnCallback(
 			function ($provider, string $method, string $path, array $options = []) use ($answers): array {
 				$this->calls[] = ['method' => $method, 'path' => $path, 'options' => $options];
@@ -105,11 +105,11 @@ class XwikiProviderGoldenTest extends TestCase {
 				return $answer;
 			}
 		);
-		$l10n = $this->createMock(originalClassName: IL10N::class);
+		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(static fn (string $text): string => 'T:'.$text);
 		$mapper = null;
 		if ($links !== null) {
-			$mapper = $this->createMock(originalClassName: XwikiLinkMapper::class);
+			$mapper = $this->createMock(XwikiLinkMapper::class);
 			$mapper->method('findByObjectUuid')->willReturnCallback(
 				function (string $uuid) use ($links): array {
 					$this->calls[] = ['mapper' => $uuid];
@@ -119,7 +119,7 @@ class XwikiProviderGoldenTest extends TestCase {
 		}
 		return new XwikiProvider(
 			router: $router,
-			appManager: $this->createMock(originalClassName: IAppManager::class),
+			appManager: $this->createMock(IAppManager::class),
 			l10n: $l10n,
 			xwikiLinkMapper: $mapper
 		);
@@ -212,9 +212,9 @@ class XwikiProviderGoldenTest extends TestCase {
 		$json = json_decode((string)json_encode($seen), true);
 		if (getenv('XWIKI_PROVIDER_GOLDEN_RECORD') === '1') {
 			file_put_contents(self::FIXTURE, json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
-			$this->markTestIncomplete(message: 'recorded');
+			$this->markTestIncomplete('recorded');
 		}
 
-		$this->assertSame(expected: json_decode((string)file_get_contents(self::FIXTURE), true), actual: $json);
+		$this->assertSame(json_decode((string)file_get_contents(self::FIXTURE), true), $json);
 	}//end testProviderMatchesTheRecording()
 }//end class
