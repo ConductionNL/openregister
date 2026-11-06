@@ -33,6 +33,8 @@ use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\ObjectCreate;
+use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
@@ -60,11 +62,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -3244,45 +3249,57 @@ class ObjectsController extends Controller {
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
-	public function create(
-		string $register,
-		string $schema,
-		ObjectOperationsInterface $objectService,
-	): JSONResponse {
+	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
 		try {
-			// Resolve slugs to numeric IDs consistently.
 			$resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
-			// Return 404 with clear error message if register or schema not found.
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
-		// Intercept request and send to webhooks before processing.
-		// This allows external systems to validate, transform, or enrich the request.
-		$object = $this->request->getParams();
-		if ($this->services->transfer->webhookService !== null) {
-			try {
-				$object = $this->services->transfer->webhookService->interceptRequest(
-					request: $this->request,
-					eventType: 'object.creating'
-				);
-			} catch (\Throwable $e) {
-				// Log error but continue with original request if webhook fails.
-				// This ensures webhook failures don't break the API.
-				$this->logger->error(
-					message: '[ObjectsController] Webhook interception failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'error' => $e->getMessage(),
-						'register' => $register,
-						'schema' => $schema,
-					]
-				);
-			}//end try
-		}//end if
+		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema));
+		$controls = new ObjectCreateControls(request: $this->request, uploaded: $this->extractAllUploadedFiles(), rbac: ($this->isCurrentUserAdmin() === false));
+		$create = new ObjectCreate(object: $object, resolved: $resolved, objectService: $objectService, controls: $controls);
 
+		return ($this->upsertRefusal(create: $create) ?? $this->createdResponse(create: $create));
+	}//end create()
+
+	/**
+	 * The request body, after the webhooks that may validate, transform or enrich it.
+	 *
+	 * @param string $register The register in the URL, for the log.
+	 * @param string $schema The schema in the URL, for the log.
+	 *
+	 * @return array<string, mixed> The body.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function interceptedBody(string $register, string $schema): array {
+		$object = $this->request->getParams();
+		if ($this->services->transfer->webhookService === null) {
+			return $object;
+		}
+
+		try {
+			return $this->services->transfer->webhookService->interceptRequest(request: $this->request, eventType: 'object.creating');
+		} catch (\Throwable $e) {
+			// A webhook failure must not break the API: log it and keep the original request.
+			$context = ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'register' => $register, 'schema' => $schema];
+			$this->logger->error(message: '[ObjectsController] Webhook interception failed', context: $context);
+			return $object;
+		}
+	}//end interceptedBody()
+
+	/**
+	 * The body without control parameters and server-managed fields.
+	 *
+	 * @param array<string, mixed> $object The body.
+	 *
+	 * @return array<string, mixed> What may be saved.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function submittableBody(array $object): array {
 		// Filter out special parameters and reserved fields.
 		// @todo shouldn't this be part of the object service?
 		// Allow @self metadata to pass through for organization activation.
@@ -3301,193 +3318,134 @@ class ObjectsController extends Controller {
 		// cannot be injected via the single-object create path.
 		$object = $this->sanitiseSelfMetadata(data: $object);
 
-		// Extract uploaded files from multipart/form-data using Request object.
-		$uploadedFiles = $this->extractAllUploadedFiles();
+		return $object;
+	}//end submittableBody()
 
-		// INSERT-ONLY opt-in (openregister#2210). `_failIfExists=true` turns this
-		// create from an upsert into a strict insert: an identifier that is
-		// already taken returns 409 instead of silently overwriting.
-		//
-		// Read from the raw request, not from $object — the body filter above
-		// strips `_`-prefixed keys, which is exactly the convention for control
-		// parameters that must not be persisted onto the object itself.
-		$failIfExists = filter_var(
-			$this->request->getParam('_failIfExists', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		// DUPLICATE OVERRIDE, read from the RAW request for the same reason
-		// `_failIfExists` above is: the body filter a few lines up strips every
-		// `_`-prefixed key, so a control left in `$object` is gone by the time
-		// the save path could act on it. Read here, it is a request the save
-		// path evaluates against the schema's declared `overrideGroups`; asking
-		// is never the same as being allowed.
-		$dedupOverride = filter_var(
-			$this->request->getParam('_dedupOverride', false),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		// UPSERT ON A DECLARED KEY (api-upsert-on-a-declared-key), read from the
-		// raw request like the two controls above. `_upsertOn` names one of the
-		// schema's `refuse` uniqueness constraints; the record holding that key
-		// is updated, or created when none does.
-		$upsertOn = trim((string)$this->request->getParam('_upsertOn', ''));
-		if ($upsertOn !== '') {
-			$refusal = $this->upsertPreconditionRefusal(failIfExists: $failIfExists, resolved: $resolved);
-			if ($refusal !== null) {
-				return $refusal;
-			}
+	/**
+	 * The refusal of an upsert that cannot run, or null.
+	 *
+	 * @param ObjectCreate $create The create asked for.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function upsertRefusal(ObjectCreate $create): ?JSONResponse {
+		if ($create->controls->upsertOn === '') {
+			return null;
 		}
 
-		// Determine RBAC and multitenancy settings based on admin status.
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = !$isAdmin;
-		// If admin, disable RBAC.
-		// Note: multitenancy is disabled for admins via $rbac flag.
-		// Determine uploaded files value.
-		$uploadedFilesValue = null;
-		if (empty($uploadedFiles) === false) {
-			$uploadedFilesValue = $uploadedFiles;
-		}
+		return $this->upsertPreconditionRefusal(failIfExists: $create->controls->failIfExists, resolved: $create->resolved);
+	}//end upsertRefusal()
 
-		// Save the object.
+	/**
+	 * Save the object and answer with it.
+	 *
+	 * Sub-objects are only returned when _extend is explicitly requested on GET.
+	 * An upsert that found its record updated it: 200, not 201.
+	 *
+	 * @param ObjectCreate $create The create asked for.
+	 *
+	 * @return JSONResponse The object, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function createdResponse(ObjectCreate $create): JSONResponse {
 		try {
-			// Clear sub-objects cache before saving to ensure clean state.
-			$objectService->clearCreatedSubObjects();
-
-			// Use the object service to validate and save the object.
-			// Use resolved numeric IDs instead of slugs.
-			$objectToSave = $object;
-			$body = $this->withClientCauseAttempt(object: $object);
-			$save = static fn (?string $uuid): ObjectEntity => $objectService->saveObject(
-				object: $body,
-				register: $resolved['register'],
-				schema: $resolved['schema'],
-				_rbac: $rbac,
-				_multitenancy: true,
-				uuid: $uuid,
-				uploadedFiles: $uploadedFilesValue,
-				failIfExists: $failIfExists,
-				_dedupOverride: $dedupOverride
-			);
-
-			$created = true;
-			if ($upsertOn !== '' && $this->services->transfer->upsertOnKeyHandler !== null) {
-				$upserted = $this->services->transfer->upsertOnKeyHandler->upsert(
-					constraintName: $upsertOn,
-					object: $objectToSave,
-					register: $resolved['registerEntity'],
-					schema: $resolved['schemaEntity'],
-					save: $save
-				);
-				$objectEntity = $upserted['object'];
-				$created = $upserted['created'];
-			} else {
-				$objectEntity = $save(null);
-			}
-
-			// TODO: Unlock the object after saving using LockingHandler through ObjectService.
-			// The unlockObject() method on the old ObjectEntityMapper is deprecated.
-			// For now, skipping unlock to allow CRUD operations to complete.
-		} catch (UpsertOnKeyException $exception) {
-			// The upsert decided its own answer: a key that is not a refuse
-			// constraint or has no value (400), a duplicated key or a holder the
-			// caller cannot see (409, never naming that holder), a lookup or key
-			// lock that could not be had (503, nothing written).
-			return new JSONResponse(data: $exception->getBody(), statusCode: $exception->getStatusCode(), headers: $exception->getHeaders());
-		} catch (TranslationTargetConflictException $exception) {
-			// Structured 400 per the exception's own documented contract
-			// (i18n-api-language-negotiation): a language-keyed body for a
-			// translatable property collided with X-Translation-Target-Language.
-			// Emitted here so the { "error": { "code": ... } } shape survives
-			// instead of being flattened by the generic validation handler.
-			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
-		} catch (ValidationException|CustomValidationException $exception) {
-			// Decision 179: refuse in the per-property shape update and patch
-			// use ({ status, message, errors[] }), not a bare string, so a form
-			// can mark the field the destination refused.
-			return $objectService->handleValidationException(exception: $exception);
-		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
-			// Handle hook rejection — return 422 with validation errors from the workflow.
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'errors' => $exception->getErrors(),
-				],
-				statusCode: 422
-			);
-		} catch (LockedException $exception) {
-			// A lock taken between this handler's pre-read and the save reaches
-			// here as the service-layer guard's typed refusal. Caught before
-			// generic \Exception so it answers 423 naming the holder rather
-			// than falling into the hardcoded 500 that made a locked PATCH
-			// look like a server fault.
-			return $this->lockedResponse(exception: $exception);
-		} catch (FolderAccessDeniedException $exception) {
-			// MUST be caught before generic \Exception to avoid being absorbed as a 403 with
-			// a non-structured body. See the `self-folder-access-control` capability spec.
-			return $this->folderAccessDeniedResponse(exception: $exception);
-		} catch (ExpressionDefaultException $exception) {
-			// MUST be caught before the generic \Exception below, which flattens
-			// everything to 403. A derived default that could not be derived is
-			// the caller's data, not their permissions, and the refusal names
-			// the property so they can see which derivation failed (ADR-005).
-			return new JSONResponse(
-				data: ['error' => $exception->getMessage(), 'errors' => [$exception->toArray()]],
-				statusCode: 422
-			);
-		} catch (\OCA\OpenRegister\Exception\ObjectExistsException $exception) {
-			// MUST be caught before the generic \Exception below, which flattens
-			// everything to 403. A losing claim reported as "forbidden" is
-			// indistinguishable from a permissions problem, and the caller cannot
-			// tell it simply lost a race — which is the entire point of asking
-			// for insert-only semantics.
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'uuid' => $exception->getUuid(),
-				],
-				statusCode: 409
-			);
-		} catch (\OCA\OpenRegister\Exception\DuplicateBlockedException $exception) {
-			// Also before the generic \Exception, and for the same reason: a
-			// create refused because the register already holds this record is
-			// not a permissions problem, and a 403 would send the user looking
-			// for the wrong fix. The matches travel with the refusal so the
-			// form can offer the existing object instead of a second one.
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'matches' => $exception->getMatches(),
-				],
-				statusCode: 409
-			);
-		} catch (AppendOnlyException $exception) {
-			// A create on a type that takes none (a view-backed type,
-			// modelling-query-backed-type) is 405, like the other writes it
-			// refuses; the generic catch below would call it a permission 403.
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+			$saved = $this->savedObject(create: $create);
 		} catch (\Exception $exception) {
-			// Handle all other exceptions (including RBAC permission errors).
-			// Sanitized external-write failures carry their own 4xx status
-			// (dbal-virtual-registers-crud) — never flatten them to 403.
-			if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
-				return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
-			}
+			return $this->createRefusal(exception: $exception, objectService: $create->objectService);
+		}
 
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
-		}//end try
-
-		// Return the created object.
-		// Note: Sub-objects are only returned when _extend is explicitly requested on GET.
-		// An upsert that found its record updated it: 200, not 201.
 		$status = 201;
-		if ($created === false) {
+		if ($saved['created'] === false) {
 			$status = 200;
 		}
 
-		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()), statusCode: $status);
-	}//end create()
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $saved['object']->jsonSerialize()), statusCode: $status);
+	}//end createdResponse()
+
+	/**
+	 * Save through the upsert when a key was named, directly otherwise.
+	 *
+	 * @param ObjectCreate $create The create asked for.
+	 *
+	 * @return array{object: ObjectEntity, created: bool} The saved object.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function savedObject(ObjectCreate $create): array {
+		$create->objectService->clearCreatedSubObjects();
+		$save = $create->saver(body: $this->withClientCauseAttempt(object: $create->object));
+
+		$upsert = $this->services->transfer->upsertOnKeyHandler;
+		if ($create->controls->upsertOn === '' || $upsert === null) {
+			return ['object' => $save(null), 'created' => true];
+		}
+
+		return $upsert->upsert(
+			constraintName: $create->controls->upsertOn,
+			object: $create->object,
+			register: $create->resolved['registerEntity'],
+			schema: $create->resolved['schemaEntity'],
+			save: $save
+		);
+	}//end savedObject()
+
+	/**
+	 * The answer to a failed create.
+	 *
+	 * Anything no write route recognises is a 403, including RBAC refusals.
+	 * Each refusal below is its own answer because a 403 would send the caller
+	 * looking for a permissions problem it does not have.
+	 *
+	 * @param \Exception $exception The failure.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function createRefusal(\Exception $exception, ObjectOperationsInterface $objectService): JSONResponse {
+		$e = $exception;
+
+		return ($this->writeRefusal(exception: $e, objectService: $objectService) ?? match (true) {
+			$e instanceof UpsertOnKeyException => new JSONResponse(data: $e->getBody(), statusCode: $e->getStatusCode(), headers: $e->getHeaders()),
+			$e instanceof ExpressionDefaultException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => [$e->toArray()]], statusCode: 422),
+			$e instanceof ObjectExistsException => new JSONResponse(data: ['error' => $e->getMessage(), 'uuid' => $e->getUuid()], statusCode: 409),
+			$e instanceof DuplicateBlockedException => new JSONResponse(data: ['error' => $e->getMessage(), 'matches' => $e->getMatches()], statusCode: 409),
+			$e instanceof DbalWriteException => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $e->getStatusCode()),
+			default => new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403),
+		});
+	}//end createRefusal()
+
+	/**
+	 * The refusal every write route gives the same answer, or null.
+	 *
+	 * A language-keyed body that collides with X-Translation-Target-Language keeps
+	 * its structured 400, so it is asked before the validation handler. Validation
+	 * refuses in the per-property shape a form can mark up.
+	 *
+	 * @param \Exception $exception The failure.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function writeRefusal(\Exception $exception, ObjectOperationsInterface $objectService): ?JSONResponse {
+		$e = $exception;
+
+		return match (true) {
+			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
+			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
+			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
+			$e instanceof LockedException => $this->lockedResponse(exception: $e),
+			$e instanceof FolderAccessDeniedException => $this->folderAccessDeniedResponse(exception: $e),
+			default => null,
+		};
+	}//end writeRefusal()
 
 	/**
 	 * Why an `_upsertOn` request cannot proceed, or null when it can.
@@ -3836,7 +3794,7 @@ class ObjectsController extends Controller {
 		} catch (ValidationException|CustomValidationException $exception) {
 			// Handle validation errors.
 			return $objectService->handleValidationException(exception: $exception);
-		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+		} catch (HookStoppedException $exception) {
 			return new JSONResponse(
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
@@ -4045,7 +4003,7 @@ class ObjectsController extends Controller {
 				]
 			);
 			return $objectService->handleValidationException(exception: $exception);
-		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+		} catch (HookStoppedException $exception) {
 			return new JSONResponse(
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
@@ -4206,7 +4164,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
 		} catch (ValidationException|CustomValidationException $exception) {
 			return $objectService->handleValidationException(exception: $exception);
-		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+		} catch (HookStoppedException $exception) {
 			return new JSONResponse(
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
@@ -4327,7 +4285,7 @@ class ObjectsController extends Controller {
 				data: $exception->toResponseBody(),
 				statusCode: 409
 			);
-		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+		} catch (HookStoppedException $exception) {
 			// A guard on the deleting event may name its own status. A refusal
 			// because another row still references this one is a conflict, not
 			// a malformed body, and 422 would tell the caller to fix a payload
