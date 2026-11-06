@@ -9,10 +9,10 @@ namespace Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\NoteVersion;
-use OCA\OpenRegister\Db\NoteVersionMapper;
+use OCA\OpenRegister\Files\Db\NoteVersion;
+use OCA\OpenRegister\Files\Db\NoteVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;

@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AgentMapper;
-use OCA\OpenRegister\Db\ConversationMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 

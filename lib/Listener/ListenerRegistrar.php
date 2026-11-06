@@ -42,6 +42,7 @@ use OCA\OpenRegister\Notifications\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -77,7 +78,7 @@ final class ListenerRegistrar {
 		Registrar\AccessListenerRegistrar::register(context: $context);
 		Registrar\ConfigurationListenerRegistrar::register(context: $context);
 		Registrar\FlowsListenerRegistrar::register(context: $context);
-		Registrar\McpListenerRegistrar::register(context: $context);
+		\OCA\OpenRegister\Mcp\Listener\Registrar\McpListenerRegistrar::register(context: $context);
 		\OCA\OpenRegister\Notifications\Listener\Registrar\NotificationsListenerRegistrar::register(context: $context);
 		Registrar\WorkListenerRegistrar::register(context: $context);
 		self::registerFileAndPlatformListeners(context: $context);
@@ -477,6 +478,7 @@ final class ListenerRegistrar {
 		// A frozen object refuses its delete the way it refuses a write, on
 		// every path that dispatches the deleting event.
 		$context->registerEventListener(ObjectDeletingEvent::class, FrozenObjectDeleteGuardListener::class);
+		$context->registerEventListener(ObjectDeletingEvent::class, ObjectStateDeleteGuardListener::class);
 
 		// Named uniqueness constraints — a `refuse` constraint stops the write
 		// naming the combination and the conflicting object; a `report` one

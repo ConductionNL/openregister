@@ -902,13 +902,7 @@ export default {
 	margin-bottom: 4px;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 .detail-grid {
 	display: grid;

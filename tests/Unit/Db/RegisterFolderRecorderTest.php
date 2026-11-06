@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;

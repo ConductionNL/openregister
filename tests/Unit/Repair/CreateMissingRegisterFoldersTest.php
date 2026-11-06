@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Repair\CreateMissingRegisterFolders;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;

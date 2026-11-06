@@ -47,7 +47,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\App\IAppManager;
