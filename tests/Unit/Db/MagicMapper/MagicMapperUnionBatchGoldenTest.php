@@ -67,6 +67,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\RecentLensOrder
  * @uses   \OCA\OpenRegister\Support\QueryLimit
  * @uses   \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses   \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
