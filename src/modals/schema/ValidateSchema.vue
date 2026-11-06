@@ -9,7 +9,7 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'validateSchema'"
 		name="Validate Schema Objects"
 		size="large"
-		:canClose="false">
+		noClose>
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
