@@ -78,16 +78,6 @@ class QueryHandler {
 	];
 
 	/**
-	 * The `_extend` names that ask for the registers and schemas of a search.
-	 *
-	 * @var array<string, array<int, string>>
-	 */
-	private const INCLUDE_SPELLINGS = [
-		'registers' => ['_registers', '_register', '@self.registers', '@self.register'],
-		'schemas'   => ['_schemas', '_schema', '@self.schemas', '@self.schema'],
-	];
-
-	/**
 	 * Page size a list/search request gets when it asks for none.
 	 *
 	 * Named rather than repeated so the number the capabilities answer
@@ -410,10 +400,12 @@ class QueryHandler {
 		// names nothing is refused here, never answered with an empty page.
 		$query = $this->normaliseReferences(query: $query);
 
-		$window           = self::paginationWindow(query: $query);
+		$paging           = new SearchPaging();
+		$reports          = new SearchResponseReports();
+		$window           = $paging->window(query: $query);
 		$historyPredicate = HistoryPredicate::parse(query: $query);
 		$expansion        = $this->expandSearchTerm(query: $query);
-		$queries          = self::withExpandedTerm(queries: self::paginatedAndCountQueries(query: $query, window: $window), expansion: $expansion);
+		$queries          = self::withExpandedTerm(queries: $paging->queries(query: $query, window: $window), expansion: $expansion);
 
 		$scope = ['rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $ids, 'uses' => $uses];
 		$scope = $this->narrowByHistory(predicate: $historyPredicate, scope: $scope, metrics: $metrics);
@@ -422,10 +414,10 @@ class QueryHandler {
 		$searchResult = $this->widenWithContentMatches(query: $query, searchResult: $searchResult, scope: $scope + $window, metrics: $metrics);
 		$results      = $this->renderListRows(query: $query, searchResult: $searchResult, scope: $scope, metrics: $metrics);
 
-		$paginatedResults = self::paginatedResponse(results: $results, searchResult: $searchResult, window: $window);
-		$paginatedResults['@self'] += self::searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
-		$paginatedResults['@self'] += self::requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
-		$paginatedResults['@self'] += self::ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
+		$paginatedResults = $paging->response(results: $results, searchResult: $searchResult, window: $window);
+		$paginatedResults['@self'] += $reports->searchReports(query: $query, historyPredicate: $historyPredicate, expansion: $expansion);
+		$paginatedResults['@self'] += $reports->requestedRegistersAndSchemas(query: $query, searchResult: $searchResult);
+		$paginatedResults['@self'] += $reports->ignoredFilterReport(ignoredFilters: $searchResult['ignoredFilters'] ?? []);
 		$paginatedResults           = $this->withFacets(query: $query, countQuery: $queries['count'], response: $paginatedResults, metrics: $metrics);
 
 		// Always add performance metrics to @self for debugging.
@@ -445,97 +437,6 @@ class QueryHandler {
 	private static function newMetrics(): ArrayObject {
 		return new ArrayObject();
 	}//end newMetrics()
-
-	/**
-	 * The limit, offset and page of a paginated search.
-	 *
-	 * `_limit=0` is valid for count- or facets-only requests; the limit is
-	 * clamped to MAX_PAGE_SIZE so an oversized `_limit` cannot force an
-	 * unbounded load. A page gives the offset and an offset gives the page.
-	 *
-	 * @param array $query The search query
-	 *
-	 * @return array{limit: int, offset: mixed, page: mixed}
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function paginationWindow(array $query): array {
-		$limit  = min(max(0, (int) ($query['_limit'] ?? self::DEFAULT_PAGE_SIZE)), self::MAX_PAGE_SIZE);
-		$offset = $query['_offset'] ?? null;
-		$page   = $query['_page'] ?? null;
-
-		if ($page === null) {
-			return ['limit' => $limit, 'offset' => $offset ?? 0, 'page' => self::pageAtOffset(offset: $offset, limit: $limit)];
-		}
-
-		$page = self::askedPage(page: $page, offset: $offset);
-
-		return ['limit' => $limit, 'offset' => $offset ?? (($page - 1) * $limit), 'page' => $page];
-	}//end paginationWindow()
-
-	/**
-	 * The page an asked page stands for.
-	 *
-	 * @param mixed $page   The asked page.
-	 * @param mixed $offset The asked offset; when there is one the page stays as asked.
-	 *
-	 * @return mixed The page.
-	 */
-	private static function askedPage(mixed $page, mixed $offset): mixed {
-		if ($offset === null) {
-			return max(1, (int) $page);
-		}
-
-		return $page;
-	}//end askedPage()
-
-	/**
-	 * The page an offset falls on.
-	 *
-	 * @param mixed $offset The asked offset.
-	 * @param int   $limit  The page size.
-	 *
-	 * @return int The page.
-	 */
-	private static function pageAtOffset(mixed $offset, int $limit): int {
-		if ($offset === null || $limit <= 0) {
-			return 1;
-		}
-
-		return ((int) floor($offset / $limit) + 1);
-	}//end pageAtOffset()
-
-	/**
-	 * The page query and the count query handed to the mapper.
-	 *
-	 * Control keys the mapper does not read are removed, and so are the two
-	 * history filter keys: left in, the search path would read them as
-	 * property filters that match nothing. History is applied as a narrowing
-	 * of the id set instead (see narrowByHistory()).
-	 *
-	 * @param array                                       $query  The search query
-	 * @param array{limit: int, offset: mixed, page: mixed} $window The pagination window
-	 *
-	 * @return array{search: array, count: array}
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function paginatedAndCountQueries(array $query, array $window): array {
-		$paginatedQuery = array_merge($query, ['_limit' => $window['limit'], '_offset' => $window['offset']]);
-		unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
-
-		$countQuery = $query;
-		unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
-
-		unset(
-			$paginatedQuery[HistoryPredicate::WAS_EVER],
-			$paginatedQuery[HistoryPredicate::CHANGED_BETWEEN],
-			$countQuery[HistoryPredicate::WAS_EVER],
-			$countQuery[HistoryPredicate::CHANGED_BETWEEN]
-		);
-
-		return ['search' => $paginatedQuery, 'count' => $countQuery];
-	}//end paginatedAndCountQueries()
 
 	/**
 	 * The queries with the search term the administered dictionary rewrote (ADR-007).
@@ -839,149 +740,6 @@ class QueryHandler {
 		$this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 		$metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
 	}//end prepareCheapRows()
-
-	/**
-	 * The response skeleton: rows, totals and the pagination window.
-	 *
-	 * @param mixed $results      The rows
-	 * @param array $searchResult The search result
-	 * @param array $window       The pagination window
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function paginatedResponse(mixed $results, array $searchResult, array $window): array {
-		$total = $searchResult['total'];
-		$pages = 0;
-		if ($window['limit'] > 0) {
-			$pages = max(1, (int) ceil($total / $window['limit']));
-		}
-
-		return [
-			'results' => $results,
-			'total'   => $total,
-			'page'    => $window['page'],
-			'pages'   => $pages,
-			'limit'   => $window['limit'],
-			'offset'  => $window['offset'],
-			'facets'  => [],
-			'@self'   => ['source' => $searchResult['source'] ?? 'database'],
-		];
-	}//end paginatedResponse()
-
-	/**
-	 * What the history filter, the dictionary and the `_recent` lens did, for `@self`.
-	 *
-	 * A filter that did not read says so instead of quietly doing nothing, and an
-	 * expansion is reported because it returns rows the searcher did not ask for.
-	 *
-	 * @param array                                                     $query            The search query
-	 * @param HistoryPredicate                                          $historyPredicate The parsed history predicate
-	 * @param \OCA\OpenRegister\Service\Search\DictionaryExpansion|null $expansion        The expansion, if any
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
-	 */
-	private static function searchReports(
-		array $query,
-		HistoryPredicate $historyPredicate,
-		?\OCA\OpenRegister\Service\Search\DictionaryExpansion $expansion
-	): array {
-		$reports = self::historyReport(historyPredicate: $historyPredicate);
-		if ($expansion !== null && $expansion->isReportable() === true) {
-			$reports['dictionary'] = $expansion->jsonSerialize();
-		}
-
-		if (is_array($query['_recentLens'] ?? null) === true) {
-			$reports['lenses']['recent'] = $query['_recentLens'];
-		}
-
-		return $reports;
-	}//end searchReports()
-
-	/**
-	 * The report of a history predicate that narrowed or could not be read.
-	 *
-	 * @param HistoryPredicate $historyPredicate The predicate.
-	 *
-	 * @return array<string, mixed> The report, empty when it has nothing to say.
-	 */
-	private static function historyReport(HistoryPredicate $historyPredicate): array {
-		if ($historyPredicate->narrows() === true || $historyPredicate->unparsed() !== []) {
-			return ['history' => $historyPredicate->jsonSerialize()];
-		}
-
-		return [];
-	}//end historyReport()
-
-	/**
-	 * The registers and schemas indexed by id, when `_extend` asks for them in any spelling.
-	 *
-	 * @param array $query        The search query
-	 * @param array $searchResult The search result
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function requestedRegistersAndSchemas(array $query, array $searchResult): array {
-		$extend = self::extendList(query: $query);
-
-		$included = [];
-		foreach (self::INCLUDE_SPELLINGS as $key => $names) {
-			$asked = array_filter($names, static fn (string $name): bool => in_array($name, $extend, true));
-			if ($asked !== [] && empty($searchResult[$key] ?? []) === false) {
-				$included[$key] = $searchResult[$key];
-			}
-		}
-
-		return $included;
-	}//end requestedRegistersAndSchemas()
-
-	/**
-	 * What a query asks to extend, as a list.
-	 *
-	 * @param array $query The query.
-	 *
-	 * @return array The asked names.
-	 */
-	private static function extendList(array $query): array {
-		$extend = $query['_extend'] ?? [];
-		if (is_string($extend) === true) {
-			return explode(',', $extend);
-		}
-
-		return $extend;
-	}//end extendList()
-
-	/**
-	 * The ignored filters, with a hint when one looks like a control parameter missing its `_`.
-	 *
-	 * @param array $ignoredFilters The filters the search ignored
-	 *
-	 * @return array
-	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
-	 */
-	private static function ignoredFilterReport(array $ignoredFilters): array {
-		if (empty($ignoredFilters) === true) {
-			return [];
-		}
-
-		$report         = ['ignoredFilters' => $ignoredFilters];
-		$controlParams  = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'filter', 'unset'];
-		$mistakenParams = array_intersect($ignoredFilters, $controlParams);
-		if (empty($mistakenParams) === false) {
-			$suggestions    = array_map(fn ($param) => "_{$param}", $mistakenParams);
-			$report['hint'] = 'Query returned 0 results because '.implode(', ', $mistakenParams)
-				.' was treated as a property filter. Did you mean '.implode(', ', $suggestions)
-				.'? Control params require underscore prefix.';
-		}
-
-		return $report;
-	}//end ignoredFilterReport()
 
 	/**
 	 * Add facets and facetable fields when the query asks for them.
