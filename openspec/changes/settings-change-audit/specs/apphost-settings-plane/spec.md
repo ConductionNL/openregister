@@ -8,7 +8,11 @@ The generic settings `update` SHALL write one hash-chained audit entry per
 changed key with the app, key, old value, new value, actor and time, and
 `load(force)` SHALL write one entry naming the import and the number of keys
 overwritten. Keys declared `x-openregister-secret` SHALL be recorded with
-both values masked. Per-user preferences SHALL NOT be audited.
+both values masked. A key is declared secret by an entry
+`"<key>": {"x-openregister-secret": true}` at the top level of the app's
+`<app>_register.json` (with its `register.d/` fragments merged), or by the
+app's `secretConfigKeys()` hook; both sets are masked. Per-user preferences
+SHALL NOT be audited.
 
 #### Scenario: a changed key is traceable
 

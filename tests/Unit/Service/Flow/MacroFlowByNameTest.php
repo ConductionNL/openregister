@@ -16,7 +16,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -28,7 +27,6 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 class MacroFlowByNameTest extends TestCase {
 
@@ -101,12 +99,10 @@ class MacroFlowByNameTest extends TestCase {
 		$resolver = new MacroActionResolver(
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(FlowService::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
 			$store
 		);
 
-		$this->assertSame('0f6a1b2c-0000-4000-8000-000000000001', $resolver->bindingFor(schema: $schema, action: 'suspend')?->flow);
+		$this->assertSame('0f6a1b2c-0000-4000-8000-000000000001', $resolver->declaredFlowUuid(schema: $schema, name: 'Opschorten voor aanvulling'));
 	}//end testARunResolvesTheNameToTheStoredFlow()
 
 	public function testAUuidIsNotLookedUpByName(): void {

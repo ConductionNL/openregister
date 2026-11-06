@@ -126,24 +126,9 @@ class PlaceholderIdTranslator {
 	 * @spec openspec/changes/anonymisation-placeholder-id-scope/design.md (Decision 3)
 	 */
 	public static function rankByFirstAppearance(array $rows): array {
-		usort(
-			$rows,
-			static function (array $left, array $right): int {
-				return [
-					(int)($left['file_id'] ?? 0),
-					(int)($left['position_start'] ?? 0),
-					(int)($left['entity_id'] ?? 0),
-				] <=> [
-					(int)($right['file_id'] ?? 0),
-					(int)($right['position_start'] ?? 0),
-					(int)($right['entity_id'] ?? 0),
-				];
-			}
-		);
-
 		$map = [];
 		$number = 1;
-		foreach ($rows as $row) {
+		foreach (self::inAppearanceOrder(rows: $rows) as $row) {
 			$entityId = (string)($row['entity_id'] ?? '');
 			if ($entityId === '' || isset($map[$entityId]) === true) {
 				continue;
@@ -155,6 +140,19 @@ class PlaceholderIdTranslator {
 
 		return $map;
 	}//end rankByFirstAppearance()
+
+	/**
+	 * The rows in order of first appearance: by file, then position, then entity id.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The entity-relation rows.
+	 *
+	 * @return array<int, array<string, mixed>> The rows, sorted.
+	 */
+	private static function inAppearanceOrder(array $rows): array {
+		$key = static fn (array $row): array => [(int)($row['file_id'] ?? 0), (int)($row['position_start'] ?? 0), (int)($row['entity_id'] ?? 0)];
+		usort($rows, static fn (array $left, array $right): int => $key($left) <=> $key($right));
+		return $rows;
+	}//end inAppearanceOrder()
 
 	/**
 	 * Translate an internal entity id to its scope-local number. In

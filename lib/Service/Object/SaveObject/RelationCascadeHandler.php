@@ -79,7 +79,7 @@ class RelationCascadeHandler {
 	 * Resolves a schema reference to a schema ID.
 	 *
 	 * This method handles various types of schema references:
-	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
+	 * - Direct ID: "34" (a UUID reference is matched against slugs only)
 	 * - JSON Schema path references: "#/components/schemas/Contactgegevens"
 	 * - URL references: "http://example.com/api/schemas/34"
 	 * - Slug references: "contactgegevens"
@@ -93,8 +93,6 @@ class RelationCascadeHandler {
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function resolveSchemaReference(string $reference, array $scope = []): ?string {
@@ -102,39 +100,17 @@ class RelationCascadeHandler {
 			return null;
 		}
 
-		// Remove query parameters if present (e.g., "schema?key=value" -> "schema").
 		$cleanReference = $this->removeQueryParameters(reference: $reference);
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($cleanReference) === true
-			|| preg_match(
-				'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-				$cleanReference
-			) === true
-		) {
+		if ($this->isDirectId(reference: $cleanReference) === true) {
 			try {
-				$schema = $this->schemaMapper->find(...(['id' => $cleanReference] + $scope));
-				return (string)$schema->getId();
+				return (string)$this->schemaMapper->find(...(['id' => $cleanReference] + $scope))->getId();
 			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
+				// Continue with the slug lookup.
 			}
 		}
 
-		// Extract the last part of path/URL references.
-		$slug = $cleanReference;
-		if (str_contains($cleanReference, '/') === true) {
-			// For references like "#/components/schemas/Contactgegevens" or "http://example.com/schemas/contactgegevens".
-			$slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-		}
-
-		// Try to find schema by slug (case-insensitive).
 		try {
-			$schemas = $this->schemaMapper->findAll(...$scope);
-			foreach ($schemas as $schema) {
-				if (strcasecmp($schema->getSlug(), $slug) === 0) {
-					return (string)$schema->getId();
-				}
-			}
+			return $this->slugMatch(entities: $this->schemaMapper->findAll(...$scope), slug: $this->lastSegment(reference: $cleanReference));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationCascadeHandler] Error finding schema by slug: ' . $e->getMessage(),
@@ -142,7 +118,6 @@ class RelationCascadeHandler {
 			);
 		}
 
-		// No match found.
 		return null;
 	}//end resolveSchemaReference()
 
@@ -164,10 +139,55 @@ class RelationCascadeHandler {
 	}//end removeQueryParameters()
 
 	/**
+	 * Whether a reference is first tried as a direct id. Only numeric references
+	 * are: a UUID reference resolves through the slug lookup.
+	 *
+	 * @param string $reference The reference without query parameters.
+	 *
+	 * @return bool
+	 */
+	private function isDirectId(string $reference): bool {
+		return is_numeric($reference) === true;
+	}//end isDirectId()
+
+	/**
+	 * The last path segment of a reference, or the whole reference when it has no `/`.
+	 *
+	 * @param string $reference The reference without query parameters.
+	 *
+	 * @return string
+	 */
+	private function lastSegment(string $reference): string {
+		if (str_contains($reference, '/') === false) {
+			return $reference;
+		}
+
+		return substr($reference, strrpos($reference, '/') + 1);
+	}//end lastSegment()
+
+	/**
+	 * The id of the first entity whose slug equals the given slug, ignoring case.
+	 *
+	 * @param iterable<Schema|Register> $entities The schemas or registers.
+	 * @param string                    $slug     The slug to match.
+	 *
+	 * @return null|numeric-string
+	 */
+	private function slugMatch(iterable $entities, string $slug): ?string {
+		foreach ($entities as $entity) {
+			if (strcasecmp($entity->getSlug(), $slug) === 0) {
+				return (string)$entity->getId();
+			}
+		}
+
+		return null;
+	}//end slugMatch()
+
+	/**
 	 * Resolves a register reference to a register ID.
 	 *
 	 * This method handles various types of register references:
-	 * - Direct ID/UUID: "34", "21aab6e0-2177-4920-beb0-391492fed04b"
+	 * - Direct ID: "34" (a UUID reference is matched against slugs only)
 	 * - URL path references: "https://api.example.com/api/registers/1"
 	 * - Slug references: "demo-register"
 	 *
@@ -178,8 +198,6 @@ class RelationCascadeHandler {
 	 *
 	 * @return null|numeric-string The resolved register ID or null if not found.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function resolveRegisterReference(string $reference): ?string {
@@ -187,38 +205,17 @@ class RelationCascadeHandler {
 			return null;
 		}
 
-		// Remove query parameters if present.
 		$cleanReference = $this->removeQueryParameters(reference: $reference);
-
-		// First, try direct ID lookup (numeric ID or UUID).
-		if (is_numeric($cleanReference) === true
-			|| preg_match(
-				'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-				$cleanReference
-			) === true
-		) {
+		if ($this->isDirectId(reference: $cleanReference) === true) {
 			try {
-				$register = $this->registerMapper->find(id: $cleanReference);
-				return (string)$register->getId();
+				return (string)$this->registerMapper->find(id: $cleanReference)->getId();
 			} catch (DoesNotExistException $e) {
-				// Continue with other resolution methods.
+				// Continue with the slug lookup.
 			}
 		}
 
-		// Extract the last part if it's a URL.
-		$slug = $cleanReference;
-		if (str_contains($cleanReference, '/') === true) {
-			$slug = substr($cleanReference, strrpos($cleanReference, '/') + 1);
-		}
-
-		// Try slug-based lookup (case-insensitive).
 		try {
-			$registers = $this->registerMapper->findAll();
-			foreach ($registers as $register) {
-				if (strcasecmp($register->getSlug(), $slug) === 0) {
-					return (string)$register->getId();
-				}
-			}
+			return $this->slugMatch(entities: $this->registerMapper->findAll(), slug: $this->lastSegment(reference: $cleanReference));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[RelationCascadeHandler] Error finding register by slug: ' . $e->getMessage(),
@@ -226,7 +223,6 @@ class RelationCascadeHandler {
 			);
 		}
 
-		// No match found.
 		return null;
 	}//end resolveRegisterReference()
 

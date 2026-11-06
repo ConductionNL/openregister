@@ -49,6 +49,21 @@ use Psr\Log\LoggerInterface;
  * @template-extends QBMapper<EntityRelation>
  */
 class EntityRelationMapper extends QBMapper implements EntityRelationMapperInterface {
+
+	/**
+	 * The relation and entity columns a per-file entity read returns.
+	 */
+	private const FILE_ENTITY_COLUMNS = [
+		'r.id as relation_id',
+		'r.entity_id',
+		'r.position_start',
+		'r.position_end',
+		'r.confidence',
+		'e.type as entity_type',
+		'e.value as entity_value',
+		'e.category',
+	];
+
 	/**
 	 * The optional fields buildRelationFromRow() sets from a row, in order:
 	 * [setter, cast, whether a null value leaves the field unset].
@@ -169,21 +184,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @return array Array of entity data with type, value, and relation info.
 	 */
 	public function findEntitiesForFile(int $fileId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(
-			'r.id as relation_id',
-			'r.entity_id',
-			'r.position_start',
-			'r.position_end',
-			'r.confidence',
-			'e.type as entity_type',
-			'e.value as entity_value',
-			'e.category'
-		)
-			->from($this->getTableName(), 'r')
-			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
-			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->orderBy('r.position_start', 'ASC');
+		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->orderBy('r.position_start', 'ASC');
 
 		$result = $qb->executeQuery();
 		$entities = $result->fetchAll();
@@ -377,30 +379,6 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	}//end findEntityIdsByValueForFiles()
 
 	/**
-	 * Mark entity relations as anonymized.
-	 *
-	 * Skip-aware: rows where `skip_anonymization = true` are excluded
-	 * (those reflect an operator decision NOT to redact the occurrence).
-	 * Per the `entity-relation-grondslagen` change, skipped rows retain
-	 * `anonymized = false` after the file's anonymise pass.
-	 *
-	 * @param int $fileId The file ID.
-	 * @param string $anonymizedValue The placeholder value used.
-	 *
-	 * @return int Number of relations updated.
-	 */
-	public function markAsAnonymized(int $fileId, string $anonymizedValue): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableName())
-			->set('anonymized', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
-			->set('anonymized_value', $qb->createNamedParameter($anonymizedValue))
-			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
-
-		return $qb->executeStatement();
-	}//end markAsAnonymized()
-
-	/**
 	 * Probe whether a relation already exists at a specific position
 	 * for a (file, entity) pair.
 	 *
@@ -590,8 +568,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @param array<int|string, string> $placeholders Keys are int|string,
 	 *        not string: a stringified entity id is a canonical numeric string,
 	 *        which PHP coerces to an int array key. Map of entity id → the
-	 *                                                     exact placeholder emitted for it
-	 *                                                     (e.g. "7" => "[PERSOON: 1]").
+	 *                                                exact placeholder emitted for it
+	 *                                                (e.g. "7" => "[PERSOON: 1]").
 	 *
 	 * @return int Number of relation rows marked anonymized.
 	 */
@@ -629,21 +607,8 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 	 * @return array<int, array<string, mixed>> Array of entity rows joined with their Entity record.
 	 */
 	public function findEntitiesForAnonymization(int $fileId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(
-			'r.id as relation_id',
-			'r.entity_id',
-			'r.position_start',
-			'r.position_end',
-			'r.confidence',
-			'e.type as entity_type',
-			'e.value as entity_value',
-			'e.category'
-		)
-			->from($this->getTableName(), 'r')
-			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
-			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+		$qb = $this->selectFileEntities(fileId: $fileId);
+		$qb->andWhere($qb->expr()->eq('r.skip_anonymization', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->orderBy('r.position_start', 'ASC');
 
 		$result = $qb->executeQuery();
@@ -652,6 +617,23 @@ class EntityRelationMapper extends QBMapper implements EntityRelationMapperInter
 
 		return $entities;
 	}//end findEntitiesForAnonymization()
+
+	/**
+	 * A select of a file's entity relations joined with their entity's type, value and category.
+	 *
+	 * @param int $fileId The file ID.
+	 *
+	 * @return IQueryBuilder The select, open for more conditions and an order.
+	 */
+	private function selectFileEntities(int $fileId): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(...self::FILE_ENTITY_COLUMNS)
+			->from($this->getTableName(), 'r')
+			->innerJoin('r', 'openregister_entities', 'e', $qb->expr()->eq('r.entity_id', 'e.id'))
+			->where($qb->expr()->eq('r.file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+		return $qb;
+	}//end selectFileEntities()
 
 	/**
 	 * Collect distinct `Entity.value` strings for relations on a file flagged

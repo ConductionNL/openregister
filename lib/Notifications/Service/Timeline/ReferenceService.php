@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
+use Generator;
 use OCA\OpenRegister\Notifications\Db\EntryReference;
 use OCA\OpenRegister\Notifications\Db\EntryReferenceMapper;
 use OCA\OpenRegister\Notifications\Db\ReferencePattern;
@@ -62,6 +63,7 @@ use Throwable;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class ReferenceService {
+	use OptionalPayloadString;
 
 	/**
 	 * How many codes one entry's text may resolve.
@@ -119,15 +121,47 @@ class ReferenceService {
 	 * @throws TimelineValidationException When the slug is missing or the expression does not compile.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function declarePattern(array $data): ReferencePattern {
+		$slug = $this->requiredSlug(data: $data);
+		$this->requireCompilableBody(data: $data);
+
+		$pattern = $this->patterns->findBySlug(slug: $slug);
+		if ($pattern === null) {
+			return $this->patterns->insert($this->filled(pattern: $this->newPattern(slug: $slug), data: $data));
+		}
+
+		return $this->patterns->update($this->filled(pattern: $pattern, data: $data));
+	}//end declarePattern()
+
+	/**
+	 * The normalised slug of a declaration payload.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return string The lower-cased, trimmed slug.
+	 *
+	 * @throws TimelineValidationException When the slug is missing.
+	 */
+	private function requiredSlug(array $data): string {
 		$slug = strtolower(trim((string)($data['slug'] ?? '')));
 		if ($slug === '') {
 			throw new TimelineValidationException(['slug' => 'A reference pattern needs a slug']);
 		}
 
+		return $slug;
+	}//end requiredSlug()
+
+	/**
+	 * Refuse a declaration whose expression is missing or does not compile.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws TimelineValidationException When the expression is missing or does not compile.
+	 */
+	private function requireCompilableBody(array $data): void {
 		$body = (string)($data['pattern'] ?? '');
 		if (trim($body) === '') {
 			throw new TimelineValidationException(['pattern' => 'A reference pattern needs an expression']);
@@ -136,18 +170,37 @@ class ReferenceService {
 		if ($this->compiles(body: $body) === false) {
 			throw new TimelineValidationException(['pattern' => 'That expression is not a usable pattern']);
 		}
+	}//end requireCompilableBody()
 
-		$pattern = $this->patterns->findBySlug(slug: $slug);
-		$isNew = ($pattern === null);
-		if ($isNew === true) {
-			$pattern = new ReferencePattern();
-			$pattern->setUuid((string)Uuid::v4());
-			$pattern->setSlug($slug);
-			$pattern->setCreated(new DateTime());
-		}
+	/**
+	 * A new, unsaved declaration carrying the slug.
+	 *
+	 * @param string $slug The normalised slug.
+	 *
+	 * @return ReferencePattern The declaration.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
+	 */
+	private function newPattern(string $slug): ReferencePattern {
+		$pattern = new ReferencePattern();
+		$pattern->setUuid((string)Uuid::v4());
+		$pattern->setSlug($slug);
+		$pattern->setCreated(new DateTime());
 
+		return $pattern;
+	}//end newPattern()
+
+	/**
+	 * Write a declaration payload onto a pattern.
+	 *
+	 * @param ReferencePattern    $pattern The pattern to fill.
+	 * @param array<string,mixed> $data    The payload.
+	 *
+	 * @return ReferencePattern The same pattern.
+	 */
+	private function filled(ReferencePattern $pattern, array $data): ReferencePattern {
 		$pattern->setTitle($this->stringOrNull(data: $data, key: 'title'));
-		$pattern->setPattern($body);
+		$pattern->setPattern((string)($data['pattern'] ?? ''));
 		$pattern->setRegister($this->stringOrNull(data: $data, key: 'register'));
 		$pattern->setSchema($this->stringOrNull(data: $data, key: 'schema'));
 		$pattern->setTargetProperty($this->stringOrNull(data: $data, key: 'targetProperty'));
@@ -155,12 +208,8 @@ class ReferenceService {
 		$pattern->setEnabled(($data['enabled'] ?? true) !== false);
 		$pattern->setUpdated(new DateTime());
 
-		if ($isNew === true) {
-			return $this->patterns->insert($pattern);
-		}
-
-		return $this->patterns->update($pattern);
-	}//end declarePattern()
+		return $pattern;
+	}//end filled()
 
 	/**
 	 * Withdraw a pattern.
@@ -198,40 +247,75 @@ class ReferenceService {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function scan(?string $text): array {
-		if (is_string($text) === false || trim($text) === '') {
+		if ($this->isBlank(text: $text) === true) {
 			return [];
 		}
 
 		$found = [];
-		$seen = [];
-
-		foreach ($this->patterns->findAll(enabledOnly: true) as $pattern) {
-			$matches = [];
-			$compiled = $this->delimit(body: (string)$pattern->getPattern());
-			if (@preg_match_all($compiled, $text, $matches) === false) {
-				$this->logger->warning(
-					'[ReferenceService] Pattern '.(string)$pattern->getSlug().' did not run; it is declared but unusable'
-				);
-				continue;
+		foreach ($this->uniqueCodes(text: $text) as [$pattern, $code]) {
+			$found[] = $this->resolve(pattern: $pattern, code: $code);
+			if (count($found) >= self::MAX_MATCHES) {
+				return $found;
 			}
+		}
 
-			foreach (($matches[0] ?? []) as $code) {
-				$code = (string)$code;
+		return $found;
+	}//end scan()
+
+	/**
+	 * Whether a text is missing or holds only whitespace.
+	 *
+	 * @param string|null $text The text.
+	 *
+	 * @return boolean True when there is nothing to read.
+	 */
+	private function isBlank(?string $text): bool {
+		return is_string($text) === false || trim($text) === '';
+	}//end isBlank()
+
+	/**
+	 * Each distinct code the enabled patterns find in a text, with its pattern.
+	 *
+	 * Lazy, so patterns after the match cap are never run.
+	 *
+	 * @param string $text The text to read.
+	 *
+	 * @return Generator<int, array{0: ReferencePattern, 1: string}> Pattern and code pairs.
+	 */
+	private function uniqueCodes(string $text): Generator {
+		$seen = [];
+		foreach ($this->patterns->findAll(enabledOnly: true) as $pattern) {
+			foreach ($this->codesOf(pattern: $pattern, text: $text) as $code) {
 				if ($code === '' || isset($seen[$code]) === true) {
 					continue;
 				}
 
 				$seen[$code] = true;
-				$found[] = $this->resolve(pattern: $pattern, code: $code);
-
-				if (count($found) >= self::MAX_MATCHES) {
-					return $found;
-				}
+				yield [$pattern, $code];
 			}
-		}//end foreach
+		}
+	}//end uniqueCodes()
 
-		return $found;
-	}//end scan()
+	/**
+	 * Every code one pattern matches in a text, in order.
+	 *
+	 * @param ReferencePattern $pattern The pattern.
+	 * @param string           $text    The text to read.
+	 *
+	 * @return array<int, string> The matched codes; empty when the pattern does not run.
+	 */
+	private function codesOf(ReferencePattern $pattern, string $text): array {
+		$matches = [];
+		$compiled = $this->delimit(body: (string)$pattern->getPattern());
+		if (@preg_match_all($compiled, $text, $matches) === false) {
+			$this->logger->warning(
+				'[ReferenceService] Pattern '.(string)$pattern->getSlug().' did not run; it is declared but unusable'
+			);
+			return [];
+		}
+
+		return array_map(static fn (mixed $code): string => (string)$code, ($matches[0] ?? []));
+	}//end codesOf()
 
 	/**
 	 * Record what an entry's text points at, replacing what it pointed at before.
@@ -244,37 +328,45 @@ class ReferenceService {
 	 * that names no case is a link to nowhere, and recording it would put a
 	 * dangling row on the other end of a graph people query.
 	 *
-	 * @param string      $entryUuid  The entry.
-	 * @param string      $sourceUuid The object the entry hangs on.
-	 * @param string|null $text       The entry text.
+	 * @param ReferenceSource $source The entry, its object and its text.
 	 *
 	 * @return array<int, EntryReference> The references now recorded for this entry.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function record(string $entryUuid, string $sourceUuid, ?string $text): array {
-		$this->references->deleteForEntry(entryUuid: $entryUuid);
+	public function record(ReferenceSource $source): array {
+		$this->references->deleteForEntry(entryUuid: $source->entryUuid);
 
 		$written = [];
-		foreach ($this->scan(text: $text) as $match) {
-			if ($match['targetUuid'] === null) {
-				continue;
+		foreach ($this->scan(text: $source->text) as $match) {
+			if ($match['targetUuid'] !== null) {
+				$written[] = $this->references->insert($this->referenceTo(source: $source, match: $match));
 			}
-
-			$reference = new EntryReference();
-			$reference->setEntryUuid($entryUuid);
-			$reference->setSourceUuid($sourceUuid);
-			$reference->setTargetUuid($match['targetUuid']);
-			$reference->setCode($match['code']);
-			$reference->setPatternSlug($match['patternSlug']);
-			$reference->setUrl($match['url']);
-			$reference->setCreated(new DateTime());
-
-			$written[] = $this->references->insert($reference);
 		}
 
 		return $written;
 	}//end record()
+
+	/**
+	 * A new reference row from a source to one resolved match.
+	 *
+	 * @param ReferenceSource                                                                    $source The entry, its object and its text.
+	 * @param array{code: string, patternSlug: string, targetUuid: string|null, url: string|null} $match  The resolved match.
+	 *
+	 * @return EntryReference The unsaved row.
+	 */
+	private function referenceTo(ReferenceSource $source, array $match): EntryReference {
+		$reference = new EntryReference();
+		$reference->setEntryUuid($source->entryUuid);
+		$reference->setSourceUuid($source->sourceUuid);
+		$reference->setTargetUuid($match['targetUuid']);
+		$reference->setCode($match['code']);
+		$reference->setPatternSlug($match['patternSlug']);
+		$reference->setUrl($match['url']);
+		$reference->setCreated(new DateTime());
+
+		return $reference;
+	}//end referenceTo()
 
 	/**
 	 * Everything one entry points at.
@@ -315,38 +407,56 @@ class ReferenceService {
 	 * @return array{code: string, patternSlug: string, targetUuid: string|null, url: string|null} The match.
 	 */
 	private function resolve(ReferencePattern $pattern, string $code): array {
-		$url = null;
+		$url = $this->urlFor(pattern: $pattern, code: $code);
+
+		return [
+			'code' => $code,
+			'patternSlug' => (string)$pattern->getSlug(),
+			'targetUuid' => $this->targetUuidOf(pattern: $pattern, code: $code),
+			'url' => $url,
+		];
+	}//end resolve()
+
+	/**
+	 * The link a pattern's url template gives a code.
+	 *
+	 * @param ReferencePattern $pattern The pattern that matched.
+	 * @param string           $code    The matched code.
+	 *
+	 * @return string|null The url, or null when the pattern has no template.
+	 */
+	private function urlFor(ReferencePattern $pattern, string $code): ?string {
 		$template = $pattern->getUrlTemplate();
-		if ($template !== null) {
-			$url = str_replace('{code}', rawurlencode($code), $template);
+		if ($template === null) {
+			return null;
 		}
 
-		$targetUuid = null;
+		return str_replace('{code}', rawurlencode($code), $template);
+	}//end urlFor()
+
+	/**
+	 * The uuid of the object a code names, when the caller may read it.
+	 *
+	 * @param ReferencePattern $pattern The pattern that matched.
+	 * @param string           $code    The matched code.
+	 *
+	 * @return string|null The uuid, or null when the code names nothing readable.
+	 */
+	private function targetUuidOf(ReferencePattern $pattern, string $code): ?string {
 		try {
-			$object = $this->objects->find(
-				id: $code,
-				register: $pattern->getRegister(),
-				schema: $pattern->getSchema(),
-				_render: false,
-				_audit: false
-			);
+			$object = $this->objects->find(id: $code, register: $pattern->getRegister(), schema: $pattern->getSchema(), _render: false, _audit: false);
 			if ($object !== null) {
-				$targetUuid = (string)$object->getUuid();
+				return (string)$object->getUuid();
 			}
 		} catch (Throwable $e) {
 			// A code that names nothing is the ordinary case, not a failure:
 			// somebody typed a number that is not a case number. It renders as
 			// plain text and records nothing.
-			$targetUuid = null;
+			return null;
 		}
 
-		return [
-			'code' => $code,
-			'patternSlug' => (string)$pattern->getSlug(),
-			'targetUuid' => $targetUuid,
-			'url' => $url,
-		];
-	}//end resolve()
+		return null;
+	}//end targetUuidOf()
 
 	/**
 	 * Wrap an administered expression body in delimiters this service chooses.
@@ -369,25 +479,4 @@ class ReferenceService {
 	private function compiles(string $body): bool {
 		return (@preg_match($this->delimit(body: $body), '') !== false);
 	}//end compiles()
-
-	/**
-	 * Read one optional string off a payload.
-	 *
-	 * @param array<string,mixed> $data The payload.
-	 * @param string              $key  The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function stringOrNull(array $data, string $key): ?string {
-		if (isset($data[$key]) === false || is_string($data[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($data[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end stringOrNull()
 }//end class

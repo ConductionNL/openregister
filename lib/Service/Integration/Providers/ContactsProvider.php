@@ -131,7 +131,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @param string $register Register slug or numeric id (unused).
 	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid (unused; link id is enough).
+	 * @param string $objectId Object uuid; the link must belong to it.
 	 * @param string $entityId Numeric link id.
 	 * @param array<string,mixed> $payload Must carry `role`.
 	 *
@@ -141,7 +141,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 */
 	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
 		$role = (string)($payload['role'] ?? '');
-		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role);
+		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role, objectUuid: $objectId);
 		return $link->jsonSerialize();
 	}//end update()
 
@@ -158,7 +158,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @param string $register Register slug or numeric id (unused).
 	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid (unused; link id is enough).
+	 * @param string $objectId Object uuid; the link must belong to it.
 	 * @param string $entityId Numeric link id.
 	 *
 	 * @return void
@@ -166,7 +166,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
 	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->contactService->unlinkContact(linkId: (int)$entityId);
+		$this->contactService->unlinkContact(linkId: (int)$entityId, objectUuid: $objectId);
 	}//end delete()
 
 	/**

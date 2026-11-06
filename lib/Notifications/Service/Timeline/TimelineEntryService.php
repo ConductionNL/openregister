@@ -57,6 +57,7 @@ use Throwable;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineEntryService {
+	use OptionalPayloadString;
 
 	/**
 	 * Constructor.
@@ -101,7 +102,7 @@ class TimelineEntryService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
-		$kind = $this->readString(data: $data, key: 'kind');
+		$kind = $this->stringOrNull(data: $data, key: 'kind');
 		$fields = [];
 		if (isset($data['fields']) === true && is_array($data['fields']) === true) {
 			$fields = $data['fields'];
@@ -113,17 +114,17 @@ class TimelineEntryService {
 		$entry = new TimelineEntry();
 		$entry->setUuid((string)Uuid::v4());
 		$entry->setObjectUuid((string)$object->getUuid());
-		$entry->setRegister($this->readString(data: $data, key: 'register'));
-		$entry->setSchema($this->readString(data: $data, key: 'schema'));
+		$entry->setRegister($this->stringOrNull(data: $data, key: 'register'));
+		$entry->setSchema($this->stringOrNull(data: $data, key: 'schema'));
 		$entry->setCommentId($this->readInt(data: $data, key: 'commentId'));
 		$entry->setKind($kind);
 		$entry->setAuthor($this->callerUid());
-		$entry->setVisibility($this->visibility->normalise(value: $this->readString(data: $data, key: 'visibility')));
+		$entry->setVisibility($this->visibility->normalise(value: $this->stringOrNull(data: $data, key: 'visibility')));
 		$entry->setMessage($message);
 		$entry->setFields($accepted);
 		$entry->setPinned(false);
 		$entry->setLanguage($this->languages->detect(text: $message));
-		$entry->setRawSource($this->readString(data: $data, key: 'rawSource'));
+		$entry->setRawSource($this->stringOrNull(data: $data, key: 'rawSource'));
 		$entry->setCreated(new DateTime());
 		$entry->setUpdated(new DateTime());
 
@@ -444,27 +445,6 @@ class TimelineEntryService {
 
 		return $user->getUID();
 	}//end callerUid()
-
-	/**
-	 * Read one optional string off a payload.
-	 *
-	 * @param array<string,mixed> $data The payload.
-	 * @param string              $key  The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function readString(array $data, string $key): ?string {
-		if (isset($data[$key]) === false || is_string($data[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($data[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end readString()
 
 	/**
 	 * Read one optional integer off a payload.

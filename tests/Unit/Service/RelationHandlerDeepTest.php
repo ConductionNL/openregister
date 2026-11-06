@@ -4,7 +4,6 @@
  * RelationHandler Deep Coverage Tests
  *
  * Tests targeting uncovered lines in RelationHandler:
- * - applyInversedByFilter (schema false, empty sub-filters, inversedBy, URL extraction)
  * - extractRelatedData delegation
  * - extractAllRelationshipIds (circuit breaker, array slicing, string values)
  * - bulkLoadRelationshipsBatched (empty, cap at 200, batch exception)
@@ -65,7 +64,6 @@ class RelationHandlerDeepTest extends TestCase {
 		$this->handler = new RelationHandler(
 			$this->objectMapper,
 			$this->schemaMapper,
-			$this->performanceHandler,
 			$this->rbacHandler,
 			$this->logger,
 			$this->registerMapper
@@ -74,60 +72,8 @@ class RelationHandlerDeepTest extends TestCase {
 	}//end setUp()
 
 	// =========================================================================
-	// applyInversedByFilter
-	// =========================================================================
-
-	/**
-	 * Test applyInversedByFilter returns empty when schema is false
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterSchemaFalse(): void {
-		$filters = ['schema' => false];
-		$result = $this->handler->applyInversedByFilter($filters, fn ($f) => []);
-
-		$this->assertEquals([], $result);
-
-	}//end testApplyInversedByFilterSchemaFalse()
-
-	/**
-	 * Test applyInversedByFilter returns empty when no sub-filters
-	 *
-	 * @return void
-	 */
-	public function testApplyInversedByFilterNoSubFilters(): void {
-		$schema = $this->createMock(Schema::class);
-		$schema->method('getProperties')->willReturn([]);
-
-		$this->schemaMapper->method('find')->willReturn($schema);
-
-		$filters = ['schema' => 1, 'name' => 'test'];
-		$result = $this->handler->applyInversedByFilter($filters, fn ($f) => []);
-
-		$this->assertEquals([], $result);
-
-	}//end testApplyInversedByFilterNoSubFilters()
-
-	// =========================================================================
 	// extractRelatedData
 	// =========================================================================
-
-	/**
-	 * Test extractRelatedData delegates to PerformanceHandler
-	 *
-	 * @return void
-	 */
-	public function testExtractRelatedDataDelegates(): void {
-		$expected = ['related' => ['uuid1', 'uuid2']];
-		$this->performanceHandler->expects($this->once())
-			->method('extractRelatedData')
-			->with(['result1'], true, false)
-			->willReturn($expected);
-
-		$result = $this->handler->extractRelatedData(['result1'], true, false);
-		$this->assertEquals($expected, $result);
-
-	}//end testExtractRelatedDataDelegates()
 
 	// =========================================================================
 	// extractAllRelationshipIds

@@ -182,13 +182,7 @@ class WebhookMapper extends QBMapper {
 			->from($this->getTableName());
 
 		// Step 3: Apply pagination if provided.
-		if ($limit !== null) {
-			$qb->setMaxResults($limit);
-		}
-
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
-		}
+		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
 
 		// Step 4: Apply filters if provided.
 		$this->applyColumnFilters(qb: $qb, filters: $filters);

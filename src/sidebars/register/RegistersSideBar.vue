@@ -232,8 +232,24 @@ import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed
 import TableIcon from 'vue-material-design-icons/Table.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
+import { scopePickers } from '../../services/scopePickers.js'
 // Ensure data is loaded
 dashboardStore.preload()
+
+const BREAKDOWN_COUNTS = ['invalid', 'deleted', 'locked']
+
+/**
+ * Add the object counts that are not zero to a stats breakdown.
+ *
+ * @param {object} breakdown The breakdown being built
+ * @param {object} stats The object statistics
+ */
+function addCounts(breakdown, stats) {
+	for (const key of BREAKDOWN_COUNTS) {
+		const count = stats[key]
+		if (count) breakdown[key] = count
+	}
+}
 
 export default {
 	name: 'RegistersSideBar',
@@ -245,6 +261,8 @@ export default {
 		CnStatsBlock,
 		ChartBar,
 	},
+
+	mixins: [scopePickers],
 
 	data() {
 		return {
@@ -315,104 +333,6 @@ export default {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
-
-		/**
-		 * Build the register dropdown options for the registers-overview filter.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for registers
-		 */
-		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
-					value: register.id,
-					label: register.title,
-					title: register.title,
-					register,
-				})),
-
-				reduce: (option) => option.register,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.register && option.register.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Build the schema dropdown options scoped to the selected register.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object} NcSelect options bag for schemas
-		 */
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter((schema) =>
-						registerStore.registerItem.schemas.some(
-							(registerSchema) => registerSchema.id === schema.id,
-						),
-					)
-					.map((schema) => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-
-				reduce: (option) => option.schema,
-				label: 'title',
-				getOptionLabel: (option) => {
-					return (
-						option.title
-						|| (option.schema && option.schema.title)
-						|| option.label
-						|| ''
-					)
-				},
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected register into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected register option, or null
-		 */
-		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
-			return {
-				value: register.id,
-				label: register.title,
-				title: register.title,
-				register,
-			}
-		},
-
-		/**
-		 * Resolve the currently-selected schema into NcSelect value shape.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {object|null} Selected schema option, or null
-		 */
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
 	},
 
 	methods: {
@@ -463,9 +383,7 @@ export default {
 			if (!stats) return null
 			const breakdown = {}
 			if (stats.size) breakdown.size = formatBytes(stats.size)
-			if (stats.invalid) breakdown.invalid = stats.invalid
-			if (stats.deleted) breakdown.deleted = stats.deleted
-			if (stats.locked) breakdown.locked = stats.locked
+			addCounts(breakdown, stats)
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
 

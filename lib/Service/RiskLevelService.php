@@ -240,22 +240,4 @@ class RiskLevelService {
 		);
 	}//end initMetadataKey()
 
-	/**
-	 * Get all valid risk levels with their labels.
-	 *
-	 * Useful for API documentation and frontend dropdowns.
-	 *
-	 * @return array<string, string> Map of risk level value to human-readable label
-	 *
-	 * @spec openspec/specs/file-risk-classification/spec.md
-	 */
-	public static function getAllRiskLevels(): array {
-		return [
-			self::RISK_NONE => 'None',
-			self::RISK_LOW => 'Low',
-			self::RISK_MEDIUM => 'Medium',
-			self::RISK_HIGH => 'High',
-			self::RISK_VERY_HIGH => 'Very High',
-		];
-	}//end getAllRiskLevels()
 }//end class

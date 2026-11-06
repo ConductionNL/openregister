@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
 use Throwable;
 
 /**
@@ -81,35 +82,47 @@ class CalendarDependency {
 	/**
 	 * Whether one timer depends on the changed calendar.
 	 *
-	 * @param string|null $timerCalendarSlug The calendar the timer names, if any.
-	 * @param string|null $organisation      The timer's organisation.
-	 * @param string      $changedSlug       The calendar that changed.
+	 * @param FlowTimerInterface $timer       The timer, with the calendar it names (if any) and its organisation.
+	 * @param string             $changedSlug The calendar that changed.
 	 *
 	 * @return string One of {@see self::DEPENDS}, {@see self::INDEPENDENT}, {@see self::UNRESOLVABLE}.
 	 *
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
-	public function verdictFor(?string $timerCalendarSlug, ?string $organisation, string $changedSlug): string {
+	public function verdictFor(FlowTimerInterface $timer, string $changedSlug): string {
 		// A timer that NAMES the changed calendar depends on it whatever the
 		// resolver would say, and answering that without a lookup is what keeps
 		// the common case an index read rather than a resolution per row.
-		if (trim((string)$timerCalendarSlug) === $changedSlug && $changedSlug !== '') {
+		if (trim((string)$timer->getCalendarSlug()) === $changedSlug && $changedSlug !== '') {
 			return self::DEPENDS;
 		}
 
-		try {
-			$resolved = $this->calendars->resolve(
-				calendarSlug: $timerCalendarSlug,
-				organisation: $organisation
-			);
-		} catch (Throwable $e) {
+		$resolvedSlug = $this->resolvedSlug(timer: $timer);
+		if ($resolvedSlug === null) {
 			return self::UNRESOLVABLE;
 		}
 
-		if ($resolved->getSlug() === $changedSlug) {
+		if ($resolvedSlug === $changedSlug) {
 			return self::DEPENDS;
 		}
 
 		return self::INDEPENDENT;
 	}//end verdictFor()
+
+	/**
+	 * The slug of the calendar the resolver gives a timer, or null when it resolves none.
+	 *
+	 * @param FlowTimerInterface $timer The timer.
+	 *
+	 * @return string|null The slug.
+	 */
+	private function resolvedSlug(FlowTimerInterface $timer): ?string {
+		try {
+			$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		return $calendar->getSlug();
+	}//end resolvedSlug()
 }//end class

@@ -2646,16 +2646,6 @@ parameters:
 			path: lib/Db/MappingMapper.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationReadStateMapper\\:\\:findByUserAndNotification\\(\\) should return OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationReadStateEntity but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
-			count: 1
-			path: lib/Notifications/Db/NotificationReadStateMapper.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationReadStateMapper\\:\\:markRead\\(\\) should return OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationReadStateEntity but returns OCP\\\\AppFramework\\\\Db\\\\Entity\\.$#"
-			count: 1
-			path: lib/Notifications/Db/NotificationReadStateMapper.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationSubscriptionMapper\\:\\:findByUser\\(\\) should return array\\<OCA\\\\OpenRegister\\\\Notifications\\\\Db\\\\NotificationSubscription\\> but returns array\\<int, OCP\\\\AppFramework\\\\Db\\\\Entity\\>\\.$#"
 			count: 1
 			path: lib/Notifications/Db/NotificationSubscriptionMapper.php
@@ -4880,11 +4870,6 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\!\\=\\= between null and null will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
 			count: 2
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 

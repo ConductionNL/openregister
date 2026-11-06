@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
+use OCA\OpenRegister\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
@@ -2085,6 +2086,8 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse|null A 404 when the source object is missing, else null.
 	 *
+	 * @throws DoesNotExistException When the route names an object that does not exist; the public action answers 404.
+	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	private function resolveTransferSource(FileTransfer $transfer): ?JSONResponse {
@@ -2103,6 +2106,8 @@ class FilesController extends Controller {
 	 * @param FileTransfer $transfer The copy or move.
 	 *
 	 * @return JSONResponse|null A 400 without a target id, a 404 when the target is missing, else null.
+	 *
+	 * @throws DoesNotExistException When the target object does not exist; the public action answers 404.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -2578,10 +2583,12 @@ class FilesController extends Controller {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}
 
-			$width = (int)($this->request->getParam('width') ?? 256);
-			$height = (int)($this->request->getParam('height') ?? 256);
+			$size = new PreviewSize(
+				width: (int)($this->request->getParam('width') ?? 256),
+				height: (int)($this->request->getParam('height') ?? 256)
+			);
 
-			$preview = $this->fileService->getPreviewHandler()->getPreview($file, $width, $height);
+			$preview = $this->fileService->getPreviewHandler()->getPreview(file: $file, size: $size);
 
 			$response = new StreamResponse($preview->read());
 			$response->addHeader('Content-Type', $preview->getMimeType());

@@ -226,42 +226,6 @@ class MetricsService {
 	}//end recordMetric()
 
 	/**
-	 * Get files processed per day for last N days
-	 *
-	 * @param int $days Number of days to retrieve
-	 *
-	 * @return int[] Array of [date => count]
-	 *
-	 * @psalm-return array<int>
-	 *
-	 * @spec openspec/specs/production-observability/spec.md
-	 */
-	public function getFilesProcessedPerDay(int $days = 30): array {
-		$qb = $this->db->getQueryBuilder();
-
-		$startTime = time() - ($days * 86400);
-
-		$qb->select($qb->func()->count('*', 'count'))
-			->selectAlias($qb->createFunction('FROM_UNIXTIME(created_at, \'%Y-%m-%d\')'), 'date')
-			->from('openregister_metrics')
-			->where($qb->expr()->eq('metric_type', $qb->createNamedParameter(self::METRIC_FILE_PROCESSED)))
-			->andWhere($qb->expr()->gte('created_at', $qb->createNamedParameter($startTime)))
-			->groupBy('date')
-			->orderBy('date', 'ASC');
-
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		$data = [];
-		foreach ($rows as $row) {
-			$data[$row['date']] = (int)$row['count'];
-		}
-
-		return $data;
-	}//end getFilesProcessedPerDay()
-
-	/**
 	 * Get embedding generation success rate
 	 *
 	 * Analyzes embedding generation metrics over specified period.
@@ -472,31 +436,6 @@ class MetricsService {
 	}//end getStorageGrowth()
 
 	/**
-	 * Get comprehensive metrics dashboard data
-	 *
-	 * @return ((float|int)[]|float|int)[][]
-	 *
-	 * @psalm-return array{files_processed: array<int>,
-	 *     embedding_stats: array{total: int, successful: int, failed: int,
-	 *     success_rate: float, estimated_cost_usd: float, period_days: int},
-	 *     search_latency: array<string, array{count: int, avg_ms: float,
-	 *     min_ms: int, max_ms: int}>,
-	 *     storage_growth: array{daily_vectors_added: array<string, int>,
-	 *     current_storage_bytes: int, current_storage_mb: float,
-	 *     avg_vectors_per_day: float, period_days: int}}
-	 *
-	 * @spec openspec/specs/production-observability/spec.md
-	 */
-	public function getDashboardMetrics(): array {
-		return [
-			'files_processed' => $this->getFilesProcessedPerDay(days: 30),
-			'embedding_stats' => $this->getEmbeddingStats(days: 30),
-			'search_latency' => $this->getSearchLatencyStats(days: 7),
-			'storage_growth' => $this->getStorageGrowth(days: 30),
-		];
-	}//end getDashboardMetrics()
-
-	/**
 	 * Clean old metrics (retention policy)
 	 *
 	 * Deletes metrics older than specified retention period.
@@ -521,7 +460,7 @@ class MetricsService {
 
 		// Build DELETE query for old metrics.
 		$qb->delete('openregister_metrics')
-			->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime)));
+			->where($qb->expr()->lt('created_at', $qb->createNamedParameter($cutoffTime, IQueryBuilder::PARAM_INT)));
 
 		// Execute delete query.
 		$result = $qb->executeStatement();

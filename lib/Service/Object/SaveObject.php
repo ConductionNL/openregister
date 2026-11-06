@@ -51,6 +51,7 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
@@ -778,8 +779,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($cleanReference) === true || preg_match($uuidPattern, $cleanReference) === 1) {
+		if (is_numeric($cleanReference) === true || UuidFormat::isCanonical(value: $cleanReference) === true) {
 			try {
 				$schema = $this->getCachedSchema(schemaId: $cleanReference);
 				$schemaId = (string)$schema->getId();
@@ -890,8 +890,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// First, try direct ID lookup (numeric ID or UUID).
-		$uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
-		if (is_numeric($reference) === true || preg_match($uuidPattern, $reference) === 1) {
+		if (is_numeric($reference) === true || UuidFormat::isCanonical(value: $reference) === true) {
 			try {
 				$register = $this->registerMapper->find($reference);
 				return (string)$register->getId();
@@ -1112,17 +1111,17 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Check for standard UUID pattern (8-4-4-4-12 format).
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isCanonical(value: $value) === true) {
 			return true;
 		}
 
 		// Check for UUID without dashes (32 hex chars).
-		if (preg_match('/^[0-9a-f]{32}$/i', $value) === 1) {
+		if (UuidFormat::isHex32(value: $value) === true) {
 			return true;
 		}
 
 		// Check for prefixed UUID patterns (e.g., "id-uuid", "ref-uuid", etc.) - with dashes.
-		if (preg_match('/^[a-z]+-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1) {
+		if (UuidFormat::isPrefixed(value: $value) === true) {
 			return true;
 		}
 
@@ -1226,7 +1225,7 @@ class SaveObject implements SaveObjectInterface {
 		// Process each relation (key = property path, value = related UUID).
 		foreach ($relations as $propertyPath => $relatedUuid) {
 			if (is_string($relatedUuid) === false
-				|| preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $relatedUuid) !== 1
+				|| UuidFormat::isCanonical(value: $relatedUuid) === false
 			) {
 				continue;
 			}
@@ -2660,10 +2659,12 @@ class SaveObject implements SaveObjectInterface {
 			throw new Exception("Invalid schema reference: {$definition['$ref']}");
 		}
 
-		$this->assertMayCascadeCreate(
-			schema: $this->getCachedSchema(schemaId: $schemaId),
-			register: (is_int($register) === true || is_string($register) === true) ? (string)$register : null
-		);
+		$cascadeRegister = null;
+		if (is_int($register) === true || is_string($register) === true) {
+			$cascadeRegister = (string)$register;
+		}
+
+		$this->assertMayCascadeCreate(schema: $this->getCachedSchema(schemaId: $schemaId), register: $cascadeRegister);
 
 		// Use silent mode for cascaded sub-objects to improve performance.
 		// This skips audit trail creation for each sub-object, reducing database writes.

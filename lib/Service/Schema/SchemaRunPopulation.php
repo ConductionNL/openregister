@@ -80,22 +80,30 @@ trait SchemaRunPopulation {
 	 * @return ObjectEntity[] The objects.
 	 */
 	private function loadBatch(SchemaRun $run, int $batchSize): array {
-		$result = $this->objectService->findAll(
-			config: [
-				'limit' => $batchSize,
-				'offset' => $run->getProcessed(),
-				'sort' => ['id' => 'ASC'],
-				'filters' => [
-					'register' => $run->getRegisterId(),
-					'schema' => $run->getSchemaId(),
-				],
-			],
-			_rbac: false,
-			_multitenancy: false
-		);
+		$result = $this->objectService->findAll(config: $this->batchQuery(run: $run, batchSize: $batchSize), _rbac: false, _multitenancy: false);
 
 		return array_values(array_filter($result, static fn ($candidate) => $candidate instanceof ObjectEntity));
 	}//end loadBatch()
+
+	/**
+	 * The query for the run's next batch: after the processed count, oldest id first.
+	 *
+	 * @param SchemaRun $run       The run.
+	 * @param int       $batchSize The batch size.
+	 *
+	 * @return array<string, mixed> The findAll() config.
+	 */
+	private function batchQuery(SchemaRun $run, int $batchSize): array {
+		return [
+			'limit' => $batchSize,
+			'offset' => $run->getProcessed(),
+			'sort' => ['id' => 'ASC'],
+			'filters' => [
+				'register' => $run->getRegisterId(),
+				'schema' => $run->getSchemaId(),
+			],
+		];
+	}//end batchQuery()
 
 	/**
 	 * Count the non-deleted population for a schema in a register.

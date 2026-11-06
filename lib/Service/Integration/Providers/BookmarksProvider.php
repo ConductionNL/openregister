@@ -38,13 +38,15 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use DateTime;
+use OCA\OpenRegister\Db\BookmarkLink;
 use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 
 class BookmarksProvider extends AbstractIntegrationProvider {
+
+	use NcAppLinkRowsProvider;
 
 	private const REQUIRED_APP = 'bookmarks';
 
@@ -71,25 +73,18 @@ class BookmarksProvider extends AbstractIntegrationProvider {
 		return 'docs';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
+	/**
+	 * The link mapper this provider reads.
+	 *
+	 * @return BookmarkLinkMapper
+	 */
+	protected function linkMapper(): BookmarkLinkMapper {
+		return $this->bookmarkLinkMapper;
+	}//end linkMapper()
 
 	/**
-	 * List bookmarks linked to an OR object.
-	 *
-	 * Reads link rows from `openregister_bookmark_links` and normalises
-	 * each into the registry leaf row shape consumed by CnBookmarksTab +
-	 * CnBookmarksCard. Returns an empty array when Bookmarks is
-	 * uninstalled.
+	 * One bookmark link in the leaf-row shape consumed by CnBookmarksTab and
+	 * CnBookmarksCard.
 	 *
 	 * Payload contract per row:
 	 *   id          : string — NC Bookmarks numeric id, cast to string
@@ -101,52 +96,25 @@ class BookmarksProvider extends AbstractIntegrationProvider {
 	 *   added       : int|null — unix timestamp the bookmark was saved
 	 *   linkId      : int    — OR link-row id
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
-	 * @param array<string,mixed> $filters Optional filters (unused).
+	 * @param BookmarkLink $link Link row from the mapper.
 	 *
-	 * @return array<int,array<string,mixed>>
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/filters
-	 *     are part of the IntegrationProvider::list() contract.
+	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/specs/integration-bookmarks/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		$links = $this->bookmarkLinkMapper->findByObjectUuid($objectId);
-		if ($links === []) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($links as $link) {
-			$bookmarkId = (int)$link->getBookmarkId();
-			$addedAt = $link->getAddedAt();
-
-			$addedTimestamp = null;
-			if ($addedAt instanceof DateTime) {
-				$addedTimestamp = $addedAt->getTimestamp();
-			}
-
-			$out[] = [
-				'id' => (string)$bookmarkId,
-				'bookmarkId' => $bookmarkId,
-				'title' => (string)($link->getTitle() ?? ($link->getUrl() ?? '')),
-				'description' => (string)($link->getDescription() ?? ''),
-				'url' => (string)($link->getUrl() ?? ''),
-				'tags' => ($link->getTags() ?? []),
-				'added' => $addedTimestamp,
-				'linkId' => $link->getId(),
-			];
-		}
-
-		return $out;
-	}//end list()
+	protected function rowFromLink(BookmarkLink $link): array {
+		$bookmarkId = (int)$link->getBookmarkId();
+		return [
+			'id' => (string)$bookmarkId,
+			'bookmarkId' => $bookmarkId,
+			'title' => (string)($link->getTitle() ?? ($link->getUrl() ?? '')),
+			'description' => (string)($link->getDescription() ?? ''),
+			'url' => (string)($link->getUrl() ?? ''),
+			'tags' => ($link->getTags() ?? []),
+			'added' => $link->getAddedAt()?->getTimestamp(),
+			'linkId' => $link->getId(),
+		];
+	}//end rowFromLink()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).

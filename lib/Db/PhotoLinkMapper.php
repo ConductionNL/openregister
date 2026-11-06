@@ -21,17 +21,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class PhotoLinkMapper
  *
  * @template-extends QBMapper<PhotoLink>
+ * @method list<PhotoLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
 class PhotoLinkMapper extends QBMapper {
+
+	use ObjectKeyLinkTrait;
 	use FindLinksByObjectUuidTrait;
 	use DeleteLinksByObjectUuidTrait;
 	/**
@@ -52,17 +53,12 @@ class PhotoLinkMapper extends QBMapper {
 	 * @return PhotoLink|null The link or null if not found.
 	 */
 	public function findByObjectAndAlbum(string $objectUuid, int $albumId): ?PhotoLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'album_id', value: $albumId));
+		if ($link instanceof PhotoLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndAlbum()
 
 	/**
@@ -77,11 +73,6 @@ class PhotoLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndAlbum(string $objectUuid, int $albumId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('album_id', $qb->createNamedParameter($albumId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'album_id', value: $albumId));
 	}//end deleteByObjectAndAlbum()
 }//end class

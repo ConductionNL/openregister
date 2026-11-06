@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -58,7 +59,6 @@ use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
@@ -1510,6 +1510,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
     }//end logProcessingRead()
+
+    /**
+     * AVG / GDPR read logging for a list or search result.
+     *
+     * @param mixed                $objects The listed objects; anything but an array is not a list and is skipped.
+     * @param array<string, mixed> $query   The query parameters of the list or search.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
+     */
+    private function logProcessingReadList(mixed $objects, array $query): void
+    {
+        if (is_array($objects) === false) {
+            return;
+        }
+
+        try {
+            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+                ->registerProcessingReadList(objects: $objects, query: $query);
+        } catch (\Throwable $e) {
+            // Fail-soft: read logging never breaks the list.
+            $this->logger->debug(
+                message: '[AVG] processing-log list read hook skipped',
+                context: ['exception' => $e->getMessage()]
+            );
+        }
+    }//end logProcessingReadList()
 
     /**
      * Gets an object by its ID without creating an audit trail.
@@ -4584,6 +4612,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result = $this->extendSearchResult(result: $result, query: $query);
 
         $this->recordSearchTrail(query: $query, result: $result, startTime: $searchStartTime);
+        $this->logProcessingReadList(objects: ($result['results'] ?? []), query: $query);
 
         return $result;
     }//end searchObjectsPaginated()
@@ -5486,7 +5515,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function isUuidFormat(string $value): bool
     {
-        return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) === 1;
+        return UuidFormat::isCanonical(value: $value);
     }//end isUuidFormat()
 
     /**

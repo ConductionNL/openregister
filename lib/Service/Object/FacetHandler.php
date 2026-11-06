@@ -300,37 +300,6 @@ class FacetHandler {
 	}//end getFacetableFields()
 
 	/**
-	 * Calculate facet count for performance metrics.
-	 *
-	 * @param bool $hasFacets Whether facets were requested.
-	 * @param array $query The query array.
-	 *
-	 * @psalm-param bool $hasFacets
-	 * @psalm-param array<string, mixed> $query
-	 *
-	 * @phpstan-param bool $hasFacets
-	 * @phpstan-param array<string, mixed> $query
-	 *
-	 * @return int The facet count.
-	 * @psalm-return   int<0, max>
-	 * @phpstan-return int
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-performance-optimization-via-hyperfacethandler
-	 */
-	public function getFacetCount(bool $hasFacets, array $query): int {
-		if ($hasFacets === false) {
-			return 0;
-		}
-
-		$facets = $query['_facets'] ?? [];
-		if (is_array($facets) === true) {
-			return count($facets);
-		}
-
-		return 0;
-	}//end getFacetCount()
-
-	/**
 	 * Calculate Facets with Intelligent Fallback Strategy.
 	 *
 	 * Implements smart fallback logic that ensures users always see meaningful facet
