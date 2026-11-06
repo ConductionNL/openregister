@@ -51,6 +51,8 @@ use ReflectionClass;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RenderObjectCoverageTest extends TestCase {
+	use InverseRelationAccess;
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -160,10 +162,10 @@ class RenderObjectCoverageTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $method, array $args = []) {
-		$ref = new ReflectionClass($this->handler);
-		$m = $ref->getMethod($method);
+		$owner = $this->methodOwner($this->handler, $method);
+		$m = new \ReflectionMethod($owner, $method);
 		$m->setAccessible(true);
-		return $m->invokeArgs($this->handler, $args);
+		return $m->invokeArgs($owner, $args);
 	}
 
 	/**
@@ -175,10 +177,14 @@ class RenderObjectCoverageTest extends TestCase {
 	 * @return void
 	 */
 	private function setPrivateProperty(string $property, $value): void {
-		$ref = new ReflectionClass($this->handler);
-		$p = $ref->getProperty($property);
+		$owner = $this->handler;
+		if ($property === 'inverseRelationCache') {
+			$owner = $this->inversePart($this->handler);
+		}
+
+		$p = new \ReflectionProperty($owner, $property);
 		$p->setAccessible(true);
-		$p->setValue($this->handler, $value);
+		$p->setValue($owner, $value);
 	}
 
 	/**
@@ -584,9 +590,9 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 
 		$this->assertSame([], $cache['uuid-1_contacts']);
 		$this->assertSame([], $cache['uuid-2_contacts']);
@@ -601,16 +607,16 @@ class RenderObjectCoverageTest extends TestCase {
 		$existing = $this->createObjectEntity(1, 'ref-uuid');
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, ['uuid-1_contacts' => [$existing]]);
+		$prop->setValue($this->inversePart($this->handler), ['uuid-1_contacts' => [$existing]]);
 
 		$this->invokePrivate('initializeInverseCacheEntries', [
 			['uuid-1'],
 			'contacts',
 		]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache['uuid-1_contacts']);
 	}
 
@@ -631,18 +637,13 @@ class RenderObjectCoverageTest extends TestCase {
 
 		// Initialize cache.
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache[$entityUuid . '_contacts']);
 	}
 
@@ -658,18 +659,13 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
-		$cache = $prop->getValue($this->handler);
+		$cache = $prop->getValue($this->inversePart($this->handler));
 		$this->assertCount(1, $cache[$entityUuid . '_contacts']);
 	}
 
@@ -685,16 +681,11 @@ class RenderObjectCoverageTest extends TestCase {
 		]);
 
 		$ref = new ReflectionClass($this->handler);
-		$prop = $ref->getProperty('inverseRelationCache');
+		$prop = new \ReflectionProperty(\OCA\OpenRegister\Service\Object\InverseRelationPreload::class, 'inverseRelationCache');
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, [$entityUuid . '_contacts' => []]);
+		$prop->setValue($this->inversePart($this->handler), [$entityUuid . '_contacts' => []]);
 
-		$this->invokePrivate('indexReferencingObjects', [
-			[$refObject],
-			['organisation'],
-			[$entityUuid],
-			'contacts',
-		]);
+		$this->invokePrivate('indexReferencingObjects', [[$refObject], $this->inverseBatch(['organisation'], [$entityUuid], 'contacts')]);
 
 		$objectsCache = $ref->getProperty('objectsCache');
 		$objectsCache->setAccessible(true);
@@ -736,11 +727,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayHasKey('contacts', $result);
 		$this->assertIsArray($result['contacts']);
@@ -775,11 +762,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayHasKey('parent', $result);
 		$this->assertIsArray($result['parent']);
@@ -808,11 +791,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertNull($result['parent']);
 	}
@@ -834,11 +813,7 @@ class RenderObjectCoverageTest extends TestCase {
 		];
 
 		$objectData = ['name' => 'Test'];
-		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [
-			$entity,
-			$objectData,
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivate('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), $objectData]);
 
 		$this->assertArrayNotHasKey('field', $result);
 	}

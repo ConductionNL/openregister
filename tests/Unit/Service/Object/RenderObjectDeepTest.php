@@ -47,6 +47,8 @@ use ReflectionClass;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RenderObjectDeepTest extends TestCase {
+	use InverseRelationAccess;
+
 	/** @var RenderObject */
 	private RenderObject $handler;
 
@@ -178,29 +180,41 @@ class RenderObjectDeepTest extends TestCase {
 	 * Helper to invoke private methods via reflection.
 	 */
 	private function invokePrivateMethod(string $method, array $args = []) {
-		$ref = new \ReflectionMethod(RenderObject::class, $method);
+		$owner = $this->methodOwner($this->handler, $method);
+		$ref = new \ReflectionMethod($owner, $method);
 		$ref->setAccessible(true);
-		return $ref->invoke($this->handler, ...$args);
+		return $ref->invoke($owner, ...$args);
+	}
+
+	/**
+	 * The object that holds a private property.
+	 */
+	private function propertyOwner(string $property): object {
+		if ($property === 'inverseRelationCache') {
+			return $this->inversePart($this->handler);
+		}
+
+		return $this->handler;
 	}
 
 	/**
 	 * Helper to set private property via reflection.
 	 */
 	private function setPrivateProperty(string $property, $value): void {
-		$ref = new ReflectionClass(RenderObject::class);
-		$prop = $ref->getProperty($property);
+		$owner = $this->propertyOwner($property);
+		$prop = new \ReflectionProperty($owner, $property);
 		$prop->setAccessible(true);
-		$prop->setValue($this->handler, $value);
+		$prop->setValue($owner, $value);
 	}
 
 	/**
 	 * Helper to get private property via reflection.
 	 */
 	private function getPrivateProperty(string $property) {
-		$ref = new ReflectionClass(RenderObject::class);
-		$prop = $ref->getProperty($property);
+		$owner = $this->propertyOwner($property);
+		$prop = new \ReflectionProperty($owner, $property);
 		$prop->setAccessible(true);
-		return $prop->getValue($this->handler);
+		return $prop->getValue($owner);
 	}
 
 	// ── resolveSchemaReference tests ────────────────────────────────────
@@ -375,12 +389,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parentRef' => 'parent-uuid-1',
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['parentRef'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['parentRef'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_children']);
@@ -402,12 +411,7 @@ class RenderObjectDeepTest extends TestCase {
 			'module' => ['value' => 'parent-uuid-1'],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['module'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['module'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_linked']);
@@ -429,12 +433,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parent-uuid-1_items' => [],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['fieldA', 'fieldB'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['fieldA', 'fieldB'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_items']);
@@ -455,12 +454,7 @@ class RenderObjectDeepTest extends TestCase {
 			'parents' => ['parent-uuid-1', 'other-uuid'],
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['parents'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['parents'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(1, $cache['parent-uuid-1_refs']);
@@ -481,12 +475,7 @@ class RenderObjectDeepTest extends TestCase {
 			'field' => 'different-uuid',
 		]);
 
-		$this->invokePrivateMethod('indexReferencingObjects', [
-			[$refEntity],
-			['field'],
-			$entityUuids,
-			$propName,
-		]);
+		$this->invokePrivateMethod('indexReferencingObjects', [[$refEntity], $this->inverseBatch(['field'], $entityUuids, $propName)]);
 
 		$cache = $this->getPrivateProperty('inverseRelationCache');
 		$this->assertCount(0, $cache['parent-uuid-1_items']);
@@ -541,11 +530,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			['name' => 'Main'],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), ['name' => 'Main']]);
 
 		$this->assertArrayHasKey('children', $result);
 	}
@@ -571,11 +556,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			[],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), []]);
 
 		$this->assertArrayHasKey('items', $result);
 		$this->assertSame([], $result['items']);
@@ -602,11 +583,7 @@ class RenderObjectDeepTest extends TestCase {
 			],
 		];
 
-		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [
-			$entity,
-			[],
-			$inversedProperties,
-		]);
+		$result = $this->invokePrivateMethod('handleInversedPropertiesFromCache', [$this->inverseLookup($entity, $inversedProperties), []]);
 
 		$this->assertArrayHasKey('singleProp', $result);
 	}
