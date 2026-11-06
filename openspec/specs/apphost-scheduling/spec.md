@@ -75,6 +75,11 @@ When an application's production version is published, or the schedules of its p
 - **WHEN** a schedule is published with `enabled: false`
 - **THEN** its flow stays and does not fire
 
+#### Scenario: A production version of another application is refused
+
+- **WHEN** an application's production version cannot be read or belongs to another application
+- **THEN** no flow is written or removed and the refusal is logged
+
 #### Scenario: A removed schedule removes its flow
 
 - **WHEN** a published manifest no longer holds a schedule, or the application is deleted
@@ -123,6 +128,11 @@ A compiled flow's schedule trigger SHALL declare as `runAs` the user who publish
 - **WHEN** a production version changes with no signed-in user
 - **THEN** no flow is written and the refusal is logged
 
+#### Scenario: A refusal reaches the caller of the publish
+
+- **WHEN** a publish succeeds and a schedule of it is refused
+- **THEN** the response carries the reason in the header `X-OpenRegister-Schedule-Refused`
+
 #### Scenario: An on-disk app with no publisher is refused
 
 - **WHEN** an app ships schedules in its own manifest and has no published application object
@@ -136,6 +146,12 @@ A compiled flow SHALL belong to the application's `@self.organisation`. One tena
 
 - **WHEN** a member of the application's organisation publishes while another organisation is active
 - **THEN** the flow belongs to the application's organisation
+
+#### Scenario: The same slug in another organisation is another application
+
+- **GIVEN** a compiled flow of an application
+- **WHEN** an application of another organisation with the same slug is published or deleted
+- **THEN** that flow is untouched
 
 #### Scenario: A publisher outside the organisation is refused
 
