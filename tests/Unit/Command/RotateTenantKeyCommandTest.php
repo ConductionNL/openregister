@@ -46,7 +46,7 @@ class RotateTenantKeyCommandTest extends TestCase {
 		$keys->expects($this->never())->method('getCurrentTenantKey');
 
 		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
-		$status = $tester->execute(['tenant' => ' org-E ']);
+		$status = $tester->execute(['tenant' => ' org-E ', '--accept-unverifiable-signatures' => true]);
 
 		$this->assertSame(0, $status);
 		$this->assertSame("Tenant org-E: new key active since 2026-11-05T10:00:00+00:00, key 41 retired.\n", $tester->getDisplay());
@@ -94,7 +94,7 @@ class RotateTenantKeyCommandTest extends TestCase {
 
 		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
 
-		$this->assertSame(1, $tester->execute(['tenant' => 'org-G']));
+		$this->assertSame(1, $tester->execute(['tenant' => 'org-G', '--accept-unverifiable-signatures' => true]));
 		$this->assertStringContainsString('not rotated', $tester->getDisplay());
 	}//end testAFailedRotationExitsNonZero()
 
@@ -127,6 +127,22 @@ class RotateTenantKeyCommandTest extends TestCase {
 
 		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
 
-		$this->assertSame(0, $tester->execute(['tenant' => 'org-H', '--create' => true]));
+		$this->assertSame(0, $tester->execute(['tenant' => 'org-H', '--create' => true, '--accept-unverifiable-signatures' => true]));
 	}//end testCreateOnATenantWithAKeyStillRotates()
+
+	/**
+	 * A live key is not rotated without the explicit flag, and the warning says why.
+	 *
+	 * @return void
+	 */
+	public function testALiveKeyIsRefusedWithoutTheFlag(): void {
+		$keys = $this->createMock(TenantKeyService::class);
+		$keys->method('hasActiveKey')->willReturn(true);
+		$keys->expects($this->never())->method('rotateTenantKey');
+
+		$tester = new CommandTester(new RotateTenantKeyCommand(tenantKeys: $keys));
+
+		$this->assertSame(1, $tester->execute(['tenant' => 'org-J']));
+		$this->assertStringContainsString('--accept-unverifiable-signatures', $tester->getDisplay());
+	}//end testALiveKeyIsRefusedWithoutTheFlag()
 }//end class

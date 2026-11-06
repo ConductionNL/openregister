@@ -30,7 +30,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Search\Service\ActivityWindow;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
+use OCA\OpenRegister\Search\Service\DashboardSizes;
+use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -38,6 +42,15 @@ use Psr\Log\LoggerInterface;
  * Pins what the dashboard reads return and log, success and failure, against a recorded golden.
  *
  * @covers \OCA\OpenRegister\Search\Service\DashboardService
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardAuditReads
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardErrorLog
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardSizes
+ * @uses   \OCA\OpenRegister\Search\Service\RegisterSchemaLookup
+ * @uses   \OCA\OpenRegister\Search\Service\ActivityWindow
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardPeriod
+ * @uses   \OCA\OpenRegister\Search\Service\DashboardScope
+ * @uses   \OCA\OpenRegister\Search\Service\RegisterSchemaPair
+ * @uses   \OCA\OpenRegister\Search\Service\SizeTally
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  */
@@ -65,8 +78,8 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 		$webhooks = $this->createMock(WebhookLogMapper::class);
 		$registers = $this->createMock(RegisterMapper::class);
 		$logger = $this->createMock(LoggerInterface::class);
-		$logger->method('error')->willReturnCallback(function (string $message, array $context = []): void {
-			$this->logged[] = $message . ' file=' . basename((string)($context['file'] ?? ''));
+		$logger->method('error')->willReturnCallback(function (string $message): void {
+			$this->logged[] = $message;
 		});
 
 		$register = new Register();
@@ -99,7 +112,10 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 			$webhooks->method('getStatistics')->willReturn(['total' => 31]);
 		}
 
-		return new DashboardService($objects, $audit, $webhooks, $registers, $this->createMock(SchemaMapper::class), $logger);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$sizes = new DashboardSizes($objects, $audit, new RegisterSchemaLookup($registers, $schemas), $logger);
+
+		return new DashboardService($objects, $audit, $webhooks, $registers, $sizes, $logger);
 	}
 
 	/**
@@ -130,13 +146,13 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 		$service = $this->service(fail: $fail);
 		$out = ['registersWithSchemas' => array_map([$this, 'statsOnly'], $service->getRegistersWithSchemas())];
 		if ($fail === true) {
-			$out['actionChart'] = $service->getAuditTrailActionChartData();
+			$out['actionChart'] = $service->auditReads()->getAuditTrailActionChartData((new DashboardScope())->during(null, null));
 			$out['byRegister'] = $service->getObjectsByRegisterChartData();
 			$out['bySchema'] = $service->getObjectsBySchemaChartData();
 			$out['bySize'] = $service->getObjectsBySizeChartData();
-			$out['auditStats'] = $service->getAuditTrailStatistics();
-			$out['distribution'] = $service->getAuditTrailActionDistribution();
-			$out['mostActive'] = $service->getMostActiveObjects();
+			$out['auditStats'] = $service->auditReads()->getAuditTrailStatistics(new DashboardScope());
+			$out['distribution'] = $service->auditReads()->getAuditTrailActionDistribution(new DashboardScope());
+			$out['mostActive'] = $service->auditReads()->getMostActiveObjects(new ActivityWindow(new DashboardScope()));
 		}
 
 		$out['logged'] = $this->logged;

@@ -94,9 +94,9 @@ class AuditHashService {
 	/**
 	 * Well-known advisory lock key serializing ALL seal passes.
 	 *
-	 * The methods sealRow() and sealRows() race each other (and themselves
-	 * across requests): both read a predecessor hash and then UPDATE, so two
-	 * interleaved passes can chain a boundary row over a stale predecessor —
+	 * Seal passes race each other across requests: each reads a predecessor
+	 * hash and then UPDATEs, so two interleaved passes can chain a boundary
+	 * row over a stale predecessor —
 	 * a false tamper alarm on the next verifyChain(). A single exclusive
 	 * lock on this key makes seal passes strictly sequential.
 	 *
@@ -171,8 +171,8 @@ class AuditHashService {
 	 *
 	 * The seal lock is not re-entrant: acquiring it twice without releasing
 	 * throws LockedException (verified against DBLockingProvider). So when a
-	 * batch seal is in progress and a nested audit insert reaches sealRow(),
-	 * the acquisition cannot succeed — the holder is us, and we are further up
+	 * batch seal is in progress and a nested seal pass is reached, the
+	 * acquisition cannot succeed — the holder is us, and we are further up
 	 * our own call stack, so waiting is waiting for ourselves.
 	 *
 	 * Tracking ownership lets acquireSealLock() answer that case immediately
@@ -253,133 +253,18 @@ class AuditHashService {
 	}//end computeHash()
 
 	/**
-	 * Get the hash of the most recent audit trail entry.
-	 *
-	 * Returns the genesis hash if no entries exist or the last entry has no hash.
-	 *
-	 * @return string The hash of the last entry or the genesis hash
-	 *
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 */
-	public function getLastHash(): string {
-		$qb = $this->db->getQueryBuilder();
-
-		$qb->select('hash')
-			->from('openregister_audit_trails')
-			->orderBy('id', 'DESC')
-			->setMaxResults(1);
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false || $row['hash'] === null || $row['hash'] === '') {
-			return $this->getGenesisHash();
-		}
-
-		return $row['hash'];
-	}//end getLastHash()
-
-	/**
-	 * Seal an already-inserted audit-trail row into the hash chain.
-	 *
-	 * Reads the row by id, derives `previousHash` from the nearest PRIOR
-	 * SEALED row (or genesis), and computes `hash` over the row using the SAME
-	 * `mapRowToEntity()` + `hydrate()` + `getCanonicalJson()` path that
-	 * {@see verifyChain()} uses — guaranteeing the stored hash re-verifies
-	 * exactly. The `hash` / `previous_hash` values are then written directly.
-	 * Call this AFTER inserting the row so the id and all persisted (DB-typed)
-	 * field values are final.
-	 *
-	 * The critical section (predecessor read + hash write) runs under the
-	 * exclusive {@see self::SEAL_LOCK_KEY} advisory lock shared with
-	 * {@see sealRows()}. Fail-soft on contention: when the lock cannot be
-	 * acquired within a short bounded wait the row is left unsealed (a later
-	 * seal pass picks it up — {@see getHashBefore()} chains over unsealed
-	 * rows exactly like verifyChain() does) rather than blocking the write
-	 * path.
-	 *
-	 * @param int $id The audit-trail row id to seal.
-	 *
-	 * @return bool True when the row was found and sealed.
-	 *
-	 * @spec openspec/specs/audit-hash-chain/spec.md
-	 */
-	public function sealRow(int $id): bool {
-		if ($this->acquireSealLock() === false) {
-			$this->logger->warning(
-				'[AuditHashService] seal lock unavailable, leaving audit row ' . $id . ' unsealed (a later seal pass will chain it)'
-			);
-
-			return false;
-		}
-
-		try {
-			return $this->sealRowLocked(id: $id);
-		} finally {
-			$this->releaseSealLock();
-		}
-	}//end sealRow()
-
-	/**
-	 * Seal a single row — body of {@see sealRow()}, caller holds the seal lock.
-	 *
-	 * @param int $id The audit-trail row id to seal.
-	 *
-	 * @return bool True when the row was found and sealed.
-	 */
-	private function sealRowLocked(int $id): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_audit_trails')
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		$result = $qb->executeQuery();
-		$row = $result->fetch();
-		$result->closeCursor();
-
-		if ($row === false) {
-			return false;
-		}
-
-		$previousHash = $this->getHashBefore(id: $id);
-		if ($previousHash === null) {
-			$previousHash = $this->getGenesisHash();
-		}
-
-		$entry = new AuditTrail();
-		$entry->hydrate(object: $this->mapRowToEntity(row: $row));
-
-		$hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
-
-		$update = $this->db->getQueryBuilder();
-		$update->update('openregister_audit_trails')
-			->set('hash', $update->createNamedParameter($hash))
-			->set('previous_hash', $update->createNamedParameter($previousHash))
-			->where($update->expr()->eq('id', $update->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-		$update->executeStatement();
-
-		return true;
-	}//end sealRowLocked()
-
-	/**
 	 * Seal a batch of already-inserted audit-trail rows into the hash chain.
 	 *
-	 * Batched counterpart of {@see sealRow()} for bulk audit inserts: instead
-	 * of 3 queries per row (row SELECT + previous-hash SELECT + UPDATE) it
-	 * runs one range SELECT, one previous-hash SELECT, and one CASE-based
+	 * Runs one range SELECT, one previous-hash SELECT, and one CASE-based
 	 * UPDATE for the whole batch. To keep the chain verifiable when foreign
 	 * rows interleave with the batch (concurrent writers), ALL unsealed rows
 	 * in the id range [min(ids), max(ids)] are sealed — the hash computed for
-	 * any row is deterministic (same canonical JSON + same predecessor), so
-	 * sealing an interleaved row here yields the identical value its own
-	 * sealRow() call would produce. Already-sealed rows are left untouched
-	 * and only contribute their stored hash as the chain link.
+	 * any row is deterministic (same canonical JSON + same predecessor).
+	 * Already-sealed rows are left untouched and only contribute their stored
+	 * hash as the chain link.
 	 *
 	 * Seal passes are serialized under the exclusive
-	 * {@see self::SEAL_LOCK_KEY} advisory lock shared with {@see sealRow()}:
-	 * without it a concurrent writer could seal a boundary row between our
+	 * {@see self::SEAL_LOCK_KEY} advisory lock: without it a concurrent writer could seal a boundary row between our
 	 * getHashBefore() read and our UPDATE (or vice versa), chaining one link
 	 * over a stale predecessor — a false tamper alarm on the next
 	 * verifyChain(). Fail-soft on contention: when the lock cannot be
@@ -428,8 +313,7 @@ class AuditHashService {
 	/**
 	 * Seal rows that were left unsealed, oldest first.
 	 *
-	 * This is the "later seal pass" that sealRow() and sealRows() have always
-	 * promised in their fail-soft log messages. Until now it did not exist:
+	 * This is the "later seal pass" that the fail-soft log messages promise. Until now it did not exist:
 	 * nothing swept unsealed rows, so every fail-soft skip was permanent. On the
 	 * instance this was written against, 49,123 of 308,937 audit rows — 15.9% —
 	 * had no hash, and never would have.
@@ -438,9 +322,8 @@ class AuditHashService {
 	 * tampering DETECTABLE; a row with no hash is a row nobody can vouch for.
 	 *
 	 * Works oldest-first and in id order so each batch chains onto an already
-	 * settled predecessor, and delegates to sealRows() so a batch derives its
-	 * predecessor once and chains forward, rather than re-deriving it per row
-	 * the way sealRow() must.
+	 * settled predecessor, so a batch derives its predecessor once and chains
+	 * forward rather than re-deriving it per row.
 	 *
 	 * @param int $limit Maximum rows to seal in one pass.
 	 *
@@ -953,9 +836,8 @@ class AuditHashService {
 		// until we return.
 		//
 		// This is the common case during a configuration import, not an edge
-		// case: sealRows() takes the lock for a batch, an object write inside
-		// that batch appends its own audit row, and insertHashChained() calls
-		// sealRow() for it. One import produced 1,041 of these, each paying the
+		// case: a seal pass takes the lock for a batch and an object write
+		// inside that batch reaches a seal pass of its own. One import produced 1,041 of these, each paying the
 		// full 100 ms — roughly 100 seconds of a repair run spent in usleep(),
 		// which is why the process looked busy while the database sat idle.
 		//

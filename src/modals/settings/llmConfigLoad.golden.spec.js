@@ -111,7 +111,7 @@ describe('LLM configuration load golden', () => {
 			jest.spyOn(console, 'error').mockImplementation((...parts) =>
 				logged.push(parts.map(String)),
 			)
-			Object.assign(vm, {
+			Object.assign(vm, LLMConfigModal.methods, {
 				t,
 				fetchOllamaModels: () => calls.push('fetchOllamaModels'),
 			})
