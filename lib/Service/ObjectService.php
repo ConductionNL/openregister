@@ -117,6 +117,10 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
+use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
+use OCA\OpenRegister\Service\Object\SavedObjectScope;
+use OCA\OpenRegister\Service\Object\SavedScopeIds;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -230,6 +234,20 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @var RegisterScopedSchemaResolver
      */
     private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
+
+    /**
+     * Clears the caches that outlive a save, constructed on first use.
+     *
+     * @var ObjectCacheInvalidator|null
+     */
+    private ?ObjectCacheInvalidator $cacheInvalidator = null;
+
+    /**
+     * Clears the collection caches after a bulk write, constructed on first use.
+     *
+     * @var BulkCacheInvalidator|null
+     */
+    private ?BulkCacheInvalidator $bulkCacheInvalidator = null;
 
     /**
      * The current object context.
@@ -2034,8 +2052,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
 
         $savedObject = $this->persistObject(object: $object, options: ['uuid' => $uuid] + $options);
-        $this->invalidateContactMatchCache(savedObject: $savedObject);
-        $this->invalidateReferenceCaches(savedObject: $savedObject);
+        $this->cacheInvalidator()->afterSave(
+            saved: new SavedObjectScope(
+                object: $savedObject,
+                registerId: $this->currentRegister?->getId(),
+                schemaId: $this->currentSchema?->getId()
+            )
+        );
 
         // Lazy folder creation: no file-storage folder is created here. The
         // folder is created on demand on the first upload, which keeps empty
@@ -2234,110 +2257,34 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end persistObject()
 
     /**
-     * Invalidate the contact matching cache against the SAVED object's data.
+     * The cache invalidator of this service.
      *
-     * The saved data carries the final uuid and applied defaults, so an email
-     * value injected by a default is invalidated too. Resolved through the
-     * injected app container, never `\OC::$server`: outside a booted Nextcloud
-     * the global container autowires this app's services from scratch and
-     * recurses until memory runs out. A non-essential side effect: a failure
-     * (also a runtime Error) is logged with the object's context and never
-     * fails the save.
-     *
-     * @param ObjectEntity $savedObject The saved object.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @return ObjectCacheInvalidator
      */
-    private function invalidateContactMatchCache(ObjectEntity $savedObject): void
+    private function cacheInvalidator(): ObjectCacheInvalidator
     {
-        try {
-            $contactMatchingService = $this->container->get(
-                \OCA\OpenRegister\Service\ContactMatchingService::class
-            );
-            $contactMatchingService->invalidateCacheForObject($savedObject->getObject());
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[ObjectService] Skipped contact-match cache invalidation: invalidation failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e->getMessage(),
-                    'uuid'      => $savedObject->getUuid(),
-                    'register'  => $this->currentRegister?->getId(),
-                    'schema'    => $this->currentSchema?->getId(),
-                ]
-            );
-        }//end try
-    }//end invalidateContactMatchCache()
+        $this->cacheInvalidator ??= new ObjectCacheInvalidator(
+            container: $this->container,
+            logger: $this->logger
+        );
+
+        return $this->cacheInvalidator;
+    }//end cacheInvalidator()
 
     /**
-     * Invalidate the Smart Picker and reference-provider preview caches of the saved object.
+     * The bulk cache invalidator of this service.
      *
-     * Every canonical URL shape comes from ObjectPreviewFormatter::buildCanonicalUrls(),
-     * the same pattern list the providers match against, and each cache prefix
-     * is invalidated once; the object's deep link is invalidated too. The
-     * deep link data is the object's own fields plus the identity triple, as
-     * the preview and search formatters build it. A non-essential side effect:
-     * a failure is logged with the object's context and never fails the save.
-     *
-     * @param ObjectEntity $savedObject The saved object.
-     *
-     * @return void
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @return BulkCacheInvalidator
      */
-    private function invalidateReferenceCaches(ObjectEntity $savedObject): void
+    private function bulkCacheInvalidator(): BulkCacheInvalidator
     {
-        try {
-            $referenceManager = $this->container->get(\OCP\Collaboration\Reference\IReferenceManager::class);
-            $formatter        = $this->container->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class);
-            $deepLinkRegistry = $this->container->get(\OCA\OpenRegister\Service\DeepLinkRegistryService::class);
+        $this->bulkCacheInvalidator ??= new BulkCacheInvalidator(
+            cacheHandler: $this->cacheHandler,
+            logger: $this->logger
+        );
 
-            $invalidationRegisterId = (int) $this->currentRegister?->getId();
-            $invalidationSchemaId   = (int) $this->currentSchema?->getId();
-            $invalidationUuid       = (string) $savedObject->getUuid();
-
-            $invalidatedPrefixes = [];
-            $canonicalUrls       = $formatter->buildCanonicalUrls(
-                registerId: $invalidationRegisterId,
-                schemaId: $invalidationSchemaId,
-                uuid: $invalidationUuid
-            );
-            foreach ($canonicalUrls as $canonicalUrl) {
-                $prefix = $formatter->resolveCachePrefix(referenceText: $canonicalUrl);
-                if (isset($invalidatedPrefixes[$prefix]) === false) {
-                    $referenceManager->invalidateCache(cachePrefix: $prefix);
-                    $invalidatedPrefixes[$prefix] = true;
-                }
-            }
-
-            $deepLinkUrl = $deepLinkRegistry->resolveUrl(
-                registerId: $invalidationRegisterId,
-                schemaId: $invalidationSchemaId,
-                objectData: array_merge(
-                    $savedObject->getObject(),
-                    ['uuid' => $invalidationUuid, 'register' => $invalidationRegisterId, 'schema' => $invalidationSchemaId]
-                )
-            );
-            if ($deepLinkUrl !== null) {
-                $referenceManager->invalidateCache(cachePrefix: $deepLinkUrl);
-            }
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[ObjectService] Skipped Smart Picker cache invalidation: invalidation failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'exception' => $e->getMessage(),
-                    'uuid'      => $savedObject->getUuid(),
-                    'register'  => $this->currentRegister?->getId(),
-                    'schema'    => $this->currentSchema?->getId(),
-                ]
-            );
-        }//end try
-    }//end invalidateReferenceCaches()
+        return $this->bulkCacheInvalidator;
+    }//end bulkCacheInvalidator()
 
     /**
      * Set register and schema context from parameters.
@@ -5745,50 +5692,18 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 _audit: $_audit
             );
 
-            $this->invalidateAfterBulkSave(bulkResult: $bulkResult);
+            $this->bulkCacheInvalidator()->afterBulkSave(
+                bulkResult: $bulkResult,
+                scope: new SavedScopeIds(
+                    registerId: $this->currentRegister?->getId(),
+                    schemaId: $this->currentSchema?->getId()
+                )
+            );
             return $bulkResult;
         } finally {
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end saveObjects()
-
-    /**
-     * Invalidate the collection caches of the current register and schema after a bulk save
-     * that created or updated objects. A failing invalidation is logged, not thrown.
-     *
-     * @param array $bulkResult The bulk save result with its statistics.
-     *
-     * @return void
-     */
-    private function invalidateAfterBulkSave(array $bulkResult): void
-    {
-        $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
-        $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
-        $totalAffected = $createdCount + $updatedCount;
-        if ($totalAffected <= 0) {
-            return;
-        }
-
-        try {
-            $this->cacheHandler->invalidateForObjectChange(
-                object: null,
-                operation: 'bulk_save',
-                registerId: $this->currentRegister?->getId(),
-                schemaId: $this->currentSchema?->getId()
-            );
-        } catch (\Exception $e) {
-            // BUG-OBJ-14: include register/schema context in the warning.
-            $this->logger->warning(
-                message: '[ObjectService] Bulk save cache invalidation failed',
-                context: [
-                    'error'         => $e->getMessage(),
-                    'totalAffected' => $totalAffected,
-                    'registerId'    => $this->currentRegister?->getId(),
-                    'schemaId'      => $this->currentSchema?->getId(),
-                ]
-            );
-        }
-    }//end invalidateAfterBulkSave()
 
     /**
      * Save many objects one row at a time, keeping reference checks O(1).
@@ -6294,7 +6209,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $this->deleteBulkRow(uuid: $uuid, run: $run);
         }
 
-        $this->invalidateBulkDeleteCaches(run: $run);
+        $this->bulkCacheInvalidator()->afterBulkDelete(run: $run);
 
         return [
             'deleted_uuids'   => $run['deleted'],
@@ -6585,53 +6500,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             'schemaId'   => $schemaIdInt,
         ];
     }//end recordBulkDeleted()
-
-    /**
-     * Invalidate the collection caches of every (register, schema) pair a bulk delete touched.
-     *
-     * CacheHandler::clearSchemaRelatedCaches() only clears the per-schema query
-     * cache when schemaId is not null, so the pairs come from the deleted rows;
-     * a broad null/null invalidation is the fallback when no pair was resolved.
-     * A failed invalidation is logged with its scope, not swallowed.
-     *
-     * @param array $run The bulk delete run.
-     *
-     * @return void
-     *
-     * @spec exclude Bulk-delete loop over deleteHandler->deleteObject(); per-object RESTRICT/CASCADE behavior owned by referential-integrity.
-     */
-    private function invalidateBulkDeleteCaches(array $run): void
-    {
-        if (empty($run['deleted']) === true) {
-            return;
-        }
-
-        $pairsToInvalidate = $run['pairs'];
-        if (empty($pairsToInvalidate) === true) {
-            $pairsToInvalidate = [['registerId' => null, 'schemaId' => null]];
-        }
-
-        foreach ($pairsToInvalidate as $pair) {
-            try {
-                $this->cacheHandler->invalidateForObjectChange(
-                    object: null,
-                    operation: 'bulk_delete',
-                    registerId: $pair['registerId'],
-                    schemaId: $pair['schemaId']
-                );
-            } catch (\Exception $e) {
-                $this->logger->warning(
-                    message: '[ObjectService] Bulk delete cache invalidation failed',
-                    context: [
-                        'error'        => $e->getMessage(),
-                        'deletedCount' => count($run['deleted']),
-                        'registerId'   => $pair['registerId'],
-                        'schemaId'     => $pair['schemaId'],
-                    ]
-                );
-            }
-        }//end foreach
-    }//end invalidateBulkDeleteCaches()
 
     /**
      * Batch-resolve the entities (and thus register/schema scopes) for a set of UUIDs.
@@ -7307,24 +7175,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             suppliedKeys: $suppliedKeys
         );
     }//end restoreStringTypedValues()
-
-    /**
-     * Build search query from request parameters
-     *
-     * @param array $params Request parameters
-     *
-     * @return array Normalized search query
-     *
-     * @psalm-return array<string, mixed>
-     *
-     * @spec exclude Facade alias delegating to buildSearchQuery(); query-building owned by zoeken-filteren.
-     */
-    public function buildObjectSearchQuery(array $params): array
-    {
-        // REFACTORED: Removed CrudHandler (caused circular dependency - called back to ObjectService).
-        // Call buildSearchQuery() directly (already exists in ObjectService).
-        return $this->buildSearchQuery(requestParams: $params);
-    }//end buildObjectSearchQuery()
 
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS

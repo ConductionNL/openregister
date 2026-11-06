@@ -80,6 +80,11 @@ use Psr\Log\LoggerInterface;
  * The pre-validation cascade runs inside a cascade scope that carries the save's RBAC mode.
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
+ * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation
+ * @uses   \OCA\OpenRegister\Service\Object\SavedObjectScope
+ * @uses   \OCA\OpenRegister\Service\Object\SavedScopeIds
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
