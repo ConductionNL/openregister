@@ -63,13 +63,24 @@ final class OrderParameter {
 			return array_map(fn (mixed $value): string => $this->direction(value: $value), $order);
 		}
 
+		return $this->listed(entries: $order);
+	}//end fields()
+
+	/**
+	 * The fields of a list; of two entries for one field the first wins.
+	 *
+	 * @param array<int, mixed> $entries The entries.
+	 *
+	 * @return array<array-key, string> Field => direction.
+	 */
+	private function listed(array $entries): array {
 		$fields = [];
-		foreach ($order as $entry) {
+		foreach ($entries as $entry) {
 			$fields += $this->entry(entry: $entry);
 		}
 
 		return $fields;
-	}//end fields()
+	}//end listed()
 
 	/**
 	 * A string value: JSON, or else one name.

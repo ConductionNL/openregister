@@ -89,7 +89,7 @@ class RenderObjectLensRowsTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new RenderObject(
-			fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\FileMapper::class),
+			fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Files\Db\FileMapper::class),
 			objectEntityMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class),
 			registerMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\RegisterMapper::class),
 			schemaMapper: $schemaMapper,

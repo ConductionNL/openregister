@@ -23,14 +23,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Db\FileMapper
+ * @covers \OCA\OpenRegister\Files\Db\FileMapper
  */
 class FileMapperFilecacheReadGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
