@@ -106,9 +106,13 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
+<<<<<<< HEAD
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
+=======
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionOptionsValidator
+>>>>>>> sig/r3-schema-advisory
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
