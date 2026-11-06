@@ -59,29 +59,22 @@ class SyncRecordMapper extends QBMapper {
 	/**
 	 * Create a pending tracking row for a gathered record.
 	 *
-	 * @param int $sourceId Owning source id
-	 * @param string $executionId Sync execution id
-	 * @param string $externalId External record identifier
-	 * @param string|null $organisation Owning organisation UUID
+	 * @param SyncExecution $execution  The source and execution the record belongs to
+	 * @param string        $externalId External record identifier
 	 *
 	 * @return SyncRecord The persisted record
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function createPending(
-		int $sourceId,
-		string $executionId,
-		string $externalId,
-		?string $organisation = null,
-	): SyncRecord {
+	public function createPending(SyncExecution $execution, string $externalId): SyncRecord {
 		$record = new SyncRecord();
 		$record->setUuid((string)Uuid::v4());
-		$record->setSourceId($sourceId);
-		$record->setExecutionId($executionId);
+		$record->setSourceId((int)$execution->source->getId());
+		$record->setExecutionId($execution->executionId);
 		$record->setExternalId($externalId);
 		$record->setStatus(SyncRecordStatus::PENDING);
 		$record->setAttempts(0);
-		$record->setOrganisation($organisation);
+		$record->setOrganisation($execution->source->getOrganisation());
 		$record->setCreated(new DateTime());
 		$record->setUpdated(new DateTime());
 
@@ -91,9 +84,8 @@ class SyncRecordMapper extends QBMapper {
 	/**
 	 * Transition a record to a new status, enforcing the state machine.
 	 *
-	 * @param SyncRecord $record The record to transition
-	 * @param string $newStatus The target status
-	 * @param string|null $errorMessage Optional error detail
+	 * @param SyncRecord $record    The record to transition
+	 * @param string     $newStatus The target status
 	 *
 	 * @return SyncRecord The updated record
 	 *
@@ -101,23 +93,64 @@ class SyncRecordMapper extends QBMapper {
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
-	public function transitionStatus(SyncRecord $record, string $newStatus, ?string $errorMessage = null): SyncRecord {
+	public function transitionStatus(SyncRecord $record, string $newStatus): SyncRecord {
+		$this->moveTo(record: $record, status: $newStatus);
+
+		return $this->touch(record: $record);
+	}//end transitionStatus()
+
+	/**
+	 * Transition a record to an error status and keep the error detail.
+	 *
+	 * @param SyncRecord  $record  The record to transition
+	 * @param SyncFailure $failure The error status and detail
+	 *
+	 * @return SyncRecord The updated record
+	 *
+	 * @throws \InvalidArgumentException When the transition is not allowed
+	 *
+	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 */
+	public function recordFailure(SyncRecord $record, SyncFailure $failure): SyncRecord {
+		$this->moveTo(record: $record, status: $failure->status);
+		$record->setErrorMessage($failure->message);
+
+		return $this->touch(record: $record);
+	}//end recordFailure()
+
+	/**
+	 * Set a record's status when the state machine allows the step.
+	 *
+	 * @param SyncRecord $record The record
+	 * @param string     $status The target status
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When the transition is not allowed
+	 */
+	private function moveTo(SyncRecord $record, string $status): void {
 		$current = (string)$record->getStatus();
-		if (SyncRecordStatus::canTransition(from: $current, to: $newStatus) === false) {
+		if (SyncRecordStatus::canTransition(from: $current, to: $status) === false) {
 			throw new InvalidArgumentException(
-				sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $newStatus)
+				sprintf('Illegal sync-record transition from "%s" to "%s".', $current, $status)
 			);
 		}
 
-		$record->setStatus($newStatus);
-		if ($errorMessage !== null) {
-			$record->setErrorMessage($errorMessage);
-		}
+		$record->setStatus($status);
+	}//end moveTo()
 
+	/**
+	 * Stamp the update time and persist a record.
+	 *
+	 * @param SyncRecord $record The record
+	 *
+	 * @return SyncRecord The updated record
+	 */
+	private function touch(SyncRecord $record): SyncRecord {
 		$record->setUpdated(new DateTime());
 
 		return $this->update(entity: $record);
-	}//end transitionStatus()
+	}//end touch()
 
 	/**
 	 * Find records for a source/execution still awaiting fetch (resume support).

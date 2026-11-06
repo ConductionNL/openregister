@@ -139,4 +139,25 @@ class FlowDryRunServiceTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 		$this->service->dryRun(flowId: 'f1', register: 'dossiq', schema: 'case', objectId: 'o1');
 	}
+
+	public function testWalksAnExamplePayloadAsItWouldAnObject(): void {
+		$this->objects->expects($this->never())->method('find');
+
+		$result = $this->service->dryRunPayload(flowId: 'f1', payload: ['amount' => 5000]);
+
+		self::assertSame(['check', 'tell'], array_column($result['steps'], 'nodeId'));
+		self::assertSame(0, $this->mail->runs);
+		self::assertSame('completed', $result['status']);
+	}
+
+	public function testTakesTheOtherBranchForAnotherPayload(): void {
+		$result = $this->service->dryRunPayload(flowId: 'f1', payload: ['amount' => 20]);
+
+		self::assertSame(['check', 'mark'], array_column($result['steps'], 'nodeId'));
+	}
+
+	public function testRefusesAPayloadOnAFlowTheCallerCannotSee(): void {
+		$this->expectException(DoesNotExistException::class);
+		$this->service->dryRunPayload(flowId: 'other', payload: ['amount' => 5000]);
+	}
 }

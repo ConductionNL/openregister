@@ -64,7 +64,7 @@ trait SipTransportSteps {
 	private function failedTransfer(Throwable $cause, string $message): TransportResult {
 		$this->logger->error(message: $message, context: ['error' => $cause->getMessage()]);
 
-		return new TransportResult(success: false, errorMessage: $cause->getMessage());
+		return (new TransportResult())->failed(errorMessage: $cause->getMessage());
 	}//end failedTransfer()
 
 	/**

@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -382,7 +383,7 @@ class DashboardController extends Controller {
 		try {
 			// Calculate sizes and statistics using dashboard service.
 			// Service handles aggregation of object and log sizes.
-			$result = $this->dashboardService->calculate(registerId: $registerId, schemaId: $schemaId);
+			$result = $this->dashboardService->sizes()->calculate(registerId: $registerId, schemaId: $schemaId);
 
 			// Return successful response with calculation results.
 			return new JSONResponse(data: $result);
@@ -441,11 +442,8 @@ class DashboardController extends Controller {
 				$tillDate = new DateTime($till);
 			}
 
-			$data = $this->dashboardService->getAuditTrailActionChartData(
-				from: $fromDate,
-				till: $tillDate,
-				registerId: $registerId,
-				schemaId: $schemaId
+			$data = $this->dashboardService->auditReads()->getAuditTrailActionChartData(
+				period: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->during(from: $fromDate, till: $tillDate)
 			);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
@@ -574,9 +572,8 @@ class DashboardController extends Controller {
 		}
 
 		try {
-			$data = $this->dashboardService->getAuditTrailStatistics(
-				registerId: $registerId,
-				schemaId: $schemaId,
+			$data = $this->dashboardService->auditReads()->getAuditTrailStatistics(
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
 				hours: $hours
 			);
 			return new JSONResponse(data: $data);
@@ -610,9 +607,8 @@ class DashboardController extends Controller {
 		}
 
 		try {
-			$data = $this->dashboardService->getAuditTrailActionDistribution(
-				registerId: $registerId,
-				schemaId: $schemaId,
+			$data = $this->dashboardService->auditReads()->getAuditTrailActionDistribution(
+				scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId),
 				hours: $hours
 			);
 			return new JSONResponse(data: $data);
@@ -652,11 +648,8 @@ class DashboardController extends Controller {
 		}
 
 		try {
-			$data = $this->dashboardService->getMostActiveObjects(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				limit: $limit,
-				hours: $hours
+			$data = $this->dashboardService->auditReads()->getMostActiveObjects(
+				window: (new DashboardScope(registerId: $registerId, schemaId: $schemaId))->mostActive(limit: $limit, hours: $hours)
 			);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {

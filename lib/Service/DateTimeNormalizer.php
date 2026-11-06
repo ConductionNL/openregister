@@ -171,24 +171,6 @@ class DateTimeNormalizer {
 	}//end formatForDatabase()
 
 	/**
-	 * Format user-supplied input as an ISO 8601 string with timezone offset.
-	 *
-	 * @param mixed $value Value to normalise and format.
-	 *
-	 * @return string|null ISO 8601 string with offset, or `null` for empty/invalid input.
-	 *
-	 * @spec openspec/specs/datetime-input-handling/spec.md
-	 */
-	public function formatForIso8601(mixed $value): ?string {
-		$datetime = $this->normalize(value: $value);
-		if ($datetime === null) {
-			return null;
-		}
-
-		return $datetime->format(DateTimeInterface::ATOM);
-	}//end formatForIso8601()
-
-	/**
 	 * Format a `format: date` value for its database column.
 	 *
 	 * The counterpart of `formatForDatabase()` for values that name a calendar
@@ -224,7 +206,7 @@ class DateTimeNormalizer {
 	 *
 	 * The counterpart of `formatForDatabase()`. A DATETIME column carries no
 	 * offset, so the string the driver hands back (`2026-10-19 22:00:00`) is
-	 * naive and `formatForIso8601()` would attribute the server's
+	 * naive, and normalising it as given would attribute the server's
 	 * `date.timezone` to it. That happens to be right on a UTC server and wrong
 	 * everywhere else, which would re-open WOO-567 on any deployment whose PHP
 	 * timezone is not UTC. Read paths that pull a `date-time` property straight

@@ -213,9 +213,7 @@ final class AggregationAnnotationValidator {
 	 */
 	private function validateMultiMetricEntry(AggregationSpecEntry $entry, array $propKeys): array {
 		$metricsErrors = $this->metricsValidator->validate(
-			name: $entry->name,
-			metrics: $entry->spec['metrics'],
-			propKeys: $propKeys
+			declaration: new MetricsDeclaration(name: $entry->name, metrics: $entry->spec['metrics'], propKeys: $propKeys)
 		);
 		if ($metricsErrors !== []) {
 			return $metricsErrors;

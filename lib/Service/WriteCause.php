@@ -141,11 +141,11 @@ final class WriteCause {
 	private static array $frames = [];
 
 	/**
-	 * Whether a request tried to name its own cause this request.
+	 * The objects whose write a request tried to label with its own cause, by uuid.
 	 *
-	 * @var boolean
+	 * @var array<string, true>
 	 */
-	private static bool $clientAttempted = false;
+	private static array $clientAttempts = [];
 
 	/**
 	 * Run something with a cause on the stack.
@@ -214,25 +214,31 @@ final class WriteCause {
 	}
 
 	/**
-	 * Note that a request tried to name its own cause.
+	 * Note that a request tried to name its own cause for the write of one object.
+	 *
+	 * @param string $objectUuid The object being written.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function noteClientAttempt(): void {
-		self::$clientAttempted = true;
+	public static function noteClientAttempt(string $objectUuid): void {
+		if ($objectUuid !== '') {
+			self::$clientAttempts[$objectUuid] = true;
+		}
 	}
 
 	/**
-	 * Whether a request tried to name its own cause this request.
+	 * Whether a request tried to name its own cause for the write of this object.
 	 *
-	 * @return boolean True when one did.
+	 * @param string $objectUuid The object an audit row describes.
+	 *
+	 * @return boolean True when the write of that object carried the attempt.
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
-	public static function clientAttempted(): bool {
-		return self::$clientAttempted;
+	public static function clientAttemptedFor(string $objectUuid): bool {
+		return isset(self::$clientAttempts[$objectUuid]);
 	}
 
 	/**
@@ -267,6 +273,6 @@ final class WriteCause {
 	 */
 	public static function reset(): void {
 		self::$frames = [];
-		self::$clientAttempted = false;
+		self::$clientAttempts = [];
 	}
 }//end class

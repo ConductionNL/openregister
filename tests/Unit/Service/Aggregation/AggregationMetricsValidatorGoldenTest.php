@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -31,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\AggregationMetricsAnnotationValidator
  * @covers \OCA\OpenRegister\Search\Service\Aggregation\MetricEntrySite
+ * @covers \OCA\OpenRegister\Search\Service\Aggregation\MetricsDeclaration
  */
 class AggregationMetricsValidatorGoldenTest extends TestCase {
 
@@ -82,7 +84,7 @@ class AggregationMetricsValidatorGoldenTest extends TestCase {
 		$validator = new AggregationMetricsAnnotationValidator();
 		$actual = [];
 		foreach (self::inputs() as $case => $metrics) {
-			$actual[$case] = $validator->validate(name: 'totals', metrics: $metrics, propKeys: ['amount', 'status']);
+			$actual[$case] = $validator->validate(new MetricsDeclaration(name: 'totals', metrics: $metrics, propKeys: ['amount', 'status']));
 		}
 
 		$json = json_encode($actual, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";

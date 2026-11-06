@@ -30,6 +30,7 @@ use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -38,6 +39,22 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @spec openspec/specs/saas-multi-tenant/spec.md#new-active-keys-must-be-stored-encrypted-with-status-active
  */
 class RotateTenantKeyCommand extends Command {
+
+	/**
+	 * The option that accepts the loss of checkable signatures.
+	 *
+	 * @var string
+	 */
+	private const ACCEPT_OPTION = 'accept-unverifiable-signatures';
+
+	/**
+	 * Why a live key is not rotated by default: a retired key stays stored, but no API reads it.
+	 *
+	 * @var string
+	 */
+	private const SIGNATURE_WARNING = 'Nothing was rotated. Records signed with the current key, such as learniq attestations, '
+		.'can no longer be checked after rotation, because no API reads a retired key. '
+		.'Pass --accept-unverifiable-signatures to rotate anyway.';
 
 	/**
 	 * Constructor.
@@ -60,7 +77,9 @@ class RotateTenantKeyCommand extends Command {
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tenant-key:rotate')
 			->setDescription(description: 'Retire a tenant\'s active HMAC signing key and store a new one')
-			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier');
+			->addArgument(name: 'tenant', mode: InputArgument::REQUIRED, description: 'The tenant identifier')
+			->addOption(name: 'create', mode: InputOption::VALUE_NONE, description: 'Create a first key for a tenant that has none')
+			->addOption(name: self::ACCEPT_OPTION, mode: InputOption::VALUE_NONE, description: 'Rotate although old signatures can no longer be checked');
 	}//end configure()
 
 	/**
@@ -77,6 +96,16 @@ class RotateTenantKeyCommand extends Command {
 		$tenant = trim((string)$input->getArgument('tenant'));
 		if ($tenant === '') {
 			$output->writeln('<error>A tenant identifier is required.</error>');
+			return 1;
+		}
+
+		if ($input->getOption('create') !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === false) {
+			$output->writeln('<error>Tenant '.$tenant.' has no active key. Check the identifier, or pass --create to create a first key.</error>');
+			return 1;
+		}
+
+		if ($input->getOption(self::ACCEPT_OPTION) !== true && $this->tenantKeys->hasActiveKey(tenantId: $tenant) === true) {
+			$output->writeln('<error>'.self::SIGNATURE_WARNING.'</error>');
 			return 1;
 		}
 

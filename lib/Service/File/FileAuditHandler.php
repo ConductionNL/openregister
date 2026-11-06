@@ -61,56 +61,6 @@ class FileAuditHandler {
 	}//end __construct()
 
 	/**
-	 * Log a file download event.
-	 *
-	 * @param int $fileId The file ID that was downloaded.
-	 * @param string $fileName The file name.
-	 * @param int $fileSize The file size in bytes.
-	 * @param string $mimeType The file MIME type.
-	 * @param string $objectUuid The UUID of the parent object.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @spec exclude No-op audit shim: only emits a log line; the AuditTrail insert is commented out, so there is no persisted behavior to specify.
-	 */
-	public function logDownload(
-		int $fileId,
-		string $fileName,
-		int $fileSize,
-		string $mimeType,
-		string $objectUuid,
-	): void {
-		try {
-			$userId = $this->getCurrentUserId();
-			$data = [
-				'fileId' => $fileId,
-				'fileName' => $fileName,
-				'fileSize' => $fileSize,
-				'mimeType' => $mimeType,
-			];
-
-			// Add anonymous context if no user.
-			if ($userId === 'anonymous') {
-				$data['remoteAddress'] = $this->request->getRemoteAddress();
-				$data['userAgent'] = $this->request->getHeader('User-Agent');
-			}
-
-			$this->logger->info(
-				message: "[FileAuditHandler] Download logged for file {$fileId} by {$userId}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		} catch (Exception $e) {
-			// Audit logging should never break the download flow.
-			$this->logger->warning(
-				message: '[FileAuditHandler] Failed to log download: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end try
-	}//end logDownload()
-
-	/**
 	 * Log a bulk download event (ZIP archive) as a SINGLE audit-trail row.
 	 *
 	 * One audit row per ZIP — not one per included file — to match the
@@ -262,17 +212,4 @@ class FileAuditHandler {
 
 	}//end logFileAction()
 
-	/**
-	 * Get the current user ID.
-	 *
-	 * @return string The current user ID or 'anonymous'.
-	 */
-	private function getCurrentUserId(): string {
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			return $user->getUID();
-		}
-
-		return 'anonymous';
-	}//end getCurrentUserId()
 }//end class

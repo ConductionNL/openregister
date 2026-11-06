@@ -109,7 +109,7 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 	 * @return void
 	 */
 	public function testAClientSuppliedCauseIsIgnoredAndRecorded(): void {
-		WriteCause::noteClientAttempt();
+		WriteCause::noteClientAttempt(objectUuid: 'u-7');
 
 		$trail = $this->mapper()->buildAuditTrail(old: $this->object(title: 'A'), new: $this->object(title: 'B'));
 
@@ -134,11 +134,27 @@ final class AuditTrailClientSuppliedCauseTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateCarriesTheMarkerToo(): void {
-		WriteCause::noteClientAttempt();
+		WriteCause::noteClientAttempt(objectUuid: 'u-7');
 
 		$trail = $this->mapper()->buildAuditTrail(new: $this->object(title: 'B'));
 
 		$this->assertSame('create', $trail->getAction());
 		$this->assertTrue($trail->getChanged()['clientSuppliedCause'] ?? false);
 	}//end testACreateCarriesTheMarkerToo()
+
+	/**
+	 * A row for another object written later in the same request carries no marker.
+	 *
+	 * @return void
+	 */
+	public function testAnotherObjectsRowCarriesNoMarker(): void {
+		WriteCause::noteClientAttempt(objectUuid: 'u-7');
+
+		$other = $this->object(title: 'C');
+		$other->setId(8);
+		$other->setUuid('u-8');
+		$trail = $this->mapper()->buildAuditTrail(new: $other);
+
+		$this->assertArrayNotHasKey('clientSuppliedCause', (array)$trail->getChanged());
+	}//end testAnotherObjectsRowCarriesNoMarker()
 }//end class
