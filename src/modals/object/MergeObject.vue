@@ -1646,13 +1646,7 @@ export default {
 	font-weight: bold;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
+@include error-text-rules;
 
 @media (prefers-reduced-motion: reduce) {
 	.object-item {

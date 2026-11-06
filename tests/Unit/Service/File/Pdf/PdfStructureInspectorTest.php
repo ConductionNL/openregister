@@ -3,7 +3,7 @@
 /**
  * PdfStructureInspectorTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector}
  * covering taggedness detection and `/StructElem` counting over the SAPP
  * object model.
  *
@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf;
 
 use ddn\sapp\PDFDoc;
-use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector;
 use PHPUnit\Framework\TestCase;
 
 /**

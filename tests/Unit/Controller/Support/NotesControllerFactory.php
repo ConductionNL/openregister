@@ -30,7 +30,7 @@ final class NotesControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Service\NoteService $noteService,
+		\OCA\OpenRegister\Files\Service\NoteService $noteService,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility,
 		\OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService $timeline,
