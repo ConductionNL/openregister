@@ -81,4 +81,11 @@ final class ObjectUpdateRun {
 	 * @var ObjectEntity|null
 	 */
 	public ?ObjectEntity $oldObject = null;
+
+	/**
+	 * The object as updated, once it is persisted.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	public ?ObjectEntity $updated = null;
 }//end class
