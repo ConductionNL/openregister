@@ -860,7 +860,11 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end transformArrayItemSchema()
 
 	/**
-	 * Strip a relation `$ref` Opis would try to resolve as a URI: from a string property, and from an untyped one.
+	 * Strip a relation `$ref`, at any depth and on any type, so Opis does not try to resolve it as a URI.
+	 *
+	 * OpenRegister uses `$ref` to record a relation (e.g. for onDelete), not for validation. A property that
+	 * keeps one fails every write with `Unresolved reference: schema:///<slug>#`, which names neither the
+	 * property nor the schema.
 	 *
 	 * @param object $propertySchema The property schema to transform
 	 *
@@ -869,42 +873,35 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function stripRelationRefs(object $propertySchema): void {
-		// Strip $ref from string-type properties referencing other schemas.
-		// OpenRegister uses $ref to denote schema relationships, but Opis JSON Schema
-		// interprets $ref as a JSON Schema reference and tries to resolve it as a URI.
-		// The $ref is only needed by OpenRegister for relation tracking (e.g. onDelete),
-		// not for validation.
-		if (($propertySchema->type ?? null) !== null
-			&& $propertySchema->type === 'string'
-			&& ($propertySchema->{'$ref'} ?? null) !== null
-		) {
-			unset($propertySchema->{'$ref'});
+		$reference = ($propertySchema->{'$ref'} ?? null);
+		if ($reference === null) {
+			return;
 		}
 
-		// 🔴 AND FROM A PROPERTY THAT DECLARES NO TYPE AT ALL, which is the one
-		// shape every branch above misses. `{"$ref": "besluit"}` on its own is
-		// not an array, not an object and not a string, so the slug survived
-		// into Opis and every object write of that schema failed with
-		// `Unresolved reference: schema:///besluit#` — a message that names
-		// neither the property nor the schema. The schema itself saved with a
-		// 200, so the author read a success and then could not store anything.
-		// Measured 2026-09-19 on tests/e2e/ci/link-exposure.spec.ts, whose
-		// disclosure assertion never ran for this reason.
-		//
-		// A ref that could genuinely be a JSON Schema reference — a fragment
-		// or a URI — is left alone: this app writes slugs, and dropping
-		// something that resolves would change validation rather than restore
-		// it.
-		$bareRef = ($propertySchema->{'$ref'} ?? null);
-		if (($propertySchema->type ?? null) === null
-			&& is_string($bareRef) === true
-			&& $bareRef !== ''
-			&& str_contains($bareRef, '#') === false
-			&& str_contains($bareRef, '/') === false
-		) {
+		if (($propertySchema->type ?? null) === 'string' || self::isRelationMarker(reference: $reference) === true) {
 			unset($propertySchema->{'$ref'});
 		}
 	}//end stripRelationRefs()
+
+	/**
+	 * Whether a `$ref` names a schema: a slug or `#/components/schemas/<slug>`, neither of which Opis can resolve.
+	 *
+	 * Any other fragment or URI could be a genuine JSON Schema reference and stays.
+	 *
+	 * @param mixed $reference The `$ref` value
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function isRelationMarker(mixed $reference): bool {
+		if (is_string($reference) === false) {
+			return false;
+		}
+
+		return str_starts_with($reference, '#/components/schemas/') === true
+			|| (str_contains($reference, '#') === false && str_contains($reference, '/') === false);
+	}//end isRelationMarker()
 
 	/**
 	 * Apply transformPropertyForOpenRegister() to every property of an object schema.
