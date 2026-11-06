@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PropertyDefaultsCalls;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
@@ -252,6 +253,10 @@ class SaveObjectAdditionalTest extends TestCase {
 	 * @return mixed
 	 */
 	private function invokePrivate(string $methodName, array $parameters = []): mixed {
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
