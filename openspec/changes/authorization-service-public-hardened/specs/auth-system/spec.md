@@ -26,9 +26,9 @@ Open Register's AuthorizationService SHALL offer public entry points for JWT, Ba
 - **THEN** the call is refused
 - @e2e exclude {service API, no page; covered by AuthorizationServiceHardeningTest}
 
-### Requirement: JWTs signed with RS or PS algorithms are verified, and a token is used once
+### Requirement: JWTs are verified under the pinned HS, RS or PS algorithm, and a token is used once
 
-Open Register SHALL verify RS256/384/512 and PS256/384/512 tokens against the consumer's RSA public key (PEM or base64 of a PEM), loading only the algorithm pinned in the consumer's configuration. It SHALL refuse a token whose `iat` lies more than 60 seconds in the future, a token whose `nbf` has not been reached, and a token whose `jti` was accepted before (remembered until the token expires; refused when no distributed cache can check it). It SHALL NOT cap the lifetime a caller states in `exp` until that question is decided. It SHALL verify HS256/384/512 tokens the same way, with web-token and only the pinned algorithm loaded, and SHALL refuse a shared secret shorter than the hash output (32, 48 or 64 bytes, RFC 7518 §3.2) with a reason that names it.
+Open Register SHALL verify RS256/384/512 and PS256/384/512 tokens against the consumer's RSA public key (PEM or base64 of a PEM), loading only the algorithm pinned in the consumer's configuration. It SHALL refuse a token whose `iat` lies more than 60 seconds in the future, a token whose `nbf` has not been reached, and a token whose `jti` was accepted before (remembered until the token expires; refused when no distributed cache can check it). It SHALL NOT cap the lifetime a caller states in `exp` until that question is decided. It SHALL verify HS256/384/512 tokens against the consumer's shared secret, accepting only the algorithm pinned in the consumer's configuration, and SHALL refuse a shared secret shorter than the hash output (32, 48 or 64 bytes, RFC 7518 §3.2) with a reason that names it.
 
 #### Scenario: an RS256 token is verified with the public key
 
