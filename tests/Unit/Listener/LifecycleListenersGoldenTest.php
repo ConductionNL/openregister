@@ -65,6 +65,13 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
+ * @covers \OCA\OpenRegister\Listener\ApprovalChainRun
+ * @covers \OCA\OpenRegister\Listener\LifecycleAttempt
+ * @covers \OCA\OpenRegister\Listener\LifecycleCreate
+ * @covers \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @covers \OCA\OpenRegister\Listener\LifecycleEdit
+ * @covers \OCA\OpenRegister\Listener\LifecycleEditReader
+ * @covers \OCA\OpenRegister\Listener\LifecycleInitialReference
  * @covers \OCA\OpenRegister\Listener\LifecycleActionListener
  * @covers \OCA\OpenRegister\Listener\LifecycleInitialStateListener
  * @covers \OCA\OpenRegister\Listener\LifecycleValidationListener
@@ -80,6 +87,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller
  * @uses   \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
  * @uses   \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowExpression
  * @uses   \OCA\OpenRegister\Service\Lifecycle\KeepLifecycleStatesScope
  * @uses   \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  * @uses   \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator
@@ -124,23 +132,30 @@ class LifecycleListenersGoldenTest extends TestCase {
 	}//end resolver()
 
 	private function actionListener(): LifecycleActionListener {
-		return new LifecycleActionListener($this->schemaMapper, $this->executor, $this->logger, $this->resolver());
+		return new LifecycleActionListener(
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
+			$this->executor,
+			$this->logger
+		);
 	}//end actionListener()
 
 	private function gateListener(): ApprovalChainGateListener {
 		return new ApprovalChainGateListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
 			$this->sequenceMapper,
 			$this->sequenceService,
 			new ApprovalChainAnnotationInstaller(logger: $this->logger),
 			$this->userSession,
-			$this->logger,
-			$this->resolver()
+			$this->logger
 		);
 	}//end gateListener()
 
 	private function initialListener(): LifecycleInitialStateListener {
-		return new LifecycleInitialStateListener($this->schemaMapper, $this->references, $this->logger);
+		return new LifecycleInitialStateListener(
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
+			$this->references,
+			$this->logger
+		);
 	}//end initialListener()
 
 	private function validationListener(): LifecycleValidationListener {
@@ -156,13 +171,11 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
 			new LifecycleGuardRegistry($this->guards, $server, $this->logger),
 			$this->userSession,
 			$this->permission,
-			$this->logger,
 			new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect),
-			$this->resolver(),
 			new ConditionTracer(dialect: $dialect),
 			$this->ruleRuns
 		);
