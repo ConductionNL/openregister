@@ -127,6 +127,13 @@ class RenderObject {
 	private array $inverseRelationCache = [];
 
 	/**
+	 * Whether inverse results answer to the caller's read right, as the current render says.
+	 *
+	 * @var boolean
+	 */
+	private bool $inverseReadChecked = true;
+
+	/**
 	 * Transient cache of lightweight file IDs keyed by entity UUID.
 	 *
 	 * @var array<string, int[]>|null
@@ -205,7 +212,6 @@ class RenderObject {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
 	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -244,7 +250,6 @@ class RenderObject {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
@@ -2349,8 +2354,83 @@ class RenderObject {
 			return $objectData;
 		}
 
+		$this->checkInverseReads(checked: $context->rbac);
+
 		return $this->handleInversedProperties(entity: $entity, objectData: $objectData);
 	}//end applyInversedProperties()
+
+	/**
+	 * Set whether inverse results answer to the caller's read right.
+	 *
+	 * The inverse cache holds what one setting admitted, so a change empties it.
+	 *
+	 * @param bool $checked False for a trusted read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function checkInverseReads(bool $checked): void {
+		if ($checked !== $this->inverseReadChecked) {
+			$this->inverseRelationCache = [];
+		}
+
+		$this->inverseReadChecked = $checked;
+	}//end checkInverseReads()
+
+	/**
+	 * The inverse results the caller may read.
+	 *
+	 * The lookups filter on organisation only. Filtering here, where the objects are
+	 * loaded, keeps them out of the inverse property and out of `@self.objects`.
+	 * Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param ObjectEntity[] $objects The objects that point back.
+	 *
+	 * @return ObjectEntity[] The readable objects.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readableInverseObjects(array $objects): array {
+		if ($this->container === null || $this->inverseReadChecked === false) {
+			return $objects;
+		}
+
+		return array_values(array_filter($objects, fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)));
+	}//end readableInverseObjects()
+
+	/**
+	 * Whether the caller may read one inverse result; a failed check answers no.
+	 *
+	 * @param ObjectEntity $object The object that points back.
+	 *
+	 * @return bool True when the caller may read it.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function mayReadInverse(ObjectEntity $object): bool {
+		try {
+			$schema = $this->getSchema(id: $object->getSchema());
+			if ($schema === null) {
+				return false;
+			}
+
+			$owner = $object->getOwner();
+			if (is_string($owner) === false) {
+				$owner = null;
+			}
+
+			return $this->container->get(PermissionHandler::class)->hasPermission(
+				schema: $schema,
+				action: 'read',
+				objectOwner: $owner,
+				object: $object
+			);
+		} catch (\Throwable $e) {
+			$this->logRenderFailure(failure: 'inverse read check failed for', entity: $object, error: $e);
+			return false;
+		}
+	}//end mayReadInverse()
 
 	/**
 	 * Whether the extend list names one of the schema's inversed properties, or `all`.
@@ -4544,11 +4624,13 @@ class RenderObject {
 		// Batch find all objects of the target schema that reference ANY of our entity UUIDs.
 		// This uses the _relations column with GIN index for efficiency.
 		try {
-			$referencingObjects = $this->batchLoadReferencingObjects(
-				entityUuids: $entityUuids,
-				targetSchemaId: $targetSchemaId,
-				registerId: (int)$firstEntity->getRegister(),
-				inversedByFields: $inversedByFields
+			$referencingObjects = $this->readableInverseObjects(
+				objects: $this->batchLoadReferencingObjects(
+					entityUuids: $entityUuids,
+					targetSchemaId: $targetSchemaId,
+					registerId: (int)$firstEntity->getRegister(),
+					inversedByFields: $inversedByFields
+				)
 			);
 
 			// Pre-initialize cache entries for ALL entities with empty arrays.
@@ -4818,9 +4900,8 @@ class RenderObject {
 		$lookup = new InverseLookup();
 		$lookup->entity = $entity;
 		$lookup->inversedProperties = $inversedProperties;
-		$lookup->referencingObjects = $this->findInverseReferencingObjects(
-			entity: $entity,
-			inversedProperties: $inversedProperties
+		$lookup->referencingObjects = $this->readableInverseObjects(
+			objects: $this->findInverseReferencingObjects(entity: $entity, inversedProperties: $inversedProperties)
 		);
 		$this->cacheReferencingObjects(objects: $lookup->referencingObjects);
 
@@ -5311,6 +5392,7 @@ class RenderObject {
 
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
 		if (empty($page->extend) === false && empty($entities) === false) {
+			$this->checkInverseReads(checked: $page->rbac);
 			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
 		}
 

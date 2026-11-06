@@ -9,9 +9,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
-use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
-use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -83,8 +81,6 @@ class TextExtractionServicePendingAndSplitGoldenTest extends TestCase {
 					$this->createMock(SchemaMapper::class),
 					$this->createMock(RegisterMapper::class),
 					$this->createMock(EntityRecognitionHandler::class),
-					$this->createMock(GdprEntityMapper::class),
-					$this->createMock(EntityRelationMapper::class),
 					$this->createMock(SettingsService::class),
 					$this->createMock(RiskLevelService::class),
 					$this->createMock(EmlParser::class),

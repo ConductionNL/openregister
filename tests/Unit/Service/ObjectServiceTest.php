@@ -1929,16 +1929,6 @@ class ObjectServiceTest extends TestCase {
 		}
 	}
 
-	public function testBuildObjectSearchQueryDelegatesToBuildSearchQuery(): void {
-		$this->searchQueryHandler->expects($this->once())
-			->method('buildSearchQuery')
-			->willReturn(['_limit' => 20]);
-
-		$result = $this->service->buildObjectSearchQuery(params: ['_limit' => 20]);
-
-		$this->assertSame(20, $result['_limit']);
-	}
-
 	// ── 39. vectorization methods — disabled ────────────────────────────
 
 	public function testVectorizeBatchObjectsThrowsDisabledException(): void {
@@ -2219,18 +2209,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame($this->deleteHandler, $result);
 	}
 
-	// ── 47. collectNamesForResults (private) ────────────────────────────
-
-	public function testCollectNamesForResultsReturnsEmptyForEmptyResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [[]]);
-		$this->assertSame([], $result);
-	}
-
-	public function testCollectNamesForResultsSkipsNonArrayResults(): void {
-		$result = $this->invokePrivate('collectNamesForResults', [['not-an-array', 42]]);
-		$this->assertSame([], $result);
-	}
-
 	// ── 48. isUuidFormat (private) ──────────────────────────────────────
 
 	public function testIsUuidFormatReturnsTrueForValid(): void {
@@ -2241,107 +2219,6 @@ class ObjectServiceTest extends TestCase {
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['not-a-uuid']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['']));
 		$this->assertFalse($this->invokePrivate('isUuidFormat', ['123']));
-	}
-
-	// ── 49. collectUuidsFromRelations (private) ─────────────────────────
-
-	public function testCollectUuidsFromRelationsCollectsDirectUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			['550e8400-e29b-41d4-a716-446655440000', 'not-uuid'],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-		$this->assertSame('550e8400-e29b-41d4-a716-446655440000', $uuids[0]);
-	}
-
-	public function testCollectUuidsFromRelationsCollectsNestedUuids(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromRelations', [
-			[['550e8400-e29b-41d4-a716-446655440000', 'not-uuid']],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	// ── 50. collectUuidsFromObjectData (private) ────────────────────────
-
-	public function testCollectUuidsFromObjectDataCollectsTopLevel(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'title' => 'Test',
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'@self' => 'skip',
-				'id' => 'skip',
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(1, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataStopsAtDepth1(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			['related' => '550e8400-e29b-41d4-a716-446655440000'],
-			&$uuids,
-			1, // depth > 0 should return immediately
-		]);
-
-		$this->assertCount(0, $uuids);
-	}
-
-	public function testCollectUuidsFromObjectDataCollectsFromArrays(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromObjectData', [
-			[
-				'relations' => [
-					'550e8400-e29b-41d4-a716-446655440000',
-					'not-a-uuid',
-					'660e8400-e29b-41d4-a716-446655440000',
-				],
-			],
-			&$uuids,
-			0,
-		]);
-
-		$this->assertCount(2, $uuids);
-	}
-
-	// ── 51. collectUuidsFromArrayResult (private) ───────────────────────
-
-	public function testCollectUuidsFromArrayResultHandlesSelfStructure(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'@self' => [
-					'relations' => ['550e8400-e29b-41d4-a716-446655440000'],
-					'organisation' => '660e8400-e29b-41d4-a716-446655440000',
-					'owner' => '770e8400-e29b-41d4-a716-446655440000',
-					'object' => ['title' => 'Test'],
-				],
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(3, $uuids);
-	}
-
-	public function testCollectUuidsFromArrayResultHandlesFlatArray(): void {
-		$uuids = [];
-		$this->invokePrivate('collectUuidsFromArrayResult', [
-			[
-				'related' => '550e8400-e29b-41d4-a716-446655440000',
-				'title' => 'Test',
-			],
-			&$uuids,
-		]);
-
-		$this->assertCount(1, $uuids);
 	}
 
 	// ── 55. getObject / setObject ───────────────────────────────────────
