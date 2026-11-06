@@ -37,51 +37,26 @@ use Psr\Log\LoggerInterface;
 final class InverseRenderSupport {
 
 	/**
-	 * The object mapper.
+	 * Constructor.
 	 *
-	 * @var MagicMapperInterface
+	 * @param MagicMapperInterface               $mapper         The object mapper.
+	 * @param LoggerInterface                    $logger         The logger.
+	 * @param InverseRelationCache               $cache          The objects found to point back.
+	 * @param Closure(int|string): (Schema|null) $schemaLookup   Finds a schema by id, through the renderer's cache.
+	 * @param Closure(string): string            $schemaIdLookup Resolves a schema reference to a schema id.
+	 * @param Closure(ObjectEntity): array       $render         Renders a related object to its full data.
+	 * @param Closure(ObjectEntity[]): void      $rememberBehind Keeps objects in the renderer's cache without replacing any.
+	 * @param Closure(ObjectEntity[]): array     $readable       Keeps the objects the caller may read.
 	 */
-	public MagicMapperInterface $mapper;
-
-	/**
-	 * The logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	public LoggerInterface $logger;
-
-	/**
-	 * The objects found to point back, per entity and property.
-	 *
-	 * @var InverseRelationCache
-	 */
-	public InverseRelationCache $cache;
-
-	/**
-	 * Finds a schema by id, through the renderer's cache.
-	 *
-	 * @var Closure(int|string): (Schema|null)
-	 */
-	public Closure $schemaLookup;
-
-	/**
-	 * Resolves a schema reference to a schema id.
-	 *
-	 * @var Closure(string): string
-	 */
-	public Closure $schemaIdLookup;
-
-	/**
-	 * Renders a related object to its full data.
-	 *
-	 * @var Closure(ObjectEntity): array
-	 */
-	public Closure $render;
-
-	/**
-	 * Keeps objects in the renderer's objects cache without replacing what is there.
-	 *
-	 * @var Closure(ObjectEntity[]): void
-	 */
-	public Closure $rememberBehind;
+	public function __construct(
+		public readonly MagicMapperInterface $mapper,
+		public readonly LoggerInterface $logger,
+		public readonly InverseRelationCache $cache,
+		public readonly Closure $schemaLookup,
+		public readonly Closure $schemaIdLookup,
+		public readonly Closure $render,
+		public readonly Closure $rememberBehind,
+		public readonly Closure $readable,
+	) {
+	}//end __construct()
 }//end class

@@ -292,7 +292,7 @@ class InverseRelationPreload {
 	 */
 	private function loadBatch(InverseBatch $batch): void {
 		try {
-			$referencingObjects = $this->batchLoadReferencingObjects(batch: $batch);
+			$referencingObjects = ($this->support->readable)($this->batchLoadReferencingObjects(batch: $batch));
 
 			// Empty entries for every entity keep the render off the slow per-entity
 			// findByRelation() path, which scans all magic tables with LIKE.

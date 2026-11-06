@@ -47,6 +47,17 @@ class InverseRelationCache {
 	}//end __construct()
 
 	/**
+	 * Forget everything, for a render that admits different objects.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function clear(): void {
+		$this->inverseRelationCache = [];
+	}//end clear()
+
+	/**
 	 * Whether the cache holds an entry for any of the given properties of an entity.
 	 *
 	 * @param ObjectEntity $entity        The entity being rendered.

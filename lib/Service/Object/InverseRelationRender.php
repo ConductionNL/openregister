@@ -124,9 +124,8 @@ class InverseRelationRender {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function fromReferencingObjects(InverseLookup $lookup, array $objectData): array {
-		$lookup->referencingObjects = $this->findInverseReferencingObjects(
-			entity: $lookup->entity,
-			inversedProperties: $lookup->inversedProperties
+		$lookup->referencingObjects = ($this->support->readable)(
+			$this->findInverseReferencingObjects(entity: $lookup->entity, inversedProperties: $lookup->inversedProperties)
 		);
 		($this->support->rememberBehind)($lookup->referencingObjects);
 
