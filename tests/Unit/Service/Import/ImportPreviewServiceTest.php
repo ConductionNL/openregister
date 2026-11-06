@@ -271,7 +271,7 @@ final class ImportPreviewServiceTest extends TestCase {
 	 */
 	private function decisionFor(int $rowNumber): ImportPreviewRow {
 		foreach ($this->rows as $row) {
-			if ($row->getRowNo() === $rowNumber) {
+			if ($row->getRowNumber() === $rowNumber) {
 				return $row;
 			}
 		}
