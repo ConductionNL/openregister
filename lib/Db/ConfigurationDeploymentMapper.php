@@ -40,6 +40,8 @@ use Symfony\Component\Uid\Uuid;
  */
 class ConfigurationDeploymentMapper extends QBMapper {
 
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -66,12 +68,7 @@ class ConfigurationDeploymentMapper extends QBMapper {
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
 	public function findByUuid(string $uuid): ConfigurationDeployment {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 
 	}//end findByUuid()
 
@@ -108,13 +105,7 @@ class ConfigurationDeploymentMapper extends QBMapper {
 		$deployment = new ConfigurationDeployment();
 		$deployment->hydrate($data);
 
-		if ($deployment->getUuid() === null) {
-			$deployment->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($deployment->getState() === null) {
-			$deployment->setState(ConfigurationDeployment::STATE_APPLIED);
-		}
+		$this->fillIdentity(deployment: $deployment);
 
 		$now = new DateTime();
 		if ($deployment->getDeployedAt() === null) {
@@ -127,4 +118,21 @@ class ConfigurationDeploymentMapper extends QBMapper {
 		return $this->insert(entity: $deployment);
 
 	}//end createFromArray()
+
+	/**
+	 * Give a new deployment a uuid and the applied state unless it has them.
+	 *
+	 * @param ConfigurationDeployment $deployment The deployment.
+	 *
+	 * @return void
+	 */
+	private function fillIdentity(ConfigurationDeployment $deployment): void {
+		if ($deployment->getUuid() === null) {
+			$deployment->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($deployment->getState() === null) {
+			$deployment->setState(ConfigurationDeployment::STATE_APPLIED);
+		}
+	}//end fillIdentity()
 }//end class

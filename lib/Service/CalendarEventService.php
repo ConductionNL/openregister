@@ -498,6 +498,29 @@ class CalendarEventService implements ObjectCalendarEventsInterface {
 	}//end linkEvent()
 
 	/**
+	 * Refuse an event that is not one of the caller's events on the given object.
+	 *
+	 * @param string $objectUuid The object the caller addressed.
+	 * @param string $calendarId The calendar the caller named.
+	 * @param string $eventUri   The event the caller named.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception With code 404 when it is not.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	public function requireEventOf(string $objectUuid, string $calendarId, string $eventUri): void {
+		foreach ($this->getEventsForObject(objectUuid: $objectUuid) as $event) {
+			if ((string)$event['calendarId'] === $calendarId && $event['id'] === $eventUri) {
+				return;
+			}
+		}
+
+		throw new Exception('Calendar event not found', 404);
+	}//end requireEventOf()
+
+	/**
 	 * Unlink an event from an object (remove X-OPENREGISTER-* properties).
 	 *
 	 * @param string $calendarId The calendar ID

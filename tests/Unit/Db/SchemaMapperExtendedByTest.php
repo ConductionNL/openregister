@@ -50,6 +50,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Covers the reverse "extended by" map over realistic allOf shapes.
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ParentReference
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyMerge
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDelta
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads
  */
 class SchemaMapperExtendedByTest extends TestCase {
 	/**
