@@ -548,6 +548,41 @@ class DashboardServiceTest extends TestCase {
 		$this->assertSame('orphaned', $result[count($result) - 1]['id']);
 	}
 
+	/**
+	 * A register whose schemas throw an Error, not an Exception, degrades the
+	 * orphaned entry to zeros: the dashboard still renders for every register.
+	 *
+	 * @return void
+	 */
+	public function testAnErrorFromARegisterLeavesTheDashboardStanding(): void {
+		$this->registerMapper
+			->method('findAll')
+			->willReturn([$this->createRegisterEntity(1, 'Healthy Register'), $this->createRegisterEntity(2, 'Broken Register')]);
+		$this->registerMapper
+			->method('getSchemasByRegisterId')
+			->willReturnCallback(function (int $registerId): array {
+				if ($registerId === 2) {
+					throw new \TypeError('schema conflict');
+				}
+
+				return [$this->createSchemaEntity(10, 'Test Schema')];
+			});
+		$this->setupStatsMappers();
+		$this->logger
+			->expects($this->once())
+			->method('error')
+			->with($this->stringContains('Failed to get orphaned statistics: schema conflict'));
+
+		$result = $this->service->getRegistersWithSchemas();
+
+		$orphaned = $result[count($result) - 1];
+		$this->assertSame('orphaned', $orphaned['id']);
+		$this->assertSame(0, $orphaned['stats']['objects']['total']);
+		$this->assertSame(0, $orphaned['stats']['logs']['total']);
+		$this->assertArrayHasKey('error', $result[2]);
+		$this->assertCount(1, $result[1]['schemas']);
+	}
+
 	public function testGetRegistersWithSchemasFiltersByRegisterId(): void {
 		$register = $this->createRegisterEntity(5, 'Filtered Register');
 		$schema = $this->createSchemaEntity(10);
