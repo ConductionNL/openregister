@@ -74,6 +74,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
+use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
@@ -4389,6 +4391,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end fetchRows()
 
 	/**
+	 * The slug column of a register+schema table, or null without a table.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return MagicSlugTable|null
+	 */
+	private function slugTable(Register $register, Schema $schema): ?MagicSlugTable {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return null;
+		}
+
+		return new MagicSlugTable(db: $this->db, tableName: $this->getTableNameForRegisterSchema(register: $register, schema: $schema));
+	}//end slugTable()
+
+	/**
 	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
 	 *
 	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
@@ -4403,26 +4421,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
 	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'slug', self::METADATA_PREFIX . 'uuid')
-			->from($tableName)
-			->where($qb->expr()->like(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->orderBy(self::METADATA_PREFIX . 'id', 'ASC')
-			->setMaxResults($limit);
-		$result = $qb->executeQuery();
-		$matches = [];
-		while (($row = $result->fetch()) !== false) {
-			$matches[] = ['slug' => (string)$row[self::METADATA_PREFIX . 'slug'], 'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid']];
-		}
-
-		$result->closeCursor();
-		return $matches;
+		return ($this->slugTable(register: $register, schema: $schema)?->byPrefix(prefix: $prefix, limit: $limit) ?? []);
 	}//end findSlugsByPrefix()
 
 	/**
@@ -4464,28 +4463,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $slug,
 		?string $excludeUuid=null,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid')
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug)))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
-			->setMaxResults(1);
-		if ($excludeUuid !== null) {
-			$qb->andWhere($qb->expr()->neq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($excludeUuid)));
-		}
-
-		$result = $qb->executeQuery();
-		$uuids = [];
-		while (($row = $result->fetch()) !== false) {
-			$uuids[] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $uuids;
+		return ($this->slugTable(register: $register, schema: $schema)?->holders(slug: $slug, excludeUuid: $excludeUuid) ?? []);
 	}//end findSlugHolders()
 
 	/**
@@ -4506,46 +4484,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array {
-		$state = ['holders' => [], 'stored' => []];
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return $state;
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$uuidCol = self::METADATA_PREFIX . 'uuid';
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$queries = [
-			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($wanted) => $wanted !== null && $wanted !== '')))],
-			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($uuid) => $uuid !== null && $uuid !== '')))],
-		];
-		foreach ($queries as $kind => [$column, $values]) {
-			foreach (array_chunk($values, 1000) as $chunk) {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select($uuidCol, $slugCol)
-					->from($tableName)
-					->where($qb->expr()->in($column, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-					->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-				$result = $qb->executeQuery();
-				while (($row = $result->fetch()) !== false) {
-					$rowSlug = $row[$slugCol];
-					if ($kind === 'holders') {
-						$state['holders'][(string)$rowSlug][] = (string)$row[$uuidCol];
-						continue;
-					}
-
-					$storedSlug = null;
-					if ($rowSlug !== null && $rowSlug !== '') {
-						$storedSlug = (string)$rowSlug;
-					}
-
-					$state['stored'][(string)$row[$uuidCol]] = $storedSlug;
-				}
-
-				$result->closeCursor();
-			}
-		}
-
-		return $state;
+		return ($this->slugTable(register: $register, schema: $schema)?->state(slugs: $slugs, uuids: $uuids) ?? ['holders' => [], 'stored' => []]);
 	}//end findSlugState()
 
 	/**
@@ -4561,54 +4500,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findDuplicateSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
-
-		// Grouped case-folded: on a case-insensitive collation `Hello-World` and
-		// `hello-world` are one slug, and the save paths compare them that way.
-		$sub = $this->db->getQueryBuilder();
-		$folded = $sub->func()->lower($slugCol);
-		$sub->selectAlias($folded, 'slug_key')
-			->from($tableName)
-			->where($sub->expr()->isNotNull($slugCol))
-			->andWhere($sub->expr()->neq($slugCol, $sub->createNamedParameter('')))
-			->andWhere($sub->expr()->isNull($deletedCol))
-			->groupBy($folded)
-			->having('COUNT(*) > 1');
-		$result = $sub->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[] = (string)$row['slug_key'];
-		}
-
-		$result->closeCursor();
-		if ($slugs === []) {
-			return [];
-		}
-
-		$duplicates = [];
-		foreach (array_chunk($slugs, 1000) as $chunk) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-				->from($tableName)
-				->where($qb->expr()->in($qb->func()->lower($slugCol), $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
-				->andWhere($qb->expr()->isNull($deletedCol))
-				->orderBy(self::METADATA_PREFIX . 'created', 'ASC')
-				->addOrderBy(self::METADATA_PREFIX . 'id', 'ASC');
-			$rows = $qb->executeQuery();
-			while (($row = $rows->fetch()) !== false) {
-				$duplicates[mb_strtolower((string)$row[$slugCol])][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-			}
-
-			$rows->closeCursor();
-		}
-
-		return $duplicates;
+		return ($this->slugTable(register: $register, schema: $schema)?->duplicates() ?? []);
 	}//end findDuplicateSlugs()
 
 	/**
@@ -4624,25 +4516,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function findAllSlugs(Register $register, Schema $schema): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
-		}
-
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
-			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->where($qb->expr()->isNotNull($slugCol))
-			->andWhere($qb->expr()->neq($slugCol, $qb->createNamedParameter('')))
-			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
-		$result = $qb->executeQuery();
-		$slugs = [];
-		while (($row = $result->fetch()) !== false) {
-			$slugs[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
-		}
-
-		$result->closeCursor();
-		return $slugs;
+		return ($this->slugTable(register: $register, schema: $schema)?->all() ?? []);
 	}//end findAllSlugs()
 
 	/**
@@ -4676,96 +4550,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		int $afterId,
 		int $pageSize,
 	): array {
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+		$table = $this->slugTable(register: $register, schema: $schema);
+		if ($table === null) {
 			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
 		}
 
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-		$result = $this->slugBackfillQuery(tableName: $tableName, afterId: $afterId, pageSize: $pageSize)->executeQuery();
-		$page = [];
-		$fetched = 0;
-		$lastId = $afterId;
-		while (($row = $result->fetch()) !== false) {
-			$fetched++;
-			$lastId = (int)$row[self::METADATA_PREFIX . 'id'];
-			$entry = $this->slugBackfillEntry(row: $row, register: $register, schema: $schema, tableName: $tableName);
-			if ($entry !== null) {
-				$page[] = $entry;
-			}
-		}
+		$convert = fn (array $row): ?ObjectEntity => $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 
-		$result->closeCursor();
-		return ['rows' => $page, 'fetched' => $fetched, 'lastId' => $lastId];
+		return (new MagicSlugBackfill(table: $table, convert: $convert, logger: $this->logger))->page(afterId: $afterId, pageSize: $pageSize);
 	}//end findSlugBackfillPage()
-
-	/**
-	 * The next page of live rows without a slug, in `_id` order.
-	 *
-	 * @param string $tableName The magic table.
-	 * @param int    $afterId   Last `_id` of the previous page.
-	 * @param int    $pageSize  Rows per page.
-	 *
-	 * @return IQueryBuilder The query.
-	 */
-	private function slugBackfillQuery(string $tableName, int $afterId, int $pageSize): IQueryBuilder {
-		$idCol = 't.' . self::METADATA_PREFIX . 'id';
-		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($tableName, 't')
-			->where($qb->expr()->gt($idCol, $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
-			// Only rows without a slug: a set slug is never rewritten by the backfill.
-			->andWhere($qb->expr()->orX($qb->expr()->isNull($slugCol), $qb->expr()->eq($slugCol, $qb->createNamedParameter(''))))
-			->orderBy($idCol, 'ASC')
-			->setMaxResults($pageSize);
-
-		return $qb;
-	}//end slugBackfillQuery()
-
-	/**
-	 * One backfill row as the planner reads it, or null (logged) when it cannot be converted.
-	 *
-	 * @param array<string, mixed> $row       The table row.
-	 * @param Register             $register  The register.
-	 * @param Schema               $schema    The schema.
-	 * @param string               $tableName The magic table (log context).
-	 *
-	 * @return array{id: int, uuid: string, slug: string|null, created: string|null, object: array}|null
-	 */
-	private function slugBackfillEntry(array $row, Register $register, Schema $schema, string $tableName): ?array {
-		$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
-		if ($entity === null) {
-			$this->logger->warning(
-				sprintf(
-					'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
-					(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
-					$tableName
-				),
-				['app' => 'openregister', 'path' => 'backfill']
-			);
-			return null;
-		}
-
-		$entry = [
-			'id' => (int)$row[self::METADATA_PREFIX . 'id'],
-			'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
-			'slug' => null,
-			'created' => null,
-			'object' => $entity->getObject() ?? [],
-		];
-		$slug = ($row[self::METADATA_PREFIX . 'slug'] ?? null);
-		if ($slug !== null && $slug !== '') {
-			$entry['slug'] = (string)$slug;
-		}
-
-		$created = ($row[self::METADATA_PREFIX . 'created'] ?? null);
-		if ($created !== null) {
-			$entry['created'] = (string)$created;
-		}
-
-		return $entry;
-	}//end slugBackfillEntry()
 
 	/**
 	 * Write one object's slug column directly, for the slug backfill.
@@ -4791,19 +4584,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		string $uuid,
 		string $slug,
 	): int {
-		$slugCol = self::METADATA_PREFIX . 'slug';
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->set($slugCol, $qb->createNamedParameter($slug))
-			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
-			->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull($slugCol),
-					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
-				)
-			);
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
-		return $qb->executeStatement();
+		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
 
 	/**

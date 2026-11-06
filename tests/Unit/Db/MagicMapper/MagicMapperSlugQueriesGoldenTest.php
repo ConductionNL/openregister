@@ -45,6 +45,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill
+ * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSlugTable
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
@@ -57,6 +59,9 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses   \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowAccess
+ * @uses   \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  */
 class MagicMapperSlugQueriesGoldenTest extends TestCase {
 
@@ -94,6 +99,7 @@ class MagicMapperSlugQueriesGoldenTest extends TestCase {
 			['_id' => 4, '_uuid' => 'u4', '_slug' => null, '_created' => '2026-01-02 00:00:00', 'title' => 'Vier'],
 			['_id' => 7, '_uuid' => 'bad', '_slug' => '', '_created' => null],
 			['_id' => 9, '_uuid' => 'u9', '_slug' => 'set', '_created' => null, 'title' => 'Negen'],
+			['_id' => 11, '_uuid' => 'u11', '_slug' => '', '_created' => '2026-01-03 00:00:00', 'title' => 'Elf'],
 		];
 
 		return [

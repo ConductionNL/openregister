@@ -236,10 +236,20 @@
                         "id": null,
                         "title": "Negen"
                     }
+                },
+                {
+                    "id": 11,
+                    "uuid": "u11",
+                    "slug": null,
+                    "created": "2026-01-03 00:00:00",
+                    "object": {
+                        "id": null,
+                        "title": "Elf"
+                    }
                 }
             ],
-            "fetched": 3,
-            "lastId": 9
+            "fetched": 4,
+            "lastId": 11
         }
     },
     "backfill of nothing": {
