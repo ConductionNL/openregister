@@ -1,0 +1,197 @@
+<?php
+
+/**
+ * The `ids` argument of the mapper's search entry points narrows the search.
+ *
+ * @category Tests
+ * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://www.OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
+
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\SettingsService;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * An id list handed to searchObjects(), countSearchObjects() or
+ * searchObjectsPaginated() reaches the table search as `_ids`.
+ */
+class MagicMapperSearchIdsTest extends TestCase {
+
+	/**
+	 * The query of a register and schema.
+	 *
+	 * @var array<string, array<string, int>>
+	 */
+	private const SCOPE = ['@self' => ['register' => 7, 'schema' => 9]];
+
+	/**
+	 * The queries the table search and the table count received.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $tableQueries = [];
+
+	/**
+	 * A mapper whose table search and count record their query.
+	 *
+	 * @return MagicMapper The mapper.
+	 */
+	private function mapper(): MagicMapper {
+		$container = $this->createMock(ContainerInterface::class);
+		$services = [
+			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
+			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+		];
+		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
+
+		$register = new Register();
+		$register->setId(7);
+		$schema = new Schema();
+		$schema->setId(9);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($register);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn($schema);
+
+		$mapper = $this->getMockBuilder(MagicMapper::class)
+			->setConstructorArgs(
+				[
+					$this->createMock(IDBConnection::class),
+					$schemas,
+					$registers,
+					$this->createMock(IConfig::class),
+					$this->createMock(IEventDispatcher::class),
+					$this->createMock(IUserSession::class),
+					$this->createMock(IGroupManager::class),
+					$this->createMock(IUserManager::class),
+					$this->createMock(IAppConfig::class),
+					$this->createMock(LoggerInterface::class),
+					$this->createMock(SettingsService::class),
+					$container,
+				]
+			)
+			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable'])
+			->getMock();
+
+		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
+			function (array $query): array {
+				$this->tableQueries[] = $query;
+				return [new ObjectEntity()];
+			}
+		);
+		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
+			function (array $query): int {
+				$this->tableQueries[] = $query;
+				return 1;
+			}
+		);
+
+		return $mapper;
+	}//end mapper()
+
+	/**
+	 * The `_ids` every table query carried.
+	 *
+	 * @return array<int, mixed> One entry per table query.
+	 */
+	private function tableIds(): array {
+		return array_map(static fn (array $query): mixed => ($query['_ids'] ?? 'none'), $this->tableQueries);
+	}//end tableIds()
+
+	/**
+	 * A search keeps to the ids it is given.
+	 *
+	 * @return void
+	 */
+	public function testASearchKeepsToItsIds(): void {
+		$this->mapper()->searchObjects(query: self::SCOPE, ids: ['a', 'b']);
+
+		$this->assertSame([['a', 'b']], $this->tableIds());
+	}//end testASearchKeepsToItsIds()
+
+	/**
+	 * A count keeps to the ids it is given.
+	 *
+	 * @return void
+	 */
+	public function testACountKeepsToItsIds(): void {
+		$this->mapper()->countSearchObjects(query: self::SCOPE, ids: ['a']);
+
+		$this->assertSame([['a']], $this->tableIds());
+	}//end testACountKeepsToItsIds()
+
+	/**
+	 * A paginated search keeps its page and its total to the ids it is given.
+	 *
+	 * @return void
+	 */
+	public function testAPaginatedSearchKeepsPageAndTotalToItsIds(): void {
+		$this->mapper()->searchObjectsPaginated(searchQuery: self::SCOPE, countQuery: self::SCOPE, ids: ['a']);
+
+		$this->assertSame([['a'], ['a']], $this->tableIds());
+	}//end testAPaginatedSearchKeepsPageAndTotalToItsIds()
+
+	/**
+	 * Ids narrow an `_ids` the query already carries; they never widen it.
+	 *
+	 * @return void
+	 */
+	public function testIdsNarrowTheQuerysOwnIds(): void {
+		$this->mapper()->searchObjects(query: (self::SCOPE + ['_ids' => ['a', 'b']]), ids: ['b', 'c']);
+
+		$this->assertSame([['b']], $this->tableIds());
+	}//end testIdsNarrowTheQuerysOwnIds()
+
+	/**
+	 * An empty list selects nothing and no table is read.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyListSelectsNothing(): void {
+		$mapper = $this->mapper();
+
+		$this->assertSame([], $mapper->searchObjects(query: self::SCOPE, ids: []));
+		$this->assertSame(0, $mapper->countSearchObjects(query: self::SCOPE, ids: []));
+		$this->assertSame(0, $mapper->searchObjectsPaginated(searchQuery: self::SCOPE, ids: [])['total']);
+		$this->assertSame([], $this->tableQueries);
+	}//end testAnEmptyListSelectsNothing()
+
+	/**
+	 * Without ids the query is left as it came.
+	 *
+	 * @return void
+	 */
+	public function testWithoutIdsNothingIsNarrowed(): void {
+		$this->mapper()->searchObjects(query: self::SCOPE);
+
+		$this->assertSame(['none'], $this->tableIds());
+	}//end testWithoutIdsNothingIsNarrowed()
+}//end class

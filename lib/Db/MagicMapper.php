@@ -10641,6 +10641,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array|int {
+		$query = $this->narrowedToIds(query: $query, ids: $ids);
+		if ($this->selectsNothing(query: $query) === true) {
+			return [];
+		}
+
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
@@ -10703,6 +10708,44 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjects()
 
 	/**
+	 * The query narrowed to the given ids, within any `_ids` it already carries.
+	 *
+	 * @param array      $query The search query.
+	 * @param array|null $ids   The ids to keep, or null for no narrowing.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+	 */
+	private function narrowedToIds(array $query, ?array $ids): array {
+		if ($ids === null) {
+			return $query;
+		}
+
+		$given = ($query['_ids'] ?? null);
+		if (is_array($given) === true) {
+			$ids = array_intersect($given, $ids);
+		}
+
+		$query['_ids'] = array_values($ids);
+
+		return $query;
+	}//end narrowedToIds()
+
+	/**
+	 * Whether the query's id list is present and empty, which selects no row.
+	 *
+	 * @param array $query The search query.
+	 *
+	 * @return bool True when no row can match.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-export-of-selected-ids-holds-only-those-objects
+	 */
+	private function selectsNothing(array $query): bool {
+		return (($query['_ids'] ?? null) === []);
+	}//end selectsNothing()
+
+	/**
 	 * Count search objects.
 	 *
 	 * @param array $query Search query
@@ -10724,6 +10767,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): int {
+		$query = $this->narrowedToIds(query: $query, ids: $ids);
+		if ($this->selectsNothing(query: $query) === true) {
+			return 0;
+		}
+
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
@@ -10889,9 +10937,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		?array $ids = null,
 		?string $uses = null,
 	): array {
+		$searchQuery = $this->narrowedToIds(query: $searchQuery, ids: $ids);
+		if ($this->selectsNothing(query: $searchQuery) === true) {
+			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
+		}
+
 		$request = [
 			'search'        => $searchQuery,
-			'count'         => $countQuery,
+			'count'         => $this->narrowedToIds(query: $countQuery, ids: $ids),
 			'activeOrgUuid' => $_activeOrgUuid,
 			'rbac'          => $_rbac,
 			'multitenancy'  => $_multitenancy,
