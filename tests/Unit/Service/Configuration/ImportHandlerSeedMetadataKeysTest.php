@@ -78,6 +78,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;

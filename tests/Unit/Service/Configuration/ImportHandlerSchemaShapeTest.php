@@ -44,6 +44,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
+ * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
  */
 class ImportHandlerSchemaShapeTest extends TestCase {
 
