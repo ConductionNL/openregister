@@ -699,21 +699,15 @@ class FileService {
 	}//end createObjectFolderById()
 
 	/**
-	 * Get the OpenRegister user root folder.
+	 * Refuse when the OpenRegister user's root folder cannot be reached.
 	 *
-	 * This method provides a consistent way to access the OpenRegister user's
-	 * root folder across the entire FileService.
-	 *
-	 * @return Folder The OpenRegister user's root folder
+	 * @return void
 	 *
 	 * @throws Exception If the user folder cannot be accessed
-	 *
-	 * @psalm-return   Folder
-	 * @phpstan-return Folder
 	 */
-	private function getOpenRegisterUserFolder(): Folder {
-		return $this->folderManagementHandler->getOpenRegisterUserFolder();
-	}//end getOpenRegisterUserFolder()
+	private function assertOpenRegisterUserFolder(): void {
+		$this->folderManagementHandler->getOpenRegisterUserFolder();
+	}//end assertOpenRegisterUserFolder()
 
 	/**
 	 * Get files for either a Register or ObjectEntity.
@@ -1192,8 +1186,7 @@ class FileService {
 		}
 
 		try {
-			// Note: userId and userFolder not currently used - file retrieved from rootFolder.
-			$this->getOpenRegisterUserFolder();
+			$this->assertOpenRegisterUserFolder();
 		} catch (Exception) {
 			$msg = "[FileService] Can't create share link for $path because OpenRegister user folder couldn't be found.";
 			$this->logger->error(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
