@@ -21,8 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCP\IUserSession;
 use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class TaggingHandler {
+class TaggingHandler implements TaggingHandlerInterface {
 	/**
 	 * File tag type identifier.
 	 *
@@ -296,21 +296,16 @@ class TaggingHandler {
 	}//end getFileTags()
 
 	/**
-	 * Generate an object tag from an object entity.
+	 * Generate the tag of an object.
 	 *
-	 * @param ObjectEntity|string $objectEntity Object entity or UUID.
+	 * @param string $objectIdentifier The object's UUID, or its id when it has no UUID.
 	 *
 	 * @return string The object tag (e.g., 'object:uuid').
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function generateObjectTag(ObjectEntity|string $objectEntity): string {
-		$identifier = $objectEntity;
-		if ($objectEntity instanceof ObjectEntity === true) {
-			$identifier = $objectEntity->getUuid() ?? (string)$objectEntity->getId();
-		}
-
-		return self::OBJECT_TAG_PREFIX . $identifier;
+	public function generateObjectTag(string $objectIdentifier): string {
+		return self::OBJECT_TAG_PREFIX . $objectIdentifier;
 	}//end generateObjectTag()
 
 	/**

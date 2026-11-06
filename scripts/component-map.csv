@@ -1141,7 +1141,7 @@ Files/Service/File/Pdf/PdfMetadataSanitizer.php,148,Files,Files,Files/Service/Fi
 Files/Service/File/Pdf/PdfStructureInspector.php,82,Files,Files,Files/Service/File/Pdf/PdfStructureInspector.php,0,
 Files/Service/File/Pdf/PdfTextReplacer.php,254,Files,Files,Files/Service/File/Pdf/PdfTextReplacer.php,0,
 Files/Service/File/Pdf/StructureMeasurement.php,51,Files,Files,Files/Service/File/Pdf/StructureMeasurement.php,0,
-Files/Service/File/Pdf/StructurePreservation.php,35,Files,Files,Files/Service/File/Pdf/StructurePreservation.php,0,427
+Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,
 Files/Service/File/PlaceholderLookup.php,20,Files,Files,Files/Service/File/PlaceholderLookup.php,0,
 Files/Service/File/PreviewSize.php,13,Files,Files,Files/Service/File/PreviewSize.php,0,

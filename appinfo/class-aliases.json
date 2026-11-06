@@ -1377,7 +1377,7 @@
 			"service": true
 		},
 		"OCA\\OpenRegister\\Service\\File\\Pdf\\StructurePreservation": {
-			"class": "OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\StructurePreservation",
+			"class": "OCA\\OpenRegister\\Kernel\\Contracts\\StructurePreservation",
 			"eager": false,
 			"service": true
 		},

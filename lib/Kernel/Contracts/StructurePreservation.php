@@ -14,7 +14,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\File\Pdf
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Service\File\Pdf;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 use JsonSerializable;
 
@@ -40,7 +40,7 @@ use JsonSerializable;
  * redaction leaf consumes them verbatim; they MUST NOT drift.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\File\Pdf
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.

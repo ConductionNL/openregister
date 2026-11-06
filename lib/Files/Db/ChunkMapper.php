@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Db;
 
 use OCP\AppFramework\Db\Entity;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -47,7 +48,7 @@ use OCA\OpenRegister\Db\Source;
  *   query over openregister_chunks (counts, source lookups, work queues, keyword search);
  *   splitting the mapper would scatter the table's query surface without reducing complexity.
  */
-class ChunkMapper extends QBMapper {
+class ChunkMapper extends QBMapper implements ChunkMapperInterface {
 
 	/**
 	 * PSR-3 logger.

@@ -21,14 +21,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use Exception;
 use OCA\OpenRegister\Files\Db\AnonymisationLog;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
-use OCA\OpenRegister\Files\Service\File\Pdf\StructurePreservation;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -59,7 +59,7 @@ use ZipArchive;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Orchestrates the Word/PDF/text replacement pipelines.
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   File / PDF / DOCX / sanitiser collaborators are required by design.
  */
-class DocumentProcessingHandler {
+class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 	/**
 	 * The enumerated entity-type labels that get localised in the placeholder.
@@ -84,13 +84,6 @@ class DocumentProcessingHandler {
 		EntityRecognitionHandler::ENTITY_TYPE_SSN,
 		EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
 	];
-
-	/**
-	 * Reference to FileService for cross-handler coordination (circular dependency break).
-	 *
-	 * @var FileService|null
-	 */
-	private ?FileService $fileService = null;
 
 	/**
 	 * The most recent sanitisation report produced during anonymisation.
@@ -236,17 +229,6 @@ class DocumentProcessingHandler {
 	public function getLastPlaceholderMap(): array {
 		return $this->lastPlaceholderMap;
 	}//end getLastPlaceholderMap()
-
-	/**
-	 * Set the FileService instance for cross-handler coordination.
-	 *
-	 * @param FileService $fileService The file service instance.
-	 *
-	 * @return void
-	 */
-	public function setFileService(FileService $fileService): void {
-		$this->fileService = $fileService;
-	}//end setFileService()
 
 	/**
 	 * Replace words in a document.
