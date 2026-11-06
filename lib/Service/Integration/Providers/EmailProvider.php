@@ -53,7 +53,7 @@ class EmailProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var string
 	 */
-	private const REQUIRED_APP = 'mail';
+	protected const REQUIRED_APP = 'mail';
 
 	/**
 	 * Constructor.

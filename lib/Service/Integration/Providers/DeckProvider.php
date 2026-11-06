@@ -57,7 +57,7 @@ class DeckProvider extends AbstractIntegrationProvider {
 	 *
 	 * @var string
 	 */
-	private const REQUIRED_APP = 'deck';
+	protected const REQUIRED_APP = 'deck';
 
 	/**
 	 * Constructor.
