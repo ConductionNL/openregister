@@ -47,6 +47,7 @@ use Stringable;
  * re-derivation, the version it keeps or drops, persistence and the outcome.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObject
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\ObjectHandling
  * @uses \OCA\OpenRegister\Db\Register

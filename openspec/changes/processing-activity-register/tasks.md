@@ -38,6 +38,7 @@
 - [~] 4.2 Retention prune job + `processing_log_retention` config. PARTIAL: the mapper exposes `deleteCreatedBefore()` (the prune primitive) and the controller reads `processing_export_max_range_days`. The scheduled prune BackgroundJob + `processing_log_retention=P3Y` default wiring is follow-up.
 - [x] 4.3 Append-only enforcement: no update/delete routes on any surface. DONE — the mapper has no update/single-delete API; the controller exposes GET-only endpoints (asserted by `testControllerHasNoMutationEndpoints`).
 - [x] 4.4 Unit tests: flush batching, fail-soft on flush failure, confidential exclusion at the mapper level. DONE for flush/fail-soft (`ProcessingLogServiceTest`) and confidential-gating (`ProcessingLogControllerTest`: FG-only). Outage-spool recovery + prune-record tests are follow-up (4.2).
+- [ ] 4.5 Legal confirms OR-PA-10: processing-log entries are not erased on request and stay until retention ends. Required before archiving this change.
 
 ## Phase 5 — Exports + per-subject extract (OR-PA-7)
 

@@ -34,7 +34,9 @@ use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
 use OCA\OpenRegister\Controller\Support\LinkedDataServices;
+use OCA\OpenRegister\Controller\Support\RelationUrlStamper;
 use OCA\OpenRegister\Controller\Support\GeoServices;
+use OCA\OpenRegister\Controller\Support\ValidationWindow;
 use OCA\OpenRegister\Controller\Support\ObjectsControllerServices;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
@@ -74,6 +76,7 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs;
 use OCA\OpenRegister\Service\Object\PaginationLinks;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
@@ -1090,32 +1093,62 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function refuseMalformedSearchTerm(array $params): ?JSONResponse {
+		$term = $this->parsedSearchTerm(params: $params);
+		if ($term === null) {
+			return null;
+		}
+
+		try {
+			(new SearchTermParser())->parse(term: $term);
+		} catch (SearchTermSyntaxException $exception) {
+			return $this->searchSyntaxRefusal(exception: $exception);
+		}
+
+		return null;
+	}//end refuseMalformedSearchTerm()
+
+	/**
+	 * The `_search` term, trimmed, when the boolean parser has to read it.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The term, or null when there is nothing to parse.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function parsedSearchTerm(array $params): ?string {
 		$search = ($params['_search'] ?? null);
 		if (is_string($search) === false || trim($search) === '') {
 			return null;
 		}
 
-		$parser = new SearchTermParser();
 		$term = trim($search);
-		if ($parser->needsParsing(term: $term) === false) {
-			return null;
-		}
-
-		try {
-			$parser->parse(term: $term);
-		} catch (SearchTermSyntaxException $exception) {
-			return new JSONResponse(
-				data: [
-					'error' => $exception->getMessage(),
-					'position' => $exception->getPosition(),
-					'term' => $exception->getTerm(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		if ((new SearchTermParser())->needsParsing(term: $term) === true) {
+			return $term;
 		}
 
 		return null;
-	}//end refuseMalformedSearchTerm()
+	}//end parsedSearchTerm()
+
+	/**
+	 * The 400 for a search term the parser cannot read.
+	 *
+	 * @param SearchTermSyntaxException $exception The parser's refusal.
+	 *
+	 * @return JSONResponse The refusal, naming the position and the term.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function searchSyntaxRefusal(SearchTermSyntaxException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $exception->getMessage(),
+				'position' => $exception->getPosition(),
+				'term' => $exception->getTerm(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end searchSyntaxRefusal()
 
 	/**
 	 * Refuse a history filter over a property that has no history.
@@ -1595,16 +1628,6 @@ class ObjectsController extends Controller {
 	private function paginateMagicResults(array $listing): array {
 		$query = $listing['query'];
 		$limit = (int)($query['_limit'] ?? 20);
-		$offset = $query['_offset'] ?? null;
-		$page = $query['_page'] ?? null;
-
-		// Convert page to offset if page is provided but offset is not.
-		if ($page !== null && $offset === null && $limit > 0) {
-			$offset = ((int)$page - 1) * $limit;
-		} else {
-			$offset = (int)($offset ?? 0);
-		}
-
 		$total = $this->countMagicTotal(listing: $listing);
 		if ($limit <= 0) {
 			return ['total' => $total, 'pages' => 1, 'page' => 1, 'limit' => $limit];
@@ -1615,13 +1638,26 @@ class ObjectsController extends Controller {
 			$pages = (int)ceil($total / $limit);
 		}
 
-		// Calculate page from offset if not explicitly provided.
-		if ($page === null) {
-			$page = (int)floor($offset / $limit) + 1;
+		return ['total' => $total, 'pages' => $pages, 'page' => $this->magicPage(query: $query, limit: $limit), 'limit' => $limit];
+	}//end paginateMagicResults()
+
+	/**
+	 * The page of a magic-table query: the one asked for, or the one its offset falls on.
+	 *
+	 * @param array $query The search query.
+	 * @param int   $limit The page size, above zero.
+	 *
+	 * @return int The page.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicPage(array $query, int $limit): int {
+		if (($query['_page'] ?? null) !== null) {
+			return (int)$query['_page'];
 		}
 
-		return ['total' => $total, 'pages' => $pages, 'page' => (int)$page, 'limit' => $limit];
-	}//end paginateMagicResults()
+		return ((int)floor((int)($query['_offset'] ?? 0) / $limit) + 1);
+	}//end magicPage()
 
 	/**
 	 * The grand total of a magic-table listing, or null when the caller does not want it.
@@ -1682,33 +1718,47 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function buildMagicResponse(array $page, array $listing): array {
-		$query = $listing['query'];
 		$responseData = [
 			'results' => $page['results'],
 			'total' => $page['total'],
 			'pages' => $page['pages'],
 			'page' => $page['page'],
 			'limit' => $page['limit'],
-			'@self' => [
-				'source' => 'magic_mapper',
-				'register' => $listing['register'],
-				'schema' => $listing['schema'],
-				'query' => $query,
-				'rbac' => $listing['rbac'],
-				'multi' => $listing['multi'],
-				'deleted' => $listing['deleted'],
-				'activeOrganisation' => $this->activeOrganisationUuid(),
-			],
+			'@self' => $this->magicSelfBlock(listing: $listing),
 		];
 
 		// The `_recent` lens report: whether it could answer, and why not
 		// (`read-history-on-audit-trail`). Present only when asked.
-		if (is_array($query['_recentLens'] ?? null) === true) {
-			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		if (is_array($listing['query']['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $listing['query']['_recentLens'];
 		}
 
 		return $responseData;
 	}//end buildMagicResponse()
+
+	/**
+	 * The `@self` block of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The block.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicSelfBlock(array $listing): array {
+		return [
+			'source' => 'magic_mapper',
+			'register' => $listing['register'],
+			'schema' => $listing['schema'],
+			'query' => $listing['query'],
+			'rbac' => $listing['rbac'],
+			'multi' => $listing['multi'],
+			'deleted' => $listing['deleted'],
+			'activeOrganisation' => $this->activeOrganisationUuid(),
+		];
+	}//end magicSelfBlock()
 
 	/**
 	 * The active organisation's UUID for the debugging metadata, or null when unavailable.
@@ -1754,10 +1804,23 @@ class ObjectsController extends Controller {
 
 		$controlParams = ['limit', 'offset', 'page', 'order', 'sort', 'search', 'extend', 'fields', 'unset'];
 		$mistakenParams = array_intersect($ignoredFilters, $controlParams);
-		if (empty($mistakenParams) === true) {
-			return $responseData;
+		if (empty($mistakenParams) === false) {
+			$responseData['@self']['hint'] = $this->controlParamHint(mistakenParams: $mistakenParams);
 		}
 
+		return $responseData;
+	}//end addIgnoredFilterHint()
+
+	/**
+	 * The hint for control parameters sent without their underscore.
+	 *
+	 * @param array $mistakenParams The parameters.
+	 *
+	 * @return string The hint.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function controlParamHint(array $mistakenParams): string {
 		$suggestions = array_map(fn ($param) => "_{$param}", $mistakenParams);
 		$hint = 'Query returned 0 results because ';
 		$hint .= implode(', ', $mistakenParams);
@@ -1766,10 +1829,9 @@ class ObjectsController extends Controller {
 		$hint .= implode(', ', $suggestions);
 		$hint .= '? Control parameters require an';
 		$hint .= ' underscore prefix (e.g. _limit, _offset, _page).';
-		$responseData['@self']['hint'] = $hint;
 
-		return $responseData;
-	}//end addIgnoredFilterHint()
+		return $hint;
+	}//end controlParamHint()
 
 	/**
 	 * Add the magic table's facets when `_facets` asks for them.
@@ -1790,11 +1852,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$facets = $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
-				query: $listing['query'],
-				register: $listing['resolved']['registerEntity'],
-				schema: $listing['resolved']['schemaEntity']
-			);
+			$facets = $this->magicFacets(listing: $listing);
 			if (empty($facets) === false) {
 				$responseData['facets'] = $facets;
 			}
@@ -1804,6 +1862,25 @@ class ObjectsController extends Controller {
 
 		return $responseData;
 	}//end addMagicFacets()
+
+	/**
+	 * The facets of a magic-table listing.
+	 *
+	 * @param array $listing The listing scope, with its search query and mapper.
+	 *
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array The facets.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function magicFacets(array $listing): array {
+		return $listing['magicMapper']->getSimpleFacetsFromRegisterSchemaTable(
+			query: $listing['query'],
+			register: $listing['resolved']['registerEntity'],
+			schema: $listing['resolved']['schemaEntity']
+		);
+	}//end magicFacets()
 
 	/**
 	 * Strip empty values from every row, serializing ObjectEntity rows first.
@@ -2132,34 +2209,20 @@ class ObjectsController extends Controller {
 	#[AnonRateLimit(limit: 60, period: 60)]
 	public function geoSearch(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return new JSONResponse(
-				data: ['error' => 'Geo filtering primitives not configured'],
-				statusCode: 501
-			);
+			return new JSONResponse(data: ['error' => 'Geo filtering primitives not configured'], statusCode: 501);
 		}
 
-		$body = $this->request->getParams();
 		try {
-			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $body);
+			$filters = $this->geo->geoFilterParser->fromGeoSearchBody(body: $this->request->getParams());
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
 		// Reuse the standard listing path, then post-filter.
-		$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
-		$payload = (array)$listing->getData();
-		$rows = ($payload['results'] ?? []);
-		if (is_array($rows) === false) {
-			return $listing;
-		}
-
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$payload['results'] = $filtered;
-		if (isset($payload['total']) === true) {
-			$payload['total'] = count($filtered);
-		}
-
-		return new JSONResponse(data: $payload);
+		return $this->geoFilteredListing(
+			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
+			filters: $filters
+		);
 	}//end geoSearch()
 
 	/**
@@ -2194,21 +2257,18 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
-		$fields = $this->parseFieldsParam(params: $params);
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
 
 		$collection = $this->geo->geoFeatureBuilder->buildFeatureCollection(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			fields: $fields,
+			geoProperty: $this->geoPropertyParam(params: $params),
+			fields: $this->parseFieldsParam(params: $params),
 			includeArea: true
 		);
 
@@ -2216,8 +2276,28 @@ class ObjectsController extends Controller {
 		// application/json content type is kept (NC's Content-Type
 		// override requires the full container); the @self envelope is
 		// omitted so the body is consumable directly by GIS clients.
-		return new JSONResponse(data: $collection);
+		return $this->geoCollectionResponse(collection: $collection, crs: $crs);
 	}//end geoJson()
+
+	/**
+	 * A FeatureCollection in the requested CRS, naming that CRS when one was asked for.
+	 *
+	 * @param array<string, mixed> $collection The collection, in WGS84.
+	 * @param GeoResponseCrs       $crs        The negotiated CRS.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+	 */
+	private function geoCollectionResponse(array $collection, GeoResponseCrs $crs): JSONResponse {
+		$response = new JSONResponse(data: $crs->applyTo(collection: $collection));
+		$contentCrs = $crs->contentCrs();
+		if ($contentCrs !== null) {
+			$response->addHeader('Content-Crs', $contentCrs);
+		}
+
+		return $response;
+	}//end geoCollectionResponse()
 
 	/**
 	 * WFS GetFeature-compatible endpoint (REQ-GEO-008).
@@ -2246,30 +2326,21 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
 		}
 
+		$crs = new GeoResponseCrs(accept: $this->request->getHeader('Accept-Crs'));
+		if ($crs->isServable() === false) {
+			return new JSONResponse(data: $crs->refusal(), statusCode: Http::STATUS_NOT_ACCEPTABLE);
+		}
+
 		$params = $this->request->getParams();
 		$rows = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
 
-		$maxFeatures = null;
-		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
-		if ($rawMax !== null && is_numeric($rawMax) === true) {
-			$maxFeatures = (int)$rawMax;
-		}
-
-		$geoProp = ($params['geo.property'] ?? null);
-
-		if ($geoProp !== null) {
-			$geoPropertyValue = (string)$geoProp;
-		} else {
-			$geoPropertyValue = null;
-		}
-
 		$response = $this->geo->geoFeatureBuilder->buildWfsResponse(
 			rows: $rows,
-			geoProperty: $geoPropertyValue,
-			maxFeatures: $maxFeatures
+			geoProperty: $this->geoPropertyParam(params: $params),
+			maxFeatures: $this->wfsMaxFeatures(params: $params)
 		);
 
-		return new JSONResponse(data: $response);
+		return $this->geoCollectionResponse(collection: $response, crs: $crs);
 	}//end wfs()
 
 	/**
@@ -2302,27 +2373,107 @@ class ObjectsController extends Controller {
 		$query = ($params['q'] ?? null);
 		if ($query !== null && trim((string)$query) !== '') {
 			$bagOnly = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
-			$suggestions = $this->geo->pdokGeocoder->geocodeFree(
-				query: (string)$query,
-				maxItems: 5,
-				bagOnly: $bagOnly
-			);
+			$suggestions = $this->geo->pdokGeocoder->geocodeFree(query: (string)$query, maxItems: 5, bagOnly: $bagOnly);
 			return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
 		}
 
+		return $this->reverseGeocodeResponse(params: $params, available: $available);
+	}//end geocode()
+
+	/**
+	 * The address at the `lon` and `lat` of a geocode request.
+	 *
+	 * @param array $params    The request params.
+	 * @param bool  $available Whether the geocoder is available.
+	 *
+	 * @return JSONResponse The address, or a 422 without coordinates.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function reverseGeocodeResponse(array $params, bool $available): JSONResponse {
 		$lon = ($params['lon'] ?? null);
 		$lat = ($params['lat'] ?? null);
-		if (is_numeric($lon) === true && is_numeric($lat) === true) {
-			$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
-			return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+		if (is_numeric($lon) === false || is_numeric($lat) === false) {
+			return new JSONResponse(data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='], statusCode: 422);
 		}
 
-		return new JSONResponse(
-			data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
-			statusCode: 422
-		);
+		$address = $this->geo->pdokGeocoder->reverseGeocode(longitude: (float)$lon, latitude: (float)$lat);
+		return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+	}//end reverseGeocodeResponse()
 
-	}//end geocode()
+	/**
+	 * A listing response with its rows run through geo filters.
+	 *
+	 * @param JSONResponse $listing The listing.
+	 * @param array        $filters The parsed filters.
+	 *
+	 * @return JSONResponse The filtered listing, or the listing when its results are not an array.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoFilteredListing(JSONResponse $listing, array $filters): JSONResponse {
+		$payload = (array)$listing->getData();
+		$payload['results'] = ($payload['results'] ?? []);
+		if (is_array($payload['results']) === false) {
+			return $listing;
+		}
+
+		return new JSONResponse(data: $this->withGeoFilteredRows(result: $payload, filters: $filters));
+	}//end geoFilteredListing()
+
+	/**
+	 * A result with its rows run through geo filters, its total following when it has one.
+	 *
+	 * @param array $result  The result, with an array of rows.
+	 * @param array $filters The parsed filters.
+	 *
+	 * @return array The result.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function withGeoFilteredRows(array $result, array $filters): array {
+		$result['results'] = $this->geo->geoFilterApplier->applyAll(rows: $result['results'], filters: $filters);
+		if (isset($result['total']) === true) {
+			$result['total'] = count($result['results']);
+		}
+
+		return $result;
+	}//end withGeoFilteredRows()
+
+	/**
+	 * The `geo.property` request param.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return string|null The property, or null when not given.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function geoPropertyParam(array $params): ?string {
+		if (isset($params['geo.property']) === false) {
+			return null;
+		}
+
+		return (string)$params['geo.property'];
+	}//end geoPropertyParam()
+
+	/**
+	 * The feature cap of a WFS request: `count`, or else `maxFeatures`.
+	 *
+	 * @param array $params The request params.
+	 *
+	 * @return int|null The cap, or null when none is given or it is not numeric.
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function wfsMaxFeatures(array $params): ?int {
+		$rawMax = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+		if (is_numeric($rawMax) === true) {
+			return (int)$rawMax;
+		}
+
+		return null;
+	}//end wfsMaxFeatures()
 
 	/**
 	 * Fetch the RBAC-scoped listing rows for a register/schema.
@@ -2392,24 +2543,11 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function applyGeoQueryFilters(array $params, array $result): array {
-		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
-			return $result;
-		}
-
 		// NC's IRequest parses `geo.bbox` etc. as a nested array
 		// (`geo: {bbox: ...}`). Re-flatten back to the dotted form the
 		// parser expects, so callers using either notation work.
 		$flatParams = $this->flattenGeoParams(params: $params);
-
-		$hasGeoParam = false;
-		foreach (['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'] as $key) {
-			if (isset($flatParams[$key]) === true) {
-				$hasGeoParam = true;
-				break;
-			}
-		}
-
-		if ($hasGeoParam === false) {
+		if ($this->asksForGeoFilter(flatParams: $flatParams) === false) {
 			return $result;
 		}
 
@@ -2419,27 +2557,33 @@ class ObjectsController extends Controller {
 			// Malformed input: surface a 422-shape envelope inside the
 			// existing result body so consumers see the validation error
 			// without crashing the whole listing path.
-			return [
-				'error' => 'geo filter parse error: ' . $e->getMessage(),
-				'results' => [],
-				'total' => 0,
-			];
+			return ['error' => 'geo filter parse error: ' . $e->getMessage(), 'results' => [], 'total' => 0];
 		}
 
-		if ($filters === [] || isset($result['results']) === false || is_array($result['results']) === false) {
+		if ($filters === [] || is_array($result['results'] ?? null) === false) {
 			return $result;
 		}
 
-		$rows = $result['results'];
-		$filtered = $this->geo->geoFilterApplier->applyAll(rows: $rows, filters: $filters);
-		$result['results'] = $filtered;
-		// Update `total` to reflect the post-filter count when present.
-		if (isset($result['total']) === true) {
-			$result['total'] = count($filtered);
+		return $this->withGeoFilteredRows(result: $result, filters: $filters);
+	}//end applyGeoQueryFilters()
+
+	/**
+	 * Whether geo filtering is configured and the request names a geo param.
+	 *
+	 * @param array $flatParams The params, `geo.*` keys flattened.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function asksForGeoFilter(array $flatParams): bool {
+		if ($this->geo->geoFilterParser === null || $this->geo->geoFilterApplier === null) {
+			return false;
 		}
 
-		return $result;
-	}//end applyGeoQueryFilters()
+		$named = array_filter(['geo.bbox', 'geo.near', 'geo.radius', 'geo.property'], fn (string $key): bool => isset($flatParams[$key]));
+		return $named !== [];
+	}//end asksForGeoFilter()
 
 	/**
 	 * Flatten NC's nested `geo: {bbox: ...}` query-param shape back into
@@ -4622,73 +4766,7 @@ class ObjectsController extends Controller {
 	 * @return array The same envelope with `url` stamped on each resolvable record.
 	 */
 	private function stampObjectUrls(array $result): array {
-		if ($this->linkedData->deepLinkRegistry === null
-			|| isset($result['results']) === false
-			|| is_array($result['results']) === false
-		) {
-			return $result;
-		}
-
-		foreach ($result['results'] as $index => $record) {
-			// Normalise entities to their serialized array form.
-			if (is_object($record) === true && method_exists($record, 'jsonSerialize') === true) {
-				$record = $record->jsonSerialize();
-			}
-
-			if (is_array($record) === false) {
-				continue;
-			}
-
-			$self = ($record['@self'] ?? []);
-			$uuid = ($self['id'] ?? ($record['id'] ?? null));
-			$registerId = ($self['register'] ?? null);
-			$schemaId = ($self['schema'] ?? null);
-
-			if ($uuid === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
-				$result['results'][$index] = $record;
-				continue;
-			}
-
-			try {
-				$flat = array_merge(
-					$record,
-					[
-						'uuid' => $uuid,
-						'id' => $uuid,
-						'register' => $registerId,
-						'schema' => $schemaId,
-					]
-				);
-
-				$url = $this->linkedData->deepLinkRegistry->resolveUrl(
-					registerId: (int)$registerId,
-					schemaId: (int)$schemaId,
-					objectData: $flat
-				);
-
-				if ($url === null && $this->linkedData->relationUrlGenerator !== null) {
-					$url = $this->linkedData->relationUrlGenerator->linkToRoute(
-						'openregister.objects.show',
-						[
-							'register' => $registerId,
-							'schema' => $schemaId,
-							'id' => $uuid,
-						]
-					);
-				}
-
-				if ($url !== null) {
-					$record['url'] = $url;
-				}
-			} catch (\Throwable $e) {
-				// Defensive: never let URL resolution break the relation response.
-				$this->logger->debug('Relation URL resolution failed: ' . $e->getMessage());
-			}//end try
-
-			$result['results'][$index] = $record;
-		}//end foreach
-
-		return $result;
+		return (new RelationUrlStamper(linkedData: $this->linkedData, logger: $this->logger))->stamped(result: $result);
 	}//end stampObjectUrls()
 
 	/**
@@ -6410,26 +6488,12 @@ class ObjectsController extends Controller {
 			$batchSize = (int)($data['batchSize'] ?? 25);
 
 			// Use ObjectService delegation to handler.
-			$result = $this->objectService->vectorizeBatchObjects(
-				_views: $views,
-				_batchSize: $batchSize
-			);
+			$result = $this->objectService->vectorizeBatchObjects(_views: $views, _batchSize: $batchSize);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $result,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'data' => $result]);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		}
 	}//end vectorizeBatch()
 
 	/**
@@ -6458,21 +6522,10 @@ class ObjectsController extends Controller {
 			// Use ObjectService delegation to handler.
 			$stats = $this->objectService->getVectorizationStatistics(_views: $views);
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'stats' => $stats,
-				]
-			);
+			return new JSONResponse(data: ['success' => true, 'stats' => $stats]);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Internal server error',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return new JSONResponse(data: ['success' => false, 'error' => 'Internal server error'], statusCode: 500);
+		}
 	}//end getObjectVectorizationStats()
 
 	/**
@@ -6492,106 +6545,112 @@ class ObjectsController extends Controller {
 	 */
 	public function validate(): JSONResponse {
 		try {
-			// Get request parameters.
-			$register = $this->request->getParam(key: 'register');
-			$schemaId = $this->request->getParam(key: 'schema');
-			$limit = $this->request->getParam(key: 'limit');
-			$offset = $this->request->getParam(key: 'offset');
-
-			if ($register === null || $schemaId === null) {
+			$window = new ValidationWindow(request: $this->request);
+			if ($window->isComplete() === false) {
 				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'Register and schema parameters are required',
-					],
+					data: ['success' => false, 'error' => 'Register and schema parameters are required'],
 					statusCode: 400
 				);
 			}
 
-			// Parse limit/offset with sensible defaults for chunked processing.
-			if ($limit !== null) {
-				$limitInt = (int)$limit;
-			} else {
-				$limitInt = null;
-			}
-
-			if ($offset !== null) {
-				$offsetInt = (int)$offset;
-			} else {
-				$offsetInt = 0;
-			}
-
-			$this->logger->info(
-				message: '[ObjectsController] Starting bulk validation for schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'limit' => $limitInt,
-					'offset' => $offsetInt,
-				]
-			);
-
-			// Validate and save objects in the schema to update metadata.
-			$result = $this->objectService->validateAndSaveObjectsBySchema(
-				registerId: (int)$register,
-				schemaId: (int)$schemaId,
-				limit: $limitInt,
-				offset: $offsetInt
-			);
-
-			$this->logger->info(
-				message: '[ObjectsController] Bulk validation and save completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register' => $register,
-					'schema' => $schemaId,
-					'processed' => $result['processed'] ?? 0,
-					'updated' => $result['updated'] ?? 0,
-					'failed' => $result['failed'] ?? 0,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'message' => 'Validation completed successfully',
-					'statistics' => [
-						'processed' => $result['processed'] ?? 0,
-						'updated' => $result['updated'] ?? 0,
-						'failed' => $result['failed'] ?? 0,
-						'total' => $result['total'] ?? null,
-					],
-					'pagination' => [
-						'limit' => $limitInt,
-						'offset' => $offsetInt,
-					],
-					'errors' => $result['errors'] ?? [],
-				]
-			);
+			return $this->validationResponse(window: $window, result: $this->validatedChunk(window: $window));
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ObjectsController] Bulk validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => $e->getMessage(),
-					'message' => 'Validation failed',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->validationFailureResponse(failure: $e);
+		}
 	}//end validate()
+
+	/**
+	 * Validate and save one chunk of a schema's objects, logging start and end.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 *
+	 * @return array The validation result.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validatedChunk(ValidationWindow $window): array {
+		$scope = ['file' => __FILE__, 'line' => __LINE__, 'register' => $window->register, 'schema' => $window->schema];
+		$start = '[ObjectsController] Starting bulk validation for schema';
+		$this->logger->info(message: $start, context: $scope + ['limit' => $window->limit, 'offset' => $window->offset]);
+
+		// Validate and save objects in the schema to update metadata.
+		$result = $this->objectService->validateAndSaveObjectsBySchema(
+			registerId: (int)$window->register,
+			schemaId: (int)$window->schema,
+			limit: $window->limit,
+			offset: $window->offset
+		);
+
+		$done = '[ObjectsController] Bulk validation and save completed';
+		$this->logger->info(message: $done, context: $scope + $this->validationCounts(result: $result));
+
+		return $result;
+	}//end validatedChunk()
+
+	/**
+	 * The processed, updated and failed counts of a validation result.
+	 *
+	 * @param array $result The validation result.
+	 *
+	 * @return array{processed: mixed, updated: mixed, failed: mixed} The counts.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationCounts(array $result): array {
+		return [
+			'processed' => ($result['processed'] ?? 0),
+			'updated' => ($result['updated'] ?? 0),
+			'failed' => ($result['failed'] ?? 0),
+		];
+	}//end validationCounts()
+
+	/**
+	 * The answer to a completed bulk validation.
+	 *
+	 * @param ValidationWindow $window The register, schema and chunk.
+	 * @param array            $result The validation result.
+	 *
+	 * @return JSONResponse The statistics, pagination and errors.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationResponse(ValidationWindow $window, array $result): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'message' => 'Validation completed successfully',
+				'statistics' => ($this->validationCounts(result: $result) + ['total' => ($result['total'] ?? null)]),
+				'pagination' => ['limit' => $window->limit, 'offset' => $window->offset],
+				'errors' => ($result['errors'] ?? []),
+			]
+		);
+	}//end validationResponse()
+
+	/**
+	 * Log a failed bulk validation and answer it.
+	 *
+	 * @param Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 500 answer.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function validationFailureResponse(Exception $failure): JSONResponse {
+		$this->logger->error(
+			message: '[ObjectsController] Bulk validation failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $failure->getMessage(),
+				'trace' => $failure->getTraceAsString(),
+			]
+		);
+
+		return new JSONResponse(
+			data: ['success' => false, 'error' => $failure->getMessage(), 'message' => 'Validation failed'],
+			statusCode: 500
+		);
+	}//end validationFailureResponse()
 
 	/**
 	 * Collect UUID-to-name mappings for all related objects in a response.
