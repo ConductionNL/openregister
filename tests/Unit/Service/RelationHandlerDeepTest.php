@@ -22,7 +22,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelatedReadFilter;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -40,8 +39,6 @@ class RelationHandlerDeepTest extends TestCase {
 
 	private MockObject|SchemaMapper $schemaMapper;
 
-	private MockObject|PerformanceHandler $performanceHandler;
-
 	private MockObject|MagicRbacHandler $rbacHandler;
 
 	private MockObject|LoggerInterface $logger;
@@ -56,7 +53,6 @@ class RelationHandlerDeepTest extends TestCase {
 	protected function setUp(): void {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->rbacHandler = $this->createMock(MagicRbacHandler::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
