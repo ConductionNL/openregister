@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  * Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator
+ * @uses   \OCA\OpenRegister\Mcp\Service\Mcp\McpVerbAnnotation
  */
 class McpAnnotationValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/mcp-annotation-validator-golden.json';
