@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IURLGenerator;
@@ -154,7 +154,7 @@ class EntryMentionGoldenTest extends TestCase {
 			}
 		);
 
-		$deepLinks = $this->createMock(DeepLinkRegistryService::class);
+		$deepLinks = $this->createMock(DeepLinkRegistryServiceInterface::class);
 		$deepLinks->method('resolveUrl')->willReturn(null);
 		$urls = $this->createMock(IURLGenerator::class);
 		$urls->method('linkToRouteAbsolute')->willReturnCallback(
@@ -176,7 +176,7 @@ class EntryMentionGoldenTest extends TestCase {
 			PermissionHandler::class => $permissions,
 			INotificationManager::class => $notifications,
 			LoggerInterface::class => $logger,
-			DeepLinkRegistryService::class => $deepLinks,
+			DeepLinkRegistryServiceInterface::class => $deepLinks,
 			IURLGenerator::class => $urls,
 		];
 
