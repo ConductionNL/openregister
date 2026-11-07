@@ -124,7 +124,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedEntries',
 		],
 		'analytics' => [
-			'class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+			'class' => \OCA\OpenRegister\Service\AnalyticsLinkServiceInterface::class,
 			'available' => 'isAnalyticsAvailable',
 			'method' => 'getLinkedReports',
 		],
