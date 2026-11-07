@@ -41,10 +41,25 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 
 	private const UUID = '00000000-0000-0000-0000-000000000007';
 
+	/**
+	 * The CalDAV backend.
+	 *
+	 * @var CalDavBackend&MockObject
+	 */
 	private CalDavBackend&MockObject $backend;
 
+	/**
+	 * The session, logged in as alice.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $session;
 
+	/**
+	 * The URL generator.
+	 *
+	 * @var IURLGenerator&MockObject
+	 */
 	private IURLGenerator&MockObject $urls;
 
 	protected function setUp(): void {
@@ -63,9 +78,15 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 
 	/**
 	 * The volatile lines (random UID, clock DTSTAMP/COMPLETED) masked out.
+	 *
+	 * @param string $document The iCalendar document.
+	 *
+	 * @return string The document with the volatile values replaced by `*`.
 	 */
 	private function stable(string $document): string {
-		return (string)preg_replace(['/^UID:[^\r\n]*/m', '/^DTSTAMP:[^\r\n]*/m', '/^COMPLETED:[^\r\n]*/m'], ['UID:*', 'DTSTAMP:*', 'COMPLETED:*'], $document);
+		$volatile = ['/^UID:[^\r\n]*/m', '/^DTSTAMP:[^\r\n]*/m', '/^COMPLETED:[^\r\n]*/m'];
+
+		return (string)preg_replace($volatile, ['UID:*', 'DTSTAMP:*', 'COMPLETED:*'], $document);
 	}
 
 	public static function forgedPayloads(): array {
@@ -325,9 +346,8 @@ class TaskServiceWriteGuardGoldenTest extends TestCase {
 	public function testTheTasksAppDeepLink(?string $calendarUri, string $taskUri, ?string $base, ?string $expected): void {
 		$this->backend->method('getCalendarsForUser')->willReturn([['id' => 5, 'uri' => $calendarUri, self::COMPONENTS => 'VTODO']]);
 		$this->backend->method('getCalendarObjects')->willReturn([['uri' => $taskUri]]);
-		$this->backend->method('getCalendarObject')->willReturn(
-			['calendardata' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:u\r\nSUMMARY:S\r\nX-OPENREGISTER-OBJECT:obj\r\nEND:VTODO\r\nEND:VCALENDAR\r\n"]
-		);
+		$ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:u\r\nSUMMARY:S\r\nX-OPENREGISTER-OBJECT:obj\r\nEND:VTODO\r\nEND:VCALENDAR\r\n";
+		$this->backend->method('getCalendarObject')->willReturn(['calendardata' => $ics]);
 		if ($base === null) {
 			$this->urls->method('linkToRoute')->willThrowException(new RuntimeException('no tasks app'));
 		} else {
