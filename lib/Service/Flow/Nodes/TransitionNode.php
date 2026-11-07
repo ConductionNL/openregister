@@ -49,7 +49,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
-class TransitionNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class TransitionNode implements IFlowNode, TransitionNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.

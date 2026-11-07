@@ -54,7 +54,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -67,7 +66,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow when an object is created, updated or deleted.
  */
-class TriggerObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class TriggerObjectNode implements TriggerObjectNodeInterface, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The object events a trigger may name.

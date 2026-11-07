@@ -76,7 +76,7 @@ use Throwable;
  * getProvider/resolveRouter/requireUid/resolveRemotePage/hydrateLink/normaliseRemoteRow/normaliseList/
  * toServiceException/isStale/refreshLink; each is a required face of the xWiki integration surface.
  */
-class XwikiLinkService {
+class XwikiLinkService implements XwikiLinkServiceInterface {
 	// The connector answers to `integriq` on development and `openconnector`
 	// on beta/main; FleetAppId holds both spellings, so this names the app
 	// rather than one spelling of it. Never compare it to an id directly —
