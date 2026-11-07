@@ -70,6 +70,9 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 
 	private ?IEventDispatcher $guards = null;
 
+	/** @var list<ObjectEntity|null> */
+	private array $oldObjects = [];
+
 	/**
 	 * Build the source table.
 	 *
@@ -151,6 +154,19 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		$this->assertSame([self::UUID], array_keys($this->tables[self::SOURCE]));
 		$this->assertSame([], $this->tables[self::TARGET]);
 	}//end testTheGuardsReadTheStoredDataAndKeepTheObject()
+
+	/**
+	 * The target write names the row as stored as its old object, so the update guards see what the mapping changed.
+	 *
+	 * @return void
+	 */
+	public function testTheTargetWriteJudgesTheChangeFromTheStoredRow(): void {
+		$this->migrate();
+
+		$this->assertCount(1, $this->oldObjects);
+		$this->assertSame(['id' => self::UUID, 'title' => 'T', 'note' => 'N'], $this->oldObjects[0]?->getObject());
+		$this->assertSame(['1', '10'], [$this->oldObjects[0]?->getRegister(), $this->oldObjects[0]?->getSchema()]);
+	}//end testTheTargetWriteJudgesTheChangeFromTheStoredRow()
 
 	/**
 	 * An object that does not fit the target stays where it is and is reported.
@@ -266,7 +282,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 			fn (string $uuid, Register $register, Schema $schema): ObjectEntity => clone $this->tables[$this->table($register, $schema)][$uuid]
 		);
 		$mapper->method('update')->willReturnCallback(
-			function (ObjectEntity $entity, Register $register, Schema $schema): ObjectEntity {
+			function (ObjectEntity $entity, Register $register, Schema $schema, ?ObjectEntity $oldEntity = null): ObjectEntity {
+				$this->oldObjects[] = $oldEntity;
 				$this->tables[$this->table($register, $schema)][$entity->getUuid()] = clone $entity;
 				return $entity;
 			}

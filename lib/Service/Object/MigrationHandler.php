@@ -195,7 +195,8 @@ class MigrationHandler {
 			$stored->setRelations(
 				$this->relationScanner->scanForRelations(data: $mappedData, schema: $run->target->schemaEntity)
 			);
-			$objectDetail['newObjectId'] = $this->moveToTarget(sourceObject: $stored, run: $run);
+			$move = $this->moveOf(stored: $stored, run: $run)->storedAs(stored: $before);
+			$objectDetail['newObjectId'] = $this->moveToTarget(move: $move, run: $run);
 			$this->recordMapping(before: $before, after: $stored);
 
 			$objectDetail['success'] = true;
@@ -252,12 +253,33 @@ class MigrationHandler {
 	}//end assertMayLeave()
 
 	/**
+	 * The move of one object from the migration's source to its target.
+	 *
+	 * The audit entry names the caller from the session, so no actor is given.
+	 *
+	 * @param ObjectEntity $stored The object, carrying its mapped data.
+	 * @param MigrationRun $run    The migration.
+	 *
+	 * @return ObjectMove The move.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function moveOf(ObjectEntity $stored, MigrationRun $run): ObjectMove {
+		return new ObjectMove(
+			object: $stored,
+			source: new MoveAddress(register: $run->source->registerEntity, schema: $run->source->schemaEntity),
+			target: new MoveAddress(register: $run->target->registerEntity, schema: $run->target->schemaEntity),
+			actor: ''
+		);
+	}//end moveOf()
+
+	/**
 	 * Move the object with its mapped data: one row at the target, none left in the source.
 	 *
-	 * The audit entry names the caller from the session, so no actor is passed.
+	 * The move names the row as stored, so the update guards judge what the mapping changed.
 	 *
-	 * @param ObjectEntity $sourceObject The object, carrying its mapped data.
-	 * @param MigrationRun $run          The migration.
+	 * @param ObjectMove   $move The move.
+	 * @param MigrationRun $run  The migration.
 	 *
 	 * @return string The uuid of the moved object.
 	 *
@@ -265,15 +287,8 @@ class MigrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function moveToTarget(ObjectEntity $sourceObject, MigrationRun $run): string {
-		$outcome = $this->mover->move(
-			object: $sourceObject,
-			sourceRegister: $run->source->registerEntity,
-			sourceSchema: $run->source->schemaEntity,
-			targetRegister: $run->target->registerEntity,
-			targetSchema: $run->target->schemaEntity,
-			actor: ''
-		);
+	private function moveToTarget(ObjectMove $move, MigrationRun $run): string {
+		$outcome = $this->mover->perform(move: $move);
 
 		if ($outcome['moved'] === false) {
 			throw new InvalidArgumentException(implode(' ', $outcome['errors']));
