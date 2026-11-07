@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
@@ -45,16 +45,16 @@ class BulkJobRunner extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory.
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobService $bulkJobService The lifecycle service.
-	 * @param IJobList $jobList Job list for re-enqueue.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory            $time           Time factory.
+	 * @param BulkJobMapper           $jobMapper      Job persistence.
+	 * @param BulkJobServiceInterface $bulkJobService The lifecycle service.
+	 * @param IJobList                $jobList        Job list for re-enqueue.
+	 * @param LoggerInterface         $logger         Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobService $bulkJobService,
+		private readonly BulkJobServiceInterface $bulkJobService,
 		private readonly IJobList $jobList,
 		private readonly LoggerInterface $logger,
 	) {
