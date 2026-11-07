@@ -5,6 +5,7 @@
  * an interface next to them.
  *
  * Classes that other components used to name directly: two Service/Object draft classes and a Db/MagicMapper handler.
+ * Classes that other components used to name directly: two Service/Object draft classes and several Db classes.
  * Db classes that Service, Controller, BackgroundJob, BulkAction, Search and Mcp code used to name directly.
  *
  * Each class implements its interface, the component's registrar binds the

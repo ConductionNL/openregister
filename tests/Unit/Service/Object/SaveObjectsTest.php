@@ -19,6 +19,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
@@ -73,13 +77,10 @@ class SaveObjectsTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks()
 		);
 
 		// Clear static caches between tests.
@@ -2266,15 +2267,10 @@ class SaveObjectsTest extends TestCase {
 		$this->setupBulkSaveMock(savedCount: 1);
 
 		return new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->saveHandler,
-			$this->userSession,
-			$this->organisationService,
-			$this->logger,
-			groupManager: $groups,
-			permissionHandler: $permissions
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->saveHandler),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: $groups),
+			reporting: new BulkSaveReporting(logger: $this->logger),
+			checks: new BulkRowChecks(permissionHandler: $permissions)
 		);
 	}
 

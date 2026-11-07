@@ -43,9 +43,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
@@ -54,13 +52,7 @@ use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IL10N;
 use OCP\IUser;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -113,35 +105,16 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface       $registers Resolves a destination's register.
-	 * @param SchemaMapperInterface         $schemas   Resolves a destination's schema.
-	 * @param ValidateObjectInterface       $validator The destination schema's full validator.
-	 * @param ObjectOperationsInterface        $objects   Creates, re-reads and (to compensate) deletes objects.
-	 * @param FormPayloadFindings  $findings  Turns a refusal into per-property findings.
-	 * @param FormIdempotencyStore $keys      Repeats the first answer for a retried key.
-	 * @param FormUploadStore      $uploads   Holds and releases upload tokens.
-	 * @param IL10N                $l10n      Translations, for answers a resident reads.
-	 * @param LoggerInterface      $logger    Records each compensation.
-	 * @param IEventDispatcher     $events    Announces a draft that left draft (receipt).
-	 * @param ITimeFactory         $time      The moment of receipt.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per step of the submit
-	 * (resolve, validate, save, find, findings, keys, uploads, receipt) plus translations and logging.
+	 * @param FormSubmitDestinations $destinations The register and schema lookups, the validator and the object write path.
+	 * @param FormSubmitKeeping $keeping The refusal findings, the idempotency keys and the upload tokens.
+	 * @param FormSubmitPlatform $platform Translations, the log, the receipt event and the clock.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
-		private readonly ValidateObjectInterface $validator,
-		private readonly ObjectOperationsInterface $objects,
-		private readonly FormPayloadFindings $findings,
-		private readonly FormIdempotencyStore $keys,
-		private readonly FormUploadStore $uploads,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
-		private readonly IEventDispatcher $events,
-		private readonly ITimeFactory $time,
+		private readonly FormSubmitDestinations $destinations,
+		private readonly FormSubmitKeeping $keeping,
+		private readonly FormSubmitPlatform $platform,
 	) {
-		$this->drafts = new DraftFinder(objects: $objects);
+		$this->drafts = new DraftFinder(objects: $destinations->objects);
 
 	}//end __construct()
 
@@ -220,7 +193,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	): array {
 		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		if ($owner === null) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
 
 		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope, draftId: $draftId);
@@ -233,7 +206,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 
 		// The files now sit on the draft: the tokens are spent, as after a submit,
 		// so they cannot be redeemed again for another object or a later save.
-		$this->uploads->claimPlanned(plans: $plans, draftId: (string)$created[0]['object']->getUuid());
+		$this->keeping->uploads->claimPlanned(plans: $plans, draftId: (string)$created[0]['object']->getUuid());
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -275,13 +248,13 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		$keyScope = $this->keyScope(scope: $scope, writes: $writes);
-		$binding = $this->keys->bindingFor(subject: $this->submitterOf(subject: $subject, owner: $owner), payload: $payload);
+		$binding = $this->keeping->keys->bindingFor(subject: $this->submitterOf(subject: $subject, owner: $owner), payload: $payload);
 
 		// Reserve the key for the length of the submit: a parallel retry with
 		// the same key is refused (409) instead of writing a second object.
-		$this->keys->reserve(scope: $keyScope, key: $key);
+		$this->keeping->keys->reserve(scope: $keyScope, key: $key);
 		try {
-			$remembered = $this->keys->find(scope: $keyScope, key: $key, binding: $binding);
+			$remembered = $this->keeping->keys->find(scope: $keyScope, key: $key, binding: $binding);
 			if ($remembered !== null) {
 				/*
 				 * @var array<string, mixed> $remembered
@@ -290,9 +263,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			}
 
 			$answer = $this->submitOnce(writes: $writes, payload: $payload, subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
-			$this->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
+			$this->keeping->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
 		} finally {
-			$this->keys->release(scope: $keyScope, key: $key);
+			$this->keeping->keys->release(scope: $keyScope, key: $key);
 		}
 
 		return $answer;
@@ -316,7 +289,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope, draftId: $draftId);
 		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
 
-		$this->uploads->claimPlanned(plans: $plans, draftId: $draftId);
+		$this->keeping->uploads->claimPlanned(plans: $plans, draftId: $draftId);
 
 		return $this->answer(created: $created, receivedAt: $receivedAt);
 	}//end submitOnce()
@@ -376,7 +349,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	 */
 	private function promoteDraft(array $plans, ?DraftOwner $owner, string $draftId): array {
 		if (count($plans) !== 1) {
-			$message = $this->l10n->t('A draft is one object; a form that writes several cannot leave draft in one step.');
+			$message = $this->platform->l10n->t('A draft is one object; a form that writes several cannot leave draft in one step.');
 			throw new FormSubmitRefusedException(message: $message, status: 422);
 		}
 
@@ -390,15 +363,15 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			// The save that did not use the allowance found it already sent: it
 			// answers as for a draft that is gone and announces nothing.
 			if (DraftStatusPolicy::promotionWasUsed(uuid: $draftId) === false) {
-				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+				throw new FormSubmitRefusedException(message: $this->platform->l10n->t('This draft does not exist.'), status: 404);
 			}
 		} finally {
 			DraftStatusPolicy::resetPromotions();
 		}
 
-		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
+		$receivedAt = DateTimeImmutable::createFromMutable($this->platform->time->getDateTime());
 		// Creation side effects run now, once (decision 227): the created event, then the receipt.
-		(new ObjectEventGate(events: $this->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
+		(new ObjectEventGate(events: $this->platform->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
 
 		return [$created, $receivedAt];
 	}//end promoteDraft()
@@ -449,7 +422,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 	private function draftData(array $plan, string $draftId, ?DraftOwner $owner): array {
 		$draft = $this->drafts->own(register: $plan['register'], schema: $plan['schema'], draftId: $draftId, owner: $owner);
 		if ($draft === null) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('This draft does not exist.'), status: 404);
 		}
 
 		return DraftFinder::dataOf(object: $draft);
@@ -478,7 +451,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
 		if ($draft === null) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('This draft does not exist.'), status: 404);
 		}
 
 		return DraftFinder::answer(draft: $draft);
@@ -562,7 +535,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		if ($plans === []) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('This form has no destination.'), status: 404);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('This form has no destination.'), status: 404);
 		}
 
 		return $plans;
@@ -599,7 +572,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			// A token this very draft already claimed (the autosave before this
 			// one, or the draft the final submit leaves) names a file the draft
 			// holds: the property is left as the draft stores it.
-			$file = $this->uploads->redeem(formId: $scope, property: (string)$property, token: $token, draftId: $draftId);
+			$file = $this->keeping->uploads->redeem(formId: $scope, property: (string)$property, token: $token, draftId: $draftId);
 			if ($file === null) {
 				continue;
 			}
@@ -717,20 +690,20 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			}
 
 			try {
-				$result = $this->validator->validateObject(
+				$result = $this->destinations->validator->validateObject(
 					object: $object,
 					schema: $plan['schema'],
 					notSupplied: $excused
 				);
-				array_push($findings, ...$this->findings->fromResult(result: $result, write: $write));
+				array_push($findings, ...$this->keeping->findings->fromResult(result: $result, write: $write));
 			} catch (CustomValidationException $exception) {
-				array_push($findings, ...$this->findings->fromThrowable(exception: $exception, write: $write));
+				array_push($findings, ...$this->keeping->findings->fromThrowable(exception: $exception, write: $write));
 			}
 		}
 
 		if ($findings !== []) {
 			throw new FormSubmitRefusedException(
-				message: $this->l10n->t('The form was not accepted. Please check the answers marked below.'),
+				message: $this->platform->l10n->t('The form was not accepted. Please check the answers marked below.'),
 				status: 422,
 				findings: $findings
 			);
@@ -781,7 +754,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			}
 
 			try {
-				$entity = $this->objects->saveObject(
+				$entity = $this->destinations->objects->saveObject(
 					object: $object,
 					register: $plan['register'],
 					schema: $plan['schema'],
@@ -828,7 +801,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			}
 
 			if (isset($ids[$value['$write']]) === false) {
-				$message = $this->l10n->t('Write "%1$s" is referenced before it is made.', [$value['$write']]);
+				$message = $this->platform->l10n->t('Write "%1$s" is referenced before it is made.', [$value['$write']]);
 				throw new FormSubmitRefusedException(
 					message: $message,
 					status: 422,
@@ -858,7 +831,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 				// Permanent: a submit that did not happen leaves no tombstone that
 				// holds a unique key against the resident's retry. The audit trail
 				// keeps both the create and this delete.
-				$this->objects->deleteObject(
+				$this->destinations->objects->deleteObject(
 					uuid: $uuid,
 					register: $done['plan']['register'],
 					schema: $done['plan']['schema'],
@@ -867,14 +840,14 @@ class FormSubmitService implements FormSubmitServiceInterface {
 					permanent: true
 				);
 			} catch (Throwable $exception) {
-				$this->logger->error(
+				$this->platform->logger->error(
 					message: '[FormSubmitService] Compensation failed: an earlier write of a refused submit could not be deleted',
 					context: ['uuid' => $uuid, 'failedAt' => $failedAt, 'exception' => $exception->getMessage()]
 				);
 				continue;
 			}
 
-			$this->logger->warning(
+			$this->platform->logger->warning(
 				message: '[FormSubmitService] Compensated: deleted an earlier write of a refused submit',
 				context: ['uuid' => $uuid, 'write' => $done['plan']['as'], 'failedAt' => $failedAt, 'reason' => $reason->getMessage()]
 			);
@@ -895,7 +868,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		if ($exception instanceof DraftAlreadyLeftException) {
-			return new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			return new FormSubmitRefusedException(message: $this->platform->l10n->t('This draft does not exist.'), status: 404);
 		}
 
 		$write = null;
@@ -903,23 +876,23 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			$write = $plan['as'];
 		}
 
-		if ($this->findings->isPayloadRefusal(exception: $exception) === true) {
+		if ($this->keeping->findings->isPayloadRefusal(exception: $exception) === true) {
 			return new FormSubmitRefusedException(
-				message: $this->l10n->t('The form was not accepted. Please check the answers marked below.'),
+				message: $this->platform->l10n->t('The form was not accepted. Please check the answers marked below.'),
 				status: 422,
-				findings: $this->findings->fromThrowable(exception: $exception, write: $write)
+				findings: $this->keeping->findings->fromThrowable(exception: $exception, write: $write)
 			);
 		}
 
 		if ($exception instanceof NotAuthorizedException) {
 			return new FormSubmitRefusedException(
-				message: $this->l10n->t('You may not send this form.'),
+				message: $this->platform->l10n->t('You may not send this form.'),
 				status: 403,
-				findings: [['property' => '', 'code' => 'not-allowed', 'message' => $this->l10n->t('You may not send this form.')]]
+				findings: [['property' => '', 'code' => 'not-allowed', 'message' => $this->platform->l10n->t('You may not send this form.')]]
 			);
 		}
 
-		$this->logger->error(
+		$this->platform->logger->error(
 			message: '[FormSubmitService] A submit could not reach its destination',
 			context: ['schema' => $plan['schema']->getSlug(), 'exception' => $exception->getMessage()]
 		);
@@ -928,7 +901,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		// queue would hand the resident a receipt for something that may never
 		// arrive, which is the defect decision 179 removes.
 		return new FormSubmitRefusedException(
-			message: $this->l10n->t('Your form could not be sent right now. Your answers are kept; please try again later.'),
+			message: $this->platform->l10n->t('Your form could not be sent right now. Your answers are kept; please try again later.'),
 			status: 503
 		);
 	}//end refusalFor()
@@ -948,7 +921,7 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			// Re-read: a creating listener has run by now, and a created listener
 			// that saves again is visible only on the stored row.
 			$schema = $done['plan']['schema'];
-			$entity = ($this->objects->find(
+			$entity = ($this->destinations->objects->find(
 				id: (string)$done['object']->getUuid(),
 				register: $done['plan']['register'],
 				schema: $schema,
@@ -1052,9 +1025,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 			// Multitenancy and RBAC off: this resolves WHERE the form writes,
 			// fixed by its author. Whether the subject may write there is the
 			// save's question, asked under RBAC.
-			return $this->registers->find((string)$reference, _rbac: false, _multitenancy: false);
+			return $this->destinations->registers->find((string)$reference, _rbac: false, _multitenancy: false);
 		} catch (Throwable) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('The place this form sends to does not exist.'), status: 404);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('The place this form sends to does not exist.'), status: 404);
 		}
 	}//end register()
 
@@ -1073,9 +1046,9 @@ class FormSubmitService implements FormSubmitServiceInterface {
 		}
 
 		try {
-			return $this->schemas->find((string)$reference, _multitenancy: false);
+			return $this->destinations->schemas->find((string)$reference, _multitenancy: false);
 		} catch (Throwable) {
-			throw new FormSubmitRefusedException(message: $this->l10n->t('The place this form sends to does not exist.'), status: 404);
+			throw new FormSubmitRefusedException(message: $this->platform->l10n->t('The place this form sends to does not exist.'), status: 404);
 		}
 	}//end schema()
 }//end class

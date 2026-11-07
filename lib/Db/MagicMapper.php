@@ -680,7 +680,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class),
 			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
 			relatedRows: $relatedRowApplier,
-			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
+			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageServiceInterface::class),
 			metadataColumns: $this->metadataColumnHealer,
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
 		);

@@ -3,7 +3,8 @@
 /**
  * Top-level Service classes are reached through their interfaces.
  *
- * Controllers, a controller support class and an event named two concrete
+ * Controllers, commands, the Files, Db, Notifications, Contacts and ContextChat
+ * components, a capability, two events and a middleware named eight concrete
  * classes in lib/Service directly. Each now has an interface next to it that
  * declares only what those callers use; they type against and resolve that
  * interface, and ContractBindings aliases it to the class. A missing alias is a
@@ -28,6 +29,18 @@ use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\LanguageServiceInterface;
+use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
+use OCA\OpenRegister\Service\RegisterResolverService;
+use OCA\OpenRegister\Service\RegisterResolverServiceInterface;
+use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\UrnServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -53,14 +66,29 @@ final class D11InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		ApplicationService::class => ApplicationServiceInterface::class,
 		BulkActionRegistry::class => BulkActionRegistryInterface::class,
+		DeepLinkRegistryService::class => DeepLinkRegistryServiceInterface::class,
+		FileService::class => FileServiceInterface::class,
+		LanguageService::class => LanguageServiceInterface::class,
+		RegisterDescriptorService::class => RegisterDescriptorServiceInterface::class,
+		RegisterResolverService::class => RegisterResolverServiceInterface::class,
+		UrnService::class => UrnServiceInterface::class,
 	];
 
 	/**
-	 * Outside files still allowed to name the class, and why: none.
+	 * Outside files still allowed to name the class, and why.
+	 *
+	 * Application::boot() resolves the deep-link registry inside a 43-line
+	 * method this refactor does not reshape. ObjectsController resolves
+	 * FileService in downloadFiles(), a 50-line method, and in the bulk-download
+	 * audit helper; audit code is out of scope. FileReadScope decides which
+	 * file-search hits the caller may read: it is access code, also out of scope.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [];
+	private const KEPT_CALLERS = [
+		DeepLinkRegistryService::class => ['AppInfo/Application.php'],
+		FileService::class => ['Controller/ObjectsController.php', 'Files/Service/File/FileReadScope.php'],
+	];
 
 	/**
 	 * The class and its interface, one case per class.

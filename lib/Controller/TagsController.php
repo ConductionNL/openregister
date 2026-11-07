@@ -30,7 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -65,7 +65,7 @@ class TagsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param ObjectService $objectService Object service instance
-	 * @param FileService $fileService File service instance for tag retrieval
+	 * @param FileServiceInterface $fileService File service instance for tag retrieval
 	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
 	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
 	 *
@@ -75,7 +75,7 @@ class TagsController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly ObjectService $objectService,
-		private readonly FileService $fileService,
+		private readonly FileServiceInterface $fileService,
 		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly ?IUserSession $userSession = null,
 	) {

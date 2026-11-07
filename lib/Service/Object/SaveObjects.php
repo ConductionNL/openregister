@@ -197,44 +197,124 @@ class SaveObjects {
 	private ?BulkObjectSlugs $bulkSlugs = null;
 
 	/**
+	 * Mapper for object entity database operations
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Mapper for schema operations
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for register operations
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Handler for individual object operations
+	 *
+	 * @var SaveObjectInterface
+	 */
+	private readonly SaveObjectInterface $saveHandler;
+
+	/**
+	 * User session for getting current user
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Service for organisation operations
+	 *
+	 * @var OrganisationServiceInterface
+	 */
+	private readonly OrganisationServiceInterface $organisationService;
+
+	/**
+	 * Logger for error and debug logging
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Group manager for admin-bypass detection; also backs the
+	 * wave-12 `_rbac` / `_validation` reserved-keys policy
+	 *
+	 * @var IGroupManager|null
+	 */
+	private readonly ?IGroupManager $groupManager;
+
+	/**
+	 * Permission handler for per-object RBAC enforcement;
+	 * wave-12 Fix 3 per-row RBAC + appendOnly gate
+	 *
+	 * @var PermissionHandler|null
+	 */
+	private readonly ?PermissionHandler $permissionHandler;
+
+	/**
+	 * Validation handler for per-object schema validation;
+	 * wave-12 Fix 3 per-row JSON-Schema validation
+	 *
+	 * @var ValidateObjectInterface|null
+	 */
+	private readonly ?ValidateObjectInterface $validateHandler;
+
+	/**
+	 * Event dispatcher for object lifecycle events
+	 *
+	 * @var IEventDispatcher|null
+	 */
+	private readonly ?IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Audit trail mapper for logging bulk changes
+	 *
+	 * @var AuditTrailMapperInterface|null
+	 */
+	private readonly ?AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * The decision-table rules, property authorization and save events a
+	 * bulk row goes through. Null only in legacy fixtures.
+	 *
+	 * @var BulkRowRules|null
+	 */
+	private readonly ?BulkRowRules $rowRules;
+
+	/**
 	 * Constructor for SaveObjects handler
 	 *
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity database operations
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations
-	 * @param RegisterMapperInterface $registerMapper Mapper for register operations
-	 * @param SaveObjectInterface $saveHandler Handler for individual object operations
-	 * @param IUserSession $userSession User session for getting current user
-	 * @param OrganisationServiceInterface $organisationService Service for organisation operations
-	 * @param LoggerInterface $logger Logger for error and debug logging
-	 * @param IGroupManager|null $groupManager Group manager for admin-bypass detection; also backs the
-	 *                                         wave-12 `_rbac` / `_validation` reserved-keys policy
-	 * @param PermissionHandler|null $permissionHandler Permission handler for per-object RBAC enforcement;
-	 *                                                  wave-12 Fix 3 per-row RBAC + appendOnly gate
-	 * @param ValidateObjectInterface|null $validateHandler Validation handler for per-object schema validation;
-	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
-	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
-	 * @param AuditTrailMapperInterface|null $auditTrailMapper Audit trail mapper for logging bulk changes
-	 * @param BulkRowRules|null $rowRules The decision-table rules, property authorization and save events a
-	 *                                    bulk row goes through. Null only in legacy fixtures.
+	 * @param BulkSaveStores    $stores    Reads the registers and schemas and writes the rows.
+	 * @param BulkSaveSession   $session   The user, organisation and groups the save runs for.
+	 * @param BulkSaveReporting $reporting Logs, dispatches the lifecycle events and records the audit trail.
+	 * @param BulkRowChecks     $checks    The per-row access, validation and rule checks.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SaveObjectInterface $saveHandler,
-		private readonly IUserSession $userSession,
-		private readonly OrganisationServiceInterface $organisationService,
-		private readonly LoggerInterface $logger,
-		private readonly ?IGroupManager $groupManager = null,
-		private readonly ?PermissionHandler $permissionHandler = null,
-		private readonly ?ValidateObjectInterface $validateHandler = null,
-		private readonly ?IEventDispatcher $eventDispatcher = null,
-		private readonly ?AuditTrailMapperInterface $auditTrailMapper = null,
-		private readonly ?BulkRowRules $rowRules = null,
-	) {
-
+	public function __construct(BulkSaveStores $stores, BulkSaveSession $session, BulkSaveReporting $reporting, BulkRowChecks $checks) {
+		$this->objectEntityMapper = $stores->objectEntityMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->saveHandler = $stores->saveHandler;
+		$this->userSession = $session->userSession;
+		$this->organisationService = $session->organisationService;
+		$this->groupManager = $session->groupManager;
+		$this->logger = $reporting->logger;
+		$this->eventDispatcher = $reporting->eventDispatcher;
+		$this->auditTrailMapper = $reporting->auditTrailMapper;
+		$this->permissionHandler = $checks->permissionHandler;
+		$this->validateHandler = $checks->validateHandler;
+		$this->rowRules = $checks->rowRules;
 	}//end __construct()
 
 	/**

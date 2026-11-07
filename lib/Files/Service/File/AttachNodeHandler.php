@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -52,10 +52,10 @@ class AttachNodeHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService The upload pipeline.
+	 * @param FileServiceInterface $fileService The upload pipeline.
 	 */
 	public function __construct(
-		private readonly FileService $fileService,
+		private readonly FileServiceInterface $fileService,
 	) {
 	}//end __construct()
 

@@ -33,6 +33,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\SettingsService;
@@ -129,14 +132,10 @@ class ConfiguredTablePrefixTest extends TestCase {
 		$registers->method('findAll')->willReturn([$first]);
 
 		$service = new ReferentialIntegrityService(
-			$this->createMock(SchemaMapper::class),
-			$registers,
-			$this->createMock(MagicMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$this->connection(rows: self::catalogue()),
-			$this->createMock(ICacheFactory::class),
-			(new ReflectionClass(ArchivalRetentionGuard::class))->newInstanceWithoutConstructor()
+			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $registers, cacheFactory: $this->createMock(ICacheFactory::class)),
+			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->connection(rows: self::catalogue())),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: (new ReflectionClass(ArchivalRetentionGuard::class))->newInstanceWithoutConstructor()),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$names = (new ReflectionMethod($service, 'magicTableNames'))->invoke($service);

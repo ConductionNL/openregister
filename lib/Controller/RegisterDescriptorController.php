@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -45,7 +45,7 @@ class RegisterDescriptorController extends Controller {
 	 *
 	 * @param string                    $appName     The app id.
 	 * @param IRequest                  $request     The current request.
-	 * @param RegisterDescriptorService $descriptors The inventory and importer.
+	 * @param RegisterDescriptorServiceInterface $descriptors The inventory and importer.
 	 * @param IUserSession              $userSession Resolves the caller.
 	 * @param IGroupManager             $groupManager Answers whether they are an administrator.
 	 *
@@ -54,7 +54,7 @@ class RegisterDescriptorController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly RegisterDescriptorService $descriptors,
+		private readonly RegisterDescriptorServiceInterface $descriptors,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
@@ -89,29 +89,27 @@ class RegisterDescriptorController extends Controller {
 			return $refusal;
 		}
 
-		$rows   = $this->descriptors->inventory();
-		$absent = 0;
-		$behind = 0;
-		foreach ($rows as $row) {
-			if ($row['state'] === RegisterDescriptorService::STATE_ABSENT) {
-				$absent++;
-				continue;
-			}
-
-			if ($row['state'] === RegisterDescriptorService::STATE_BEHIND) {
-				$behind++;
-			}
-		}
-
-		return new JSONResponse(
-			data: [
-				'results' => $rows,
-				'total'   => count($rows),
-				'absent'  => $absent,
-				'behind'  => $behind,
-			]
-		);
+		return new JSONResponse(data: $this->inventoryPayload());
 	}//end index()
+
+	/**
+	 * The inventory rows with their total and how many are absent or behind.
+	 *
+	 * @return array{results: array<int, array<string, string|null>>, total: int, absent: int, behind: int} The payload.
+	 *
+	 * @spec openspec/specs/register-descriptor-admin/spec.md
+	 */
+	private function inventoryPayload(): array {
+		$rows   = $this->descriptors->inventory();
+		$states = array_column($rows, 'state');
+
+		return [
+			'results' => $rows,
+			'total'   => count($rows),
+			'absent'  => count(array_keys($states, RegisterDescriptorServiceInterface::STATE_ABSENT, true)),
+			'behind'  => count(array_keys($states, RegisterDescriptorServiceInterface::STATE_BEHIND, true)),
+		];
+	}//end inventoryPayload()
 
 	/**
 	 * Force a re-import of one app's descriptor for one register slug.

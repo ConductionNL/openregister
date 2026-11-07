@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
+use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
+use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -127,12 +129,8 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 
 		$this->job = new RelatedRetentionRecalculationJob(
 			$this->createMock(ITimeFactory::class),
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->index,
-			$calculator,
-			$retention,
+			new RelatedRetentionLookup($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
 		);
 	}//end setUp()

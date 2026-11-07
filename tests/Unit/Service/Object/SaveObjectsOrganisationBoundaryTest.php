@@ -25,6 +25,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -214,16 +218,10 @@ class SaveObjectsOrganisationBoundaryTest extends TestCase {
 		$orgs->method('getOrganisationForNewEntity')->willReturn('org-a');
 
 		return new SaveObjects(
-			objectEntityMapper: $mapper,
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			saveHandler: $this->createMock(SaveObject::class),
-			userSession: $userSession,
-			organisationService: $orgs,
-			logger: $logger,
-			groupManager: $groupManager,
-			permissionHandler: $permissionHandler,
-			validateHandler: $this->createMock(ValidateObject::class)
+			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $userSession, organisationService: $orgs, groupManager: $groupManager),
+			reporting: new BulkSaveReporting(logger: $logger),
+			checks: new BulkRowChecks(permissionHandler: $permissionHandler, validateHandler: $this->createMock(ValidateObject::class))
 		);
 	}//end handler()
 

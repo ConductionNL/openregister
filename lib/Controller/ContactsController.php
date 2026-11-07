@@ -26,7 +26,6 @@ use OCA\OpenRegister\Controller\Support\ContactsControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactServiceInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;

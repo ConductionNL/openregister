@@ -42,27 +42,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
-use OCA\OpenRegister\Db\HandoffQueueEntryMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\WriteCause;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IDBConnection;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -110,38 +98,17 @@ class HandoffService implements HandoffServiceInterface {
 	/**
 	 * Wire the engine against the shipped OR capabilities it composes.
 	 *
-	 * @param ObjectOperationsInterface $objectService RBAC-enforcing object read/write path.
-	 * @param SemanticTypeResolver $semanticTypeResolver Kind URI → installed schema resolution.
-	 * @param SchemaMapperInterface $schemaMapper Source-schema loading.
-	 * @param MagicMapperInterface $objectMapper Raw entity access for provenance relation writes.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Immutable audit rows.
-	 * @param PermissionHandler $permissionHandler RBAC pre-checks (typed 403 before any write).
-	 * @param HandoffMappingEvaluator $mappingEvaluator The five-expression mapping evaluator.
-	 * @param HandoffQueueEntryMapper $queueMapper Durable queue-mode storage.
-	 * @param IDBConnection $db Transaction boundary.
-	 * @param IEventDispatcher $eventDispatcher Post-commit ADR-041 event dispatch.
-	 * @param IUserSession $userSession The acting user (and drain impersonation).
-	 * @param IUserManager $userManager Requesting-user lookup for queue drain.
-	 * @param INotificationManager $notificationManager Requester notification on drain permission failure.
-	 * @param LoggerInterface $logger Structured logging.
+	 * @param HandoffObjectAccess $objects The source and target objects, under the caller's RBAC.
+	 * @param HandoffProviders $providers The provider schema of a kind and the data mapping onto it.
+	 * @param HandoffLedger $ledger The audit rows, the queue, the transaction and the log.
+	 * @param HandoffRequesters $requesters The acting user, the requester lookup, notifications and events.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly SemanticTypeResolver $semanticTypeResolver,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly HandoffMappingEvaluator $mappingEvaluator,
-		private readonly HandoffQueueEntryMapper $queueMapper,
-		private readonly IDBConnection $db,
-		private readonly IEventDispatcher $eventDispatcher,
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
+		private readonly HandoffObjectAccess $objects,
+		private readonly HandoffProviders $providers,
+		private readonly HandoffLedger $ledger,
+		private readonly HandoffRequesters $requesters,
 	) {
-
 	}//end __construct()
 
 	/**
@@ -165,7 +132,7 @@ class HandoffService implements HandoffServiceInterface {
 	 *   (Requirement: Handoff REST surface)
 	 */
 	public function listAvailability(string $register, string $schema, string $id): array {
-		$source = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema));
+		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $id, register: $register, schema: $schema));
 		if ($source === null) {
 			throw new HandoffException(
 				errorCode: HandoffException::NOT_DECLARED,
@@ -173,11 +140,11 @@ class HandoffService implements HandoffServiceInterface {
 			);
 		}
 
-		$sourceSchema = $this->schemaMapper->find(id: (string)$source->getSchema());
+		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
 		$entries = $this->declaredHandoffs(schema: $sourceSchema);
 
 		$parked = [];
-		foreach ($this->queueMapper->findParkedForObject(sourceObjectUuid: (string)$source->getUuid()) as $entry) {
+		foreach ($this->ledger->queueMapper->findParkedForObject(sourceObjectUuid: (string)$source->getUuid()) as $entry) {
 			$parked[$entry->getHandoffId()] = $entry;
 		}
 
@@ -264,12 +231,12 @@ class HandoffService implements HandoffServiceInterface {
 		?string $correlationId = null,
 	): array {
 		// 1. Load the source under the caller's RBAC (read) — 404/403 surface here.
-		$source = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema));
+		$source = WriteCause::asLookup(fn () => $this->objects->objectService->find(id: $id, register: $register, schema: $schema));
 		if ($source === null) {
 			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}
 
-		$sourceSchema = $this->schemaMapper->find(id: (string)$source->getSchema());
+		$sourceSchema = $this->objects->schemaMapper->find(id: (string)$source->getSchema());
 
 		// 2. The declared entry — `handoff-not-declared` when absent.
 		$entry = $this->declaredHandoff(schema: $sourceSchema, handoffId: $handoffId);
@@ -285,7 +252,7 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		// Write permission on the source, as the calling user (never escalate).
-		$this->permissionHandler->checkPermission(
+		$this->objects->permissionHandler->checkPermission(
 			schema: $sourceSchema,
 			action: 'update',
 			objectOwner: $source->getOwner(),
@@ -300,19 +267,19 @@ class HandoffService implements HandoffServiceInterface {
 			return $this->degrade(entry: $entry, source: $source, kindUri: $kindUri, handoffId: $handoffId);
 		}
 
-		$targetRegister = $this->semanticTypeResolver->findRegisterForSchema(schema: $provider);
+		$targetRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $provider);
 		if ($targetRegister === null) {
 			// An orphaned provider schema cannot receive objects — same degradation path.
 			return $this->degrade(entry: $entry, source: $source, kindUri: $kindUri, handoffId: $handoffId);
 		}
 
 		// 4. RBAC pre-check: create on the resolved target schema, as the caller — typed 403 before any write.
-		$this->permissionHandler->checkPermission(schema: $provider, action: 'create');
+		$this->objects->permissionHandler->checkPermission(schema: $provider, action: 'create');
 
 		// 5. Evaluate the mapping and translate contract fields → provider properties via the binding.
 		$correlationId = ($correlationId ?? Uuid::v4()->toRfc4122());
 		$provenance = $this->buildProvenance(source: $source, sourceSchema: $sourceSchema);
-		$contractData = $this->mappingEvaluator->evaluate(
+		$contractData = $this->providers->mappingEvaluator->evaluate(
 			mapping: (array)($entry['mapping'] ?? []),
 			sourceData: $source->getObject(),
 			provenance: $provenance
@@ -331,7 +298,7 @@ class HandoffService implements HandoffServiceInterface {
 		// transaction, compensated by target delete + source revert on
 		// failure. Observable contract holds: a failed handoff leaves no
 		// target, no relation, no handoff audit row, and no source mutation.
-		$target = $this->objectService->saveObject(
+		$target = $this->objects->objectService->saveObject(
 			object: $targetData,
 			register: $targetRegister,
 			schema: $provider
@@ -349,7 +316,7 @@ class HandoffService implements HandoffServiceInterface {
 			throw $e;
 		}
 
-		$this->db->beginTransaction();
+		$this->ledger->db->beginTransaction();
 		try {
 			$this->writeProvenanceRelations(
 				source: $source,
@@ -369,9 +336,9 @@ class HandoffService implements HandoffServiceInterface {
 				deferred: $deferred
 			);
 
-			$this->db->commit();
+			$this->ledger->db->commit();
 		} catch (\Throwable $e) {
-			$this->db->rollBack();
+			$this->ledger->db->rollBack();
 			$this->compensate(
 				target: $target,
 				targetRegister: $targetRegister,
@@ -385,7 +352,7 @@ class HandoffService implements HandoffServiceInterface {
 		}//end try
 
 		// 7. Post-commit: dispatch the ADR-041 event (a throwing listener can never roll back the handoff).
-		$this->eventDispatcher->dispatchTyped(
+		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
 				sourceApp: (string)($sourceSchema->getApplication() ?? ''),
 				sourceRegister: (int)$source->getRegister(),
@@ -433,11 +400,11 @@ class HandoffService implements HandoffServiceInterface {
 	public function drainParked(?string $kindUri = null): array {
 		$entries = [];
 		if ($kindUri !== null) {
-			$entries = $this->queueMapper->findParkedByKind(kindUri: $kindUri);
+			$entries = $this->ledger->queueMapper->findParkedByKind(kindUri: $kindUri);
 		}
 
 		if ($kindUri === null) {
-			$entries = $this->queueMapper->findParked();
+			$entries = $this->ledger->queueMapper->findParked();
 		}
 
 		$summary = [
@@ -448,7 +415,7 @@ class HandoffService implements HandoffServiceInterface {
 
 		foreach ($entries as $entry) {
 			// Cheap pre-check: still no provider → leave parked.
-			$this->semanticTypeResolver->clearCache();
+			$this->providers->semanticTypeResolver->clearCache();
 			if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {
 				$summary['skipped']++;
 				continue;
@@ -479,16 +446,16 @@ class HandoffService implements HandoffServiceInterface {
 		$entry->setAttempt($entry->getAttempt() + 1);
 		$entry->setLastAttemptAt(new DateTime());
 
-		$requester = $this->userManager->get($entry->getRequestingUser());
+		$requester = $this->requesters->userManager->get($entry->getRequestingUser());
 		if ($requester === null) {
 			$entry->setStatus(HandoffQueueEntry::STATUS_FAILED_PERMISSION);
 			$entry->setLastError('Requesting user no longer exists.');
-			$this->queueMapper->update(entity: $entry);
+			$this->ledger->queueMapper->update(entity: $entry);
 			return false;
 		}
 
-		$previousUser = $this->userSession->getUser();
-		$this->userSession->setUser($requester);
+		$previousUser = $this->requesters->userSession->getUser();
+		$this->requesters->userSession->setUser($requester);
 
 		try {
 			$this->execute(
@@ -503,7 +470,7 @@ class HandoffService implements HandoffServiceInterface {
 			$entry->setStatus(HandoffQueueEntry::STATUS_EXECUTED);
 			$entry->setExecutedAt(new DateTime());
 			$entry->setLastError(null);
-			$this->queueMapper->update(entity: $entry);
+			$this->ledger->queueMapper->update(entity: $entry);
 
 			$this->auditDequeued(entry: $entry);
 			return true;
@@ -511,17 +478,17 @@ class HandoffService implements HandoffServiceInterface {
 			// RBAC re-evaluated at drain time refused: never escalate.
 			$entry->setStatus(HandoffQueueEntry::STATUS_FAILED_PERMISSION);
 			$entry->setLastError($e->getMessage());
-			$this->queueMapper->update(entity: $entry);
+			$this->ledger->queueMapper->update(entity: $entry);
 			$this->notifyDrainFailure(entry: $entry);
 			return false;
 		} catch (\Throwable $e) {
 			$entry->setStatus(HandoffQueueEntry::STATUS_FAILED_VALIDATION);
 			$entry->setLastError($e->getMessage());
-			$this->queueMapper->update(entity: $entry);
+			$this->ledger->queueMapper->update(entity: $entry);
 			$this->notifyDrainFailure(entry: $entry);
 			return false;
 		} finally {
-			$this->userSession->setUser($previousUser);
+			$this->requesters->userSession->setUser($previousUser);
 		}//end try
 
 	}//end drainEntry()
@@ -552,7 +519,7 @@ class HandoffService implements HandoffServiceInterface {
 			);
 		}
 
-		$requestingUser = ($this->userSession->getUser()?->getUID() ?? '');
+		$requestingUser = ($this->requesters->userSession->getUser()?->getUID() ?? '');
 		$correlationId = Uuid::v4()->toRfc4122();
 
 		$queueEntry = new HandoffQueueEntry();
@@ -569,9 +536,9 @@ class HandoffService implements HandoffServiceInterface {
 		// the column as updated and includes it in the INSERT.
 		$queueEntry->setCreated(new DateTime());
 
-		$queueEntry = $this->queueMapper->insert(entity: $queueEntry);
+		$queueEntry = $this->ledger->queueMapper->insert(entity: $queueEntry);
 
-		$this->auditTrailMapper->createAuditTrailEntry(
+		$this->ledger->auditTrailMapper->createAuditTrailEntry(
 			object: $source,
 			action: self::AUDIT_QUEUED,
 			context: [
@@ -610,7 +577,7 @@ class HandoffService implements HandoffServiceInterface {
 			return null;
 		}
 
-		$schema = $this->semanticTypeResolver->resolveSchemaByImplements(
+		$schema = $this->providers->semanticTypeResolver->resolveSchemaByImplements(
 			uri: $kindUri,
 			consumingRegisterId: $consumingRegisterId
 		);
@@ -717,16 +684,16 @@ class HandoffService implements HandoffServiceInterface {
 		?string $sourceSchemaRef = null,
 	): void {
 		try {
-			$rawTarget = $this->objectMapper->find(
+			$rawTarget = $this->objects->objectMapper->find(
 				identifier: (string)$target->getUuid(),
 				register: $targetRegister,
 				schema: $targetSchema,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$this->objectMapper->delete(entity: $rawTarget);
+			$this->objects->objectMapper->delete(entity: $rawTarget);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->ledger->logger->error(
 				message: '[HandoffService] Compensation could not remove the created target — manual cleanup required',
 				context: [
 					'file' => __FILE__,
@@ -742,14 +709,14 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		try {
-			$this->objectService->saveObject(
+			$this->objects->objectService->saveObject(
 				object: $sourceSnapshot,
 				register: $sourceRegisterRef,
 				schema: $sourceSchemaRef,
 				uuid: (string)$source->getUuid()
 			);
 		} catch (\Throwable $e) {
-			$this->logger->error(
+			$this->ledger->logger->error(
 				message: '[HandoffService] Compensation could not restore the source object — manual review required',
 				context: [
 					'file' => __FILE__,
@@ -788,7 +755,7 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		$data = array_merge($source->getObject(), $set);
-		$this->objectService->saveObject(
+		$this->objects->objectService->saveObject(
 			object: $data,
 			register: $register,
 			schema: $schema,
@@ -828,11 +795,11 @@ class HandoffService implements HandoffServiceInterface {
 		Register $targetRegister,
 		Schema $targetSchema,
 	): void {
-		$sourceRegister = $this->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
+		$sourceRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
 
 		// Fresh raw source row: applyOnSuccess() may have rewritten it (and
 		// rebuilt its relations map from data) moments ago.
-		$rawSource = $this->objectMapper->find(
+		$rawSource = $this->objects->objectMapper->find(
 			identifier: (string)$source->getUuid(),
 			register: $sourceRegister,
 			schema: $sourceSchema,
@@ -843,9 +810,9 @@ class HandoffService implements HandoffServiceInterface {
 		$sourceRelations = ($rawSource->getRelations() ?? []);
 		$sourceRelations[self::RELATION_PREFIX . ':' . $handoffId . ':handed-off-to'] = (string)$target->getUuid();
 		$rawSource->setRelations($sourceRelations);
-		$this->objectMapper->update(entity: $rawSource, register: $sourceRegister, schema: $sourceSchema);
+		$this->objects->objectMapper->update(entity: $rawSource, register: $sourceRegister, schema: $sourceSchema);
 
-		$rawTarget = $this->objectMapper->find(
+		$rawTarget = $this->objects->objectMapper->find(
 			identifier: (string)$target->getUuid(),
 			register: $targetRegister,
 			schema: $targetSchema,
@@ -856,7 +823,7 @@ class HandoffService implements HandoffServiceInterface {
 		$targetRelations = ($rawTarget->getRelations() ?? []);
 		$targetRelations[self::RELATION_PREFIX . ':' . $handoffId . ':originated-from'] = (string)$source->getUuid();
 		$rawTarget->setRelations($targetRelations);
-		$this->objectMapper->update(entity: $rawTarget, register: $targetRegister, schema: $targetSchema);
+		$this->objects->objectMapper->update(entity: $rawTarget, register: $targetRegister, schema: $targetSchema);
 
 	}//end writeProvenanceRelations()
 
@@ -898,12 +865,12 @@ class HandoffService implements HandoffServiceInterface {
 			$context['drainedAt'] = (new DateTime())->format('c');
 		}
 
-		$this->auditTrailMapper->createAuditTrailEntry(
+		$this->ledger->auditTrailMapper->createAuditTrailEntry(
 			object: $source,
 			action: self::AUDIT_EXECUTED,
 			context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->getUuid()])
 		);
-		$this->auditTrailMapper->createAuditTrailEntry(
+		$this->ledger->auditTrailMapper->createAuditTrailEntry(
 			object: $target,
 			action: self::AUDIT_EXECUTED,
 			context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
@@ -925,16 +892,16 @@ class HandoffService implements HandoffServiceInterface {
 		try {
 			// Explicit register/schema context keeps MagicMapper on the one
 			// correct magic table (no cross-table scan).
-			$sourceSchema = $this->schemaMapper->find(id: (string)$entry->getSourceSchema());
-			$sourceRegister = $this->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
-			$source = $this->objectMapper->find(
+			$sourceSchema = $this->objects->schemaMapper->find(id: (string)$entry->getSourceSchema());
+			$sourceRegister = $this->providers->semanticTypeResolver->findRegisterForSchema(schema: $sourceSchema);
+			$source = $this->objects->objectMapper->find(
 				identifier: $entry->getSourceObjectUuid(),
 				register: $sourceRegister,
 				schema: $sourceSchema,
 				_rbac: false,
 				_multitenancy: false
 			);
-			$this->auditTrailMapper->createAuditTrailEntry(
+			$this->ledger->auditTrailMapper->createAuditTrailEntry(
 				object: $source,
 				action: self::AUDIT_DEQUEUED,
 				context: [
@@ -947,7 +914,7 @@ class HandoffService implements HandoffServiceInterface {
 				]
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->ledger->logger->warning(
 				message: '[HandoffService] Could not write dequeue audit row',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'entry' => $entry->getId(), 'error' => $e->getMessage()]
 			);
@@ -967,7 +934,7 @@ class HandoffService implements HandoffServiceInterface {
 	 */
 	private function notifyDrainFailure(HandoffQueueEntry $entry): void {
 		try {
-			$notification = $this->notificationManager->createNotification();
+			$notification = $this->requesters->notificationManager->createNotification();
 			$notification->setApp('openregister');
 			$notification->setUser($entry->getRequestingUser());
 			$notification->setDateTime(new DateTime());
@@ -985,9 +952,9 @@ class HandoffService implements HandoffServiceInterface {
 					'reason' => $entry->getStatus(),
 				]
 			);
-			$this->notificationManager->notify($notification);
+			$this->requesters->notificationManager->notify($notification);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->ledger->logger->warning(
 				message: '[HandoffService] Could not notify requester of drain failure',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'entry' => $entry->getId(), 'error' => $e->getMessage()]
 			);

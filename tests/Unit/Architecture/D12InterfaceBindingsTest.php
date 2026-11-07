@@ -68,6 +68,18 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunRecorder;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
+use OCA\OpenRegister\Service\Operations\JobScheduleService;
+use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
+use OCA\OpenRegister\Service\Operations\SupportBundleService;
+use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementService;
@@ -131,6 +143,8 @@ final class D12InterfaceBindingsTest extends TestCase {
 		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
 		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
 		ConditionTracer::class => [ConditionTracerInterface::class, ContractBindings::class],
+		ConsistencyCheckService::class => [ConsistencyCheckServiceInterface::class, ContractBindings::class],
+		ConsistencyRepairService::class => [ConsistencyRepairServiceInterface::class, ContractBindings::class],
 		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
 		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, ContractBindings::class],
 		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, ContractBindings::class],
@@ -140,7 +154,10 @@ final class D12InterfaceBindingsTest extends TestCase {
 		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
 		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
 		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		JobRunRecorder::class => [JobRunRecorderInterface::class, ContractBindings::class],
+		JobScheduleService::class => [JobScheduleServiceInterface::class, ContractBindings::class],
 		LoopNode::class => [LoopNodeInterface::class, ContractBindings::class],
+		MaintenanceModeService::class => [MaintenanceModeServiceInterface::class, ContractBindings::class],
 		ObjectActionBulk::class => [ObjectActionBulkInterface::class, ContractBindings::class],
 		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
@@ -156,6 +173,7 @@ final class D12InterfaceBindingsTest extends TestCase {
 		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
 		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
 		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
+		SupportBundleService::class => [SupportBundleServiceInterface::class, ContractBindings::class],
 		TaskFormCompletion::class => [TaskFormCompletionInterface::class, ContractBindings::class],
 		TaskFormResolver::class => [TaskFormResolverInterface::class, ContractBindings::class],
 		TaskProjectionService::class => [TaskProjectionServiceInterface::class, ContractBindings::class],
@@ -169,14 +187,20 @@ final class D12InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * Both are Db code that constructs the class with `new` (the schema entity
 	 * and a schema-mapper refusal helper are not container-built); they are
+	 * AuditTrailExportJob is audit code, outside this lane; it hands the
+	 * Both are Db code that constructs the class with `new` (the schema entity
+	 * concrete recorder to its RecordedQueuedJob parent, which now takes the
+	 * interface. MaintenanceModeMiddleware is touched by an open pull request,
 	 * left as they are.
+	 * so it is left until that lands.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
 		ExtendingFormDeclaration::class => ['Db/SchemaMapper/PropertyDeclarationRefusals.php'],
+		JobRunRecorder::class => ['BackgroundJob/AuditTrailExportJob.php'],
+		MaintenanceModeService::class => ['Middleware/MaintenanceModeMiddleware.php'],
 		UniqueConstraintEvaluator::class => ['Db/Schema.php'],
 	];
 

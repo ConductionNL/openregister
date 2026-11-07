@@ -41,6 +41,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -96,18 +100,10 @@ class SaveObjectsBulkSideEffectsTest extends TestCase {
 			);
 
 		$this->handler = new SaveObjects(
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->registerMapper,
-			$this->createMock(SaveObject::class),
-			$this->userSession,
-			$this->organisationService,
-			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			$this->eventDispatcher,
-			$this->auditTrailMapper
+			stores: new BulkSaveStores(objectEntityMapper: $this->objectMapper, schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->userSession, organisationService: $this->organisationService, groupManager: null),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->eventDispatcher, auditTrailMapper: $this->auditTrailMapper),
+			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null)
 		);
 
 		// Clear static caches between tests.

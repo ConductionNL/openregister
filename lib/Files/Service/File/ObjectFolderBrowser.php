@@ -26,7 +26,7 @@ use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -81,11 +81,11 @@ class ObjectFolderBrowser {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService               $fileService  Resolves the object folder and runs the file pipeline.
+	 * @param FileServiceInterface               $fileService  Resolves the object folder and runs the file pipeline.
 	 * @param FileRestrictionGuard|null $restrictions Leaves out a restricted file the caller is not admitted to. Null only in legacy fixtures.
 	 */
 	public function __construct(
-		private readonly FileService $fileService,
+		private readonly FileServiceInterface $fileService,
 		private readonly ?FileRestrictionGuard $restrictions = null,
 	) {
 	}//end __construct()

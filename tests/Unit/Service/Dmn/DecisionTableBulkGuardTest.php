@@ -25,6 +25,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -179,19 +183,10 @@ class DecisionTableBulkGuardTest extends TestCase {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->expects($this->never())->method('bulkUpsert');
 		$service = new SaveObjects(
-			$mapper,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SaveObject::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			null,
-			null,
-			new BulkRowRules(decisionTables: $this->guard([$other]))
+			stores: new BulkSaveStores(objectEntityMapper: $mapper, schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: null),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: null, auditTrailMapper: null),
+			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null, rowRules: new BulkRowRules(decisionTables: $this->guard([$other])))
 		);
 
 		$result = $service->saveObjects([3 => $this->table()]);

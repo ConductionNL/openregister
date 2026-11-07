@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,7 +42,7 @@ class ActivityEntries {
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param LoggerInterface $logger The logger.
 	 * @param SchemaMapperInterface|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
-	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
+	 * @param DeepLinkRegistryServiceInterface|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
@@ -51,7 +51,7 @@ class ActivityEntries {
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private ?SchemaMapperInterface $schemaMapper = null,
-		private ?DeepLinkRegistryService $deepLinks = null,
+		private ?DeepLinkRegistryServiceInterface $deepLinks = null,
 	) {
 	}//end __construct()
 

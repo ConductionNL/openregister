@@ -34,6 +34,9 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionDelivery;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionPrincipals;
+use OCA\OpenRegister\Notifications\Service\Timeline\MentionReadCheck;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -143,15 +146,10 @@ class EntryMentionServiceTest extends TestCase {
 		$this->notifications->method('createNotification')->willReturn($notification);
 
 		$this->service = new EntryMentionService(
-			$this->watchers,
-			$this->userManager,
-			$this->userSession,
-			$this->schemaMapper,
-			$this->permissions,
-			$this->notifications,
-			$this->createMock(LoggerInterface::class),
-			$this->deepLinks,
-			$this->urls
+			new MentionPrincipals($this->watchers, $this->userManager, $this->userSession),
+			new MentionReadCheck($this->schemaMapper, $this->permissions),
+			new MentionDelivery($this->notifications, $this->deepLinks, $this->urls),
+			$this->createMock(LoggerInterface::class)
 		);
 	}
 

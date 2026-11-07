@@ -47,6 +47,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
+use OCA\OpenRegister\Service\Form\FormSubmitKeeping;
+use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
 
 /**
  * The submit contract against real stores, a real opis validator and a fake creating listener.
@@ -261,17 +264,23 @@ class FormSubmitServiceTest extends TestCase {
 		$this->uploads = new FormUploadStore(appData: $appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
 
 		$this->service = new FormSubmitService(
-			registers: $registers,
-			schemas: $schemas,
-			validator: $validateObject,
-			objects: $this->objects,
-			findings: new FormPayloadFindings(),
-			keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: $this->locks, l10n: $l10n),
-			uploads: $this->uploads,
-			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class),
-			events: $events,
-			time: $time
+			destinations: new FormSubmitDestinations(
+				registers: $registers,
+				schemas: $schemas,
+				validator: $validateObject,
+				objects: $this->objects
+			),
+			keeping: new FormSubmitKeeping(
+				findings: new FormPayloadFindings(),
+				keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: $this->locks, l10n: $l10n),
+				uploads: $this->uploads
+			),
+			platform: new FormSubmitPlatform(
+				l10n: $l10n,
+				logger: $this->createMock(LoggerInterface::class),
+				events: $events,
+				time: $time
+			)
 		);
 	}//end setUp()
 

@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactServiceInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -39,7 +39,7 @@ final class ContactsDomain {
 	 * @param ContactServiceInterface $contactService   Contact service
 	 * @param ObjectOperationsInterface           $objectService    Object service
 	 * @param ContactMatcherInterface $matchingService  Contact matching service
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
+	 * @param DeepLinkRegistryServiceInterface $deepLinkRegistry Deep link registry
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ContactsDomain {
 		public readonly ContactServiceInterface $contactService,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly ContactMatcherInterface $matchingService,
-		public readonly DeepLinkRegistryService $deepLinkRegistry,
+		public readonly DeepLinkRegistryServiceInterface $deepLinkRegistry,
 	) {
 	}//end __construct()
 }//end class

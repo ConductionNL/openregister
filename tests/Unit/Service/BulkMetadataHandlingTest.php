@@ -34,6 +34,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -169,13 +173,10 @@ class BulkMetadataHandlingTest extends TestCase {
 
 		// Create the SaveObjects handler with mocked dependencies.
 		$this->saveObjectsHandler = new SaveObjects(
-			$this->mockObjectMapper,
-			$this->mockSchemaMapper,
-			$this->mockRegisterMapper,
-			$this->mockSaveHandler,
-			$this->mockUserSession,
-			$this->mockOrganisationService,
-			$this->createMock(LoggerInterface::class)
+			stores: new BulkSaveStores(objectEntityMapper: $this->mockObjectMapper, schemaMapper: $this->mockSchemaMapper, registerMapper: $this->mockRegisterMapper, saveHandler: $this->mockSaveHandler),
+			session: new BulkSaveSession(userSession: $this->mockUserSession, organisationService: $this->mockOrganisationService),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks()
 		);
 
 	}//end setUp()

@@ -23,6 +23,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -78,13 +82,10 @@ class SaveObjectsSingleSchemaPreparationGoldenTest extends TestCase {
 		);
 
 		$handler = new SaveObjects(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$save,
-			$session,
-			$organisations,
-			$this->createMock(LoggerInterface::class)
+			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $save),
+			session: new BulkSaveSession(userSession: $session, organisationService: $organisations),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks()
 		);
 
 		$register = new Register();

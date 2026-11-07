@@ -52,7 +52,6 @@ use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;

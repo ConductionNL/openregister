@@ -55,35 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/register-descriptor-admin/spec.md
  */
-class RegisterDescriptorService {
-	/**
-	 * The register exists at the version the app ships.
-	 *
-	 * @var string
-	 */
-	public const STATE_CURRENT = 'current';
-
-	/**
-	 * The register exists but predates the descriptor the app now ships.
-	 *
-	 * @var string
-	 */
-	public const STATE_BEHIND = 'behind';
-
-	/**
-	 * The app declares a register that does not exist on this instance.
-	 *
-	 * @var string
-	 */
-	public const STATE_ABSENT = 'absent';
-
-	/**
-	 * Who asked for a re-import from the command line.
-	 *
-	 * @var string
-	 */
-	public const VIA_OCC = 'occ openregister:descriptors:list --import';
-
+class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	/**
 	 * The re-import ran one descriptor file, for an app without one base document.
 	 *

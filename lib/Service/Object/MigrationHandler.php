@@ -46,27 +46,75 @@ use Psr\Log\LoggerInterface;
  */
 class MigrationHandler {
 	/**
+	 * Mapper for object entities.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Handler for utility operations.
+	 *
+	 * @var UtilityHandler
+	 */
+	private readonly UtilityHandler $utilityHandler;
+
+	/**
+	 * Handler for data manipulation.
+	 *
+	 * @var DataManipulationHandler
+	 */
+	private readonly DataManipulationHandler $dataManipHandler;
+
+	/**
+	 * Moves an object to its target address.
+	 *
+	 * @var MoveObject
+	 */
+	private readonly MoveObject $mover;
+
+	/**
+	 * Finds the relations in the mapped data.
+	 *
+	 * @var SaveObjectInterface
+	 */
+	private readonly SaveObjectInterface $relationScanner;
+
+	/**
+	 * Records what the mapping changed.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrail;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for MigrationHandler.
 	 *
-	 * @param MagicMapperInterface $objectMapper Mapper for object entities.
-	 * @param UtilityHandler $utilityHandler Handler for utility operations.
-	 * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
-	 * @param MoveObject $mover Moves an object to its target address.
-	 * @param SaveObjectInterface $relationScanner Finds the relations in the mapped data.
-	 * @param AuditTrailMapperInterface $auditTrail Records what the mapping changed.
-	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param MigrationStorage $storage Reads, moves and records the objects.
+	 * @param MigrationMapping $mapping Resolves the addresses and maps the data.
+	 * @param LoggerInterface  $logger  Logger for logging operations.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly UtilityHandler $utilityHandler,
-		private readonly DataManipulationHandler $dataManipHandler,
-		private readonly MoveObject $mover,
-		private readonly SaveObjectInterface $relationScanner,
-		private readonly AuditTrailMapperInterface $auditTrail,
-		private readonly LoggerInterface $logger,
+		MigrationStorage $storage,
+		MigrationMapping $mapping,
+		LoggerInterface $logger,
 	) {
+		$this->objectMapper = $storage->objectMapper;
+		$this->mover = $storage->mover;
+		$this->auditTrail = $storage->auditTrail;
+		$this->utilityHandler = $mapping->utilityHandler;
+		$this->dataManipHandler = $mapping->dataManipHandler;
+		$this->relationScanner = $mapping->relationScanner;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

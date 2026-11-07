@@ -36,6 +36,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -113,14 +116,10 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new ReferentialIntegrityService(
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			objectEntityMapper: $this->objectMapper,
-			auditTrailMapper: $this->auditTrailMapper,
-			logger: $this->logger,
-			db: $this->createMock(IDBConnection::class),
-			cacheFactory: $this->createNullCacheFactory(),
-			archivalGuard: $this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(schemaMapper: $this->schemaMapper, registerMapper: $this->registerMapper, cacheFactory: $this->createNullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->logger
 		);
 
 		$this->reflection = new \ReflectionClass($this->service);

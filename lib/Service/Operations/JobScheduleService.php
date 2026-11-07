@@ -42,7 +42,7 @@ use OCP\IConfig;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-recurring-jobs-schedule-is-administered-and-failures-raise-an-alert-req-aoc-003
  */
-class JobScheduleService {
+class JobScheduleService implements JobScheduleServiceInterface {
 
 	/**
 	 * The app the administered schedules belong to.
