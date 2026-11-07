@@ -140,12 +140,8 @@ class ObjectShareLinkController extends Controller {
 		$this->shareManager = $services->shareManager;
 		$this->objectService = $services->objectService;
 		$this->reader = $services->reader;
-		$this->rejections = new ObjectShareLinkThrottle(
-			throttler: $services->throttler,
-			logger: $logger,
-			action: self::THROTTLE_ACTION,
-			label: 'ObjectShareLinkController'
-		);
+		$label = 'ObjectShareLinkController';
+		$this->rejections = new ObjectShareLinkThrottle(throttler: $services->throttler, logger: $logger, action: self::THROTTLE_ACTION, label: $label);
 	}//end __construct()
 
 	/**
