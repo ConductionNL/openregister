@@ -28,9 +28,9 @@ try {
 	$container = $app->getContainer();
 
 	// Get services.
-	$chatService = $container->get(\OCA\OpenRegister\Service\ChatService::class);
-	$conversationMapper = $container->get(\OCA\OpenRegister\Db\ConversationMapper::class);
-	$agentMapper = $container->get(\OCA\OpenRegister\Db\AgentMapper::class);
+	$chatService = $container->get(\OCA\OpenRegister\Mcp\Service\ChatService::class);
+	$conversationMapper = $container->get(\OCA\OpenRegister\Mcp\Db\ConversationMapper::class);
+	$agentMapper = $container->get(\OCA\OpenRegister\Mcp\Db\AgentMapper::class);
 	$organisationService = $container->get(\OCA\OpenRegister\Service\OrganisationService::class);
 
 	echo "=== RAG CHAT TEST ===\n\n";
@@ -49,7 +49,7 @@ try {
 	echo "Step 2: Creating conversation...\n";
 	$organisation = $organisationService->getActiveOrganisation();
 
-	$conversation = new \OCA\OpenRegister\Db\Conversation();
+	$conversation = new \OCA\OpenRegister\Mcp\Db\Conversation();
 	$conversation->setUserId('admin');
 	$conversation->setOrganisation($organisation?->getUuid());
 	$conversation->setAgentId($agent->getId());

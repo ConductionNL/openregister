@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -83,6 +84,7 @@ use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
 use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\ResultNameCollector;
 use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use OCA\OpenRegister\Service\Object\ObjectDateValues;
 use OCA\OpenRegister\Service\Object\PatchDataMerge;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -2112,63 +2114,73 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         bool $_dedupOverride=false,
         ?string $_owner=null
     ): ObjectEntity {
-        // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        //
-        // See restoreScopeContext() for the contract and for openregister#3408,
-        // the defect this leak produced. A caller that anchored the service with
-        // setRegister()/setSchema() and then saves WITHOUT naming a scope is
-        // unaffected: the snapshot and the restore are the same context.
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        return $this->saveAtTransitionBoundary(
+            object: $object,
+            options: [
+                'extend'         => $extend,
+                'register'       => $register,
+                'schema'         => $schema,
+                'uuid'           => $uuid,
+                '_rbac'          => $_rbac,
+                '_multitenancy'  => $_multitenancy,
+                'silent'         => $silent,
+                '_validation'    => $_validation,
+                'uploadedFiles'  => $uploadedFiles,
+                'currentUser'    => $currentUser,
+                'failIfExists'   => $failIfExists,
+                '_unowned'       => $_unowned,
+                '_dedupOverride' => $_dedupOverride,
+                '_owner'         => $_owner,
+            ]
+        );
+    }//end saveObject()
 
-        // OPEN THE AUTOMATIC-TRANSITION BOUNDARY. Leaving the OUTERMOST one is
-        // the first moment at which this write is finished in every sense that
-        // matters: the object row, its audit row, and the second update a
-        // file-bearing save makes from an in-memory entity. A move applied any
-        // earlier is lost to that second write. See AutoTransitionPass.
+    /**
+     * Runs one save inside the automatic-transition boundary, with its scope kept local.
+     *
+     * A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER. See restoreScopeContext()
+     * for the contract and for openregister#3408, the defect this leak produced. A caller
+     * that anchored the service with setRegister()/setSchema() and then saves WITHOUT
+     * naming a scope is unaffected: the snapshot and the restore are the same context.
+     *
+     * Leaving the OUTERMOST boundary is the first moment at which this write is finished
+     * in every sense that matters: the object row, its audit row, and the second update a
+     * file-bearing save makes from an in-memory entity. A move applied any earlier is lost
+     * to that second write. See AutoTransitionPass.
+     *
+     * @param array|ObjectEntity $object  The object to save.
+     * @param array              $options The arguments of the saveObject() call.
+     *
+     * @phpstan-param array<array-key, mixed>|ObjectEntity $object
+     * @phpstan-param array<string, mixed>                 $options
+     * @psalm-param   array<array-key, mixed>|ObjectEntity $object
+     * @psalm-param   array<string, mixed>                 $options
+     *
+     * @return ObjectEntity The rendered object, or the automatic move's result when one applied.
+     *
+     * @spec exclude Private step of saveObject(); write behaviour owned by the save handler.
+     */
+    private function saveAtTransitionBoundary(array | ObjectEntity $object, array $options): ObjectEntity
+    {
         $this->autoTransitions?->enter();
-        $automatic = [];
-        $result    = null;
 
         try {
-            $result = $this->saveWithinScope(
-                object: $object,
-                options: [
-                    'extend'         => $extend,
-                    'register'       => $register,
-                    'schema'         => $schema,
-                    'uuid'           => $uuid,
-                    '_rbac'          => $_rbac,
-                    '_multitenancy'  => $_multitenancy,
-                    'silent'         => $silent,
-                    '_validation'    => $_validation,
-                    'uploadedFiles'  => $uploadedFiles,
-                    'currentUser'    => $currentUser,
-                    'failIfExists'   => $failIfExists,
-                    '_unowned'       => $_unowned,
-                    '_dedupOverride' => $_dedupOverride,
-                    '_owner'         => $_owner,
-                ]
+            $result = $this->preservingScope(
+                operation: fn (): ObjectEntity => $this->saveWithinScope(object: $object, options: $options)
             );
         } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-
             // Always in a `finally`, never conditionally: an unbalanced enter
             // would leave the pass believing a boundary is still open, and
             // nothing in this request would ever drain again.
             $automatic = ($this->autoTransitions?->leave() ?? []);
         }
 
-        // No null guard on $result here. PHPStan proves the try block either
-        // assigns it or throws, so a guard would be dead code, and dead code
-        // that only static analysis can see is exactly what the baseline is
-        // for tracking rather than growing.
         if ($this->autoTransitions === null) {
             return $result;
         }
 
         return $this->autoTransitions->preferAutomatic(saved: $result, applied: $automatic);
-    }//end saveObject()
+    }//end saveAtTransitionBoundary()
 
     /**
      * Run one save inside the scope saveObject() opened: check, prepare, persist, invalidate, render.
@@ -2186,11 +2198,36 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      */
     private function saveWithinScope(array | ObjectEntity $object, array $options): ObjectEntity
     {
+        $run = $this->openSaveRun(object: $object, options: $options);
+        $this->authoriseSaveTarget(run: $run);
+        $this->cascadeAndPrepareSave(run: $run);
+
+        return $this->renderSave(run: $run, saved: $this->persistSave(run: $run));
+    }//end saveWithinScope()
+
+    /**
+     * Sets the context of one save and reads its identifier.
+     *
+     * The folder-access revalidation cache is bound to this single save call (not the
+     * whole FileService/request lifetime), so a cascade save that moves or trashes a
+     * folder mid-request can't be waved through on a stale "accessible" verdict from an
+     * earlier write.
+     *
+     * @param array|ObjectEntity $object  The object to save.
+     * @param array              $options The arguments of the saveObject() call.
+     *
+     * @phpstan-param array<array-key, mixed>|ObjectEntity $object
+     * @phpstan-param array<string, mixed>                 $options
+     * @psalm-param   array<array-key, mixed>|ObjectEntity $object
+     * @psalm-param   array<string, mixed>                 $options
+     *
+     * @return ObjectSaveRun The save, with its normalised object and identifier.
+     *
+     * @spec exclude Private step of saveObject(); write behaviour owned by the save handler.
+     */
+    private function openSaveRun(array | ObjectEntity $object, array $options): ObjectSaveRun
+    {
         $this->discardPendingSchemaRef();
-        // Bound the folder-access revalidation cache to this single save call
-        // (not the whole FileService/request lifetime), so a cascade save that
-        // moves or trashes a folder mid-request can't be waved through on a
-        // stale "accessible" verdict from an earlier write.
         $this->fileService->resetFolderAccessRevalidationCache();
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
@@ -2199,51 +2236,152 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         [$object, $uuid] = $this->extractUuidAndNormalizeObject(object: $object, uuid: $options['uuid']);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
-        // The write continues with the row the permission check ran on. The save
-        // looks its identifier up again without the caller's scope, where the
-        // same identifier can name another row (an id that is another row's uuid,
-        // a slug that is another row's id).
-        $checked = $this->checkSavePermissions(
-            uuid: $uuid,
-            _rbac: $options['_rbac'],
-            object: $object,
-            _multitenancy: $options['_multitenancy']
-        );
-        if ($checked !== null) {
-            $uuid = $checked;
-        } else if ($uuid !== null && $options['_rbac'] === true && $this->currentSchema !== null) {
-            // Nothing the caller may see answers to this identifier: the write may only insert.
-            $options['failIfExists'] = true;
-        }
+
+        return new ObjectSaveRun(object: $object, uuid: $uuid, options: $options);
+    }//end openSaveRun()
+
+    /**
+     * Checks the caller's rights on the save target and settles what the write may do.
+     *
+     * The write continues with the row the permission check ran on. The save looks its
+     * identifier up again without the caller's scope, where the same identifier can name
+     * another row (an id that is another row's uuid, a slug that is another row's id).
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); the rules live in checkSavePermissions() and guardWriteTarget().
+     */
+    private function authoriseSaveTarget(ObjectSaveRun $run): void
+    {
+        $this->bindSaveToCheckedRow(run: $run);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
-        $options['failIfExists'] = $this->guardWriteTarget(uuid: $uuid, failIfExists: $options['failIfExists']);
+        $run->options['failIfExists'] = $this->guardWriteTarget(
+            uuid: $run->uuid,
+            failIfExists: $run->options['failIfExists']
+        );
 
-        // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
-        $uuidWasNull = ($uuid === null);
+        // A null identifier here is what tells a create from a user-provided UUID.
+        $run->isCreate = ($run->uuid === null);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
-        // Nested objects the cascade creates are checked for create rights unless this save runs with RBAC off.
-        $this->saveHandler->enterCascadeScope(_rbac: $options['_rbac']);
+    }//end authoriseSaveTarget()
+
+    /**
+     * Runs the permission check and points the save at the row it ran on.
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); the rules live in checkSavePermissions().
+     */
+    private function bindSaveToCheckedRow(ObjectSaveRun $run): void
+    {
+        $checked = $this->checkSavePermissions(
+            uuid: $run->uuid,
+            _rbac: $run->options['_rbac'],
+            object: $run->object,
+            _multitenancy: $run->options['_multitenancy']
+        );
+        if ($checked !== null) {
+            $run->uuid = $checked;
+        } else if ($run->uuid !== null && $run->options['_rbac'] === true && $this->currentSchema !== null) {
+            // Nothing the caller may see answers to this identifier: the write may only insert.
+            $run->options['failIfExists'] = true;
+        }
+    }//end bindSaveToCheckedRow()
+
+    /**
+     * Runs the cascade, prepares the object and clears what the top-level save must not inherit.
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); write behaviour owned by the save handler.
+     */
+    private function cascadeAndPrepareSave(ObjectSaveRun $run): void
+    {
+        $this->cascadeSave(run: $run);
+
+        $run->object = $this->prepareObjectForSave(
+            object: $run->object,
+            write: ['uuid' => $run->uuid, 'isCreate' => $run->isCreate]
+        );
+
+        $this->settleSaveFolder(run: $run);
+    }//end cascadeAndPrepareSave()
+
+    /**
+     * Checks the object's folder and clears what the top-level save must not inherit.
+     *
+     * Request-scoped caches are cleared before a new top-level save operation, so cascade
+     * operations benefit from caching while stale data is avoided.
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); the folder rule lives in ensureObjectFolder().
+     */
+    private function settleSaveFolder(ObjectSaveRun $run): void
+    {
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
+        $run->options['folderId'] = $this->ensureObjectFolder(
+            uuid: $run->uuid,
+            currentUser: $run->options['currentUser']
+        );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
+
+        $this->saveHandler->clearAllCaches();
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
+    }//end settleSaveFolder()
+
+    /**
+     * Saves the nested objects of this save.
+     *
+     * Nested objects the cascade creates are checked for create rights unless this save
+     * runs with RBAC off.
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); the create rule lives in the save handler.
+     */
+    private function cascadeSave(ObjectSaveRun $run): void
+    {
+        $this->saveHandler->enterCascadeScope(_rbac: $run->options['_rbac']);
         try {
-            [$object, $uuid] = $this->handleCascadingWithContextPreservation(object: $object, uuid: $uuid);
+            [$run->object, $run->uuid] = $this->handleCascadingWithContextPreservation(
+                object: $run->object,
+                uuid: $run->uuid
+            );
         } finally {
             $this->saveHandler->leaveCascadeScope();
         }
+    }//end cascadeSave()
 
-        $object = $this->prepareObjectForSave(object: $object, write: ['uuid' => $uuid, 'isCreate' => $uuidWasNull]);
-
-        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-        $options['folderId'] = $this->ensureObjectFolder(uuid: $uuid, currentUser: $options['currentUser']);
-        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
-
-        // Clear request-scoped caches before starting a new top-level save operation.
-        // This ensures cascade operations benefit from caching while avoiding stale data.
-        $this->saveHandler->clearAllCaches();
-        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
-
-        $savedObject = $this->persistObject(object: $object, options: ['uuid' => $uuid] + $options);
+    /**
+     * Writes the object and drops the caches it touches.
+     *
+     * Lazy folder creation: no file-storage folder is created here. The folder is created
+     * on demand on the first upload, which keeps empty folders out of the Files tree and
+     * system-created objects out of folders a later editor cannot access.
+     *
+     * @param ObjectSaveRun $run The save.
+     *
+     * @return ObjectEntity The saved object.
+     *
+     * @spec exclude Private step of saveObject(); write behaviour owned by the save handler.
+     */
+    private function persistSave(ObjectSaveRun $run): ObjectEntity
+    {
+        $savedObject = $this->persistObject(object: $run->object, options: ['uuid' => $run->uuid] + $run->options);
         $this->cacheInvalidator()->afterSave(
             saved: new SavedObjectScope(
                 object: $savedObject,
@@ -2252,25 +2390,36 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             )
         );
 
-        // Lazy folder creation: no file-storage folder is created here. The
-        // folder is created on demand on the first upload, which keeps empty
-        // folders out of the Files tree and system-created objects out of
-        // folders a later editor cannot access.
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
 
+        return $savedObject;
+    }//end persistSave()
+
+    /**
+     * Renders the saved object for the caller.
+     *
+     * @param ObjectSaveRun $run   The save.
+     * @param ObjectEntity  $saved The saved object.
+     *
+     * @return ObjectEntity The rendered object.
+     *
+     * @spec exclude Private step of saveObject(); render behaviour owned by RenderObject.
+     */
+    private function renderSave(ObjectSaveRun $run, ObjectEntity $saved): ObjectEntity
+    {
         $renderedObject = $this->renderHandler->renderEntity(
-            entity: $savedObject,
-            _extend: $options['extend'] ?? [],
+            entity: $saved,
+            _extend: $run->options['extend'] ?? [],
             registers: null,
             schemas: null,
-            _rbac: $options['_rbac'],
-            _multitenancy: $options['_multitenancy']
+            _rbac: $run->options['_rbac'],
+            _multitenancy: $run->options['_multitenancy']
         );
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
         \OCA\OpenRegister\Service\WritePhaseProbe::flush();
 
         return $renderedObject;
-    }//end saveWithinScope()
+    }//end renderSave()
 
     /**
      * Refuse a write the target does not take, and say whether the write must insert only.
@@ -2351,21 +2500,65 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
         }
 
-        $object = $this->saveHandler->applyAlwaysDefaults(schema: $this->currentSchema, data: $object);
-        if ($write['isCreate'] === true) {
-            $object = $this->saveHandler->applyExpressionDefaults(schema: $this->currentSchema, data: $object);
-        }
-
-        $object = $this->normalizeDateValues(object: $object);
-        if ($write['isCreate'] === true) {
-            $object = $this->saveHandler->seedLifecycleFieldOnCreate(schema: $this->currentSchema, data: $object);
-        }
+        $object = $this->applySaveDefaults(object: $object, isCreate: $write['isCreate']);
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
         if ($write['isCreate'] === false) {
             $object = $this->restoreMaskedReveals(object: $object, uuid: $write['uuid']);
         }
 
+        $this->assertSaveIsValid(object: $object, write: $write);
+        return $object;
+    }//end prepareObjectForSave()
+
+    /**
+     * Fills the defaults of the current schema and normalises date values.
+     *
+     * @param array $object   The object data.
+     * @param bool  $isCreate Whether this save creates the object.
+     *
+     * @phpstan-param array<array-key, mixed> $object
+     * @psalm-param   array<array-key, mixed> $object
+     *
+     * @return array The object data with its defaults.
+     *
+     * @phpstan-return array<array-key, mixed>
+     * @psalm-return   array<array-key, mixed>
+     *
+     * @spec exclude Private step of saveObject(); defaults owned by the save handler.
+     */
+    private function applySaveDefaults(array $object, bool $isCreate): array
+    {
+        $object = $this->saveHandler->applyAlwaysDefaults(schema: $this->currentSchema, data: $object);
+        if ($isCreate === true) {
+            $object = $this->saveHandler->applyExpressionDefaults(schema: $this->currentSchema, data: $object);
+        }
+
+        $object = $this->normalizeDateValues(object: $object);
+        if ($isCreate === true) {
+            $object = $this->saveHandler->seedLifecycleFieldOnCreate(schema: $this->currentSchema, data: $object);
+        }
+
+        return $object;
+    }//end applySaveDefaults()
+
+    /**
+     * Refuses data the schema does not allow on this write.
+     *
+     * @param array $object The object data.
+     * @param array $write  The `uuid` and `isCreate` of this write.
+     *
+     * @phpstan-param array<array-key, mixed>                $object
+     * @phpstan-param array{uuid: ?string, isCreate: bool}   $write
+     * @psalm-param   array<array-key, mixed>                $object
+     * @psalm-param   array{uuid: ?string, isCreate: bool}   $write
+     *
+     * @return void
+     *
+     * @spec exclude Private step of saveObject(); the rules live in the enforce and validate units it calls.
+     */
+    private function assertSaveIsValid(array $object, array $write): void
+    {
         $this->enforceDeclaredShapes(object: $object);
 
         $updateUuid = $write['uuid'];
@@ -2378,8 +2571,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
 
         $this->enforceReadOnlyOnUpdate(object: $object, uuid: $write['uuid']);
         $this->enforceLensesAreReadOnly(object: $object);
-        return $object;
-    }//end prepareObjectForSave()
+    }//end assertSaveIsValid()
 
     /**
      * Hand the prepared object to the SaveObject handler.
@@ -3651,6 +3843,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             );
 
             $this->applyDeleteScope(register: $register, schema: $schema);
+
+            if ($_retentionSweep === true) {
+                return (new RetentionDestruction())->run(fn (): bool => $this->deleteWithinScope(request: $request, permanent: $permanent));
+            }
 
             return $this->deleteWithinScope(request: $request, permanent: $permanent);
         } finally {
@@ -6916,139 +7112,174 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         ?IUser $currentUser=null
     ): ObjectEntity {
         // A PATCH SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
-        // The saveObject() it delegates to now restores too, so without this the
-        // only context left behind would be the one patchObject() set itself.
+        // The saveObject() it delegates to restores too, so without this the only
+        // context left behind would be the one patchObject() set itself.
         // See restoreScopeContext().
-        $previousRegister = $this->currentRegister;
-        $previousSchema   = $this->currentSchema;
+        return $this->preservingScope(
+            operation: function () use ($objectId, $data, $register, $schema, $_rbac, $_multitenancy, $currentUser): ObjectEntity {
+                // Resolve the caller's scope onto the service context first, so the
+                // lookup below and the save that follows both see the same one.
+                $this->setContextFromParameters(register: $register, schema: $schema);
 
-        try {
-            // Resolve the caller's scope onto the service context first, so the
-            // lookup below and the save that follows both see the same one.
-            $this->setContextFromParameters(
-                register: $register,
-                schema: $schema
-            );
+                $existing = $this->findPatchTarget(
+                    objectId: $objectId,
+                    target: new ObjectFindTarget(register: $register, schema: $schema)
+                );
 
-            // Scoped lookup when both halves of the scope are known — that targets
-            // exactly one magic table. Otherwise the legacy cross-table resolve,
-            // which every existing caller relies on. Note the identifier is passed
-            // through unchanged: casting a uuid to int resolves to an unrelated row.
-            $scopedRegister = null;
-            $scopedSchema   = null;
-            if ($register !== null && $schema !== null) {
-                $scopedRegister = $this->currentRegister;
-                $scopedSchema   = $this->currentSchema;
+                // Address the save at the object we actually resolved, not at whatever
+                // form of the identifier the caller happened to hold.
+                $merged       = $this->patchedBody(existing: $existing, data: $data);
+                $merged['id'] = ($existing->getUuid() ?? $objectId);
+
+                return $this->saveObject(
+                    object: $merged,
+                    register: $register,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    currentUser: $currentUser
+                );
             }
-
-            $existing = $this->objectMapper->find(
-                identifier: $objectId,
-                register: $scopedRegister,
-                schema: $scopedSchema
-            );
-
-            $merged = (new PatchDataMerge())->merge(
-                stored: (array) $existing->getObject(),
-                patch: $data
-            );
-
-            // The read decoded, so the write has to re-encode. A `type: string`
-            // property whose stored value looks like JSON comes back from
-            // getObject() as an ARRAY (SchemaTypeConverter::convertString), and
-            // feeding that array back in makes validation refuse a patch that
-            // never mentioned the property. Only keys the caller did NOT supply
-            // are restored — see restoreStringTypedValues() for why.
-            $merged = $this->restoreStringTypedValues(
-                data: $merged,
-                existing: $existing,
-                suppliedKeys: array_keys($data)
-            );
-
-            // Address the save at the object we actually resolved, not at whatever
-            // form of the identifier the caller happened to hold.
-            $merged['id'] = ($existing->getUuid() ?? $objectId);
-
-            return $this->saveObject(
-                object: $merged,
-                register: $register,
-                schema: $schema,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                currentUser: $currentUser
-            );
-        } finally {
-            $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
-        }
+        );
     }//end patchObject()
 
     /**
-     * Restore the stored form of string-typed properties the read path decoded.
+     * Finds the stored object a patch applies to.
      *
-     * Thin resolver around `SchemaTypeConverter::restoreStringTypedValues()`,
-     * which owns the rule. All this does is find the schema whose property
-     * declarations say which keys are string-typed.
+     * A scoped lookup when both halves of the scope are known: that targets exactly one
+     * magic table. Otherwise the legacy cross-table resolve, which every existing caller
+     * relies on. The identifier is passed through unchanged: casting a uuid to int
+     * resolves to an unrelated row.
      *
-     * The schema lookup runs with RBAC and multitenancy off: it reads type
-     * declarations to persist an object correctly, not data on the caller's
-     * behalf, and `saveObject()` still applies every check to the write itself.
-     * Leaving them on would make the repair depend on the caller's schema
-     * permissions, so the defect would come back for exactly the callers least
-     * able to diagnose it.
+     * @param string           $objectId The identifier the caller holds.
+     * @param ObjectFindTarget $target   The register and schema the call names.
      *
-     * If the schema or the converter cannot be resolved the data is returned
-     * unchanged, which leaves the pre-existing loud validation refusal in
-     * place. That is the intended failure direction: never swallow, never
-     * silently rewrite.
+     * @return ObjectEntity The stored object.
      *
-     * @param array        $data         The merged object data about to be saved.
-     * @param ObjectEntity $existing     The object as it was read.
-     * @param array        $suppliedKeys Keys the caller actually sent.
+     * @spec exclude Private step of patchObject(); the rights are checked by the saveObject() it ends in.
+     */
+    private function findPatchTarget(string $objectId, ObjectFindTarget $target): ObjectEntity
+    {
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($target->register !== null && $target->schema !== null) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        return $this->objectMapper->find(
+            identifier: $objectId,
+            register: $scopedRegister,
+            schema: $scopedSchema
+        );
+    }//end findPatchTarget()
+
+    /**
+     * Merges a patch over the stored data and re-encodes what the read decoded.
      *
-     * @return array The data with untouched string-typed JSON values restored.
+     * A `type: string` property whose stored value looks like JSON comes back from
+     * getObject() as an ARRAY (SchemaTypeConverter::convertString), and feeding that array
+     * back in makes validation refuse a patch that never mentioned the property. Only keys
+     * the caller did NOT supply are restored: a value the caller sent is theirs, and the
+     * write has to judge it as sent.
+     *
+     * @param ObjectEntity $existing The stored object.
+     * @param array        $data     The fields the caller supplied.
+     *
+     * @phpstan-param array<string, mixed> $data
+     * @psalm-param   array<string, mixed> $data
+     *
+     * @return array The body to save.
+     *
+     * @phpstan-return array<string, mixed>
+     * @psalm-return   array<string, mixed>
+     *
+     * @spec exclude Private step of patchObject(); merge behaviour owned by PatchDataMerge.
+     */
+    private function patchedBody(ObjectEntity $existing, array $data): array
+    {
+        $merged = (new PatchDataMerge())->merge(stored: (array) $existing->getObject(), patch: $data);
+
+        $restorer = $this->stringTypeRestorer(existing: $existing);
+        if ($restorer === null) {
+            return $merged;
+        }
+
+        return $restorer['converter']->restoreStringTypedValues(
+            data: $merged,
+            properties: ($restorer['schema']->getProperties() ?? []),
+            suppliedKeys: array_keys($data)
+        );
+    }//end patchedBody()
+
+    /**
+     * The schema and converter that restore string-typed values, when both can be had.
+     *
+     * `SchemaTypeConverter::restoreStringTypedValues()` owns the rule. All this does is
+     * find the schema whose property declarations say which keys are string-typed.
+     *
+     * The schema lookup runs with RBAC and multitenancy off: it reads type declarations
+     * to persist an object correctly, not data on the caller's behalf, and `saveObject()`
+     * still applies every check to the write itself. Leaving them on would make the repair
+     * depend on the caller's schema permissions, so the defect would come back for exactly
+     * the callers least able to diagnose it.
+     *
+     * If the schema or the converter cannot be resolved the data stays unchanged, which
+     * leaves the pre-existing loud validation refusal in place. That is the intended
+     * failure direction: never swallow, never silently rewrite. A container may also answer
+     * with something other than a converter, or with nothing at all; calling a method on
+     * null would turn a patch into a fatal.
+     *
+     * @param ObjectEntity $existing The object as it was read.
+     *
+     * @return array{schema: Schema, converter: SchemaTypeConverter}|null The pair, or null.
      *
      * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
-    private function restoreStringTypedValues(array $data, ObjectEntity $existing, array $suppliedKeys): array
+    private function stringTypeRestorer(ObjectEntity $existing): ?array
     {
         $schemaId = $existing->getSchema();
         if ($schemaId === null) {
-            return $data;
+            return null;
         }
 
         try {
-            $schema = $this->schemaMapper->find(
-                $schemaId,
-                _rbac: false,
-                _multitenancy: false
-            );
-
+            $schema    = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
             $converter = $this->container->get(SchemaTypeConverter::class);
         } catch (\Throwable $restoreError) {
-            $this->logger->warning(
-                message: '[ObjectService] Could not restore string-typed values before the save',
-                context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                    'schema' => $schemaId,
-                    'exception' => $restoreError->getMessage(),
-                ]
-            );
-            return $data;
+            $this->logStringRestoreFailure(schemaId: $schemaId, error: $restoreError);
+            return null;
         }
 
-        // A container may answer with something other than a converter, or with
-        // nothing at all. Returning the data unchanged keeps the pre-existing
-        // refusal; calling a method on null would turn a patch into a fatal.
         if (($converter instanceof SchemaTypeConverter) === false) {
-            return $data;
+            return null;
         }
 
-        return $converter->restoreStringTypedValues(
-            data: $data,
-            properties: ($schema->getProperties() ?? []),
-            suppliedKeys: $suppliedKeys
+        return ['schema' => $schema, 'converter' => $converter];
+    }//end stringTypeRestorer()
+
+    /**
+     * Records that string-typed values could not be restored before a save.
+     *
+     * @param int|string $schemaId The schema of the object.
+     * @param \Throwable $error    What went wrong.
+     *
+     * @return void
+     *
+     * @spec exclude Logging step of patchObject(); no business rule.
+     */
+    private function logStringRestoreFailure(int | string $schemaId, \Throwable $error): void
+    {
+        $this->logger->warning(
+            message: '[ObjectService] Could not restore string-typed values before the save',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'schema' => $schemaId,
+                'exception' => $error->getMessage(),
+            ]
         );
-    }//end restoreStringTypedValues()
+    }//end logStringRestoreFailure()
 
     // =========================================================================
     // MERGE/MIGRATE HANDLER DELEGATION METHODS

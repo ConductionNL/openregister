@@ -830,8 +830,8 @@ class SettingsController extends Controller {
 	private function chunkVectorizationProgress(): array {
 		$progress = ['total' => 0, 'vectorized' => 0];
 		try {
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Db\ChunkMapper::class);
-			if ($chunkMapper instanceof \OCA\OpenRegister\Db\ChunkMapper) {
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface::class);
+			if ($chunkMapper instanceof \OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface) {
 				$progress['total'] = $chunkMapper->countAll();
 				$progress['vectorized'] = $chunkMapper->countVectorized();
 			}

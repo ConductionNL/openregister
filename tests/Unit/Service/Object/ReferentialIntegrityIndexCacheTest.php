@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
  * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityIndexCacheTest extends TestCase {
 
