@@ -70,6 +70,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -193,6 +195,7 @@ final class ContractBindings {
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
+		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
