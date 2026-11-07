@@ -51,6 +51,8 @@ class ExampleSetProofPlace {
 	 * @param int|string $key The key.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function pathOf(int|string $key): string {
 		return ltrim($this->path.'.'.$key, '.');
