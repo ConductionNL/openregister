@@ -1,0 +1,610 @@
+{
+    "upsert new slot, defaults": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "insert(entity)"
+        ],
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "en",
+            "value": "Hello",
+            "status": "draft",
+            "translator": null,
+            "sourceLanguage": null,
+            "updatedIsSet": true
+        }
+    },
+    "upsert new slot, every option": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"de\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "insert(entity)"
+        ],
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "de",
+            "value": "Hallo",
+            "status": "approved",
+            "translator": "alice",
+            "sourceLanguage": "en",
+            "updatedIsSet": true
+        }
+    },
+    "upsert new slot, empty source language and null value": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"fr\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "insert(entity)"
+        ],
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "fr",
+            "value": null,
+            "status": "draft",
+            "translator": null,
+            "sourceLanguage": null,
+            "updatedIsSet": true
+        }
+    },
+    "upsert existing slot keeps status": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "update(entity)"
+        ],
+        "result": {
+            "id": 9,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "en",
+            "value": "New",
+            "status": "approved",
+            "translator": "bob",
+            "sourceLanguage": "nl",
+            "updatedIsSet": true
+        }
+    },
+    "upsert existing slot without status gets draft": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "update(entity)"
+        ],
+        "result": {
+            "id": 9,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "en",
+            "value": "New",
+            "status": "draft",
+            "translator": "bob",
+            "sourceLanguage": "nl",
+            "updatedIsSet": true
+        }
+    },
+    "upsert existing slot overrides status": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()",
+            "update(entity)"
+        ],
+        "result": {
+            "id": 9,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "en",
+            "value": "New",
+            "status": "outdated",
+            "translator": "carol",
+            "sourceLanguage": "de",
+            "updatedIsSet": true
+        }
+    },
+    "findOne found": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": {
+            "id": 9,
+            "objectUuid": "obj-1",
+            "property": "title",
+            "language": "en",
+            "value": "Old",
+            "status": "draft",
+            "translator": "bob",
+            "sourceLanguage": "nl",
+            "updatedIsSet": false
+        }
+    },
+    "findOne missing": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"title\"",
+            "andWhere(eq(property, :p2))",
+            "param :p3 = \"en\"",
+            "andWhere(eq(language, :p3))",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": null
+    },
+    "findByObject": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": [
+            {
+                "id": 9,
+                "objectUuid": "obj-1",
+                "property": "title",
+                "language": "en",
+                "value": "Old",
+                "status": "draft",
+                "translator": "bob",
+                "sourceLanguage": "nl",
+                "updatedIsSet": false
+            },
+            {
+                "id": 9,
+                "objectUuid": "obj-1",
+                "property": "title",
+                "language": "en",
+                "value": "Old",
+                "status": "approved",
+                "translator": "bob",
+                "sourceLanguage": "nl",
+                "updatedIsSet": false
+            }
+        ]
+    },
+    "deleteByObject": {
+        "sql": [
+            "-- new builder",
+            "delete(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "executeStatement()"
+        ],
+        "result": 4
+    },
+    "completeness": {
+        "sql": [
+            "-- new builder",
+            "select(language)",
+            "selectAlias(COUNT(*), count)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "andWhere(isNotNull(value))",
+            "param :p2 = \"\"",
+            "andWhere(neq(value, :p2))",
+            "groupBy(language)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": {
+            "en": 3,
+            "de": 1
+        }
+    },
+    "completeness empty": {
+        "sql": [
+            "-- new builder",
+            "select(language)",
+            "selectAlias(COUNT(*), count)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "andWhere(isNotNull(value))",
+            "param :p2 = \"\"",
+            "andWhere(neq(value, :p2))",
+            "groupBy(language)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": []
+    },
+    "search defaults": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "setMaxResults(100)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": [
+            {
+                "id": 9,
+                "objectUuid": "obj-1",
+                "property": "title",
+                "language": "en",
+                "value": "Old",
+                "status": "draft",
+                "translator": "bob",
+                "sourceLanguage": "nl",
+                "updatedIsSet": false
+            }
+        ]
+    },
+    "search every filter": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "setMaxResults(20)",
+            "param :p1 = \"%50\\\\%\\\\_off\\\\\\\\x%\"",
+            "andWhere(iLike(value, :p1))",
+            "param :p2 = \"de\"",
+            "andWhere(eq(language, :p2))",
+            "param :p3 = \"approved\"",
+            "andWhere(eq(status, :p3))",
+            "param :p4 = \"obj-1\"",
+            "andWhere(eq(object_uuid, :p4))",
+            "param :p5 = \"nl\"",
+            "andWhere(eq(source_language, :p5))",
+            "param :p6 = \"outdated\"",
+            "andWhere(eq(status, :p6))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": []
+    },
+    "search empty strings are ignored": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": []
+    },
+    "search limit is capped": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "setMaxResults(1000)",
+            "param :p1 = \"en\"",
+            "andWhere(eq(language, :p1))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": []
+    },
+    "search negative limit and outdated only": {
+        "sql": [
+            "-- new builder",
+            "select(*)",
+            "from(openregister_translations, null)",
+            "setMaxResults(1)",
+            "param :p1 = \"outdated\"",
+            "andWhere(eq(status, :p1))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": []
+    },
+    "markDerivedOutdated": {
+        "sql": [
+            "-- new builder",
+            "update(openregister_translations, null)",
+            "param :p1 = \"outdated\"",
+            "set(status, :p1)",
+            "param :p2 = <timestamp>",
+            "set(updated, :p2)",
+            "param :p3 = \"obj-1\"",
+            "where(eq(object_uuid, :p3))",
+            "param :p4 = \"title\"",
+            "andWhere(eq(property, :p4))",
+            "param :p5 = \"nl\"",
+            "andWhere(neq(language, :p5))",
+            "param :p6 = [\"approved\",\"human_reviewed\",\"machine_translated\"] [STR_ARRAY]",
+            "andWhere(in(status, :p6))",
+            "executeStatement()"
+        ],
+        "result": 2
+    },
+    "backfill without registers": {
+        "sql": [
+            "-- new builder",
+            "update(openregister_translations, null)",
+            "param :p1 = \"nl\"",
+            "set(source_language, :p1)",
+            "param :p2 = \"\"",
+            "where(eq(source_language, :p2))",
+            "executeStatement()"
+        ],
+        "result": 7
+    },
+    "backfill per register": {
+        "sql": [
+            "-- new builder",
+            "update(openregister_translations, t)",
+            "param :p1 = \"de\"",
+            "set(source_language, :p1)",
+            "param :p2 = \"\"",
+            "where(eq(source_language, :p2))",
+            "param :p3 = \"5\"",
+            "andWhere(object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = :p3))",
+            "setMaxResults(25)",
+            "executeStatement()",
+            "-- new builder",
+            "update(openregister_translations, t)",
+            "param :p4 = \"nl\"",
+            "set(source_language, :p4)",
+            "param :p5 = \"\"",
+            "where(eq(source_language, :p5))",
+            "param :p6 = \"12\"",
+            "andWhere(object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = :p6))",
+            "setMaxResults(25)",
+            "executeStatement()",
+            "-- new builder",
+            "update(openregister_translations, t)",
+            "param :p7 = \"nl\"",
+            "set(source_language, :p7)",
+            "param :p8 = \"\"",
+            "where(eq(source_language, :p8))",
+            "param :p9 = \"r-x\"",
+            "andWhere(object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = :p9))",
+            "setMaxResults(25)",
+            "executeStatement()",
+            "-- new builder",
+            "update(openregister_translations, null)",
+            "param :p10 = \"nl\"",
+            "set(source_language, :p10)",
+            "param :p11 = \"\"",
+            "where(eq(source_language, :p11))",
+            "executeStatement()"
+        ],
+        "result": 18
+    },
+    "backfill falls back when bounded update fails": {
+        "sql": [
+            "-- new builder",
+            "update(openregister_translations, t)",
+            "param :p1 = \"en\"",
+            "set(source_language, :p1)",
+            "param :p2 = \"\"",
+            "where(eq(source_language, :p2))",
+            "param :p3 = \"5\"",
+            "andWhere(object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = :p3))",
+            "setMaxResults(1)",
+            "executeStatement()",
+            "-- new builder",
+            "update(openregister_translations, null)",
+            "param :p4 = \"en\"",
+            "set(source_language, :p4)",
+            "param :p5 = \"\"",
+            "where(eq(source_language, :p5))",
+            "param :p6 = \"5\"",
+            "andWhere(object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = :p6))",
+            "executeStatement()",
+            "-- new builder",
+            "update(openregister_translations, null)",
+            "param :p7 = \"nl\"",
+            "set(source_language, :p7)",
+            "param :p8 = \"\"",
+            "where(eq(source_language, :p8))",
+            "executeStatement()"
+        ],
+        "result": 9
+    },
+    "count missing source language": {
+        "sql": [
+            "-- new builder",
+            "select(COUNT(*) AS pending)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"\"",
+            "where(eq(source_language, :p1))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": 11
+    },
+    "count missing source language without row": {
+        "sql": [
+            "-- new builder",
+            "select(COUNT(*) AS pending)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"\"",
+            "where(eq(source_language, :p1))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": 0
+    },
+    "dominant source language": {
+        "sql": [
+            "-- new builder",
+            "select(source_language)",
+            "selectAlias(COUNT(*), cnt)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"\"",
+            "andWhere(neq(source_language, :p2))",
+            "groupBy(source_language)",
+            "orderBy(cnt, DESC)",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": "de"
+    },
+    "dominant source language without rows": {
+        "sql": [
+            "-- new builder",
+            "select(source_language)",
+            "selectAlias(COUNT(*), cnt)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"\"",
+            "andWhere(neq(source_language, :p2))",
+            "groupBy(source_language)",
+            "orderBy(cnt, DESC)",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": null
+    },
+    "dominant source language null column": {
+        "sql": [
+            "-- new builder",
+            "select(source_language)",
+            "selectAlias(COUNT(*), cnt)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"\"",
+            "andWhere(neq(source_language, :p2))",
+            "groupBy(source_language)",
+            "orderBy(cnt, DESC)",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": null
+    },
+    "dominant source language empty column": {
+        "sql": [
+            "-- new builder",
+            "select(source_language)",
+            "selectAlias(COUNT(*), cnt)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"obj-1\"",
+            "where(eq(object_uuid, :p1))",
+            "param :p2 = \"\"",
+            "andWhere(neq(source_language, :p2))",
+            "groupBy(source_language)",
+            "orderBy(cnt, DESC)",
+            "setMaxResults(1)",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": null
+    },
+    "missing language without properties": {
+        "sql": [],
+        "result": []
+    },
+    "missing language without candidates": {
+        "sql": [],
+        "result": []
+    },
+    "missing language": {
+        "sql": [
+            "-- new builder",
+            "select(object_uuid, property)",
+            "from(openregister_translations, null)",
+            "param :p1 = \"en\"",
+            "where(eq(language, :p1))",
+            "param :p2 = [\"a\",\"b\",\"c\",\"a\"] [STR_ARRAY]",
+            "andWhere(in(object_uuid, :p2))",
+            "param :p3 = [\"title\",\"body\"] [STR_ARRAY]",
+            "andWhere(in(property, :p3))",
+            "andWhere(isNotNull(value))",
+            "param :p4 = \"\"",
+            "andWhere(neq(value, :p4))",
+            "executeQuery()",
+            "closeCursor()"
+        ],
+        "result": [
+            "b",
+            "c"
+        ]
+    }
+}
