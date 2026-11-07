@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\LanguageService;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -74,13 +74,13 @@ class LanguageMiddleware extends Middleware {
 	 *
 	 * @param IRequest $request The incoming request.
 	 * @param LanguageService $languageService The request-scoped language service.
-	 * @param TranslationMapper $translationMapper Mapper for source-language lookups (response side).
+	 * @param TranslationMapperInterface $translationMapper Mapper for source-language lookups (response side).
 	 * @param LoggerInterface $logger Logger for invalid-tag warnings.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly LanguageService $languageService,
-		private readonly TranslationMapper $translationMapper,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

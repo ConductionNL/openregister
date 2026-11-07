@@ -21,18 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
@@ -106,18 +94,11 @@ final class ContractBindings {
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
-		SchemaMapperInterface::class => SchemaMapper::class,
-		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
 		TaskServiceInterface::class => TaskService::class,
 		FlowRunServiceInterface::class => FlowRunService::class,
-		OrganisationMapperInterface::class => OrganisationMapper::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		RetentionServiceInterface::class => RetentionService::class,
-		FlowRunMapperInterface::class => FlowRunMapper::class,
-		EntityRelationMapperInterface::class => EntityRelationMapper::class,
-		RegisterMapperInterface::class => RegisterMapper::class,
-		\OCA\OpenRegister\Db\MagicMapperInterface::class => \OCA\OpenRegister\Db\MagicMapper::class,
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,
