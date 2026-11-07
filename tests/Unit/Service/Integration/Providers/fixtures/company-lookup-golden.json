@@ -1,0 +1,623 @@
+{
+    "kvk list no filters": {
+        "result": [
+            {
+                "kvkNummer": "1"
+            },
+            {
+                "kvkNummer": "2"
+            }
+        ],
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": [],
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk list all filters": {
+        "result": [
+            {
+                "kvkNummer": "3"
+            },
+            {
+                "kvkNummer": "4"
+            }
+        ],
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "Acme",
+                        "aantal": "100",
+                        "pagina": "3"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk list small limit, zero page": {
+        "result": [],
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "aantal": "5"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk list router throws": {
+        "result": {
+            "threw": "RuntimeException",
+            "message": "boom"
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "x"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk lookup blank": {
+        "result": {
+            "results": [],
+            "total": 0
+        },
+        "observed": []
+    },
+    "kvk lookup hit": {
+        "result": {
+            "results": [
+                {
+                    "kvkNummer": "1"
+                },
+                {
+                    "kvkNummer": "2"
+                }
+            ],
+            "total": 2
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "kvkNummer": "12345678"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk lookup list response": {
+        "result": {
+            "results": [
+                {
+                    "kvkNummer": "3"
+                },
+                {
+                    "kvkNummer": "4"
+                }
+            ],
+            "total": 2
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "kvkNummer": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk lookup unavailable": {
+        "result": {
+            "unavailable": true,
+            "cause": "openconnector-down",
+            "results": [],
+            "total": 0
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "kvkNummer": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk lookup throws": {
+        "result": {
+            "unavailable": true,
+            "cause": "upstream-service-down",
+            "results": [],
+            "total": 0
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "kvkNummer": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "KvkProvider::lookupByKvkNumber failed: boom"
+            ]
+        ]
+    },
+    "kvk search defaults": {
+        "result": {
+            "results": [
+                {
+                    "kvkNummer": "1"
+                },
+                {
+                    "kvkNummer": "2"
+                }
+            ],
+            "total": 2,
+            "limit": 25,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "Acme",
+                        "aantal": "25",
+                        "pagina": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk search criteria and clamps": {
+        "result": {
+            "results": [
+                {
+                    "kvkNummer": "3"
+                },
+                {
+                    "kvkNummer": "4"
+                }
+            ],
+            "total": 2,
+            "limit": 100,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "plaats": "Utrecht",
+                        "naam": "old",
+                        "aantal": "100",
+                        "pagina": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk search criteria naam overwritten": {
+        "result": {
+            "results": [],
+            "total": 0,
+            "limit": 1,
+            "page": 4
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "New",
+                        "aantal": "1",
+                        "pagina": "4"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk search unavailable": {
+        "result": {
+            "unavailable": true,
+            "cause": "openconnector-down",
+            "results": [],
+            "total": 0,
+            "limit": 10,
+            "page": 2
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "x",
+                        "aantal": "10",
+                        "pagina": "2"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "kvk search throws": {
+        "result": {
+            "unavailable": true,
+            "cause": "upstream-service-down",
+            "results": [],
+            "total": 0,
+            "limit": 1,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "kvk",
+                "GET",
+                "zoeken",
+                {
+                    "query": {
+                        "naam": "x",
+                        "aantal": "1",
+                        "pagina": "1"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "KvkProvider::searchCompanies failed: boom"
+            ]
+        ]
+    },
+    "oc list no filters": {
+        "result": [
+            {
+                "name": "Wrapped"
+            },
+            {
+                "company": "not-an-array",
+                "name": "Kept whole"
+            },
+            {
+                "name": "Bare"
+            }
+        ],
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": [],
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc list all filters": {
+        "result": [
+            {
+                "name": "L1"
+            },
+            {
+                "name": "L2"
+            }
+        ],
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "q": "Acme",
+                        "per_page": "100",
+                        "page": "2"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc list other shape": {
+        "result": [],
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": [],
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc list router throws": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\ProviderUnavailableException",
+            "message": "down"
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": [],
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc search defaults": {
+        "result": {
+            "results": [
+                {
+                    "name": "Wrapped"
+                },
+                {
+                    "company": "not-an-array",
+                    "name": "Kept whole"
+                },
+                {
+                    "name": "Bare"
+                }
+            ],
+            "total": 3,
+            "limit": 30,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "per_page": "30",
+                        "page": "1",
+                        "order": "score",
+                        "q": "Acme"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc search jurisdiction": {
+        "result": {
+            "results": [
+                {
+                    "name": "L1"
+                },
+                {
+                    "name": "L2"
+                }
+            ],
+            "total": 2,
+            "limit": 100,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "per_page": "100",
+                        "page": "1",
+                        "order": "score",
+                        "jurisdiction_code": "nl"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc search blank jurisdiction": {
+        "result": {
+            "results": [],
+            "total": 0,
+            "limit": 1,
+            "page": 3
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "per_page": "1",
+                        "page": "3",
+                        "order": "score",
+                        "q": "x"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc search unavailable": {
+        "result": {
+            "unavailable": true,
+            "cause": "openconnector-down",
+            "results": [],
+            "total": 0,
+            "limit": 10,
+            "page": 2
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "per_page": "10",
+                        "page": "2",
+                        "order": "score",
+                        "q": "x"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ]
+        ]
+    },
+    "oc search throws": {
+        "result": {
+            "unavailable": true,
+            "cause": "upstream-service-down",
+            "results": [],
+            "total": 0,
+            "limit": 1,
+            "page": 1
+        },
+        "observed": [
+            [
+                "call",
+                "opencorporates",
+                "GET",
+                "companies/search",
+                {
+                    "query": {
+                        "per_page": "1",
+                        "page": "1",
+                        "order": "score",
+                        "q": "x",
+                        "jurisdiction_code": "gb"
+                    },
+                    "headers": {
+                        "Accept": "application/json"
+                    }
+                }
+            ],
+            [
+                "log",
+                "warning",
+                "OpenCorporatesProvider::searchCompanies failed: boom"
+            ]
+        ]
+    }
+}
