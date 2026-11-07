@@ -53,6 +53,13 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectRelationService implements ObjectRelationServiceInterface {
 	/**
+	 * Shapes the fields of the rows this service writes and reads.
+	 *
+	 * @var RelationRowFields
+	 */
+	private readonly RelationRowFields $fields;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectRelationMapperInterface $mapper The relation row mapper.
@@ -70,6 +77,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly ?IUserSession $userSession = null,
 	) {
+		$this->fields = new RelationRowFields();
 	}//end __construct()
 
 	/**
@@ -98,33 +106,10 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		?string $relationType = null,
 	): ObjectRelation {
 		return $this->mapper->createFromArray(
-			$this->objectLink(from: $created, to: $source, origin: ObjectRelation::ORIGIN_SPLIT)
+			$this->fields->objectLink(from: $created, to: $source, origin: ObjectRelation::ORIGIN_SPLIT)
 			+ ['relationType' => $relationType, 'sourceEntry' => $entry, 'createdBy' => $this->actor()]
 		);
 	}//end recordSplit()
-
-
-	/**
-	 * The ends, kind and origin of a row that links one object to another.
-	 *
-	 * @param ObjectEntity $from   The object the row starts at.
-	 * @param ObjectEntity $to     The object it points at.
-	 * @param string       $origin One of the ObjectRelation::ORIGIN_* constants.
-	 *
-	 * @return array<string, mixed> The row's first fields.
-	 */
-	private function objectLink(ObjectEntity $from, ObjectEntity $to, string $origin): array {
-		return [
-			'sourceUuid' => (string)$from->getUuid(),
-			'sourceRegister' => $this->asInt(value: $from->getRegister()),
-			'sourceSchema' => $this->asInt(value: $from->getSchema()),
-			'targetUuid' => (string)$to->getUuid(),
-			'targetRegister' => $this->asInt(value: $to->getRegister()),
-			'targetSchema' => $this->asInt(value: $to->getSchema()),
-			'kind' => ObjectRelation::KIND_OBJECT,
-			'origin' => $origin,
-		];
-	}//end objectLink()
 
 	/**
 	 * What a child takes from its parent at creation, under one relation type.
@@ -157,7 +142,9 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		foreach ($inherits as $role => $property) {
 			// A value the child already carries is the child's own. Inheritance
 			// fills a gap; it does not overrule what somebody typed.
-			if (self::hasValue(data: $parentData, property: $property) === false || self::hasValue(data: $childData, property: $property) === true) {
+			if ($this->fields->hasValue(data: $parentData, property: $property) === false
+				|| $this->fields->hasValue(data: $childData, property: $property) === true
+			) {
 				continue;
 			}
 
@@ -167,19 +154,6 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 
 		return ['data' => $childData, 'inherited' => $record];
 	}//end applyInheritance()
-
-
-	/**
-	 * Whether a property is present with a value that is neither null nor empty.
-	 *
-	 * @param array<string, mixed> $data     The object data.
-	 * @param int|string           $property The property.
-	 *
-	 * @return bool True when it carries a value.
-	 */
-	private static function hasValue(array $data, int|string $property): bool {
-		return array_key_exists($property, $data) === true && $data[$property] !== null && $data[$property] !== '';
-	}//end hasValue()
 
 	/**
 	 * Record a child created under a parent, with what it inherited.
@@ -205,26 +179,11 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		?string $entry = null,
 	): ObjectRelation {
 		return $this->mapper->createFromArray(
-			$this->objectLink(from: $child, to: $parent, origin: ObjectRelation::ORIGIN_DERIVE)
-			+ ['relationType' => $relationType, 'sourceEntry' => $entry, 'inherited' => self::recordOf(inherited: $inherited)]
+			$this->fields->objectLink(from: $child, to: $parent, origin: ObjectRelation::ORIGIN_DERIVE)
+			+ ['relationType' => $relationType, 'sourceEntry' => $entry, 'inherited' => $this->fields->recordOf(inherited: $inherited)]
 			+ ['createdBy' => $this->actor()]
 		);
 	}//end recordDerivation()
-
-	/**
-	 * What a derivation row records as inherited: null when nothing was.
-	 *
-	 * @param array<string, mixed> $inherited Role => property and value, as applyInheritance() returned it.
-	 *
-	 * @return array<string, mixed>|null The record.
-	 */
-	private static function recordOf(array $inherited): array|null {
-		if ($inherited === []) {
-			return null;
-		}
-
-		return $inherited;
-	}//end recordOf()
 
 	/**
 	 * Add an address outside the product as a relation on an object.
@@ -259,37 +218,10 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	): ObjectRelation {
 		return $this->mapper->createFromArray(
 			['sourceUuid' => $sourceUuid, 'sourceRegister' => $register, 'sourceSchema' => $schema]
-			+ self::externalTarget(url: $url, title: $title)
+			+ $this->fields->externalTarget(url: $url, title: $title)
 			+ $this->externalDetail(relationType: $relationType, label: $label)
 		);
 	}//end addExternalLink()
-
-
-	/**
-	 * The address and title of an external link; a title nobody gave falls back to the address.
-	 *
-	 * The fallback keeps the row from ever being nameless in a list.
-	 *
-	 * @param string      $url   The address.
-	 * @param string|null $title The title.
-	 *
-	 * @return array{targetUrl: string, targetTitle: string} The target fields.
-	 *
-	 * @throws InvalidArgumentException When the address is not a resolvable web address.
-	 */
-	private static function externalTarget(string $url, string|null $title): array {
-		$url = trim($url);
-		if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
-			throw new InvalidArgumentException('An external relation needs a resolvable web address.');
-		}
-
-		$named = $url;
-		if ($title !== null && trim($title) !== '') {
-			$named = trim($title);
-		}
-
-		return ['targetUrl' => $url, 'targetTitle' => $named];
-	}//end externalTarget()
 
 	/**
 	 * The kind, origin, type, label and author of a manually added external link.
@@ -362,10 +294,9 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	private function proseRows(string $sourceUuid, string $targetUuid, array $scope, array $detail): array {
 		return [
 			$this->proseRow(from: $sourceUuid, to: $targetUuid, scope: $scope, detail: $detail),
-			$this->proseRow(from: $targetUuid, to: $sourceUuid, scope: self::reversedScope(scope: $scope), detail: $detail),
+			$this->proseRow(from: $targetUuid, to: $sourceUuid, scope: $this->fields->reversedScope(scope: $scope), detail: $detail),
 		];
 	}//end proseRows()
-
 
 	/**
 	 * Whether a mention links two different objects and is not already recorded under its anchor.
@@ -427,22 +358,6 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 			] + $detail + ['createdBy' => $this->actor()]
 		);
 	}//end proseRow()
-
-	/**
-	 * A prose reference's scope seen from the far side.
-	 *
-	 * @param array<string, mixed> $scope The near side's scope.
-	 *
-	 * @return array<string, mixed> The far side's scope.
-	 */
-	private static function reversedScope(array $scope): array {
-		return [
-			'sourceRegister' => ($scope['targetRegister'] ?? null),
-			'sourceSchema' => ($scope['targetSchema'] ?? null),
-			'targetRegister' => ($scope['sourceRegister'] ?? null),
-			'targetSchema' => ($scope['sourceSchema'] ?? null),
-		];
-	}//end reversedScope()
 
 	/**
 	 * Withdraw every row one piece of text wrote, on both sides.
@@ -599,7 +514,6 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		return ($this->vocabularyDescriptor(row: $row, language: $language) ?? $this->storedDescriptor(row: $row));
 	}//end descriptorOf()
 
-
 	/**
 	 * The descriptor the row's relation type has in its source schema's vocabulary, when it resolves.
 	 *
@@ -630,7 +544,7 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 	private function typeInSchema(int $schemaId, string $type, string $language): array|null {
 		try {
 			$schema = $this->schemaMapper->find($schemaId, _rbac: false, _multitenancy: false);
-			return self::descriptorOfType(descriptors: $this->relationTypes->descriptors(schema: $schema, language: $language), type: $type);
+			return $this->fields->descriptorOfType(descriptors: $this->relationTypes->descriptors(schema: $schema, language: $language), type: $type);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[ObjectRelationService] Could not resolve a relation type against its schema',
@@ -639,24 +553,6 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 			return null;
 		}
 	}//end typeInSchema()
-
-	/**
-	 * The first descriptor of a type.
-	 *
-	 * @param array<string, array<string, mixed>> $descriptors The schema's descriptors.
-	 * @param string                              $type        The relation type.
-	 *
-	 * @return array<string, mixed>|null The descriptor.
-	 */
-	private static function descriptorOfType(array $descriptors, string $type): array|null {
-		foreach ($descriptors as $descriptor) {
-			if (($descriptor['type'] ?? null) === $type) {
-				return $descriptor;
-			}
-		}
-
-		return null;
-	}//end descriptorOfType()
 
 	/**
 	 * The descriptor a stored row carries itself, for a type no vocabulary resolves.
@@ -710,20 +606,4 @@ class ObjectRelationService implements ObjectRelationServiceInterface {
 		return $this->userSession?->getUser()?->getUID();
 	}//end actor()
 
-	/**
-	 * Read a register or schema reference as an int, when it is one.
-	 *
-	 * @param mixed $value The reference.
-	 *
-	 * @return int|null The id.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function asInt(mixed $value): ?int {
-		if (is_numeric($value) === false) {
-			return null;
-		}
-
-		return (int)$value;
-	}//end asInt()
 }//end class
