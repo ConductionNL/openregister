@@ -210,6 +210,14 @@ audit entry for that query.
 - **AND** with a usable declared purpose the rows of that schema are in the answer
 - @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
 
+#### Scenario: a relation search that names no table leaves out the tables it may not read
+
+- **GIVEN** a schema that asks for a purpose
+- **WHEN** `/api/objects?_relations_contains=` runs without a usable declared purpose
+- **THEN** the search answers 200 with the referring rows of the other tables, and none of that schema
+- **AND** with a usable declared purpose the referring rows of that schema are in the answer
+- @e2e exclude {needs an administered purpose and processing activity; unit tests pin the leave-out}
+
 #### Scenario: queries are countable per purpose
 
 - **GIVEN** a month of queries under three purposes

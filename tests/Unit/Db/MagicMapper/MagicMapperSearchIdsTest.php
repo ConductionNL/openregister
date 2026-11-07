@@ -519,6 +519,24 @@ class MagicMapperSearchIdsTest extends TestCase {
 	}//end testARelationSearchWithoutATableIsAnsweredByTheTable()
 
 	/**
+	 * A relation search without a table leaves out a table that asks for a purpose the request does not carry.
+	 *
+	 * @return void
+	 */
+	public function testARelationSearchWithoutATableLeavesOutATableThatNeedsAPurpose(): void {
+		$this->purposeGuard = $this->refusingGuard();
+		$this->purposeGuard->expects($this->never())->method('enforce');
+		$mapper = $this->mapper();
+		$mapper->method('findByRelationAcrossAllMagicTables')->willReturn([$this->locatedRow()]);
+
+		$query  = ['_relations_contains' => 'target'];
+		$result = $mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+
+		$this->assertSame(['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []], $result);
+		$this->assertSame(0, $this->searches);
+	}//end testARelationSearchWithoutATableLeavesOutATableThatNeedsAPurpose()
+
+	/**
 	 * The flags of the call decide, whatever the query carries.
 	 *
 	 * @return void
