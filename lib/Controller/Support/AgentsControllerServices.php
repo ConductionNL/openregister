@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,7 +38,7 @@ final class AgentsControllerServices {
 	 *
 	 * @param AgentMapperInterface         $agentMapper         Agent mapper for database operations
 	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
-	 * @param ToolRegistry        $toolRegistry        Tool registry for available tools
+	 * @param ToolRegistryInterface        $toolRegistry        Tool registry for available tools
 	 * @param LoggerInterface     $logger              Logger for error tracking
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
@@ -46,7 +46,7 @@ final class AgentsControllerServices {
 	public function __construct(
 		public readonly AgentMapperInterface $agentMapper,
 		public readonly OrganisationServiceInterface $organisationService,
-		public readonly ToolRegistry $toolRegistry,
+		public readonly ToolRegistryInterface $toolRegistry,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

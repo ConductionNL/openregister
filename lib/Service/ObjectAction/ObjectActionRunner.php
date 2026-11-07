@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
  */
-class ObjectActionRunner {
+class ObjectActionRunner implements ObjectActionRunnerInterface {
 
 	/**
 	 * The error code of a precondition refusal.

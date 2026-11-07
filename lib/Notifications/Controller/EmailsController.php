@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
+use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
@@ -89,39 +90,35 @@ class EmailsController extends Controller {
 	private readonly PermissionHandler $permissions;
 
 	/**
+	 * Resolves reply headers onto objects, when available.
+	 *
+	 * @var ReplyThreadService|null
+	 */
+	private readonly ?ReplyThreadService $replyThreads;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName Application name
-	 * @param IRequest $request HTTP request object
-	 * @param EmailService $emailService Email service
-	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param \OCP\IUserSession $userSession User session
-	 * @param \Psr\Log\LoggerInterface $logger Logger
-	 * @param EmailLinkServiceInterface $emailLinkService Object-scoped email links
-	 * @param PermissionHandler $permissions Answers the object update right
-	 * @param ReplyThreadService|null $replyThreads Resolves reply headers onto objects
+	 * @param string                   $appName  Application name
+	 * @param IRequest                 $request  HTTP request object
+	 * @param EmailsControllerServices $services The service bundles of this API
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		EmailService $emailService,
-		ObjectOperationsInterface $objectService,
-		\OCP\IUserSession $userSession,
-		\Psr\Log\LoggerInterface $logger,
-		EmailLinkServiceInterface $emailLinkService,
-		PermissionHandler $permissions,
-		private readonly ?ReplyThreadService $replyThreads = null,
+		EmailsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
-		$this->emailService = $emailService;
-		$this->objectService = $objectService;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
-		$this->emailLinkService = $emailLinkService;
-		$this->permissions = $permissions;
+		$this->emailService = $services->domain->emailService;
+		$this->emailLinkService = $services->domain->emailLinkService;
+		$this->objectService = $services->objectAccess->objectService;
+		$this->permissions = $services->objectAccess->permissions;
+		$this->userSession = $services->platform->userSession;
+		$this->logger = $services->platform->logger;
+		$this->replyThreads = $services->replyThreads;
 	}//end __construct()
 
 	/**

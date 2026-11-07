@@ -28,6 +28,10 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
 use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
 use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\NoteVersionService;
@@ -63,7 +67,9 @@ final class FilesRegistrar
         FileMapperInterface::class                => FileMapper::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
         RiskLevelServiceInterface::class          => RiskLevelService::class,
+        ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,
         UploadServiceInterface::class             => UploadService::class,
