@@ -66,7 +66,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowService {
+class FlowService implements FlowServiceInterface {
 	/**
 	 * The app id a flow is attributed to when the caller names none.
 	 *

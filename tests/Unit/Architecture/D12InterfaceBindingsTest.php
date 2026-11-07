@@ -29,13 +29,25 @@ use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
 use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -64,6 +76,12 @@ final class D12InterfaceBindingsTest extends TestCase {
 		CasePlanItemTimers::class => [CasePlanItemTimersInterface::class, ContractBindings::class],
 		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
 		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
+		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
+		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
+		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
+		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
+		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 

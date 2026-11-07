@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Controller;
 
+use OCA\OpenRegister\AppHost\Controller\Support\GenericStoreControllerServices;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
@@ -84,43 +85,95 @@ class GenericStoreController extends Controller {
 	private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
 
 	/**
+	 * Loads the leaf app's manifest.
+	 *
+	 * @var ManifestLoader
+	 */
+	private readonly ManifestLoader $manifestLoader;
+
+	/**
+	 * Guarded remote discovery.
+	 *
+	 * @var GenericStoreService
+	 */
+	private readonly GenericStoreService $storeService;
+
+	/**
+	 * Declarative component install.
+	 *
+	 * @var GenericStoreInstaller
+	 */
+	private readonly GenericStoreInstaller $installer;
+
+	/**
+	 * Configuration browse and install.
+	 *
+	 * @var FederatedStoreCatalog
+	 */
+	private readonly FederatedStoreCatalog $catalog;
+
+	/**
+	 * GitHub discovery source.
+	 *
+	 * @var GitHubStoreSource
+	 */
+	private readonly GitHubStoreSource $gitHubSource;
+
+	/**
+	 * ADR-023 action resolver.
+	 *
+	 * @var StoreActionAuthorizer
+	 */
+	private readonly StoreActionAuthorizer $actionAuthorizer;
+
+	/**
+	 * Current session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Admin check for install.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * `$appName` is the CALLING leaf app id, set by that app's alias
 	 * registration, which is what lets one controller serve every app.
 	 *
-	 * @param string                $appName        Calling leaf app id.
-	 * @param IRequest              $request        HTTP request.
-	 * @param ManifestLoader        $manifestLoader Loads the leaf app's manifest.
-	 * @param GenericStoreService   $storeService   Guarded remote discovery.
-	 * @param GenericStoreInstaller $installer      Declarative component install.
-	 * @param FederatedStoreCatalog $catalog        Configuration browse and install.
-	 * @param GitHubStoreSource     $gitHubSource   GitHub discovery source.
-	 * @param StoreActionAuthorizer $actionAuthorizer ADR-023 action resolver.
-	 * @param IUserSession          $userSession    Current session.
-	 * @param IGroupManager         $groupManager   Admin check for install.
-	 * @param LoggerInterface       $logger         PSR logger.
+	 * @param string                         $appName  Calling leaf app id.
+	 * @param IRequest                       $request  HTTP request.
+	 * @param GenericStoreControllerServices $services The discovery, install and platform services.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each collaborator is one
-	 * discovery or install path the engine owns on a leaf app's behalf, and the
-	 * count grew because the plane absorbed work the apps used to do
-	 * themselves. Grouping them behind a locator would hide which paths exist
-	 * from the one file that has to choose between them.
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ManifestLoader $manifestLoader,
-		private readonly GenericStoreService $storeService,
-		private readonly GenericStoreInstaller $installer,
-		private readonly FederatedStoreCatalog $catalog,
-		private readonly GitHubStoreSource $gitHubSource,
-		private readonly StoreActionAuthorizer $actionAuthorizer,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly LoggerInterface $logger,
+		GenericStoreControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->manifestLoader = $services->sources->manifestLoader;
+		$this->storeService = $services->sources->storeService;
+		$this->gitHubSource = $services->sources->gitHubSource;
+		$this->catalog = $services->sources->catalog;
+		$this->installer = $services->install->installer;
+		$this->actionAuthorizer = $services->install->actionAuthorizer;
+		$this->userSession = $services->platform->userSession;
+		$this->groupManager = $services->platform->groupManager;
+		$this->logger = $services->platform->logger;
 	}//end __construct()
 
 	/**

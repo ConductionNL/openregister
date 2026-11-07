@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\FlowAccess;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 
 /**
@@ -35,14 +35,14 @@ final class FlowDefinitions {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FlowService                 $flows              Reads, writes and runs flow definitions.
+	 * @param FlowServiceInterface                 $flows              Reads, writes and runs flow definitions.
 	 * @param FlowAccess                  $access             Who may do what with a flow.
 	 * @param FlowVersionServiceInterface $flowVersionService Reads, publishes, drafts and deprecates versions.
 	 *
 	 * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
 	 */
 	public function __construct(
-		public readonly FlowService $flows,
+		public readonly FlowServiceInterface $flows,
 		public readonly FlowAccess $access,
 		public readonly FlowVersionServiceInterface $flowVersionService,
 	) {
