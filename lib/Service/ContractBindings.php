@@ -86,6 +86,10 @@ use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
@@ -154,6 +158,8 @@ final class ContractBindings {
 		SchemaExplorationInterface::class => SchemaService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		SourceRecordResolverInterface::class => SourceRecordResolver::class,
+		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
