@@ -50,7 +50,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use DateTime;
-use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -378,7 +378,7 @@ class ContextChatSubmissionListener implements IEventListener {
 
 		// Resolve BEFORE touching ContentItem or ContentProvider below: both
 		// are unloadable on NC < 32 (ContentItem is OCP\ContextChat\*, and
-		// reading ContentProvider::PROVIDER_ID loads a class whose header
+		// reading ContentProviderInterface::PROVIDER_ID loads a class whose header
 		// implements the missing IContentProvider).
 		$contentManager = $this->contentManager();
 		if ($contentManager === null) {
@@ -387,7 +387,7 @@ class ContextChatSubmissionListener implements IEventListener {
 
 		$item = new ContentItem(
 			itemId: $uuid,
-			providerId: ContentProvider::PROVIDER_ID,
+			providerId: ContentProviderInterface::PROVIDER_ID,
 			title: $this->resolveTitle(object: $object),
 			content: $this->renderContent(object: $object, schema: $schema),
 			documentType: 'text/plain',
@@ -396,7 +396,7 @@ class ContextChatSubmissionListener implements IEventListener {
 		);
 
 		$contentManager->submitContent(
-			ContentProvider::APP_ID,
+			ContentProviderInterface::APP_ID,
 			[$item]
 		);
 	}//end submitContentItem()
@@ -424,8 +424,8 @@ class ContextChatSubmissionListener implements IEventListener {
 		}
 
 		$contentManager->deleteContent(
-			ContentProvider::APP_ID,
-			ContentProvider::PROVIDER_ID,
+			ContentProviderInterface::APP_ID,
+			ContentProviderInterface::PROVIDER_ID,
 			[$uuid]
 		);
 	}//end removeContentItem()
