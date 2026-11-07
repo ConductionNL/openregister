@@ -93,7 +93,7 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
-class AggregationRunner {
+class AggregationRunner implements AggregationRunnerInterface {
 	use MagicColumnNameTrait;
 
 	/**
