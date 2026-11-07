@@ -30,6 +30,7 @@ use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -142,7 +143,10 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 			);
 		}
 
-		return new TaskSequenceService(sequences: $sequences, taskReader: $reader, tasks: $tasks, dispatcher: $dispatcher, logger: $logger);
+		return new TaskSequenceService(
+			services: new TaskSequenceServices(sequences: $sequences, taskReader: $reader, tasks: $tasks, dispatcher: $dispatcher),
+			logger: $logger
+		);
 	}
 
 	/**
