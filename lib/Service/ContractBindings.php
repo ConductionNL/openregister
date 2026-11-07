@@ -75,6 +75,10 @@ use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
@@ -123,6 +127,7 @@ final class ContractBindings {
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
@@ -138,6 +143,7 @@ final class ContractBindings {
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		SourceRowReaderInterface::class => SourceRowReader::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
