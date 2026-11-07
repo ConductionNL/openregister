@@ -203,29 +203,11 @@ class ConceptRepository implements ConceptRepositoryInterface {
 
 		$this->schemeCache[$schemeUri] = null;
 
-		$ids = $this->ids();
-		if ($ids === null) {
+		$data = $this->firstScheme(filters: ['uri' => $schemeUri], metadata: []);
+		if ($data === null) {
 			return null;
 		}
 
-		$results = $this->read(
-			registerId: $ids[0],
-			schemaId: $ids[1],
-			filters: ['uri' => $schemeUri],
-			limit: 1
-		);
-
-		$entity = ($results[0] ?? null);
-		if ($entity instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		$data = ($entity->getObject() ?? []);
-		if (is_array($data) === false) {
-			return null;
-		}
-
-		$data['@uuid'] = (string)$entity->getUuid();
 		$this->schemeCache[$schemeUri] = $data;
 
 		return $data;
@@ -251,18 +233,36 @@ class ConceptRepository implements ConceptRepositoryInterface {
 			}
 		}
 
+		$data = $this->firstScheme(filters: [], metadata: ['uuid' => $reference]);
+		if ($data === null) {
+			return null;
+		}
+
+		$uri = trim((string)($data['uri'] ?? ''));
+		if ($uri !== '') {
+			$this->schemeCache[$uri] = $data;
+		}
+
+		return $data;
+	}//end schemeByReference()
+
+	/**
+	 * The first scheme object matching the filters, as decoded data carrying its `@uuid`; null when none.
+	 *
+	 * @param array<string,mixed> $filters  Property filters.
+	 * @param array<string,mixed> $metadata `@self` filters besides register and schema.
+	 *
+	 * @return array<string,mixed>|null The scheme's decoded object data.
+	 *
+	 * @spec openspec/specs/skos-concept-registers/spec.md
+	 */
+	private function firstScheme(array $filters, array $metadata): ?array {
 		$ids = $this->ids();
 		if ($ids === null) {
 			return null;
 		}
 
-		$results = $this->read(
-			registerId: $ids[0],
-			schemaId: $ids[1],
-			filters: [],
-			limit: 1,
-			metadata: ['uuid' => $reference]
-		);
+		$results = $this->read(registerId: $ids[0], schemaId: $ids[1], filters: $filters, limit: 1, metadata: $metadata);
 
 		$entity = ($results[0] ?? null);
 		if ($entity instanceof ObjectEntity === false) {
@@ -275,13 +275,9 @@ class ConceptRepository implements ConceptRepositoryInterface {
 		}
 
 		$data['@uuid'] = (string)$entity->getUuid();
-		$uri = trim((string)($data['uri'] ?? ''));
-		if ($uri !== '') {
-			$this->schemeCache[$uri] = $data;
-		}
 
 		return $data;
-	}//end schemeByReference()
+	}//end firstScheme()
 
 	/**
 	 * The shape a scheme declares for its concepts, or an empty array.

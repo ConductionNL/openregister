@@ -284,18 +284,7 @@ class CacheSettingsHandler {
 		$now = time();
 		if ($this->objectStatsCache === null || ($now - $this->objectStatsCacheTimestamp) > 30) {
 			try {
-				$objectCacheService = $this->objectCacheService;
-				if ($objectCacheService === null && $this->container !== null) {
-					try {
-						$objectCacheService = $this->container->get(CacheHandler::class);
-					} catch (Exception $e) {
-						throw new Exception('CacheHandler not available');
-					}
-				}
-
-				if ($objectCacheService === null) {
-					throw new Exception('CacheHandler not available');
-				}
+				$objectCacheService = $this->objectCacheHandler();
 
 				$this->objectStatsCache = $objectCacheService->getStats();
 			} catch (Exception $e) {
@@ -523,18 +512,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearObjectCache(?string $_userId = null): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 			$objectCacheService->clearCache();
@@ -554,12 +532,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'object',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'object', error: $e);
 		}//end try
 	}//end clearObjectCache()
 
@@ -594,18 +567,7 @@ class CacheSettingsHandler {
 	 */
 	private function clearNamesCache(): array {
 		try {
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 			$beforeNameCacheSize = $beforeStats['name_cache_size'] ?? 0;
@@ -631,12 +593,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'names',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'names', error: $e);
 		}//end try
 	}//end clearNamesCache()
 
@@ -653,18 +610,7 @@ class CacheSettingsHandler {
 	public function warmupNamesCache(): array {
 		try {
 			$startTime = microtime(true);
-			$objectCacheService = $this->objectCacheService;
-			if ($objectCacheService === null && $this->container !== null) {
-				try {
-					$objectCacheService = $this->container->get(CacheHandler::class);
-				} catch (Exception $e) {
-					throw new Exception('CacheHandler not available');
-				}
-			}
-
-			if ($objectCacheService === null) {
-				throw new Exception('CacheHandler not available');
-			}
+			$objectCacheService = $this->objectCacheHandler();
 
 			$beforeStats = $objectCacheService->getStats();
 
@@ -723,12 +669,7 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'schema',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'schema', error: $e);
 		}//end try
 	}//end clearSchemaCache()
 
@@ -800,12 +741,51 @@ class CacheSettingsHandler {
 				'success' => true,
 			];
 		} catch (Exception $e) {
-			return [
-				'service' => 'distributed',
-				'cleared' => 0,
-				'success' => false,
-				'error' => $e->getMessage(),
-			];
+			return $this->clearFailed(service: 'distributed', error: $e);
 		}
 	}//end clearDistributedCache()
+
+	/**
+	 * The object cache handler: the one injected, else the one the container builds.
+	 *
+	 * @return CacheHandlerInterface The handler.
+	 *
+	 * @throws Exception When neither supplies one.
+	 */
+	private function objectCacheHandler(): CacheHandlerInterface {
+		$objectCacheService = $this->objectCacheService;
+		if ($objectCacheService === null && $this->container !== null) {
+			try {
+				$objectCacheService = $this->container->get(CacheHandler::class);
+			} catch (Exception $e) {
+				throw new Exception('CacheHandler not available');
+			}
+		}
+
+		if ($objectCacheService === null) {
+			throw new Exception('CacheHandler not available');
+		}
+
+		return $objectCacheService;
+	}//end objectCacheHandler()
+
+	/**
+	 * The result of a cache clear that failed.
+	 *
+	 * @param string    $service The cache that was being cleared.
+	 * @param Exception $error   Why it failed.
+	 *
+	 * @return array{service: T, cleared: 0, success: false, error: string}
+	 *
+	 * @template T of string
+	 * @phpstan-param T $service
+	 */
+	private function clearFailed(string $service, Exception $error): array {
+		return [
+			'service' => $service,
+			'cleared' => 0,
+			'success' => false,
+			'error' => $error->getMessage(),
+		];
+	}//end clearFailed()
 }//end class
