@@ -75,9 +75,10 @@ class TimeTrackerLinkMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('entry_type', $qb->createNamedParameter($entryType)));
 
-		$this->applyIdComponent(qb: $qb, column: 'client_id', value: $clientId);
-		$this->applyIdComponent(qb: $qb, column: 'task_id', value: $taskId);
-		$this->applyIdComponent(qb: $qb, column: 'time_id', value: $timeId);
+		$this->applyIdComponents(
+			qb: $qb,
+			components: ['client_id' => $clientId, 'task_id' => $taskId, 'time_id' => $timeId]
+		);
 
 		try {
 			return $this->findEntity(query: $qb);
@@ -143,22 +144,22 @@ class TimeTrackerLinkMapper extends QBMapper {
 	}//end findAll()
 
 	/**
-	 * Apply an id-component constraint to the query builder, using
-	 * `IS NULL` when the component is absent so the composite-unique
-	 * match is exact.
+	 * Narrow to each id component, using `IS NULL` for an absent one so the
+	 * composite-unique match is exact.
 	 *
-	 * @param IQueryBuilder $qb The query builder.
-	 * @param string $column The id column name.
-	 * @param string|null $value The id value, or null.
+	 * @param IQueryBuilder               $qb         The query being built.
+	 * @param array<string, string|null> $components The id columns and their values, in order.
 	 *
 	 * @return void
 	 */
-	private function applyIdComponent(IQueryBuilder $qb, string $column, ?string $value): void {
-		if ($value === null) {
-			$qb->andWhere($qb->expr()->isNull($column));
-			return;
-		}
+	private function applyIdComponents(IQueryBuilder $qb, array $components): void {
+		foreach ($components as $column => $value) {
+			if ($value === null) {
+				$qb->andWhere($qb->expr()->isNull($column));
+				continue;
+			}
 
-		$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
-	}//end applyIdComponent()
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+	}//end applyIdComponents()
 }//end class
