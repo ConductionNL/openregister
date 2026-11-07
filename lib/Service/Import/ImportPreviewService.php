@@ -82,7 +82,7 @@ use Throwable;
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class ImportPreviewService {
+class ImportPreviewService implements ImportPreviewServiceInterface {
 
 	/**
 	 * How many rows one commit batch writes.

@@ -43,7 +43,7 @@ use UnexpectedValueException;
 /**
  * Drops items that do not match.
  */
-class FilterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class FilterNode implements IFlowNode, FilterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *
