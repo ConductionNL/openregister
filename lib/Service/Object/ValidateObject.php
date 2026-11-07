@@ -1958,6 +1958,7 @@ class ValidateObject implements ValidateObjectInterface {
 		}
 
 		$validator = new Validator();
+		$validator->setParser((new RefLoopGuardParser(keyword: '$ref'))->schemaParser());
 		$validator->setMaxErrors(100);
 
 		$formats = $validator->parser()->getFormatResolver();
