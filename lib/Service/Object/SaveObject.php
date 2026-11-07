@@ -35,7 +35,6 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -52,6 +51,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeItem;
+use OCA\OpenRegister\Service\Object\SaveObject\CascadeRules;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
@@ -1095,8 +1096,8 @@ class SaveObject implements SaveObjectInterface {
 		$run->stored = $stored;
 
 		// Single object properties first, then array properties, as each pass rewrites the data.
-		$objectProperties = array_filter($properties, fn (array $property) => self::isCascadedObjectProperty(property: $property));
-		$arrayObjProps = array_filter($properties, fn (array $property) => self::isCascadedArrayProperty(property: $property));
+		$objectProperties = array_filter($properties, fn (array $property) => CascadeRules::isObjectProperty(property: $property));
+		$arrayObjProps = array_filter($properties, fn (array $property) => CascadeRules::isArrayProperty(property: $property));
 		foreach ($objectProperties as $property => $definition) {
 			$run->property = $property;
 			$run->definition = $definition;
@@ -1111,78 +1112,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $run->data;
 	}//end cascadeObjects()
-
-	/**
-	 * Whether a single object property cascades: a `$ref` with inversedBy or cascade handling, and no writeBack.
-	 *
-	 * Properties with writeBack are handled by the write-back method. Objects
-	 * with only `$ref` and nested-object handling remain in the data.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property cascades.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadedObjectProperty(array $property): bool {
-		$hasWriteBack = ($property['writeBack'] ?? null) !== null
-			&& $property['writeBack'] === true;
-		if ($hasWriteBack === true) {
-			return false;
-		}
-
-		$hasRef = ($property['$ref'] ?? null) !== null;
-		$hasInversedBy = isset($property['inversedBy']);
-		$hasCascadeHandling = isset($property['objectConfiguration']['handling'])
-			&& $property['objectConfiguration']['handling'] === 'cascade';
-
-		return $property['type'] === 'object' && $hasRef && ($hasInversedBy || $hasCascadeHandling);
-	}//end isCascadedObjectProperty()
-
-	/**
-	 * Whether an array property cascades: a `$ref` with inversedBy, cascade or relates handling, and no writeBack.
-	 *
-	 * TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property cascades.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadedArrayProperty(array $property): bool {
-		$propWriteBack = ($property['writeBack'] ?? null) !== null
-			&& $property['writeBack'] === true;
-		$itemsWriteBack = ($property['items']['writeBack'] ?? null) !== null
-			&& $property['items']['writeBack'] === true;
-		if ($propWriteBack === true || $itemsWriteBack === true) {
-			return false;
-		}
-
-		$hasRef = isset($property['$ref']) || (($property['items']['$ref'] ?? null) !== null);
-		$hasInversedBy = isset($property['inversedBy'])
-			|| (($property['items']['inversedBy'] ?? null) !== null);
-		$hasCascade = self::cascadesOrRelates(property: $property);
-
-		return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
-	}//end isCascadedArrayProperty()
-
-	/**
-	 * Whether a property, or its items, declares cascade or relates handling.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return bool True when the property's objects cascade or are related.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadesOrRelates(array $property): bool {
-		$objHandling = $property['objectConfiguration']['handling'] ?? null;
-		$itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-
-		return $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
-			|| $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
-	}//end cascadesOrRelates()
 
 	/**
 	 * Cascade the single object of the run's property into its own object.
@@ -1222,42 +1151,13 @@ class SaveObject implements SaveObjectInterface {
 				definition: $run->definition,
 				object: $objectData
 			);
-			self::applySingleCascadeResult(run: $run, createdUuid: $createdUuid);
+			CascadeRules::applySingleResult(run: $run, createdUuid: $createdUuid);
 		} catch (NotAuthorizedException $e) {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
 		}
 	}//end cascadeObjectProperty()
-
-	/**
-	 * Put a cascaded single object's UUID in the parent, or drop the property when the child points back.
-	 *
-	 * @param CascadeRun  $run         The cascade pass, on the cascaded property.
-	 * @param string|null $createdUuid The UUID of the cascaded object.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function applySingleCascadeResult(CascadeRun $run, ?string $createdUuid): void {
-		$definition = $run->definition;
-		if (($definition['inversedBy'] ?? null) === null) {
-			// Without inversedBy: store the created object's UUID.
-			$run->data[$run->property] = $createdUuid;
-			return;
-		}
-
-		// With inversedBy: keep the property for write-back processing when writeBack is on.
-		if (($definition['writeBack'] ?? null) !== null && $definition['writeBack'] === true) {
-			$run->data[$run->property] = $createdUuid;
-		}
-
-		if (($definition['writeBack'] ?? null) === null || $definition['writeBack'] === false) {
-			// Remove the property (traditional cascading).
-			unset($run->data[$run->property]);
-		}
-	}//end applySingleCascadeResult()
 
 	/**
 	 * Cascade the objects of the run's array property, and queue what the parent no longer references.
@@ -1275,7 +1175,7 @@ class SaveObject implements SaveObjectInterface {
 			return;
 		}
 
-		self::classifyArrayCascade(run: $run);
+		CascadeRules::classifyArray(run: $run);
 
 		// Handle empty array: clean up all related objects and continue.
 		if (empty($run->data[$run->property]) === true) {
@@ -1296,37 +1196,13 @@ class SaveObject implements SaveObjectInterface {
 				return;
 			}
 
-			self::applyArrayCascadeResult(run: $run, createdUuids: $createdUuids);
+			CascadeRules::applyArrayResult(run: $run, createdUuids: $createdUuids);
 		} catch (NotAuthorizedException $e) {
 			throw $e;
 		} catch (Exception $e) {
 			// Continue with other properties even if one fails.
 		}
 	}//end cascadeArrayProperty()
-
-	/**
-	 * Record on the run whether the array property relates its objects, and which stored references may become orphans.
-	 *
-	 * Only what the stored parent referenced, under cascade or relates handling, can become an orphan.
-	 *
-	 * @param CascadeRun $run The cascade pass, on the array property.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function classifyArrayCascade(CascadeRun $run): void {
-		$objHandling = $run->definition['objectConfiguration']['handling'] ?? null;
-		$itemsHandling = $run->definition['items']['objectConfiguration']['handling'] ?? null;
-		$run->isRelated = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
-		$isCascade = $objHandling === 'cascade' || $itemsHandling === 'cascade';
-
-		$run->oldUuids = [];
-		$stored = $run->stored[$run->property] ?? null;
-		if (($run->isRelated === true || $isCascade === true) && is_array($stored) === true) {
-			$run->oldUuids = array_values(array_filter($stored, 'is_string'));
-		}
-	}//end classifyArrayCascade()
 
 	/**
 	 * Queue references of the run's property for orphan cleanup after the parent is saved.
@@ -1367,7 +1243,7 @@ class SaveObject implements SaveObjectInterface {
 	private function applyRelatedCascadeResult(CascadeRun $run, array $createdUuids): void {
 		$existingUuids = array_filter(
 			$run->data[$run->property] ?? [],
-			fn ($item) => is_string($item) === true && self::isObjectIdentifier(value: $item) === true
+			fn ($item) => is_string($item) === true && CascadeItem::isObjectIdentifier(value: $item) === true
 		);
 
 		$run->data[$run->property] = array_values(array_unique(array_merge($existingUuids, $createdUuids)));
@@ -1379,39 +1255,6 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}
 	}//end applyRelatedCascadeResult()
-
-	/**
-	 * Put cascaded array objects' UUIDs in the parent, or drop the property when the children point back.
-	 *
-	 * @param CascadeRun $run          The cascade pass, on the array property.
-	 * @param string[]   $createdUuids The UUIDs of the cascaded objects.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function applyArrayCascadeResult(CascadeRun $run, array $createdUuids): void {
-		$definition = $run->definition;
-		$hasInversedBy = ($definition['inversedBy'] ?? null) !== null;
-		$hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
-		if ($hasInversedBy === false && $hasItemsInversedBy === false) {
-			// Without inversedBy: store the created objects' UUIDs.
-			$run->data[$run->property] = $createdUuids;
-			return;
-		}
-
-		// With inversedBy: keep the property for write-back processing, else remove it.
-		$defWriteBack = ($definition['writeBack'] ?? null) !== null
-			&& $definition['writeBack'] === true;
-		$itemsWriteBack = isset($definition['items']['writeBack'])
-			&& $definition['items']['writeBack'] === true;
-		if ($defWriteBack === true || $itemsWriteBack === true) {
-			$run->data[$run->property] = $createdUuids;
-			return;
-		}
-
-		unset($run->data[$run->property]);
-	}//end applyArrayCascadeResult()
 
 	/**
 	 * Cascade multiple objects from an array of objects in the data.
@@ -1437,12 +1280,12 @@ class SaveObject implements SaveObjectInterface {
 			return [];
 		}
 
-		$validObjects = array_filter($propData, fn ($object): bool => self::isCascadeCandidate(object: $object));
+		$validObjects = array_filter($propData, fn ($object): bool => CascadeItem::isCandidate(object: $object));
 		if (empty($validObjects) === true) {
 			return [];
 		}
 
-		$definition = self::cascadeItemsDefinition(property: $property);
+		$definition = CascadeRules::itemsDefinition(property: $property);
 		if ($definition === null) {
 			return [];
 		}
@@ -1478,83 +1321,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
-
-	/**
-	 * Whether an array item of a cascading property is a nested object or an object id.
-	 *
-	 * A nested object holding only an empty `id` is not; ids are uuids with or without
-	 * dashes, prefixed uuids and numeric ids.
-	 *
-	 * @param mixed $object The item.
-	 *
-	 * @return bool True when the item is cascaded or kept.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isCascadeCandidate(mixed $object): bool {
-		if (is_array($object) === true
-			&& empty($object) === false
-			&& (count($object) === 1
-			&& (($object['id'] ?? null) !== null)
-			&& empty($object['id']) === true) === false
-		) {
-			return true;
-		}
-
-		return is_string($object) === true && self::isObjectIdentifier(value: $object) === true;
-	}//end isCascadeCandidate()
-
-	/**
-	 * The item definition of an array property, carrying the property's `$ref`, `inversedBy`,
-	 * `register` and `objectConfiguration` down to its items.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return array|null The item definition, or null when it names no schema.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadeItemsDefinition(array $property): ?array {
-		foreach (['$ref', 'inversedBy', 'register', 'objectConfiguration'] as $key) {
-			if (($property[$key] ?? null) !== null) {
-				$property['items'][$key] = $property[$key];
-			}
-		}
-
-		if (isset($property['items']['$ref']) === false) {
-			return null;
-		}
-
-		return $property['items'];
-	}//end cascadeItemsDefinition()
-
-	/**
-	 * Whether a value is the id of a stored object rather than a nested object.
-	 *
-	 * Accepts a uuid with or without dashes, a prefixed uuid (`id-<uuid>`) and a
-	 * numeric id.
-	 *
-	 * @param string $value The value to test.
-	 *
-	 * @return bool True when the value is an object identifier.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function isObjectIdentifier(string $value): bool {
-		$patterns = [
-			'/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i',
-			'/^[0-9a-f]{32}$/i',
-			'/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i',
-			'/^[0-9]+$/',
-		];
-		foreach ($patterns as $pattern) {
-			if (preg_match($pattern, $value) === 1) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isObjectIdentifier()
 
 	/**
 	 * Where the sub-objects of a cascading property live, and how one names its parent.
@@ -1614,10 +1380,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		// Skip if object is empty or doesn't contain actual data.
-		$hasOnlyEmptyId = count($object) === 1
-			&& (($object['id'] ?? null) !== null)
-			&& empty($object['id']) === true;
-		if (empty($object) === true || $hasOnlyEmptyId === true) {
+		if (empty($object) === true || CascadeItem::hasOnlyEmptyId(object: $object) === true) {
 			return null;
 		}
 
@@ -1628,13 +1391,13 @@ class SaveObject implements SaveObjectInterface {
 
 		// Only set inversedBy if it's configured (for relation-based cascading).
 		if (($definition['inversedBy'] ?? null) !== null) {
-			$object[$definition['inversedBy']] = self::withParentReference(
+			$object[$definition['inversedBy']] = CascadeItem::withParentReference(
 				current: $object[$definition['inversedBy']] ?? null,
 				parentId: $objectId
 			);
 		}
 
-		$register = self::cascadeRegister(definition: $definition, parentRegister: $objectEntity->getRegister());
+		$register = CascadeItem::register(definition: $definition, parentRegister: $objectEntity->getRegister());
 
 		// A nested inline object is always created. The save would take its `id` or
 		// `@self.id` as the row to write onto, looked up past the read filters.
@@ -1684,49 +1447,6 @@ class SaveObject implements SaveObjectInterface {
 
 		return $savedUuid;
 	}//end cascadeSingleObject()
-
-	/**
-	 * The inverse property value of a cascaded object once it names its parent.
-	 *
-	 * An array gains the parent id when missing; any other value is replaced by it.
-	 *
-	 * @param mixed  $current  The current inverse property value.
-	 * @param string $parentId The parent object's uuid.
-	 *
-	 * @return mixed The new value.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function withParentReference(mixed $current, string $parentId): mixed {
-		if (is_array($current) === false) {
-			return $parentId;
-		}
-
-		if (in_array($parentId, $current, true) === false) {
-			$current[] = $parentId;
-		}
-
-		return $current;
-	}//end withParentReference()
-
-	/**
-	 * The register a cascaded object is saved in: the definition's, else the parent's; an array gives its id.
-	 *
-	 * @param array $definition     The property definition.
-	 * @param mixed $parentRegister The parent object's register.
-	 *
-	 * @return mixed The register.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private static function cascadeRegister(array $definition, mixed $parentRegister): mixed {
-		$register = $definition['register'] ?? $parentRegister;
-		if (is_array($register) === true) {
-			$register = $register['id'] ?? $register;
-		}
-
-		return $register;
-	}//end cascadeRegister()
 
 	/**
 	 * Deletes orphaned related objects that are no longer referenced by the parent.
@@ -2118,7 +1838,7 @@ class SaveObject implements SaveObjectInterface {
 		return array_filter(
 			$targetUuids,
 			fn ($uuid) => empty($uuid) === false && is_string($uuid) === true && trim($uuid) !== ''
-				&& self::isObjectIdentifier(value: $uuid) === true
+				&& CascadeItem::isObjectIdentifier(value: $uuid) === true
 		);
 	}//end writeBackTargetIds()
 
