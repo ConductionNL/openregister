@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
@@ -288,7 +289,7 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 		$converter->method('restoreStringTypedValues')->willReturnCallback(fn (...$args) => ['restored' => $args]);
 		$container->method('get')->willReturnCallback(fn (string $id) => match ($id) {
 			'userId' => 'anna',
-			SchemaTypeConverter::class => (($setup['converter'] ?? false) ? $converter : null),
+			SchemaTypeConverterInterface::class => (($setup['converter'] ?? false) ? $converter : null),
 			default => null,
 		});
 
