@@ -22,13 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCP\Files\Folder;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
-use OCP\Files\NotPermittedException;
 use OCP\IUser;
 
 /**
@@ -84,9 +81,9 @@ interface FileFolderServiceInterface {
 	 *
 	 * @return Node|null The created folder Node or null if creation fails
 	 *
-	 * @throws Exception If folder creation fails or entities not found
-	 * @throws NotPermittedException If folder creation is not permitted
-	 * @throws NotFoundException If parent folders do not exist
+	 * @throws \Exception If folder creation fails or entities not found
+	 * @throws \OCP\Files\NotPermittedException If folder creation is not permitted
+	 * @throws \OCP\Files\NotFoundException If parent folders do not exist
 	 *
 	 * @phpstan-return Node|null
 	 *
@@ -102,7 +99,7 @@ interface FileFolderServiceInterface {
 	 *
 	 * @return bool True when the folder was removed.
 	 *
-	 * @throws NotPermittedException When Nextcloud refuses to delete the folder.
+	 * @throws \OCP\Files\NotPermittedException When Nextcloud refuses to delete the folder.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -119,7 +116,7 @@ interface FileFolderServiceInterface {
 	 *
 	 * @return Node[]
 	 *
-	 * @throws Exception If the entity folder cannot be accessed
+	 * @throws \Exception If the entity folder cannot be accessed
 	 *
 	 * @psalm-return   list<\OCP\Files\Node>
 	 * @phpstan-return array<int, Node>

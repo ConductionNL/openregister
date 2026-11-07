@@ -23,10 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
 
 /**
  * The file look-ups and projections callers make without changing a file.
@@ -69,8 +67,8 @@ interface FileReaderInterface {
 	 *
 	 * @return File|null The file if found, null otherwise.
 	 *
-	 * @throws NotFoundException If the folder is not found.
-	 * @throws DoesNotExistException If the object ID is not found.
+	 * @throws \OCP\Files\NotFoundException If the folder is not found.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the object ID is not found.
 	 *
 	 * @psalm-param   ObjectEntity|string|null $object
 	 * @psalm-param   string|int $file
@@ -127,8 +125,8 @@ interface FileReaderInterface {
 	 *
 	 * @return array Array of file nodes.
 	 *
-	 * @throws NotFoundException If the folder is not found.
-	 * @throws DoesNotExistException If the object ID is not found.
+	 * @throws \OCP\Files\NotFoundException If the folder is not found.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException If the object ID is not found.
 	 *
 	 * @psalm-return   list<\OCP\Files\Node>
 	 * @phpstan-return array<int, Node>

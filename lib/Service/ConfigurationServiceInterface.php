@@ -22,15 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
-use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCP\AppFramework\Http\JSONResponse;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
 
 /**
  * Every public method of ConfigurationService. Callers depend on this interface, not on the class.
@@ -41,7 +37,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 * Checks if the OpenConnector service is available from the container.
 	 *
 	 * @return bool True if the OpenConnector service is available, false otherwise.
-	 * @throws ContainerExceptionInterface|NotFoundExceptionInterface
+	 * @throws \Psr\Container\ContainerExceptionInterface|\Psr\Container\NotFoundExceptionInterface
 	 *
 	 * @spec exclude Facade plumbing: peer-app presence probe (installed-apps check + container resolve), no standalone behavioral contract.
 	 */
@@ -57,8 +53,8 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 *
 	 * @return JSONResponse|array A PHP array with the uploaded json data or a JSONResponse in case of an error
 	 *
-	 * @throws Exception
-	 * @throws GuzzleException
+	 * @throws \Exception
+	 * @throws \GuzzleHttp\Exception\GuzzleException
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
@@ -112,7 +108,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 * @param Configuration $configuration The configuration to check
 	 *
 	 * @return string|null The remote version, or null if check failed
-	 * @throws GuzzleException If HTTP request fails
+	 * @throws \GuzzleHttp\Exception\GuzzleException If HTTP request fails
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
 	 *
@@ -154,7 +150,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 *
 	 * @return JSONResponse|array The fetched configuration data or error response.
 	 *
-	 * @throws GuzzleException If HTTP request fails.
+	 * @throws \GuzzleHttp\Exception\GuzzleException If HTTP request fails.
 	 *
 	 * @psalm-return JSONResponse<400|500, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
 	 *
@@ -172,7 +168,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 *
 	 * @param Configuration $configuration The configuration to preview
 	 *
-	 * @throws GuzzleException If fetching remote configuration fails
+	 * @throws \GuzzleHttp\Exception\GuzzleException If fetching remote configuration fails
 	 *
 	 * @return array|JSONResponse Preview data with registers, schemas, objects, endpoints, and metadata.
 	 *
@@ -218,7 +214,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 * @param int $page Page number
 	 * @param int $perPage Results per page
 	 *
-	 * @throws Exception If search fails
+	 * @throws \Exception If search fails
 	 *
 	 * @return array Search results with total count, results array, page, and per_page.
 	 *
@@ -235,7 +231,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 * @param int $page Page number
 	 * @param int $perPage Results per page
 	 *
-	 * @throws Exception If search fails
+	 * @throws \Exception If search fails
 	 *
 	 * @return array Search results with total count, results array, page, and per_page.
 	 *
@@ -283,7 +279,7 @@ interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 	 *
 	 * @return array Import results, keyed as importFromJson() returns them
 	 *
-	 * @throws Exception When the remote document cannot be fetched or the import fails
+	 * @throws \Exception When the remote document cannot be fetched or the import fails
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-selective-configuration-import-and-auto-update-must-import-what-they-name
 	 */

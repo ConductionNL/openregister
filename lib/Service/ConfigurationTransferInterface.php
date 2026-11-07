@@ -22,11 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Turns registers and configurations into a configuration array and reads one back.
@@ -45,7 +42,7 @@ interface ConfigurationTransferInterface extends AppConfigurationImporterInterfa
 	 *
 	 * @return array The OpenAPI specification.
 	 *
-	 * @throws Exception If configuration is invalid.
+	 * @throws \Exception If configuration is invalid.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
@@ -71,7 +68,7 @@ interface ConfigurationTransferInterface extends AppConfigurationImporterInterfa
 	 * @param string|null $version The version for version tracking (deprecated, use data version)
 	 * @param bool $force Force import even if the same or newer version already exists
 	 *
-	 * @throws Exception If called without a Configuration entity or if import fails
+	 * @throws \Exception If called without a Configuration entity or if import fails
 	 * @return array Array of created/updated entities
 	 *
 	 * @phpstan-return array{

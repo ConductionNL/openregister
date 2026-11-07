@@ -22,12 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\Files\File;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
-use OCP\Files\NotPermittedException;
 use OCP\IUser;
 use OCP\Share\IShare;
 
@@ -68,7 +64,7 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 *
 	 * @return void
 	 *
-	 * @throws NotPermittedException If the session cannot read the node
+	 * @throws \OCP\Files\NotPermittedException If the session cannot read the node
 	 *
 	 * @psalm-return   void
 	 * @phpstan-return void
@@ -86,7 +82,7 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 * @param int|null $shareType The share type (0=user, 1=group, 3=public link, 4=email, etc.)
 	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
 	 *
-	 * @throws Exception If creating the share link fails
+	 * @throws \Exception If creating the share link fails
 	 *
 	 * @return string The share link
 	 *
@@ -165,7 +161,7 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 *
 	 * Delegates to FileOwnershipHandler.
 	 *
-	 * @throws Exception If OpenRegister user cannot be created.
+	 * @throws \Exception If OpenRegister user cannot be created.
 	 *
 	 * @return IUser The OpenRegister user.
 	 *
@@ -180,19 +176,19 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string|int $file The path to the file or file ID to publish
 	 *
-	 * @return File The published file
+	 * @return \OCP\Files\File The published file
 	 *
-	 * @throws Exception If file publishing fails
-	 * @throws NotFoundException If the file is not found
-	 * @throws NotPermittedException If sharing is not permitted
+	 * @throws \Exception If file publishing fails
+	 * @throws \OCP\Files\NotFoundException If the file is not found
+	 * @throws \OCP\Files\NotPermittedException If sharing is not permitted
 	 *
-	 * @psalm-return   File
-	 * @phpstan-return File
+	 * @psalm-return   \OCP\Files\File
+	 * @phpstan-return \OCP\Files\File
 	 *
 	 * @spec exclude File publish via public share; deferred to the file-actions FilePublishingHandler
 	 *   follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function publishFile(ObjectEntity|string $object, string|int $file): File;
+	public function publishFile(ObjectEntity|string $object, string|int $file): \OCP\Files\File;
 
 	/**
 	 * Unpublish a file by removing its public share link.
@@ -200,17 +196,17 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 * @param ObjectEntity|string $object The object or object ID
 	 * @param string|int $filePath The path to the file to unpublish or file ID
 	 *
-	 * @return File The unpublished file
+	 * @return \OCP\Files\File The unpublished file
 	 *
-	 * @throws Exception If file unpublishing fails
-	 * @throws NotFoundException If the file is not found
-	 * @throws NotPermittedException If sharing operations are not permitted
+	 * @throws \Exception If file unpublishing fails
+	 * @throws \OCP\Files\NotFoundException If the file is not found
+	 * @throws \OCP\Files\NotPermittedException If sharing operations are not permitted
 	 *
-	 * @psalm-return   File
-	 * @phpstan-return File
+	 * @psalm-return   \OCP\Files\File
+	 * @phpstan-return \OCP\Files\File
 	 *
 	 * @spec exclude File unpublish (remove public share); deferred to the file-actions FilePublishingHandler
 	 *   follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): File;
+	public function unpublishFile(ObjectEntity|string $object, string|int $filePath): \OCP\Files\File;
 }//end interface

@@ -22,12 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
-use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
-
 /**
  * Imports a configuration an app ships, from its data or from a file in the app.
  */
@@ -48,7 +42,7 @@ interface AppConfigurationImporterInterface {
 	 * @param bool $force Whether to force import regardless of version checks
 	 *
 	 * @return array The import results
-	 * @throws Exception If import fails
+	 * @throws \Exception If import fails
 	 *
 	 * @phpstan-return array{
 	 *     registers: array<Register>,
@@ -82,9 +76,9 @@ interface AppConfigurationImporterInterface {
 	 * @param string $version The version of the configuration
 	 * @param bool $force Whether to force import regardless of version checks
 	 *
-	 * @return (ObjectEntity|Register|Schema|mixed)[][] Import result with counts and IDs
+	 * @return (\OCA\OpenRegister\Db\ObjectEntity|\OCA\OpenRegister\Db\Register|\OCA\OpenRegister\Db\Schema|mixed)[][] Import result with counts and IDs
 	 *
-	 * @throws Exception If file cannot be read or import fails
+	 * @throws \Exception If file cannot be read or import fails
 	 *
 	 * @since 0.2.10
 	 *

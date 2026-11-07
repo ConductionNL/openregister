@@ -22,23 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
-use OCP\Files\Folder;
-use OCP\Files\InvalidPathException;
 use OCP\Files\Node;
-use OCP\Files\NotFoundException;
-use OCP\Files\NotPermittedException;
 
 /**
  * The file operations controllers and the Files component call on FileService.
@@ -60,7 +52,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *                                     option — null/absent = auto (preserve iff the input is a
 	 *                                     tagged PDF), true = attempt, false = skip but still measure.
 	 *
-	 * @throws Exception If anonymization fails.
+	 * @throws \Exception If anonymization fails.
 	 *
 	 * @return Node The anonymized file node.
 	 *
@@ -83,7 +75,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @return File The new file copy.
 	 *
-	 * @throws Exception If the copy fails.
+	 * @throws \Exception If the copy fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -99,9 +91,9 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 * @param ObjectEntity|string $object The object entity or object UUID/ID
 	 * @param string|null $zipName Optional custom name for the ZIP file
 	 *
-	 * @throws Exception If ZIP creation fails or object not found
-	 * @throws NotFoundException If the object folder is not found
-	 * @throws NotPermittedException If file access is not permitted
+	 * @throws \Exception If ZIP creation fails or object not found
+	 * @throws \OCP\Files\NotFoundException If the object folder is not found
+	 * @throws \OCP\Files\NotPermittedException If file access is not permitted
 	 *
 	 * @return (int|string)[]
 	 *
@@ -118,8 +110,8 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 * @param Node[] $files Array of Node files to format.
 	 * @param array $requestParams Optional request parameters including filters.
 	 *
-	 * @throws InvalidPathException If file paths are invalid.
-	 * @throws NotFoundException If files are not found.
+	 * @throws \OCP\Files\InvalidPathException If file paths are invalid.
+	 * @throws \OCP\Files\NotFoundException If files are not found.
 	 *
 	 * @return array Formatted file data with pagination
 	 *
@@ -216,7 +208,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @return File The moved file.
 	 *
-	 * @throws Exception If the move fails.
+	 * @throws \Exception If the move fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -231,7 +223,7 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @return File The renamed file.
 	 *
-	 * @throws Exception If the rename fails.
+	 * @throws \Exception If the rename fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -250,8 +242,8 @@ interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceIn
 	 *
 	 * @return File The saved file.
 	 *
-	 * @throws NotPermittedException If file operations fail due to permissions.
-	 * @throws Exception If file operations fail for other reasons.
+	 * @throws \OCP\Files\NotPermittedException If file operations fail due to permissions.
+	 * @throws \Exception If file operations fail for other reasons.
 	 *
 	 * @phpstan-param array<int, string> $tags
 	 * @psalm-param   array<int, string> $tags
