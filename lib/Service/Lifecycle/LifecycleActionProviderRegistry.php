@@ -47,8 +47,11 @@ use Psr\Log\LoggerInterface;
  *
  * Not declared `final`: the engine tests substitute a registry that resolves
  * without a live container, mirroring `LifecycleActionRegistry`'s rationale.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class LifecycleActionProviderRegistry {
+	use ResolvesThroughContainers;
 
 	/**
 	 * Per-request cache.
@@ -85,47 +88,37 @@ class LifecycleActionProviderRegistry {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resolve(string $tag): LifecycleActionProviderInterface {
-		if (isset($this->cache[$tag]) === true) {
-			return $this->cache[$tag];
+		if (isset($this->cache[$tag]) === false) {
+			$this->cache[$tag] = $this->load(tag: $tag);
 		}
 
-		$instance = null;
-		$errors = [];
-		// Try OR's app container first (covers OR-internal providers) and
-		// fall back to the injected server container (covers FQCN-based
-		// references to providers in other apps that Nextcloud can autowire).
-		// The server container is injected via OCP\IServerContainer rather
-		// than reached through the static \OC::$server accessor, which lib/
-		// bans.
-		foreach ([$this->container, $this->serverContainer] as $candidate) {
-			try {
-				$instance = $candidate->get($tag);
-				break;
-			} catch (\Throwable $e) {
-				$errors[] = $e->getMessage();
-			}
-		}
+		return $this->cache[$tag];
+	}//end resolve()
 
+	/**
+	 * Resolve a provider tag through the containers, refusing a miss or a wrong type.
+	 *
+	 * @param string $tag DI service tag or FQCN.
+	 *
+	 * @return LifecycleActionProviderInterface
+	 *
+	 * @throws LifecycleProviderException When the tag is not registered or has the wrong type.
+	 */
+	private function load(string $tag): LifecycleActionProviderInterface {
+		$instance = $this->lookUp(
+			id: $tag,
+			logPrefix: sprintf('Lifecycle provider tag "%s" could not be resolved: ', $tag)
+		);
 		if ($instance === null) {
-			$this->logger->error(
-				sprintf('Lifecycle provider tag "%s" could not be resolved: %s', $tag, implode(' | ', $errors))
-			);
-			throw new LifecycleProviderException(
-				message: sprintf('Lifecycle provider "%s" is not registered.', $tag)
-			);
+			throw new LifecycleProviderException(message: sprintf('Lifecycle provider "%s" is not registered.', $tag));
 		}
 
 		if (($instance instanceof LifecycleActionProviderInterface) === false) {
 			throw new LifecycleProviderException(
-				message: sprintf(
-					'Service "%s" does not implement %s.',
-					$tag,
-					LifecycleActionProviderInterface::class
-				)
+				message: sprintf('Service "%s" does not implement %s.', $tag, LifecycleActionProviderInterface::class)
 			);
 		}
 
-		$this->cache[$tag] = $instance;
 		return $instance;
-	}//end resolve()
+	}//end load()
 }//end class
