@@ -46,7 +46,7 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SetFieldsNode implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The config keys of which at least one must be non-empty.

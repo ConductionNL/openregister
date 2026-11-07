@@ -24,6 +24,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +56,11 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		AwaitSignalNode::class => [AwaitSignalNodeInterface::class, ContractBindings::class],
+		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
+		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
+		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
+		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 

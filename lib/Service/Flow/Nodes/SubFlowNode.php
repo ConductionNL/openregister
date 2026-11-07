@@ -58,7 +58,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SubFlowNode implements IFlowNode, SubFlowNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * How deep a chain of sub-flows may go before it is refused.

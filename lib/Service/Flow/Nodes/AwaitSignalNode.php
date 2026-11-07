@@ -75,7 +75,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run until an external signal decides how it continues.
  */
-class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * Minutes between heartbeats when the flow does not choose.
