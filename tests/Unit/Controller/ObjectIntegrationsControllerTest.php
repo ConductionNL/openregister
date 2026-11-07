@@ -34,6 +34,9 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -145,12 +148,18 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		return new ObjectIntegrationsController(
 			appName: 'openregister',
 			request: $request,
-			registry: $registry,
-			logger: new NullLogger(),
-			objectService: $objectService ?? $this->accessibleObjectService(),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			visibility: $visibility ?? $this->passThroughVisibility(),
-			permissions: $permissions ?? $this->permissions(mayUpdate: true)
+			services: new ObjectIntegrationsControllerServices(
+				domain: new ObjectIntegrationsDomain(
+					registry: $registry,
+					objectService: $objectService ?? $this->accessibleObjectService(),
+					schemaMapper: $this->createMock(SchemaMapper::class)
+				),
+				access: new ObjectIntegrationsAccess(
+					visibility: $visibility ?? $this->passThroughVisibility(),
+					permissions: $permissions ?? $this->permissions(mayUpdate: true)
+				),
+				logger: new NullLogger()
+			)
 		);
 	}//end buildController()
 

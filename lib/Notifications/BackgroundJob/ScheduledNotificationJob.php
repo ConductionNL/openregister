@@ -86,33 +86,79 @@ final class ScheduledNotificationJob extends TimedJob {
 	private ?ICache $stateCache = null;
 
 	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic object mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Operator-aware filter evaluator.
+	 *
+	 * @var ScheduledFilterEvaluator
+	 */
+	private readonly ScheduledFilterEvaluator $filterEvaluator;
+
+	/**
+	 * Notification dispatcher.
+	 *
+	 * @var AnnotationNotificationDispatcher
+	 */
+	private readonly AnnotationNotificationDispatcher $dispatcher;
+
+	/**
+	 * Per-object dedup state mapper.
+	 *
+	 * @var NotificationDedupeStateMapper
+	 */
+	private readonly NotificationDedupeStateMapper $dedupeMapper;
+
+	/**
+	 * App config for tunable retention window.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * PSR logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Wire collaborators and configure the timed-job interval.
 	 *
-	 * @param ITimeFactory $time Nextcloud time factory.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicMapperInterface $objectMapper Magic object mapper.
-	 * @param AnnotationNotificationDispatcher $dispatcher Notification dispatcher.
-	 * @param LoggerInterface $logger PSR logger.
-	 * @param ICacheFactory $cacheFactory Distributed cache factory.
-	 * @param ScheduledFilterEvaluator $filterEvaluator Operator-aware filter evaluator.
-	 * @param NotificationDedupeStateMapper $dedupeMapper Per-object dedup state mapper.
-	 * @param IAppConfig $appConfig App config for tunable retention window.
+	 * @param ITimeFactory                  $time         Nextcloud time factory.
+	 * @param ScheduledObjectSources        $sources      Schemas, objects and the filter evaluator.
+	 * @param ScheduledNotificationDelivery $delivery     Dispatcher, dedup state, app config and logger.
+	 * @param ICacheFactory                 $cacheFactory Distributed cache factory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly LoggerInterface $logger,
+		ScheduledObjectSources $sources,
+		ScheduledNotificationDelivery $delivery,
 		ICacheFactory $cacheFactory,
-		private readonly ScheduledFilterEvaluator $filterEvaluator,
-		private readonly NotificationDedupeStateMapper $dedupeMapper,
-		private readonly IAppConfig $appConfig,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 60);
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->objectMapper = $sources->objectMapper;
+		$this->filterEvaluator = $sources->filterEvaluator;
+		$this->dispatcher = $delivery->dispatcher;
+		$this->dedupeMapper = $delivery->dedupeMapper;
+		$this->appConfig = $delivery->appConfig;
+		$this->logger = $delivery->logger;
 
 		try {
 			$this->stateCache = $cacheFactory->createDistributed('openregister_scheduled_notifs');

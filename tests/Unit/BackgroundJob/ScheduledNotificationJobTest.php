@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -239,14 +241,9 @@ class ScheduledNotificationJobTest extends TestCase {
 	private function runJob(): void {
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$this->appConfig
+			new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $this->appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');
@@ -488,14 +485,9 @@ class ScheduledNotificationJobTest extends TestCase {
 
 		$job = new ScheduledNotificationJob(
 			$this->time,
-			$this->schemaMapper,
-			$this->objectMapper,
-			$this->dispatcher,
-			$this->logger,
-			$this->cacheFactory,
-			new ScheduledFilterEvaluator(logger: $this->logger),
-			$this->dedupeMapper,
-			$appConfig
+			new ScheduledObjectSources($this->schemaMapper, $this->objectMapper, new ScheduledFilterEvaluator(logger: $this->logger)),
+			new ScheduledNotificationDelivery($this->dispatcher, $this->dedupeMapper, $appConfig, $this->logger),
+			$this->cacheFactory
 		);
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('run');

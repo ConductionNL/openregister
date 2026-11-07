@@ -54,6 +54,9 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
+use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
+use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
 
 final class BulkJobPriorValueCaptureTest extends TestCase {
 
@@ -313,16 +316,22 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		$service = new BulkJobService(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->registry,
-			$this->resolver,
-			$this->createMock(BulkJobExecutor::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IJobList::class),
-			$appConfig,
-			new NullLogger()
+			new BulkJobStore(
+				$this->jobMapper,
+				$this->memberMapper,
+				$this->createMock(IJobList::class),
+				new NullLogger()
+			),
+			new BulkJobActions(
+				$this->registry,
+				$this->resolver,
+				$this->createMock(BulkJobExecutor::class)
+			),
+			new BulkJobEnvironment(
+				$this->createMock(ObjectService::class),
+				$this->createMock(IUserManager::class),
+				$appConfig
+			)
 		);
 
 		try {
