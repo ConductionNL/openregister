@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\CospendLinkServiceInterface;
 use OCA\OpenRegister\Service\DemoDataService;
 use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCA\OpenRegister\Service\EndpointService;
@@ -50,6 +52,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 	 */
 	private const CASES = [
 		BulkTranslationService::class => [BulkTranslationServiceInterface::class, ContractBindings::class, 'Service'],
+		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DemoDataService::class => [DemoDataServiceInterface::class, ContractBindings::class, 'Service'],
 		EndpointService::class => [EndpointServiceInterface::class, ContractBindings::class, 'Service'],
 	];

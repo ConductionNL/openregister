@@ -45,7 +45,7 @@ use Throwable;
 /**
  * Recognises a concept delete and answers what blocks it.
  */
-class ConceptDeleteGuard {
+class ConceptDeleteGuard implements ConceptDeleteGuardInterface {
 
 	/**
 	 * How many holding schemas the refusal names.

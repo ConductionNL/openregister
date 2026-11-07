@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -42,14 +42,14 @@ class ExampleSetListCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetCatalogue $catalogue Finds the fragments.
-	 * @param ExampleSetRecord    $record    Says whether a set is installed.
+	 * @param ExampleSetCatalogue       $catalogue Finds the fragments.
+	 * @param ExampleSetRecordInterface $record    Says whether a set is installed.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetCatalogue $catalogue,
-		private readonly ExampleSetRecord $record,
+		private readonly ExampleSetRecordInterface $record,
 	) {
 		parent::__construct();
 	}//end __construct()
