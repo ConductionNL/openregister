@@ -126,6 +126,12 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 		$this->db->method('beginTransaction')->willReturnCallback(fn () => $this->steps[] = 'begin');
 		$this->db->method('commit')->willReturnCallback(fn () => $this->steps[] = 'commit');
 		$this->db->method('rollBack')->willReturnCallback(fn () => $this->steps[] = 'rollback');
+		$this->db->method('executeStatement')->willReturnCallback(
+			function (string $sql): int {
+				$this->steps[] = 'statement ' . $sql;
+				return 0;
+			}
+		);
 		$this->db->method('executeQuery')->willReturnCallback(
 			function (string $sql): IResult {
 				$this->steps[] = 'hold ' . $sql;
@@ -324,6 +330,38 @@ final class WholeTableDeleteHoldsRowsTest extends TestCase {
 
 		self::assertSame(['read 42'], $this->steps);
 	}//end testSqliteChecksWithoutAHold()
+
+	/**
+	 * On PostgreSQL the hold waits at most the lock timeout, set for this transaction only, before it asks for the rows.
+	 *
+	 * @return void
+	 */
+	public function testPostgresBoundsTheWaitForTheRowsItHolds(): void {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_POSTGRES);
+		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
+		$db->method('executeStatement')->willReturnCallback(
+			function (string $sql): int {
+				$this->steps[] = 'statement ' . $sql;
+				return 0;
+			}
+		);
+		$db->method('executeQuery')->willReturnCallback(
+			function (string $sql): IResult {
+				$this->steps[] = 'hold ' . $sql;
+				return $this->createMock(IResult::class);
+			}
+		);
+		$schema = $this->givenTable(schemaId: 42);
+
+		$guard = new SchemaTeardownGuard(mapper: $this->mapper, db: $db, audit: $this->audit);
+		$guard->rows->assertNoneKept(register: $this->register(), schema: $schema);
+
+		self::assertSame(
+			["statement SET LOCAL lock_timeout = '50s'", 'hold SELECT uuid FOR UPDATE', 'read 42'],
+			$this->steps
+		);
+	}//end testPostgresBoundsTheWaitForTheRowsItHolds()
 
 	/**
 	 * Run the delete by schema.

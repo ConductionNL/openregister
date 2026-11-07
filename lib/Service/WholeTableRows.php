@@ -46,6 +46,14 @@ final class WholeTableRows {
 	private const CHUNK_SIZE = 500;
 
 	/**
+	 * How long the delete waits for a row another writer holds, on PostgreSQL.
+	 *
+	 * PostgreSQL waits without limit by default; MariaDB and MySQL give up after
+	 * innodb_lock_wait_timeout (50 s). Past it the delete fails and rolls back whole.
+	 */
+	public const LOCK_TIMEOUT = '50s';
+
+	/**
 	 * @param MagicMapperInterface $mapper Reads the magic table.
 	 * @param IDBConnection        $db     Holds the rows of the table.
 	 */
@@ -94,6 +102,7 @@ final class WholeTableRows {
 	 *
 	 * A plain read holds nothing: a lock or freeze committed after it would be missed.
 	 * SQLite has no row locks and no FOR UPDATE, and it runs one writer at a time.
+	 * On PostgreSQL the wait for a held row is bounded for the rest of the transaction.
 	 *
 	 * @param Register $register The register context.
 	 * @param Schema   $schema   The schema context.
@@ -101,8 +110,13 @@ final class WholeTableRows {
 	 * @return void
 	 */
 	private function holdRows(Register $register, Schema $schema): void {
-		if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_SQLITE) {
+		$provider = $this->db->getDatabaseProvider();
+		if ($provider === IDBConnection::PLATFORM_SQLITE) {
 			return;
+		}
+
+		if ($provider === IDBConnection::PLATFORM_POSTGRES) {
+			$this->db->executeStatement("SET LOCAL lock_timeout = '".self::LOCK_TIMEOUT."'");
 		}
 
 		$query = $this->db->getQueryBuilder();
