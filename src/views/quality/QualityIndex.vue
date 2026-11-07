@@ -149,32 +149,12 @@
 							</tr>
 						</tbody>
 					</table>
-					<div v-if="lowQualityTotal > lowQualityLimit" class="pagination">
-						<NcButton
-							:disabled="lowQualityOffset === 0"
-							@click="previousPage">
-							{{ t('openregister', 'Previous') }}
-						</NcButton>
-						<span class="paginationInfo">
-							{{
-								t('openregister', 'Showing {from}-{to} of {total}', {
-									from: lowQualityOffset + 1,
-									to: Math.min(
-										lowQualityOffset + lowQualityLimit,
-										lowQualityTotal,
-									),
-									total: lowQualityTotal,
-								})
-							}}
-						</span>
-						<NcButton
-							:disabled="
-								lowQualityOffset + lowQualityLimit >= lowQualityTotal
-							"
-							@click="nextPage">
-							{{ t('openregister', 'Next') }}
-						</NcButton>
-					</div>
+					<RangePager
+						:offset="lowQualityOffset"
+						:limit="lowQualityLimit"
+						:total="lowQualityTotal"
+						@previous="previousPage"
+						@next="nextPage" />
 				</section>
 			</template>
 		</div>
@@ -184,28 +164,27 @@
 <script>
 import { CnChartWidget } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
+import RangePager from './RangePager.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualitySelection } from './qualitySelection.js'
 
 export default {
 	name: 'QualityIndex',
 
 	components: {
+		RangePager,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcButton,
 		CnChartWidget,
 		ChartBoxOutline,
 		RegisterSchemaSelector,
 	},
+
+	mixins: [qualitySelection],
 
 	data() {
 		return {
@@ -214,20 +193,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
-		 */
-		hasSelection() {
-			return qualityStore.hasSelection
-		},
-
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
 		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
@@ -300,19 +265,6 @@ export default {
 		lowQualityOffset() {
 			return qualityStore.lowQualityOffset
 		},
-	},
-
-	/**
-	 * @spec openspec/specs/mdm-frontend/spec.md
-	 */
-	mounted() {
-		if (this.hasSelection) {
-			this.loadData()
-		}
-		this.$watch(
-			() => [qualityStore.selectedRegister, qualityStore.selectedSchema],
-			() => this.loadData(),
-		)
 	},
 
 	methods: {

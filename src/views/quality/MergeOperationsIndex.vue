@@ -104,35 +104,12 @@
 						</tr>
 					</tbody>
 				</table>
-				<div
-					v-if="mergeOperationsTotal > mergeOperationsLimit"
-					class="pagination">
-					<NcButton
-						:disabled="mergeOperationsOffset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="paginationInfo">
-						{{
-							t('openregister', 'Showing {from}-{to} of {total}', {
-								from: mergeOperationsOffset + 1,
-								to: Math.min(
-									mergeOperationsOffset + mergeOperationsLimit,
-									mergeOperationsTotal,
-								),
-								total: mergeOperationsTotal,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="
-							mergeOperationsOffset + mergeOperationsLimit
-							>= mergeOperationsTotal
-						"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<RangePager
+					:offset="mergeOperationsOffset"
+					:limit="mergeOperationsLimit"
+					:total="mergeOperationsTotal"
+					@previous="previousPage"
+					@next="nextPage" />
 			</template>
 		</div>
 	</NcAppContent>
@@ -146,6 +123,7 @@ import {
 	NcLoadingIcon,
 } from '@nextcloud/vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import RangePager from './RangePager.vue'
 import { qualityStore } from '../../store/store.js'
 
 /**
@@ -162,6 +140,7 @@ export default {
 	name: 'MergeOperationsIndex',
 
 	components: {
+		RangePager,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,

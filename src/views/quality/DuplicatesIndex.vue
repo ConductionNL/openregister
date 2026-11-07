@@ -89,32 +89,12 @@
 						</tr>
 					</tbody>
 				</table>
-				<div v-if="duplicatesTotal > duplicatesLimit" class="pagination">
-					<NcButton
-						:disabled="duplicatesOffset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="paginationInfo">
-						{{
-							t('openregister', 'Showing {from}-{to} of {total}', {
-								from: duplicatesOffset + 1,
-								to: Math.min(
-									duplicatesOffset + duplicatesLimit,
-									duplicatesTotal,
-								),
-								total: duplicatesTotal,
-							})
-						}}
-					</span>
-					<NcButton
-						:disabled="
-							duplicatesOffset + duplicatesLimit >= duplicatesTotal
-						"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
+				<RangePager
+					:offset="duplicatesOffset"
+					:limit="duplicatesLimit"
+					:total="duplicatesTotal"
+					@previous="previousPage"
+					@next="nextPage" />
 			</template>
 		</div>
 
@@ -136,13 +116,16 @@ import {
 } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import MdmMergeWizardModal from '../../modals/mdm/MdmMergeWizardModal.vue'
+import RangePager from './RangePager.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
 import { qualityStore } from '../../store/store.js'
+import { qualitySelection } from './qualitySelection.js'
 
 export default {
 	name: 'DuplicatesIndex',
 
 	components: {
+		RangePager,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
@@ -151,6 +134,8 @@ export default {
 		RegisterSchemaSelector,
 		MdmMergeWizardModal,
 	},
+
+	mixins: [qualitySelection],
 
 	data() {
 		return {
@@ -161,20 +146,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
-		 */
-		hasSelection() {
-			return qualityStore.hasSelection
-		},
-
-		/**
-		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
-		 */
-		loading() {
-			return qualityStore.isLoading
-		},
-
 		/**
 		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
@@ -202,19 +173,6 @@ export default {
 		duplicatesOffset() {
 			return qualityStore.duplicatesOffset
 		},
-	},
-
-	/**
-	 * @spec openspec/specs/mdm-frontend/spec.md
-	 */
-	mounted() {
-		if (this.hasSelection) {
-			this.loadData()
-		}
-		this.$watch(
-			() => [qualityStore.selectedRegister, qualityStore.selectedSchema],
-			() => this.loadData(),
-		)
 	},
 
 	methods: {
