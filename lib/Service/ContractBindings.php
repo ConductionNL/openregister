@@ -101,6 +101,10 @@ use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -151,6 +155,7 @@ final class ContractBindings {
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
+		CalendarLinkServiceInterface::class => CalendarLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
@@ -173,6 +178,8 @@ final class ContractBindings {
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
+		JsonLdContextServiceInterface::class => JsonLdContextService::class,
+		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
@@ -195,11 +202,14 @@ final class ContractBindings {
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
+		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
+		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
