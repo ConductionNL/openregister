@@ -170,6 +170,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
