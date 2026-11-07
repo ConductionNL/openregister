@@ -125,7 +125,7 @@ final class ObjectSourceRegistrar {
 			'logger'            => 'Psr\Log\LoggerInterface',
 		],
 		DbalObjectSourceProvider::class => [
-			'sourceMapper'      => \OCA\OpenRegister\Db\SourceMapper::class,
+			'sourceMapper'      => \OCA\OpenRegister\Db\SourceMapperInterface::class,
 			'connectionFactory' => DbalConnectionFactory::class,
 			'logger'            => 'Psr\Log\LoggerInterface',
 		],

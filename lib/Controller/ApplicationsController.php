@@ -23,7 +23,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -69,9 +69,9 @@ class ApplicationsController extends Controller {
 	 *
 	 * Used for direct database queries when needed, bypassing service layer.
 	 *
-	 * @var ApplicationMapper Application mapper instance
+	 * @var ApplicationMapperInterface Application mapper instance
 	 */
-	private readonly ApplicationMapper $applicationMapper;
+	private readonly ApplicationMapperInterface $applicationMapper;
 
 	/**
 	 * Logger for debugging and error tracking
@@ -91,7 +91,7 @@ class ApplicationsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param ApplicationServiceInterface $applicationService Application service for business logic
-	 * @param ApplicationMapper $applicationMapper Application mapper for database operations
+	 * @param ApplicationMapperInterface $applicationMapper Application mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
 	 * @return void
@@ -100,7 +100,7 @@ class ApplicationsController extends Controller {
 		string $appName,
 		IRequest $request,
 		ApplicationServiceInterface $applicationService,
-		ApplicationMapper $applicationMapper,
+		ApplicationMapperInterface $applicationMapper,
 		LoggerInterface $logger,
 	) {
 		// Call parent constructor to initialize base controller.

@@ -41,7 +41,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<ObjectRelation>
  */
-class ObjectRelationMapper extends QBMapper {
+class ObjectRelationMapper extends QBMapper implements ObjectRelationMapperInterface {
 	/**
 	 * Constructor.
 	 *

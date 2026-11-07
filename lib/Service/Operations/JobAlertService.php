@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -105,7 +105,7 @@ class JobAlertService implements JobAlertServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper          $runs          The run log the count comes from.
+	 * @param JobRunMapperInterface          $runs          The run log the count comes from.
 	 * @param IConfig               $config        Where the threshold and the marker live.
 	 * @param INotificationManager  $notifications Where the alert is delivered.
 	 * @param IGroupManager         $groups        Resolves who the administrators are.
@@ -113,7 +113,7 @@ class JobAlertService implements JobAlertServiceInterface {
 	 * @param LoggerInterface       $logger        Where a failed delivery is reported.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly IConfig $config,
 		private readonly INotificationManager $notifications,
 		private readonly IGroupManager $groups,

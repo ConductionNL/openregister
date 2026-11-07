@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCP\App\IAppManager;
 use OCP\IConfig;
 use Throwable;
@@ -102,13 +102,13 @@ class SupportBundleService {
 	 *
 	 * @param IConfig                 $config The live configuration.
 	 * @param IAppManager             $apps   The installed apps and their versions.
-	 * @param JobRunMapper            $runs   The run log the failures come from.
+	 * @param JobRunMapperInterface            $runs   The run log the failures come from.
 	 * @param ConsistencyCheckService $check  The read-only consistency check.
 	 */
 	public function __construct(
 		private readonly IConfig $config,
 		private readonly IAppManager $apps,
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly ConsistencyCheckService $check,
 	) {
 	}//end __construct()

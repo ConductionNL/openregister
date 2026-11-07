@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -47,19 +47,19 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	/**
 	 * Application mapper for database operations
 	 *
-	 * @var ApplicationMapper
+	 * @var ApplicationMapperInterface
 	 */
-	private ApplicationMapper $applicationMapper;
+	private ApplicationMapperInterface $applicationMapper;
 
 	/**
 	 * ApplicationTool constructor
 	 *
-	 * @param ApplicationMapper $applicationMapper Application mapper instance
+	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
 	 * @param IUserSession $userSession User session
 	 * @param LoggerInterface $logger Logger instance
 	 */
 	public function __construct(
-		ApplicationMapper $applicationMapper,
+		ApplicationMapperInterface $applicationMapper,
 		IUserSession $userSession,
 		LoggerInterface $logger,
 	) {

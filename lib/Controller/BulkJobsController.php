@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
@@ -92,9 +92,9 @@ class BulkJobsController extends Controller {
 	/**
 	 * Job persistence.
 	 *
-	 * @var BulkJobMapper
+	 * @var BulkJobMapperInterface
 	 */
-	private readonly BulkJobMapper $jobMapper;
+	private readonly BulkJobMapperInterface $jobMapper;
 
 	/**
 	 * The action catalogue.

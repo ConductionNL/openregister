@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Operations;
 
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -73,12 +73,12 @@ class JobRunRecorder {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper     $runs   The run log.
+	 * @param JobRunMapperInterface     $runs   The run log.
 	 * @param LoggerInterface  $logger Where a failure to record is reported.
 	 * @param JobAlertService  $alerts Raises the threshold alert on a failure.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly LoggerInterface $logger,
 		private readonly JobAlertService $alerts,
 	) {

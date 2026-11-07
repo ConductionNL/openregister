@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCP\BackgroundJob\IJobList;
 
 /**
@@ -34,13 +34,13 @@ final class OperationsConsoleJobs {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param BulkJobMapper $bulkJobs The bulk job records.
+	 * @param BulkJobMapperInterface $bulkJobs The bulk job records.
 	 * @param IJobList      $jobList  Nextcloud's registered background jobs.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function __construct(
-		public readonly BulkJobMapper $bulkJobs,
+		public readonly BulkJobMapperInterface $bulkJobs,
 		public readonly IJobList $jobList,
 	) {
 	}//end __construct()
