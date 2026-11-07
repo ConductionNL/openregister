@@ -64,6 +64,9 @@ interface ConfigurationServiceInterface {
 	 *
 	 * @throws Exception If configuration is invalid.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function exportConfig(array|Configuration|Register $input = [], bool $includeObjects = false): array;
@@ -120,6 +123,9 @@ interface ConfigurationServiceInterface {
 	 *     rules: array
 	 * }
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
 	 */
 	public function importFromJson(
@@ -163,6 +169,8 @@ interface ConfigurationServiceInterface {
 	 *     rules: array
 	 * }
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array;
@@ -195,6 +203,8 @@ interface ConfigurationServiceInterface {
 	 *     synchronizations: array,
 	 *     rules: array
 	 * }
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
@@ -233,6 +243,8 @@ interface ConfigurationServiceInterface {
 	 *
 	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the static scoped-elevation helper importFromApp() uses.
+	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function softDeleteAppImports(string $appId): array;
@@ -247,6 +259,8 @@ interface ConfigurationServiceInterface {
 	 *
 	 * @return string|null The remote version, or null if check failed
 	 * @throws GuzzleException If HTTP request fails
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version check has multiple error and validation conditions
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
 	 */
@@ -269,6 +283,8 @@ interface ConfigurationServiceInterface {
 	 *     lastChecked: string|null,
 	 *     message: string
 	 * }
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Version comparison has multiple null and comparison checks
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-7
 	 */

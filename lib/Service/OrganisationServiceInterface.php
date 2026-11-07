@@ -71,6 +71,9 @@ interface OrganisationServiceInterface {
 	 *
 	 * @return Organisation[]
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Cache parameter reserved for future implementation
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag controls caching behavior
+	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
@@ -86,6 +89,7 @@ interface OrganisationServiceInterface {
 	 * @return Organisation|null The active organisation or null.
 	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) OrganisationContext is an ambient scope marker, read statically by design.
 	 */
 	public function getActiveOrganisation(?array $preloadedOrgs = null): ?Organisation;
 
@@ -157,6 +161,10 @@ interface OrganisationServiceInterface {
 	 * @throws OrganisationSlugConflictException If another organisation holds the slug the name gives
 	 * @throws Exception                         If user not logged in or organisation creation fails
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
+	 *
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	public function createOrganisation(string $name, string $description = '', bool $addCurrentUser = true, string $uuid = ''): Organisation;
@@ -219,6 +227,8 @@ interface OrganisationServiceInterface {
 	 * @return bool True if cache cleared
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to clear persistent settings
 	 *
 	 * @spec exclude Cache-invalidation helper (request/session/static caches + optional persistent setting); no business logic.
 	 */
