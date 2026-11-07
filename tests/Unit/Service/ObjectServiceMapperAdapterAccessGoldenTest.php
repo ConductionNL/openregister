@@ -47,9 +47,9 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 	/**
 	 * The adapter under test, with ObjectService::findAll() recording its arguments.
 	 *
-	 * @param array             $captured Receives each call's arguments.
-	 * @param int|string|null   $register The bound register.
-	 * @param int|string|null   $schema   The bound schema.
+	 * @param array $captured Receives each call's arguments.
+	 * @param int|string|null $register The bound register.
+	 * @param int|string|null $schema The bound schema.
 	 *
 	 * @return ObjectServiceMapperAdapter
 	 */
@@ -72,7 +72,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 	 */
 	public function testFindAllAppliesEveryArgumentAndTheBoundScope(): void {
 		$captured = [];
-		$adapter  = $this->findAllAdapter($captured, 3, 'sch');
+		$adapter = $this->findAllAdapter($captured, 3, 'sch');
 
 		$result = $adapter->findAll(
 			['limit' => 1, 'keep' => 'x', 'filters' => ['a' => 1]],
@@ -113,7 +113,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 	 */
 	public function testFindAllKeepsTheCallersScope(): void {
 		$captured = [];
-		$adapter  = $this->findAllAdapter($captured, 3, 4);
+		$adapter = $this->findAllAdapter($captured, 3, 4);
 
 		$adapter->findAll(['filters' => ['register' => 9, 'schema' => 8]]);
 
@@ -127,7 +127,7 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 	 */
 	public function testFindAllUnboundOnlyAddsEmptyFilters(): void {
 		$captured = [];
-		$adapter  = $this->findAllAdapter($captured, null, null);
+		$adapter = $this->findAllAdapter($captured, null, null);
 
 		$adapter->findAll();
 		$adapter->findAll(['filters' => null, 'limit' => 5]);
@@ -161,11 +161,11 @@ class ObjectServiceMapperAdapterAccessGoldenTest extends TestCase {
 
 		$service = $this->createMock(ObjectService::class);
 		$findArgs = null;
-		$cause    = null;
+		$cause = null;
 		$service->expects($this->once())->method('find')->willReturnCallback(
 			static function (...$args) use (&$findArgs, &$cause, $existing): ObjectEntity {
 				$findArgs = $args;
-				$cause    = WriteCause::current()['cause'];
+				$cause = WriteCause::current()['cause'];
 				return $existing;
 			}
 		);
