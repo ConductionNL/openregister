@@ -28,7 +28,7 @@
 namespace OCA\OpenRegister\Service\Sync;
 
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SyncExecution;
 use OCA\OpenRegister\Db\SyncFailure;
@@ -58,7 +58,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 * Constructor.
 	 *
 	 * @param SyncRecordMapper $syncRecordMapper Per-record tracking persistence
-	 * @param MappingMapper $mappingMapper Resolves the configured Mapping entity
+	 * @param MappingMapperInterface $mappingMapper Resolves the configured Mapping entity
 	 * @param MappingService $mappingService Applies Twig field transformation
 	 * @param ObjectOperationsInterface $objectService Validates + persists target objects
 	 * @param SyncConflictResolver $conflictResolver Decides source/local conflicts
@@ -66,7 +66,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 	 */
 	public function __construct(
 		private readonly SyncRecordMapper $syncRecordMapper,
-		private readonly MappingMapper $mappingMapper,
+		private readonly MappingMapperInterface $mappingMapper,
 		private readonly MappingService $mappingService,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SyncConflictResolver $conflictResolver,

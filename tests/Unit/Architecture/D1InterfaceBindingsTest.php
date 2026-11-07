@@ -17,6 +17,8 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -55,6 +57,7 @@ final class D1InterfaceBindingsTest extends TestCase {
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
 		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
+		MappingMapper::class => [MappingMapperInterface::class, DbRegistrar::class, 'Db'],
 		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
 		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
@@ -71,9 +74,18 @@ final class D1InterfaceBindingsTest extends TestCase {
 	 * ObjectActionElevationEntries resolves the ids a permission elevation is
 	 * public signature this refactor keeps unchanged.
 	 *
+	 * ExportHandler and ImportHandler are rewritten by the open flow
+	 * export/import PR (#5968); they and the registrar that builds them keep
+	 * the concrete MappingMapper until that lands.
+	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const LEFT = [
+		MappingMapper::class => [
+			'Service/Configuration/ConfigurationServiceRegistrar.php',
+			'Service/Configuration/ExportHandler.php',
+			'Service/Configuration/ImportHandler.php',
+		],
 		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 		TranslationMapper::class => ['Command/BackfillTranslationSourceLanguageCommand.php'],
