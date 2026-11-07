@@ -100,9 +100,8 @@ class FlowTimerDiagnosticController extends Controller {
 
 		try {
 			$anchor = $this->readAnchor(anchorAt: $anchorAt);
-			$resolved = WorkingCalendar::fromArray(definition: $calendar);
 
-			return new JSONResponse(data: $this->diagnostic->explain(calendar: $resolved, anchor: $anchor, sla: $sla, ladder: $ladder));
+			return new JSONResponse(data: $this->diagnostic->explain(calendar: WorkingCalendar::fromArray(definition: $calendar), anchor: $anchor, sla: $sla, ladder: $ladder));
 		} catch (FlowTimerValidationException $refused) {
 			// A calendar that cannot be saved is not explainable, for the save path's own reason.
 			return $this->refused(message: $refused->getMessage());
