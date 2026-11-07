@@ -185,7 +185,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// after insert would be outside the hash it is later given.
 		$this->applyAttributions(auditTrail: $auditTrail);
 
-		$inserted = $this->insert(entity: $auditTrail);
+		$inserted = $this->insert(entity: self::withChangeList(auditTrail: $auditTrail));
 
 		$this->shipToSink(entries: [$inserted]);
 
@@ -2994,8 +2994,26 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$gap->setUserName('System');
 		$gap->setCreated(new DateTime());
 
-		$this->insert(entity: $gap);
+		$this->insert(entity: self::withChangeList(auditTrail: $gap));
 	}//end recordSinkGap()
+
+	/**
+	 * The entry with an empty change list when it records no change.
+	 *
+	 * `changed` is NOT NULL: a refusal, an export or a gap record that names no
+	 * change is written with `[]`, or the insert fails and the record is lost.
+	 *
+	 * @param AuditTrail $auditTrail The entry to insert.
+	 *
+	 * @return AuditTrail The same entry.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private static function withChangeList(AuditTrail $auditTrail): AuditTrail {
+		$auditTrail->setChanged($auditTrail->getChanged());
+
+		return $auditTrail;
+	}//end withChangeList()
 
 	/**
 	 * Record one change to a security control, or one refused attempt at a change.
