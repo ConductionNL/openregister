@@ -106,6 +106,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -116,6 +118,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
@@ -128,12 +132,20 @@ use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
@@ -214,20 +226,54 @@ use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
+use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
+use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
+use OCA\OpenRegister\Service\Schemas\PropertyVocabularyInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
@@ -262,6 +308,7 @@ final class ContractBindings {
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
+		LoopNodeInterface::class => LoopNode::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		RouterNodeInterface::class => RouterNode::class,
@@ -284,6 +331,7 @@ final class ContractBindings {
 		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
+		ConditionTracerInterface::class => ConditionTracer::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
@@ -293,13 +341,18 @@ final class ContractBindings {
 		DeckCardServiceInterface::class => DeckCardService::class,
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
+		\OCA\OpenRegister\Service\Object\DraftActivationInterface::class => \OCA\OpenRegister\Service\Object\DraftActivation::class,
+		\OCA\OpenRegister\Service\Object\DraftExpiryInterface::class => \OCA\OpenRegister\Service\Object\DraftExpiry::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
+		EndNodeInterface::class => EndNode::class,
 		EndpointServiceInterface::class => EndpointService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		ExplodeNodeInterface::class => ExplodeNode::class,
+		ExtendingFormDeclarationInterface::class => ExtendingFormDeclaration::class,
 		\OCA\OpenRegister\Service\Object\FacetCacheVersionInterface::class => \OCA\OpenRegister\Service\Object\FacetCacheVersion::class,
+		FacetResultCacheClearerInterface::class => FacetResultCacheClearer::class,
 		FavouriteServiceInterface::class => FavouriteService::class,
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FilterNodeInterface::class => FilterNode::class,
@@ -376,22 +429,33 @@ final class ContractBindings {
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
+		PropertyVocabularyInterface::class => PropertyVocabulary::class,
 		QualityScorerInterface::class => QualityScorer::class,
 		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
 		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
 		ReferenceResolverInterface::class => ReferenceResolver::class,
 		RouterNodeInterface::class => RouterNode::class,
+		RuleEnablementServiceInterface::class => RuleEnablementService::class,
+		RuleInventoryServiceInterface::class => RuleInventoryService::class,
+		RuleReplayServiceInterface::class => RuleReplayService::class,
+		RuleRunRecorderInterface::class => RuleRunRecorder::class,
+		RuleTrialServiceInterface::class => RuleTrialService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
+		SchemaCacheHandlerInterface::class => SchemaCacheHandler::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SchemaTypeConverterInterface::class => SchemaTypeConverter::class,
 		SchemaShareableConfigScannerInterface::class => SchemaShareableConfigScanner::class,
 		SearchTrailServiceInterface::class => SearchTrailService::class,
+		SemanticRoleHandlerInterface::class => SemanticRoleHandler::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
+		SendEmailNodeInterface::class => SendEmailNode::class,
+		SendNotificationNodeInterface::class => SendNotificationNode::class,
+		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
@@ -402,16 +466,23 @@ final class ContractBindings {
 		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
+		TaskFormCompletionInterface::class => TaskFormCompletion::class,
+		TaskFormResolverInterface::class => TaskFormResolver::class,
 		TaskManagerInterface::class => TaskService::class,
+		TaskProjectionServiceInterface::class => TaskProjectionService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TaskSubjectLocatorInterface::class => TaskSubjectLocator::class,
+		TaskVtodoWriteBackGateInterface::class => TaskVtodoWriteBackGate::class,
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		TransitionNodeInterface::class => TransitionNode::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class => TranslationStatusService::class,
+		TriggerManualNodeInterface::class => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
+		UniqueConstraintEvaluatorInterface::class => UniqueConstraintEvaluator::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,

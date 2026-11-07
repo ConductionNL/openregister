@@ -44,7 +44,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluatorInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -67,13 +67,13 @@ class UniqueConstraintListener implements IEventListener, UniqueConstraintListen
 	/**
 	 * Constructor.
 	 *
-	 * @param UniqueConstraintEvaluator $evaluator Reads and describes the constraints.
+	 * @param UniqueConstraintEvaluatorInterface $evaluator Reads and describes the constraints.
 	 * @param SchemaMapperInterface $schemas Resolves the schema an object belongs to.
 	 * @param MagicMapperInterface $objects Finds the objects already holding a combination.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly UniqueConstraintEvaluator $evaluator,
+		private readonly UniqueConstraintEvaluatorInterface $evaluator,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly MagicMapperInterface $objects,
 		private readonly LoggerInterface $logger,
@@ -149,7 +149,7 @@ class UniqueConstraintListener implements IEventListener, UniqueConstraintListen
 					conflictingId: $conflict
 				);
 
-				if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
+				if ($constraint['action'] === UniqueConstraintEvaluatorInterface::ACTION_REFUSE) {
 					$event->setErrors(
 						[
 							'code' => self::ERROR_CODE,

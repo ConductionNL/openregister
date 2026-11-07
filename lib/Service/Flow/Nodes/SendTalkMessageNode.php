@@ -47,7 +47,14 @@ use UnexpectedValueException;
 /**
  * The "Send a Talk message" step.
  */
-class SendTalkMessageNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class SendTalkMessageNode implements
+	IFlowNode,
+	SendTalkMessageNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeTaxonomy,
+	IFlowNodePreview
+{
 
 	/**
 	 * The step type this node answers to.

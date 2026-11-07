@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
-use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -86,9 +86,9 @@ class ObjectDraftController extends Controller {
 	/**
 	 * Makes the draft definitive.
 	 *
-	 * @var DraftActivation
+	 * @var DraftActivationInterface
 	 */
-	private readonly DraftActivation $activation;
+	private readonly DraftActivationInterface $activation;
 
 	/**
 	 * The acting user, who is the asserted owner.

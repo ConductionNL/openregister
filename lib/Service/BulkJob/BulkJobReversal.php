@@ -36,8 +36,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 
 /**
@@ -49,13 +49,13 @@ class BulkJobReversal implements BulkJobReversalInterface {
 	 * Constructor.
 	 *
 	 * @param BulkJobService      $service      The lifecycle the reversal reuses.
-	 * @param BulkJobMapper       $jobMapper    Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
+	 * @param BulkJobMapperInterface       $jobMapper    Job persistence.
+	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 */
 	public function __construct(
 		private readonly BulkJobService $service,
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobMemberMapper $memberMapper,
+		private readonly BulkJobMapperInterface $jobMapper,
+		private readonly BulkJobMemberMapperInterface $memberMapper,
 	) {
 	}//end __construct()
 

@@ -57,7 +57,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class SourceMapper extends QBMapper {
+class SourceMapper extends QBMapper implements SourceMapperInterface {
 
 	use ColumnFiltersTrait;
 	use MultiTenancyTrait;

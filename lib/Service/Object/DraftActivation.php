@@ -66,7 +66,7 @@ use Throwable;
  *
  * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
  */
-class DraftActivation {
+class DraftActivation implements DraftActivationInterface {
 
 	/**
 	 * Constructor.

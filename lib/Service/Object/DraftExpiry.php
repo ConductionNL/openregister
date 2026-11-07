@@ -58,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
  */
-class DraftExpiry {
+class DraftExpiry implements DraftExpiryInterface {
 
 	/**
 	 * How many drafts one read fetches.
@@ -73,13 +73,6 @@ class DraftExpiry {
 	 * @var integer
 	 */
 	public const MAX_PAGES = 50;
-
-	/**
-	 * How many drafts one run removes at most, over all schemas; the rest waits for the next run.
-	 *
-	 * @var integer
-	 */
-	public const MAX_REMOVALS = 1000;
 
 	/**
 	 * Constructor.

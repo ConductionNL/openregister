@@ -23,7 +23,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -68,9 +68,9 @@ class SourcesController extends Controller {
 	/**
 	 * The source mapper
 	 *
-	 * @var SourceMapper
+	 * @var SourceMapperInterface
 	 */
-	private readonly SourceMapper $sourceMapper;
+	private readonly SourceMapperInterface $sourceMapper;
 
 	/**
 	 * The localization service
@@ -421,7 +421,7 @@ class SourcesController extends Controller {
 	 * Trigger an immediate sync for a source ("Sync Now").
 	 *
 	 * Admin-only and organisation-scoped: the source is loaded via
-	 * SourceMapper::find(), which applies the organisation filter, so a
+	 * SourceMapperInterface::find(), which applies the organisation filter, so a
 	 * non-owning admin receives a 404 rather than acting on another tenant's
 	 * source (per-object guard, no IDOR). The harvest pipeline runs inline
 	 * when a transport is available; sources without a registered fetcher are
@@ -436,7 +436,7 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
-	 *   organisation-scoped: the source is loaded via SourceMapper::find(),
+	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
 	 *   which applies the active-organisation filter and 404s on a foreign
 	 *   tenant's id, so a caller cannot trigger sync on an object outside
 	 *   their organisation.
@@ -492,7 +492,7 @@ class SourcesController extends Controller {
 	/**
 	 * Return the current sync status for a source.
 	 *
-	 * Organisation-scoped via SourceMapper::find() (per-object guard). Any
+	 * Organisation-scoped via SourceMapperInterface::find() (per-object guard). Any
 	 * authenticated member of the owning organisation may read sync status;
 	 * no credentials are exposed.
 	 *
@@ -505,7 +505,7 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Organisation-scoped read: the source is loaded via
-	 *   SourceMapper::find(), which applies the active-organisation filter and
+	 *   SourceMapperInterface::find(), which applies the active-organisation filter and
 	 *   404s on a foreign tenant's id. Only non-sensitive sync status is
 	 *   returned (no credentials), so any authenticated member of the owning
 	 *   organisation may read it.
@@ -587,7 +587,7 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
-	 *   organisation-scoped: the source is loaded via SourceMapper::find(),
+	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
 	 *   which applies the active-organisation filter and 404s on a foreign
 	 *   tenant's id. The response never contains the credential value.
 	 *
@@ -648,7 +648,7 @@ class SourcesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) AND
-	 *   organisation-scoped: the source is loaded via SourceMapper::find(),
+	 *   organisation-scoped: the source is loaded via SourceMapperInterface::find(),
 	 *   which applies the active-organisation filter and 404s on a foreign
 	 *   tenant's id. The response never contains the credential value.
 	 *

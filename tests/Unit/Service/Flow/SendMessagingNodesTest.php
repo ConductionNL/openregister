@@ -27,8 +27,11 @@ use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -198,13 +201,13 @@ class SendMessagingNodesTest extends TestCase {
 		);
 
 		// The registration listener's constructor, through the node bundles it
-		// takes, carries all three node types, which is the wiring `handle()`
-		// registers.
+		// takes, carries all three node types (by their interfaces), which is the
+		// wiring `handle()` registers.
 		$paramTypes = $this->constructorTypes(FlowNodeRegistrationListener::class);
 
-		$this->assertContains(SendNotificationNode::class, $paramTypes);
-		$this->assertContains(SendEmailNode::class, $paramTypes);
-		$this->assertContains(SendTalkMessageNode::class, $paramTypes);
+		$this->assertContains(SendNotificationNodeInterface::class, $paramTypes);
+		$this->assertContains(SendEmailNodeInterface::class, $paramTypes);
+		$this->assertContains(SendTalkMessageNodeInterface::class, $paramTypes);
 
 		// The boundary with ADR-094: outbound HTTP stays with OpenConnector.
 		// No send-webhook node exists — not in the built-ins directory, and no

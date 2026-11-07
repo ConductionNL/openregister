@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\BulkJob;
 
-use OCA\OpenRegister\Db\BulkJobMapper;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCP\BackgroundJob\IJobList;
 use Psr\Log\LoggerInterface;
 
@@ -37,14 +37,14 @@ final readonly class BulkJobStore {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
+	 * @param BulkJobMapperInterface $jobMapper Job persistence.
+	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 * @param IJobList $jobList The background queue.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		public BulkJobMapper $jobMapper,
-		public BulkJobMemberMapper $memberMapper,
+		public BulkJobMapperInterface $jobMapper,
+		public BulkJobMemberMapperInterface $memberMapper,
 		public IJobList $jobList,
 		public LoggerInterface $logger,
 	) {

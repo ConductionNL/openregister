@@ -63,13 +63,13 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
-use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SemanticRoleHandlerInterface;
 use OCA\OpenRegister\Service\SemanticTypeResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -221,16 +221,16 @@ class SchemasController extends Controller {
 	/**
 	 * The schema cache service.
 	 *
-	 * @var SchemaCacheHandler
+	 * @var SchemaCacheHandlerInterface
 	 */
-	private readonly SchemaCacheHandler $schemaCacheService;
+	private readonly SchemaCacheHandlerInterface $schemaCacheService;
 
 	/**
 	 * The facet cache svc.
 	 *
-	 * @var FacetResultCacheClearer
+	 * @var FacetResultCacheClearerInterface
 	 */
-	private readonly FacetResultCacheClearer $facetResults;
+	private readonly FacetResultCacheClearerInterface $facetResults;
 
 	/**
 	 * The logger.
@@ -270,9 +270,9 @@ class SchemasController extends Controller {
 	/**
 	 * The semantic roles.
 	 *
-	 * @var ?SemanticRoleHandler
+	 * @var ?SemanticRoleHandlerInterface
 	 */
-	private readonly ?SemanticRoleHandler $semanticRoles;
+	private readonly ?SemanticRoleHandlerInterface $semanticRoles;
 
 	/**
 	 * The controller's injected services.

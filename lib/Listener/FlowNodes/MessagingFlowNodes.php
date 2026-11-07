@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
-use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
-use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 
 /**
  * The messaging steps.
@@ -45,14 +45,14 @@ final readonly class MessagingFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param SendNotificationNode $sendNotification The built-in "Send a notification" node.
-	 * @param SendEmailNode $sendEmail The built-in "Send an email" node.
-	 * @param SendTalkMessageNode $sendTalkMessage The built-in "Send a Talk message" node.
+	 * @param SendNotificationNodeInterface $sendNotification The built-in "Send a notification" node.
+	 * @param SendEmailNodeInterface $sendEmail The built-in "Send an email" node.
+	 * @param SendTalkMessageNodeInterface $sendTalkMessage The built-in "Send a Talk message" node.
 	 */
 	public function __construct(
-		private SendNotificationNode $sendNotification,
-		private SendEmailNode $sendEmail,
-		private SendTalkMessageNode $sendTalkMessage,
+		private SendNotificationNodeInterface $sendNotification,
+		private SendEmailNodeInterface $sendEmail,
+		private SendTalkMessageNodeInterface $sendTalkMessage,
 	) {
 	}//end __construct()
 

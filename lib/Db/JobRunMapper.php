@@ -48,14 +48,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunMapper extends QBMapper {
-
-	/**
-	 * How many rows one run-log read returns unless the caller asks for fewer.
-	 *
-	 * @var integer
-	 */
-	public const DEFAULT_LIMIT = 50;
+class JobRunMapper extends QBMapper implements JobRunMapperInterface {
 
 	/**
 	 * The most rows one run-log read will ever return.

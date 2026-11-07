@@ -46,7 +46,14 @@ use UnexpectedValueException;
 /**
  * The "Send an email" step.
  */
-class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class SendEmailNode implements
+	IFlowNode,
+	SendEmailNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeTaxonomy,
+	IFlowNodePreview
+{
 
 	/**
 	 * The step type this node answers to.

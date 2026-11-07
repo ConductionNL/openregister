@@ -34,9 +34,9 @@ use OCA\OpenRegister\BulkAction\BulkActionResult;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -69,8 +69,8 @@ class BulkJobExecutor {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
+	 * @param BulkJobMapperInterface $jobMapper Job persistence.
+	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
 	 * @param PermissionHandler $permissionHandler Per-object access checks.
@@ -80,8 +80,8 @@ class BulkJobExecutor {
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobMemberMapper $memberMapper,
+		private readonly BulkJobMapperInterface $jobMapper,
+		private readonly BulkJobMemberMapperInterface $memberMapper,
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkActionRegistry $registry,
 		private readonly PermissionHandler $permissionHandler,

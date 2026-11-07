@@ -32,8 +32,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
-use OCA\OpenRegister\Service\Task\TaskProjectionService;
-use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
 use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
 use OCP\EventDispatcher\Event;
@@ -58,14 +58,14 @@ class TaskVtodoWriteBackListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskVtodoWriteBackGate $gate The one gate.
-	 * @param TaskProjectionService $projections Failure-isolated reconciliation.
+	 * @param TaskVtodoWriteBackGateInterface $gate The one gate.
+	 * @param TaskProjectionServiceInterface $projections Failure-isolated reconciliation.
 	 * @param IUserSession $userSession Names the acting identity, when there is one.
 	 * @param LoggerInterface $logger Failure reporting.
 	 */
 	public function __construct(
-		private readonly TaskVtodoWriteBackGate $gate,
-		private readonly TaskProjectionService $projections,
+		private readonly TaskVtodoWriteBackGateInterface $gate,
+		private readonly TaskProjectionServiceInterface $projections,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

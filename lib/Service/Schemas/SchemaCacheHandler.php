@@ -67,7 +67,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class SchemaCacheHandler {
+class SchemaCacheHandler implements SchemaCacheHandlerInterface {
 	/**
 	 * Cache table name for schema data
 	 *
