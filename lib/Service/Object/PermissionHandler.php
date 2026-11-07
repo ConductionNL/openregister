@@ -611,7 +611,7 @@ class PermissionHandler {
 			return false;
 		}
 
-		$subject = ($userId ?? $this->userSession->getUser()?->getUID());
+		$subject = $this->callerId(userId: $userId);
 		$isAdmin = false;
 		if ($subject !== null) {
 			$user = $this->userManager->get($subject);
@@ -757,10 +757,7 @@ class PermissionHandler {
 		// so keying on the argument gave an admin-defaulted call and an anonymous
 		// call the same key `u_` with different verdicts. That matters wherever the
 		// subject changes within a request: runAsAnonymous() and runAs() both do.
-		$subject = $userId;
-		if ($subject === null) {
-			$subject = $this->userSession->getUser()?->getUID();
-		}
+		$subject = $this->callerId(userId: $userId);
 
 		return sprintf(
 			's%d|a%s|u%s|o%s|i%s',
@@ -867,7 +864,7 @@ class PermissionHandler {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
-		$verdict = ($this->scopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
 		}
@@ -960,26 +957,6 @@ class PermissionHandler {
 
 		return true;
 	}//end deniedByRule()
-
-	/**
-	 * The `private` scope's verdict, or null for an object that does not declare it.
-	 *
-	 * Asked before any rule is consulted and before the caller is resolved from the
-	 * session, because a private object does not answer to the schema's rules at all.
-	 *
-	 * @param PermissionCheck $check The check
-	 *
-	 * @return bool|null
-	 */
-	private function scopeVerdict(PermissionCheck $check): ?bool {
-		return $this->privateScopeVerdict(
-			authorization: $check->authorization,
-			object: $check->object,
-			userId: $check->userId,
-			objectOwner: $check->objectOwner,
-			action: $check->action
-		);
-	}//end scopeVerdict()
 
 	/**
 	 * Resolve the caller onto the check; the verdict for an anonymous or unknown caller.
@@ -1321,7 +1298,7 @@ class PermissionHandler {
 		$mode->record(
 			denial: $denial,
 			action: $action,
-			userId: ($userId ?? $this->userSession->getUser()?->getUID()),
+			userId: $this->callerId(userId: $userId),
 			context: $context
 		);
 
@@ -1417,25 +1394,9 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function provenanceFor(
-		Schema $schema,
-		array $actions,
-		?string $userId = null,
-		?ObjectEntity $object = null,
-	): array {
-		if ($userId === null) {
-			$userId = $this->userSession->getUser()?->getUID();
-		}
-
-		$userGroups = [];
-		if ($userId !== null) {
-			$userObj = $this->userManager->get($userId);
-			if ($userObj !== null) {
-				$userGroups = $this->groupManager->getUserGroupIds($userObj);
-			}
-		}
-
-		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $userGroups);
+	public function provenanceFor(Schema $schema, array $actions, ?string $userId = null, ?ObjectEntity $object = null): array {
+		$userId = $this->callerId(userId: $userId);
+		$principals = $this->denyResolver()->principalsFor(userId: $userId, userGroups: $this->groupsOf(userId: $userId));
 
 		try {
 			$cascaded = $this->resolveAuthorization(schema: $schema, object: $object);
@@ -1446,36 +1407,77 @@ class PermissionHandler {
 			return array_fill_keys($actions, ['source' => 'unresolvable', 'granted' => false]);
 		}
 
+		$blocks = $this->provenanceBlocks(schema: $schema, object: $object);
+		$denials = [];
+		foreach ($actions as $action) {
+			$denials[$action] = $this->denialFor(authorization: $cascaded, action: $action, userId: $userId, object: $object);
+		}
+
+		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver());
+		$enforced = $this->denyEnforcementMode()->enforces();
+
+		return $resolver->forActions(actions: $actions, principals: $principals, blocks: $blocks, denials: $denials, enforced: $enforced);
+	}//end provenanceFor()
+
+	/**
+	 * The blocks provenance reads: object, schema, register and the register's role definitions.
+	 *
+	 * @param Schema            $schema The schema.
+	 * @param ObjectEntity|null $object The object, when there is one.
+	 *
+	 * @return array<string, array|null> The blocks.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function provenanceBlocks(Schema $schema, ?ObjectEntity $object): array {
 		$register = $this->getRegisterForSchema(schema: $schema);
 		$registerAuthorization = null;
 		if ($register !== null) {
 			$registerAuthorization = $this->getRegisterAuthorization(registerId: $register->getId());
 		}
 
-		$enforced = $this->denyEnforcementMode()->enforces();
-		$denials = [];
-		foreach ($actions as $action) {
-			$denials[$action] = $this->denialFor(
-				authorization: $cascaded,
-				action: $action,
-				userId: $userId,
-				object: $object
-			);
+		return [
+			'object' => $object?->getAuthorization(),
+			'schema' => $schema->getAuthorization(),
+			'register' => $registerAuthorization,
+			'roleDefinitions' => $this->getRoleDefinitionsForSchema(schema: $schema),
+		];
+	}//end provenanceBlocks()
+
+	/**
+	 * The named caller, or the session user when none is named.
+	 *
+	 * @param string|null $userId The named caller.
+	 *
+	 * @return string|null The caller, null when anonymous.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function callerId(?string $userId): ?string {
+		return ($userId ?? $this->userSession->getUser()?->getUID());
+	}//end callerId()
+
+	/**
+	 * The groups of a user; none for an anonymous caller or a uid that names nobody.
+	 *
+	 * @param string|null $userId The user.
+	 *
+	 * @return array<int, string> The group ids.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function groupsOf(?string $userId): array {
+		if ($userId === null) {
+			return [];
 		}
 
-		return (new ProvenanceResolver(denyResolver: $this->denyResolver()))->forActions(
-			actions: $actions,
-			principals: $principals,
-			blocks: [
-				'object' => $object?->getAuthorization(),
-				'schema' => $schema->getAuthorization(),
-				'register' => $registerAuthorization,
-				'roleDefinitions' => $this->getRoleDefinitionsForSchema(schema: $schema),
-			],
-			denials: $denials,
-			enforced: $enforced
-		);
-	}//end provenanceFor()
+		$user = $this->userManager->get($userId);
+		if ($user === null) {
+			return [];
+		}
+
+		return $this->groupManager->getUserGroupIds($user);
+	}//end groupsOf()
 
 	/**
 	 * The grantable permission set.
@@ -1551,12 +1553,7 @@ class PermissionHandler {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function denialFor(
-		?array $authorization,
-		string $action,
-		?string $userId = null,
-		?ObjectEntity $object = null,
-	): ?array {
+	public function denialFor(?array $authorization, string $action, ?string $userId = null, ?ObjectEntity $object = null): ?array {
 		$resolver = $this->denyResolver();
 
 		// The cheap exit, and the backwards-compatibility promise made
@@ -1566,45 +1563,40 @@ class PermissionHandler {
 			return null;
 		}
 
-		if ($userId === null) {
-			$userId = $this->userSession->getUser()?->getUID();
-		}
-
-		$userGroups = [];
-		if ($userId !== null) {
-			$userObj = $this->userManager->get($userId);
-			if ($userObj !== null) {
-				$userGroups = $this->groupManager->getUserGroupIds($userObj);
-			}
-		}
-
+		$userId = $this->callerId(userId: $userId);
+		$userGroups = $this->groupsOf(userId: $userId);
 		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
 			return null;
 		}
 
 		$principals = $resolver->principalsFor(userId: $userId, userGroups: $userGroups);
 
-		$unconditional = $resolver->unconditionalDenial(
-			authorization: $authorization,
-			action: $action,
-			principals: $principals
+		$question = new DenialQuestion(authorization: $authorization, action: $action);
+
+		return $this->denialAnswer(question: $question->about(principals: $principals, object: $object));
+	}//end denialFor()
+
+	/**
+	 * The unconditional denial of the question, else the first conditional one that selects its object.
+	 *
+	 * @param DenialQuestion $question The question.
+	 *
+	 * @return array|null The denial.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function denialAnswer(DenialQuestion $question): ?array {
+		$unconditional = $this->denyResolver()->unconditionalDenial(
+			authorization: $question->authorization,
+			action: $question->action,
+			principals: $question->principals
 		);
-		if ($unconditional !== null) {
+		if ($unconditional !== null || $question->object === null) {
 			return $unconditional;
 		}
 
-		if ($object === null) {
-			return null;
-		}
-
-		return $this->firstMatchingConditionalDenial(
-			resolver: $resolver,
-			authorization: $authorization,
-			action: $action,
-			principals: $principals,
-			object: $object
-		);
-	}//end denialFor()
+		return $this->firstMatchingConditionalDenial(question: $question, object: $question->object);
+	}//end denialAnswer()
 
 	/**
 	 * The first row-scoped denial whose `match` clause selects this row.
@@ -1616,41 +1608,27 @@ class PermissionHandler {
 	 * record carries can never match, so it selects every row: the deny fails
 	 * closed rather than never firing.
 	 *
-	 * @param DenyResolver $resolver      The deny-grammar reader.
-	 * @param array|null   $authorization The cascaded block.
-	 * @param string       $action        The verb being decided.
-	 * @param string[]     $principals    The caller's principal names.
-	 * @param ObjectEntity $object        The row under evaluation.
+	 * @param DenialQuestion $question The block, verb and principals.
+	 * @param ObjectEntity   $object   The row under evaluation.
 	 *
 	 * @return array{rule: mixed, principal: string, action: string, conditional: bool}|null The denial, or null.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function firstMatchingConditionalDenial(
-		DenyResolver $resolver,
-		?array $authorization,
-		string $action,
-		array $principals,
-		ObjectEntity $object,
-	): ?array {
-		$conditional = $resolver->conditionalDenials(
-			authorization: $authorization,
-			action: $action,
-			principals: $principals
+	private function firstMatchingConditionalDenial(DenialQuestion $question, ObjectEntity $object): ?array {
+		$conditional = $this->denyResolver()->conditionalDenials(
+			authorization: $question->authorization,
+			action: $question->action,
+			principals: $question->principals
 		);
 		if ($conditional === []) {
 			return null;
 		}
 
 		$envelope = $object->getMatchEnvelope();
-
 		foreach ($conditional as $denial) {
-			$rule = $denial['rule'];
-			if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-				continue;
-			}
-
-			if ($this->denialSelects(match: $rule['match'], envelope: $envelope) === true) {
+			$clause = ($denial['rule']['match'] ?? null);
+			if (is_array($clause) === true && $this->denialSelects(match: $clause, envelope: $envelope) === true) {
 				return $denial;
 			}
 		}
@@ -1679,7 +1657,7 @@ class PermissionHandler {
 	 * overwhelmingly common one and does no user lookup at all, so an object
 	 * that never declared a scope costs nothing.
 	 *
-	 * `$authorization` is the ALREADY-CASCADED block from
+	 * The check's authorization is the ALREADY-CASCADED block from
 	 * {@see resolveAuthorization()}, in which the object's own `_authorization`
 	 * has replaced the schema's keys. Reading the scope from it therefore gets
 	 * the object-over-schema precedence for free, and gets it from the same
@@ -1690,56 +1668,24 @@ class PermissionHandler {
 	 * turn a schema whose DEFAULT is private into a schema nobody can create in,
 	 * which inverts the meaning of a default.
 	 *
-	 * @param array|null $authorization The cascaded authorization block.
-	 * @param ObjectEntity|null $object The object under evaluation, if any.
-	 * @param string|null $userId The caller, or null to resolve from the session.
-	 * @param string|null $objectOwner The object's owner, if the caller supplied it separately.
-	 * @param string $action The action being decided; a grant only counts when it carries
-	 *                       that permission.
+	 * @param PermissionCheck $check The check, its authorization cascaded; a grant only counts when it carries the check's action.
 	 *
 	 * @return bool|null The verdict, or null when the object is not private.
 	 */
-	private function privateScopeVerdict(
-		?array $authorization,
-		?ObjectEntity $object,
-		?string $userId,
-		?string $objectOwner,
-		string $action,
-	): ?bool {
+	private function privateScopeVerdict(PermissionCheck $check): ?bool {
 		// A create is asked about the incoming data (openregister#4094), which
 		// is not an object yet and so cannot be private.
-		if ($object === null || $action === 'create') {
+		$object = $check->object;
+		if ($object === null || $check->action === 'create') {
 			return null;
 		}
 
-		if ($this->objectScope()->declaredScope(authorization: $authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
+		if ($this->objectScope()->declaredScope(authorization: $check->authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
 			return null;
 		}
 
-		if ($userId === null) {
-			$userId = $this->userSession->getUser()?->getUID();
-		}
-
-		$userGroups = [];
-		if ($userId !== null) {
-			$userObj = $this->userManager->get($userId);
-			if ($userObj !== null) {
-				$userGroups = $this->groupManager->getUserGroupIds($userObj);
-			}
-		}
-
-		$owner = ($objectOwner ?? $object->getOwner());
-
-		if ($this->objectScope()->admitsUnconditionally(
-			userId: $userId,
-			userGroups: $userGroups,
-			objectOwner: $owner,
-			// The OWNING GROUP is read off the object's own block, never off the
-			// cascaded one: a schema-level `ownerGroup` would hand every object
-			// of that schema to one group, which is a rule, not an owner.
-			authorization: $object->getAuthorization()
-		) === true
-		) {
+		$userId = $this->callerId(userId: $check->userId);
+		if ($this->privateObjectAdmits(check: $check, userId: $userId) === true) {
 			return true;
 		}
 
@@ -1748,12 +1694,35 @@ class PermissionHandler {
 		// schema stays the CEILING (design D3b). `private` narrows and a grant
 		// re-opens within that ceiling; neither can admit somebody the schema
 		// refuses.
-		if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $action) === true) {
+		if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $check->action) === true) {
 			return null;
 		}
 
 		return false;
 	}//end privateScopeVerdict()
+
+	/**
+	 * Whether the private object admits the caller outright: its owner, its owning group, an administrator.
+	 *
+	 * The OWNING GROUP is read off the object's own block, never off the cascaded
+	 * one: a schema-level `ownerGroup` would hand every object of that schema to
+	 * one group, which is a rule, not an owner.
+	 *
+	 * @param PermissionCheck $check  The check, about an object.
+	 * @param string|null     $userId The resolved caller.
+	 *
+	 * @return bool True when the caller is admitted.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function privateObjectAdmits(PermissionCheck $check, ?string $userId): bool {
+		return $this->objectScope()->admitsUnconditionally(
+			userId: $userId,
+			userGroups: $this->groupsOf(userId: $userId),
+			objectOwner: ($check->objectOwner ?? $check->object->getOwner()),
+			authorization: $check->object->getAuthorization()
+		);
+	}//end privateObjectAdmits()
 
 	/**
 	 * Dispatch `CustomScopeEvaluatingEvent` and collect a listener
@@ -2889,14 +2858,8 @@ class PermissionHandler {
 			$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
 
-			$userId = $this->userSession->getUser()?->getUID();
-			$userGroups = [];
-			if ($userId !== null) {
-				$userObj = $this->userManager->get($userId);
-				if ($userObj !== null) {
-					$userGroups = $this->groupManager->getUserGroupIds($userObj);
-				}
-			}
+			$userId = $this->callerId(userId: null);
+			$userGroups = $this->groupsOf(userId: $userId);
 
 			$source = $matrix['userSource'] ?? null;
 			if (is_array($source) === false) {

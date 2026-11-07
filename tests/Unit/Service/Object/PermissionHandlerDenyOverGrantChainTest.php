@@ -70,6 +70,7 @@ use Psr\Log\NullLogger;
  *
  * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses   \OCA\OpenRegister\Service\Object\DenialQuestion
  * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
