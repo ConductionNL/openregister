@@ -1109,14 +1109,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		// The refusal names the rule that produced it (task 3.3).
-		$this->logRefusal(
-			authorization: $check->authorization,
-			action: $check->action,
-			userId: $check->userId,
-			userGroups: $check->userGroups,
-			schema: $check->schema,
-			object: $check->object
-		);
+		$this->logRefusal(check: $check);
 
 		return false;
 	}//end grantedByRules()
@@ -1153,25 +1146,19 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * traffic; it is only worth a warning when it surprises somebody, and this
 	 * log exists so that it does not.
 	 *
-	 * @param array|null        $authorization The cascaded block.
-	 * @param string            $action        The verb that was refused.
-	 * @param string|null       $userId        The caller.
-	 * @param array<int,string> $userGroups    The caller's groups.
-	 * @param Schema            $schema        The schema being decided.
-	 * @param ObjectEntity|null $object        The row, when there was one.
+	 * The check carries the cascaded block, the refused verb, the caller and
+	 * their groups, the schema being decided and the row, when there was one.
+	 *
+	 * @param PermissionCheck $check The check that was refused.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function logRefusal(
-		?array $authorization,
-		string $action,
-		?string $userId,
-		array $userGroups,
-		Schema $schema,
-		?ObjectEntity $object,
-	): void {
+	private function logRefusal(PermissionCheck $check): void {
+		$authorization = $check->authorization;
+		$action        = $check->action;
+
 		$rule = null;
 		$reason = 'no authorization block names this verb';
 		if (is_array($authorization) === true && isset($authorization[$action]) === true) {
@@ -1184,11 +1171,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'schemaId' => $schema->getId(),
-				'objectUuid' => $object?->getUuid(),
+				'schemaId' => $check->schema->getId(),
+				'objectUuid' => $check->object?->getUuid(),
 				'action' => $action,
-				'userId' => $userId,
-				'principals' => $userGroups,
+				'userId' => $check->userId,
+				'principals' => $check->userGroups,
 				'rule' => $rule,
 				'reason' => $reason,
 			]
