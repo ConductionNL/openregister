@@ -16,7 +16,7 @@
 			:disabled="action.disabled"
 			@click="action.run()">
 			<template #icon>
-				<component :is="action.icon" :size="20" />
+				<component :is="action.icon" :size="20" :class="action.iconClass" />
 			</template>
 			{{ action.label }}
 		</NcActionButton>
@@ -44,7 +44,7 @@ export default {
 	props: {
 		/**
 		 * Menu entries in display order: `{ label, icon, run }`, optionally
-		 * `hidden`, `disabled`, `title` and `class`.
+		 * `hidden`, `disabled`, `title`, `class` and `iconClass`.
 		 */
 		actions: {
 			type: Array,

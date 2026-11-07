@@ -74,94 +74,7 @@
 					</span>
 				</template>
 			</h2>
-			<NcActions :primary="true" menuName="Actions">
-				<template #icon>
-					<DotsHorizontal :size="20" />
-				</template>
-				<!-- Actions for imported configurations -->
-				<template v-if="isImported">
-					<NcActionButton closeAfterClick @click="handleView">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						View
-					</NcActionButton>
-					<NcActionButton
-						v-if="hasUpdateAvailable"
-						closeAfterClick
-						@click="handlePreviewUpdate">
-						<template #icon>
-							<EyeOutline :size="20" />
-						</template>
-						Preview Update
-					</NcActionButton>
-					<NcActionButton
-						v-if="isRemoteConfiguration"
-						closeAfterClick
-						@click="handleCheckVersion">
-						<template #icon>
-							<Sync :size="20" />
-						</template>
-						Check Version
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="handleEdit">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="handleExport">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						Export
-					</NcActionButton>
-					<NcActionButton
-						v-if="isLocalConfiguration && !isPublished"
-						closeAfterClick
-						@click="handlePublish">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="isPublished"
-						closeAfterClick
-						@click="handlePublish">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						Update Published
-					</NcActionButton>
-					<NcActionButton closeAfterClick @click="handleDelete">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
-				</template>
-				<!-- Actions for discovered/external configurations -->
-				<template v-else>
-					<NcActionButton
-						closeAfterClick
-						@click="$emit('import', configuration)">
-						<template #icon>
-							<CloudUpload :size="20" />
-						</template>
-						Import
-					</NcActionButton>
-					<NcActionButton
-						v-if="viewSourceUrl"
-						closeAfterClick
-						@click="openInNewTab(viewSourceUrl)">
-						<template #icon>
-							<OpenInNew :size="20" />
-						</template>
-						View Source
-					</NcActionButton>
-				</template>
-			</NcActions>
+			<ActionMenu primary :actions="cardActions" />
 		</div>
 
 		<!-- Configuration Details -->
@@ -256,24 +169,22 @@ import Cloud from 'vue-material-design-icons/Cloud.vue'
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import Star from 'vue-material-design-icons/Star.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
+import ActionMenu from '../shared/ActionMenu.vue'
 import {
 	sourceTypeLabel,
 	syncStatusText,
 } from '../../services/configurationDisplay.js'
+import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
 import { configurationStore, navigationStore } from '../../store/store.js'
 
 /**
@@ -296,18 +207,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 export default {
 	name: 'ConfigurationCard',
 	components: {
-		NcActions,
-		NcActionButton,
+		ActionMenu,
 		CogOutline,
-		DotsHorizontal,
-		Eye,
-		EyeOutline,
-		Pencil,
-		TrashCanOutline,
-		Download,
-		CloudUpload,
 		CloudUploadOutline,
-		OpenInNew,
 		Update,
 		Sync,
 		CheckCircle,
@@ -352,6 +254,63 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The menu of the card: a discovered configuration can only be imported.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		cardActions() {
+			return this.isImported ? this.importedActions : this.discoveredActions
+		},
+
+		importedActions() {
+			return [
+				viewAction(() => this.handleView()),
+				{
+					label: 'Preview Update',
+					icon: EyeOutline,
+					run: () => this.handlePreviewUpdate(),
+					hidden: !this.hasUpdateAvailable,
+				},
+				{
+					label: 'Check Version',
+					icon: Sync,
+					run: () => this.handleCheckVersion(),
+					hidden: !this.isRemoteConfiguration,
+				},
+				editAction(() => this.handleEdit()),
+				{
+					label: 'Export',
+					icon: Download,
+					run: () => this.handleExport(),
+				},
+				{
+					label: this.isPublished ? 'Update Published' : 'Publish',
+					icon: CloudUploadOutline,
+					run: () => this.handlePublish(),
+					hidden: !this.isPublished && !this.isLocalConfiguration,
+				},
+				deleteAction(() => this.handleDelete()),
+			]
+		},
+
+		discoveredActions() {
+			return [
+				{
+					label: 'Import',
+					icon: CloudUpload,
+					run: () => this.$emit('import', this.configuration),
+				},
+				{
+					label: 'View Source',
+					icon: OpenInNew,
+					run: () => this.openInNewTab(this.viewSourceUrl),
+					hidden: !this.viewSourceUrl,
+				},
+			]
+		},
+
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
 		 *

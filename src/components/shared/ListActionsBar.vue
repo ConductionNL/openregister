@@ -2,6 +2,7 @@
 	<div class="viewActionsBar">
 		<div class="viewInfo">
 			<span v-if="summary" class="viewTotalCount">{{ summary }}</span>
+			<slot name="info" />
 			<span v-if="selectedCount > 0" class="viewIndicator">
 				({{
 					t('openregister', '{count} selected', { count: selectedCount })
