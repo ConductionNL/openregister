@@ -70,7 +70,7 @@ use Sabre\VObject\Reader;
  *
  * @spec openspec/specs/object-interactions/spec.md
  */
-class TaskService implements ObjectCalendarTasksInterface {
+class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface {
 
 	/**
 	 * CalDAV backend for calendar operations.
