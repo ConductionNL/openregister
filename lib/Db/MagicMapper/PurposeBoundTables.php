@@ -71,11 +71,38 @@ final class PurposeBoundTables {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function readable(array $pairs): array {
+		return $this->whereAllowed(pairs: $pairs, allowed: true);
+	}//end readable()
+
+	/**
+	 * The tables that ask for a purpose the request does not carry.
+	 *
+	 * @param array<int, array{register: mixed, schema: mixed}> $pairs The tables.
+	 *
+	 * @return array<int, array{register: mixed, schema: mixed}> The refusing ones, in order.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function unreadable(array $pairs): array {
+		return $this->whereAllowed(pairs: $pairs, allowed: false);
+	}//end unreadable()
+
+	/**
+	 * The tables whose read is allowed, or refused, as asked.
+	 *
+	 * @param array<int, array{register: mixed, schema: mixed}> $pairs   The tables.
+	 * @param bool                                              $allowed Whether to keep the allowed or the refusing ones.
+	 *
+	 * @return array<int, array{register: mixed, schema: mixed}> The matching ones, in order.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function whereAllowed(array $pairs, bool $allowed): array {
 		return array_values(
 			array_filter(
 				$pairs,
-				fn (array $pair): bool => $this->guard->allows(register: $pair['register'], schema: $pair['schema'])
+				fn (array $pair): bool => $this->guard->allows(register: $pair['register'], schema: $pair['schema']) === $allowed
 			)
 		);
-	}//end readable()
+	}//end whereAllowed()
 }//end class

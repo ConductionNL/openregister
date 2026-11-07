@@ -86,6 +86,7 @@ class MagicMapperRecentLensTest extends TestCase {
 			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$services[PurposeGuard::class] = $this->createMock(PurposeGuard::class);
+		$services[PurposeGuard::class]->method('allows')->willReturn(true);
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
 		$pairs = $this->pairs();
