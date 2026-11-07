@@ -58,6 +58,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphNode
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphStep
  * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeletionGraphWalk
+ * @uses \OCA\OpenRegister\Service\Object\DeletionGraph\DeclaredRelation
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
@@ -309,6 +310,18 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 
 		self::assertTrue($this->service->canDelete($this->label(code: ''))->deletable);
 	}//end testRowWithoutKeyIsDeletable()
+
+	/**
+	 * A key of only spaces cites nothing, so nothing is asked of the citing table.
+	 *
+	 * @return void
+	 */
+	public function testBlankKeyIsDeletable(): void {
+		$this->schemas(labelsProperty: ['type' => 'array', 'referenceSchema' => 'label', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
+		$this->db->expects(self::never())->method('prepare');
+
+		self::assertTrue($this->service->canDelete($this->label(code: '   '))->deletable);
+	}//end testBlankKeyIsDeletable()
 
 	/**
 	 * A key reference with an action other than RESTRICT is not indexed at all.

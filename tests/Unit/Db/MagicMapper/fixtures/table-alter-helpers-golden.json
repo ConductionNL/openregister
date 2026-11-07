@@ -4,6 +4,7 @@
             "title": {
                 "name": "title",
                 "type": "character varying",
+                "sqlType": "character varying",
                 "length": 255,
                 "precision": null,
                 "scale": null,
@@ -13,6 +14,7 @@
             "amount": {
                 "name": "amount",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 10,
                 "scale": 2,
@@ -22,6 +24,7 @@
             "price": {
                 "name": "price",
                 "type": "DECIMAL",
+                "sqlType": "DECIMAL",
                 "length": null,
                 "precision": 12,
                 "scale": 2,
@@ -31,6 +34,7 @@
             "wide": {
                 "name": "wide",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 30,
                 "scale": 10,
@@ -40,6 +44,7 @@
             "boom": {
                 "name": "boom",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 8,
                 "scale": 1,
@@ -49,6 +54,7 @@
             "note": {
                 "name": "note",
                 "type": "text",
+                "sqlType": "text",
                 "length": null,
                 "precision": null,
                 "scale": null,
@@ -57,13 +63,13 @@
             }
         },
         "trace": [
-            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()"
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()"
         ]
     },
     "columns unreadable / mysql": {
         "thrown": "Exception: prepare failed",
         "trace": [
-            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
             "error [MagicMapper] Failed to get existing table columns {\"tableName\":\"openregister_table_1_2\",\"error\":\"prepare failed\"}"
         ]
     },
@@ -145,7 +151,7 @@
             "price"
         ],
         "trace": [
-            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
+            "prepare SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale, is_nullable, column_default, column_type FROM information_schema.columns WHERE table_name = ? AND table_schema = DATABASE()",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `amount` DECIMAL(20,6) NOT NULL DEFAULT 0.00 []",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `price` DECIMAL(20,6) NULL []",
             "sql ALTER TABLE `oc_openregister_table_1_2` MODIFY `boom` DECIMAL(20,6) NULL []",
@@ -173,6 +179,7 @@
             "title": {
                 "name": "title",
                 "type": "character varying",
+                "sqlType": "character varying",
                 "length": 255,
                 "precision": null,
                 "scale": null,
@@ -182,6 +189,7 @@
             "amount": {
                 "name": "amount",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 10,
                 "scale": 2,
@@ -191,6 +199,7 @@
             "price": {
                 "name": "price",
                 "type": "DECIMAL",
+                "sqlType": "DECIMAL",
                 "length": null,
                 "precision": 12,
                 "scale": 2,
@@ -200,6 +209,7 @@
             "wide": {
                 "name": "wide",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 30,
                 "scale": 10,
@@ -209,6 +219,7 @@
             "boom": {
                 "name": "boom",
                 "type": "numeric",
+                "sqlType": "numeric",
                 "length": null,
                 "precision": 8,
                 "scale": 1,
@@ -218,6 +229,7 @@
             "note": {
                 "name": "note",
                 "type": "text",
+                "sqlType": "text",
                 "length": null,
                 "precision": null,
                 "scale": null,

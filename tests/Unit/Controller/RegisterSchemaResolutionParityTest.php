@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Architecture\ControllerSources;
 
 /**
  * Parity of the `{register}/{schema}` resolution across controllers.
@@ -82,10 +83,9 @@ class RegisterSchemaResolutionParityTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoControllerHoldsItsOwnCopyOfTheResolution(): void {
-		$dir = dirname(__DIR__, 3) . '/lib/Controller';
 		$offenders = [];
 
-		foreach (glob($dir . '/*.php') ?: [] as $file) {
+		foreach (ControllerSources::controllers() as $file) {
 			$source = file_get_contents($file);
 			if ($source !== false && str_contains($source, 'clearCurrents(') === true) {
 				$offenders[] = basename($file);

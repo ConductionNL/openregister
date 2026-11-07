@@ -124,13 +124,12 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$translationHandler->method('resolveTranslationsForRender')->willReturnArgument(0);
 
 		$render = new RenderObject(
-			$this->createMock(\OCA\OpenRegister\Db\FileMapper::class),
+			$this->createMock(\OCA\OpenRegister\Files\Db\FileMapper::class),
 			$this->createMock(MagicMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$schemaMapper,
 			$this->createMock(\OCP\SystemTag\ISystemTagManager::class),
 			$this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
 			$this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class),
 			new NullLogger(),

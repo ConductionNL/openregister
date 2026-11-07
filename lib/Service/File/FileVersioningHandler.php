@@ -31,6 +31,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file versioning operations.

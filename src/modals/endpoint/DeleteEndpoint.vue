@@ -7,7 +7,6 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 	<NcDialog
 		v-if="navigationStore.dialog === 'deleteEndpoint'"
 		name="Delete Endpoint"
-		:canClose="true"
 		@update:open="navigationStore.setDialog(false)">
 		<div class="modal">
 			<p>

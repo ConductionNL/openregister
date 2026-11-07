@@ -52,7 +52,6 @@ use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * OpenCorporates company-search integration provider — external,
@@ -66,6 +65,7 @@ use Throwable;
 class OpenCorporatesProvider extends AbstractIntegrationProvider {
 
 	use ConnectorRoutedProviderTrait;
+	use CompanyLookupCalls;
 
 	/**
 	 * OpenConnector source id this provider routes through.
@@ -73,6 +73,20 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * @var string
 	 */
 	public const SOURCE_ID = 'opencorporates';
+
+	/**
+	 * The search path of the source.
+	 *
+	 * @var string
+	 */
+	private const SEARCH_PATH = 'companies/search';
+
+	/**
+	 * The source's query param of each registry filter.
+	 *
+	 * @var array<string,string>
+	 */
+	private const LIST_PARAMS = ['_search' => 'q', '_limit' => 'per_page', '_page' => 'page'];
 
 	/**
 	 * NC app that must be installed for this integration to function
@@ -132,26 +146,6 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Auth requirements descriptor. `type: 'external'` — the OpenCorporates
-	 * API token is configured on the OpenConnector `opencorporates` source
-	 * (an `api_token` query parameter), not here. OpenRegister's admin UI
-	 * surfaces the source's auth status and links out to OpenConnector to
-	 * configure it.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
-	 */
-	public function authRequirements(): array {
-		return [
-			'type' => 'external',
-			'configuredVia' => 'openconnector',
-			'source' => self::SOURCE_ID,
-			'supports' => ['apikey'],
-		];
-	}//end authRequirements()
-
-	/**
 	 * List companies matching a free-text query — the registry read-path.
 	 *
 	 * This leaf is object-independent (company search is not bound to an OR
@@ -178,30 +172,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *   object-independent so they are intentionally unused.
 	 */
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$query = [];
-		$search = (string)($filters['_search'] ?? '');
-		if ($search !== '') {
-			$query['q'] = $search;
-		}
-
-		$limit = (int)($filters['_limit'] ?? 0);
-		if ($limit > 0) {
-			$query['per_page'] = (string)min(100, $limit);
-		}
-
-		$page = (int)($filters['_page'] ?? 0);
-		if ($page > 0) {
-			$query['page'] = (string)$page;
-		}
-
-		$response = $this->router->call(
-			provider: $this,
-			method: 'GET',
-			path: 'companies/search',
-			options: ['query' => $query, 'headers' => ['Accept' => 'application/json']]
-		);
-
-		return $this->extractRows(response: $response);
+		return $this->extractRows(response: $this->askRegister(query: $this->listQuery(filters: $filters)));
 	}//end list()
 
 	/**
@@ -211,10 +182,8 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * by name, optionally scoped to a jurisdiction (e.g. `nl`). Degrades
 	 * null-safely to `{ unavailable, cause }` rather than throwing (AD-23).
 	 *
-	 * @param string $query Free-text company-name query.
-	 * @param string|null $jurisdiction Optional ISO jurisdiction code (e.g. `nl`).
-	 * @param int $limit Max results per page (clamped 1..100).
-	 * @param int $page 1-based page (clamped >= 1).
+	 * @param CompanySearch $search The text, paging (limit clamped 1..100, page >= 1) and the
+	 *                             optional criterion `jurisdiction`, an ISO code (e.g. `nl`).
 	 *
 	 * @return array<string,mixed> `{ results, total, limit, page }` on
 	 *                             success, or `{ unavailable, cause, ... }`
@@ -222,70 +191,20 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
-	public function searchCompanies(string $query, ?string $jurisdiction = null, int $limit = 30, int $page = 1): array {
-		$limit = max(1, min(100, $limit));
-		$page = max(1, $page);
-
-		$params = [
-			'per_page' => (string)$limit,
-			'page' => (string)$page,
-			'order' => 'score',
-		];
-
-		$query = trim($query);
-		if ($query !== '') {
-			$params['q'] = $query;
+	public function searchCompanies(CompanySearch $search): array {
+		$run = $search->run(operation: 'OpenCorporatesProvider::searchCompanies');
+		$params = ['per_page' => (string)$run->limit, 'page' => (string)$run->page, 'order' => 'score'];
+		if ($search->text() !== '') {
+			$params['q'] = $search->text();
 		}
 
-		if ($jurisdiction !== null && trim($jurisdiction) !== '') {
-			$params['jurisdiction_code'] = trim($jurisdiction);
+		$jurisdiction = trim((string)($search->criteria['jurisdiction'] ?? ''));
+		if ($jurisdiction !== '') {
+			$params['jurisdiction_code'] = $jurisdiction;
 		}
 
-		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'GET',
-				path: 'companies/search',
-				options: ['query' => $params, 'headers' => ['Accept' => 'application/json']]
-			);
-		} catch (ProviderUnavailableException $e) {
-			return $this->degraded(cause: $e->getCause(), limit: $limit, page: $page);
-		} catch (Throwable $e) {
-			$this->logger->warning('OpenCorporatesProvider::searchCompanies failed: ' . $e->getMessage());
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, limit: $limit, page: $page);
-		}
-
-		$rows = $this->extractRows(response: $response);
-
-		return [
-			'results' => $rows,
-			'total' => count($rows),
-			'limit' => $limit,
-			'page' => $page,
-		];
+		return $this->lookup(query: $params, run: $run);
 	}//end searchCompanies()
-
-	/**
-	 * Build the degraded envelope mirroring the unconfigured-source
-	 * descriptor so the search shape stays stable across success +
-	 * degraded paths (AD-23).
-	 *
-	 * @param string $cause One of the ProviderUnavailableException CAUSE_* values.
-	 * @param int $limit Resolved limit.
-	 * @param int $page Resolved page.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function degraded(string $cause, int $limit, int $page): array {
-		return [
-			'unavailable' => true,
-			'cause' => $cause,
-			'results' => [],
-			'total' => 0,
-			'limit' => $limit,
-			'page' => $page,
-		];
-	}//end degraded()
 
 	/**
 	 * Pull the company rows out of an OpenCorporates response envelope.
@@ -299,35 +218,30 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function extractRows(array $response): array {
-		$companies = $response['results']['companies'] ?? null;
+		$companies = ($response['results']['companies'] ?? null);
 		if (is_array($companies) === true) {
-			$out = [];
-			foreach ($companies as $entry) {
-				if (is_array($entry) === false) {
-					continue;
-				}
-
-				if (isset($entry['company']) === true && is_array($entry['company']) === true) {
-					$out[] = $entry['company'];
-				} else {
-					$out[] = $entry;
-				}
-			}
-
-			return $out;
+			return array_map(fn (array $entry): array => $this->unwrapped(entry: $entry), $this->rowsOf(entries: $companies));
 		}
 
 		if (array_is_list($response) === true) {
-			$out = [];
-			foreach ($response as $row) {
-				if (is_array($row) === true) {
-					$out[] = $row;
-				}
-			}
-
-			return $out;
+			return $this->rowsOf(entries: $response);
 		}
 
 		return [];
 	}//end extractRows()
+
+	/**
+	 * The company of an entry; an entry without one is used as it is.
+	 *
+	 * @param array<string,mixed> $entry The entry.
+	 *
+	 * @return array<string,mixed> The company.
+	 */
+	private function unwrapped(array $entry): array {
+		if (is_array($entry['company'] ?? null) === true) {
+			return $entry['company'];
+		}
+
+		return $entry;
+	}//end unwrapped()
 }//end class

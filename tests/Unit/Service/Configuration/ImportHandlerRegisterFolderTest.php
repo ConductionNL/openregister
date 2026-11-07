@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -54,6 +54,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Configuration\SeedVersionLedger
  * @uses \OCA\OpenRegister\Service\Configuration\AppImport
  * @uses \OCA\OpenRegister\Service\Configuration\ImportedConfigurationUpdate
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedRelatedItems
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
+ * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  */
 class ImportHandlerRegisterFolderTest extends TestCase {
 
@@ -120,11 +123,9 @@ class ImportHandlerRegisterFolderTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $configurationMapper,
 			mappingMapper: $this->createMock(MappingMapper::class),
-			client: $this->createMock(Client::class),
 			appConfig: $appConfig,
 			logger: $this->createMock(LoggerInterface::class),
 			appDataPath: '/tmp',
-			uploadHandler: $this->createMock(UploadHandler::class),
 			objectService: $this->createMock(ObjectService::class)
 		);
 	}

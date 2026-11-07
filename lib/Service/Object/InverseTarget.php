@@ -49,4 +49,11 @@ final class InverseTarget {
 	 * @var boolean
 	 */
 	public bool $isArray = false;
+
+	/**
+	 * The UUID the fields must point at.
+	 *
+	 * @var string|null
+	 */
+	public ?string $entityUuid = null;
 }//end class
