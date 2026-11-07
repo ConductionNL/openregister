@@ -49,7 +49,7 @@ use Throwable;
  *   contract across two classes for a step that is intrinsically the last
  *   stage of the same pipeline (ADR-045 #E design.md D1/D2).
  */
-class SurvivorshipResolver {
+class SurvivorshipResolver implements SurvivorshipResolverInterface {
 	/**
 	 * Default ordered tier list (weakest first) when the config omits one.
 	 *
