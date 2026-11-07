@@ -105,21 +105,32 @@ class ObjectSlugStore {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function register(int|string|null $registerId): ?Register {
+	public function register(int|string|null $registerId): Register|null {
 		if ($registerId === null || $registerId === '') {
 			return null;
 		}
 
 		$key = (string)$registerId;
 		if (array_key_exists($key, $this->registers) === false) {
-			try {
-				$this->registers[$key] = $this->registerMapper->find(id: (int)$registerId, _rbac: false, _multitenancy: false);
-			} catch (Throwable $e) {
-				$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
-				$this->registers[$key] = null;
-			}
+			$this->registers[$key] = $this->lookup(key: $key);
 		}
 
 		return $this->registers[$key];
 	}//end register()
+
+	/**
+	 * Find a register, logging the failure when it does not resolve.
+	 *
+	 * @param string $key The register id.
+	 *
+	 * @return Register|null The register, or null.
+	 */
+	private function lookup(string $key): Register|null {
+		try {
+			return $this->registerMapper->find(id: (int)$key, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			$this->log->registerLookupFailed(registerId: $key, reason: $e->getMessage());
+			return null;
+		}
+	}//end lookup()
 }//end class
