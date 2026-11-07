@@ -4,7 +4,7 @@
  * Integration tests for SaveObject/SaveObjects handlers and related services
  *
  * Tests RelationCascadeHandler, DeleteObject,
- * CascadingHandler, BulkOperationsHandler, PerformanceHandler,
+ * CascadingHandler, BulkOperationsHandler,
  * and SaveObjects with real database operations.
  *
  * @category Test
@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -40,7 +39,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * Tests real code paths in RelationCascadeHandler,
  * DeleteObject, CascadingHandler, BulkOperationsHandler,
- * PerformanceHandler, and SaveObjects.
+ * and SaveObjects.
  *
  * @group DB
  */
@@ -48,7 +47,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 	private RelationCascadeHandler $relationCascadeHandler;
 	private DeleteObject $deleteObject;
 	private CascadingHandler $cascadingHandler;
-	private PerformanceHandler $performanceHandler;
 	private SaveObjects $saveObjects;
 	private SaveObject $saveHandler;
 	private ObjectService $objectService;
@@ -71,7 +69,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		$this->relationCascadeHandler = \OC::$server->get(RelationCascadeHandler::class);
 		$this->deleteObject = \OC::$server->get(DeleteObject::class);
 		$this->cascadingHandler = \OC::$server->get(CascadingHandler::class);
-		$this->performanceHandler = \OC::$server->get(PerformanceHandler::class);
 		$this->saveObjects = \OC::$server->get(SaveObjects::class);
 		$this->saveHandler = \OC::$server->get(SaveObject::class);
 		$this->objectService = \OC::$server->get(ObjectService::class);
@@ -749,130 +746,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 			['name' => 'Child']
 		);
 		$this->assertNull($result);
-	}
-
-	// ========================================================================
-	// PerformanceHandler tests
-	// ========================================================================
-
-	/**
-	 * Test isSimpleRequest with basic query.
-	 */
-	public function testIsSimpleRequestBasic(): void {
-		$query = ['_limit' => 20];
-		$this->assertTrue($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with complex extend.
-	 */
-	public function testIsSimpleRequestComplexExtend(): void {
-		$query = [
-			'_extend' => ['field1', 'field2', 'field3'],
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with facets.
-	 */
-	public function testIsSimpleRequestWithFacets(): void {
-		$query = [
-			'_facets' => ['category'],
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with large limit.
-	 */
-	public function testIsSimpleRequestLargeLimit(): void {
-		$query = ['_limit' => 100];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with many filters.
-	 */
-	public function testIsSimpleRequestManyFilters(): void {
-		$query = [
-			'field1' => 'val1',
-			'field2' => 'val2',
-			'field3' => 'val3',
-			'field4' => 'val4',
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with string extend.
-	 */
-	public function testIsSimpleRequestStringExtend(): void {
-		$query = [
-			'_extend' => 'field1,field2,field3',
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with two extend fields passes.
-	 */
-	public function testIsSimpleRequestTwoExtends(): void {
-		$query = [
-			'_extend' => ['field1', 'field2'],
-			'_limit' => 20,
-		];
-		$this->assertTrue($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test isSimpleRequest with _facetable flag.
-	 */
-	public function testIsSimpleRequestFacetableFlag(): void {
-		$query = [
-			'_facetable' => true,
-			'_limit' => 20,
-		];
-		$this->assertFalse($this->performanceHandler->isSimpleRequest($query));
-	}
-
-	/**
-	 * Test optimizeExtendQueries with string input.
-	 */
-	public function testOptimizeExtendQueriesString(): void {
-		$result = $this->performanceHandler->optimizeExtendQueries('field1, field2, field3');
-		$this->assertEquals(['field1', 'field2', 'field3'], $result);
-	}
-
-	/**
-	 * Test optimizeExtendQueries with empty string.
-	 */
-	public function testOptimizeExtendQueriesEmptyString(): void {
-		$result = $this->performanceHandler->optimizeExtendQueries('');
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test optimizeExtendQueries with array input.
-	 */
-	public function testOptimizeExtendQueriesArray(): void {
-		$input = ['field1', 'field2'];
-		$result = $this->performanceHandler->optimizeExtendQueries($input);
-		$this->assertEquals($input, $result);
-	}
-
-	/**
-	 * Test preloadCriticalEntities runs without error.
-	 */
-	public function testPreloadCriticalEntities(): void {
-		// Placeholder method, just verifying it doesn't throw.
-		$this->performanceHandler->preloadCriticalEntities([
-			'_schema' => $this->testSchema->getId(),
-		]);
-		$this->assertTrue(true);
 	}
 
 	// ========================================================================

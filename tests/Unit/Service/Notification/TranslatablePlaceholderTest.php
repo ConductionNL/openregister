@@ -34,9 +34,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleFiring;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleMessageRenderer;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
@@ -47,7 +51,6 @@ use OCP\Notification\IManager as INotificationManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
-use ReflectionProperty;
 
 /**
  * Locks how a language map fills a placeholder.
@@ -120,17 +123,18 @@ class TranslatablePlaceholderTest extends TestCase {
 
 		$object = new ObjectEntity();
 		$object->setRegister('20');
+		$object->setObject(['subject' => ['en' => 'Call client', 'nl' => 'Bel klant']]);
 		$languages = (new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveRegisterLanguages'))->invoke($dispatcher, $object);
-		(new ReflectionProperty(AnnotationNotificationDispatcher::class, 'registerLanguages'))->setValue($dispatcher, $languages);
-
-		$subject = (new ReflectionMethod(AnnotationNotificationDispatcher::class, 'resolveLocalizedSubject'))->invoke(
-			$dispatcher,
-			['en' => 'Task changed: {{subject}}', 'nl' => 'Taak gewijzigd: {{subject}}'],
-			'fr',
-			['subject' => ['en' => 'Call client', 'nl' => 'Bel klant']],
+		$firing = new RuleFiring(
+			'task',
+			['subject' => ['en' => 'Task changed: {{subject}}', 'nl' => 'Taak gewijzigd: {{subject}}']],
+			$object,
+			new Schema(),
 			[],
-			'task'
+			'object_updated'
 		);
+		$renderer = new RuleMessageRenderer($this->templating(), $languages, null, $this->createMock(LoggerInterface::class));
+		$subject = $renderer->subject(new MessageTarget($firing, 'fr'));
 
 		$this->assertSame('Taak gewijzigd: Bel klant', $subject);
 	}//end testTheDispatcherFallsBackToTheRegistersDefaultLanguage()

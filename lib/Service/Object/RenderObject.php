@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Adbar\Dot;
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -39,19 +39,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
-use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -233,7 +230,6 @@ class RenderObject {
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for database operations.
 	 * @param ISystemTagManager $systemTagManager System tag manager for file tags.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper for file tags.
-	 * @param CacheHandlerInterface $cacheHandler Cache service for performance optimization.
 	 * @param CacheHandlerInterface $objectCacheService Object cache service for optimized loading.
 	 * @param PropertyRbacHandler $propertyRbacHandler Property-level RBAC handler.
 	 * @param LoggerInterface $logger Logger for performance monitoring.
@@ -272,7 +268,6 @@ class RenderObject {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
-		private readonly CacheHandlerInterface $cacheHandler,
 		private readonly CacheHandlerInterface $objectCacheService,
 		private readonly PropertyRbacHandler $propertyRbacHandler,
 		private readonly LoggerInterface $logger,
@@ -386,93 +381,6 @@ class RenderObject {
 
 		return $writeOnly;
 	}//end getWriteOnlyProperties()
-
-	/**
-	 * Enrich `recurrence`-typed properties with their upcoming occurrences.
-	 *
-	 * For every property declared as `type: recurrence` whose value is a non-empty
-	 * RRULE string, this attaches a sibling virtual field `_occurrences` listing
-	 * the next N occurrences (ISO 8601). N defaults to 5 and may be overridden per
-	 * request via `?recurrenceOccurrences=N` (clamped to 1..100). The RRULE string
-	 * itself is preserved unchanged for round-trip integrity. When the object
-	 * declares exactly one recurrence property, `_occurrences` is attached at the
-	 * object root; with multiple, each is keyed as `<prop>_occurrences` to avoid
-	 * collisions.
-	 *
-	 * @param array $objectData The object data being rendered.
-	 * @param Schema $schema The schema for the object.
-	 *
-	 * @return array The object data, possibly enriched with occurrence lists.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function enrichRecurrenceOccurrences(array $objectData, Schema $schema): array {
-		$properties = $schema->getProperties() ?? [];
-
-		// Collect recurrence properties present in the object with a string value.
-		$recurrenceProps = [];
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$type = null;
-			if (is_array($propertyConfig) === true) {
-				$type = ($propertyConfig['type'] ?? null);
-			} elseif (is_object($propertyConfig) === true) {
-				$type = ($propertyConfig->type ?? null);
-			}
-
-			if ($type !== 'recurrence') {
-				continue;
-			}
-
-			$value = ($objectData[$propertyName] ?? null);
-			if (is_string($value) === true && $value !== '') {
-				$recurrenceProps[$propertyName] = $value;
-			}
-		}//end foreach
-
-		if (empty($recurrenceProps) === true) {
-			return $objectData;
-		}
-
-		$count = $this->resolveOccurrenceCount();
-		$validator = new ExtendedFieldTypeValidator();
-		$single = (count($recurrenceProps) === 1);
-
-		foreach ($recurrenceProps as $propertyName => $rrule) {
-			$occurrences = $validator->materialiseOccurrences(rrule: $rrule, count: $count);
-			$key = $propertyName . '_occurrences';
-			if ($single === true) {
-				$key = '_occurrences';
-			}
-
-			$objectData[$key] = $occurrences;
-		}
-
-		return $objectData;
-	}//end enrichRecurrenceOccurrences()
-
-	/**
-	 * Resolve the requested number of recurrence occurrences from the request.
-	 *
-	 * Reads the `recurrenceOccurrences` query parameter (default 5, clamped to
-	 * 1..100 by the validator). Falls back to the default when no request is
-	 * available (e.g. in unit-test construction without an injected IRequest).
-	 *
-	 * @return int The requested occurrence count.
-	 *
-	 * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
-	 */
-	private function resolveOccurrenceCount(): int {
-		if ($this->request === null) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		$raw = $this->request->getParam('recurrenceOccurrences', null);
-		if ($raw === null || is_numeric($raw) === false) {
-			return ExtendedFieldTypeValidator::DEFAULT_OCCURRENCES;
-		}
-
-		return (int)$raw;
-	}//end resolveOccurrenceCount()
 
 	/**
 	 * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
@@ -676,58 +584,75 @@ class RenderObject {
 
 		foreach ($rows as &$row) {
 			if ($row instanceof ObjectEntity === true) {
-				$schemaId = $row->getSchema();
-				if ($schemaId === null) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row->getRegister();
-				$register = null;
-				if ($registerId !== null) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$resolved = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row->getObject(),
-					schema: $schema,
-					register: $register
-				);
-				$row->setObject($resolved);
+				$this->translateEntityRow(row: $row);
 				continue;
-			}//end if
+			}
 
 			if (is_array($row) === true) {
-				$schemaId = $row['@self']['schema'] ?? null;
-				if (is_int($schemaId) === false && is_string($schemaId) === false) {
-					continue;
-				}
-
-				$schema = $this->getSchema(id: $schemaId);
-				if ($schema === null) {
-					continue;
-				}
-
-				$registerId = $row['@self']['register'] ?? null;
-				$register = null;
-				if (is_int($registerId) === true || is_string($registerId) === true) {
-					$register = $this->getRegister(id: $registerId);
-				}
-
-				$row = $this->translationHandler->resolveTranslationsForRender(
-					objectData: $row,
-					schema: $schema,
-					register: $register
-				);
-			}//end if
-		}//end foreach
+				$row = $this->translateArrayRow(row: $row);
+			}
+		}
 
 		unset($row);
 	}//end resolveTranslationsForRows()
+
+	/**
+	 * Resolve the translations of one entity row; without a known schema it stays as it is.
+	 *
+	 * @param ObjectEntity $row The row, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateEntityRow(ObjectEntity $row): void {
+		$schema = null;
+		if ($row->getSchema() !== null) {
+			$schema = $this->getSchema(id: $row->getSchema());
+		}
+
+		if ($schema === null) {
+			return;
+		}
+
+		$register = null;
+		if ($row->getRegister() !== null) {
+			$register = $this->getRegister(id: $row->getRegister());
+		}
+
+		$row->setObject(
+			$this->translationHandler->resolveTranslationsForRender(objectData: $row->getObject(), schema: $schema, register: $register)
+		);
+	}//end translateEntityRow()
+
+	/**
+	 * Resolve the translations of one serialized row; without a known schema it stays as it is.
+	 *
+	 * @param array $row The row.
+	 *
+	 * @return array The row with its translations resolved.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function translateArrayRow(array $row): array {
+		$schemaId = $row['@self']['schema'] ?? null;
+		$schema = null;
+		if (is_int($schemaId) === true || is_string($schemaId) === true) {
+			$schema = $this->getSchema(id: $schemaId);
+		}
+
+		if ($schema === null) {
+			return $row;
+		}
+
+		$registerId = $row['@self']['register'] ?? null;
+		$register = null;
+		if (is_int($registerId) === true || is_string($registerId) === true) {
+			$register = $this->getRegister(id: $registerId);
+		}
+
+		return $this->translationHandler->resolveTranslationsForRender(objectData: $row, schema: $schema, register: $register);
+	}//end translateArrayRow()
 
 	/**
 	 * Resolve the declared lenses on a batch of un-rendered list rows.
@@ -2721,7 +2646,7 @@ class RenderObject {
 			$entity->setObject($objectData);
 		}
 
-		$objectData = $this->enrichRecurrenceOccurrences(objectData: $objectData, schema: $schema);
+		$objectData = (new RecurrenceOccurrences(request: $this->request))->enrich(objectData: $objectData, schema: $schema);
 		$entity->setObject($objectData);
 
 		return $objectData;
@@ -2930,7 +2855,15 @@ class RenderObject {
 			return $objectData;
 		}
 
-		return $this->applyVirtualCalculations(entity: $entity, schema: $schema, data: $objectData);
+		$calculations = new VirtualCalculations(evaluator: $this->calculationEvaluator, logger: $this->logger);
+
+		return array_replace(
+			$objectData,
+			$calculations->values(
+				calculations: VirtualCalculations::declaredBy(schema: $schema),
+				payload: (new CalculationPayload())->withSelf(data: $objectData, entity: $entity)
+			)
+		);
 	}//end applyRequestedCalculations()
 
 	/**
@@ -2980,10 +2913,11 @@ class RenderObject {
 		$this->applyWatcherMarkers(entity: $entity);
 		$this->applyReadStateMarkers(entity: $entity);
 		$this->applyUpdateRightMarker(entity: $entity, schema: $schema, extend: $extend);
-		$this->applyArchivalRetentionBlock(entity: $entity, schema: $schema);
-		$this->applyArchivalDecision(entity: $entity);
+		$annotations = new RecordAnnotations(logger: $this->logger);
+		$annotations->attachRetention(entity: $entity, schema: $schema);
+		$annotations->attachDecision(entity: $entity);
 		$this->applyRetentionClocks(entity: $entity);
-		$this->applyExternalLinks(entity: $entity, schema: $schema);
+		$annotations->attachExternalLinks(entity: $entity, schema: $schema);
 	}//end applyRenderMarkers()
 
 	/**
@@ -3338,171 +3272,6 @@ class RenderObject {
 	}//end applyUpdateRightMarker()
 
 	/**
-	 * Attach the resolved `@self._retention` decision.
-	 *
-	 * The slot has been declared on the entity since add-archival-annotation-support
-	 * and, until this method existed, was filled by nothing outside a unit test —
-	 * so every client asking an object for its archival constraints got silence
-	 * while the facts sat unmerged in three sub-blocks of `retention`.
-	 *
-	 * Failures are logged and swallowed for the same reason the annotation block
-	 * above swallows them: a records-management edge case must never take out
-	 * object rendering.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/retention-management/spec.md
-	 */
-	private function applyArchivalDecision(ObjectEntity $entity): void {
-		try {
-			$resolver = new ArchivalDecisionResolver();
-			$decision = $resolver->resolve(entity: $entity);
-			if ($decision === null) {
-				return;
-			}
-
-			$entity->setArchivalRetention($decision);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival decision resolve failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalDecision()
-
-	/**
-	 * Attach the links out of this record, under `@self.externalLinks`.
-	 *
-	 * A link whose placeholders cannot all be filled is not offered, and a
-	 * schema declaring no links attaches nothing at all rather than an empty
-	 * list: a consumer that has to distinguish "no links declared" from "links
-	 * declared, none applicable" can, and one that does not is not handed a key
-	 * it must remember to ignore.
-	 *
-	 * Failure here is swallowed to a debug line for the same reason every other
-	 * tail-of-render block swallows: a link is an ornament on a record, and a
-	 * record the caseworker cannot read at all is a far worse outcome than a
-	 * record missing its shortcut to the BAG viewer.
-	 *
-	 * @param ObjectEntity $entity The rendered object.
-	 * @param Schema|null $schema Its schema, when one is resolvable.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
-	 */
-	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
-			return;
-		}
-
-		$configuration = ($schema->getConfiguration() ?? []);
-		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
-		if (is_array($declarations) === false || $declarations === []) {
-			return;
-		}
-
-		try {
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$links = (new ExternalLinkResolver())->resolve(
-				declarations: $declarations,
-				object: $objectData
-			);
-
-			if ($links === []) {
-				return;
-			}
-
-			$objectData['@self'] = ($objectData['@self'] ?? []);
-			if (is_array($objectData['@self']) === false) {
-				$objectData['@self'] = [];
-			}
-
-			$objectData['@self']['externalLinks'] = $links;
-			$entity->setObject($objectData);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] external link resolution failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyExternalLinks()
-
-	/**
-	 * Compute + attach the annotation-driven `_retention.annotation` block.
-	 *
-	 * Stateless w.r.t. the row's persisted columns; pulls the annotation off
-	 * the schema's `configuration` and asks `RetentionEvaluator` to produce
-	 * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
-	 * current row + `_created` timestamp.
-	 *
-	 * Failures are logged + swallowed: a malformed annotation must NEVER
-	 * break object rendering.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema|null $schema The resolved schema (may be null).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
-			return;
-		}
-
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		try {
-			$createdAt = $entity->getCreated();
-			if ($createdAt === null) {
-				return;
-			}
-
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$row = $objectData;
-			$evaluator = new RetentionEvaluator(logger: $this->logger);
-			$annotationBlock = $evaluator->evaluate(
-				annotation: $annotation,
-				row: $row,
-				createdAt: $createdAt
-			);
-
-			$existing = ($entity->getRetention() ?? []);
-			$existing['annotation'] = $annotationBlock;
-			$entity->setRetention($existing);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival retention compute failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalRetentionBlock()
-
-	/**
 	 * Check whether the current request opts in to the `_translationMeta`
 	 * envelope.
 	 *
@@ -3677,79 +3446,6 @@ class RenderObject {
 		$rule = new PropertySourceLanguage(schema: $schema, registerDefault: $registerDefault);
 		return $rule->forProperty(body: $preResolveData, property: $property);
 	}//end resolveSourceLanguageForProperty()
-
-	/**
-	 * Apply virtual (materialise:false) calculations declared on the
-	 * schema to the given data array. Materialised calculations are
-	 * persisted on save and skipped here.
-	 *
-	 * @param ObjectEntity $entity The object being rendered (used for @self.* refs).
-	 * @param Schema|null $schema The schema definition (may be null).
-	 * @param array<string, mixed> $data The current rendered data array.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array {
-		if ($schema === null) {
-			return $data;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$calcs = ($config['x-openregister-calculations'] ?? null);
-		if (is_array($calcs) === false || count($calcs) === 0) {
-			return $data;
-		}
-
-		$created = $entity->getCreated();
-		$updated = $entity->getUpdated();
-
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(\DateTimeInterface::ATOM);
-		}
-
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
-		}
-
-		$payload = $data;
-		$payload['@self'] = [
-			'id' => $entity->getUuid(),
-			'uuid' => $entity->getUuid(),
-			'register' => $entity->getRegister(),
-			'schema' => $entity->getSchema(),
-			'owner' => $entity->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-
-		foreach ($calcs as $name => $spec) {
-			if (is_array($spec) === false) {
-				continue;
-			}
-
-			// Skip materialised — already in $data from save-time listener.
-			if (($spec['materialise'] ?? false) === true) {
-				continue;
-			}
-
-			try {
-				$value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
-				if ($value instanceof \DateTimeInterface) {
-					$value = $value->format(\DateTimeInterface::ATOM);
-				}
-
-				$data[(string)$name] = $value;
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string)$name, $e->getMessage())
-				);
-			}
-		}//end foreach
-
-		return $data;
-	}//end applyVirtualCalculations()
 
 	/**
 	 * Handle extends containing a wildcard ($)
@@ -4657,7 +4353,7 @@ class RenderObject {
 		}
 
 		// If it's a UUID, try to find the schema by UUID.
-		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === true) {
+		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $cleanSchemaRef) === 1) {
 			try {
 				$schema = $this->schemaMapper->find($cleanSchemaRef);
 				return (string)$schema->getId();

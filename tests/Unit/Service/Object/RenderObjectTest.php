@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -111,7 +111,6 @@ class RenderObjectTest extends TestCase {
 			$this->schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -1596,7 +1595,6 @@ class RenderObjectTest extends TestCase {
 			$schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -1632,7 +1630,6 @@ class RenderObjectTest extends TestCase {
 			$schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -4452,7 +4449,6 @@ class RenderObjectTest extends TestCase {
 			$schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -4810,7 +4806,6 @@ class RenderObjectTest extends TestCase {
 			$schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -6384,7 +6379,6 @@ class RenderObjectTest extends TestCase {
 			$schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,

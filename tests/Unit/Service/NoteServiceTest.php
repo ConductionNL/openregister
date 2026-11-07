@@ -12,8 +12,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\NoteVersionService;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\Comments\IComment;
@@ -55,7 +55,6 @@ class NoteServiceTest extends TestCase {
 			$this->commentsManager,
 			$this->userSession,
 			$this->userManager,
-			$this->logger,
 			$this->visibility,
 			$this->versions
 		);

@@ -239,7 +239,8 @@ app-owned schema: `openregister:schemas:prune-retired --app <appId> --slug <slug
 
 The command MUST be scoped by owning application, so it can never reach a
 same-slug schema another app owns. It MUST be dry-run by default. It MUST
-refuse a schema that still owns objects unless `--force` is given. It MUST
+refuse a schema that still owns objects unless `--force` is given, and a schema
+holding frozen, archived or locked rows unless `--force-kept-rows` is given too. It MUST
 unlink the schema id from every referencing register before the row is deleted,
 matching both the integer and the string form of the id, because the stored list
 holds either depending on which import era wrote it.

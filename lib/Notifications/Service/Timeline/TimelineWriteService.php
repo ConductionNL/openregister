@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -58,7 +58,7 @@ class TimelineWriteService {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService          $notes      Writes the comment that carries the text.
+	 * @param NoteServiceInterface          $notes      Writes the comment that carries the text.
 	 * @param TimelineEntryService $entries    Writes the record.
 	 * @param ReferenceService     $references Records what the text points at.
 	 * @param EntryMentionService  $mentions   Notifies and subscribes whoever was named.
@@ -68,7 +68,7 @@ class TimelineWriteService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly NoteService $notes,
+		private readonly NoteServiceInterface $notes,
 		private readonly TimelineEntryService $entries,
 		private readonly ReferenceService $references,
 		private readonly EntryMentionService $mentions,
@@ -98,15 +98,10 @@ class TimelineWriteService {
 			visibility: $this->stringOrNull(data: $data, key: 'visibility')
 		);
 
-		$entry = $this->entries->record(
-			object: $object,
-			data: array_merge(
-				$data,
-				['message' => $message, 'commentId' => ($note['id'] ?? null)]
-			)
-		);
+		$noteParts = ['message' => $message, 'commentId' => ($note['id'] ?? null)];
+		$entry = $this->entries->record(object: $object, data: array_merge($data, $noteParts));
 
-		$this->derive(object: $object, entry: $entry, message: $message, data: $data);
+		$this->derive(written: new WrittenEntry(object: $object, entry: $entry, message: $message), data: $data);
 
 		return $entry;
 	}//end write()
@@ -141,28 +136,17 @@ class TimelineWriteService {
 	/**
 	 * Keep a note's record, references and mentions in step after an edit.
 	 *
-	 * @param ObjectEntity $object     The object the note hangs on.
-	 * @param integer      $commentId  The comment that was rewritten.
-	 * @param string|null  $message    The new text, or null when it did not change.
-	 * @param string|null  $visibility The new flag, or null when it did not change.
+	 * @param ObjectEntity $object  The object the note hangs on.
+	 * @param NoteRewrite  $rewrite What changed.
 	 *
 	 * @return TimelineEntry|null The record, or null when the note has none.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function rewrite(
-		ObjectEntity $object,
-		int $commentId,
-		?string $message = null,
-		?string $visibility = null,
-	): ?TimelineEntry {
-		$entry = $this->entries->syncFromNote(
-			commentId: $commentId,
-			message: $message,
-			visibility: $visibility
-		);
+	public function rewrite(ObjectEntity $object, NoteRewrite $rewrite): ?TimelineEntry {
+		$entry = $this->entries->syncFromNote(rewrite: $rewrite);
 
-		if ($entry === null || $message === null) {
+		if ($entry === null || $rewrite->message === null) {
 			return $entry;
 		}
 
@@ -170,7 +154,7 @@ class TimelineWriteService {
 		// removing the code remove the reference. Mentions are not: somebody
 		// already named and subscribed stays subscribed, because unsubscribing
 		// them by deleting a word is a silent act on another person's inbox.
-		$this->recordReferences(object: $object, entry: $entry, message: $message);
+		$this->recordReferences(written: new WrittenEntry(object: $object, entry: $entry, message: $rewrite->message));
 
 		return $entry;
 	}//end rewrite()
@@ -184,53 +168,43 @@ class TimelineWriteService {
 	 *
 	 * Never throws: a note that was accepted must not be lost to the index.
 	 *
-	 * @param ObjectEntity        $object The object the note hangs on.
-	 * @param array<string,mixed> $note   The note as the notes endpoint returned it.
-	 * @param string|null         $register The register as the caller addressed it.
-	 * @param string|null         $schema   The schema as the caller addressed it.
+	 * @param ObjectEntity   $object The object the note hangs on.
+	 * @param NoteProjection $note   The note and the coordinates the caller addressed.
 	 *
 	 * @return TimelineEntry|null The record, or null when it could not be written.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
-	public function projectNote(
-		ObjectEntity $object,
-		array $note,
-		?string $register = null,
-		?string $schema = null,
-	): ?TimelineEntry {
-		$message = (string)($note['message'] ?? '');
-
+	public function projectNote(ObjectEntity $object, NoteProjection $note): ?TimelineEntry {
 		try {
-			$entry = $this->entries->record(
-				object: $object,
-				data: [
-					'message' => $message,
-					'commentId' => ($note['id'] ?? null),
-					'visibility' => ($note['visibility'] ?? null),
-					'register' => $register,
-					'schema' => $schema,
-				]
-			);
+			$entry = $this->entries->record(object: $object, data: $note->recordData());
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'[TimelineWriteService] Note '.(string)($note['id'] ?? '?')
-					.' was written but its record was not; it will not be searchable',
+				'[TimelineWriteService] Note '.$note->label().' was written but its record was not; it will not be searchable',
 				['exception' => $e]
 			);
 
 			return null;
 		}
 
-		$this->derive(
-			object: $object,
-			entry: $entry,
-			message: $message,
-			data: ['register' => $register, 'schema' => $schema]
-		);
+		$written = new WrittenEntry(object: $object, entry: $entry, message: $note->message());
+		$this->derive(written: $written, data: $note->labels());
 
 		return $entry;
 	}//end projectNote()
+
+	/**
+	 * The record behind one note, when there is one.
+	 *
+	 * @param integer $commentId The comment.
+	 *
+	 * @return TimelineEntry|null The record, or null for a note written before this change.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	public function entryForNote(int $commentId): ?TimelineEntry {
+		return $this->entries->entryForNote(commentId: $commentId);
+	}//end entryForNote()
 
 	/**
 	 * Forget the record, and what it pointed at, behind a deleted note.
@@ -260,53 +234,51 @@ class TimelineWriteService {
 	/**
 	 * The things derived from an entry: what it points at, and whom it named.
 	 *
-	 * @param ObjectEntity        $object  The object.
-	 * @param TimelineEntry       $entry   The entry just written.
-	 * @param string              $message Its text.
+	 * @param WrittenEntry        $written The entry just written.
 	 * @param array<string,mixed> $data    The payload, for the register and schema labels.
 	 *
 	 * @return void
 	 */
-	private function derive(ObjectEntity $object, TimelineEntry $entry, string $message, array $data): void {
-		$this->recordReferences(object: $object, entry: $entry, message: $message);
+	private function derive(WrittenEntry $written, array $data): void {
+		$this->recordReferences(written: $written);
+		$this->applyMentions(written: $written, data: $data);
+	}//end derive()
 
+	/**
+	 * Notify and subscribe whoever an entry named, without risking the entry.
+	 *
+	 * @param WrittenEntry        $written The entry just written.
+	 * @param array<string,mixed> $data    The payload, for the register and schema labels.
+	 *
+	 * @return void
+	 */
+	private function applyMentions(WrittenEntry $written, array $data): void {
 		try {
 			$this->mentions->apply(
-				object: $object,
-				entryUuid: (string)$entry->getUuid(),
-				text: $message,
+				object: $written->object,
+				entryUuid: $written->uuid(),
+				text: $written->message,
 				register: $this->stringOrNull(data: $data, key: 'register'),
 				schema: $this->stringOrNull(data: $data, key: 'schema')
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[TimelineWriteService] Mentions in entry '.(string)$entry->getUuid().' could not be applied',
-				['exception' => $e]
-			);
+			$this->logger->warning('[TimelineWriteService] Mentions in entry '.$written->uuid().' could not be applied', ['exception' => $e]);
 		}
-	}//end derive()
+	}//end applyMentions()
 
 	/**
 	 * Record what an entry's text points at, without risking the entry.
 	 *
-	 * @param ObjectEntity  $object  The object.
-	 * @param TimelineEntry $entry   The entry.
-	 * @param string        $message Its text.
+	 * @param WrittenEntry $written The entry.
 	 *
 	 * @return void
 	 */
-	private function recordReferences(ObjectEntity $object, TimelineEntry $entry, string $message): void {
+	private function recordReferences(WrittenEntry $written): void {
 		try {
-			$this->references->record(
-				source: new ReferenceSource(
-					entryUuid: (string)$entry->getUuid(),
-					sourceUuid: (string)$object->getUuid(),
-					text: $message
-				)
-			);
+			$this->references->record(source: $written->referenceSource());
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[TimelineWriteService] References of entry '.(string)$entry->getUuid().' could not be recorded',
+				'[TimelineWriteService] References of entry '.$written->uuid().' could not be recorded',
 				['exception' => $e]
 			);
 		}
@@ -338,24 +310,28 @@ class TimelineWriteService {
 			throw new TimelineValidationException(['message' => 'An entry needs a message or a text block']);
 		}
 
-		$variables = [];
-		if (isset($data['variables']) === true && is_array($data['variables']) === true) {
-			$variables = $data['variables'];
-		}
+		return $this->blocks->insert(slug: $slug, variables: $this->blockVariables(object: $object, data: $data));
+	}//end resolveMessage()
 
+	/**
+	 * The values of a text block: the object's own, then whatever the caller supplied.
+	 *
+	 * @param ObjectEntity        $object The object.
+	 * @param array<string,mixed> $data   The payload.
+	 *
+	 * @return array<string,mixed> The values.
+	 */
+	private function blockVariables(ObjectEntity $object, array $data): array {
 		$objectValues = [];
 		$objectData = $object->getObject();
 		if (is_array($objectData) === true) {
 			$objectValues = $objectData;
 		}
 
-		return $this->blocks->insert(
-			slug: $slug,
-			variables: array_merge(
-				$objectValues,
-				['objectUuid' => (string)$object->getUuid()],
-				$variables
-			)
+		return array_merge(
+			$objectValues,
+			['objectUuid' => (string)$object->getUuid()],
+			$this->arrayOrEmpty(data: $data, key: 'variables')
 		);
-	}//end resolveMessage()
+	}//end blockVariables()
 }//end class

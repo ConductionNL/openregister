@@ -69,7 +69,6 @@ class RetentionServiceTest extends TestCase {
 			$this->registerMapper,
 			$this->auditMapper,
 			$this->settingsHandler,
-			$this->appConfig,
 			$this->userSession,
 			$this->logger,
 			$this->rowScanner,
