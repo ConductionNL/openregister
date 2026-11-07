@@ -1,14 +1,12 @@
 <?php
 
 /**
- * A query builder double that records every call with all of its arguments.
+ * A query-builder double that writes every call, with every argument, into one log.
  *
- * Each builder the connection hands out gets a number, and every call made on
- * it, on its expression builder and on its function builder is written to one
- * shared log as text: `#1 andWhere(eq(t._owner, :p1))`. Parameters render as
- * numbered placeholders and their values are logged where they are created,
- * so a test can pin the exact query a method builds, in order, and a change in
- * any predicate, column, operator or bound value shows up as a log diff.
+ * Unlike FluentQueryBuilderTrait this double renders the expressions and the
+ * bound parameters, so a golden test can pin the generated SQL shape and the
+ * values handed to it: which table, which columns, which predicates in which
+ * order, and the value and array-ness of each named parameter.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -16,11 +14,9 @@
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db
  *
- * @author    Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
  */
@@ -31,108 +27,142 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Tests\Support\ResultRowReaderTrait;
 use OCP\DB\IResult;
-use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
-use OCP\DB\QueryBuilder\IFunctionBuilder;
-use OCP\DB\QueryBuilder\ILiteral;
 use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
-use PHPUnit\Framework\MockObject\MockObject;
-use ReflectionClass;
-use ReflectionNamedType;
+use OCP\IDBConnection;
 
 /**
- * Builds query builders that log every call, and serves rows to executeQuery().
+ * Records builder calls as readable lines.
  */
 trait RecordingQueryBuilderTrait {
 	use ResultRowReaderTrait;
 
 	/**
-	 * Every call on every builder, in order.
+	 * Every builder call, rendered, in order.
 	 *
-	 * @var array<int, string>
+	 * @var list<string>
 	 */
-	private array $queryLog = [];
+	private array $sqlLog = [];
 
 	/**
-	 * Row sets served to executeQuery(), one set per call, in order.
+	 * What each executeStatement() call returns, in order; a Throwable is thrown.
 	 *
-	 * @var array<int, array<int, array<string, mixed>>>
+	 * @var list<int|\Throwable>
 	 */
-	private array $queuedRows = [];
+	private array $statementResults = [];
 
 	/**
-	 * How many builders were handed out.
+	 * The row sets each executeQuery() call yields, in order.
 	 *
-	 * @var int
+	 * @var list<list<array<string, mixed>>>
 	 */
-	private int $builderCount = 0;
+	private array $queryResults = [];
 
 	/**
-	 * How many named parameters were created, over all builders.
+	 * Number of named parameters created so far.
 	 *
-	 * @var int
+	 * @var integer
 	 */
 	private int $parameterCount = 0;
 
 	/**
-	 * A new recording builder.
+	 * A connection whose every getQueryBuilder() call hands out a new recording builder.
 	 *
-	 * @return IQueryBuilder&MockObject The builder.
+	 * @return IDBConnection The connection.
 	 */
-	private function recordingBuilder(): IQueryBuilder&MockObject {
-		$this->builderCount++;
-		$tag = '#' . $this->builderCount;
-		$qb = $this->createMock(IQueryBuilder::class);
-		$expr = $this->recordingHelper(IExpressionBuilder::class, $tag . ' expr.');
-		$func = $this->recordingHelper(IFunctionBuilder::class, $tag . ' func.');
-
-		$special = [
-			'expr', 'func', 'executeQuery', 'executeStatement', 'createNamedParameter', 'createPositionalParameter',
-			'createParameter', 'createFunction', 'getSQL', 'getTableName', 'prefixTableName', 'getColumnName',
-		];
-		foreach ((new ReflectionClass(IQueryBuilder::class))->getMethods() as $method) {
-			$name = $method->getName();
-			if (in_array($name, $special, true) === true || str_starts_with($name, 'get') === true) {
-				continue;
+	private function recordingConnection(): IDBConnection {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(
+			function (): IQueryBuilder {
+				$this->sqlLog[] = '-- new builder';
+				return $this->recordingBuilder();
 			}
+		);
 
-			$qb->method($name)->willReturnCallback(
-				function (mixed ...$args) use ($qb, $tag, $name): IQueryBuilder {
-					$this->queryLog[] = $tag . ' ' . $name . '(' . $this->renderArgs($args) . ')';
+		return $db;
+	}//end recordingConnection()
+
+	/**
+	 * Render one argument for the log.
+	 *
+	 * @param mixed $value The argument.
+	 *
+	 * @return string The rendering.
+	 */
+	private static function renderArgument(mixed $value): string {
+		if (is_string($value) === true) {
+			return $value;
+		}
+
+		if ($value instanceof \Stringable) {
+			return (string)$value;
+		}
+
+		return json_encode($value, JSON_THROW_ON_ERROR);
+	}//end renderArgument()
+
+	/**
+	 * Render a call.
+	 *
+	 * @param string $method The method name.
+	 * @param array<int, mixed> $args The arguments.
+	 *
+	 * @return string The rendering.
+	 */
+	private static function renderCall(string $method, array $args): string {
+		return $method . '(' . implode(', ', array_map(self::renderArgument(...), $args)) . ')';
+	}//end renderCall()
+
+	/**
+	 * Build a recording builder.
+	 *
+	 * @return IQueryBuilder The builder.
+	 */
+	private function recordingBuilder(): IQueryBuilder {
+		$qb = $this->createMock(IQueryBuilder::class);
+		$fluent = ['select', 'selectAlias', 'from', 'where', 'andWhere', 'update', 'insert', 'delete', 'set', 'setValue', 'orderBy', 'groupBy', 'setMaxResults'];
+		foreach ($fluent as $method) {
+			$qb->method($method)->willReturnCallback(
+				function (mixed ...$args) use ($qb, $method): IQueryBuilder {
+					$this->sqlLog[] = self::renderCall($method, $args);
 					return $qb;
 				}
 			);
 		}
 
-		$qb->method('expr')->willReturn($expr);
-		$qb->method('func')->willReturn($func);
-		$qb->method('createFunction')->willReturnCallback(
-			fn (string $sql): IQueryFunction => $this->textValue(IQueryFunction::class, $sql)
-		);
 		$qb->method('createNamedParameter')->willReturnCallback(
-			function (mixed $value, mixed $type = IQueryBuilder::PARAM_STR) use ($tag): IParameter {
-				$this->parameterCount++;
-				$placeholder = ':p' . $this->parameterCount;
-				$this->queryLog[] = $tag . ' param ' . $placeholder . ' = ' . $this->renderArgs([$value, $type]);
-				return $this->textValue(IParameter::class, $placeholder);
+			function (mixed $value, mixed $type = IQueryBuilder::PARAM_STR): IParameter {
+				$name = ':p' . (++$this->parameterCount);
+				$suffix = '';
+				if ($type === IQueryBuilder::PARAM_STR_ARRAY) {
+					$suffix = ' [STR_ARRAY]';
+				}
+
+				$this->sqlLog[] = 'param ' . $name . ' = ' . self::renderParameterValue($value) . $suffix;
+				return self::recordedText(IParameter::class, $name);
 			}
 		);
-		$qb->method('getTableName')->willReturnArgument(0);
-		$qb->method('getColumnName')->willReturnArgument(0);
-		$qb->method('getSQL')->willReturn('(subquery ' . $tag . ')');
+		$qb->method('createFunction')->willReturnCallback(
+			fn (string $sql): IQueryFunction => self::recordedText(IQueryFunction::class, $sql)
+		);
+		$qb->method('expr')->willReturn($this->recordingExpressions());
 		$qb->method('executeStatement')->willReturnCallback(
-			function () use ($tag): int {
-				$this->queryLog[] = $tag . ' executeStatement()';
-				return 1;
+			function (): int {
+				$this->sqlLog[] = 'executeStatement()';
+				$next = array_shift($this->statementResults) ?? 0;
+				if ($next instanceof \Throwable) {
+					throw $next;
+				}
+
+				return $next;
 			}
 		);
 		$qb->method('executeQuery')->willReturnCallback(
-			function () use ($tag): IResult {
-				$this->queryLog[] = $tag . ' executeQuery()';
-				$rows = array_shift($this->queuedRows) ?? [];
-				return $this->servedResult($rows);
+			function (): IResult {
+				$this->sqlLog[] = 'executeQuery()';
+				return $this->recordingResult(rows: (array_shift($this->queryResults) ?? []));
 			}
 		);
 
@@ -140,82 +170,48 @@ trait RecordingQueryBuilderTrait {
 	}//end recordingBuilder()
 
 	/**
-	 * An expression or function builder that logs each call and answers with text.
+	 * Render a parameter value, masking a wall-clock timestamp.
 	 *
-	 * @param class-string $interface IExpressionBuilder::class or IFunctionBuilder::class.
-	 * @param string       $prefix    The log prefix, such as '#1 expr.'.
+	 * @param mixed $value The value.
 	 *
-	 * @return MockObject The helper.
+	 * @return string The rendering.
 	 */
-	private function recordingHelper(string $interface, string $prefix): MockObject {
-		$helper = $this->createMock($interface);
-		foreach ((new ReflectionClass($interface))->getMethods() as $method) {
-			$name = $method->getName();
-			$returnType = $method->getReturnType();
-			$returns = 'string';
-			if ($returnType instanceof ReflectionNamedType === true) {
-				$returns = $returnType->getName();
-			}
+	private static function renderParameterValue(mixed $value): string {
+		if ($value instanceof \DateTimeInterface) {
+			return '<datetime>';
+		}
 
-			$helper->method($name)->willReturnCallback(
-				function (mixed ...$args) use ($prefix, $name, $returns): mixed {
-					$text = $name . '(' . $this->renderArgs($args) . ')';
-					$this->queryLog[] = $prefix . $text;
-					if ($returns === ICompositeExpression::class) {
-						return $this->composite($text, count($args));
-					}
+		if (is_string($value) === true && preg_match('/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/', $value) === 1) {
+			return '<timestamp>';
+		}
 
-					if ($returns === ILiteral::class || $returns === IQueryFunction::class) {
-						return $this->textValue($returns, $text);
-					}
+		return json_encode($value, JSON_THROW_ON_ERROR);
+	}//end renderParameterValue()
 
-					return $text;
-				}
+	/**
+	 * An expression builder whose expressions render to readable text.
+	 *
+	 * @return IExpressionBuilder The expression builder.
+	 */
+	private function recordingExpressions(): IExpressionBuilder {
+		$expr = $this->createMock(IExpressionBuilder::class);
+		foreach (['eq', 'neq', 'in', 'iLike', 'like', 'isNull', 'isNotNull', 'lt', 'gt'] as $method) {
+			$expr->method($method)->willReturnCallback(
+				fn (mixed ...$args): string => self::renderCall($method, array_slice($args, 0, 2))
 			);
 		}
 
-		return $helper;
-	}//end recordingHelper()
+		return $expr;
+	}//end recordingExpressions()
 
 	/**
-	 * Call arguments as text: strings bare, arrays as JSON, the rest exported.
+	 * A result that yields the given rows.
 	 *
-	 * @param array<int|string, mixed> $args The arguments.
+	 * @param list<array<string, mixed>> $rows The rows.
 	 *
-	 * @return string The arguments joined by commas.
+	 * @return IResult The result.
 	 */
-	private function renderArgs(array $args): string {
-		$parts = [];
-		foreach ($args as $arg) {
-			if (is_string($arg) === true || $arg instanceof \Stringable === true) {
-				$parts[] = (string)$arg;
-				continue;
-			}
-
-			if (is_array($arg) === true) {
-				$parts[] = json_encode($arg, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-				continue;
-			}
-
-			if (is_object($arg) === true) {
-				$parts[] = get_class($arg);
-				continue;
-			}
-
-			$parts[] = var_export($arg, true);
-		}
-
-		return implode(', ', $parts);
-	}//end renderArgs()
-
-	/**
-	 * A result serving the rows, then false.
-	 *
-	 * @param array<int, array<string, mixed>> $rows The rows.
-	 *
-	 * @return IResult&MockObject The result.
-	 */
-	private function servedResult(array $rows): IResult&MockObject {
+	private function recordingResult(array $rows): IResult {
 		$result = $this->createMock(IResult::class);
 		$queue = $rows;
 		$next = static function () use (&$queue): array|false {
@@ -227,31 +223,27 @@ trait RecordingQueryBuilderTrait {
 		};
 		$this->stubRowReader($result, $next);
 		$this->stubAllRowsReader($result, $rows);
-		$result->method('fetchOne')->willReturnCallback(
-			static function () use (&$queue): mixed {
-				if ($queue === []) {
-					return false;
-				}
-
-				$row = array_shift($queue);
-				return reset($row);
+		$result->method('closeCursor')->willReturnCallback(
+			function (): bool {
+				$this->sqlLog[] = 'closeCursor()';
+				return true;
 			}
 		);
 
 		return $result;
-	}//end servedResult()
+	}//end recordingResult()
 
 	/**
-	 * A real stringable IParameter, ILiteral or IQueryFunction.
+	 * A stringable parameter or function.
 	 *
-	 * @param class-string $interface The value interface.
-	 * @param string       $text      What it stringifies to.
+	 * @param class-string $interface IParameter::class or IQueryFunction::class.
+	 * @param string $text What it renders to.
 	 *
-	 * @return IParameter|ILiteral|IQueryFunction The value.
+	 * @return IParameter|IQueryFunction The value.
 	 */
-	private function textValue(string $interface, string $text): IParameter|ILiteral|IQueryFunction {
+	private static function recordedText(string $interface, string $text): IParameter|IQueryFunction {
 		if ($interface === IParameter::class) {
-			return new class ($text) implements IParameter {
+			return new class ($text) implements IParameter, \Stringable {
 				public function __construct(private readonly string $text) {
 				}
 
@@ -261,18 +253,7 @@ trait RecordingQueryBuilderTrait {
 			};
 		}
 
-		if ($interface === ILiteral::class) {
-			return new class ($text) implements ILiteral {
-				public function __construct(private readonly string $text) {
-				}
-
-				public function __toString(): string {
-					return $this->text;
-				}
-			};
-		}
-
-		return new class ($text) implements IQueryFunction {
+		return new class ($text) implements IQueryFunction, \Stringable {
 			public function __construct(private readonly string $text) {
 			}
 
@@ -280,62 +261,5 @@ trait RecordingQueryBuilderTrait {
 				return $this->text;
 			}
 		};
-	}//end textValue()
-
-	/**
-	 * A composite expression that stringifies to its call text plus later parts.
-	 *
-	 * @param string $text  The andX()/orX() call text.
-	 * @param int    $count How many parts the call was given.
-	 *
-	 * @return ICompositeExpression The composite.
-	 */
-	private function composite(string $text, int $count): ICompositeExpression {
-		return new class ($text, $count) implements ICompositeExpression {
-			/**
-			 * Parts added after construction.
-			 *
-			 * @var array<int, string>
-			 */
-			private array $parts = [];
-
-			public function __construct(private readonly string $text, private readonly int $initial) {
-			}
-
-			/**
-			 * @param array<int, mixed> $parts The parts.
-			 */
-			public function addMultiple(array $parts = []): ICompositeExpression {
-				foreach ($parts as $part) {
-					$this->parts[] = (string)$part;
-				}
-
-				return $this;
-			}
-
-			/**
-			 * @param mixed $part The part.
-			 */
-			public function add($part): ICompositeExpression {
-				$this->parts[] = (string)$part;
-				return $this;
-			}
-
-			public function count(): int {
-				return count($this->parts) + $this->initial;
-			}
-
-			public function getType(): string {
-				return 'composite';
-			}
-
-			public function __toString(): string {
-				if ($this->parts === []) {
-					return $this->text;
-				}
-
-				return $this->text . '+[' . implode(', ', $this->parts) . ']';
-			}
-		};
-	}//end composite()
+	}//end recordedText()
 }//end trait
