@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +48,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		PortalTaskNode::class => [PortalTaskNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
