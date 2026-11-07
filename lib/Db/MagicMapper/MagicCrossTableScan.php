@@ -34,6 +34,13 @@ final class MagicCrossTableScan {
 	public bool $includeDeleted = false;
 
 	/**
+	 * Whether each match is read with every stored column, not only its name and data.
+	 *
+	 * @var boolean
+	 */
+	public bool $storedRows = false;
+
+	/**
 	 * Only scan this register's tables; null scans every table.
 	 *
 	 * @var integer|null

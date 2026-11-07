@@ -6641,7 +6641,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $resolved = [];
         try {
-            $entities = $this->objectMapper->findMultipleAcrossAllMagicTables(
+            $entities = $this->objectMapper->findStoredAcrossAllMagicTables(
                 uuids: $uuids,
                 includeDeleted: true
             );
