@@ -70,7 +70,7 @@ use Throwable;
  *     for the create+link path inflate the count; the alternative
  *     (re-implementing Polls' UserSession) would be worse.
  */
-class PollLinkService {
+class PollLinkService implements PollLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *

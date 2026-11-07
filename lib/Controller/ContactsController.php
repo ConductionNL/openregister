@@ -28,7 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\PersonLinkService;
+use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,9 +54,9 @@ class ContactsController extends Controller {
 	/**
 	 * People on objects: the write surface for user and contact links.
 	 *
-	 * @var PersonLinkService
+	 * @var PersonLinkServiceInterface
 	 */
-	private readonly PersonLinkService $personLinks;
+	private readonly PersonLinkServiceInterface $personLinks;
 
 	/**
 	 * Object service.

@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -57,6 +59,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const CLASSES = [
+		LinkedEntityService::class => [LinkedEntityServiceInterface::class, ContractBindings::class],
 		MappingService::class => [MappingServiceInterface::class, ContractBindings::class],
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
