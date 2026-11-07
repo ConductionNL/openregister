@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ApiCaller;
 
 use DateTime;
+use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -161,18 +162,15 @@ class ApiCallRecorder {
 		}
 
 		try {
-			$this->mapper->count(
+			$key = new ApiCallKey(
 				principal: $principal,
 				route: self::routeOf(path: $path),
 				method: strtoupper(substr($method, 0, 10)),
 				apiVersion: $apiVersion,
-				moment: ($moment ?? new DateTime()),
 			);
+			$this->mapper->count(key: $key, moment: ($moment ?? new DateTime()));
 		} catch (Throwable $e) {
-			$this->logger->debug(
-				'OpenRegister: could not record an API call.',
-				['exception' => $e]
-			);
+			$this->logger->debug('OpenRegister: could not record an API call.', ['exception' => $e]);
 		}
 
 	}//end record()

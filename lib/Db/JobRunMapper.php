@@ -108,7 +108,8 @@ class JobRunMapper extends QBMapper {
 			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
 			->setFirstResult(max(0, $offset));
 
-		$this->narrow(qb: $qb, jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		$filter = new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		$this->narrow(qb: $qb, filter: $filter);
 
 		return $this->findEntities(query: $qb);
 
@@ -135,7 +136,8 @@ class JobRunMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->func()->count('*', 'total'))->from($this->getTableName());
 
-		$this->narrow(qb: $qb, jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		$filter = new JobRunFilter(jobClass: $jobClass, outcome: $outcome, since: $since, until: $until);
+		$this->narrow(qb: $qb, filter: $filter);
 
 		$result = $qb->executeQuery();
 		$row = $result->fetch();
@@ -250,42 +252,60 @@ class JobRunMapper extends QBMapper {
 	}//end renameJobClass()
 
 	/**
-	 * Apply the three filters the console offers.
+	 * Apply the filters the console offers.
 	 *
-	 * @param IQueryBuilder $qb       The query being built.
-	 * @param string|null   $jobClass Narrow to one job class.
-	 * @param string|null   $outcome  Narrow to one outcome.
-	 * @param DateTime|null $since    Lower bound on `started`.
-	 * @param DateTime|null $until    Upper bound on `started`.
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The job class, outcome and period to narrow to.
 	 *
 	 * @return void
 	 */
-	private function narrow(
-		IQueryBuilder $qb,
-		?string $jobClass,
-		?string $outcome,
-		?DateTime $since,
-		?DateTime $until,
-	): void {
-		if ($jobClass !== null && $jobClass !== '') {
-			$qb->andWhere($qb->expr()->eq('job_class', $qb->createNamedParameter($jobClass)));
-		}
-
-		if ($outcome !== null && $outcome !== '') {
-			$qb->andWhere($qb->expr()->eq('outcome', $qb->createNamedParameter($outcome)));
-		}
-
-		if ($since !== null) {
-			$qb->andWhere(
-				$qb->expr()->gte('started', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
-
-		if ($until !== null) {
-			$qb->andWhere(
-				$qb->expr()->lte('started', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
-			);
-		}
+	private function narrow(IQueryBuilder $qb, JobRunFilter $filter): void {
+		$this->narrowToEquals(qb: $qb, filter: $filter);
+		$this->narrowToPeriod(qb: $qb, filter: $filter);
 
 	}//end narrow()
+
+	/**
+	 * Narrow to the job class and outcome, when given and not empty.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The filter.
+	 *
+	 * @return void
+	 */
+	private function narrowToEquals(IQueryBuilder $qb, JobRunFilter $filter): void {
+		$equals = ['job_class' => $filter->jobClass, 'outcome' => $filter->outcome];
+
+		foreach ($equals as $column => $value) {
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+
+	}//end narrowToEquals()
+
+	/**
+	 * Narrow `started` to the period, when bounds are given.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param JobRunFilter  $filter The filter.
+	 *
+	 * @return void
+	 */
+	private function narrowToPeriod(IQueryBuilder $qb, JobRunFilter $filter): void {
+		if ($filter->since !== null) {
+			$qb->andWhere(
+				$qb->expr()->gte('started', $qb->createNamedParameter($filter->since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		if ($filter->until !== null) {
+			$qb->andWhere(
+				$qb->expr()->lte('started', $qb->createNamedParameter($filter->until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+	}//end narrowToPeriod()
 }//end class
