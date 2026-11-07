@@ -193,6 +193,22 @@ audit entry for that query.
 - **WHEN** a query is made under it
 - **THEN** the query is refused, naming the purpose
 
+#### Scenario: a search by ids that names no table is refused like the table read
+
+- **GIVEN** a schema that asks for a purpose, and a request on `/api/objects` with `_ids`, alone or beside only `register` or only `schema`
+- **WHEN** one of the ids is a row of that schema and the request declares no usable purpose
+- **THEN** the read is refused with 403 `PURPOSE_REFUSED`, as `GET /api/objects/{register}/{schema}` refuses it
+- **AND** ids that only hit tables without the annotation answer as before
+- @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
+
+#### Scenario: a text search that names no table leaves out the tables it may not read
+
+- **GIVEN** a schema that asks for a purpose
+- **WHEN** `/api/objects?_search=` runs without a usable declared purpose
+- **THEN** the search answers 200 with the matches of the other tables, and none of that schema
+- **AND** with a usable declared purpose the rows of that schema are in the answer
+- @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
+
 #### Scenario: queries are countable per purpose
 
 - **GIVEN** a month of queries under three purposes

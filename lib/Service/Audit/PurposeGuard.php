@@ -131,19 +131,56 @@ class PurposeGuard {
 			return null;
 		}
 
-		$declared = $this->context->declared();
-
 		try {
-			$resolved = $this->registry->requirePurpose(code: $declared);
+			return $this->acceptDeclared();
 		} catch (PurposeRefusedException $refusal) {
 			$this->recordRefusal(refusal: $refusal, register: $register, schema: $schema);
 			throw $refusal;
 		}
+	}//end enforce()
 
+	/**
+	 * Whether a read of this table may run, without recording a refusal.
+	 *
+	 * For a search that spans tables and leaves out the ones it may not read,
+	 * rather than refusing the whole search.
+	 *
+	 * @param Register|null $register The register being read.
+	 * @param Schema|null   $schema   The schema being read.
+	 *
+	 * @return bool True when no purpose is needed or the declared one is accepted.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	public function allows(?Register $register, ?Schema $schema): bool {
+		if ($this->isRequired(register: $register, schema: $schema) === false) {
+			return true;
+		}
+
+		try {
+			$this->acceptDeclared();
+		} catch (PurposeRefusedException $refusal) {
+			return false;
+		}
+
+		return true;
+	}//end allows()
+
+	/**
+	 * Accept the purpose this request declared, and remember it.
+	 *
+	 * @return string The accepted purpose code.
+	 *
+	 * @throws PurposeRefusedException When no usable purpose was declared.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function acceptDeclared(): string {
+		$resolved = $this->registry->requirePurpose(code: $this->context->declared());
 		$this->context->accept(purpose: $resolved['purpose'], activity: $resolved['activity']);
 
 		return $resolved['purpose']->getCode();
-	}//end enforce()
+	}//end acceptDeclared()
 
 	/**
 	 * Record the refusal on the trail.

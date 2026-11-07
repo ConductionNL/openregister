@@ -41,6 +41,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -84,6 +85,7 @@ class MagicMapperRecentLensTest extends TestCase {
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
 			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
 		];
+		$services[PurposeGuard::class] = $this->createMock(PurposeGuard::class);
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
 		$pairs = $this->pairs();

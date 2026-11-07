@@ -944,6 +944,23 @@ class ObjectsControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 	}
 
+	public function testObjectsAnswersARefusedPurposeWith403(): void {
+		$this->request->method('getParams')->willReturn(['_ids' => 'u1']);
+		$this->objectService->method('buildSearchQuery')->willReturn(['_ids' => ['u1']]);
+		$this->objectService->method('searchObjectsPaginated')->willThrowException(
+			new \OCA\OpenRegister\Service\Audit\PurposeRefusedException(
+				rule: \OCA\OpenRegister\Service\Audit\PurposeRefusedException::RULE_MISSING,
+				reason: 'This read needs a declared purpose.',
+				purpose: null
+			)
+		);
+
+		$result = $this->controller->objects($this->objectService);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('PURPOSE_REFUSED', $result->getData()['error']);
+	}
+
 	// --- contracts() propagates exception (no try-catch) ---
 
 	public function testContractsThrowsWhenNotFound(): void {
