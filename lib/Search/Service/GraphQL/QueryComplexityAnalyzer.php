@@ -24,8 +24,11 @@ use GraphQL\Error\Error;
 use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Language\AST\FieldNode;
 use GraphQL\Language\AST\InlineFragmentNode;
+use GraphQL\Language\AST\IntValueNode;
 use GraphQL\Language\AST\OperationDefinitionNode;
 use GraphQL\Language\AST\SelectionSetNode;
+use GraphQL\Language\AST\ValueNode;
+use GraphQL\Language\AST\VariableNode;
 use OCP\IAppConfig;
 
 /**
@@ -87,136 +90,164 @@ class QueryComplexityAnalyzer {
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
 	 */
 	public function analyze(DocumentNode $document, ?array $variables = null): array {
-		$maxDepth = (int)$this->appConfig->getValueString(
-			'openregister',
-			'graphql_max_depth',
-			(string)self::DEFAULT_MAX_DEPTH
-		);
-		$maxCost = (int)$this->appConfig->getValueString(
-			'openregister',
-			'graphql_max_cost',
-			(string)self::DEFAULT_MAX_COST
-		);
-
-		$depth = 0;
-		$cost = 0;
-
-		foreach ($document->definitions as $definition) {
-			if ($definition instanceof OperationDefinitionNode === false) {
-				continue;
-			}
-
-			$result = $this->analyzeSelectionSet(
-				selectionSet: $definition->selectionSet,
-				currentDepth: 0,
-				variables: $variables
-			);
-			$depth = max($depth, $result['depth']);
-			$cost += $result['cost'];
-		}
-
-		if ($depth > $maxDepth) {
-			throw new Error(
-				"Query depth $depth exceeds maximum allowed depth $maxDepth",
-				null,
-				null,
-				[],
-				null,
-				null,
-				[
-					'code' => 'QUERY_TOO_COMPLEX',
-					'maxDepth' => $maxDepth,
-					'actualDepth' => $depth,
-				]
-			);
-		}
-
-		if ($cost > $maxCost) {
-			throw new Error(
-				"Query cost $cost exceeds maximum allowed cost $maxCost",
-				null,
-				null,
-				[],
-				null,
-				null,
-				[
-					'code' => 'QUERY_TOO_COMPLEX',
-					'estimatedCost' => $cost,
-					'maxCost' => $maxCost,
-				]
-			);
-		}
-
-		return [
-			'depth' => $depth,
-			'cost' => $cost,
-			'maxDepth' => $maxDepth,
-			'maxCost' => $maxCost,
+		$limits = [
+			'maxDepth' => $this->limit(key: 'graphql_max_depth', default: self::DEFAULT_MAX_DEPTH),
+			'maxCost' => $this->limit(key: 'graphql_max_cost', default: self::DEFAULT_MAX_COST),
 		];
+		$totals = $this->analyzeDocument(document: $document, variables: $variables);
+		$this->assertWithinLimits(totals: $totals, limits: $limits);
+
+		return ($totals + $limits);
 
 	}//end analyze()
+
+	/**
+	 * Read one complexity limit from the app config.
+	 *
+	 * @param string $key     The config key.
+	 * @param int    $default The default limit.
+	 *
+	 * @return int
+	 */
+	private function limit(string $key, int $default): int {
+		return (int)$this->appConfig->getValueString('openregister', $key, (string)$default);
+	}//end limit()
+
+	/**
+	 * Depth and cost over every operation of a document; fragment definitions are not counted.
+	 *
+	 * @param DocumentNode              $document  The parsed document
+	 * @param array<string, mixed>|null $variables Query variables
+	 *
+	 * @return array{depth: int, cost: int}
+	 */
+	private function analyzeDocument(DocumentNode $document, ?array $variables): array {
+		$depth = 0;
+		$cost = 0;
+		$context = new SelectionContext(depth: 0, variables: $variables);
+		foreach ($document->definitions as $definition) {
+			if ($definition instanceof OperationDefinitionNode === true) {
+				$result = $this->analyzeSelectionSet(selectionSet: $definition->selectionSet, context: $context);
+				$depth = max($depth, $result['depth']);
+				$cost += $result['cost'];
+			}
+		}
+
+		return ['depth' => $depth, 'cost' => $cost];
+	}//end analyzeDocument()
+
+	/**
+	 * Refuse a query deeper or costlier than the limits; depth is checked first.
+	 *
+	 * @param array{depth: int, cost: int}       $totals The query's depth and cost.
+	 * @param array{maxDepth: int, maxCost: int} $limits The limits.
+	 *
+	 * @return void
+	 *
+	 * @throws Error If query exceeds complexity limits
+	 */
+	private function assertWithinLimits(array $totals, array $limits): void {
+		if ($totals['depth'] > $limits['maxDepth']) {
+			throw $this->tooComplex(
+				message: "Query depth {$totals['depth']} exceeds maximum allowed depth {$limits['maxDepth']}",
+				extensions: ['maxDepth' => $limits['maxDepth'], 'actualDepth' => $totals['depth']]
+			);
+		}
+
+		if ($totals['cost'] > $limits['maxCost']) {
+			throw $this->tooComplex(
+				message: "Query cost {$totals['cost']} exceeds maximum allowed cost {$limits['maxCost']}",
+				extensions: ['estimatedCost' => $totals['cost'], 'maxCost' => $limits['maxCost']]
+			);
+		}
+	}//end assertWithinLimits()
+
+	/**
+	 * The error a too complex query is refused with.
+	 *
+	 * @param string               $message    The message.
+	 * @param array<string, mixed> $extensions Extensions after the `QUERY_TOO_COMPLEX` code.
+	 *
+	 * @return Error
+	 */
+	private function tooComplex(string $message, array $extensions): Error {
+		return new Error($message, null, null, [], null, null, (['code' => 'QUERY_TOO_COMPLEX'] + $extensions));
+	}//end tooComplex()
 
 	/**
 	 * Recursively analyze a selection set.
 	 *
 	 * @param SelectionSetNode $selectionSet The selection set
-	 * @param int $currentDepth Current nesting depth
-	 * @param array<string, mixed>|null $variables Query variables
+	 * @param SelectionContext $context      Its nesting depth and the query variables
 	 *
 	 * @return array{depth: int, cost: int}
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
 	 */
-	private function analyzeSelectionSet(
-		SelectionSetNode $selectionSet,
-		int $currentDepth,
-		?array $variables,
-	): array {
-		$maxDepth = $currentDepth;
+	private function analyzeSelectionSet(SelectionSetNode $selectionSet, SelectionContext $context): array {
+		$maxDepth = $context->depth;
 		$totalCost = 0;
-
 		foreach ($selectionSet->selections as $selection) {
-			if ($selection instanceof FieldNode) {
-				$fieldName = $selection->name->value;
+			$result = $this->analyzeSelection(selection: $selection, context: $context);
+			$maxDepth = max($maxDepth, $result['depth']);
+			foreach ($result['costs'] as $cost) {
+				$totalCost += $cost;
+			}
+		}
 
-				// Skip introspection fields.
-				if (str_starts_with($fieldName, '__') === true) {
-					continue;
-				}
-
-				$totalCost += self::FIELD_COST;
-
-				if ($selection->selectionSet !== null) {
-					$multiplier = $this->getListMultiplier(field: $selection, variables: $variables);
-					$resolverCost = $this->getResolverCost(fieldName: $fieldName);
-					$totalCost += $resolverCost;
-
-					$childResult = $this->analyzeSelectionSet(
-						selectionSet: $selection->selectionSet,
-						currentDepth: ($currentDepth + 1),
-						variables: $variables
-					);
-					$maxDepth = max($maxDepth, $childResult['depth']);
-					$totalCost += ($childResult['cost'] * $multiplier);
-				}
-			} elseif ($selection instanceof InlineFragmentNode) {
-				// InlineFragmentNode::$selectionSet is non-nullable.
-				$result = $this->analyzeSelectionSet(
-					selectionSet: $selection->selectionSet,
-					currentDepth: $currentDepth,
-					variables: $variables
-				);
-				$maxDepth = max($maxDepth, $result['depth']);
-				$totalCost += $result['cost'];
-			}//end if
-		}//end foreach
-
-		return [
-			'depth' => $maxDepth,
-			'cost' => $totalCost,
-		];
-
+		return ['depth' => $maxDepth, 'cost' => $totalCost];
 	}//end analyzeSelectionSet()
+
+	/**
+	 * Depth and cost terms of one selection: a field, an inline fragment, or nothing (a fragment spread).
+	 *
+	 * The cost terms are added in order by the caller.
+	 *
+	 * @param mixed            $selection The selection node
+	 * @param SelectionContext $context   Its nesting depth and the query variables
+	 *
+	 * @return array{depth: int, costs: array<int, int|float>}
+	 */
+	private function analyzeSelection(mixed $selection, SelectionContext $context): array {
+		if ($selection instanceof FieldNode) {
+			return $this->analyzeField(field: $selection, context: $context);
+		}
+
+		if ($selection instanceof InlineFragmentNode) {
+			// InlineFragmentNode::$selectionSet is non-nullable.
+			$result = $this->analyzeSelectionSet(selectionSet: $selection->selectionSet, context: $context);
+			return ['depth' => $result['depth'], 'costs' => [$result['cost']]];
+		}
+
+		return ['depth' => $context->depth, 'costs' => []];
+	}//end analyzeSelection()
+
+	/**
+	 * Depth and cost terms of one field: introspection fields are free, a leaf costs
+	 * the field cost, and a field with a selection set adds its resolver cost and its
+	 * children's cost times its list multiplier.
+	 *
+	 * @param FieldNode        $field   The field node
+	 * @param SelectionContext $context Its nesting depth and the query variables
+	 *
+	 * @return array{depth: int, costs: array<int, int|float>}
+	 */
+	private function analyzeField(FieldNode $field, SelectionContext $context): array {
+		$fieldName = $field->name->value;
+		if (str_starts_with($fieldName, '__') === true) {
+			return ['depth' => $context->depth, 'costs' => []];
+		}
+
+		if ($field->selectionSet === null) {
+			return ['depth' => $context->depth, 'costs' => [self::FIELD_COST]];
+		}
+
+		$multiplier = $this->getListMultiplier(field: $field, variables: $context->variables);
+		$resolverCost = $this->getResolverCost(fieldName: $fieldName);
+		$child = $this->analyzeSelectionSet(selectionSet: $field->selectionSet, context: $context->deeper());
+
+		return ['depth' => $child['depth'], 'costs' => [self::FIELD_COST, $resolverCost, ($child['cost'] * $multiplier)]];
+	}//end analyzeField()
 
 	/**
 	 * Get the list multiplier for a field (from the `first` argument).
@@ -234,26 +265,41 @@ class QueryComplexityAnalyzer {
 				continue;
 			}
 
-			$valueNode = $arg->value;
-			if ($valueNode instanceof \GraphQL\Language\AST\IntValueNode) {
-				return max(1, (int)$valueNode->value);
+			$multiplier = $this->argumentMultiplier(value: $arg->value, variables: $variables);
+			if ($multiplier !== null) {
+				return $multiplier;
 			}
-
-			// Resolve variable references (e.g., $limit in `first: $limit`).
-			if ($valueNode instanceof \GraphQL\Language\AST\VariableNode
-				&& $variables !== null
-			) {
-				$varName = $valueNode->name->value;
-				if (isset($variables[$varName]) === true
-					&& is_numeric(value: $variables[$varName]) === true
-				) {
-					return max(1, (int)$variables[$varName]);
-				}
-			}
-		}//end foreach
+		}
 
 		return 1;
 	}//end getListMultiplier()
+
+	/**
+	 * The multiplier one `first` argument gives: its int literal, or the numeric variable it names.
+	 *
+	 * Variable references (e.g. `$limit` in `first: $limit`) are resolved against the query variables.
+	 *
+	 * @param ValueNode                 $value     The argument value
+	 * @param array<string, mixed>|null $variables Query variables
+	 *
+	 * @return int|null The multiplier, at least 1, or null when this argument gives none
+	 */
+	private function argumentMultiplier(ValueNode $value, ?array $variables): ?int {
+		if ($value instanceof IntValueNode) {
+			return max(1, (int)$value->value);
+		}
+
+		if ($value instanceof VariableNode === false || $variables === null) {
+			return null;
+		}
+
+		$variable = ($variables[$value->name->value] ?? null);
+		if (is_numeric(value: $variable) === true) {
+			return max(1, (int)$variable);
+		}
+
+		return null;
+	}//end argumentMultiplier()
 
 	/**
 	 * Get the resolver cost for a field name.

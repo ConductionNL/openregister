@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use OCA\OpenRegister\Db\Schema as RegisterSchema;
-use OCP\IUserSession;
 
 /**
  * Builds and caches the object type of each schema, and resolves references between them.
@@ -88,16 +87,16 @@ class ObjectTypes {
 	 * Constructor.
 	 *
 	 * @param array<int, RegisterSchema> $schemas The schemas of the graph
-	 * @param IUserSession $userSession The session that says who is asking
+	 * @param SchemaCaller $caller Who the schema is generated for
 	 */
-	public function __construct(array $schemas, IUserSession $userSession) {
+	public function __construct(array $schemas, private readonly SchemaCaller $caller) {
 		foreach ($schemas as $schema) {
 			$this->schemasById[$schema->getId()] = $schema;
 		}
 
 		$this->scalars = (new GraphQLScalars())->all();
 		$this->names = new GraphQLNames();
-		$this->metadataFields = new ObjectMetadataFields(scalars: $this->scalars, userSession: $userSession);
+		$this->metadataFields = new ObjectMetadataFields(scalars: $this->scalars, userSession: $this->caller->session);
 		$this->typeMapper = $this->newTypeMapper();
 		$this->compositionHandler = $this->newCompositionHandler();
 		$this->propertyFields = new ObjectPropertyFields(typeMapper: $this->typeMapper, names: $this->names);
@@ -188,6 +187,7 @@ class ObjectTypes {
 			objectTypeFactory: $this->forSchema(...),
 			fieldNameConverter: $this->names->toFieldName(...),
 			typeNameConverter: $this->names->toTypeName(...),
+			propertyRbac: $this->caller->propertyRbac,
 		);
 	}//end newTypeMapper()
 
@@ -217,10 +217,9 @@ class ObjectTypes {
 	 * @spec openspec/specs/graphql-api/spec.md
 	 */
 	private function fieldsOf(RegisterSchema $schema): array {
-		$fields = array_merge(
-			$this->metadataFields->leading(auditTrailType: $this->typeMapper->getAuditTrailType()),
-			$this->propertyFields->forSchema(schema: $schema)
-		);
+		// Union, not merge: a property whose name maps onto a metadata field must not replace it.
+		$fields = $this->metadataFields->leading(auditTrailType: $this->typeMapper->getAuditTrailType())
+			+ $this->propertyFields->forSchema(schema: $schema);
 
 		$this->compositionHandler->applyComposition(schema: $schema, fields: $fields);
 

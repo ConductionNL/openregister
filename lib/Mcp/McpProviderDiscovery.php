@@ -33,7 +33,7 @@ use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
-use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;

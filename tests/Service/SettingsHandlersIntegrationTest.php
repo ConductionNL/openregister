@@ -16,7 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;

@@ -30,6 +30,7 @@ use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file retrieval operations with Single Responsibility.
@@ -67,7 +68,7 @@ class ReadFileHandler {
 	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
 	 * @param MagicMapperInterface $objectMapper Object mapper for magic table operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         category-based filtering. Null-safe so legacy
 	 *                                                         fixtures keep working.
 	 */
@@ -78,7 +79,7 @@ class ReadFileHandler {
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 

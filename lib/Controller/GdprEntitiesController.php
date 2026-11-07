@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\GdprEntitiesControllerServices;
-use OCA\OpenRegister\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
