@@ -169,4 +169,16 @@ class OasValidationReportTest extends TestCase
         $this->assertSame([], $summary['issues']);
 
     }//end testEmptySummaryOnFreshReport()
-}//end class
+
+	public function testStrictFailureCarriesTheReportAndCountsItsErrors(): void {
+		$report = new OasValidationReport();
+		$report->addError(path: 'a', message: 'one', code: 'c');
+		$report->addError(path: 'b', message: 'two', code: 'c');
+
+		$failure = $report->strictFailure();
+
+		$this->assertSame('Generated OAS failed strict validation: 2 error(s)', $failure->getMessage());
+		$this->assertSame($report, $failure->getReport());
+	}
+}
+//end class

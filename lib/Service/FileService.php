@@ -59,22 +59,22 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
-use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Service\File\FileLockHandler;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\StreamResponse;
@@ -208,9 +208,9 @@ class FileService {
 	/**
 	 * Tagging handler (Single Responsibility: Tag management)
 	 *
-	 * @var TaggingHandler
+	 * @var TaggingHandlerInterface
 	 */
-	private TaggingHandler $taggingHandler;
+	private TaggingHandlerInterface $taggingHandler;
 
 	/**
 	 * File formatting handler (Single Responsibility: File formatting and filtering)
@@ -222,9 +222,9 @@ class FileService {
 	/**
 	 * Document processing handler (Single Responsibility: Document manipulation and anonymization)
 	 *
-	 * @var DocumentProcessingHandler
+	 * @var DocumentProcessingHandlerInterface
 	 */
-	private DocumentProcessingHandler $documentProcessingHandler;
+	private DocumentProcessingHandlerInterface $documentProcessingHandler;
 
 	/**
 	 * File publishing handler (Single Responsibility: File publishing and ZIP archiving)
@@ -335,7 +335,6 @@ class FileService {
 		'createFileHandler',
 		'readFileHandler',
 		'fileFormattingHandler',
-		'documentProcessingHandler',
 		'filePublishingHandler',
 	];
 
@@ -354,9 +353,9 @@ class FileService {
 	 * @param ReadFileHandler $readFileHandler Read file handler
 	 * @param UpdateFileHandler $updateFileHandler Update file handler
 	 * @param DeleteFileHandler $deleteFileHandler Delete file handler
-	 * @param TaggingHandler $taggingHandler Tagging handler
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler
 	 * @param FileFormattingHandler $fileFormatHandler File formatting handler
-	 * @param DocumentProcessingHandler $docProcHandler Document processing handler
+	 * @param DocumentProcessingHandlerInterface $docProcHandler Document processing handler
 	 * @param FilePublishingHandler $filePubHandler File publishing handler
 	 * @param FileVersioningHandler $fileVerHandler File versioning handler
 	 * @param FileLockHandler $fileLockHandler File lock handler
@@ -379,9 +378,9 @@ class FileService {
 		ReadFileHandler $readFileHandler,
 		UpdateFileHandler $updateFileHandler,
 		DeleteFileHandler $deleteFileHandler,
-		TaggingHandler $taggingHandler,
+		TaggingHandlerInterface $taggingHandler,
 		FileFormattingHandler $fileFormatHandler,
-		DocumentProcessingHandler $docProcHandler,
+		DocumentProcessingHandlerInterface $docProcHandler,
 		FilePublishingHandler $filePubHandler,
 		FileVersioningHandler $fileVerHandler,
 		FileLockHandler $fileLockHandler,
@@ -1243,7 +1242,7 @@ class FileService {
 	 * @param string|null   $category    New category; '' clears, null skips.
 	 * @param string[]|null $labels      New labels; [] clears, null skips.
 	 *
-	 * @return \OCA\OpenRegister\Db\File The persisted metadata row.
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted metadata row.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -1252,7 +1251,7 @@ class FileService {
 		?string $description = null,
 		?string $category = null,
 		?array $labels = null,
-	): \OCA\OpenRegister\Db\File {
+	): \OCA\OpenRegister\Files\Db\File {
 		return $this->updateFileHandler->updateFileMetadata(
 			fileId: $fileId,
 			description: $description,
@@ -1346,7 +1345,12 @@ class FileService {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function generateObjectTag(ObjectEntity|string $objectEntity): string {
-		return $this->taggingHandler->generateObjectTag($objectEntity);
+		$identifier = $objectEntity;
+		if ($objectEntity instanceof ObjectEntity === true) {
+			$identifier = $objectEntity->getUuid() ?? (string)$objectEntity->getId();
+		}
+
+		return $this->taggingHandler->generateObjectTag($identifier);
 	}//end generateObjectTag()
 
 	/**
