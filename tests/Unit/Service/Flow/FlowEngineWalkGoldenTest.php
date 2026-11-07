@@ -141,6 +141,8 @@ class GoldenWalkLogger extends AbstractLogger {
  * @covers \OCA\OpenRegister\Service\Flow\FlowWalkPass
  * @uses \OCA\OpenRegister\Service\Flow\FlowFiring
  * @uses \OCA\OpenRegister\Service\Flow\FlowStreamHalt
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeDeclarations
+ * @uses \OCA\OpenRegister\Service\Flow\LoweredFlow
  */
 class FlowEngineWalkGoldenTest extends TestCase {
 
