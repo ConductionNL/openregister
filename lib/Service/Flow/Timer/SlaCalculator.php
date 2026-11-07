@@ -41,63 +41,7 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
  * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromInterface
  * is PHP's own conversion; there is no instance form.
  */
-final class SlaCalculator {
-
-	/**
-	 * The unit vocabulary, shared by the SLA and the escalation offsets.
-	 */
-	public const UNIT_HOURS = 'hours';
-
-	public const UNIT_BUSINESS_DAYS = 'businessDays';
-
-	public const UNIT_CALENDAR_DAYS = 'calendarDays';
-
-	/**
-	 * Every accepted unit.
-	 *
-	 * @var array<int, string>
-	 */
-	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
-
-	/**
-	 * The end date is left where the budget put it. THE DEFAULT, and it is the
-	 * default deliberately: rolling changes a deadline, and a deadline that
-	 * moved without anybody asking is worse than one that lands on a Sunday.
-	 *
-	 * @var string
-	 */
-	public const ROLL_NONE = 'none';
-
-	/**
-	 * Move the end date forward to the first working day. This is the rule the
-	 * Algemene termijnenwet states for a statutory term; whether a given term
-	 * is one, and whether the calendar it is measured against lists the right
-	 * days, are both questions for the administrator, not for this class.
-	 *
-	 * @var string
-	 */
-	public const ROLL_NEXT = 'next';
-
-	/**
-	 * Move the end date back to the last working day.
-	 *
-	 * @var string
-	 */
-	public const ROLL_PREVIOUS = 'previous';
-
-	/**
-	 * The whole roll vocabulary.
-	 *
-	 * @var array<int, string>
-	 */
-	public const ROLLS = [self::ROLL_NONE, self::ROLL_NEXT, self::ROLL_PREVIOUS];
-
-	/**
-	 * The accepted SLA value range, inclusive.
-	 */
-	public const MIN_VALUE = 1;
-
-	public const MAX_VALUE = 10000;
+final class SlaCalculator implements SlaCalculatorInterface {
 
 	/**
 	 * Seconds in a day, the fraction base for business days.
@@ -624,11 +568,6 @@ final class SlaCalculator {
 	 * @throws FlowTimerValidationException When the modifier is unparseable.
 	 */
 	private function shift(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
-		if ($shifted === false) {
-			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
-		}
-
-		return $shifted;
+		return MomentShift::by(moment: $moment, modifier: $modifier);
 	}//end shift()
 }//end class

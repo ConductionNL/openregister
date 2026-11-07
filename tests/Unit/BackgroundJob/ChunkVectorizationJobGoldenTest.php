@@ -11,6 +11,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerI
 use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
@@ -286,7 +287,7 @@ class ChunkVectorizationJobGoldenTest extends TestCase
 
         $this->registerService(LoggerInterface::class, fn () => $logger);
         $this->registerService(IAppConfig::class, fn () => $config);
-        $this->registerService(ChunkMapper::class, fn () => $mapper);
+        $this->registerService(ChunkStoreInterface::class, fn () => $mapper);
         $this->registerService(EmbeddingGeneratorInterface::class, fn () => $embeddings);
         $this->registerService(VectorStorageHandlerInterface::class, fn () => $storage);
     }//end wire()

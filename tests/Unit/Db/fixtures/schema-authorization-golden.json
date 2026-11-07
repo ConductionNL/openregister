@@ -1,0 +1,287 @@
+{
+    "validate empty": true,
+    "validate unknown action": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Invalid authorization action 'fly' in schema. Must be one of: read, create, update, delete, destroy, list, export, manage, assign, readFiles, addFiles, deleteFiles, readGrants"
+    },
+    "validate rules not a list": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization rules for action 'read' in schema must be an array"
+    },
+    "validate empty group": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Group ID in authorization for action 'read' in schema must be a non-empty string"
+    },
+    "validate number rule": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization rule for action 'read' in schema must be a string or conditional object"
+    },
+    "validate conditional without group": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization rule for action 'read' in schema must have a 'group' key"
+    },
+    "validate conditional empty group": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization 'group' for action 'read' in schema must be a non-empty string"
+    },
+    "validate conditional number group": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization 'group' for action 'read' in schema must be a non-empty string"
+    },
+    "validate match not an array": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization 'match' for action 'read' in schema must be an array"
+    },
+    "validate unsupported operator": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' uses the unsupported operator '$regex'; supported are $eq, $ne, $in, $nin, $contains, $exists, $gt, $gte, $lt, $lte"
+    },
+    "validate in needs a list": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs a list as the '$in' operand"
+    },
+    "validate nin map": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs a list as the '$nin' operand"
+    },
+    "validate in token": true,
+    "validate in list": true,
+    "validate cross organisation text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization 'crossOrganisation' for action 'read' in schema must be true or false; set it to true only on a rule that may read other organisations' rows"
+    },
+    "validate cross organisation true": true,
+    "validate inherit flag text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization flag 'inheritFromPublic' in schema must be a boolean"
+    },
+    "validate inherit flag true": true,
+    "validate scope unknown": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization scope in schema must be one of: organisation, private"
+    },
+    "validate scope organisation": true,
+    "validate scope private": true,
+    "validate roles text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization 'roles' in schema must be a map of role name to group ids"
+    },
+    "validate roles nameless": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization 'roles' in schema names a role with no name"
+    },
+    "validate roles blank name": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization 'roles' in schema names a role with no name"
+    },
+    "validate role without groups": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Role 'r' in schema must list at least one group id"
+    },
+    "validate role groups text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Role 'r' in schema must list at least one group id"
+    },
+    "validate role blank group": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Role 'r' in schema lists a group id that is not a non-empty string"
+    },
+    "validate roles ok": true,
+    "validate reveal wrong": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization key 'reveal' in schema must be \"explicit\""
+    },
+    "validate reveal explicit": true,
+    "validate declared action": true,
+    "validate half declared action": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Invalid authorization action 'half' in schema. Must be one of: read, create, update, delete, destroy, list, export, manage, assign, readFiles, addFiles, deleteFiles, readGrants, approve"
+    },
+    "validate property not an array": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization for property 'p' must be an array"
+    },
+    "validate property unknown action": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Invalid authorization action 'fly' in property 'p'. Must be one of: read, create, update, delete, destroy, list, export, manage, assign, readFiles, addFiles, deleteFiles, readGrants"
+    },
+    "validate property bad rule": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization rule for action 'read' in property 'p' must have a 'group' key"
+    },
+    "validate property ok": true,
+    "validate schema before property": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Invalid authorization action 'fly' in schema. Must be one of: read, create, update, delete, destroy, list, export, manage, assign, readFiles, addFiles, deleteFiles, readGrants"
+    },
+    "validate first refusal wins": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Group ID in authorization for action 'read' in schema must be a non-empty string"
+    },
+    "validate canonical read": true,
+    "validate canonical create": true,
+    "validate canonical update": true,
+    "validate canonical delete": true,
+    "validate canonical destroy": true,
+    "validate canonical list": true,
+    "validate canonical export": true,
+    "validate canonical manage": true,
+    "validate canonical assign": true,
+    "validate canonical readFiles": true,
+    "validate canonical addFiles": true,
+    "validate canonical deleteFiles": true,
+    "validate canonical readGrants": true,
+    "validate control roles as text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization 'roles' in schema must be a map of role name to group ids"
+    },
+    "validate control public as text": true,
+    "validate control inheritFromPublic as text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization flag 'inheritFromPublic' in schema must be a boolean"
+    },
+    "validate control scope as text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization scope in schema must be one of: organisation, private"
+    },
+    "validate control deny as text": true,
+    "validate control matrix as text": true,
+    "validate control x-openregister-token-grant as text": true,
+    "validate control audit as text": true,
+    "validate control reveal as text": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization key 'reveal' in schema must be \"explicit\""
+    },
+    "permission admin group": true,
+    "permission admin user group": true,
+    "permission owner": true,
+    "permission other owner": false,
+    "permission owner without user": false,
+    "permission no block": true,
+    "permission unlisted action": false,
+    "permission empty action": false,
+    "permission public unlisted": false,
+    "permission group listed": true,
+    "permission group not listed": false,
+    "permission conditional without match": true,
+    "permission conditional empty match": true,
+    "permission conditional other group": false,
+    "permission conditional met": true,
+    "permission conditional unmet": false,
+    "permission conditional no data": false,
+    "permission organisation no active": false,
+    "permission organisation same": true,
+    "permission organisation other": false,
+    "permission organisation from data only": false,
+    "permission resolved relation": true,
+    "permission resolved other relation": false,
+    "permission second entry matches": true,
+    "permission loose type": false,
+    "permission entry without group": true,
+    "permission number entry": false,
+    "property none": {
+        "has": false,
+        "all": [],
+        "each": {
+            "absent": null
+        }
+    },
+    "property plain": {
+        "has": false,
+        "all": [],
+        "each": {
+            "a": null,
+            "b": null,
+            "absent": null
+        }
+    },
+    "property authorization": {
+        "has": true,
+        "all": {
+            "a": {
+                "read": [
+                    "g"
+                ]
+            }
+        },
+        "each": {
+            "a": {
+                "read": [
+                    "g"
+                ]
+            },
+            "b": null,
+            "absent": null
+        }
+    },
+    "property empty block": {
+        "has": false,
+        "all": [],
+        "each": {
+            "a": null,
+            "absent": null
+        }
+    },
+    "property scope": {
+        "has": true,
+        "all": {
+            "a": {
+                "read": [
+                    "organisation"
+                ],
+                "update": [
+                    "organisation"
+                ]
+            }
+        },
+        "each": {
+            "a": {
+                "read": [
+                    "organisation"
+                ],
+                "update": [
+                    "organisation"
+                ]
+            },
+            "absent": null
+        }
+    },
+    "property blank scope": {
+        "has": false,
+        "all": [],
+        "each": {
+            "a": null,
+            "absent": null
+        }
+    },
+    "property number scope": {
+        "has": false,
+        "all": [],
+        "each": {
+            "a": null,
+            "absent": null
+        }
+    },
+    "property block wins": {
+        "has": true,
+        "all": {
+            "a": {
+                "read": [
+                    "g"
+                ]
+            }
+        },
+        "each": {
+            "a": {
+                "read": [
+                    "g"
+                ]
+            },
+            "absent": null
+        }
+    },
+    "property numeric names": {
+        "has": true,
+        "all": [
+            {
+                "update": [
+                    "g"
+                ]
+            }
+        ],
+        "each": {
+            "0": {
+                "update": [
+                    "g"
+                ]
+            },
+            "absent": null
+        }
+    },
+    "declared none": [],
+    "declared not a map": [],
+    "declared mixed": [
+        "approve",
+        "reject"
+    ],
+    "groups read": [
+        "a",
+        {
+            "group": "b"
+        }
+    ],
+    "groups empty read": [],
+    "groups update": [],
+    "groups empty update": [],
+    "groups missing": [],
+    "groups empty missing": []
+}

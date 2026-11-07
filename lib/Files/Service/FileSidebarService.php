@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -71,9 +71,9 @@ class FileSidebarService {
 	/**
 	 * Chunk mapper for extraction data.
 	 *
-	 * @var ChunkMapper
+	 * @var ChunkSourceReaderInterface
 	 */
-	private readonly ChunkMapper $chunkMapper;
+	private readonly ChunkSourceReaderInterface $chunkMapper;
 
 	/**
 	 * Entity relation mapper for PII data.

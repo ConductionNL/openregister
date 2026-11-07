@@ -29,7 +29,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -49,6 +48,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TimelineEntryMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * The most entries one search statement will return.
@@ -81,18 +82,12 @@ class TimelineEntryMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findByUuid(string $uuid): ?TimelineEntry {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['uuid' => $uuid]));
+		if ($found instanceof TimelineEntry) {
+			return $found;
 		}
 
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -105,18 +100,12 @@ class TimelineEntryMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findByComment(int $commentId): ?TimelineEntry {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('comment_id', $qb->createNamedParameter($commentId, IQueryBuilder::PARAM_INT)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['comment_id' => $commentId]));
+		if ($found instanceof TimelineEntry) {
+			return $found;
 		}
 
+		return null;
 	}//end findByComment()
 
 	/**
@@ -140,21 +129,15 @@ class TimelineEntryMapper extends QBMapper {
 		int $limit = 50,
 		int $offset = 0,
 	): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('pinned', 'DESC')
+		$qb = $this->selectWhereEquals(columns: ['object_uuid' => $objectUuid]);
+		$qb->orderBy('pinned', 'DESC')
 			->addOrderBy('created', 'DESC')
 			->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		if ($visibility !== null) {
-			$qb->andWhere($qb->expr()->eq('visibility', $qb->createNamedParameter($visibility)));
-		}
+		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
 
 		return $this->findEntities(query: $qb);
-
 	}//end findForObject()
 
 	/**
@@ -182,50 +165,22 @@ class TimelineEntryMapper extends QBMapper {
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/unified-search-provider/spec.md
 	 */
-	public function search(
-		string $term,
-		?array $objectUuids = null,
-		?string $visibility = null,
-		?string $kind = null,
-		int $limit = 50,
-	): array {
+	public function search(string $term, ?array $objectUuids = null, ?string $visibility = null, ?string $kind = null, int $limit = 50): array {
 		if (is_array($objectUuids) === true && $objectUuids === []) {
 			return [];
 		}
 
-		$capped = min(max($limit, 1), self::SEARCH_LIMIT);
-
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->iLike(
-					'message',
-					$qb->createNamedParameter('%'.$this->db->escapeLikeParameter($term).'%')
-				)
-			)
+			->where($qb->expr()->iLike('message', $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($term).'%')))
 			->orderBy('created', 'DESC')
-			->setMaxResults($capped);
+			->setMaxResults(min(max($limit, 1), self::SEARCH_LIMIT));
 
-		if ($objectUuids !== null) {
-			$qb->andWhere(
-				$qb->expr()->in(
-					'object_uuid',
-					$qb->createNamedParameter($objectUuids, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-		}
+		$this->whereObjectIn(qb: $qb, objectUuids: $objectUuids);
+		$this->whereEqualsWhenGiven(qb: $qb, column: 'visibility', value: $visibility);
 
-		if ($visibility !== null) {
-			$qb->andWhere($qb->expr()->eq('visibility', $qb->createNamedParameter($visibility)));
-		}
-
-		if ($kind !== null) {
-			$qb->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter($kind)));
-		}
-
-		return $this->findEntities(query: $qb);
-
+		return $this->findOfKind(qb: $qb, kind: $kind);
 	}//end search()
 
 	/**
@@ -247,29 +202,28 @@ class TimelineEntryMapper extends QBMapper {
 			return [];
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('follow_up', $qb->createNamedParameter(TimelineEntry::FOLLOW_UP_OPEN)))
-			->orderBy('created', 'ASC')
+		$qb = $this->selectWhereEquals(columns: ['follow_up' => TimelineEntry::FOLLOW_UP_OPEN]);
+		$qb->orderBy('created', 'ASC')
 			->setMaxResults($limit);
 
-		if ($objectUuids !== null) {
-			$qb->andWhere(
-				$qb->expr()->in(
-					'object_uuid',
-					$qb->createNamedParameter($objectUuids, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			);
-		}
+		$this->whereObjectIn(qb: $qb, objectUuids: $objectUuids);
 
-		if ($kind !== null) {
-			$qb->andWhere($qb->expr()->eq('kind', $qb->createNamedParameter($kind)));
-		}
+		return $this->findOfKind(qb: $qb, kind: $kind);
+	}//end findOpenFollowUps()
+
+	/**
+	 * Run the query, narrowed to one kind when one is given.
+	 *
+	 * @param IQueryBuilder $qb   The query.
+	 * @param string|null   $kind The kind, or null for every kind.
+	 *
+	 * @return array<int, TimelineEntry> The entries.
+	 */
+	private function findOfKind(IQueryBuilder $qb, ?string $kind): array {
+		$this->whereEqualsWhenGiven(qb: $qb, column: 'kind', value: $kind);
 
 		return $this->findEntities(query: $qb);
-
-	}//end findOpenFollowUps()
+	}//end findOfKind()
 
 	/**
 	 * Drop every record for one object.
@@ -281,12 +235,7 @@ class TimelineEntryMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function deleteForObject(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return (int)$qb->executeStatement();
-
+		return (int)$this->deleteWhereEquals(columns: ['object_uuid' => $objectUuid])->executeStatement();
 	}//end deleteForObject()
 
 	/**
@@ -299,11 +248,6 @@ class TimelineEntryMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function deleteForComment(int $commentId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('comment_id', $qb->createNamedParameter($commentId, IQueryBuilder::PARAM_INT)));
-
-		return (int)$qb->executeStatement();
-
+		return (int)$this->deleteWhereEquals(columns: ['comment_id' => $commentId])->executeStatement();
 	}//end deleteForComment()
 }//end class

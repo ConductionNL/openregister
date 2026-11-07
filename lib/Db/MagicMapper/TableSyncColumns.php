@@ -65,14 +65,7 @@ final class TableSyncColumns {
 	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
 	public function createdStatistics(): array {
-		$metadataCount = $this->metadataCount();
-
-		return [
-			'success' => true,
-			'created' => true,
-			'metadataProperties' => $metadataCount,
-			'regularProperties' => count($this->required) - $metadataCount,
-			'totalProperties' => count($this->required),
+		return ['success' => true, 'created' => true] + $this->propertyCounts() + [
 			'columnsAdded' => count($this->required),
 			'columnsDeRequired' => 0,
 			'columnsDropped' => 0,
@@ -93,26 +86,48 @@ final class TableSyncColumns {
 	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
 	public function updatedStatistics(array $current): array {
-		$metadataCount = $this->metadataCount();
-		$added = count($this->changes['columnsAdded']);
-		$dropped = count($this->changes['columnsDropped']);
-
-		return [
-			'success' => true,
-			'metadataProperties' => $metadataCount,
-			'regularProperties' => count($this->required) - $metadataCount,
-			'totalProperties' => count($this->required),
-			'columnsAdded' => $added,
-			'columnsDeRequired' => count($this->changes['columnsDeRequired']),
-			'columnsReRequired' => count($this->changes['columnsReRequired']),
-			'columnsDropped' => $dropped,
-			'columnsUnchanged' => count($current) - $added - $dropped,
+		return ['success' => true] + $this->propertyCounts() + $this->changeCounts(current: $current) + [
 			'columnsAddedList' => $this->changes['columnsAdded'],
 			'columnsDeRequiredList' => $this->changes['columnsDeRequired'],
 			'columnsReRequiredList' => $this->changes['columnsReRequired'],
 			'columnsDroppedList' => $this->changes['columnsDropped'],
 		];
 	}//end updatedStatistics()
+
+	/**
+	 * How many metadata, regular and total properties the required columns hold.
+	 *
+	 * @return array{metadataProperties: int, regularProperties: int, totalProperties: int} The counts.
+	 */
+	private function propertyCounts(): array {
+		$metadataCount = $this->metadataCount();
+
+		return [
+			'metadataProperties' => $metadataCount,
+			'regularProperties' => count($this->required) - $metadataCount,
+			'totalProperties' => count($this->required),
+		];
+	}//end propertyCounts()
+
+	/**
+	 * How many columns the structure update added, de-required, re-required, dropped and left alone.
+	 *
+	 * @param array $current The columns the table had before the update, keyed by name
+	 *
+	 * @return array<string, int> The counts.
+	 */
+	private function changeCounts(array $current): array {
+		$added = count($this->changes['columnsAdded']);
+		$dropped = count($this->changes['columnsDropped']);
+
+		return [
+			'columnsAdded' => $added,
+			'columnsDeRequired' => count($this->changes['columnsDeRequired']),
+			'columnsReRequired' => count($this->changes['columnsReRequired']),
+			'columnsDropped' => $dropped,
+			'columnsUnchanged' => count($current) - $added - $dropped,
+		];
+	}//end changeCounts()
 
 	/**
 	 * How many of the required columns are metadata columns.

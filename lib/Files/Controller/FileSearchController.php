@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -50,7 +50,7 @@ class FileSearchController extends Controller {
 	 * @param string $appName App name
 	 * @param IRequest $request Request object
 	 * @param VectorizationServiceInterface $vectorService Vectorization service
-	 * @param ChunkMapper $chunkMapper Chunk mapper (ranked keyword arm)
+	 * @param ChunkMapperInterface $chunkMapper Chunk mapper (ranked keyword arm)
 	 * @param LoggerInterface $logger Logger
 	 * @param FileReadScope $readScope Keeps only the hits on files the caller may open
 	 */
@@ -58,7 +58,7 @@ class FileSearchController extends Controller {
 		string $appName,
 		IRequest $request,
 		private readonly VectorizationServiceInterface $vectorService,
-		private readonly ChunkMapper $chunkMapper,
+		private readonly ChunkMapperInterface $chunkMapper,
 		private readonly LoggerInterface $logger,
 		private readonly FileReadScope $readScope,
 	) {

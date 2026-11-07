@@ -78,6 +78,25 @@ trait ResolvesRegisterAndSchemaTrait {
 		// (1) Drop anything an earlier caller left on the shared service.
 		$objectService->clearCurrents();
 
+		$this->setRegisterBlamingTheRightSide(register: $register, schema: $schema, objectService: $objectService);
+		$this->setSchemaOrNotFound(schema: $schema, objectService: $objectService);
+
+		return $this->resolvedIdsAndEntities(objectService: $objectService);
+	}//end resolveRegisterAndSchema()
+
+	/**
+	 * Set the register, reporting a failure as the side that actually failed.
+	 *
+	 * @param string                    $register      Register slug, uuid or numeric id.
+	 * @param string                    $schema        Schema slug, uuid or numeric id.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
+	 *
+	 * @return void
+	 *
+	 * @throws RegisterNotFoundException When the register itself does not resolve.
+	 * @throws SchemaNotFoundException   When the register resolved and a pending schema ref did not.
+	 */
+	private function setRegisterBlamingTheRightSide(string $register, string $schema, ObjectOperationsInterface $objectService): void {
 		$registerBefore = $objectService->getCurrentRegisterEntity();
 
 		try {
@@ -88,27 +107,44 @@ trait ResolvesRegisterAndSchemaTrait {
 			// register's name.
 			$registerAfter = $objectService->getCurrentRegisterEntity();
 			if ($registerAfter === null || $registerAfter === $registerBefore) {
-				throw new RegisterNotFoundException(
-					registerSlugOrId: $register,
-					code: 404,
-					previous: $e
-				);
+				throw new RegisterNotFoundException(registerSlugOrId: $register, code: 404, previous: $e);
 			}
 
 			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
 		}
+	}//end setRegisterBlamingTheRightSide()
 
+	/**
+	 * Set the schema, reporting a failure as a missing schema.
+	 *
+	 * @param string                    $schema        Schema slug, uuid or numeric id.
+	 * @param ObjectOperationsInterface $objectService The request's object service.
+	 *
+	 * @return void
+	 *
+	 * @throws SchemaNotFoundException When the schema does not resolve in the register.
+	 */
+	private function setSchemaOrNotFound(string $schema, ObjectOperationsInterface $objectService): void {
 		try {
 			$objectService->setSchema(schema: $schema);
 		} catch (DoesNotExistException $e) {
 			throw new SchemaNotFoundException(schemaSlugOrId: $schema, code: 404, previous: $e);
 		}
+	}//end setSchemaOrNotFound()
 
+	/**
+	 * The ids and entities the object service now holds.
+	 *
+	 * @param ObjectOperationsInterface $objectService The request's object service.
+	 *
+	 * @return array{register: mixed, schema: mixed, registerEntity: mixed, schemaEntity: mixed}
+	 */
+	private function resolvedIdsAndEntities(ObjectOperationsInterface $objectService): array {
 		return [
 			'register' => $objectService->getRegister(),
 			'schema' => $objectService->getSchema(),
 			'registerEntity' => $objectService->getCurrentRegisterEntity(),
 			'schemaEntity' => $objectService->getCurrentSchemaEntity(),
 		];
-	}//end resolveRegisterAndSchema()
+	}//end resolvedIdsAndEntities()
 }//end trait
