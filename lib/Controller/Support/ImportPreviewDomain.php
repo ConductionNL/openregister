@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Import\ImportPreviewService;
-use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 
 /**
  * The domain services of the import preview API.
@@ -34,14 +34,14 @@ final class ImportPreviewDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ImportPreviewService $service The preview lifecycle.
-	 * @param SourceRowReader      $reader  The file reader, for hashing and staging.
+	 * @param ImportPreviewServiceInterface $service The preview lifecycle.
+	 * @param SourceRowReaderInterface      $reader  The file reader, for hashing and staging.
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
 	public function __construct(
-		public readonly ImportPreviewService $service,
-		public readonly SourceRowReader $reader,
+		public readonly ImportPreviewServiceInterface $service,
+		public readonly SourceRowReaderInterface $reader,
 	) {
 	}//end __construct()
 }//end class

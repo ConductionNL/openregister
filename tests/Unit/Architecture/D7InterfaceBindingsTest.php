@@ -52,6 +52,10 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -98,10 +102,12 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
+		ImportPreviewService::class => [ImportPreviewServiceInterface::class, ContractBindings::class],
 		JsonLdContextService::class => [JsonLdContextServiceInterface::class, ContractBindings::class],
 		JsonLdSerializer::class => [JsonLdSerializerInterface::class, ContractBindings::class],
 		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
 		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
+		SourceRowReader::class => [SourceRowReaderInterface::class, ContractBindings::class],
 		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
 		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
 	];

@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Dto;
 
-use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 
 /**
  * Per-object failure summary for one bulk save call.
@@ -164,7 +164,7 @@ class BulkSaveOutcome {
 	 * but reported the detail under its own key layout, so a caller had to know
 	 * which path it had asked for before it could read the answer.
 	 *
-	 * @param BatchOperationStatus $status Per-row outcomes from the streaming save.
+	 * @param BatchOperationStatusInterface $status Per-row outcomes from the streaming save.
 	 * @param int $requestedCount Rows the caller submitted.
 	 * @param int $accountedCount Rows the status accounts for (created + updated + unchanged).
 	 *
@@ -173,7 +173,7 @@ class BulkSaveOutcome {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public static function fromBatchStatus(
-		BatchOperationStatus $status,
+		BatchOperationStatusInterface $status,
 		int $requestedCount,
 		int $accountedCount
 	): self {

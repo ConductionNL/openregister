@@ -119,8 +119,8 @@ final class ObjectSourceRegistrar {
 		DatabaseIntrospectionService::class => [
 			'connectionFactory' => DbalConnectionFactory::class,
 			'typeMapper'        => SqlTypeMapper::class,
-			'registerMapper'    => \OCA\OpenRegister\Db\RegisterMapper::class,
-			'schemaMapper'      => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'registerMapper'    => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+			'schemaMapper'      => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'diffService'       => \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
 			'logger'            => 'Psr\Log\LoggerInterface',
 		],
@@ -141,8 +141,8 @@ final class ObjectSourceRegistrar {
 			'logger'      => 'Psr\Log\LoggerInterface',
 		],
 		TablesSchemaSyncService::class => [
-			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'columnMapper'   => TablesColumnMapper::class,
 			'logger'         => 'Psr\Log\LoggerInterface',
 		],
