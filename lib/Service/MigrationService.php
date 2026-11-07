@@ -34,7 +34,7 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
-class MigrationService {
+class MigrationService implements MigrationServiceInterface {
 
 	/**
 	 * The shared register-scoped schema resolver.
