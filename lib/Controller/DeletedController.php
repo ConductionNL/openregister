@@ -375,8 +375,6 @@ class DeletedController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
@@ -512,8 +510,6 @@ class DeletedController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with multiple restore result
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
@@ -603,8 +599,6 @@ class DeletedController extends Controller {
 	 * @param string $id The ID or UUID of the object to permanently delete
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
@@ -937,8 +931,6 @@ class DeletedController extends Controller {
 	 * wave-3 C4 finding (no RBAC on `destroyMultiple`).
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with multiple deletion result
 	 *
