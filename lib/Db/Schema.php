@@ -44,6 +44,10 @@ use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
+use OCA\OpenRegister\Db\Schema\NotSuppliedReasons;
+use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
+use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
+use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
 use OCP\IURLGenerator;
 use stdClass;
 
@@ -1647,32 +1651,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
-		$configuration = $this->getConfiguration();
-
-		if ($configuration === null) {
-			return null;
-		}
-
-		$source = ($configuration['x-openregister-object-source'] ?? null);
-
-		// A type backed by a saved view (x-openregister-view) reads through the
-		// built-in `view` provider and is never writable
-		// (modelling-query-backed-type). An explicit object source wins.
-		if (is_array($source) === false) {
-			$view = ($configuration['x-openregister-view']['view'] ?? null);
-			if ((is_string($view) === true && $view !== '') || is_int($view) === true) {
-				return ['provider' => 'view', 'config' => ['view' => $view], 'readOnly' => true];
-			}
-
-			return null;
-		}
-
-		$provider = ($source['provider'] ?? null);
-		if (is_string($provider) === false || $provider === '') {
-			return null;
-		}
-
-		return $source;
+		return (new ObjectSourceDeclaration())->declared(configuration: $this->getConfiguration());
 	}//end getObjectSource()
 
 	/**
@@ -1690,73 +1669,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getLenses(): array {
-		$configuration = $this->getConfiguration();
-
-		if ($configuration === null) {
-			return [];
-		}
-
-		$lenses = ($configuration[self::LENS_ANNOTATION] ?? null);
-
-		if (is_array($lenses) === false) {
-			return [];
-		}
-
-		$declared = [];
-		foreach ($lenses as $name => $spec) {
-			$entry = self::normaliseLens(spec: $spec);
-			if ((string)$name === '' || $entry === null) {
-				continue;
-			}
-
-			$declared[(string)$name] = $entry;
-		}
-
-		return $declared;
+		return (new PresentationAnnotations())->lenses(configuration: $this->getConfiguration());
 	}//end getLenses()
-
-	/**
-	 * Normalise one declared lens, or drop it.
-	 *
-	 * A lens is only half a lens without both halves: a `through` naming the
-	 * reference property and a `property` naming what to read there. Half of one
-	 * would render as empty on every read, which is indistinguishable from a
-	 * field nobody filled in, so it is dropped here and reported by
-	 * HingeAnnotationValidator at save time.
-	 *
-	 * @param mixed $spec The declared lens.
-	 *
-	 * @return array|null The lens, or null when either half is missing.
-	 *
-	 * @psalm-return array{through: string, property: string, label?: string}|null
-	 */
-	private static function normaliseLens(mixed $spec): ?array {
-		if (is_array($spec) === false) {
-			return null;
-		}
-
-		$through = ($spec['through'] ?? null);
-		$property = ($spec['property'] ?? null);
-
-		if (is_string($through) === false || $through === '') {
-			return null;
-		}
-
-		if (is_string($property) === false || $property === '') {
-			return null;
-		}
-
-		$entry = [
-			'through' => $through,
-			'property' => $property,
-		];
-
-		if (isset($spec['label']) === true && is_string($spec['label']) === true) {
-			$entry['label'] = $spec['label'];
-		}
-
-		return $entry;
-	}//end normaliseLens()
 
 	/**
 	 * Get the list-surface declaration from the schema configuration.
@@ -1773,77 +1687,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getListPresentation(): array {
-		$configuration = $this->getConfiguration();
-		$empty = [
-			'columns' => [],
-			'searchFields' => [],
-		];
-
-		if ($configuration === null) {
-			return $empty;
-		}
-
-		$list = ($configuration[self::LIST_ANNOTATION] ?? null);
-
-		if (is_array($list) === false) {
-			return $empty;
-		}
-
-		$columns = [];
-		foreach (($list['columns'] ?? []) as $column) {
-			$entry = self::normaliseListColumn(column: $column);
-			if ($entry !== null) {
-				$columns[] = $entry;
-			}
-		}
-
-		$searchFields = [];
-		foreach (($list['searchFields'] ?? []) as $field) {
-			if (is_string($field) === true && $field !== '') {
-				$searchFields[] = $field;
-			}
-		}
-
-		return [
-			'columns' => $columns,
-			'searchFields' => array_values(array_unique($searchFields)),
-		];
+		return (new PresentationAnnotations())->listPresentation(configuration: $this->getConfiguration());
 	}//end getListPresentation()
-
-	/**
-	 * Normalise one declared list column.
-	 *
-	 * A bare string is the property name; an array may add a label and a width.
-	 *
-	 * @param mixed $column The declared column.
-	 *
-	 * @return array{property: string, label?: string}|null The column, or null when it names no property.
-	 */
-	private static function normaliseListColumn(mixed $column): ?array {
-		if (is_string($column) === true) {
-			if ($column === '') {
-				return null;
-			}
-
-			return ['property' => $column];
-		}
-
-		if (is_array($column) === false) {
-			return null;
-		}
-
-		$property = ($column['property'] ?? null);
-		if (is_string($property) === false || $property === '') {
-			return null;
-		}
-
-		$entry = ['property' => $property];
-		if (isset($column['label']) === true && is_string($column['label']) === true) {
-			$entry['label'] = $column['label'];
-		}
-
-		return $entry;
-	}//end normaliseListColumn()
 
 	/**
 	 * Get the geographic-inheritance declaration from the schema configuration.
@@ -1858,73 +1703,8 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function getGeoInheritance(): array {
-		$configuration = $this->getConfiguration();
-
-		if ($configuration === null) {
-			return [];
-		}
-
-		$geo = ($configuration[self::GEO_INHERITANCE_ANNOTATION] ?? null);
-
-		if (is_array($geo) === false) {
-			return [];
-		}
-
-		$sources = ($geo['from'] ?? null);
-		if (is_array($sources) === false) {
-			return [];
-		}
-
-		$declared = [];
-		foreach ($sources as $source) {
-			$entry = self::normaliseGeoSource(source: $source);
-			if ($entry === null) {
-				continue;
-			}
-
-			$declared[] = $entry;
-		}//end foreach
-
-		return $declared;
+		return (new PresentationAnnotations())->geoInheritance(configuration: $this->getConfiguration());
 	}//end getGeoInheritance()
-
-	/**
-	 * Normalise one declared geographic-inheritance source, or drop it.
-	 *
-	 * A bare string is the reference property to follow; an array may add the
-	 * label a map legend shows beside the features that arrived through it.
-	 *
-	 * @param mixed $source The declared source.
-	 *
-	 * @return array|null The source, or null when it names no reference property.
-	 *
-	 * @psalm-return array{through: string, label?: string}|null
-	 */
-	private static function normaliseGeoSource(mixed $source): ?array {
-		if (is_string($source) === true) {
-			if ($source === '') {
-				return null;
-			}
-
-			return ['through' => $source];
-		}
-
-		if (is_array($source) === false) {
-			return null;
-		}
-
-		$through = ($source['through'] ?? null);
-		if (is_string($through) === false || $through === '') {
-			return null;
-		}
-
-		$entry = ['through' => $through];
-		if (isset($source['label']) === true && is_string($source['label']) === true) {
-			$entry['label'] = $source['label'];
-		}
-
-		return $entry;
-	}//end normaliseGeoSource()
 
 	/**
 	 * Check whether this schema's objects are opted into Context Chat indexing.
@@ -2425,27 +2205,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function notSuppliedReasons(): array {
-		$configuration = ($this->getConfiguration() ?? []);
-		$annotation = ($configuration[self::NOT_SUPPLIED_REASONS_ANNOTATION] ?? null);
-
-		if (is_array($annotation) === false) {
-			return [];
-		}
-
-		$reasons = [];
-		foreach ($annotation as $code => $label) {
-			if (is_string($code) === false || $code === '') {
-				continue;
-			}
-
-			if (is_string($label) === false || $label === '') {
-				continue;
-			}
-
-			$reasons[$code] = $label;
-		}
-
-		return $reasons;
+		return (new NotSuppliedReasons())->reasons(configuration: $this->getConfiguration());
 	}//end notSuppliedReasons()
 
 	/**
@@ -2549,96 +2309,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *             This method is kept for backward compatibility only.
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function regenerateFacetsFromProperties(): void {
-		$properties = $this->getProperties();
-
-		if (empty($properties) === true) {
-			$this->setFacets(facets: null);
-			return;
-		}
-
-		$facetConfig = [
-			'object_fields' => [],
-			'generated_at' => time(),
-			'schema_version' => $this->getVersion() ?? '1.0',
-		];
-
-		// Analyze each property for facetable configuration.
-		foreach ($properties as $propertyKey => $property) {
-			// Skip properties that are not marked as facetable.
-			if (isset($property['facetable']) === false || $property['facetable'] !== true) {
-				continue;
-			}
-
-			// Determine appropriate facet type based on property configuration.
-			$facetType = $this->determineFacetType(property: $property);
-
-			// The determineFacetType() helper is declared `: string`, so there is no null
-			// case to guard against.
-			$facetConfig['object_fields'][$propertyKey] = [
-				'type' => $facetType,
-				'title' => $property['title'] ?? $propertyKey,
-				'description' => $property['description'] ?? null,
-				'data_type' => $property['type'] ?? 'string',
-				'queryParameter' => $propertyKey,
-			];
-
-			// Add type-specific configuration.
-			if ($facetType === 'date_histogram') {
-				$facetConfig['object_fields'][$propertyKey]['default_interval'] = 'month';
-				$facetConfig['object_fields'][$propertyKey]['supported_intervals'] = ['day', 'week', 'month', 'year'];
-			} elseif ($facetType === 'range') {
-				$facetConfig['object_fields'][$propertyKey]['supports_custom_ranges'] = true;
-			} elseif ($facetType === 'terms' && (($property['enum'] ?? null) !== null)) {
-				$facetConfig['object_fields'][$propertyKey]['predefined_values'] = $property['enum'];
-			}
-		}//end foreach
-
-		// Set the generated facet configuration.
-		$this->setFacets(facets: $facetConfig);
+		$this->setFacets(
+			facets: (new PropertyFacetBlock())->built(
+				properties: $this->getProperties(),
+				version: $this->getVersion(),
+				generatedAt: time()
+			)
+		);
 	}//end regenerateFacetsFromProperties()
-
-	/**
-	 * Determine the appropriate facet type for a property
-	 *
-	 * @param array $property The property configuration
-	 *
-	 * @phpstan-param array<string, mixed> $property
-	 *
-	 * @psalm-param array<string, mixed> $property
-	 *
-	 * @return string The facet type
-	 */
-	private function determineFacetType(array $property): string {
-		$type = $property['type'] ?? 'string';
-		$format = $property['format'] ?? null;
-
-		// Date/datetime fields use date_histogram.
-		if ($type === 'string' && ($format === 'date' || $format === 'date-time')) {
-			return 'date_histogram';
-		}
-
-		// Numeric fields can use range facets.
-		if ($type === 'number' || $type === 'integer') {
-			return 'range';
-		}
-
-		// String fields with enums or categorical data use terms.
-		if ($type === 'string' || $type === 'boolean') {
-			return 'terms';
-		}
-
-		// Arrays typically use terms (for categorical values).
-		if ($type === 'array') {
-			return 'terms';
-		}
-
-		// Default to terms for other types.
-		return 'terms';
-	}//end determineFacetType()
 
 	/**
 	 * Get the array of schema references that this schema must validate against (allOf)
