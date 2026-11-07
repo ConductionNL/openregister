@@ -300,4 +300,33 @@ class ExampleSetUserObjectRowsGoldenTest extends TestCase {
 			$notes->write('app', 'k', ['user' => 'alice', 'objectUuid' => 'o-1', 'message' => 'Hi'])
 		);
 	}//end testNoteWriteFailure()
+	/**
+	 * A read state and a watcher are lost when the lookup finds nothing or fails, and revert to `removed` or `failed`.
+	 *
+	 * @return void
+	 */
+	public function testLostAndRevert(): void {
+		$entry  = ['user' => 'alice', 'objectUuid' => 'o-1'];
+		$states = $this->createMock(ObjectReadStateMapper::class);
+		$states->method('findOne')->willReturnOnConsecutiveCalls(
+			$this->createMock(ObjectReadState::class),
+			null,
+			$this->throwException(new RuntimeException('x'))
+		);
+		$states->method('markUnread')->willReturnOnConsecutiveCalls(true, false, $this->throwException(new RuntimeException('x')));
+		$readStates = new ExampleSetReadStates($this->container($states));
+		$this->assertSame([false, true, true], [$readStates->lost($entry), $readStates->lost($entry), $readStates->lost($entry)]);
+		$this->assertSame(['removed', 'removed', 'failed'], [$readStates->revert($entry), $readStates->revert($entry), $readStates->revert($entry)]);
+
+		$follows = $this->createMock(WatcherMapperInterface::class);
+		$follows->expects($this->exactly(3))->method('findOne')->with('alice', 'o-1')->willReturnOnConsecutiveCalls(
+			$this->createMock(Watcher::class),
+			null,
+			$this->throwException(new RuntimeException('x'))
+		);
+		$follows->expects($this->exactly(3))->method('unsubscribe')->with('alice', 'o-1')->willReturnOnConsecutiveCalls(true, false, $this->throwException(new RuntimeException('x')));
+		$watchers = new ExampleSetWatchers($this->container($follows));
+		$this->assertSame([false, true, true], [$watchers->lost($entry), $watchers->lost($entry), $watchers->lost($entry)]);
+		$this->assertSame(['removed', 'removed', 'failed'], [$watchers->revert($entry), $watchers->revert($entry), $watchers->revert($entry)]);
+	}//end testLostAndRevert()
 }//end class
