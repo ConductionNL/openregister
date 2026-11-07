@@ -31,7 +31,7 @@ use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 
 /**
  * Handles file creation operations with Single Responsibility.
@@ -78,7 +78,7 @@ class CreateFileHandler {
 	 * @param IRootFolder $rootFolder Root folder for file operations.
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
 	 * @param FileValidationHandler $fileValidHandler File validation handler.
-	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
 	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 */
@@ -86,7 +86,7 @@ class CreateFileHandler {
 		private readonly IRootFolder $rootFolder,
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {

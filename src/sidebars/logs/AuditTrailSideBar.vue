@@ -346,22 +346,14 @@ export default {
 	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
+		this.refreshEmptyScopeLists()
 
 		this.loadStatistics()
 		this.loadActionDistribution()
 		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		eventBus.on('audit-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('audit-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -375,16 +367,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
 
 		/**
 		 * Handle object filter change with debouncing
@@ -410,19 +392,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Debounced version of applyFilters for text input
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
 
 		/**
 		 * Update changes filter

@@ -28,7 +28,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 
 /**
  * The node that makes flow state usable from a graph.
@@ -61,7 +60,7 @@ use OCP\WorkflowEngine\IManager;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateNode implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class FlowStateNode extends LogicNodeBase implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * Read one key into the item.
@@ -147,11 +146,11 @@ class FlowStateNode implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfi
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 	) {
+		parent::__construct(l10n: $l10n, urls: $urls);
 		$this->slots = new FlowStateSlots();
-
 	}//end __construct()
 
 	/**
@@ -189,17 +188,6 @@ class FlowStateNode implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfi
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/history.svg');
 	}//end getIcon()
-
-	/**
-	 * Availability.
-	 *
-	 * @param integer $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a flow-state step, across all five operations.
@@ -411,16 +399,4 @@ class FlowStateNode implements IFlowNode, FlowStateNodeInterface, IFlowNodeConfi
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

@@ -67,7 +67,7 @@ use Throwable;
  *   cause vocabulary; each is required for the degrade-don't-throw dispatch
  *   surface (AD-23).
  */
-class MessageDispatchProvider extends AbstractIntegrationProvider {
+class MessageDispatchProvider extends AbstractIntegrationProvider implements MessageDispatcherInterface {
 
 	use ConnectorRoutedProviderTrait;
 

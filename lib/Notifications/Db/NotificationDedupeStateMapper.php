@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTime;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
@@ -55,6 +54,8 @@ use OCA\OpenRegister\Db\Schema;
  * @psalm-suppress PossiblyUnusedMethod
  */
 class NotificationDedupeStateMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Default retention window for the periodic sweep (90 days).
@@ -85,38 +86,21 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return NotificationDedupeState|null Row when present, null when absent.
 	 */
 	public function findOne(int $schemaId, string $ruleKey, string $objectUuid): ?NotificationDedupeState {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->eq(
-					'schema_id',
-					$qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'rule_key',
-					$qb->createNamedParameter($ruleKey)
-				)
-			)
-			->andWhere(
-				$qb->expr()->eq(
-					'object_uuid',
-					$qb->createNamedParameter($objectUuid)
-				)
-			)
-			->setMaxResults(1);
+		$qb = $this->selectWhereEquals(columns: ['schema_id' => $schemaId, 'rule_key' => $ruleKey, 'object_uuid' => $objectUuid]);
+		$qb->setMaxResults(1);
 
 		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+			$found = $this->findEntity(query: $qb);
 		} catch (\Throwable $e) {
-			// Read failures should not break the dispatch loop.
+			// Missing rows and read failures alike should not break the dispatch loop.
 			return null;
 		}
 
+		if ($found instanceof NotificationDedupeState) {
+			return $found;
+		}
+
+		return null;
 	}//end findOne()
 
 	/**
@@ -145,21 +129,28 @@ class NotificationDedupeStateMapper extends QBMapper {
 		bool $dispatched,
 	): NotificationDedupeState {
 		$existing = $this->findOne(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid);
-
 		if ($existing !== null) {
-			$existing->setFingerprint($fingerprint);
-			$existing->setSeenAt($now);
-			if ($dispatched === true) {
-				$existing->setDispatchedAt($now);
-			}
-
-			try {
-				return $this->update(entity: $existing);
-			} catch (\Throwable $e) {
-				return $existing;
-			}
+			return $this->refresh(existing: $existing, fingerprint: $fingerprint, now: $now, dispatched: $dispatched);
 		}
 
+		$entity = $this->newState(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid, fingerprint: $fingerprint, now: $now);
+
+		return $this->insertOrReadWinner(entity: $entity, schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid);
+	}//end upsert()
+
+
+	/**
+	 * A new row, seen and dispatched now.
+	 *
+	 * @param int      $schemaId    The schema.
+	 * @param string   $ruleKey     The rule.
+	 * @param string   $objectUuid  The object.
+	 * @param string   $fingerprint The fingerprint.
+	 * @param DateTime $now         The evaluation moment.
+	 *
+	 * @return NotificationDedupeState The unsaved row.
+	 */
+	private function newState(int $schemaId, string $ruleKey, string $objectUuid, string $fingerprint, DateTime $now): NotificationDedupeState {
 		$entity = new NotificationDedupeState();
 		$entity->setSchemaId($schemaId);
 		$entity->setRuleKey($ruleKey);
@@ -168,26 +159,62 @@ class NotificationDedupeStateMapper extends QBMapper {
 		$entity->setDispatchedAt($now);
 		$entity->setSeenAt($now);
 
+		return $entity;
+
+	}//end newState()
+
+
+	/**
+	 * Move an existing row on: new fingerprint, seen now, dispatched now when it was.
+	 *
+	 * @param NotificationDedupeState $existing    The stored row.
+	 * @param string                  $fingerprint The new fingerprint.
+	 * @param DateTime                $now         The evaluation moment.
+	 * @param bool                    $dispatched  Whether this evaluation dispatched.
+	 *
+	 * @return NotificationDedupeState The updated row, or the row as changed when the update failed.
+	 */
+	private function refresh(NotificationDedupeState $existing, string $fingerprint, DateTime $now, bool $dispatched): NotificationDedupeState {
+		$existing->setFingerprint($fingerprint);
+		$existing->setSeenAt($now);
+		if ($dispatched === true) {
+			$existing->setDispatchedAt($now);
+		}
+
+		try {
+			return $this->update(entity: $existing);
+		} catch (\Throwable $e) {
+			return $existing;
+		}
+
+	}//end refresh()
+
+	/**
+	 * Insert a new row, or answer with the one a concurrent dispatcher wrote.
+	 *
+	 * @param NotificationDedupeState $entity     The row to insert.
+	 * @param int                     $schemaId   Its schema.
+	 * @param string                  $ruleKey    Its rule.
+	 * @param string                  $objectUuid Its object.
+	 *
+	 * @return NotificationDedupeState The stored row.
+	 *
+	 * @throws DbException When the insert fails for another reason, or no winning row exists.
+	 */
+	private function insertOrReadWinner(NotificationDedupeState $entity, int $schemaId, string $ruleKey, string $objectUuid): NotificationDedupeState {
 		try {
 			return $this->insert(entity: $entity);
 		} catch (DbException $e) {
-			// Concurrent dispatcher won the race — re-read and treat the
-			// row as authoritative.
-			if ($e->getReason() === DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
-				$existing = $this->findOne(
-					schemaId: $schemaId,
-					ruleKey: $ruleKey,
-					objectUuid: $objectUuid
-				);
-				if ($existing !== null) {
-					return $existing;
-				}
+			if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+				throw $e;
 			}
 
-			throw $e;
+			// Concurrent dispatcher won the race — re-read and treat the
+			// row as authoritative.
+			return ($this->findOne(schemaId: $schemaId, ruleKey: $ruleKey, objectUuid: $objectUuid) ?? throw $e);
 		}
 
-	}//end upsert()
+	}//end insertOrReadWinner()
 
 	/**
 	 * Drop every dedup row tied to an object (used on object purge).
@@ -197,20 +224,7 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return int Number of rows deleted (0 on error).
 	 */
 	public function deleteByObject(string $objectUuid): int {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName())
-				->where(
-					$qb->expr()->eq(
-						'object_uuid',
-						$qb->createNamedParameter($objectUuid)
-					)
-				);
-			return (int)$qb->executeStatement();
-		} catch (\Throwable) {
-			return 0;
-		}
-
+		return $this->executeQuietly(statement: fn (): IQueryBuilder => $this->deleteWhereEquals(columns: ['object_uuid' => $objectUuid]));
 	}//end deleteByObject()
 
 	/**
@@ -222,26 +236,9 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return int Number of rows deleted (0 on error).
 	 */
 	public function deleteByRule(int $schemaId, string $ruleKey): int {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName())
-				->where(
-					$qb->expr()->eq(
-						'schema_id',
-						$qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)
-					)
-				)
-				->andWhere(
-					$qb->expr()->eq(
-						'rule_key',
-						$qb->createNamedParameter($ruleKey)
-					)
-				);
-			return (int)$qb->executeStatement();
-		} catch (\Throwable) {
-			return 0;
-		}
-
+		return $this->executeQuietly(
+			statement: fn (): IQueryBuilder => $this->deleteWhereEquals(columns: ['schema_id' => $schemaId, 'rule_key' => $ruleKey])
+		);
 	}//end deleteByRule()
 
 	/**
@@ -252,23 +249,7 @@ class NotificationDedupeStateMapper extends QBMapper {
 	 * @return int Number of rows deleted (0 on error).
 	 */
 	public function deleteSeenBefore(DateTime $cutoff): int {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->delete($this->getTableName())
-				->where(
-					$qb->expr()->lt(
-						'seen_at',
-						$qb->createNamedParameter(
-							$cutoff->format('Y-m-d H:i:s'),
-							IQueryBuilder::PARAM_STR
-						)
-					)
-				);
-			return (int)$qb->executeStatement();
-		} catch (\Throwable) {
-			return 0;
-		}
-
+		return $this->deleteBeforeQuietly(column: 'seen_at', cutoff: $cutoff->format('Y-m-d H:i:s'));
 	}//end deleteSeenBefore()
 
 	/**
@@ -286,25 +267,16 @@ class NotificationDedupeStateMapper extends QBMapper {
 		try {
 			$qb = $this->db->getQueryBuilder();
 			$qb->selectDistinct('rule_key')
-				->from($this->getTableName())
-				->where(
-					$qb->expr()->eq(
-						'schema_id',
-						$qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)
-					)
-				);
+				->from($this->getTableName());
+			$this->whereEquals(qb: $qb, columns: ['schema_id' => $schemaId]);
 
 			$result = $qb->executeQuery();
-			$keys = [];
-			while (($row = $result->fetch()) !== false) {
-				$keys[] = (string)($row['rule_key'] ?? '');
-			}
-
+			$keys = array_map(static fn (array $row): string => (string)($row['rule_key'] ?? ''), $result->fetchAll());
 			$result->closeCursor();
+
 			return $keys;
 		} catch (\Throwable) {
 			return [];
 		}//end try
-
 	}//end listRuleKeysForSchema()
 }//end class

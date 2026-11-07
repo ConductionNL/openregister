@@ -1,0 +1,821 @@
+{
+    "findByRule NULL open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule NULL open": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent NULL open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule NULL since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule NULL since": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent NULL since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule NULL until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule NULL until": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent NULL until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule NULL both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule NULL both": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent NULL both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule '' open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule '' open": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent '' open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule '' since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule '' since": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent '' since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule '' until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule '' until": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.lte(created, :p2, NULL)",
+            "#1 andWhere(lte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent '' until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule '' both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule '' both": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent '' both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 expr.gte(created, :p1, NULL)",
+            "#1 andWhere(gte(created, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule 'pass' open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule 'pass' open": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent 'pass' open": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = pass, 2",
+            "#1 expr.eq(verdict, :p1, NULL)",
+            "#1 andWhere(eq(verdict, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule 'pass' since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule 'pass' since": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent 'pass' since": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = pass, 2",
+            "#1 expr.eq(verdict, :p1, NULL)",
+            "#1 andWhere(eq(verdict, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule 'pass' until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule 'pass' until": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.lte(created, :p3, NULL)",
+            "#1 andWhere(lte(created, :p3, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent 'pass' until": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = pass, 2",
+            "#1 expr.eq(verdict, :p1, NULL)",
+            "#1 andWhere(eq(verdict, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule 'pass' both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 expr.lte(created, :p4, NULL)",
+            "#1 andWhere(lte(created, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "countByRule 'pass' both": {
+        "result": 7,
+        "queries": [
+            "#1 selectAlias(COUNT(*), run_count)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-1, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 param :p2 = pass, 2",
+            "#1 expr.eq(verdict, :p2, NULL)",
+            "#1 andWhere(eq(verdict, :p2, NULL))",
+            "#1 param :p3 = DateTime, datetime",
+            "#1 expr.gte(created, :p3, NULL)",
+            "#1 andWhere(gte(created, :p3, NULL))",
+            "#1 param :p4 = DateTime, datetime",
+            "#1 expr.lte(created, :p4, NULL)",
+            "#1 andWhere(lte(created, :p4, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent 'pass' both": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(0)",
+            "#1 param :p1 = pass, 2",
+            "#1 expr.eq(verdict, :p1, NULL)",
+            "#1 andWhere(eq(verdict, :p1, NULL))",
+            "#1 param :p2 = DateTime, datetime",
+            "#1 expr.gte(created, :p2, NULL)",
+            "#1 andWhere(gte(created, :p2, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule paging 0 -5": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-2, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent paging 0 -5": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule paging 1 0": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-2, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent paging 1 0": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(0)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule paging 50 10": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-2, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent paging 50 10": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(50)",
+            "#1 setFirstResult(10)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule paging 501 3": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-2, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(500)",
+            "#1 setFirstResult(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent paging 501 3": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(500)",
+            "#1 setFirstResult(3)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findByRule paging -2 7": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 param :p1 = rule-2, 2",
+            "#1 expr.eq(rule_id, :p1, NULL)",
+            "#1 where(eq(rule_id, :p1, NULL))",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(7)",
+            "#1 executeQuery()"
+        ]
+    },
+    "findRecent paging -2 7": {
+        "result": [
+            4,
+            9
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_rule_runs, NULL)",
+            "#1 orderBy(created, DESC)",
+            "#1 addOrderBy(id, DESC)",
+            "#1 setMaxResults(1)",
+            "#1 setFirstResult(7)",
+            "#1 executeQuery()"
+        ]
+    }
+}

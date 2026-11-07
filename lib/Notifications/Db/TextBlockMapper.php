@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -41,6 +41,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
  */
 class TextBlockMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Constructor.
@@ -66,18 +68,12 @@ class TextBlockMapper extends QBMapper {
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
 	 */
 	public function findBySlug(string $slug): ?TextBlock {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['slug' => $slug]));
+		if ($found instanceof TextBlock) {
+			return $found;
 		}
 
+		return null;
 	}//end findBySlug()
 
 	/**
@@ -101,41 +97,35 @@ class TextBlockMapper extends QBMapper {
 			->from($this->getTableName())
 			->orderBy('title', 'ASC');
 
-		if ($register !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('register'),
-					$qb->expr()->eq('register', $qb->createNamedParameter($register))
-				)
-			);
-		}
+		$this->whereScopedOrUnscoped(qb: $qb, column: 'register', value: $register);
+		$this->whereScopedOrUnscoped(qb: $qb, column: 'schema', value: $schema);
+		$this->whereInGroupScope(qb: $qb, groups: $groups);
 
-		if ($schema !== null) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('schema'),
-					$qb->expr()->eq('schema', $qb->createNamedParameter($schema))
-				)
-			);
-		}
+		return $this->findEntities(query: $qb);
+	}//end findInScope()
 
+	/**
+	 * Narrow to blocks scoped to no group or to one of the reader's groups.
+	 *
+	 * A reader in no group sees only the unscoped blocks.
+	 *
+	 * @param IQueryBuilder     $qb     The query.
+	 * @param array<int,string> $groups The reader's groups.
+	 *
+	 * @return void
+	 */
+	private function whereInGroupScope(IQueryBuilder $qb, array $groups): void {
 		if ($groups === []) {
 			$qb->andWhere($qb->expr()->isNull('group_id'));
-
-			return $this->findEntities(query: $qb);
+			return;
 		}
 
 		$qb->andWhere(
 			$qb->expr()->orX(
 				$qb->expr()->isNull('group_id'),
-				$qb->expr()->in(
-					'group_id',
-					$qb->createNamedParameter($groups, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_STR_ARRAY)
-				)
+				$qb->expr()->in('group_id', $qb->createNamedParameter($groups, IQueryBuilder::PARAM_STR_ARRAY))
 			)
 		);
 
-		return $this->findEntities(query: $qb);
-
-	}//end findInScope()
+	}//end whereInGroupScope()
 }//end class
