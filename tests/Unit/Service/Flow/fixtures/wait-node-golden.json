@@ -1,0 +1,437 @@
+{
+    "validate: empty": "UnexpectedValueException: A wait needs a duration or a moment to wait until.",
+    "validate: blank both": "UnexpectedValueException: A wait needs a duration or a moment to wait until.",
+    "validate: for seconds digits": "ok",
+    "validate: for zero digits": "ok",
+    "validate: for padded digits": "ok",
+    "validate: for words": "ok",
+    "validate: for plus words": "ok",
+    "validate: for double plus": "ok",
+    "validate: for weeks": "ok",
+    "validate: for negative": "ok",
+    "validate: for decimal": "UnexpectedValueException: That is not a time this flow can wait until.",
+    "validate: for garbage": "UnexpectedValueException: That is not a time this flow can wait until.",
+    "validate: for int": "ok",
+    "validate: until past": "ok",
+    "validate: until future": "ok",
+    "validate: until garbage": "UnexpectedValueException: That is not a time this flow can wait until.",
+    "validate: until wins over for": "ok",
+    "validate: garbage until wins over for": "UnexpectedValueException: That is not a time this flow can wait until.",
+    "validate: blank until falls back to for": "ok",
+    "execute: empty": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: blank both": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: for seconds digits": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for zero digits": {
+        "suspended": "now+0",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for padded digits": {
+        "suspended": "now+45",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for words": {
+        "suspended": "now+7200",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for plus words": {
+        "suspended": "now+5400",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for double plus": {
+        "suspended": "now+86400",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for weeks": {
+        "suspended": "now+604800",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for negative": {
+        "suspended": "now+300",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: for decimal": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: for garbage": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: for int": {
+        "suspended": "now+12",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: until past": {
+        "suspended": "2000-01-01T00:00:00+00:00",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: until future": {
+        "suspended": "2999-06-15T12:30:00+00:00",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: until garbage": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: until wins over for": {
+        "suspended": "2999-06-15T12:30:00+00:00",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute: garbage until wins over for": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute: blank until falls back to for": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute with no context": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute empty with no context": {
+        "returned": []
+    },
+    "execute garbage with no context": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute with resuming flag": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute empty with resuming flag": {
+        "returned": []
+    },
+    "execute garbage with resuming flag": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute with resuming flag false": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>"
+    },
+    "execute empty with resuming flag false": {
+        "returned": []
+    },
+    "execute garbage with resuming flag false": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute with fresh slot": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>",
+        "slot": {
+            "waitingUntil": "<resumeAt>"
+        }
+    },
+    "execute empty with fresh slot": {
+        "returned": [],
+        "slot": []
+    },
+    "execute garbage with fresh slot": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ],
+        "slot": []
+    },
+    "execute with fresh slot and flag": {
+        "suspended": "now+30",
+        "reason": "waiting until <resumeAt>",
+        "slot": {
+            "waitingUntil": "<resumeAt>"
+        }
+    },
+    "execute empty with fresh slot and flag": {
+        "returned": [],
+        "slot": []
+    },
+    "execute garbage with fresh slot and flag": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ],
+        "slot": []
+    },
+    "execute with held slot": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ],
+        "slot": {
+            "waitingUntil": "2000-01-01T00:00:00+00:00"
+        }
+    },
+    "execute empty with held slot": {
+        "returned": [],
+        "slot": {
+            "waitingUntil": "2000-01-01T00:00:00+00:00"
+        }
+    },
+    "execute garbage with held slot": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ],
+        "slot": {
+            "waitingUntil": "2000-01-01T00:00:00+00:00"
+        }
+    },
+    "execute with not a slot": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "execute empty with not a slot": {
+        "returned": []
+    },
+    "execute garbage with not a slot": {
+        "returned": [
+            {
+                "json": {
+                    "a": 1
+                }
+            },
+            {
+                "json": {
+                    "b": 2
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                }
+            }
+        ]
+    },
+    "configKeys": [
+        "for",
+        "until"
+    ]
+}
