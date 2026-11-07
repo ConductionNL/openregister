@@ -141,23 +141,11 @@ class Bootstrap {
 	private const GENERIC_HEALTH_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 	private const GENERIC_METRICS_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 	private const GENERIC_STORE_CONTROLLER = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericStoreController';
-	private const GENERIC_STORE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService';
-	private const GENERIC_STORE_INSTALLER = 'OCA\\OpenRegister\\AppHost\\Store\\GenericStoreInstaller';
 
 	/**
-	 * The catalogue serving a store that exchanges configuration.
+	 * The store controller's discovery, install and platform services.
 	 */
-	private const FEDERATED_STORE_CATALOG = 'OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog';
-
-	/**
-	 * The GitHub discovery source, for stores declaring `source: github`.
-	 */
-	private const GITHUB_STORE_SOURCE = 'OCA\\OpenRegister\\AppHost\\Store\\Source\\GitHubStoreSource';
-
-	/**
-	 * Resolves an `installAuth: action:<name>` posture against the leaf app.
-	 */
-	private const STORE_ACTION_AUTHORIZER = 'OCA\\OpenRegister\\AppHost\\Store\\StoreActionAuthorizer';
+	private const GENERIC_STORE_CONTROLLER_SERVICES = 'OCA\\OpenRegister\\AppHost\\Controller\\Support\\GenericStoreControllerServices';
 
 	private const GENERIC_SETTINGS_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\AppHostSettingsService';
 	private const GENERIC_ACTION_AUTH_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericActionAuthService';
@@ -391,15 +379,7 @@ class Bootstrap {
 				return new $class(
 					appName: $appId,
 					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get(self::OBSERVABILITY_MANIFEST_LOADER),
-					storeService: $c->get(self::GENERIC_STORE_SERVICE),
-					installer: $c->get(self::GENERIC_STORE_INSTALLER),
-					catalog: $c->get(self::FEDERATED_STORE_CATALOG),
-					gitHubSource: $c->get(self::GITHUB_STORE_SOURCE),
-					actionAuthorizer: $c->get(self::STORE_ACTION_AUTHORIZER),
-					userSession: $c->get('OCP\\IUserSession'),
-					groupManager: $c->get('OCP\\IGroupManager'),
-					logger: $c->get('Psr\\Log\\LoggerInterface')
+					services: $c->get(self::GENERIC_STORE_CONTROLLER_SERVICES)
 				);
 			}
 		);
