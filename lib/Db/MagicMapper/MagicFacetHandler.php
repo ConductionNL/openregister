@@ -1208,42 +1208,60 @@ class MagicFacetHandler {
 
 		foreach ($tableConfigs as $tc) {
 			$schema = $tc['schema'] ?? null;
-			if ($schema === null) {
-				continue;
+			if ($schema !== null) {
+				$schemaConfig = $this->expandFacetConfig(facetConfig: $facetConfigString, schema: $schema);
+				$mergedConfig = $this->mergeSchemaFacetConfig(merged: $mergedConfig, schemaConfig: $schemaConfig);
 			}
-
-			// Get facet config for this schema.
-			$schemaConfig = $this->expandFacetConfig(facetConfig: $facetConfigString, schema: $schema);
-
-			// Merge @self metadata facets (typically same across schemas).
-			if (isset($schemaConfig['@self']) === true && is_array($schemaConfig['@self']) === true) {
-				foreach ($schemaConfig['@self'] as $field => $config) {
-					if (isset($mergedConfig['@self'][$field]) === false) {
-						$mergedConfig['@self'][$field] = $config;
-					}
-				}
-			}
-
-			// Merge object field facets (may differ per schema).
-			foreach ($schemaConfig as $field => $config) {
-				if ($field === '@self') {
-					continue;
-				}
-
-				// Add field if not already present, or merge if title is missing.
-				if (isset($mergedConfig[$field]) === false) {
-					$mergedConfig[$field] = $config;
-				} elseif (isset($config['title']) === true
-					&& isset($mergedConfig[$field]['title']) === false
-				) {
-					// Use the title from a schema that has it.
-					$mergedConfig[$field]['title'] = $config['title'];
-				}
-			}
-		}//end foreach
+		}
 
 		return $mergedConfig;
 	}//end expandFacetConfigFromAllSchemas()
+
+	/**
+	 * Merge one schema's facet configuration into the configuration merged so far.
+	 *
+	 * Metadata (@self) facets and object field facets already present are kept;
+	 * an object field facet without a title takes the title of a later schema.
+	 *
+	 * @param array $merged       The configuration merged so far.
+	 * @param array $schemaConfig The facet configuration of one schema.
+	 *
+	 * @return array The merged configuration.
+	 */
+	private function mergeSchemaFacetConfig(array $merged, array $schemaConfig): array {
+		$selfConfig = $schemaConfig['@self'] ?? null;
+		if (is_array($selfConfig) === true) {
+			$merged['@self'] += $selfConfig;
+		}
+
+		unset($schemaConfig['@self']);
+		foreach ($schemaConfig as $field => $config) {
+			$merged[$field] = $this->mergeFieldFacet(existing: $merged[$field] ?? null, config: $config);
+		}
+
+		return $merged;
+	}//end mergeSchemaFacetConfig()
+
+	/**
+	 * Merge one schema's facet of an object field into the facet merged so far.
+	 *
+	 * @param array|null $existing The facet merged so far, null when there is none.
+	 * @param array      $config   The schema's facet of the field.
+	 *
+	 * @return array The merged facet.
+	 */
+	private function mergeFieldFacet(?array $existing, array $config): array {
+		if ($existing === null) {
+			return $config;
+		}
+
+		// Use the title from a schema that has it.
+		if (isset($config['title']) === true && isset($existing['title']) === false) {
+			$existing['title'] = $config['title'];
+		}
+
+		return $existing;
+	}//end mergeFieldFacet()
 
 	/**
 	 * Whether the caller may be offered a facet over this property.
@@ -1343,31 +1361,56 @@ class MagicFacetHandler {
 	 */
 	private function determineFacetTypeFromProperty(array $property): string {
 		// Check explicit type override from facetable config object.
-		$facetable = $property['facetable'] ?? false;
-		if (is_array($facetable) === true && isset($facetable['type']) === true) {
-			$configType = $facetable['type'];
-			if (in_array($configType, ['terms', 'date_histogram', 'date_range'], true) === true) {
-				return $configType;
-			}
+		$configType = $this->configuredFacetType(property: $property);
+		if ($configType !== null) {
+			return $configType;
 		}
 
-		$type = $property['type'] ?? 'string';
-		$format = $property['format'] ?? '';
-
 		// Date/datetime fields use date histogram.
-		if ($format === 'date' || $format === 'date-time' || $format === 'datetime') {
+		if (in_array($property['format'] ?? '', ['date', 'date-time', 'datetime'], true) === true) {
 			return 'date_histogram';
 		}
 
-		// Numeric fields could use range, but terms is more common for faceting.
-		// Only use range if specifically configured.
+		return $this->numericFacetType(property: $property);
+	}//end determineFacetTypeFromProperty()
+
+	/**
+	 * The facet type a property's facetable config object sets explicitly.
+	 *
+	 * @param array $property The property definition from the schema.
+	 *
+	 * @return string|null The configured type (terms, date_histogram, date_range), or null.
+	 */
+	private function configuredFacetType(array $property): ?string {
+		$facetable = $property['facetable'] ?? false;
+		if (is_array($facetable) === true
+			&& in_array($facetable['type'] ?? null, ['terms', 'date_histogram', 'date_range'], true) === true
+		) {
+			return $facetable['type'];
+		}
+
+		return null;
+	}//end configuredFacetType()
+
+	/**
+	 * The facet type of a property that sets none and is not a date.
+	 *
+	 * Numeric fields could use range, but terms is more common for faceting:
+	 * range is used only when specifically configured through facet_type.
+	 *
+	 * @param array $property The property definition from the schema.
+	 *
+	 * @return string The configured facet_type of a numeric property, else terms.
+	 */
+	private function numericFacetType(array $property): string {
+		$type = $property['type'] ?? 'string';
 		if (($type === 'integer' || $type === 'number') && isset($property['facet_type']) === true) {
 			return $property['facet_type'];
 		}
 
 		// Default to terms facet for categorical data.
 		return 'terms';
-	}//end determineFacetTypeFromProperty()
+	}//end numericFacetType()
 
 	/**
 	 * Get terms facet for a field in a magic mapper table.
