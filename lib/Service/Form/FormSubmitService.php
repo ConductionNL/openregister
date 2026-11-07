@@ -80,7 +80,7 @@ use Throwable;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
-class FormSubmitService {
+class FormSubmitService implements FormSubmitServiceInterface {
 
 	/**
 	 * Stands in for an earlier write's id while every write is validated before the first.
