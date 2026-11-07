@@ -842,7 +842,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->objectEntityMapper
 			->expects($this->once())
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->with(['uuid-a', 'uuid-b'], true)
 			->willReturn([$entityA, $entityB]);
 
@@ -902,12 +902,46 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
+	 * The handler soft-deletes by writing the whole row back, so it gets the stored
+	 * row: the cross-table read that fills only name and data must not reach it.
+	 */
+	public function testDeleteObjectsHandsTheHandlerTheStoredRow(): void {
+		$slim = new ObjectEntity();
+		$slim->setUuid('uuid-a');
+		$slim->setRegister('1');
+		$slim->setSchema('2');
+
+		$stored = clone $slim;
+		$stored->setOwner('alice');
+		$stored->setOrganisation('org-1');
+		$stored->setVersion('0.0.3');
+
+		$this->objectEntityMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$slim]);
+		$this->objectEntityMapper->method('findStoredAcrossAllMagicTables')->willReturn([$stored]);
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$handed = [];
+		$this->deleteHandler->method('deleteObject')->willReturnCallback(
+			function ($register, $schema, $uuid, $originalObjectId = null, $_rbac = true, $_multitenancy = true, $scoped = false, $preResolved = null) use (&$handed) {
+				$handed[] = $preResolved;
+				return true;
+			}
+		);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$this->service->deleteObjects(uuids: ['uuid-a'], _rbac: false, _multitenancy: false);
+
+		$this->assertSame([$stored], $handed);
+	}
+
+	/**
 	 * Uuids the batch lookup cannot resolve fall back to the legacy per-uuid
 	 * scope find and a handler call without pre-resolved entity.
 	 */
 	public function testDeleteObjectsFallsBackToPerUuidLookupWhenBatchMisses(): void {
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([]);
 
 		$legacyEntity = new ObjectEntity();
@@ -969,7 +1003,7 @@ class ObjectServiceTest extends TestCase {
 		$entityB->setSchema('2');
 
 		$this->objectEntityMapper
-			->method('findMultipleAcrossAllMagicTables')
+			->method('findStoredAcrossAllMagicTables')
 			->willReturn([$entityA, $entityB]);
 
 		$this->registerMapper->method('find')->willReturn($this->register);

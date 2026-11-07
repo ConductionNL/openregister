@@ -924,6 +924,18 @@ interface MagicMapperInterface {
 	public function findMultipleAcrossAllMagicTables(array $uuids, bool $includeDeleted = false, ?int $registerIdScope = null): array;
 
 	/**
+	 * Find objects by uuid across all magic tables, each with every stored column.
+	 *
+	 * @param array $uuids          The uuids to search for.
+	 * @param bool  $includeDeleted Whether to include soft-deleted objects.
+	 *
+	 * @return ObjectEntity[] The found objects (may be fewer than requested).
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findStoredAcrossAllMagicTables(array $uuids, bool $includeDeleted = false): array;
+
+	/**
 	 * Find all soft-deleted objects across ALL magic tables.
 	 *
 	 * Objects live in per-register/schema magic tables, so there is no single

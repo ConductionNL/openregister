@@ -73,6 +73,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectCreateObjectTest extends TestCase {
 
@@ -282,8 +284,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 		$saved->setUuid(self::UUID);
 		$data = ['title' => 'new', 'doc' => 'raw'];
 
-		$method = (new \ReflectionClass(SaveObject::class))->getMethod('processFilePropertiesWithRollback');
-		$method->invokeArgs($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
+		FilePropertyCalls::processFilePropertiesWithRollback($this->handler(case: [], logger: new \Psr\Log\NullLogger()), [$saved, &$data, $register, $schema]);
 
 		$this->assertSame(['title' => 'new', 'doc' => 42], $data);
 	}

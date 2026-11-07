@@ -2251,7 +2251,7 @@ return array (
     'entity' => NULL,
     'log' => 
     array (
-      0 => 'error: [MagicSearchHandler] Failed to convert row to ObjectEntity file,line,error,tableName,row',
+      0 => 'error: [MagicSearchHandler] Failed to convert row to ObjectEntity file,line,error,tableName,columns',
     ),
   ),
   'bad deleted throws' => 
@@ -2259,7 +2259,7 @@ return array (
     'entity' => NULL,
     'log' => 
     array (
-      0 => 'error: [MagicSearchHandler] Failed to convert row to ObjectEntity file,line,error,tableName,row',
+      0 => 'error: [MagicSearchHandler] Failed to convert row to ObjectEntity file,line,error,tableName,columns',
     ),
   ),
   'ids' => 

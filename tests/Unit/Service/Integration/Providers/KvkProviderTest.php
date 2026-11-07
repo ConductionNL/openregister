@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -190,7 +191,7 @@ class KvkProviderTest extends TestCase {
 			)
 		);
 
-		$result = $this->provider->searchCompanies('Acme', [], 25, 1);
+		$result = $this->provider->searchCompanies(new CompanySearch('Acme', 25, 1));
 		$this->assertTrue($result['unavailable']);
 		$this->assertSame('upstream-service-down', $result['cause']);
 		$this->assertSame(25, $result['limit']);
@@ -214,7 +215,7 @@ class KvkProviderTest extends TestCase {
 			)
 			->willReturn(['resultaten' => []]);
 
-		$result = $this->provider->searchCompanies('Bakery', ['plaats' => 'Utrecht'], 500, 1);
+		$result = $this->provider->searchCompanies((new CompanySearch('Bakery', 500, 1))->narrowedBy(['plaats' => 'Utrecht']));
 		$this->assertSame(100, $result['limit']);
 	}//end testSearchClampsLimitAndPassesCriteria()
 

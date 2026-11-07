@@ -48,6 +48,7 @@ final class ActionUrlTargetTest extends TestCase {
 			'mail' => ['mailto:info@example.test', 'mailto:info@example.test'],
 			'other scheme' => ['custom://example.test/call', null],
 			'file transfer' => ['ftp://example.test/call', null],
+			'script' => ['javascript://example.test/call', null],
 			'not a url' => ['call', null],
 			'no host' => ['http://', null],
 			'broken host' => ['http://exa mple.test/call', null],

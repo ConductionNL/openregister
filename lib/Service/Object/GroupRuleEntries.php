@@ -134,7 +134,7 @@ final class GroupRuleEntries {
 	}//end overrideTarget()
 
 	/**
-	 * Whether an override's clause passes; an override without a clause does.
+	 * Whether an override's clause passes; an override without a clause does, a malformed clause does not.
 	 *
 	 * @param mixed            $clause  The entry's `match` value.
 	 * @param GroupRuleRequest $request The question.
@@ -144,8 +144,12 @@ final class GroupRuleEntries {
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
 	private function overrideClausePasses(mixed $clause, GroupRuleRequest $request): bool {
-		if (is_array($clause) === false || $clause === []) {
+		if ($clause === null || $clause === []) {
 			return true;
+		}
+
+		if (is_array($clause) === false) {
+			return false;
 		}
 
 		$conditions = $this->clauseForAction(clause: $clause, action: $request->action);

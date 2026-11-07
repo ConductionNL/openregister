@@ -13,17 +13,11 @@
  * the schema, and a property-level rule refusing a field would be defeated by
  * anybody willing to add a relation type.
  *
- * 🔑 THE DESIGN'S TWO SENTENCES ONLY LOOK CONTRADICTORY, so this is where the
- * reading is written down. D-4 says the exposed set is "the intersection of
- * what the link offers and what the reader could see", and the proposal says
- * "a reader holding NO other access to the far record sees exactly those
- * properties". Read as an intersection with OBJECT access those cannot both
- * hold: a reader with no object access would see nothing. The intersection is
- * with the PROPERTY-level rules, which is the only reading under which both
- * sentences are true — the link supplies the reach to the record, and the
- * property rules still say which of its fields this reader may see. So a
- * link can carry a reader to a record they could not otherwise open, and can
- * never show them a field their own rules withhold.
+ * 🔑 THE INTERSECTION IS WITH EVERYTHING THE READER MAY READ, object and
+ * property alike. A reader without the read right on the far record does not
+ * reach it through a link: the reference stays an identifier, as for any
+ * record they cannot read, in their own organisation or another. A reader who
+ * reaches it sees the declared properties their own rules allow.
  *
  * 🔴 AND A PROPERTY OUTSIDE THE SET READS AS WITHHELD, NOT ABSENT (D-5).
  * Empty reads as "there is no besluit"; withheld reads as "you may not see
@@ -72,6 +66,20 @@ class LinkExposure {
 	 * @var string
 	 */
 	public const WITHHELD = '__withheld__';
+
+	/**
+	 * The `@self` keys that say which record a link points at.
+	 *
+	 * @var string[]
+	 */
+	private const IDENTITY = ['id', 'register', 'schema'];
+
+	/**
+	 * The `@self` keys filled from properties of the record.
+	 *
+	 * @var string[]
+	 */
+	private const DISPLAY = ['name', 'description', 'summary', 'image', 'slug'];
 
 	/**
 	 * Whether a relation type declares a field set at all.
@@ -150,6 +158,33 @@ class LinkExposure {
 
 		return $projection;
 	}//end project()
+
+	/**
+	 * What stays of a far record's `@self` beside a projection.
+	 *
+	 * The identity stays. The other metadata is filled from properties or says
+	 * more about the record than the link declares, so it goes. A display field
+	 * stays only when its value is shown anyway: the source of `name` may be a
+	 * template over several properties, so the comparison is on the value.
+	 *
+	 * @param array<string, mixed> $self  The far record's `@self`.
+	 * @param array<string, mixed> $shown The projection.
+	 *
+	 * @return array<string, mixed> The narrowed `@self`.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
+	 */
+	public function envelope(array $self, array $shown): array {
+		$identity = array_intersect_key($self, array_flip(self::IDENTITY));
+		$visible = [...array_values($identity), ...array_values($shown)];
+
+		$display = array_filter(
+			array_intersect_key($self, array_flip(self::DISPLAY)),
+			static fn (mixed $value): bool => $value !== self::WITHHELD && in_array($value, $visible, true)
+		);
+
+		return array_merge($identity, $display);
+	}//end envelope()
 
 	/**
 	 * Why a declared `exposes` may not be saved, or null when it may.
