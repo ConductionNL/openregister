@@ -27,6 +27,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -56,6 +59,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		ScheduleManifestLoader::class => [
 			ScheduleManifestLoaderInterface::class,
 			AppHostRegistrar::class,
+			[],
+		],
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
+			SearchRegistrar::class,
 			[],
 		],
 	];
