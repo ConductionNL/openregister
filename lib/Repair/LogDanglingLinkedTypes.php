@@ -98,28 +98,47 @@ class LogDanglingLinkedTypes implements IRepairStep {
 			return;
 		}
 
-		$registeredIds = $this->registry->listIds();
-		$dangling = $this->scan(schemas: $schemas, registeredIds: $registeredIds);
+		$this->report(
+			dangling: $this->scan(schemas: $schemas, registeredIds: $this->registry->listIds()),
+			output: $output
+		);
+	}//end run()
 
+	/**
+	 * Log and print one warning per dangling linkedType, or say that there are none.
+	 *
+	 * @param array<int, array{slug: string, id: string, danglingType: string}> $dangling The dangling rows.
+	 * @param IOutput                                                           $output   Repair output.
+	 *
+	 * @return void
+	 */
+	private function report(array $dangling, IOutput $output): void {
 		if ($dangling === []) {
 			$output->info('[OpenRegister] All schemas linkedTypes are covered by registered integrations.');
 			return;
 		}
 
 		foreach ($dangling as $row) {
-			$template = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
-			$template .= ' which is not registered. Add the matching IntegrationProvider';
-			$template .= ' before the legacy linked-type fallback is removed.';
-			$message = sprintf(
-				$template,
-				$row['slug'],
-				$row['id'],
-				$row['danglingType']
-			);
+			$message = $this->danglingMessage(row: $row);
 			$this->logger->warning($message);
 			$output->warning($message);
 		}
-	}//end run()
+	}//end report()
+
+	/**
+	 * The warning text for one dangling linkedType.
+	 *
+	 * @param array{slug: string, id: string, danglingType: string} $row The dangling row.
+	 *
+	 * @return string
+	 */
+	private function danglingMessage(array $row): string {
+		$template  = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
+		$template .= ' which is not registered. Add the matching IntegrationProvider';
+		$template .= ' before the legacy linked-type fallback is removed.';
+
+		return sprintf($template, $row['slug'], $row['id'], $row['danglingType']);
+	}//end danglingMessage()
 
 	/**
 	 * Load every schema entity via the SchemaMapper.
@@ -134,13 +153,7 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 */
 	private function loadSchemas(): ?array {
 		try {
-			$mapper = $this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper');
-			if (method_exists($mapper, 'findAll') === true) {
-				$result = $mapper->findAll();
-				if (is_array($result) === true) {
-					return $result;
-				}
-			}
+			return $this->findAllSchemas();
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				'[OpenRegister] LogDanglingLinkedTypes could not load schemas — skipping scan',
@@ -150,6 +163,25 @@ class LogDanglingLinkedTypes implements IRepairStep {
 
 		return null;
 	}//end loadSchemas()
+
+	/**
+	 * All schemas from the SchemaMapper, or null when it cannot list them.
+	 *
+	 * @return array<int, mixed>|null
+	 */
+	private function findAllSchemas(): ?array {
+		$mapper = $this->container->get('OCA\\OpenRegister\\Db\\SchemaMapper');
+		if (method_exists($mapper, 'findAll') === false) {
+			return null;
+		}
+
+		$result = $mapper->findAll();
+		if (is_array($result) === false) {
+			return null;
+		}
+
+		return $result;
+	}//end findAllSchemas()
 
 	/**
 	 * Walk every schema and collect linkedTypes that aren't registered.
@@ -164,33 +196,51 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	private function scan(array $schemas, array $registeredIds): array {
 		$dangling = [];
 		foreach ($schemas as $schema) {
-			$linkedTypes = $this->extractLinkedTypes(schema: $schema);
-			if ($linkedTypes === []) {
-				continue;
-			}
-
-			$slug = $this->safeStringAccessor(schema: $schema, accessors: ['getSlug', 'getName']) ?? 'unknown';
-			$id = (string)($this->safeStringAccessor(schema: $schema, accessors: ['getId', 'getUuid']) ?? '');
-
-			foreach ($linkedTypes as $type) {
-				if (is_string($type) === false) {
-					continue;
-				}
-
-				if (in_array($type, $registeredIds, true) === true) {
-					continue;
-				}
-
-				$dangling[] = [
-					'slug' => $slug,
-					'id' => $id,
-					'danglingType' => $type,
-				];
-			}
-		}//end foreach
+			$dangling = array_merge($dangling, $this->danglingOf(schema: $schema, registeredIds: $registeredIds));
+		}
 
 		return $dangling;
 	}//end scan()
+
+	/**
+	 * The dangling linkedTypes entries of one schema.
+	 *
+	 * @param mixed              $schema        Schema entity (or test stub).
+	 * @param array<int, string> $registeredIds Live registry ids.
+	 *
+	 * @return array<int, array{slug: string, id: string, danglingType: string}>
+	 */
+	private function danglingOf(mixed $schema, array $registeredIds): array {
+		$linkedTypes = $this->extractLinkedTypes(schema: $schema);
+		if ($linkedTypes === []) {
+			return [];
+		}
+
+		$slug = $this->safeStringAccessor(schema: $schema, accessors: ['getSlug', 'getName']) ?? 'unknown';
+		$id   = (string) ($this->safeStringAccessor(schema: $schema, accessors: ['getId', 'getUuid']) ?? '');
+
+		return array_map(
+			static fn (string $type): array => ['slug' => $slug, 'id' => $id, 'danglingType' => $type],
+			$this->unregistered(types: $linkedTypes, registeredIds: $registeredIds)
+		);
+	}//end danglingOf()
+
+	/**
+	 * The string linkedTypes the registry does not know, in their original order.
+	 *
+	 * @param array<int|string, mixed> $types         The declared linkedTypes.
+	 * @param array<int, string>       $registeredIds Live registry ids.
+	 *
+	 * @return array<int, string>
+	 */
+	private function unregistered(array $types, array $registeredIds): array {
+		return array_values(
+			array_filter(
+				$types,
+				static fn (mixed $type): bool => is_string($type) === true && in_array($type, $registeredIds, true) === false
+			)
+		);
+	}//end unregistered()
 
 	/**
 	 * Pull the linkedTypes array out of a Schema entity, regardless of
@@ -223,21 +273,12 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 * @return array<int,mixed>|null Array when found, null when not available.
 	 */
 	private function extractViaGetLinkedTypes(object $schema): ?array {
-		if (method_exists($schema, 'getLinkedTypes') === false) {
+		$value = $this->callDeclared(schema: $schema, method: 'getLinkedTypes');
+		if (is_array($value) === false) {
 			return null;
 		}
 
-		try {
-			$value = $schema->getLinkedTypes();
-		} catch (\Throwable $e) {
-			return null;
-		}
-
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return null;
+		return $value;
 	}//end extractViaGetLinkedTypes()
 
 	/**
@@ -248,25 +289,33 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 * @return array<int,mixed>|null Array when found, null when not available.
 	 */
 	private function extractViaGetConfiguration(object $schema): ?array {
-		if (method_exists($schema, 'getConfiguration') === false) {
+		$value = $this->callDeclared(schema: $schema, method: 'getConfiguration');
+		if (is_array($value) === false || is_array($value['linkedTypes'] ?? null) === false) {
+			return null;
+		}
+
+		return $value['linkedTypes'];
+	}//end extractViaGetConfiguration()
+
+	/**
+	 * Call a declared method, or null when it is not declared or throws.
+	 *
+	 * @param object $schema Schema entity.
+	 * @param string $method The method name.
+	 *
+	 * @return mixed
+	 */
+	private function callDeclared(object $schema, string $method): mixed {
+		if (method_exists($schema, $method) === false) {
 			return null;
 		}
 
 		try {
-			$value = $schema->getConfiguration();
+			return $schema->{$method}();
 		} catch (\Throwable $e) {
 			return null;
 		}
-
-		if (is_array($value) === true
-			&& isset($value['linkedTypes']) === true
-			&& is_array($value['linkedTypes']) === true
-		) {
-			return $value['linkedTypes'];
-		}
-
-		return null;
-	}//end extractViaGetConfiguration()
+	}//end callDeclared()
 
 	/**
 	 * Call the first available string accessor on a schema entity.
@@ -280,27 +329,53 @@ class LogDanglingLinkedTypes implements IRepairStep {
 	 */
 	private function safeStringAccessor($schema, array $accessors): ?string {
 		foreach ($accessors as $method) {
-			if ($this->accessorIsAvailable(schema: $schema, method: $method) === false) {
-				continue;
-			}
-
-			try {
-				$value = $schema->{$method}();
-			} catch (\Throwable $e) {
-				continue;
-			}
-
-			if (is_string($value) === true && $value !== '') {
+			$value = $this->readString(schema: $schema, method: $method);
+			if ($value !== null) {
 				return $value;
-			}
-
-			if (is_int($value) === true) {
-				return (string)$value;
 			}
 		}
 
 		return null;
 	}//end safeStringAccessor()
+
+	/**
+	 * One accessor's value as a non-empty string, or null.
+	 *
+	 * @param mixed  $schema Schema entity.
+	 * @param string $method The accessor name.
+	 *
+	 * @return string|null
+	 */
+	private function readString($schema, string $method): ?string {
+		if ($this->accessorIsAvailable(schema: $schema, method: $method) === false) {
+			return null;
+		}
+
+		try {
+			return $this->asString(value: $schema->{$method}());
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end readString()
+
+	/**
+	 * A non-empty string or an int as a string; null for anything else.
+	 *
+	 * @param mixed $value The accessor result.
+	 *
+	 * @return string|null
+	 */
+	private function asString(mixed $value): ?string {
+		if (is_int($value) === true) {
+			return (string) $value;
+		}
+
+		if (is_string($value) === true && $value !== '') {
+			return $value;
+		}
+
+		return null;
+	}//end asString()
 
 	/**
 	 * Decide whether an accessor can actually be invoked on a schema entity.
@@ -334,12 +409,9 @@ class LogDanglingLinkedTypes implements IRepairStep {
 			return true;
 		}
 
-		if (($schema instanceof Entity) === false || str_starts_with($method, 'get') === false) {
-			return false;
-		}
-
 		// The exact derivation Entity::__call() performs before handing the name
 		// to Entity::getter(): lcfirst(substr($methodName, 3)).
-		return property_exists($schema, lcfirst(substr($method, 3)));
+		return $schema instanceof Entity && str_starts_with($method, 'get') === true
+			&& property_exists($schema, lcfirst(substr($method, 3))) === true;
 	}//end accessorIsAvailable()
 }//end class
