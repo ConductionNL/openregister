@@ -342,6 +342,38 @@ class ObjectsControllerCountsTest extends TestCase {
 	}
 
 	/**
+	 * An entry without a register is malformed too.
+	 */
+	public function testAnEntryWithoutARegisterIsMalformed(): void {
+		$this->request->method('getParams')->willReturn(['counts' => [['schema' => 'A']]]);
+		$this->objectService->expects($this->never())->method('buildSearchQuery');
+
+		$this->assertSame(400, $this->controller->counts($this->objectService)->getStatus());
+	}
+
+	/**
+	 * The same pair under two filters is two counts, not one shared count.
+	 */
+	public function testTwoFiltersOnOnePairAreCountedApart(): void {
+		$this->setupNonAdminUser();
+		$this->stubResolution();
+		$this->request->method('getParams')->willReturn([
+			'counts' => [
+				['register' => 'R', 'schema' => 'A', 'filter' => ['status' => 'open']],
+				['register' => 'R', 'schema' => 'A', 'filter' => ['status' => 'closed']],
+			],
+		]);
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+			static fn (array $query): array => ['total' => ($query['status'] === 'open' ? 3 : 8)]
+		);
+
+		$results = $this->controller->counts($this->objectService)->getData()['results'];
+
+		$this->assertSame([3, 8], array_column($results, 'count'));
+	}
+
+	/**
 	 * An entry whose filter is no object is malformed, and the batch is refused before anything runs.
 	 */
 	public function testAFilterThatIsNoObjectIsMalformed(): void {
