@@ -412,7 +412,12 @@ class FilesController extends Controller {
 			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
 		}
 
-		$object = $this->objectFileAccess->changeable(register: $route->register, schema: $route->schema, id: $route->id, verb: $check->verb);
+		$object = $this->objectFileAccess->changeable(
+			register: $route->register,
+			schema: $route->schema,
+			id: $route->id,
+			verb: $check->verb
+		);
 		// REQ-OAS-007: a frozen or archived object's files do not change
 		// either. Asked after the access rule, so a caller without access
 		// still gets 404/403 and learns nothing of the state.
@@ -433,7 +438,9 @@ class FilesController extends Controller {
 	 */
 	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
 		$route = $check->route;
-		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true));
+		$object = WriteCause::asLookup(
+			fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true)
+		);
 		if ($object instanceof ObjectEntity === false) {
 			return null;
 		}
@@ -781,7 +788,8 @@ class FilesController extends Controller {
 			// A person sees the list only when they may read the object. Every
 			// file sits in the openregister account's home, so without this
 			// check any signed-in user could list any object's files.
-			$object = $this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading());
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$object = $this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading());
 
 			// An anonymous caller has no read check to resolve the object; it is looked
 			// up within this register and schema all the same. Publication still decides
@@ -892,7 +900,8 @@ class FilesController extends Controller {
 			// SEC-CTRL-5: the object read rule decides for authenticated callers
 			// (404 when they may not read it). Anonymous callers are gated
 			// separately by the published-file check below.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			$file = $this->fileService->getFile(object: $object, file: $fileId);
 
@@ -1543,12 +1552,18 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
 			$data = $this->request->getParams();
 
 			// Content is optional for metadata-only updates.
-			$result = $this->fileService->updateFile(filePath: $fileId, content: $data['content'] ?? null, tags: $data['tags'] ?? [], object: $this->objectService->getObject());
+			$result = $this->fileService->updateFile(
+				filePath: $fileId,
+				content: $data['content'] ?? null,
+				tags: $data['tags'] ?? [],
+				object: $this->objectService->getObject()
+			);
 
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (Exception $e) {
@@ -1585,7 +1600,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forRemoving()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forRemoving()->onFile(fileId: $fileId));
 			$this->objectService->setObject($id);
 			$result = $this->fileService->deleteFile(file: $fileId, object: $this->objectService->getObject());
 
@@ -1896,7 +1912,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -1968,7 +1985,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forReading()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forReading()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2003,7 +2021,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object-level RBAC on the source object; the file leaves it, so this needs deleteFiles.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forRemoving()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forRemoving()->onFile(fileId: $fileId));
 			return $this->transferFile(transfer: $transfer);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
@@ -2181,7 +2200,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forReading()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forReading()->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2234,7 +2254,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before restoring.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2303,7 +2324,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before locking.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2367,7 +2389,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before unlocking.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2525,7 +2548,8 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: authenticated callers must have object read access.
 			// Anonymous callers were already gated by the published-file check
 			// above, so preview opts out of the write/action anonymous-deny guard.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->forAnyone()->forReading()->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->forAnyone()->forReading()->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2596,7 +2620,8 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies.
 			// Metadata is no less a mutation for being descriptive.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			if ($this->objectService->getObject() === null) {
@@ -2733,7 +2758,8 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
-			$this->ensureObjectAccess(check: (new FileAccessCheck(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)))->onFile(fileId: $fileId));
+			$route = new ObjectLinkRoute(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
