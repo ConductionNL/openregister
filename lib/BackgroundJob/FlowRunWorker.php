@@ -40,7 +40,7 @@ use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowStreamMapper;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
 use OCA\OpenRegister\Service\Flow\FlowTokenRouter;
@@ -175,7 +175,7 @@ class FlowRunWorker extends TimedJob {
 	 *                                           like one that found nothing.
 	 * @param FlowClaimMapper|null $claims Place claims, for the abandoned-claim reaper.
 	 * @param FlowStreamMapper|null $streams Run streams, for failing an abandoned branch.
-	 * @param FlowLocator|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
+	 * @param FlowLocatorInterface|null $flows Resolves the run's flow, for the abandoned step's `onError` policy.
 	 * @param RunLockRegistry|null $locks Run-held object locks, for the orphaned-lock sweep.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) This worker is the one
@@ -195,7 +195,7 @@ class FlowRunWorker extends TimedJob {
 		private readonly ?DelegationService $delegation = null,
 		private readonly ?FlowClaimMapper $claims = null,
 		private readonly ?FlowStreamMapper $streams = null,
-		private readonly ?FlowLocator $flows = null,
+		private readonly ?FlowLocatorInterface $flows = null,
 		private readonly ?RunLockRegistry $locks = null,
 	) {
 		parent::__construct(time: $time);
