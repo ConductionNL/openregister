@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
@@ -125,24 +126,16 @@ class EscalationLadderService {
 			return ['rungs' => $this->normaliseRules(rules: $rules, sla: $sla), 'roleBindings' => []];
 		}
 
-		$slug = trim((string)$timer->getLadderSlug());
-		if ($slug === '') {
-			$slug = (string)$this->organisationLadderSlug(organisation: $timer->getOrganisation());
-		}
-
+		$slug = $this->ladderSlugFor(timer: $timer);
 		if ($slug === '') {
 			return ['rungs' => [], 'roleBindings' => []];
 		}
 
 		$ladder = $this->ladderBySlug(slug: $slug);
-		$bindings = ($ladder['roleBindings'] ?? []);
-		if (is_array($bindings) === false) {
-			$bindings = [];
-		}
 
 		return [
 			'rungs' => $this->normaliseRules(rules: ($ladder['rungs'] ?? []), sla: $sla),
-			'roleBindings' => $bindings,
+			'roleBindings' => self::bindingsOf(ladder: $ladder),
 		];
 	}//end resolveLadder()
 
@@ -179,16 +172,7 @@ class EscalationLadderService {
 			);
 		}
 
-		$normalised = [];
-		foreach ($rules as $index => $rule) {
-			if (is_array($rule) === false) {
-				throw new FlowTimerValidationException(message: sprintf('Escalation rule #%d is not an object.', (int)$index));
-			}
-
-			$normalised[] = $this->normaliseRule(rule: $rule, index: (int)$index);
-		}
-
-		return $normalised;
+		return array_map(fn (mixed $rule, int|string $index): array => $this->normaliseRule(rule: $rule, index: (int)$index), $rules, array_keys($rules));
 	}//end normaliseRules()
 
 	/**
@@ -214,17 +198,8 @@ class EscalationLadderService {
 
 			$instant = $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar);
 			if ($instant < $anchorAt) {
-				throw new FlowTimerValidationException(
-					message: sprintf(
-						"Escalation rule '%s': the preBreach offset of %d %s exceeds the SLA — it resolves to %s, before the anchor %s (calendar '%s').",
-						(string)$rung['key'],
-						(int)$rung['offset'],
-						(string)$rung['offsetUnit'],
-						$instant->format('c'),
-						$anchorAt->format('c'),
-						$calendar->getSlug()
-					)
-				);
+				$where = sprintf("it resolves to %s, before the anchor %s (calendar '%s')", $instant->format('c'), $anchorAt->format('c'), $calendar->getSlug());
+				throw new FlowTimerValidationException(message: self::offsetLabel(rung: $rung) . ' exceeds the SLA — ' . $where . '.');
 			}
 		}
 	}//end validateAgainstTimeline()
@@ -265,7 +240,7 @@ class EscalationLadderService {
 	 */
 	public function nextRungAt(array $rungs, DateTimeInterface $fireAt, array $firedKeys, WorkingCalendar $calendar): ?DateTimeImmutable {
 		$earliest = null;
-		foreach ($this->ordered(rungs: $rungs, fireAt: $fireAt, calendar: $calendar) as $entry) {
+		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
 			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true) {
 				continue;
 			}
@@ -295,7 +270,7 @@ class EscalationLadderService {
 	 */
 	public function dueRungs(array $rungs, DateTimeInterface $fireAt, DateTimeInterface $now, array $firedKeys, WorkingCalendar $calendar): array {
 		$due = [];
-		foreach ($this->ordered(rungs: $rungs, fireAt: $fireAt, calendar: $calendar) as $entry) {
+		foreach ($this->ordered(rungs: $rungs, instantOf: $this->instantOf(fireAt: $fireAt, calendar: $calendar)) as $entry) {
 			if (in_array((string)$entry['rung']['key'], $firedKeys, true) === true || $entry['at'] > $now) {
 				continue;
 			}
@@ -381,28 +356,18 @@ class EscalationLadderService {
 	/**
 	 * Rungs paired with their instants, earliest first (declared order breaks ties).
 	 *
-	 * @param array<int, array<string, mixed>> $rungs The normalised rungs.
-	 * @param DateTimeInterface $fireAt The fire moment.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param array<int, array<string, mixed>>                          $rungs     The normalised rungs.
+	 * @param Closure(array<string, mixed>): DateTimeImmutable $instantOf The instant a rung falls on.
 	 *
 	 * @return array<int, array{rung: array<string, mixed>, at: DateTimeImmutable}> The ordered rungs.
 	 */
-	private function ordered(array $rungs, DateTimeInterface $fireAt, WorkingCalendar $calendar): array {
+	private function ordered(array $rungs, Closure $instantOf): array {
 		$entries = [];
 		foreach (array_values($rungs) as $index => $rung) {
-			$entries[] = ['rung' => $rung, 'at' => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar), 'index' => $index];
+			$entries[] = ['rung' => $rung, 'at' => $instantOf($rung), 'index' => $index];
 		}
 
-		usort(
-			$entries,
-			static function (array $left, array $right): int {
-				if ($left['at']->getTimestamp() === $right['at']->getTimestamp()) {
-					return ($left['index'] <=> $right['index']);
-				}
-
-				return ($left['at'] <=> $right['at']);
-			}
-		);
+		usort($entries, self::byInstantThenIndex(...));
 
 		return array_map(
 			static fn (array $entry): array => ['rung' => $entry['rung'], 'at' => $entry['at']],
@@ -411,118 +376,98 @@ class EscalationLadderService {
 	}//end ordered()
 
 	/**
+	 * The function that places a rung on the timeline of one fire moment.
+	 *
+	 * @param DateTimeInterface $fireAt   The fire moment.
+	 * @param WorkingCalendar   $calendar The resolved calendar.
+	 *
+	 * @return Closure(array<string, mixed>): DateTimeImmutable The rung's instant.
+	 */
+	private function instantOf(DateTimeInterface $fireAt, WorkingCalendar $calendar): Closure {
+		return fn (array $rung): DateTimeImmutable => $this->rungInstant(rung: $rung, fireAt: $fireAt, calendar: $calendar);
+	}//end instantOf()
+
+	/**
+	 * Order two entries by instant, declared position breaking a tie.
+	 *
+	 * @param array{at: DateTimeImmutable, index: int} $left  One entry.
+	 * @param array{at: DateTimeImmutable, index: int} $right The other.
+	 *
+	 * @return integer The comparison.
+	 */
+	private static function byInstantThenIndex(array $left, array $right): int {
+		if ($left['at']->getTimestamp() === $right['at']->getTimestamp()) {
+			return ($left['index'] <=> $right['index']);
+		}
+
+		return ($left['at'] <=> $right['at']);
+	}//end byInstantThenIndex()
+
+	/**
+	 * The slug of the ladder a timer names, else its organisation's default.
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return string The slug, or '' when neither names one.
+	 */
+	private function ladderSlugFor(FlowTimer $timer): string {
+		$slug = trim((string)$timer->getLadderSlug());
+		if ($slug === '') {
+			$slug = (string)$this->organisationLadderSlug(organisation: $timer->getOrganisation());
+		}
+
+		return $slug;
+	}//end ladderSlugFor()
+
+	/**
+	 * A ladder's role bindings; anything but an array binds nothing.
+	 *
+	 * @param array<string, mixed> $ladder The ladder definition.
+	 *
+	 * @return array<string, string> Role → `type:id`.
+	 */
+	private static function bindingsOf(array $ladder): array {
+		$bindings = ($ladder['roleBindings'] ?? []);
+		if (is_array($bindings) === false) {
+			return [];
+		}
+
+		return $bindings;
+	}//end bindingsOf()
+
+	/**
+	 * The start of a refused preBreach rung's message: its key and offset.
+	 *
+	 * @param array<string, mixed> $rung The normalised rung.
+	 *
+	 * @return string The label.
+	 */
+	private static function offsetLabel(array $rung): string {
+		return sprintf(
+			"Escalation rule '%s': the preBreach offset of %d %s",
+			(string)$rung['key'],
+			(int)$rung['offset'],
+			(string)$rung['offsetUnit']
+		);
+	}//end offsetLabel()
+
+	/**
 	 * Validate and normalise one rule.
 	 *
-	 * @param array<string, mixed> $rule The rule.
-	 * @param int $index Its position, for messages.
+	 * @param mixed $rule  The declared rule.
+	 * @param int   $index Its position, for messages.
 	 *
 	 * @return array<string, mixed> The normalised rung.
 	 *
-	 * @throws FlowTimerValidationException On a refused trigger, offset, unit, priority or role list.
+	 * @throws FlowTimerValidationException On a non-object rule or any refused field.
 	 */
-	private function normaliseRule(array $rule, int $index): array {
-		$trigger = (string)($rule['trigger'] ?? '');
-		if (in_array($trigger, self::TRIGGERS, true) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Escalation rule #%d has trigger '%s'; use one of %s.", $index, $trigger, implode(', ', self::TRIGGERS))
-			);
+	private function normaliseRule(mixed $rule, int $index): array {
+		if (is_array($rule) === false) {
+			throw new FlowTimerValidationException(message: sprintf('Escalation rule #%d is not an object.', $index));
 		}
 
-		$offset = ($rule['offset'] ?? null);
-		if (is_int($offset) === false || $offset < 0) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Escalation rule #%d has offset '%s'; it must be an integer >= 0.", $index, var_export($offset, true))
-			);
-		}
-
-		$unit = ($rule['offsetUnit'] ?? null);
-		if (is_string($unit) === false || in_array($unit, SlaCalculator::UNITS, true) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Escalation rule #%d has offsetUnit '%s'; use one of %s (the same units the SLA accepts).",
-					$index,
-					var_export($unit, true),
-					implode(', ', SlaCalculator::UNITS)
-				)
-			);
-		}
-
-		$priority = (string)($rule['priority'] ?? 'medium');
-		if (in_array($priority, self::PRIORITIES, true) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf("Escalation rule #%d has priority '%s'; use one of %s.", $index, $priority, implode(', ', self::PRIORITIES))
-			);
-		}
-
-		$key = trim((string)($rule['key'] ?? ''));
-		if ($key === '') {
-			$key = sprintf('%s:%d:%s', $trigger, $offset, $unit);
-		}
-
-		return [
-			'key' => $key,
-			'trigger' => $trigger,
-			'offset' => $offset,
-			'offsetUnit' => $unit,
-			'notifyRole' => $this->roleList(value: ($rule['notifyRole'] ?? []), field: 'notifyRole', index: $index),
-			'escalateToRole' => $this->roleList(value: ($rule['escalateToRole'] ?? []), field: 'escalateToRole', index: $index),
-			'priority' => $priority,
-			'message' => $this->stringOrNull(value: ($rule['message'] ?? null)),
-			'consequence' => $this->stringOrNull(value: ($rule['consequence'] ?? null)),
-			'openIncident' => (($rule['openIncident'] ?? false) === true),
-		];
+		return (new EscalationRule(rule: $rule, index: $index))->toRung();
 	}//end normaliseRule()
-
-	/**
-	 * A role list: a string or a list of strings.
-	 *
-	 * @param mixed $value The declared roles.
-	 * @param string $field The field name, for messages.
-	 * @param int $index The rule position, for messages.
-	 *
-	 * @return array<int, string> The roles.
-	 *
-	 * @throws FlowTimerValidationException On a non-string entry.
-	 */
-	private function roleList(mixed $value, string $field, int $index): array {
-		if (is_string($value) === true) {
-			$value = [$value];
-		}
-
-		if (is_array($value) === false) {
-			throw new FlowTimerValidationException(
-				message: sprintf('Escalation rule #%d: %s must be a role name or a list of role names.', $index, $field)
-			);
-		}
-
-		$roles = [];
-		foreach ($value as $role) {
-			if (is_string($role) === false || trim($role) === '') {
-				throw new FlowTimerValidationException(
-					message: sprintf('Escalation rule #%d: %s contains an empty or non-string role.', $index, $field)
-				);
-			}
-
-			$roles[] = trim($role);
-		}
-
-		return array_values(array_unique($roles));
-	}//end roleList()
-
-	/**
-	 * A non-empty string, or null.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The string.
-	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end stringOrNull()
 
 	/**
 	 * The recipients one role resolves to.
