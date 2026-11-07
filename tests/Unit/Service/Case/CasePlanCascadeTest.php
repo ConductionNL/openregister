@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Exception\CaseCascadeBoundException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanStore;
@@ -162,13 +163,9 @@ class CasePlanCascadeTest extends TestCase {
 		);
 
 		return new CasePlanCascade(
-			items: $this->items,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			machine: $machine,
-			sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),
-			realiser: $this->realiser,
-			anchor: $this->anchor,
-			db: $this->db,
-			logger: new NullLogger()
+			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()), realiser: $this->realiser, anchor: $this->anchor)
 		);
 	}//end cascade()
 

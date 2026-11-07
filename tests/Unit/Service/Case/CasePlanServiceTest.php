@@ -30,6 +30,7 @@ use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
@@ -177,7 +178,7 @@ class CasePlanServiceTest extends TestCase {
 			),
 			mechanics: new CasePlanMechanics(
 				machine: $machine,
-				cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor, db: $db, logger: new NullLogger()),
+				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $this->realiser, anchor: $this->anchor)),
 				sentries: $sentries,
 				definitions: new CasePlanDefinition(sentries: $sentries)
 			),

@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAnchorAccess;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanBringOver;
@@ -295,13 +296,9 @@ class CaseUnitsGoldenTest extends TestCase {
 		CaseAnchorReader $anchor
 	): CasePlanCascade {
 		return new CasePlanCascade(
-			items: $this->items,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			machine: $machine,
-			sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),
-			realiser: $realiser,
-			anchor: $anchor,
-			db: $db,
-			logger: new NullLogger()
+			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()), realiser: $realiser, anchor: $anchor)
 		);
 	}//end cascade()
 

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Exception\CaseAccessDeniedException;
 use OCA\OpenRegister\Exception\CaseTransitionException;
 use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
+use OCA\OpenRegister\Service\Case\CaseCascadeReaders;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
@@ -116,7 +117,7 @@ class CaseFlowNodesTest extends TestCase {
 			),
 			mechanics: new CasePlanMechanics(
 				machine: $machine,
-				cascade: new CasePlanCascade(items: $this->items, machine: $machine, sentries: $sentries, realiser: $realiser, anchor: $anchor, db: $db, logger: new NullLogger()),
+				cascade: new CasePlanCascade(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), machine: $machine, readers: new CaseCascadeReaders(sentries: $sentries, realiser: $realiser, anchor: $anchor)),
 				sentries: $sentries,
 				definitions: new CasePlanDefinition(sentries: $sentries)
 			),
