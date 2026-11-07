@@ -43,6 +43,10 @@ use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusal;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalAudit;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalNotice;
+use OCA\OpenRegister\Service\Task\WriteBack\WriteBackTaskResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -53,6 +57,11 @@ use Throwable;
  * Every branch of handleWrite(), request() and isProjected(), pinned.
  *
  * @covers \OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate
+ * @covers \OCA\OpenRegister\Service\Task\WriteBack\WriteBackAttempt
+ * @covers \OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusal
+ * @covers \OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalAudit
+ * @covers \OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusalNotice
+ * @covers \OCA\OpenRegister\Service\Task\WriteBack\WriteBackTaskResolver
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @uses \OCA\OpenRegister\Service\Task\TaskVtodoStatusMapping
@@ -212,15 +221,20 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 		[$projector, $inbox, $dispatcher, $logger] = $this->surfaces();
 
 		return new TaskVtodoWriteBackGate(
-			$this->lifecycle(),
-			$mapper,
-			$audits,
-			$projector,
-			$projections,
-			$inbox,
-			$dispatcher,
-			$this->createMock(TaskNotificationRulesInterface::class),
-			$logger
+			tasks: $this->lifecycle(),
+			resolver: new WriteBackTaskResolver(mapper: $mapper, logger: $logger),
+			projector: $projector,
+			refusal: new WriteBackRefusal(
+				audit: new WriteBackRefusalAudit(audits: $audits, logger: $logger),
+				projections: $projections,
+				notice: new WriteBackRefusalNotice(
+					inbox: $inbox,
+					dispatcher: $dispatcher,
+					rules: $this->createMock(TaskNotificationRulesInterface::class),
+					logger: $logger
+				),
+				logger: $logger
+			)
 		);
 	}//end gate()
 
