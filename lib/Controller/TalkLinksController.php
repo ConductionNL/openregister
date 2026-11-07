@@ -23,8 +23,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -74,13 +77,11 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->talkLinkService->isTalkAvailable() === false) {
-			return $this->appNotInstalled(appName: 'Nextcloud Talk');
-		}
-
-		return $this->listLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->talkLinkService->getLinkedRooms($object->getUuid()))
+		return $this->whenTalkInstalled(
+			answer: fn (): JSONResponse => $this->listLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->talkLinkService->getLinkedRooms($object->getUuid()))
+			)
 		);
 	}//end index()
 
@@ -101,27 +102,11 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->talkLinkService->isTalkAvailable() === false) {
-			return $this->appNotInstalled(appName: 'Nextcloud Talk');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$roomToken = (string)$this->request->getParam('roomToken', '');
-				if ($roomToken === '') {
-					return new JSONResponse(['error' => 'roomToken is required'], 400);
-				}
-
-				$link = $this->talkLinkService->linkRoom(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$roomToken
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenTalkInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: $this->linkRoom(...)
+			)
 		);
 	}//end link()
 
@@ -139,46 +124,14 @@ class TalkLinksController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
-		if ($this->talkLinkService->isTalkAvailable() === false) {
-			return $this->appNotInstalled(appName: 'Nextcloud Talk');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$name = trim((string)$this->request->getParam('name', ''));
-				if ($name === '') {
-					return new JSONResponse(['error' => 'name is required'], 400);
-				}
-
-				$description = $this->request->getParam('description');
-				$typeParam = $this->request->getParam('type');
-				$type = 2;
-				if ($typeParam !== null) {
-					$type = (int)$typeParam;
-				}
-
-				$descriptionValue = null;
-				if ($description !== null) {
-					$descriptionValue = (string)$description;
-				}
-
-				$link = $this->talkLinkService->createAndLinkRoom(
-					$object->getUuid(),
-					(int)$object->getRegister(),
-					(int)$object->getSchema(),
-					$name,
-					$descriptionValue,
-					$type
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenTalkInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: $this->createRoom(...)
+			)
 		);
 	}//end createNew()
 
@@ -198,17 +151,11 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $roomToken): JSONResponse {
-		if ($this->talkLinkService->isTalkAvailable() === false) {
-			return $this->appNotInstalled(appName: 'Nextcloud Talk');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($roomToken): JSONResponse {
-				$this->talkLinkService->unlinkRoom($object->getUuid(), $roomToken);
-
-				return new JSONResponse(['success' => true]);
-			}
+		return $this->whenTalkInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->talkLinkService->unlinkRoom($uuid, $roomToken))
+			)
 		);
 	}//end destroy()
 
@@ -225,20 +172,97 @@ class TalkLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function rooms(): JSONResponse {
+		return $this->whenTalkInstalled(
+			answer: fn (): JSONResponse => LinkedSourceResponses::listed(
+				items: $this->talkLinkService->getAvailableRoomsForUser(LinkedSourceActions::search(request: $this->request))
+			)
+		);
+	}//end rooms()
+
+	/**
+	 * Link the Talk room the `roomToken` param names to the object: 400 without it, 201 with the link.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function linkRoom(ObjectEntity $object): JSONResponse {
+		$roomToken = (string)$this->request->getParam('roomToken', '');
+		if ($roomToken === '') {
+			return LinkedSourceResponses::required(param: 'roomToken');
+		}
+
+		$link = $this->talkLinkService->linkRoom(
+			$object->getUuid(),
+			(int)$object->getRegister(),
+			(int)$object->getSchema(),
+			$roomToken
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end linkRoom()
+
+	/**
+	 * Create a Talk room named by the `name` param (optional `description`, `type`) and link it: 400 without a name.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return JSONResponse The response.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function createRoom(ObjectEntity $object): JSONResponse {
+		$name = trim((string)$this->request->getParam('name', ''));
+		if ($name === '') {
+			return LinkedSourceResponses::required(param: 'name');
+		}
+
+		$link = $this->talkLinkService->createAndLinkRoom(
+			$object->getUuid(),
+			(int)$object->getRegister(),
+			(int)$object->getSchema(),
+			$name,
+			LinkedSourceActions::optionalString(request: $this->request, param: 'description'),
+			$this->roomType()
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end createRoom()
+
+	/**
+	 * The room type the `type` param asks for; 2 (group) when absent.
+	 *
+	 * @return int The Talk room type.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function roomType(): int {
+		$type = $this->request->getParam('type');
+		if ($type === null) {
+			return 2;
+		}
+
+		return (int)$type;
+	}//end roomType()
+
+	/**
+	 * Run the answer when the Talk app is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Returns the response.
+	 *
+	 * @return JSONResponse The answer, or 501.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function whenTalkInstalled(Closure $answer): JSONResponse {
 		if ($this->talkLinkService->isTalkAvailable() === false) {
 			return $this->appNotInstalled(appName: 'Nextcloud Talk');
 		}
 
-		$search = $this->request->getParam('search');
-		$searchValue = null;
-		if ($search !== null) {
-			$searchValue = (string)$search;
-		}
-
-		$rooms = $this->talkLinkService->getAvailableRoomsForUser($searchValue);
-
-		return new JSONResponse(['results' => $rooms, 'total' => count($rooms)]);
-	}//end rooms()
+		return $answer();
+	}//end whenTalkInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -258,19 +282,6 @@ class TalkLinksController extends Controller {
 	 *              retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [409, 404, 503]);
 	}//end mapException()
 }//end class

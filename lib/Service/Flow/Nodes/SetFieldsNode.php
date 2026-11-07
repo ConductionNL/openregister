@@ -38,15 +38,12 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
-use OCP\IL10N;
-use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class SetFieldsNode extends LogicNodeBase implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The config keys of which at least one must be non-empty.
@@ -54,19 +51,6 @@ class SetFieldsNode implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfi
 	 * @var string[]
 	 */
 	private const RESHAPING_KEYS = ['set', 'compute', 'rename', 'remove'];
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l10n Translations.
-	 * @param IURLGenerator $urls For the palette icon.
-	 */
-	public function __construct(
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
-	) {
-
-	}//end __construct()
 
 	/**
 	 * The step type.
@@ -103,17 +87,6 @@ class SetFieldsNode implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfi
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/rename.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes — reshaping data grants no privilege.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a set-fields step.
@@ -599,16 +572,4 @@ class SetFieldsNode implements IFlowNode, SetFieldsNodeInterface, IFlowNodeConfi
 		return IFlowNodeTaxonomy::KIND_SCRIPT_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

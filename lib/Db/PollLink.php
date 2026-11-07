@@ -61,6 +61,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class PollLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -150,9 +152,7 @@ class PollLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'pollId', type: 'integer');
 		$this->addType(fieldName: 'pollTitle', type: 'string');
 		$this->addType(fieldName: 'pollType', type: 'string');
@@ -165,25 +165,13 @@ class PollLink extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * JSON serialization.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'pollId' => $this->pollId,
-			'pollTitle' => $this->pollTitle,
-			'pollType' => $this->pollType,
-			'deadline' => $this->deadline?->format(DateTime::ATOM),
-			'voterCount' => $this->voterCount,
-			'optionCount' => $this->optionCount,
 			'closed' => (bool)$this->closed,
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

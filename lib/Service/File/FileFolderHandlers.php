@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
 
 /**
@@ -36,7 +36,7 @@ final class FileFolderHandlers {
 	 *
 	 * @param FileValidationHandler   $fileValidHandler     File validation handler
 	 * @param FolderManagementHandler $folderMgmtHandler    Folder management handler
-	 * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler
+	 * @param FileOwnershipHandlerInterface    $fileOwnershipHandler File ownership handler
 	 * @param FileSharingHandler      $fileSharingHandler   File sharing handler
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
@@ -44,7 +44,7 @@ final class FileFolderHandlers {
 	public function __construct(
 		public readonly FileValidationHandler $fileValidHandler,
 		public readonly FolderManagementHandler $folderMgmtHandler,
-		public readonly FileOwnershipHandler $fileOwnershipHandler,
+		public readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		public readonly FileSharingHandler $fileSharingHandler,
 	) {
 	}//end __construct()

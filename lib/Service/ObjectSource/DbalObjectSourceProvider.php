@@ -92,6 +92,13 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	private const DERIVED_ALIAS = 'or_src';
 
 	/**
+	 * Runs the pushed-down aggregations once the source and connection are resolved.
+	 *
+	 * @var DbalAggregator
+	 */
+	private readonly DbalAggregator $aggregator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SourceMapperInterface $sourceMapper Loads the backing database source.
@@ -105,6 +112,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		private readonly DbalConnectionFactory $connectionFactory,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->aggregator = new DbalAggregator(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -359,9 +367,30 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
-		[$source, $columns] = $context;
+		$aggregation = new DbalAggregation(metric: $metric, field: $field, filter: $filter, columns: $context[1]);
+		$query       = $this->boundAggregation(source: $context[0], config: $config, aggregation: $aggregation);
+		if ($query === null) {
+			return null;
+		}
 
-		$aggregation = new DbalAggregation(metric: $metric, field: $field, filter: $filter, columns: $columns);
+		return $this->aggregator->run(query: $query, shape: new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket));
+	}//end aggregate()
+
+	/**
+	 * Bind the aggregation to a connection, once its value field is known to be a column.
+	 *
+	 * The value field is checked before connecting, so a misconfigured field
+	 * answers null without touching the external database.
+	 *
+	 * @param Source               $source      The backing database source.
+	 * @param array<string, mixed> $config      The schema's dbal-source configuration.
+	 * @param DbalAggregation      $aggregation The metric, field, filter and columns.
+	 *
+	 * @return DbalAggregationQuery|null Null when the field is not a column or the driver is missing.
+	 *
+	 * @throws DbalObjectSourceException When the external database is unreachable.
+	 */
+	private function boundAggregation(Source $source, array $config, DbalAggregation $aggregation): ?DbalAggregationQuery {
 		if ($aggregation->lacksValueField() === true) {
 			return null;
 		}
@@ -371,50 +400,12 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			return null;
 		}
 
-		$query = new DbalAggregationQuery(
+		return $this->aggregator->query(
 			connection: $connection,
-			aggExpr: $this->aggregateExpression(connection: $connection, metric: $metric, field: $field),
 			table: $this->fromExpression(connection: $connection, config: $config),
 			aggregation: $aggregation
 		);
-
-		return $this->runAggregation(
-			query: $query,
-			shape: new DbalAggregationShape(groupBy: $groupBy, dateBucket: $dateBucket)
-		);
-	}//end aggregate()
-
-	/**
-	 * Run a bound aggregation in its shape: a date-bucket series, a categorical groupBy, or a scalar value.
-	 *
-	 * @param DbalAggregationQuery $query The bound aggregation.
-	 * @param DbalAggregationShape $shape The groupBy and date-bucket specs.
-	 *
-	 * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
-	 *
-	 * @throws DbalObjectSourceException On a query error (502).
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function runAggregation(DbalAggregationQuery $query, DbalAggregationShape $shape): ?array {
-		try {
-			// Date-bucket series (chart widgets).
-			if ($shape->dateBucket !== null) {
-				return $this->aggregateDateBucket(query: $query, dateBucket: $shape->dateBucket);
-			}
-
-			// Categorical groupBy.
-			$groupField = (string)($shape->groupBy['field'] ?? '');
-			if ($groupField !== '') {
-				return $this->aggregateGrouped(query: $query, groupField: $groupField);
-			}
-
-			return $this->aggregateScalar(query: $query);
-		} catch (DbalException $e) {
-			$this->logger->warning('[ObjectSource:dbal-source] aggregation query failed: ' . $e->getMessage());
-			throw new DbalObjectSourceException('The external database returned an error.', 502, $e);
-		}//end try
-	}//end runAggregation()
+	}//end boundAggregation()
 
 	/**
 	 * Open the connection an aggregation runs on, or null when the source's driver is not installed.
@@ -438,317 +429,6 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 			throw new DbalObjectSourceException('The external database is unreachable.', 503, $e);
 		}
 	}//end connectForAggregation()
-
-	/**
-	 * Run a categorical groupBy aggregation, or null when the group column is not allowlisted.
-	 *
-	 * @param DbalAggregationQuery $query      The bound aggregation.
-	 * @param string               $groupField The column to group by.
-	 *
-	 * @return array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function aggregateGrouped(DbalAggregationQuery $query, string $groupField): ?array {
-		if (in_array($groupField, $query->aggregation->columns, true) === false) {
-			return null;
-		}
-
-		$quotedGroup = $this->quote(connection: $query->connection, identifier: $groupField);
-		$qb = $query->connection->createQueryBuilder();
-		$qb->select($quotedGroup . ' AS grpkey', $query->aggExpr . ' AS value')->from($query->table);
-		$this->applyAggregationFilter(qb: $qb, query: $query);
-		$qb->groupBy($quotedGroup);
-
-		$groups = [];
-		foreach ($qb->executeQuery()->fetchAllAssociative() as $row) {
-			$groups[] = [
-				'key' => ($row['grpkey'] ?? null),
-				'value' => $this->numifyMetric(metric: $query->aggregation->metric, value: ($row['value'] ?? null)),
-			];
-		}
-
-		return ['groups' => $groups];
-	}//end aggregateGrouped()
-
-	/**
-	 * Run a scalar aggregation (KPI / stats-block).
-	 *
-	 * @param DbalAggregationQuery $query The bound aggregation.
-	 *
-	 * @return array{value: int|float|null}
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function aggregateScalar(DbalAggregationQuery $query): array {
-		$qb = $query->connection->createQueryBuilder();
-		$qb->select($query->aggExpr)->from($query->table);
-		$this->applyAggregationFilter(qb: $qb, query: $query);
-
-		return ['value' => $this->numifyMetric(metric: $query->aggregation->metric, value: $qb->executeQuery()->fetchOne())];
-	}//end aggregateScalar()
-
-	/**
-	 * Run a date-bucketed aggregation series (chart widgets) against the table.
-	 *
-	 * @param DbalAggregationQuery $query      The bound aggregation.
-	 * @param array<string, mixed> $dateBucket The date-bucket spec ({field, start, end, gap}).
-	 *
-	 * @return array{groups: array<int, array{key: string, value: int|float|null}>}|null
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function aggregateDateBucket(DbalAggregationQuery $query, array $dateBucket): ?array {
-		$connection = $query->connection;
-		$bucketField = (string)($dateBucket['field'] ?? '');
-		if (in_array($bucketField, $query->aggregation->columns, true) === false) {
-			return null;
-		}
-
-		$bucketExpr = $this->dateBucketExpression(
-			connection: $connection,
-			field: $bucketField,
-			gap: (string)($dateBucket['gap'] ?? '')
-		);
-		if ($bucketExpr === null) {
-			return null;
-		}
-
-		// The bounds arrive as ISO-8601 strings; comparing a date/timestamp
-		// column to an untyped param is dialect-fragile, so pin the LHS to
-		// timestamptz on Postgres.
-		$boundLhs = $this->quote(connection: $connection, identifier: $bucketField);
-		if ($connection->getDatabasePlatform() instanceof PostgreSQLPlatform) {
-			$boundLhs .= '::timestamptz';
-		}
-
-		$qb = $connection->createQueryBuilder();
-		$qb->select($bucketExpr . ' AS bucket', $query->aggExpr . ' AS value')->from($query->table);
-		$qb->andWhere($boundLhs . ' >= ' . $qb->createNamedParameter((string)($dateBucket['start'] ?? '')));
-		$qb->andWhere($boundLhs . ' < ' . $qb->createNamedParameter((string)($dateBucket['end'] ?? '')));
-		$this->applyAggregationFilter(qb: $qb, query: $query);
-		$qb->groupBy('bucket')->orderBy('bucket', 'ASC');
-
-		$groups = [];
-		foreach ($qb->executeQuery()->fetchAllAssociative() as $row) {
-			$groups[] = [
-				'key' => $this->isoBucketKey(raw: ($row['bucket'] ?? null)),
-				'value' => $this->numifyMetric(metric: $query->aggregation->metric, value: ($row['value'] ?? null)),
-			];
-		}
-
-		return ['groups' => $groups];
-	}//end aggregateDateBucket()
-
-	/**
-	 * Build the aggregate SELECT expression for a metric.
-	 *
-	 * @param Connection $connection The DBAL connection (for identifier quoting).
-	 * @param string $metric count/sum/avg/min/max.
-	 * @param string|null $field Metric column (ignored for count).
-	 *
-	 * @return string The SQL aggregate expression.
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function aggregateExpression(Connection $connection, string $metric, ?string $field): string {
-		if ($metric === 'count') {
-			return 'COUNT(*)';
-		}
-
-		$col = $this->quote(connection: $connection, identifier: (string)$field);
-		return match ($metric) {
-			'sum' => 'SUM(' . $col . ')',
-			'avg' => 'AVG(' . $col . ')',
-			'min' => 'MIN(' . $col . ')',
-			'max' => 'MAX(' . $col . ')',
-			default => 'COUNT(*)',
-		};
-	}//end aggregateExpression()
-
-	/**
-	 * The platform-specific date-bucket (truncation) expression, or null when
-	 * the platform/gap combination is unsupported (caller falls back).
-	 *
-	 * @param Connection $connection The DBAL connection.
-	 * @param string $field The (already-allowlisted) date column.
-	 * @param string $gap One of minute/hour/day/week/month/quarter/year.
-	 *
-	 * @return string|null The bucket SQL expression, or null when unsupported.
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function dateBucketExpression(Connection $connection, string $field, string $gap): ?string {
-		if (in_array($gap, ['minute', 'hour', 'day', 'week', 'month', 'quarter', 'year'], true) === false) {
-			return null;
-		}
-
-		$platform = $connection->getDatabasePlatform();
-		$col = $this->quote(connection: $connection, identifier: $field);
-
-		// Postgres date_trunc handles every supported gap unit natively.
-		if ($platform instanceof PostgreSQLPlatform) {
-			return "date_trunc('" . $gap . "', " . $col . '::timestamptz)';
-		}
-
-		// MySQL: DATE_FORMAT covers the fixed-width gaps; week/quarter need
-		// bespoke maths, so fall back to PHP for those.
-		if ($platform instanceof AbstractMySQLPlatform) {
-			return match ($gap) {
-				'minute' => 'DATE_FORMAT(' . $col . ", '%Y-%m-%dT%H:%i:00Z')",
-				'hour' => 'DATE_FORMAT(' . $col . ", '%Y-%m-%dT%H:00:00Z')",
-				'day' => 'DATE_FORMAT(' . $col . ", '%Y-%m-%dT00:00:00Z')",
-				'month' => 'DATE_FORMAT(' . $col . ", '%Y-%m-01T00:00:00Z')",
-				'year' => 'DATE_FORMAT(' . $col . ", '%Y-01-01T00:00:00Z')",
-				default => null,
-			};
-		}
-
-		return null;
-	}//end dateBucketExpression()
-
-	/**
-	 * Apply the aggregation filter map to a query builder, restricted to the
-	 * allowlisted columns. Supports equality plus the in/notIn/gt/gte/lt/lte/ne
-	 * operator vocabulary (same set as the native magic-table path).
-	 *
-	 * Filter keys are not guaranteed to be strings (a decoded JSON object with
-	 * numeric-string keys can surface as int keys), so the runtime `is_string()`
-	 * guard below is load-bearing, not redundant.
-	 *
-	 * @param QueryBuilder         $qb    The query builder (mutated).
-	 * @param DbalAggregationQuery $query The bound aggregation whose filter and columns apply.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function applyAggregationFilter(QueryBuilder $qb, DbalAggregationQuery $query): void {
-		foreach ($query->aggregation->filter as $col => $criterion) {
-			if (is_string($col) === false || in_array($col, $query->aggregation->columns, true) === false) {
-				continue;
-			}
-
-			$quoted = $this->quote(connection: $query->connection, identifier: $col);
-
-			if (is_array($criterion) === false) {
-				$qb->andWhere($quoted . ' = ' . $qb->createNamedParameter($criterion));
-				continue;
-			}
-
-			$this->applyOperatorCriterion(qb: $qb, quoted: $quoted, criterion: $criterion);
-		}//end foreach
-	}//end applyAggregationFilter()
-
-	/**
-	 * Apply a single column's operator criterion (in/notIn/gt/gte/lt/lte/ne).
-	 *
-	 * @param QueryBuilder $qb The query builder (mutated).
-	 * @param string $quoted The quoted column identifier.
-	 * @param array<string, mixed> $criterion The operator → operand map.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function applyOperatorCriterion(QueryBuilder $qb, string $quoted, array $criterion): void {
-		foreach ($criterion as $op => $onValue) {
-			if ((string)$op === 'in' || (string)$op === 'notIn') {
-				$list = [];
-				if (is_array($onValue) === true) {
-					$list = array_values($onValue);
-				}
-
-				if ($list === []) {
-					// `in ()` matches nothing; `notIn ()` excludes nothing.
-					$emptyPredicate = '1 = 1';
-					if ((string)$op === 'in') {
-						$emptyPredicate = '1 = 0';
-					}
-
-					$qb->andWhere($emptyPredicate);
-					continue;
-				}
-
-				$params = [];
-				foreach ($list as $item) {
-					$params[] = $qb->createNamedParameter($item);
-				}
-
-				$keyword = ' NOT IN (';
-				if ((string)$op === 'in') {
-					$keyword = ' IN (';
-				}
-
-				$qb->andWhere($quoted . $keyword . implode(', ', $params) . ')');
-				continue;
-			}//end if
-
-			$sqlOn = match ((string)$op) {
-				'gt' => '>',
-				'gte' => '>=',
-				'lt' => '<',
-				'lte' => '<=',
-				'ne' => '<>',
-				default => null,
-			};
-
-			if ($sqlOn === null) {
-				continue;
-			}
-
-			$qb->andWhere($quoted . ' ' . $sqlOn . ' ' . $qb->createNamedParameter($onValue));
-		}//end foreach
-	}//end applyOperatorCriterion()
-
-	/**
-	 * Coerce a fetched aggregate value to the response numeric shape. `count`
-	 * is always an int (0 for an empty set); value metrics are floats, or null
-	 * when the set is empty / non-numeric.
-	 *
-	 * @param string $metric The metric name.
-	 * @param mixed $value The raw fetched value.
-	 *
-	 * @return int|float|null The normalised metric value.
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function numifyMetric(string $metric, mixed $value): int|float|null {
-		if ($metric === 'count') {
-			return (int)$value;
-		}
-
-		if ($value === null || is_numeric($value) === false) {
-			return null;
-		}
-
-		return (float)$value;
-	}//end numifyMetric()
-
-	/**
-	 * Normalise a bucket label to the ISO-8601-UTC form the PHP fallback emits
-	 * (`Y-m-d\TH:i:s\Z`), so chart consumers see one date-key contract across
-	 * backends. Non-parseable labels are returned verbatim.
-	 *
-	 * @param mixed $raw The raw bucket value from the driver.
-	 *
-	 * @return string The ISO-8601-UTC bucket label.
-	 *
-	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 */
-	private function isoBucketKey(mixed $raw): string {
-		$label = (string)$raw;
-		$stamp = strtotime($label);
-		if ($stamp === false) {
-			return $label;
-		}
-
-		return gmdate('Y-m-d\TH:i:s\Z', $stamp);
-	}//end isoBucketKey()
 
 	/**
 	 * Resolve the backing source and the allowlisted scalar column set.

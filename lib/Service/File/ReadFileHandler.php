@@ -21,8 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -30,7 +31,6 @@ use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file retrieval operations with Single Responsibility.
@@ -66,7 +66,7 @@ class ReadFileHandler {
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler.
 	 * @param FileValidationHandler $fileValidHandler File validation handler.
 	 * @param FileOwnershipHandler $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapperInterface $objectMapper Object mapper for magic table operations.
+	 * @param MagicObjectFinderInterface $objectMapper Object mapper for magic table operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         category-based filtering. Null-safe so legacy
@@ -77,7 +77,7 @@ class ReadFileHandler {
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
 		private readonly FileOwnershipHandler $fileOwnershipHandler,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly MagicObjectFinderInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {

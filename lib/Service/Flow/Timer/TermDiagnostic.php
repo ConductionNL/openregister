@@ -71,10 +71,10 @@ class TermDiagnostic {
 	/**
 	 * Constructor.
 	 *
-	 * @param SlaCalculator $calculator The engine the arm path uses.
+	 * @param SlaCalculatorInterface $calculator The engine the arm path uses.
 	 */
 	public function __construct(
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 	) {
 	}//end __construct()
 

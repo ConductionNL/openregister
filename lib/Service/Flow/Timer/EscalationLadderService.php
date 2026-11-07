@@ -99,11 +99,11 @@ class EscalationLadderService {
 	 * Constructor.
 	 *
 	 * @param FlowTimerDefinitionStore $definitions The seeded ladder definitions.
-	 * @param SlaCalculator $calculator Timeline arithmetic.
+	 * @param SlaCalculatorInterface $calculator Timeline arithmetic.
 	 */
 	public function __construct(
 		private readonly FlowTimerDefinitionStore $definitions,
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 	) {
 
 	}//end __construct()

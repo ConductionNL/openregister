@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Files\Controller\Settings\FileSettingsController;
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
@@ -226,7 +227,7 @@ class FileSettingsControllerBranchTest extends TestCase {
 		$this->container->method('get')->willReturnMap(
 			[
 				[FileMapperInterface::class, $fileMapper],
-				[ChunkMapper::class, $chunkMapper],
+				[ChunkIndexOverviewInterface::class, $chunkMapper],
 				[TextExtractionService::class, $textExtraction],
 			]
 		);

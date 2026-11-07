@@ -45,7 +45,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TablesTableReader {
+class TablesTableReader implements TablesCatalogueInterface {
 
 	use ContainerServiceLookup;
 	use TablesEntityDescriptors;

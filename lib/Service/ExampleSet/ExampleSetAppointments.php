@@ -52,6 +52,16 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	public const FIELDS = ['object', 'owner', 'calendar', 'summary', 'start', 'end', 'location', 'description', 'attendees'];
 
 	/**
+	 * The fields an appointment needs, with what each holds.
+	 */
+	private const REQUIRED = [
+		'object'  => 'the object it is on',
+		'owner'   => 'the account whose calendar holds it',
+		'summary' => 'a summary',
+		'start'   => 'a start',
+	];
+
+	/**
 	 * The DAV app's CalDAV backend, by name: the DAV app is not part of OCP.
 	 */
 	private const CALDAV = 'OCA\\DAV\\CalDAV\\CalDavBackend';
@@ -106,33 +116,16 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not an appointment field a set may write';
-		}
-
-		$required = [
-			'object'  => 'the object it is on',
-			'owner'   => 'the account whose calendar holds it',
-			'summary' => 'a summary',
-			'start'   => 'a start',
-		];
-		foreach ($required as $field => $what) {
-			if (is_string($data[$field] ?? null) === false || trim($data[$field]) === '') {
-				return 'an appointment needs '.$what.' ('.$field.')';
-			}
-		}
-
-		if (in_array((string) $data['owner'], $users, true) === false) {
-			return 'owner "'.(string) $data['owner'].'" is not an account the set creates or adopts';
-		}
-
-		$dates = $this->datesRefusal(data: $data);
-		if ($dates !== '') {
-			return $dates;
-		}
-
-		return $this->attendeesRefusal(attendees: ($data['attendees'] ?? []));
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'an appointment'),
+				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'an appointment'),
+				fn (): string => $this->ownerRefusal(owner: (string) $data['owner'], users: $users),
+				fn (): string => $rules->datesRefusal(data: $data, fields: ['start', 'end']),
+				fn (): string => $this->attendeesRefusal(attendees: ($data['attendees'] ?? [])),
+			]
+		);
 	}//end refusal()
 
 	/**
@@ -154,34 +147,71 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 		}
 
 		try {
-			$calendarUri = (string) ($data['calendar'] ?? 'personal');
-			$calendarId  = $this->calendarId(owner: (string) $data['owner'], uri: $calendarUri);
-			$uid         = strtoupper(bin2hex(random_bytes(16)));
-			$uri         = $uid.'.ics';
-			$this->caldav()->createCalendarObject($calendarId, $uri, $this->ics(uid: $uid, data: $data));
-
-			$link = new CalendarLink();
-			$link->setObjectUuid($objectUuid);
-			$link->setRegisterId($target['register']);
-			$link->setSchemaId($target['schema']);
-			$link->setCalendarUri($calendarUri);
-			$link->setCalendarId($calendarId);
-			$link->setEventUid($uid);
-			$link->setEventUri($uri);
-			$link->setSummary((string) $data['summary']);
-			// The link table holds wall time without a zone and is read back as UTC.
-			$link->setDtstart((new DateTime((string) $data['start']))->setTimezone(new DateTimeZone('UTC')));
-			$link->setDtend($this->dateOrNull(value: ($data['end'] ?? null))?->setTimezone(new DateTimeZone('UTC')));
-			$link->setLocation($this->textOrNull(value: ($data['location'] ?? null)));
-			$link->setLinkedBy($app);
-			$link->setLinkedAt(new DateTime());
-			$this->container->get(CalendarLinkMapper::class)->insert($link);
+			$event = $this->createEvent(data: $data);
+			$this->insertLink(app: $app, target: ['object' => $objectUuid, ...$target], event: $event, data: $data);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['object' => $objectUuid, 'calendar' => $calendarId, 'uri' => $uri, 'uid' => $uid]];
+		return ['error' => '', 'entry' => ['object' => $objectUuid, 'calendar' => $event['calendar'], 'uri' => $event['uri'], 'uid' => $event['uid']]];
 	}//end write()
+
+	/**
+	 * Write the event to the owner's calendar, made when the account has none with that uri yet.
+	 *
+	 * @param array<string, mixed> $data The filled appointment fields.
+	 *
+	 * @return array{calendarUri: string, calendar: int, uid: string, uri: string} Where the event is.
+	 */
+	private function createEvent(array $data): array {
+		$calendarUri = (string) ($data['calendar'] ?? 'personal');
+		$calendarId  = $this->calendarId(owner: (string) $data['owner'], uri: $calendarUri);
+		$uid         = strtoupper(bin2hex(random_bytes(16)));
+		$uri         = $uid.'.ics';
+		$this->caldav()->createCalendarObject($calendarId, $uri, $this->ics(uid: $uid, data: $data));
+
+		return ['calendarUri' => $calendarUri, 'calendar' => $calendarId, 'uid' => $uid, 'uri' => $uri];
+	}//end createEvent()
+
+	/**
+	 * Link the event to the object (or task) it is on.
+	 *
+	 * @param string                                                          $app    The app that ships the fragment, recorded as the linker.
+	 * @param array{object: string, register: int, schema: int}               $target The object or task and its register and schema.
+	 * @param array{calendarUri: string, calendar: int, uid: string, uri: string} $event  Where the event is.
+	 * @param array<string, mixed>                                            $data   The filled appointment fields.
+	 *
+	 * @return void
+	 */
+	private function insertLink(string $app, array $target, array $event, array $data): void {
+		$link = new CalendarLink();
+		$link->setObjectUuid($target['object']);
+		$link->setRegisterId($target['register']);
+		$link->setSchemaId($target['schema']);
+		$link->setCalendarUri($event['calendarUri']);
+		$link->setCalendarId($event['calendar']);
+		$link->setEventUid($event['uid']);
+		$link->setEventUri($event['uri']);
+		$link->setSummary((string) $data['summary']);
+		$this->setWhenAndWhere(link: $link, data: $data);
+		$link->setLinkedBy($app);
+		$link->setLinkedAt(new DateTime());
+		$this->container->get(CalendarLinkMapper::class)->insert($link);
+	}//end insertLink()
+
+	/**
+	 * Put the start, end and location on the link; the link table holds wall time without a zone and is read back as UTC.
+	 *
+	 * @param CalendarLink         $link The link.
+	 * @param array<string, mixed> $data The filled appointment fields.
+	 *
+	 * @return void
+	 */
+	private function setWhenAndWhere(CalendarLink $link, array $data): void {
+		$link->setDtstart((new DateTime((string) $data['start']))->setTimezone(new DateTimeZone('UTC')));
+		$link->setDtend($this->dateOrNull(value: ($data['end'] ?? null))?->setTimezone(new DateTimeZone('UTC')));
+		$link->setLocation($this->textOrNull(value: ($data['location'] ?? null)));
+	}//end setWhenAndWhere()
 
 	/**
 	 * The register and schema an appointment's link names: those of the object, or, for a task (which is no object),
@@ -274,8 +304,28 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 * @return string
 	 */
 	private function ics(string $uid, array $data): string {
-		$utc   = new DateTimeZone('UTC');
 		$lines = [
+			...$this->headerLines(uid: $uid, data: $data),
+			...$this->optionalLines(data: $data),
+			...$this->organizerLines(owner: (string) $data['owner']),
+			...$this->attendeeLines(attendees: (array) ($data['attendees'] ?? [])),
+			'END:VEVENT',
+			'END:VCALENDAR',
+		];
+
+		return implode("\r\n", $lines)."\r\n";
+	}//end ics()
+
+	/**
+	 * The opening lines of the calendar and the event, up to its start.
+	 *
+	 * @param string               $uid  The event's uid.
+	 * @param array<string, mixed> $data The filled appointment fields.
+	 *
+	 * @return array<int, string>
+	 */
+	private function headerLines(string $uid, array $data): array {
+		return [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			'PRODID:-//OpenRegister//Example set//EN',
@@ -283,11 +333,22 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 			'UID:'.$uid,
 			'DTSTAMP:'.gmdate('Ymd\THis\Z'),
 			'SUMMARY:'.$this->escape(text: (string) $data['summary']),
-			'DTSTART:'.(new DateTime((string) $data['start']))->setTimezone($utc)->format('Ymd\THis\Z'),
+			'DTSTART:'.(new DateTime((string) $data['start']))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z'),
 		];
-		$end = $this->dateOrNull(value: ($data['end'] ?? null));
+	}//end headerLines()
+
+	/**
+	 * The end, location and description lines of the event, for the fields that are filled.
+	 *
+	 * @param array<string, mixed> $data The filled appointment fields.
+	 *
+	 * @return array<int, string>
+	 */
+	private function optionalLines(array $data): array {
+		$lines = [];
+		$end   = $this->dateOrNull(value: ($data['end'] ?? null));
 		if ($end !== null) {
-			$lines[] = 'DTEND:'.$end->setTimezone($utc)->format('Ymd\THis\Z');
+			$lines[] = 'DTEND:'.$end->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
 		}
 
 		foreach (['location' => 'LOCATION', 'description' => 'DESCRIPTION'] as $field => $property) {
@@ -296,43 +357,61 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 			}
 		}
 
-		$owner = $this->container->get(IUserManager::class)->get((string) $data['owner']);
-		$email = (string) $owner?->getEMailAddress();
-		if ($email !== '') {
-			$lines[] = 'ORGANIZER;CN="'.$this->escape(text: (string) $owner?->getDisplayName()).'":mailto:'.$email;
+		return $lines;
+	}//end optionalLines()
+
+	/**
+	 * The organizer line of the event: the owner, when the account has an e-mail address.
+	 *
+	 * @param string $owner The owner's account.
+	 *
+	 * @return array<int, string>
+	 */
+	private function organizerLines(string $owner): array {
+		$account = $this->container->get(IUserManager::class)->get($owner);
+		$email   = (string) $account?->getEMailAddress();
+		if ($email === '') {
+			return [];
 		}
 
-		foreach ((array) ($data['attendees'] ?? []) as $attendee) {
+		return ['ORGANIZER;CN="'.$this->escape(text: (string) $account?->getDisplayName()).'":mailto:'.$email];
+	}//end organizerLines()
+
+	/**
+	 * One line per invitee, with their participation.
+	 *
+	 * @param array<int, mixed> $attendees The declared invitees.
+	 *
+	 * @return array<int, string>
+	 */
+	private function attendeeLines(array $attendees): array {
+		$lines = [];
+		foreach ($attendees as $attendee) {
 			$attendee = (array) $attendee;
 			$state    = self::STATES[(string) ($attendee['status'] ?? 'invited')];
 			$name     = $this->escape(text: (string) ($attendee['name'] ?? $attendee['email']));
 			$lines[]  = 'ATTENDEE;CN="'.$name.'";ROLE=REQ-PARTICIPANT;PARTSTAT='.$state.':mailto:'.(string) $attendee['email'];
 		}
 
-		$lines[] = 'END:VEVENT';
-		$lines[] = 'END:VCALENDAR';
+		return $lines;
+	}//end attendeeLines()
 
-		return implode("\r\n", $lines)."\r\n";
-	}//end ics()
 
 	/**
-	 * A start or end that is not a date.
+	 * An owner who is no account the set creates or adopts.
 	 *
-	 * @param array<string, mixed> $data The filled appointment fields.
+	 * @param string             $owner The owner.
+	 * @param array<int, string> $users The accounts the set creates or adopts.
 	 *
 	 * @return string
 	 */
-	private function datesRefusal(array $data): string {
-		foreach (['start', 'end'] as $field) {
-			try {
-				$this->dateOrNull(value: ($data[$field] ?? null));
-			} catch (Throwable) {
-				return $field.' "'.(string) $data[$field].'" is not a date';
-			}
+	private function ownerRefusal(string $owner, array $users): string {
+		if (in_array($owner, $users, true) === false) {
+			return 'owner "'.$owner.'" is not an account the set creates or adopts';
 		}
 
 		return '';
-	}//end datesRefusal()
+	}//end ownerRefusal()
 
 	/**
 	 * An invitee without an address, or with a participation the set does not know.

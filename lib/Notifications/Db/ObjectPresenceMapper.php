@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Db;
 
 use DateTimeInterface;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -36,6 +35,8 @@ use OCP\IDBConnection;
  * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md
  */
 class ObjectPresenceMapper extends QBMapper {
+	use NotificationQueryTrait;
+
 
 	/**
 	 * Constructor.
@@ -61,18 +62,12 @@ class ObjectPresenceMapper extends QBMapper {
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
 	public function findOne(string $userId, string $objectUuid): ?ObjectPresence {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findFirstOrNull(qb: $this->selectWhereEquals(columns: ['user_id' => $userId, 'object_uuid' => $objectUuid]));
+		if ($found instanceof ObjectPresence) {
+			return $found;
 		}
+
+		return null;
 	}//end findOne()
 
 	/**
@@ -91,16 +86,8 @@ class ObjectPresenceMapper extends QBMapper {
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
 	public function findPresent(string $objectUuid, DateTimeInterface $notBefore): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->gte(
-					'last_seen',
-					$qb->createNamedParameter($notBefore, IQueryBuilder::PARAM_DATETIME_MUTABLE)
-				)
-			)
+		$qb = $this->selectWhereEquals(columns: ['object_uuid' => $objectUuid]);
+		$qb->andWhere($qb->expr()->gte('last_seen', $qb->createNamedParameter($notBefore, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->orderBy('arrived_at', 'ASC');
 
 		return $this->findEntities(query: $qb);
@@ -117,12 +104,7 @@ class ObjectPresenceMapper extends QBMapper {
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
 	public function removeOne(string $userId, string $objectUuid): bool {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)))
-			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return ($qb->executeStatement() > 0);
+		return ($this->deleteWhereEquals(columns: ['user_id' => $userId, 'object_uuid' => $objectUuid])->executeStatement() > 0);
 	}//end removeOne()
 
 	/**

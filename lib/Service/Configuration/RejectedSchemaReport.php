@@ -65,7 +65,7 @@ final class RejectedSchemaReport
 		];
 		$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaKey' => $rejection->key];
 		$context += ['error' => $error->getMessage(), 'trace' => $error->getTraceAsString()];
-		$this->logger->error(message: '[ImportHandler] Failed to create schema (Pass 1)', context: $context);
+		$this->logger->error(message: ImportLogTag::PREFIX.'Failed to create schema (Pass 1)', context: $context);
 	}//end record()
 
 	/**
@@ -103,7 +103,7 @@ final class RejectedSchemaReport
 		$rejectedSlugs = array_column($run->result['failed']['schemas'], 'slug');
 
 		return sprintf(
-			'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
+			ImportLogTag::PREFIX.'PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
 			. 'linked to any register in this import: %s. Registers declaring them were '
 			. 'created without those schema references.',
 			count($rejectedSlugs),

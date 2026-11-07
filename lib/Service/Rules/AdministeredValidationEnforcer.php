@@ -39,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
  */
-class AdministeredValidationEnforcer {
+class AdministeredValidationEnforcer implements AdministeredValidationEnforcerInterface {
 
 	/**
 	 * Constructor.
