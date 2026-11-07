@@ -84,6 +84,7 @@ final class ContractBindings {
 	 */
 	public const BINDINGS = [
 		AppContainerFinderInterface::class => AppContainerLocator::class,
+		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
