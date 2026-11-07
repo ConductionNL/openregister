@@ -189,7 +189,8 @@ final class NotificationAnnotationValidator {
 	private function rulesErrors(array $notifications, NotificationSchemaFacts $schema): array {
 		$errors = [];
 		foreach ($notifications as $name => $spec) {
-			$rule   = fn (): array => $this->ruleErrors(rule: new NotificationRuleContext(name: $name, spec: $spec, schema: $schema));
+			// Only runs once ruleShapeErrors() found a non-empty string name and an object spec.
+			$rule   = fn (): array => $this->ruleErrors(rule: new NotificationRuleContext(name: (string)$name, spec: $spec, schema: $schema));
 			$errors = array_merge($errors, ($this->ruleShapeErrors(name: $name, spec: $spec) ?? $rule()));
 		}
 
