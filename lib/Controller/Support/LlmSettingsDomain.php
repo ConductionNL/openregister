@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCP\IDBConnection;
 
 /**
  * Services of the llm settings API.
@@ -39,7 +38,6 @@ final class LlmSettingsDomain {
 	 * @param AppSettingsInterface          $settingsService      Settings service.
 	 * @param VectorizationServiceInterface $vectorizationService Vectorization service.
 	 * @param ConnectionReporter            $connectionReporter   Reports the saved provider to integriq's connection registry.
-	 * @param IDBConnection                 $db                   Database connection.
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
@@ -47,7 +45,6 @@ final class LlmSettingsDomain {
 		public readonly AppSettingsInterface $settingsService,
 		public readonly VectorizationServiceInterface $vectorizationService,
 		public readonly ConnectionReporter $connectionReporter,
-		public readonly IDBConnection $db,
 	) {
 	}//end __construct()
 }//end class

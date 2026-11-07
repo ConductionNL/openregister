@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
-class FormIdempotencyStore {
+class FormIdempotencyStore implements FormIdempotencyStoreInterface {
 
 	use AppDataFolder;
 

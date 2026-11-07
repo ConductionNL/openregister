@@ -59,14 +59,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class ApplyRuleAction implements BulkActionInterface {
-
-	/**
-	 * The action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:apply-rule';
+class ApplyRuleAction implements ApplyRuleActionInterface {
 
 	/**
 	 * Constructor.

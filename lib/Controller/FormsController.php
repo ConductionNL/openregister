@@ -31,10 +31,10 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Controller\Support\FormsControllerServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
-use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
-use OCA\OpenRegister\Service\Form\FormSubmitService;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -72,30 +72,30 @@ class FormsController extends Controller {
 	/**
 	 * Resolves a stored form.
 	 *
-	 * @var FormDefinitionResolver
+	 * @var FormDefinitionResolverInterface
 	 */
-	private readonly FormDefinitionResolver $resolver;
+	private readonly FormDefinitionResolverInterface $resolver;
 
 	/**
 	 * Creates the destination.
 	 *
-	 * @var FormSubmitService
+	 * @var FormSubmitServiceInterface
 	 */
-	private readonly FormSubmitService $submitter;
+	private readonly FormSubmitServiceInterface $submitter;
 
 	/**
 	 * Judges a mapping.
 	 *
-	 * @var FormDestinationValidator
+	 * @var FormDestinationValidatorInterface
 	 */
-	private readonly FormDestinationValidator $validator;
+	private readonly FormDestinationValidatorInterface $validator;
 
 	/**
 	 * Holds upload tokens.
 	 *
-	 * @var FormUploadStore
+	 * @var FormUploadStoreInterface
 	 */
-	private readonly FormUploadStore $uploads;
+	private readonly FormUploadStoreInterface $uploads;
 
 	/**
 	 * Resolves a destination schema.

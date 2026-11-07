@@ -15,6 +15,8 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -41,19 +43,20 @@ final class D1InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * Class => [the interface its outside callers use, the registrar that binds it, its component].
+	 * Hidden class => [the interface its outside callers use, the registrar that binds it, its component].
 	 *
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: string}>
 	 */
 	private const HIDDEN = [
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
+		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
 		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
 		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 	];
 
 	/**
-	 * Hidden class => the outside callers deliberately left naming it, relative to lib/.
+	 * Class => the outside callers deliberately left naming it, relative to lib/.
 	 *
 	 * ObjectActionElevationEntries resolves the ids a permission elevation is
 	 * checked against; permission code is out of scope for this refactor, so

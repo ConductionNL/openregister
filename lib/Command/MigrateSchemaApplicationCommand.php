@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\SchemaApplicationMigrator;
+use OCA\OpenRegister\Service\SchemaApplicationMigratorInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -45,11 +45,11 @@ class MigrateSchemaApplicationCommand extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaApplicationMigrator $migrator The migration service.
+	 * @param SchemaApplicationMigratorInterface $migrator The migration service.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function __construct(private readonly SchemaApplicationMigrator $migrator) {
+	public function __construct(private readonly SchemaApplicationMigratorInterface $migrator) {
 		parent::__construct();
 
 	}//end __construct()

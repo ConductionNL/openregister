@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
-use OCA\OpenRegister\BulkAction\RunActionAction;
+use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -91,7 +91,7 @@ class ObjectActionBulk {
 		}
 
 		return $this->jobs->create(
-			actionId: RunActionAction::ID,
+			actionId: RunActionActionInterface::ID,
 			parameters: ['action' => $action, 'inputs' => $inputs, 'register' => $register, 'schema' => $schemaRef],
 			selection: ['ids' => $ids],
 			justification: null,

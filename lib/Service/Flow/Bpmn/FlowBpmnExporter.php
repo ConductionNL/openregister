@@ -35,7 +35,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Bpmn;
 
-use DOMDocument;
 use DOMElement;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
@@ -102,6 +101,13 @@ class FlowBpmnExporter {
 	public const SPACING = 180;
 
 	/**
+	 * Reads the flow into the graph that is serialised.
+	 *
+	 * @var BpmnExportGraphBuilder
+	 */
+	private readonly BpmnExportGraphBuilder $builder;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param BpmnVocabulary      $vocabulary The one mapping table.
@@ -111,6 +117,7 @@ class FlowBpmnExporter {
 		private readonly BpmnVocabulary $vocabulary,
 		private readonly BpmnSchemaValidator $validator,
 	) {
+		$this->builder = new BpmnExportGraphBuilder();
 	}//end __construct()
 
 	/**
@@ -125,116 +132,139 @@ class FlowBpmnExporter {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function export(Flow $flow): string {
-		$document = new DOMDocument('1.0', 'UTF-8');
-		$document->formatOutput = true;
-
-		$definitions = $document->createElementNS(self::NS_BPMN, 'bpmn:definitions');
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:bpmndi', self::NS_BPMNDI);
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:dc', self::NS_DC);
-		$definitions->setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:di', self::NS_DI);
-		$definitions->setAttributeNS(
-			'http://www.w3.org/2000/xmlns/',
-			'xmlns:' . BpmnVocabulary::EXTENSION_PREFIX,
-			BpmnVocabulary::EXTENSION_NS
-		);
-		$definitions->setAttribute('id', 'Definitions_' . $this->idOf(value: (string)$flow->getUuid()));
-		$definitions->setAttribute('targetNamespace', BpmnVocabulary::EXTENSION_NS);
-		$document->appendChild($definitions);
-
-		$processId = 'Process_' . $this->idOf(value: (string)$flow->getUuid());
-		$process = $document->createElementNS(self::NS_BPMN, 'bpmn:process');
-		$process->setAttribute('id', $processId);
-		$process->setAttribute('name', (string)($flow->getName() ?? ''));
-		// 🔑 `isExecutable="false"` is the honest value. A BPMN engine reading
-		// this file must not believe it can execute it: the execution semantic
-		// is symfony/workflow's, and this file is interchange, never a
-		// deployable process.
-		$process->setAttribute('isExecutable', 'false');
-		$definitions->appendChild($process);
-
-		$nodes = $this->nodesOf(flow: $flow);
-		foreach ($nodes as $node) {
-			$process->appendChild($this->nodeElement(document: $document, node: $node));
-		}
-
-		$edges = $this->edgesOf(flow: $flow);
-		foreach ($edges as $index => $edge) {
-			$process->appendChild($this->edgeElement(document: $document, edge: $edge, index: $index));
-		}
-
-		$definitions->appendChild(
-			$this->diagram(document: $document, processId: $processId, nodes: $nodes, edges: $edges)
-		);
+		$graph = $this->builder->graphOf(flow: $flow);
+		$document = new BpmnExportDocument(definitionsId: 'Definitions_' . $graph->id);
+		$this->process(document: $document, graph: $graph);
+		$document->definitions->appendChild($this->diagram(document: $document, graph: $graph));
 
 		// 🔴 THE BOUNDARY CHECK RUNS ON OUR OWN OUTPUT TOO. An export that does
 		// not validate is a serializer bug, and the user must not be the one
 		// who discovers it: a file Camunda refuses is indistinguishable, to
 		// them, from a product that cannot export.
-		$this->validator->assertValid(document: $document, subject: 'The exported flow');
+		$this->validator->assertValid(document: $document->dom, subject: 'The exported flow');
 
-		return (string)$document->saveXML();
+		return (string)$document->dom->saveXML();
 	}//end export()
+
+	/**
+	 * The process element, attached to the root, then filled.
+	 *
+	 * @param BpmnExportDocument $document The document.
+	 * @param BpmnExportGraph    $graph    The graph.
+	 *
+	 * @return void
+	 */
+	private function process(BpmnExportDocument $document, BpmnExportGraph $graph): void {
+		$process = $document->create(qualifiedName: 'bpmn:process');
+		$process->setAttribute('id', $graph->processId());
+		$process->setAttribute('name', $graph->name);
+		// 🔑 `isExecutable="false"` is the honest value. A BPMN engine reading
+		// this file must not believe it can execute it: the execution semantic
+		// is symfony/workflow's, and this file is interchange, never a
+		// deployable process.
+		$process->setAttribute('isExecutable', 'false');
+		$document->definitions->appendChild($process);
+
+		foreach ($this->flowElements(document: $document, graph: $graph) as $element) {
+			$process->appendChild($element);
+		}
+	}//end process()
+
+	/**
+	 * Every node, then every edge, as process elements.
+	 *
+	 * @param BpmnExportDocument $document The document.
+	 * @param BpmnExportGraph    $graph    The graph.
+	 *
+	 * @return array<int, DOMElement> The elements, in document order.
+	 */
+	private function flowElements(BpmnExportDocument $document, BpmnExportGraph $graph): array {
+		$elements = [];
+		foreach ($graph->nodes as $node) {
+			$elements[] = $this->nodeElement(document: $document, node: $node);
+		}
+
+		foreach ($graph->edges as $edge) {
+			$elements[] = $this->edgeElement(document: $document, edge: $edge);
+		}
+
+		return $elements;
+	}//end flowElements()
 
 	/**
 	 * One node, with its type and config in `extensionElements`.
 	 *
-	 * @param DOMDocument          $document The document.
+	 * 🔴 `extensionElements` COMES FIRST, BEFORE THE EVENT DEFINITION.
+	 * `tBaseElement` puts it at the head of the sequence every BPMN element
+	 * inherits, and an event definition written before it fails the schema
+	 * on a document that is otherwise perfectly readable — which is exactly
+	 * the class of mistake a validated boundary is for.
+	 *
+	 * @param BpmnExportDocument   $document The document.
 	 * @param array<string, mixed> $node     The node.
 	 *
 	 * @return DOMElement The element.
 	 */
-	private function nodeElement(DOMDocument $document, array $node): DOMElement {
-		$type = (string)($node['type'] ?? '');
-		$kind = $this->vocabulary->elementFor(nodeType: $type);
-
-		[$elementName, $eventDefinition] = $this->resolve(kind: $kind);
-
-		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:' . $elementName);
-		$element->setAttribute('id', $this->idOf(value: (string)($node['id'] ?? '')));
+	private function nodeElement(BpmnExportDocument $document, array $node): DOMElement {
+		[$elementName, $eventDefinition] = $this->kindOf(node: $node);
+		$element = $document->create(qualifiedName: 'bpmn:' . $elementName);
+		$element->setAttribute('id', $this->builder->ncName(value: (string)($node['id'] ?? '')));
 		$element->setAttribute('name', (string)($node['name'] ?? $node['id'] ?? ''));
 
-		$extensions = $document->createElementNS(self::NS_BPMN, 'bpmn:extensionElements');
-		$typeElement = $document->createElementNS(
-			BpmnVocabulary::EXTENSION_NS,
-			BpmnVocabulary::EXTENSION_PREFIX . ':' . BpmnVocabulary::ELEMENT_TYPE,
-			$type
-		);
-		$extensions->appendChild($typeElement);
-
-		$config = ($node['config'] ?? null);
-		if (is_array($config) === true && $config !== []) {
-			$configElement = $document->createElementNS(
-				BpmnVocabulary::EXTENSION_NS,
-				BpmnVocabulary::EXTENSION_PREFIX . ':' . BpmnVocabulary::ELEMENT_CONFIG,
-				(string)json_encode($config)
-			);
-			$extensions->appendChild($configElement);
-		}
-
-		// 🔴 `extensionElements` COMES FIRST, BEFORE THE EVENT DEFINITION.
-		// `tBaseElement` puts it at the head of the sequence every BPMN element
-		// inherits, and an event definition written before it fails the schema
-		// on a document that is otherwise perfectly readable — which is exactly
-		// the class of mistake a validated boundary is for.
-		$element->appendChild($extensions);
-
+		$element->appendChild($this->extensions(document: $document, node: $node));
 		if ($eventDefinition !== null) {
-			$definitionConfig = [];
-			if (is_array($config) === true) {
-				$definitionConfig = $config;
-			}
-
-			$element->appendChild(
-				$this->eventDefinition(
-					document: $document,
-					definition: $eventDefinition,
-					config: $definitionConfig
-				)
-			);
+			$element->appendChild($this->eventDefinition(document: $document, node: $node));
 		}
 
 		return $element;
 	}//end nodeElement()
+
+	/**
+	 * A node's `extensionElements`: its own type, and its config when it has one.
+	 *
+	 * @param BpmnExportDocument   $document The document.
+	 * @param array<string, mixed> $node     The node.
+	 *
+	 * @return DOMElement The extension elements.
+	 */
+	private function extensions(BpmnExportDocument $document, array $node): DOMElement {
+		$extensions = $document->create(qualifiedName: 'bpmn:extensionElements');
+		$extensions->appendChild($document->extension(name: BpmnVocabulary::ELEMENT_TYPE, text: (string)($node['type'] ?? '')));
+
+		$config = $this->configOf(node: $node);
+		if ($config !== []) {
+			$extensions->appendChild($document->extension(name: BpmnVocabulary::ELEMENT_CONFIG, text: (string)json_encode($config)));
+		}
+
+		return $extensions;
+	}//end extensions()
+
+	/**
+	 * A node's config, or an empty one when it carries none.
+	 *
+	 * @param array<string, mixed> $node The node.
+	 *
+	 * @return array<mixed> The config.
+	 */
+	private function configOf(array $node): array {
+		$config = ($node['config'] ?? null);
+		if (is_array($config) === true) {
+			return $config;
+		}
+
+		return [];
+	}//end configOf()
+
+	/**
+	 * A node's vocabulary kind as an element name and an optional event definition.
+	 *
+	 * @param array<string, mixed> $node The node.
+	 *
+	 * @return array{0: string, 1: string|null} The element name and the definition.
+	 */
+	private function kindOf(array $node): array {
+		return $this->resolve(kind: $this->vocabulary->elementFor(nodeType: (string)($node['type'] ?? '')));
+	}//end kindOf()
 
 	/**
 	 * A vocabulary kind as an element name and an optional event definition.
@@ -265,44 +295,59 @@ class FlowBpmnExporter {
 	}//end resolve()
 
 	/**
-	 * One event definition, with the content its type requires.
+	 * One node's event definition, with the content its type requires.
 	 *
-	 * 🔑 A CONDITIONAL EVENT DEFINITION IS NOT ALLOWED TO BE EMPTY: the schema
-	 * requires a `condition`, and the subject the trigger listens for is what
-	 * belongs in it. A timer's cycle is optional to the schema and required by
-	 * our own spec, which says the cron travels in the `timerEventDefinition`.
-	 *
-	 * @param DOMDocument          $document   The document.
-	 * @param string               $definition The definition kind.
-	 * @param array<string, mixed> $config     The node's config.
+	 * @param BpmnExportDocument   $document The document.
+	 * @param array<string, mixed> $node     The node, whose kind carries a definition.
 	 *
 	 * @return DOMElement The definition.
 	 */
-	private function eventDefinition(DOMDocument $document, string $definition, array $config): DOMElement {
-		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:' . $definition . 'EventDefinition');
+	private function eventDefinition(BpmnExportDocument $document, array $node): DOMElement {
+		$definition = (string)$this->kindOf(node: $node)[1];
+		$element = $document->create(qualifiedName: 'bpmn:' . $definition . 'EventDefinition');
 
-		if ($definition === 'timer') {
-			$cron = trim((string)($config['cron'] ?? ''));
-			if ($cron !== '') {
-				$element->appendChild($document->createElementNS(self::NS_BPMN, 'bpmn:timeCycle', $cron));
-			}
-
-			return $element;
-		}
-
-		if ($definition === 'conditional') {
-			$element->appendChild(
-				$document->createElementNS(self::NS_BPMN, 'bpmn:condition', $this->subjectOf(config: $config))
-			);
+		$content = $this->definitionContent(definition: $definition, config: $this->configOf(node: $node));
+		if ($content !== null) {
+			$element->appendChild($document->create(qualifiedName: $content[0], text: $content[1]));
 		}
 
 		return $element;
 	}//end eventDefinition()
 
 	/**
+	 * The child an event definition carries, as an element name and its text.
+	 *
+	 * 🔑 A CONDITIONAL EVENT DEFINITION IS NOT ALLOWED TO BE EMPTY: the schema
+	 * requires a `condition`, and the subject the trigger listens for is what
+	 * belongs in it. A timer's cycle is optional to the schema and required by
+	 * our own spec, which says the cron travels in the `timerEventDefinition`.
+	 *
+	 * @param string       $definition The definition kind.
+	 * @param array<mixed> $config     The node's config.
+	 *
+	 * @return array{0: string, 1: string}|null The child, or null for none.
+	 */
+	private function definitionContent(string $definition, array $config): ?array {
+		if ($definition === 'conditional') {
+			return ['bpmn:condition', $this->subjectOf(config: $config)];
+		}
+
+		$cron = trim((string)($config['cron'] ?? ''));
+		if ($definition !== 'timer' || $cron === '') {
+			return null;
+		}
+
+		return ['bpmn:timeCycle', $cron];
+	}//end definitionContent()
+
+	/**
 	 * The subject an object trigger listens for, as a condition sentence.
 	 *
-	 * @param array<string, mixed> $config The node's config.
+	 * 🔑 NEVER AN EMPTY CONDITION. The schema forbids one, and "any object
+	 * event" is the honest reading of a trigger that names no subject — which
+	 * is what the engine does with it.
+	 *
+	 * @param array<mixed> $config The node's config.
 	 *
 	 * @return string The condition.
 	 */
@@ -316,9 +361,6 @@ class FlowBpmnExporter {
 		}
 
 		if ($parts === []) {
-			// 🔑 NOT AN EMPTY CONDITION. The schema forbids one, and "any
-			// object event" is the honest reading of a trigger that names no
-			// subject — which is what the engine does with it.
 			return 'true';
 		}
 
@@ -328,96 +370,43 @@ class FlowBpmnExporter {
 	/**
 	 * One edge as a sequence flow.
 	 *
-	 * @param DOMDocument          $document The document.
-	 * @param array<string, mixed> $edge     The edge.
-	 * @param int                  $index    Its index, for an edge with no id.
+	 * @param BpmnExportDocument   $document The document.
+	 * @param array<string, mixed> $edge     The edge, with its id resolved.
 	 *
 	 * @return DOMElement The element.
 	 */
-	private function edgeElement(DOMDocument $document, array $edge, int $index): DOMElement {
-		$element = $document->createElementNS(self::NS_BPMN, 'bpmn:sequenceFlow');
-		$element->setAttribute('id', $this->idOf(value: (string)($edge['id'] ?? ('edge-' . $index))));
-		$element->setAttribute('sourceRef', $this->idOf(value: (string)($edge['from'] ?? '')));
-		$element->setAttribute('targetRef', $this->idOf(value: (string)($edge['to'] ?? '')));
+	private function edgeElement(BpmnExportDocument $document, array $edge): DOMElement {
+		$element = $document->create(qualifiedName: 'bpmn:sequenceFlow');
+		$element->setAttribute('id', $this->builder->ncName(value: (string)$edge['id']));
+		$element->setAttribute('sourceRef', $this->builder->ncName(value: (string)($edge['from'] ?? '')));
+		$element->setAttribute('targetRef', $this->builder->ncName(value: (string)($edge['to'] ?? '')));
 
 		$condition = trim((string)($edge['condition'] ?? ''));
 		if ($condition !== '') {
-			$expression = $document->createElementNS(self::NS_BPMN, 'bpmn:conditionExpression', $condition);
-			$element->appendChild($expression);
+			$element->appendChild($document->create(qualifiedName: 'bpmn:conditionExpression', text: $condition));
 		}
 
 		return $element;
 	}//end edgeElement()
 
 	/**
-	 * The diagram interchange block, from the canvas positions.
+	 * The diagram interchange block, from the resolved boxes and routes.
 	 *
-	 * 🔑 BOTH SPELLINGS OF A POSITION ARE READ. PHP does not own the canvas
-	 * shape — the editor writes it — and the stored graphs carry `position:
-	 * {x, y}` and bare `x`/`y` alike. Reading only one would silently lay out a
-	 * perfectly positioned flow as a diagonal line, which reads as "the export
-	 * lost my layout".
-	 *
-	 * @param DOMDocument              $document  The document.
-	 * @param string                   $processId The process id.
-	 * @param array<int, mixed>        $nodes     The nodes.
-	 * @param array<int, mixed>        $edges     The edges.
+	 * @param BpmnExportDocument $document The document.
+	 * @param BpmnExportGraph    $graph    The graph.
 	 *
 	 * @return DOMElement The diagram.
 	 */
-	private function diagram(DOMDocument $document, string $processId, array $nodes, array $edges): DOMElement {
-		$diagram = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNDiagram');
-		$diagram->setAttribute('id', 'Diagram_' . $processId);
+	private function diagram(BpmnExportDocument $document, BpmnExportGraph $graph): DOMElement {
+		$diagram = $document->create(qualifiedName: 'bpmndi:BPMNDiagram');
+		$diagram->setAttribute('id', 'Diagram_' . $graph->processId());
 
-		$plane = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNPlane');
-		$plane->setAttribute('id', 'Plane_' . $processId);
-		$plane->setAttribute('bpmnElement', $processId);
+		$plane = $document->create(qualifiedName: 'bpmndi:BPMNPlane');
+		$plane->setAttribute('id', 'Plane_' . $graph->processId());
+		$plane->setAttribute('bpmnElement', $graph->processId());
 		$diagram->appendChild($plane);
 
-		$centres = [];
-		foreach ($nodes as $index => $node) {
-			[$left, $top] = $this->positionOf(node: $node, index: (int)$index);
-			$centres[$this->idOf(value: (string)($node['id'] ?? ''))] = [
-				(int)($left + intdiv(self::WIDTH, 2)),
-				(int)($top + intdiv(self::HEIGHT, 2)),
-			];
-		}
-
-		foreach ($nodes as $index => $node) {
-			$id = $this->idOf(value: (string)($node['id'] ?? ''));
-			$shape = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNShape');
-			$shape->setAttribute('id', 'Shape_' . $id);
-			$shape->setAttribute('bpmnElement', $id);
-
-			$bounds = $document->createElementNS(self::NS_DC, 'dc:Bounds');
-			[$left, $top] = $this->positionOf(node: $node, index: (int)$index);
-			$bounds->setAttribute('x', (string)$left);
-			$bounds->setAttribute('y', (string)$top);
-			$bounds->setAttribute('width', (string)self::WIDTH);
-			$bounds->setAttribute('height', (string)self::HEIGHT);
-			$shape->appendChild($bounds);
-
-			$plane->appendChild($shape);
-		}
-
-		foreach ($edges as $index => $edge) {
-			$id = $this->idOf(value: (string)($edge['id'] ?? ('edge-' . $index)));
-			$element = $document->createElementNS(self::NS_BPMNDI, 'bpmndi:BPMNEdge');
-			$element->setAttribute('id', 'Edge_' . $id);
-			$element->setAttribute('bpmnElement', $id);
-
-			// 🔴 TWO WAYPOINTS, ALWAYS. `di:Edge` requires `minOccurs="2"`, so
-			// an edge drawn without them is not a diagram with a missing line:
-			// it fails the schema and every modeller refuses the whole file.
-			$from = ($centres[$this->idOf(value: (string)($edge['from'] ?? ''))] ?? [0, 0]);
-			$to = ($centres[$this->idOf(value: (string)($edge['to'] ?? ''))] ?? [0, 0]);
-			foreach ([$from, $to] as $point) {
-				$waypoint = $document->createElementNS(self::NS_DI, 'di:waypoint');
-				$waypoint->setAttribute('x', (string)$point[0]);
-				$waypoint->setAttribute('y', (string)$point[1]);
-				$element->appendChild($waypoint);
-			}
-
+		foreach ($this->diagramElements(document: $document, graph: $graph) as $element) {
 			$plane->appendChild($element);
 		}
 
@@ -425,105 +414,74 @@ class FlowBpmnExporter {
 	}//end diagram()
 
 	/**
-	 * A node's canvas position, or a laid-out one.
+	 * Every node's shape, then every edge's line.
 	 *
-	 * @param array<string, mixed> $node  The node.
-	 * @param int                  $index Its index.
+	 * @param BpmnExportDocument $document The document.
+	 * @param BpmnExportGraph    $graph    The graph.
 	 *
-	 * @return array{0: int, 1: int} The x and y.
+	 * @return array<int, DOMElement> The elements, in document order.
 	 */
-	private function positionOf(array $node, int $index): array {
-		$position = ($node['position'] ?? null);
-		if (is_array($position) === true && isset($position['x']) === true && isset($position['y']) === true) {
-			return [(int)$position['x'], (int)$position['y']];
+	private function diagramElements(BpmnExportDocument $document, BpmnExportGraph $graph): array {
+		$elements = [];
+		foreach ($graph->boxes as $box) {
+			$elements[] = $this->shape(document: $document, box: $box);
 		}
 
-		if (isset($node['x']) === true && isset($node['y']) === true) {
-			return [(int)$node['x'], (int)$node['y']];
+		foreach ($graph->routes as $route) {
+			$elements[] = $this->line(document: $document, route: $route);
 		}
 
-		return [($index * self::SPACING), 100];
-	}//end positionOf()
+		return $elements;
+	}//end diagramElements()
 
 	/**
-	 * The flow's nodes as a list.
+	 * One node's shape, with its bounds.
 	 *
-	 * @param Flow $flow The flow.
+	 * @param BpmnExportDocument                   $document The document.
+	 * @param array{id: string, x: int, y: int}    $box      The node's box.
 	 *
-	 * @return array<int, array<string, mixed>> The nodes.
+	 * @return DOMElement The shape.
 	 */
-	private function nodesOf(Flow $flow): array {
-		$nodes = [];
-		foreach ((array)($flow->getNodes() ?? []) as $node) {
-			if (is_array($node) === true) {
-				$nodes[] = $node;
-			}
+	private function shape(BpmnExportDocument $document, array $box): DOMElement {
+		$shape = $document->create(qualifiedName: 'bpmndi:BPMNShape');
+		$shape->setAttribute('id', 'Shape_' . $box['id']);
+		$shape->setAttribute('bpmnElement', $box['id']);
+
+		$bounds = $document->create(qualifiedName: 'dc:Bounds');
+		foreach (['x' => $box['x'], 'y' => $box['y'], 'width' => self::WIDTH, 'height' => self::HEIGHT] as $name => $value) {
+			$bounds->setAttribute($name, (string)$value);
 		}
 
-		return $nodes;
-	}//end nodesOf()
+		$shape->appendChild($bounds);
+
+		return $shape;
+	}//end shape()
 
 	/**
-	 * The flow's edges as a list.
+	 * One edge's line, from centre to centre.
 	 *
-	 * @param Flow $flow The flow.
+	 * 🔴 TWO WAYPOINTS, ALWAYS. `di:Edge` requires `minOccurs="2"`, so an
+	 * edge drawn without them is not a diagram with a missing line: it fails
+	 * the schema and every modeller refuses the whole file.
 	 *
-	 * @return array<int, array<string, mixed>> The edges.
+	 * @param BpmnExportDocument                                        $document The document.
+	 * @param array{id: string, from: array<int>, to: array<int>}       $route    The edge's route.
+	 *
+	 * @return DOMElement The edge.
 	 */
-	private function edgesOf(Flow $flow): array {
-		$known = [];
-		foreach ($this->nodesOf(flow: $flow) as $node) {
-			$known[] = (string)($node['id'] ?? '');
+	private function line(BpmnExportDocument $document, array $route): DOMElement {
+		$element = $document->create(qualifiedName: 'bpmndi:BPMNEdge');
+		$element->setAttribute('id', 'Edge_' . $route['id']);
+		$element->setAttribute('bpmnElement', $route['id']);
+
+		foreach ([$route['from'], $route['to']] as $point) {
+			$waypoint = $document->create(qualifiedName: 'di:waypoint');
+			$waypoint->setAttribute('x', (string)$point[0]);
+			$waypoint->setAttribute('y', (string)$point[1]);
+			$element->appendChild($waypoint);
 		}
 
-		$edges = [];
-		foreach ((array)($flow->getEdges() ?? []) as $edge) {
-			if (is_array($edge) === false) {
-				continue;
-			}
+		return $element;
+	}//end line()
 
-			// 🔴 A DANGLING EDGE IS DROPPED, NOT EXPORTED. A `sequenceFlow`
-			// whose sourceRef or targetRef names nothing in the process is not
-			// a slightly wrong diagram: every modeller refuses the whole file,
-			// so one edge left behind by a deleted node turns the export into
-			// something nobody can open. The flow itself is not wrong — the
-			// engine refuses a dangling edge at build time — but a document
-			// assembled from a stored node list can still carry one, and the
-			// export is the surface where it becomes fatal.
-			$from = (string)($edge['from'] ?? '');
-			$to = (string)($edge['to'] ?? '');
-			if (in_array($from, $known, true) === false || in_array($to, $known, true) === false) {
-				continue;
-			}
-
-			$edges[] = $edge;
-		}//end foreach
-
-		return $edges;
-	}//end edgesOf()
-
-	/**
-	 * A value as an XML NCName, which is what a BPMN id must be.
-	 *
-	 * 🔴 A UUID STARTS WITH A DIGIT ABOUT HALF THE TIME, and an NCName may not.
-	 * An id that is invalid XML makes the whole document unparseable by the
-	 * tool the export exists to reach, and the failure arrives as "Camunda
-	 * cannot open your file" rather than as anything about ids.
-	 *
-	 * @param string $value The value.
-	 *
-	 * @return string The NCName.
-	 */
-	private function idOf(string $value): string {
-		$clean = (string)preg_replace('/[^A-Za-z0-9_.-]/', '_', trim($value));
-		if ($clean === '') {
-			$clean = 'unnamed';
-		}
-
-		if (preg_match('/^[A-Za-z_]/', $clean) !== 1) {
-			$clean = ('id_' . $clean);
-		}
-
-		return $clean;
-	}//end idOf()
 }//end class

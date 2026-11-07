@@ -28,7 +28,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -57,9 +57,9 @@ class CalendarEventsController extends Controller {
 	/**
 	 * Tier-2 calendar link service (additive link-table layer).
 	 *
-	 * @var CalendarLinkService
+	 * @var CalendarLinkServiceInterface
 	 */
-	private readonly CalendarLinkService $calendarLinkService;
+	private readonly CalendarLinkServiceInterface $calendarLinkService;
 
 	/**
 	 * Object service for object validation.
@@ -74,7 +74,7 @@ class CalendarEventsController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
-	 * @param CalendarLinkService $calendarLinkService Calendar link service (Tier-2)
+	 * @param CalendarLinkServiceInterface $calendarLinkService Calendar link service (Tier-2)
 	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param PermissionHandler $permissions Answers the object update right
 	 *
@@ -84,7 +84,7 @@ class CalendarEventsController extends Controller {
 		string $appName,
 		IRequest $request,
 		ObjectCalendarEventsInterface $calendarEventService,
-		CalendarLinkService $calendarLinkService,
+		CalendarLinkServiceInterface $calendarLinkService,
 		ObjectOperationsInterface $objectService,
 		private readonly PermissionHandler $permissions,
 	) {

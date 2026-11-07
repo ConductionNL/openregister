@@ -56,7 +56,7 @@ use OCP\IUserSession;
  *   across classes would put the schema's grammar in two places, which is the drift the
  *   single-reading rule in the docblock above exists to prevent.
  */
-class StateFieldRuleResolver {
+class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
 
 	/**
 	 * The three rule kinds a state's `fields` block may declare.
