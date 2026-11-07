@@ -43,6 +43,8 @@ use PHPUnit\Framework\TestCase;
  * rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @uses   \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @uses   \OCA\OpenRegister\Exception\CaseValidationException
  * @uses   \OCA\OpenRegister\Db\CaseItem
