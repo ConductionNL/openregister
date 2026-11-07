@@ -86,6 +86,20 @@ class RelationTypeResolver {
 	private array $memo = [];
 
 	/**
+	 * Reads labels, titles and keys out of the declarations.
+	 *
+	 * @var RelationValueReader
+	 */
+	private readonly RelationValueReader $values;
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$this->values = new RelationValueReader();
+	}//end __construct()
+
+	/**
 	 * Every relation descriptor a schema declares, keyed by property name.
 	 *
 	 * Every `$ref` property gets a descriptor, annotated or not, because a
@@ -112,7 +126,6 @@ class RelationTypeResolver {
 
 		return $this->memo[$memoKey];
 	}//end descriptors()
-
 
 	/**
 	 * The key a schema's descriptor set is memoised under, per language.
@@ -199,7 +212,6 @@ class RelationTypeResolver {
 			]
 		);
 	}//end row()
-
 
 	/**
 	 * The descriptor a row reads under when its property declares nothing resolvable.
@@ -289,7 +301,6 @@ class RelationTypeResolver {
 			merged: $merged
 		);
 	}//end describe()
-
 
 	/**
 	 * How a relation reads: its two labels, whether it is symmetric, and what it inherits.
@@ -423,9 +434,9 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function labelsFor(string $name, mixed $property, array $merged, bool $symmetric, string $language): array {
-		$label = ($this->text(value: ($merged['label'] ?? null), language: $language) ?? $this->titleOf(property: $property) ?? $name);
+		$label = ($this->values->text(value: ($merged['label'] ?? null), language: $language) ?? $this->values->titleOf(property: $property) ?? $name);
 
-		$inverse = $this->text(value: ($merged['inverseLabel'] ?? null), language: $language);
+		$inverse = $this->values->text(value: ($merged['inverseLabel'] ?? null), language: $language);
 		if ($symmetric === true) {
 			// A symmetric relation reads the same from both ends. The save-time
 			// refusal keeps an inverseLabel out of a symmetric declaration, so
@@ -454,7 +465,7 @@ class RelationTypeResolver {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function inheritsOf(array $declaration): array {
-		$inherits = self::asArray(value: ($declaration['inherits'] ?? null));
+		$inherits = $this->values->asArray(value: ($declaration['inherits'] ?? null));
 		if (is_array($inherits) === false) {
 			return [];
 		}
@@ -466,7 +477,6 @@ class RelationTypeResolver {
 
 		return $resolved;
 	}//end inheritsOf()
-
 
 	/**
 	 * One inheritance entry resolved to role => property, or nothing when it is not valid.
@@ -537,8 +547,8 @@ class RelationTypeResolver {
 
 		$entries = [];
 		foreach ($raw as $entry) {
-			$entry = self::asArray(value: $entry);
-			$key   = self::entryKey(entry: $entry);
+			$entry = $this->values->asArray(value: $entry);
+			$key   = $this->entryKey(entry: $entry);
 			if ($key !== null) {
 				$entries[$key] = $entry;
 			}
@@ -547,7 +557,6 @@ class RelationTypeResolver {
 		return $entries;
 	}//end vocabularyOf()
 
-
 	/**
 	 * The trimmed key of a vocabulary entry, or null when it is not an entry with a key.
 	 *
@@ -555,112 +564,12 @@ class RelationTypeResolver {
 	 *
 	 * @return string|null The key.
 	 */
-	private static function entryKey(mixed $entry): ?string {
+	private function entryKey(mixed $entry): ?string {
 		if (is_array($entry) === false) {
 			return null;
 		}
 
-		return self::nonBlank(value: ($entry['key'] ?? null));
+		return $this->values->nonBlank(value: ($entry['key'] ?? null));
 	}//end entryKey()
 
-	/**
-	 * Resolve a label to text in one language.
-	 *
-	 * A plain string is the label in every language, which is what an
-	 * organisation with one language writes. A map is resolved by exact tag,
-	 * then primary subtag, then Dutch, then English, then whatever is there:
-	 * a label in the wrong language beats no label, which is the fallback and
-	 * says nothing at all.
-	 *
-	 * @param mixed $value The declared label.
-	 * @param string $language The BCP-47 tag asked for.
-	 *
-	 * @return string|null The resolved text.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function text(mixed $value, string $language): ?string {
-		if (is_string($value) === true) {
-			return self::nonBlank(value: $value);
-		}
-
-		$value = self::asArray(value: $value);
-		if (is_array($value) === false) {
-			return null;
-		}
-
-		$preferred = array_map(
-			static fn (string $tag): mixed => ($value[$tag] ?? null),
-			[$language, substr($language, 0, 2), 'nl', 'en']
-		);
-
-		return (self::firstNonBlank(candidates: $preferred) ?? self::firstNonBlank(candidates: $value));
-	}//end text()
-
-
-	/**
-	 * The first candidate that is a non-blank string, trimmed.
-	 *
-	 * @param array<mixed> $candidates The candidates, in order of preference.
-	 *
-	 * @return string|null The text.
-	 */
-	private static function firstNonBlank(array $candidates): ?string {
-		foreach ($candidates as $candidate) {
-			$text = self::nonBlank(value: $candidate);
-			if ($text !== null) {
-				return $text;
-			}
-		}
-
-		return null;
-	}//end firstNonBlank()
-
-	/**
-	 * A value as trimmed text, or null when it is not a string or is blank.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return string|null The text.
-	 */
-	private static function nonBlank(mixed $value): ?string {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end nonBlank()
-
-	/**
-	 * A decoded JSON object as an array; any other value as it is.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return mixed
-	 */
-	private static function asArray(mixed $value): mixed {
-		if (is_object($value) === true) {
-			return (array)$value;
-		}
-
-		return $value;
-	}//end asArray()
-
-	/**
-	 * A property's own title, when it has one.
-	 *
-	 * @param mixed $property The property definition.
-	 *
-	 * @return string|null The title.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	private function titleOf(mixed $property): ?string {
-		$property = self::asArray(value: $property);
-		if (is_array($property) === false) {
-			return null;
-		}
-
-		return self::nonBlank(value: ($property['title'] ?? null));
-	}//end titleOf()
 }//end class
