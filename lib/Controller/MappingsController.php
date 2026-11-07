@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -70,9 +70,9 @@ class MappingsController extends Controller {
 	/**
 	 * Mapping mapper for database operations
 	 *
-	 * @var MappingMapper
+	 * @var MappingMapperInterface
 	 */
-	private readonly MappingMapper $mappingMapper;
+	private readonly MappingMapperInterface $mappingMapper;
 
 	/**
 	 * Mapping service for executing mappings

@@ -32,7 +32,7 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
@@ -128,9 +128,9 @@ class WebhookService {
 	/**
 	 * Mapping mapper for loading mapping entities
 	 *
-	 * @var MappingMapper
+	 * @var MappingMapperInterface
 	 */
-	private MappingMapper $mappingMapper;
+	private MappingMapperInterface $mappingMapper;
 
 	/**
 	 * Cache of the "has interception webhooks" flag per event type.
@@ -150,7 +150,7 @@ class WebhookService {
 	 * @param LoggerInterface $logger Logger
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
 	 * @param MappingService $mappingService Mapping service
-	 * @param MappingMapper $mappingMapper Mapping mapper
+	 * @param MappingMapperInterface $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
 	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
 	 * @param WebhookInterceptionCache|null $interceptionCache Interception-flag cache (optional)
@@ -162,7 +162,7 @@ class WebhookService {
 		LoggerInterface $logger,
 		WebhookLogMapper $webhookLogMapper,
 		MappingService $mappingService,
-		MappingMapper $mappingMapper,
+		MappingMapperInterface $mappingMapper,
 		IJobList $jobList,
 		?CloudEventFormatterInterface $cloudEventFormatter = null,
 		?WebhookInterceptionCache $interceptionCache = null,

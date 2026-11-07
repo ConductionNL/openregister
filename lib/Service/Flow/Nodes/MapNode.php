@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -55,13 +55,13 @@ class MapNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 	 * @param IL10N $l10n Translations.
 	 * @param IURLGenerator $urls For the palette icon.
 	 * @param MappingService $mappings Evaluates the mapping.
-	 * @param MappingMapper $mapper Resolves the mapping by id, uuid or slug.
+	 * @param MappingMapperInterface $mapper Resolves the mapping by id, uuid or slug.
 	 */
 	public function __construct(
 		private readonly IL10N $l10n,
 		private readonly IURLGenerator $urls,
 		private readonly MappingService $mappings,
-		private readonly MappingMapper $mapper,
+		private readonly MappingMapperInterface $mapper,
 	) {
 
 	}//end __construct()
