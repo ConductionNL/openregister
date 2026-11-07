@@ -44,8 +44,13 @@ use Stringable;
  * UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector
+ * @covers \OCA\OpenRegister\Service\Lifecycle\AutoTransitionContext
  * @uses   \OCA\OpenRegister\Service\Lifecycle\AutoTransitionCandidate
  * @uses   \OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Search\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  */
 class AutoTransitionSelectorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/auto-transition-golden.json';
