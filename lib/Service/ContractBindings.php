@@ -76,6 +76,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -185,6 +187,7 @@ final class ContractBindings {
 		ObjectReadNodeInterface::class => ObjectReadNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
+		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
