@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -128,7 +128,7 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 		// Managed folders are held by the openregister account, as in production.
 		$systemAccount = $this->createMock(IUser::class);
 		$systemAccount->method('getUID')->willReturn('openregister');
-		$ownership = $this->createMock(\OCA\OpenRegister\Service\File\FileOwnershipHandler::class);
+		$ownership = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileOwnershipHandler::class);
 		$ownership->method('getUser')->willReturn($systemAccount);
 		(new ReflectionProperty(FileService::class, 'fileOwnershipHandler'))->setValue($fileService, $ownership);
 		$handler->setFileService($fileService);

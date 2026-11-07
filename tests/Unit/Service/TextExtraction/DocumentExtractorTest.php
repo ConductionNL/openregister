@@ -31,11 +31,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use Exception;
-use OCA\OpenRegister\Service\TextExtraction\DocumentBodyParser;
-use OCA\OpenRegister\Service\TextExtraction\DocumentContentReader;
-use OCA\OpenRegister\Service\TextExtraction\DocumentExtractor;
-use OCA\OpenRegister\Service\TextExtraction\DocumentStyleMap;
-use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\DocumentBodyParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\DocumentContentReader;
+use OCA\OpenRegister\Files\Service\TextExtraction\DocumentExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\DocumentStyleMap;
+use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;

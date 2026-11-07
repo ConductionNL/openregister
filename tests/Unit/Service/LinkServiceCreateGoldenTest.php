@@ -218,24 +218,40 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		$node->method('getId')->willReturn(10);
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getDirectoryListing')->willReturn([$node]);
-		$handler = new class($folder) {
-			public function __construct(private Folder $folder) {
+		$handler = new class($folder, $this->session('openregister')->getUser()) {
+			public function __construct(private Folder $folder, private \OCP\IUser $account) {
 			}
 
 			public function getObjectFolder(mixed $target): Folder {
 				return $this->folder;
 			}
+
+			public function getUser(): \OCP\IUser {
+				return $this->account;
+			}
 		};
+		$objects = new class {
+			public function find(string $uuid): \OCA\OpenRegister\Db\ObjectEntity {
+				return new \OCA\OpenRegister\Db\ObjectEntity();
+			}
+		};
+		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$rights = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$rights->method('hasPermission')->willReturn(true);
 		$container = $this->container(
 			[
 				'OCP\\Share\\IManager' => $manager,
 				'OCP\\IUserSession' => $this->session('alice'),
-				\OCA\OpenRegister\Service\File\FileRestrictionGuard::class => new class {
+				\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard::class => new class {
 					public function readableNodes(array $nodes): array {
 						return $nodes;
 					}
 				},
 				'OCA\\OpenRegister\\Service\\FileService' => $handler,
+				'OCA\\OpenRegister\\Db\\MagicMapper' => $objects,
+				'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
+				'OCA\\OpenRegister\\Service\\Object\\PermissionHandler' => $rights,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);

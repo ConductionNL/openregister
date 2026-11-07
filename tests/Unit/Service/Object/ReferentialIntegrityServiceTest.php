@@ -346,6 +346,13 @@ class ReferentialIntegrityServiceTest extends TestCase {
 		$this->assertSame('direct-schema', $result);
 	}
 
+	public function testExtractTargetRefReadsReferenceSchemaFromItems(): void {
+		$result = $this->invokeMethod('extractTargetRef', [
+			['type' => 'array', 'items' => ['referenceSchema' => 'code-list']],
+		]);
+		$this->assertSame('code-list', $result);
+	}
+
 	public function testExtractTargetRefReturnsNullForEmptyItems(): void {
 		$result = $this->invokeMethod('extractTargetRef', [
 			['type' => 'array', 'items' => ['type' => 'string']],

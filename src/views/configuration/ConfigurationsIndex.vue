@@ -22,92 +22,24 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{
-							t(
-								'openregister',
-								'Showing {showing} of {total} configurations',
-								{
-									showing: paginatedConfigurations.length,
-									total: configurationStore.configurationList
-										.length,
-								},
-							)
-						}}
-					</span>
-					<span
-						v-if="selectedConfigurations.length > 0"
-						class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedConfigurations.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See configurations as cards"
-							:buttonVariant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Cards
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="viewMode"
-							title="See configurations as a table"
-							:buttonVariant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							buttonVariantGrouped="horizontal">
-							Table
-						</NcCheckboxRadioSwitch>
-					</div>
-
-					<NcActions
-						:forceName="true"
-						:inline="3"
-						:menuName="t('openregister', 'Actions')">
-						<NcActionButton
-							:primary="true"
-							closeAfterClick
-							@click="
-								() => {
-									configurationStore.setConfigurationItem(null)
-									navigationStore.setModal('editConfiguration')
-								}
-							">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							Create Configuration
-						</NcActionButton>
-						<NcActionButton
-							closeAfterClick
-							@click="navigationStore.setModal('importConfiguration')">
-							<template #icon>
-								<CloudUpload :size="20" />
-							</template>
-							Import Configuration
-						</NcActionButton>
-						<NcActionButton
-							closeAfterClick
-							@click="configurationStore.refreshConfigurationList()">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							Refresh
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+			<ListActionsBar
+				:summary="
+					t(
+						'openregister',
+						'Showing {showing} of {total} configurations',
+						{
+							showing: paginatedConfigurations.length,
+							total: configurationStore.configurationList.length,
+						},
+					)
+				"
+				:selectedCount="selectedConfigurations.length"
+				:actions="headerActions">
+				<ViewModeSwitch
+					v-model="viewMode"
+					cardsTitle="See configurations as cards"
+					tableTitle="See configurations as a table" />
+			</ListActionsBar>
 
 			<!-- Loading, Error, and Empty States -->
 			<NcEmptyContent
@@ -309,105 +241,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 										}}
 									</td>
 									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton
-												closeAfterClick
-												@click="
-													() => {
-														configurationStore.setConfigurationItem(
-															configuration,
-														)
-														navigationStore.setModal(
-															'viewConfiguration',
-														)
-													}
-												">
-												<template #icon>
-													<Eye :size="20" />
-												</template>
-												View
-											</NcActionButton>
-											<NcActionButton
-												closeAfterClick
-												@click="
-													() => {
-														configurationStore.setConfigurationItem(
-															configuration,
-														)
-														navigationStore.setModal(
-															'editConfiguration',
-														)
-													}
-												">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Edit
-											</NcActionButton>
-											<NcActionButton
-												v-if="
-													isRemoteConfiguration(
-														configuration,
-													)
-												"
-												closeAfterClick
-												@click="checkVersion(configuration)">
-												<template #icon>
-													<Sync :size="20" />
-												</template>
-												Check Version
-											</NcActionButton>
-											<NcActionButton
-												v-if="
-													hasUpdateAvailable(configuration)
-												"
-												closeAfterClick
-												@click="
-													previewUpdate(configuration)
-												">
-												<template #icon>
-													<EyeOutline :size="20" />
-												</template>
-												Preview Update
-											</NcActionButton>
-											<NcActionButton
-												closeAfterClick
-												@click="
-													() => {
-														configurationStore.setConfigurationItem(
-															configuration,
-														)
-														navigationStore.setModal(
-															'exportConfiguration',
-														)
-													}
-												">
-												<template #icon>
-													<Download :size="20" />
-												</template>
-												Export
-											</NcActionButton>
-											<NcActionButton
-												closeAfterClick
-												@click="
-													() => {
-														configurationStore.setConfigurationItem(
-															configuration,
-														)
-														navigationStore.setDialog(
-															'deleteConfiguration',
-														)
-													}
-												">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												Delete
-											</NcActionButton>
-										</NcActions>
+										<ActionMenu
+											:actions="
+												configurationActions(configuration)
+											" />
 									</td>
 								</tr>
 							</tbody>
@@ -436,9 +273,6 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcActionButton,
 	NcActions,
@@ -454,39 +288,41 @@ import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 import Cloud from 'vue-material-design-icons/Cloud.vue'
 import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Update from 'vue-material-design-icons/Update.vue'
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
+import {
+	checkConfigurationVersion,
+	sourceTypeLabel,
+	syncStatusText,
+} from '../../services/configurationDisplay.js'
+import {
+	deleteAction,
+	editAction,
+	refreshAction,
+	viewAction,
+} from '../../services/menuActions.js'
 
 export default {
 	name: 'ConfigurationsIndex',
 	components: {
+		ViewModeSwitch,
+		ActionMenu,
+		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
-		NcActions,
-		NcActionButton,
 		NcCheckboxRadioSwitch,
 		ConfigurationCard,
 		CogOutline,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
-		Download,
-		CloudUpload,
-		Refresh,
-		Plus,
-		Eye,
-		EyeOutline,
 		Update,
 		Sync,
 		CheckCircle,
@@ -509,6 +345,31 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The entries of the bar above the list.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		headerActions() {
+			return [
+				{
+					label: 'Create Configuration',
+					icon: Plus,
+					run: () => {
+						configurationStore.setConfigurationItem(null)
+						navigationStore.setModal('editConfiguration')
+					},
+				},
+				{
+					label: 'Import Configuration',
+					icon: CloudUpload,
+					run: () => navigationStore.setModal('importConfiguration'),
+				},
+				refreshAction(() => configurationStore.refreshConfigurationList()),
+			]
+		},
+
 		/**
 		 * Current page slice of the configuration list.
 		 *
@@ -597,6 +458,42 @@ export default {
 	},
 
 	methods: {
+		checkVersion: checkConfigurationVersion,
+		getSourceTypeLabel: sourceTypeLabel,
+		getSyncStatusText: syncStatusText,
+
+		/**
+		 * The row menu of a configuration.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} configuration The configuration
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		configurationActions(configuration) {
+			return [
+				viewAction(() => this.handleView(configuration)),
+				editAction(() => this.handleEdit(configuration)),
+				{
+					label: 'Check Version',
+					icon: Sync,
+					run: () => this.checkVersion(configuration),
+					hidden: !this.isRemoteConfiguration(configuration),
+				},
+				{
+					label: 'Preview Update',
+					icon: EyeOutline,
+					run: () => this.previewUpdate(configuration),
+					hidden: !this.hasUpdateAvailable(configuration),
+				},
+				{
+					label: 'Export',
+					icon: Download,
+					run: () => this.handleExport(configuration),
+				},
+				deleteAction(() => this.handleDelete(configuration)),
+			]
+		},
+
 		/**
 		 * Toggle selection state for every configuration in the current list.
 		 *
@@ -680,61 +577,6 @@ export default {
 		},
 
 		/**
-		 * Map a source-type id to a human label.
-		 *
-		 * @spec exclude UI plumbing — static label lookup for display.
-		 * @param {string} sourceType - source type id
-		 * @return {string} display label
-		 */
-		getSourceTypeLabel(sourceType) {
-			const labels = {
-				local: 'Local',
-				github: 'GitHub',
-				gitlab: 'GitLab',
-				url: 'URL',
-			}
-			return labels[sourceType] || 'Unknown'
-		},
-
-		/**
-		 * Check a configuration's remote version and refresh the list.
-		 *
-		 * @spec exclude UI plumbing — thin POST + toast + list refresh; configuration sync contract owned elsewhere.
-		 * @param {object} configuration - configuration row
-		 * @return {Promise<void>}
-		 */
-		async checkVersion(configuration) {
-			try {
-				const response = await axios.post(
-					generateUrl(
-						`/apps/openregister/api/configurations/${configuration.id}/check-version`,
-					),
-				)
-
-				if (response.data.hasUpdate) {
-					showSuccess(
-						t('openregister', 'Update available: {local} → {remote}', {
-							local: response.data.localVersion,
-							remote: response.data.remoteVersion,
-						}),
-					)
-				} else {
-					showSuccess(t('openregister', 'Configuration is up to date'))
-				}
-
-				// Refresh the list to show updated version info
-				await configurationStore.refreshConfigurationList()
-			} catch (error) {
-				console.error('Failed to check version:', error)
-				showError(
-					t('openregister', 'Failed to check version: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
-			}
-		},
-
-		/**
 		 * Open the view-configuration modal for a row.
 		 *
 		 * @spec exclude UI plumbing — store-set + modal dispatch.
@@ -793,39 +635,6 @@ export default {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
-		},
-
-		/**
-		 * Build a relative sync-status label for a configuration.
-		 *
-		 * @spec exclude UI plumbing — display formatter computing relative time.
-		 * @param {object} configuration - configuration row
-		 * @return {string} display label
-		 */
-		getSyncStatusText(configuration) {
-			if (
-				configuration.syncStatus === 'success'
-				&& configuration.lastSyncDate
-			) {
-				const now = new Date()
-				const lastSync = new Date(configuration.lastSyncDate)
-				const diffInHours = Math.floor((now - lastSync) / (1000 * 60 * 60))
-
-				if (diffInHours < 1) {
-					return 'Synced just now'
-				} else if (diffInHours < 24) {
-					return `Synced ${diffInHours}h ago`
-				} else {
-					const diffInDays = Math.floor(diffInHours / 24)
-					return `Synced ${diffInDays}d ago`
-				}
-			} else if (configuration.syncStatus === 'failed') {
-				return 'Sync failed'
-			} else if (configuration.syncStatus === 'pending') {
-				return 'Sync pending'
-			} else {
-				return 'Never synced'
-			}
 		},
 	},
 }

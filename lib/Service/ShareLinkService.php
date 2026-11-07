@@ -51,7 +51,8 @@ namespace OCA\OpenRegister\Service;
 
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\IL10N;
@@ -160,6 +161,12 @@ class ShareLinkService {
 			return [];
 		}
 
+		$sharers = [$userId];
+		$systemUserId = $this->systemUserId();
+		if ($systemUserId !== null && $this->mayUpdateObject(entity: $this->resolveObjectEntity(objectUuid: $objectUuid)) === true) {
+			$sharers[] = $systemUserId;
+		}
+
 		$rows = [];
 		$seen = [];
 		$count = 0;
@@ -170,32 +177,116 @@ class ShareLinkService {
 
 			$count++;
 
-			foreach (self::SHARE_TYPES as $type) {
-				try {
-					$shares = $shareManager->getSharesBy($userId, $type, $node);
-				} catch (Throwable $e) {
-					continue;
-				}
-
-				foreach ($shares as $share) {
-					$row = $this->normaliseShare(share: $share, userId: $userId);
-					if ($row === null) {
+			foreach ($sharers as $sharer) {
+				foreach ($this->sharesOf(manager: $shareManager, sharer: $sharer, node: $node) as $share) {
+					$row = $this->normaliseShare(share: $share, userId: $sharer);
+					if ($row === null || isset($seen[$row['shareId']]) === true) {
 						continue;
 					}
 
-					$id = $row['shareId'];
-					if (isset($seen[$id]) === true) {
-						continue;
-					}
-
-					$seen[$id] = true;
+					$seen[$row['shareId']] = true;
 					$rows[] = $row;
 				}
-			}//end foreach
+			}
 		}//end foreach
 
 		return $rows;
 	}//end getLinkedShares()
+
+	/**
+	 * The shares one sharer made of a node, across the supported types.
+	 *
+	 * @param IManager $manager The share manager.
+	 * @param string   $sharer  The sharer's uid.
+	 * @param Node     $node    The node.
+	 *
+	 * @return array<int, IShare> The shares.
+	 */
+	private function sharesOf(IManager $manager, string $sharer, Node $node): array {
+		$shares = [];
+		foreach (self::SHARE_TYPES as $type) {
+			try {
+				$shares = array_merge($shares, $manager->getSharesBy($sharer, $type, $node));
+			} catch (Throwable $e) {
+				continue;
+			}
+		}
+
+		return $shares;
+	}//end sharesOf()
+
+	/**
+	 * The uid of the app's account, which holds the objects' files and shares them.
+	 *
+	 * @return string|null The uid, or null when the account cannot be reached.
+	 */
+	private function systemUserId(): ?string {
+		try {
+			return $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\FileService')?->getUser()->getUID();
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end systemUserId()
+
+	/**
+	 * Whether the caller holds the `update` right editing the object requires.
+	 *
+	 * @param object|null $entity The object.
+	 *
+	 * @return bool True when they do; false too when it cannot be asked.
+	 */
+	private function mayUpdateObject(?object $entity): bool {
+		$permissions = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandler');
+		$schemas = $this->lookup(serviceName: 'OCA\\OpenRegister\\Db\\SchemaMapper');
+		if (($entity instanceof ObjectEntity) === false || $permissions === null || $schemas === null) {
+			return false;
+		}
+
+		try {
+			return $permissions->hasPermission(
+				schema: $schemas->find((int)$entity->getSchema()),
+				action: 'update',
+				objectOwner: $entity->getOwner(),
+				object: $entity
+			);
+		} catch (Throwable $e) {
+			return false;
+		}
+	}//end mayUpdateObject()
+
+	/**
+	 * Put a share on the object's audit trail under the session user.
+	 *
+	 * The share itself is made by the app's account, so this is the only record of who asked.
+	 * A failed entry is logged: the share has already changed.
+	 *
+	 * @param object|null $entity The object.
+	 * @param IShare      $share  The share.
+	 * @param string      $verb   `recordGrant` or `recordRevoke`.
+	 *
+	 * @return void
+	 */
+	private function auditShare(?object $entity, IShare $share, string $verb): void {
+		$auditor = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor');
+		if (($entity instanceof ObjectEntity) === false || $auditor === null) {
+			return;
+		}
+
+		try {
+			$grant = [
+				'id' => $share->getId(),
+				'type' => (string)$share->getShareType(),
+				'sharedWith' => $share->getSharedWith(),
+				'permissions' => $share->getPermissions(),
+			];
+			$auditor->$verb(object: $entity, grant: $grant, admittedAs: 'update');
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'ShareLinkService: a share change was not audited: ' . $e->getMessage(),
+				['app' => 'openregister']
+			);
+		}
+	}//end auditShare()
 
 	/**
 	 * Create a share on a file inside the object's folder.
@@ -238,16 +329,28 @@ class ShareLinkService {
 			throw new Exception('shareWith is required for this share type', 400);
 		}
 
+		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		if ($this->mayUpdateObject(entity: $entity) === false) {
+			throw new Exception('You may not change this object, so you cannot share its files.', 403);
+		}
+
+		$sharer = $this->systemUserId();
+		if ($sharer === null) {
+			throw new Exception('The OpenRegister account is not available', 503);
+		}
+
 		$share = $shareManager->newShare();
 		$share->setNode($node);
 		$share->setShareType($draft->shareType);
-		$share->setSharedBy($userId);
+		$share->setSharedBy($sharer);
 		$share->setPermissions($draft->permissions());
 
 		$this->applyOptionalFields(share: $share, draft: $draft);
 
 		try {
-			return $shareManager->createShare($share);
+			$created = $shareManager->createShare($share);
+			$this->auditShare(entity: $entity, share: $created, verb: 'recordGrant');
+			return $created;
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'ShareLinkService::createShare failed: ' . $e->getMessage(),
@@ -318,11 +421,15 @@ class ShareLinkService {
 			throw new Exception('Share not found', 404);
 		}
 
-		if ($share->getSharedBy() !== $userId && $share->getShareOwner() !== $userId) {
+		$entity = $this->resolveObjectEntity(objectUuid: $objectUuid);
+		$isCallers = ($share->getSharedBy() === $userId || $share->getShareOwner() === $userId);
+		$isManaged = ($share->getSharedBy() === $this->systemUserId() && $this->mayUpdateObject(entity: $entity) === true);
+		if ($isCallers === false && $isManaged === false) {
 			throw new Exception('Share not found', 404);
 		}
 
 		$shareManager->deleteShare($share);
+		$this->auditShare(entity: $entity, share: $share, verb: 'recordRevoke');
 	}//end revokeShare()
 
 	/**

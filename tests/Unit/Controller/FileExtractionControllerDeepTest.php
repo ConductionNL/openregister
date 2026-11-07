@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FileExtractionControllerFactory;
-use OCA\OpenRegister\Controller\FileExtractionController;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Controller\FileExtractionController;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;

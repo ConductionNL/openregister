@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
 use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +21,7 @@ use ReflectionClass;
  * compares the normalized files, or the failure, with
  * fixtures/files-uploads-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\FilesController
+ * @covers \OCA\OpenRegister\Files\Controller\FilesController
  */
 class FilesControllerUploadsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/files-uploads-golden.json';

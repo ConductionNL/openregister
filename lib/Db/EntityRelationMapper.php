@@ -33,6 +33,8 @@ use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
 /**
  * Class EntityRelationMapper

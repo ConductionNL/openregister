@@ -89,6 +89,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeaf
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchLeafScope
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnionScore
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 

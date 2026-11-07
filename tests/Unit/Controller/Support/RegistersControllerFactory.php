@@ -47,7 +47,7 @@ final class RegistersControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\RegisterService $registerService,
 		\OCA\OpenRegister\Db\MagicMapper $objectEntityMapper,
-		\OCA\OpenRegister\Service\UploadService $uploadService,
+		\OCA\OpenRegister\Files\Service\UploadService $uploadService,
 		\Psr\Log\LoggerInterface $logger,
 		\OCP\IUserSession $userSession,
 		\OCA\OpenRegister\Service\ConfigurationService $configurationService,

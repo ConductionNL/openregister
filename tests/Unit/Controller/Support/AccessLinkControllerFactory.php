@@ -34,7 +34,7 @@ final class AccessLinkControllerFactory {
 		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkService $links,
-		\OCA\OpenRegister\Service\Sharing\AccessLinkReader $reader,
+		\OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader $reader,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard $mintGuard,
 		\OCA\OpenRegister\Service\Sharing\AccessLinkActs $acts,
 		\OCP\IUserSession $userSession,

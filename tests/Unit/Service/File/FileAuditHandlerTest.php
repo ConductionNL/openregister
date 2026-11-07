@@ -7,7 +7,7 @@ namespace Unit\Service\File;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;

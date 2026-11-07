@@ -50,6 +50,7 @@ use Throwable;
  * Deck (Kanban cards) integration provider.
  */
 class DeckProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id required for this integration.
@@ -87,14 +88,6 @@ class DeckProvider extends AbstractIntegrationProvider {
 	public function getGroup(): ?string {
 		return 'workflow';
 	}//end getGroup()
-
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
 
 	public function isEnabled(): bool {
 		return $this->deckLinkService->isDeckAvailable();
@@ -145,38 +138,49 @@ class DeckProvider extends AbstractIntegrationProvider {
 		$schemaId = (int)($payload['schemaId'] ?? $schema);
 		$target = (new LinkTarget(objectUuid: $objectId, registerId: $registerId))->inSchema(schemaId: $schemaId);
 
-		$hasCardId = (empty($payload['cardId']) === false);
-		$hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
-
-		if ($hasCardId === true) {
-			$link = $this->deckLinkService->linkCard(target: $target, cardId: (int)$payload['cardId']);
-
-			return $link->jsonSerialize();
+		if (empty($payload['cardId']) === false) {
+			return $this->deckLinkService->linkCard(target: $target, cardId: (int)$payload['cardId'])->jsonSerialize();
 		}
 
-		if ($hasBoardData === true) {
-			$description = null;
-			if (isset($payload['description']) === true) {
-				$description = (string)$payload['description'];
-			}
+		if (empty($payload['boardId']) === true || empty($payload['stackId']) === true) {
+			throw new Exception('Either cardId or boardId+stackId is required', 400);
+		}
 
-			$duedate = null;
-			if (isset($payload['duedate']) === true) {
-				$duedate = (string)$payload['duedate'];
-			}
+		$card = $this->cardDraft(payload: $payload);
 
-			$link = $this->deckLinkService->createAndLinkCard(
-				target: $target,
-				card: (new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']))
-					->onBoard(boardId: (int)$payload['boardId'])
-					->withDetails(description: $description, duedate: $duedate)
-			);
-
-			return $link->jsonSerialize();
-		}//end if
-
-		throw new Exception('Either cardId or boardId+stackId is required', 400);
+		return $this->deckLinkService->createAndLinkCard(target: $target, card: $card)->jsonSerialize();
 	}//end create()
+
+	/**
+	 * The new card a payload describes.
+	 *
+	 * @param array<string,mixed> $payload Payload with boardId and stackId.
+	 *
+	 * @return CardDraft The card.
+	 */
+	private function cardDraft(array $payload): CardDraft {
+		$card = new CardDraft(title: (string)($payload['title'] ?? 'Untitled'), stackId: (int)$payload['stackId']);
+		$description = $this->optionalText(payload: $payload, key: 'description');
+		$duedate = $this->optionalText(payload: $payload, key: 'duedate');
+
+		return $card->onBoard(boardId: (int)$payload['boardId'])->withDetails(description: $description, duedate: $duedate);
+	}//end cardDraft()
+
+	/**
+	 * A payload field as text, null when absent.
+	 *
+	 * @param array<string,mixed> $payload The payload.
+	 * @param string              $key     The field.
+	 *
+	 * @return string|null The text.
+	 */
+	private function optionalText(array $payload, string $key): ?string {
+		if (isset($payload[$key]) === false) {
+			return null;
+		}
+
+		return (string)$payload[$key];
+	}//end optionalText()
 
 	/**
 	 * Unlink a Deck card. The card itself stays in Deck.

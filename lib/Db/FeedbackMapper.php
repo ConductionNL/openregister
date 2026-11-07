@@ -31,6 +31,7 @@ use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCA\OpenRegister\Notifications\Db\Message;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * Class FeedbackMapper

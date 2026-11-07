@@ -74,14 +74,21 @@ class CaseSentryEvaluator {
 	];
 
 	/**
+	 * Reads and refuses on-parts.
+	 *
+	 * @var CaseSentryOnPart
+	 */
+	private readonly CaseSentryOnPart $onParts;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param EventCatalogService $catalog The closed event catalog.
 	 */
 	public function __construct(
-		private readonly EventCatalogService $catalog,
+		EventCatalogService $catalog,
 	) {
-
+		$this->onParts = new CaseSentryOnPart(catalog: $catalog);
 	}//end __construct()
 
 	/**
@@ -110,18 +117,16 @@ class CaseSentryEvaluator {
 			throw new CaseValidationException(message: sprintf('%s criteria must be a list of sentries.', $where));
 		}
 
-		$known = $this->catalog->knownTriggerIds();
 		foreach ($criteria as $index => $sentry) {
-			$this->validateSentry(sentry: $sentry, label: sprintf('%s sentry #%d', $where, (int)$index + 1), known: $known);
+			$this->validateSentry(sentry: $sentry, label: sprintf('%s sentry #%d', $where, (int)$index + 1));
 		}
 	}//end validateCriteria()
 
 	/**
 	 * Save-time check of one sentry.
 	 *
-	 * @param mixed $sentry The sentry as stored.
-	 * @param string $label Which sentry, for the message.
-	 * @param array<int, string> $known The catalog's known trigger ids.
+	 * @param mixed  $sentry The sentry as stored.
+	 * @param string $label  Which sentry, for the message.
 	 *
 	 * @return void
 	 *
@@ -129,7 +134,31 @@ class CaseSentryEvaluator {
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	private function validateSentry(mixed $sentry, string $label, array $known): void {
+	private function validateSentry(mixed $sentry, string $label): void {
+		self::validateSentryShape(sentry: $sentry, label: $label);
+		if (array_key_exists('on', $sentry) === true) {
+			$this->onParts->validate(onPart: $sentry['on'], label: $label);
+		}
+
+		if (array_key_exists('if', $sentry) === true && FlowExpression::isValid(logic: $sentry['if']) === false) {
+			throw new CaseValidationException(message: sprintf('%s has an if-part that is not a valid expression.', $label));
+		}
+	}//end validateSentry()
+
+	/**
+	 * Refuse a sentry that is not an object, or declares neither part.
+	 *
+	 * @param mixed  $sentry The sentry as stored.
+	 * @param string $label  Which sentry, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException When the sentry has no usable shape.
+	 *
+	 * @psalm-assert array $sentry
+	 * @phpstan-assert array<mixed> $sentry
+	 */
+	private static function validateSentryShape(mixed $sentry, string $label): void {
 		if (is_array($sentry) === false) {
 			throw new CaseValidationException(message: sprintf('%s must be an object with an on-part and/or an if-part.', $label));
 		}
@@ -137,15 +166,7 @@ class CaseSentryEvaluator {
 		if (array_key_exists('on', $sentry) === false && array_key_exists('if', $sentry) === false) {
 			throw new CaseValidationException(message: sprintf('%s has neither an on-part nor an if-part.', $label));
 		}
-
-		if (array_key_exists('on', $sentry) === true) {
-			$this->validateOnPart(onPart: $sentry['on'], label: $label, known: $known);
-		}
-
-		if (array_key_exists('if', $sentry) === true && FlowExpression::isValid(logic: $sentry['if']) === false) {
-			throw new CaseValidationException(message: sprintf('%s has an if-part that is not a valid expression.', $label));
-		}
-	}//end validateSentry()
+	}//end validateSentryShape()
 
 	/**
 	 * Which entry sentry admits an item now, if any.
@@ -170,7 +191,8 @@ class CaseSentryEvaluator {
 			return self::DEFAULT_ENTRY;
 		}
 
-		return $this->firingSentry(criteria: $criteria, tree: $tree, object: $object, event: $event, payload: $payload);
+		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
+		return $this->firingSentry(criteria: $criteria, moment: new CaseSentryMoment(tree: $tree, event: $event, data: $data));
 	}//end entrySentry()
 
 	/**
@@ -193,7 +215,8 @@ class CaseSentryEvaluator {
 			return null;
 		}
 
-		return $this->firingSentry(criteria: $criteria, tree: $tree, object: $object, event: $event, payload: $payload);
+		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
+		return $this->firingSentry(criteria: $criteria, moment: new CaseSentryMoment(tree: $tree, event: $event, data: $data));
 	}//end exitSentry()
 
 	/**
@@ -213,18 +236,10 @@ class CaseSentryEvaluator {
 	public function dataFor(CasePlanTree $tree, array $object, ?string $event, array $payload): array {
 		$data = FlowExpression::dataFor(
 			item: [FlowItems::JSON => $object],
-			context: [
-				'event' => $event,
-				'payload' => $payload,
-			],
+			context: ['event' => $event, 'payload' => $payload],
 			subject: $object
 		);
-		$data['case'] = [
-			'items' => $tree->stateMap(),
-			'object' => $object,
-			'event' => $event,
-			'payload' => $payload,
-		];
+		$data['case'] = ['items' => $tree->stateMap(), 'object' => $object, 'event' => $event, 'payload' => $payload];
 
 		return $data;
 	}//end dataFor()
@@ -233,23 +248,15 @@ class CaseSentryEvaluator {
 	 * OR across the array: the first sentry that fires names itself.
 	 *
 	 * @param array<int, mixed> $criteria The sentries.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled.
-	 * @param array<string, mixed> $payload The event's payload.
+	 * @param CaseSentryMoment  $moment   The plan, event and document the pass reads.
 	 *
 	 * @return string|null The firing sentry's id, or null.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	private function firingSentry(array $criteria, CasePlanTree $tree, array $object, ?string $event, array $payload): ?string {
-		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
+	private function firingSentry(array $criteria, CaseSentryMoment $moment): ?string {
 		foreach ($criteria as $index => $sentry) {
-			if (is_array($sentry) === false) {
-				continue;
-			}
-
-			if ($this->fires(sentry: $sentry, tree: $tree, data: $data, event: $event) === true) {
+			if (is_array($sentry) === true && $this->fires(sentry: $sentry, moment: $moment) === true) {
 				return (string)($sentry['id'] ?? ('sentry:' . ((int)$index + 1)));
 			}
 		}
@@ -262,101 +269,46 @@ class CaseSentryEvaluator {
 	 * naming no field) never fires.
 	 *
 	 * @param array<string, mixed> $sentry The sentry.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $data The evaluation document.
-	 * @param string|null $event The event being handled.
+	 * @param CaseSentryMoment     $moment The plan, event and document the pass reads.
 	 *
 	 * @return boolean True when both present parts hold.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	private function fires(array $sentry, CasePlanTree $tree, array $data, ?string $event): bool {
+	private function fires(array $sentry, CaseSentryMoment $moment): bool {
 		$hasOn = array_key_exists('on', $sentry);
-		$hasIf = array_key_exists('if', $sentry);
-		if ($hasOn === false && $hasIf === false) {
+		if ($hasOn === false && array_key_exists('if', $sentry) === false) {
 			return false;
 		}
 
-		if ($hasOn === true && $this->onPartOccurred(onPart: $sentry['on'], tree: $tree, event: $event) === false) {
+		if ($hasOn === true && $this->onParts->occurred(onPart: $sentry['on'], moment: $moment) === false) {
 			return false;
 		}
 
-		if ($hasIf === true) {
-			if ($this->namesField(logic: $sentry['if']) === false) {
-				return false;
-			}
-
-			return FlowExpression::isTrue(logic: $sentry['if'], data: $data);
-		}
-
-		return true;
+		return $this->ifPartHolds(sentry: $sentry, data: $moment->data);
 	}//end fires()
 
 	/**
-	 * Whether an on-part has occurred: a plan-item event against current
-	 * state (monotonic), any other event against the one being handled.
+	 * Whether a sentry's if-part, when present, names a field and evaluates to true.
 	 *
-	 * @param mixed $onPart The on-part: `{event, item?}`.
-	 * @param CasePlanTree $tree The plan.
-	 * @param string|null $event The event being handled.
+	 * @param array<string, mixed> $sentry The sentry.
+	 * @param array<string, mixed> $data   The evaluation document.
 	 *
-	 * @return boolean True when it has.
+	 * @return boolean True when there is no if-part, or it holds.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
-	private function onPartOccurred(mixed $onPart, CasePlanTree $tree, ?string $event): bool {
-		if (is_array($onPart) === false) {
+	private function ifPartHolds(array $sentry, array $data): bool {
+		if (array_key_exists('if', $sentry) === false) {
+			return true;
+		}
+
+		if ($this->namesField(logic: $sentry['if']) === false) {
 			return false;
 		}
 
-		$name = trim((string)($onPart['event'] ?? ''));
-		if ($name === '') {
-			return false;
-		}
-
-		if (array_key_exists($name, self::ITEM_EVENTS) === true) {
-			$key = trim((string)($onPart['item'] ?? ''));
-			if ($key === '') {
-				return false;
-			}
-
-			return $tree->keyHasState(key: $key, state: self::ITEM_EVENTS[$name]);
-		}
-
-		return $event !== null && in_array($event, $this->catalog->aliasesFor(dispatched: $name), true);
-	}//end onPartOccurred()
-
-	/**
-	 * Save-time check of one on-part.
-	 *
-	 * @param mixed $onPart The on-part.
-	 * @param string $label The sentry, for the message.
-	 * @param array<int, string> $known The catalog's known trigger ids.
-	 *
-	 * @return void
-	 *
-	 * @throws CaseValidationException Naming the unknown event or the missing item.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
-	 */
-	private function validateOnPart(mixed $onPart, string $label, array $known): void {
-		if (is_array($onPart) === false || trim((string)($onPart['event'] ?? '')) === '') {
-			throw new CaseValidationException(message: sprintf('%s has an on-part without an event.', $label));
-		}
-
-		$name = trim((string)$onPart['event']);
-		if (in_array($name, $known, true) === false) {
-			throw new CaseValidationException(
-				message: sprintf("%s names event '%s', which is not in the event catalog.", $label, $name)
-			);
-		}
-
-		if (array_key_exists($name, self::ITEM_EVENTS) === true && trim((string)($onPart['item'] ?? '')) === '') {
-			throw new CaseValidationException(
-				message: sprintf("%s names plan-item event '%s' without naming the item.", $label, $name)
-			);
-		}
-	}//end validateOnPart()
+		return FlowExpression::isTrue(logic: $sentry['if'], data: $data);
+	}//end ifPartHolds()
 
 	/**
 	 * Whether an if-part is a rule that reads at least one field: an operator

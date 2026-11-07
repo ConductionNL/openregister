@@ -23,8 +23,8 @@
  * `idempotentHint`) and an optional `scope` may also be declared. These reuse
  * the SAME vocabulary the `x-openregister-mcp` schema dialect already
  * canonicalised for schema-derived tools ({@see
- * \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS},
- * {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}) — no
+ * \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::HINT_KEYS},
+ * {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::SCOPES}) — no
  * parallel vocabulary is introduced. Every one of the four defaults to
  * `null`/omitted; {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} forwards
  * only what the author actually set, never a fabricated default, into the
@@ -87,18 +87,18 @@ final class McpTool {
 	 * @param string|null $name Local tool name; defaults to the method name when null.
 	 * @param string|null $description LLM-facing description; defaults to the docblock summary when null.
 	 * @param bool|null $readOnlyHint Optional MCP 2025-11-25 annotation hint; one of
-	 *                                {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
+	 *                                {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::HINT_KEYS}.
 	 *                                Omitted (null) when the author does not declare it — never inferred.
 	 * @param bool|null $destructiveHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
 	 * @param bool|null $idempotentHint Optional MCP 2025-11-25 annotation hint (see `$readOnlyHint`).
 	 * @param string|null $scope Optional advisory scope; when set, MUST be one of
-	 *                           {@see \OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::SCOPES}
+	 *                           {@see \OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::SCOPES}
 	 *                           (validated by {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} at
 	 *                           scan time, not here). Omitted (null) when not declared.
 	 * @param string|null $subject The thing this tool acts on, e.g. `document`. Groups the tool in
 	 *                             the agent grant matrix. Omitted (null) when not declared — and an
 	 *                             omission is INVISIBLE, because
-	 *                             {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::describeTools()}
+	 *                             {@see \OCA\OpenRegister\Mcp\Service\Mcp\ToolRegistryFacade::describeTools()}
 	 *                             deliberately returns null rather than inferring one from the id.
 	 *                             Declare it: a consumer cannot tell an inferred subject from a real one.
 	 * @param string|null $action The verb this tool performs on that subject, e.g. `get`. NOT closed

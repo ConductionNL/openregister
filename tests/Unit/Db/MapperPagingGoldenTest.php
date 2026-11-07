@@ -21,11 +21,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
@@ -45,11 +45,11 @@ use ReflectionClass;
 use ReflectionNamedType;
 
 /**
- * @covers \OCA\OpenRegister\Db\AnonymisationLogMapper
+ * @covers \OCA\OpenRegister\Files\Db\AnonymisationLogMapper
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
  * @covers \OCA\OpenRegister\Db\BulkJobMapper
  * @covers \OCA\OpenRegister\Db\BulkJobMemberMapper
- * @covers \OCA\OpenRegister\Db\ChunkMapper
+ * @covers \OCA\OpenRegister\Files\Db\ChunkMapper
  * @covers \OCA\OpenRegister\Db\EmailLinkMapper
  * @covers \OCA\OpenRegister\Db\EndpointLogMapper
  * @covers \OCA\OpenRegister\Db\ImportPreviewMapper

@@ -25,9 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\TextExtraction\OoxmlPackage;
-use OCA\OpenRegister\Service\TextExtraction\PresentationExtractor;
-use OCA\OpenRegister\Service\TextExtraction\PresentationSlideParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage;
+use OCA\OpenRegister\Files\Service\TextExtraction\PresentationExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\PresentationSlideParser;
 use OCP\Files\File;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;

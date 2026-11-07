@@ -261,11 +261,11 @@ class MagicStatisticsHandler {
 
 			$sql = "SELECT table_name FROM information_schema.tables
                     WHERE table_schema = DATABASE()
-                    AND table_name LIKE 'oc_openregister_table_%'";
+                    AND table_name LIKE '*PREFIX*openregister_table_%'";
 			if ($isPostgres === true) {
 				$sql = "SELECT table_name FROM information_schema.tables
                         WHERE table_schema = current_schema()
-                        AND table_name LIKE 'oc_openregister_table_%'";
+                        AND table_name LIKE '*PREFIX*openregister_table_%'";
 			}
 
 			$stmt = $this->db->prepare($sql);
@@ -273,13 +273,8 @@ class MagicStatisticsHandler {
 			$tables = [];
 
 			while (($row = $stmt->fetch()) !== false) {
-				// Remove the 'oc_' prefix to get the table name for query builder.
-				$tableName = $row['table_name'];
-				if (str_starts_with($tableName, 'oc_') === true) {
-					$tableName = substr($tableName, 3);
-				}
-
-				$tables[] = $tableName;
+				// The query builder adds the table prefix itself.
+				$tables[] = (string)strstr($row['table_name'], 'openregister_table_');
 			}
 
 			$this->magicTablesCache = $tables;

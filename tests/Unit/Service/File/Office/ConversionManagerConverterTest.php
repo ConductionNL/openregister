@@ -18,9 +18,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\File\Office;
 
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Service\File\Office\ConversionManagerConverter;
-use OCA\OpenRegister\Service\File\Office\ConversionWorkFolder;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\Office\ConversionManagerConverter;
+use OCA\OpenRegister\Files\Service\File\Office\ConversionWorkFolder;
 use OCP\Files\Conversion\ConversionMimeProvider;
 use OCP\Files\Conversion\IConversionManager;
 use OCP\Files\File;

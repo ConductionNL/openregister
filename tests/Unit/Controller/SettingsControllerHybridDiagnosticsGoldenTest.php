@@ -7,26 +7,19 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Tests\Unit\Controller\Support\SettingsControllerFactory;
 use Exception;
-use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Service\SettingsService;
-use OCP\App\IAppManager;
+use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
+use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\DB\IResult;
-use OCP\IAppConfig;
 use OCP\IDBConnection;
-use OCP\IL10N;
-use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 use stdClass;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Golden test for SettingsController::getHybridSearchDiagnostics().
+ * Golden test for HybridSearchDiagnostics::report().
  *
  * Every case answers the catalog and count queries from a table keyed by
  * query kind, records each database, container and logger call and the
@@ -34,10 +27,7 @@ use Psr\Log\LoggerInterface;
  * fixtures/settings-hybrid-diagnostics-golden.json. Set UPDATE_GOLDEN=1 to
  * rewrite the fixture.
  *
- * @covers \OCA\OpenRegister\Controller\SettingsController
- * @uses \OCA\OpenRegister\Controller\Support\SettingsStore
- * @uses \OCA\OpenRegister\Controller\Support\SettingsRuntime
- * @uses \OCA\OpenRegister\Controller\Support\SettingsControllerServices
+ * @covers \OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics
  */
 class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/settings-hybrid-diagnostics-golden.json';
@@ -107,28 +97,14 @@ class SettingsControllerHybridDiagnosticsGoldenTest extends TestCase {
 				return new stdClass();
 			}
 
-			$chunks = $this->createMock(ChunkMapper::class);
+			$chunks = $this->createMock(ChunkMapperInterface::class);
 			$chunks->method('countAll')->willReturn(70);
 			$chunks->method('countVectorized')->willReturn(55);
 			return $chunks;
 		});
 
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => vsprintf($text, $params));
-
-		$controller = SettingsControllerFactory::create(
-			'openregister',
-			$this->createMock(IRequest::class),
-			$this->createMock(IAppConfig::class),
-			$this->connection($case['sql'] ?? []),
-			$container,
-			$this->createMock(SettingsService::class),
-			$logger,
-			$l10n
-		);
-
-		$method = new ReflectionMethod(SettingsController::class, 'getHybridSearchDiagnostics');
-		$diagnostics = $method->invoke($controller, $case['postgres']);
+		$report = new HybridSearchDiagnostics(db: $this->connection($case['sql'] ?? []), container: $container, logger: $logger);
+		$diagnostics = $report->report(isPostgres: $case['postgres']);
 		$this->compare($this->dataName(), ['calls' => $this->calls, 'diagnostics' => $diagnostics]);
 	}
 

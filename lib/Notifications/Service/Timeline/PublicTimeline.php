@@ -49,7 +49,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -72,12 +72,12 @@ class PublicTimeline implements PublicTimelineInterface {
 	 * Constructor.
 	 *
 	 * @param TimelineEntryService $entries Reads the timeline records.
-	 * @param NoteService          $notes   Reads the notes a record may not exist for yet.
+	 * @param NoteServiceInterface          $notes   Reads the notes a record may not exist for yet.
 	 * @param LoggerInterface      $logger  PSR logger.
 	 */
 	public function __construct(
 		private readonly TimelineEntryService $entries,
-		private readonly NoteService $notes,
+		private readonly NoteServiceInterface $notes,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

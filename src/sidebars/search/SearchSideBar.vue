@@ -571,11 +571,6 @@ import {
  * The state every instance of this component starts from.
  */
 const INITIAL_STATE = {
-	navigationStore,
-	objectStore,
-	registerStore,
-	schemaStore,
-	viewsStore,
 	activeTab: 'search-tab', // Active tab tracker
 	registerLoading: false,
 	schemaLoading: false,
@@ -637,7 +632,14 @@ export default {
 	},
 
 	data() {
-		return freshState(INITIAL_STATE)
+		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
+			...freshState(INITIAL_STATE),
+		}
 	},
 
 	computed: {
@@ -877,26 +879,9 @@ export default {
 			deep: true,
 		},
 
-		// Re-apply the query params once the register list arrives. The mount-
-		// time `applyQueryParamsFromRoute()` retry loop (10 × 200ms) is shorter
-		// than the actual `_extend=schemas&stats` register-list response on
-		// busy dev envs (~5s observed), so deep-links with ?register=… stayed
-		// empty and downstream tables never populated. Reacting to the list
-		// transition closes that race without polling. See the e2e investigation
-		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
-		'$root.registerStore.registerList': {
-			/**
-			 * @param {Array<object>} newList
-			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
-			 */
-			handler(newList) {
-				if (this.$route.path !== '/tables') return
-				if (Array.isArray(newList) === false || newList.length === 0) return
-				if (this.$route.query.register === undefined) return
-				if (this.selectedRegisters.length > 0) return
-				this.applyQueryParamsFromRoute()
-			},
-		},
+		// A deep link names ids the lists resolve, and the lists can take longer than any retry window.
+		'registerStore.registerList': 'applyRouteOnceListsArrive',
+		'schemaStore.schemaList': 'applyRouteOnceListsArrive',
 
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
@@ -1150,38 +1135,26 @@ export default {
 				)
 				return true
 			}
-			// Try apply now, or retry shortly if lists not yet loaded.
-			//
-			// The register list (`GET /api/registers?_extend=schemas&stats`)
-			// takes 3–4.5s on a populated instance — longer than the former
-			// 10×200ms (2s) budget — so a `/tables?register=…&schema=…`
-			// deep-link gave up before the list arrived and the table stayed
-			// on "No objects found. Select registers and schemas…", never
-			// firing the search. The `$root.registerStore.registerList`
-			// watcher was meant to cover this but did not re-trigger the
-			// search reliably. Extend the retry window to 40×200ms (8s) so it
-			// comfortably outlasts the real list-load time. Verified via the
-			// e2e investigation in tests/e2e/spec-coverage/
-			// {entity-management-modals, saved-search-views}.
-			const tryApply = (attempt = 0) => {
-				const regOk = applyRegisters()
-				const schOk = applySchemas()
-				if (regOk && schOk) {
-					if (
-						this.selectedRegisters.length > 0
-						&& this.selectedSchemas.length > 0
-					) {
-						this.performSearchWithFacets()
-					} else {
-						objectStore.clearSearchCollection()
-					}
-					return
-				}
-				if (attempt < 40) {
-					setTimeout(() => tryApply(attempt + 1), 200)
-				}
+			// A list that is not loaded yet leaves this to applyRouteOnceListsArrive().
+			if (applyRegisters() === false || applySchemas() === false) return
+			if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) {
+				this.performSearchWithFacets()
+			} else {
+				objectStore.clearSearchCollection()
 			}
-			tryApply()
+		},
+
+		/**
+		 * Apply the route's scope when a list arrives and the scope is not applied yet.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
+		applyRouteOnceListsArrive() {
+			if (this.$route.path !== '/tables') return
+			if (this.$route.query.register === undefined) return
+			if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) return
+			this.applyQueryParamsFromRoute()
 		},
 
 		/**
@@ -2155,6 +2128,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/components.scss' as *;
+
 .section {
 	padding: 16px;
 	margin-bottom: 0;
@@ -2396,23 +2371,7 @@ export default {
 	padding-top: 4px;
 }
 
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-}
-
-.option-title {
-	font-weight: 500;
-}
-
-.option-description {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	max-width: 100%;
-	white-space: normal;
-	overflow-wrap: break-word;
-}
+@include option-content-rules;
 
 .search-input-container {
 	display: flex;

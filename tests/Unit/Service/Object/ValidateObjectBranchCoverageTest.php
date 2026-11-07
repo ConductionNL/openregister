@@ -17,7 +17,7 @@ use ReflectionMethod;
 /**
  * Branch coverage tests for ValidateObject — targets uncovered branches in
  * extractObjectConfigurationHandling, getMixedValue, extractHandlingFromOneOfItems,
- * transformPropertyForOpenRegister, transformToUuidProperty, transformToNestedObjectProperty.
+ * transformPropertyForOpenRegister, transformToUuidProperty.
  */
 class ValidateObjectBranchCoverageTest extends TestCase {
 	private ValidateObject $validator;

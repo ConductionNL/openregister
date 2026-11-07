@@ -170,37 +170,5 @@ export default {
 <style scoped lang="scss">
 @use '../styles/components.scss' as *;
 
-.webhooks-sidebar {
-	padding: 16px;
-	background: var(--color-main-background);
-	border-left: 1px solid var(--color-border);
-	height: 100%;
-	overflow-y: auto;
-	min-width: 280px;
-	max-width: 350px;
-}
-
-.sidebar-header {
-	margin-bottom: 20px;
-}
-
-@include sidebar-header-h3;
-
-.search-section {
-	margin-bottom: 24px;
-}
-
-.filter-section {
-	margin-bottom: 24px;
-}
-
-@include filter-section-h4-rules;
-
-.clear-filters {
-	margin-top: 20px;
-}
-
-.clear-filters button {
-	width: 100%;
-}
+@include filter-sidebar('webhooks-sidebar');
 </style>

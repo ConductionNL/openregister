@@ -6281,6 +6281,186 @@ class ObjectsControllerTest extends TestCase {
 		}
 	}
 
+	/**
+	 * A bulk download is audited as one entry naming every file, and the temporary ZIP goes.
+	 *
+	 * @return void
+	 */
+	public function testDownloadFilesAuditsOneEntryAndRemovesTheZip(): void {
+		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$objectEntity->setUuid('uuid-123');
+		$this->objectService->method('find')->willReturn($objectEntity);
+
+		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
+		file_put_contents($tempZip, 'fake-zip-content');
+
+		$first = $this->createMock(\OCP\Files\File::class);
+		$first->method('getId')->willReturn(11);
+		$first->method('getName')->willReturn('a.txt');
+		$second = $this->createMock(\OCP\Files\File::class);
+		$second->method('getId')->willReturn(12);
+		$second->method('getName')->willReturn('b.txt');
+
+		$audit = $this->createMock(\OCA\OpenRegister\Files\Service\File\FileAuditHandler::class);
+		$audit->expects($this->once())->method('logBulkDownload')->with(
+			$objectEntity,
+			[11, 12],
+			['a.txt', 'b.txt'],
+			'test-files.zip',
+			16
+		);
+		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+		$fileService->method('createObjectFilesZip')->willReturn(
+			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip', 'size' => 16]
+		);
+		$fileService->method('getFiles')->willReturn([$first, $second]);
+		$fileService->method('getAuditHandler')->willReturn($audit);
+		$this->container->method('get')->willReturn($fileService);
+
+		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame('fake-zip-content', $result->render());
+		$this->assertFileDoesNotExist($tempZip);
+	}
+
+	/**
+	 * A failing audit trail does not break the download.
+	 *
+	 * @return void
+	 */
+	public function testDownloadFilesSurvivesAFailingAudit(): void {
+		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$objectEntity->setUuid('uuid-123');
+		$this->objectService->method('find')->willReturn($objectEntity);
+
+		$tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
+		file_put_contents($tempZip, 'zip');
+
+		$fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+		$fileService->method('createObjectFilesZip')->willReturn(
+			['path' => $tempZip, 'filename' => 'test-files.zip', 'mimeType' => 'application/zip']
+		);
+		$fileService->method('getFiles')->willThrowException(new \RuntimeException('no trail'));
+		$this->container->method('get')->willReturn($fileService);
+
+		$result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+	}
+
+	/**
+	 * A finished PDF export is recorded with the row count the export service answers.
+	 *
+	 * @return void
+	 */
+	public function testAPdfExportIsRecordedWithItsRowCount(): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) {
+				$this->assertSame('pdf', $args['format'] ?? $args[2]);
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? 'pdf' : $default
+		);
+		$this->exportService->method('exportToPdf')->willReturn('%PDF');
+		$this->exportService->expects($this->once())->method('countExportRows')->willReturn(4);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertSame('%PDF', $result->render());
+	}
+
+	/**
+	 * A JSON export is recorded with the format it was asked in.
+	 *
+	 * @return void
+	 */
+	public function testAJsonExportIsRecorded(): void {
+		$this->arrangeRecordedExport(format: 'json');
+		$this->exportService->method('exportToJson')->willReturn('[]');
+
+		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * An Excel export is recorded and answers an xlsx file.
+	 *
+	 * @return void
+	 */
+	public function testAnExcelExportIsRecordedAndNamedXlsx(): void {
+		$this->arrangeRecordedExport(format: 'excel');
+		$this->exportService->method('exportToExcel')->willReturn(new \PhpOffice\PhpSpreadsheet\Spreadsheet());
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertStringEndsWith('.xlsx', $result->getHeaders()['Content-Disposition']);
+	}
+
+	/**
+	 * An export of this format, whose run must be recorded once under that format.
+	 *
+	 * @param string $format The format.
+	 *
+	 * @return void
+	 */
+	private function arrangeRecordedExport(string $format): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) use ($format) {
+				$this->assertSame($format, $args['format'] ?? $args[2]);
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? $format : $default
+		);
+	}
+
+	/**
+	 * A JSON export drops the route from its filters and answers a named JSON file.
+	 *
+	 * @return void
+	 */
+	public function testExportJsonGolden(): void {
+		$this->grantExport();
+		$registerEntity = new \OCA\OpenRegister\Db\Register();
+		$registerEntity->setSlug('my-register');
+		$schemaEntity = new \OCA\OpenRegister\Db\Schema();
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn(['_route' => 'r', 'status' => 'open']);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
+		);
+		$this->exportService->expects($this->once())->method('exportToJson')->with(
+			$registerEntity,
+			$schemaEntity,
+			['status' => 'open']
+		)->willReturn('{"results":[1,2]}');
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertSame('{"results":[1,2]}', $result->render());
+		$this->assertSame('application/json', $result->getHeaders()['Content-Type']);
+		$this->assertMatchesRegularExpression(
+			'/^attachment; filename=my-register_schema_\d{4}-\d{2}-\d{2}_\d{6}\.json$/',
+			$result->getHeaders()['Content-Disposition']
+		);
+	}
+
 	// =========================================================================
 	// downloadFiles() — returns 404 when object not found (via DoesNotExist)
 	// =========================================================================

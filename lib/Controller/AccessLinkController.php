@@ -55,7 +55,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActs;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -97,9 +97,9 @@ class AccessLinkController extends Controller {
 	/**
 	 * Serves what a link opens.
 	 *
-	 * @var AccessLinkReader
+	 * @var AccessLinkReaderInterface
 	 */
-	private readonly AccessLinkReader $reader;
+	private readonly AccessLinkReaderInterface $reader;
 
 	/**
 	 * Decides whether a caller may publish a subject.

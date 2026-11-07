@@ -72,7 +72,7 @@
  * 2. **Verb-suffix fallback** — only when the descriptor is absent or sets none
  *    of the three hint keys: the CLOSED, fixed ADR-063 verb vocabulary
  *    (`search`/`get`/`create`/`update`/`delete` —
- *    `OCA\OpenRegister\Service\Mcp\McpAnnotationValidator::VERBS`) read off a
+ *    `OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator::VERBS`) read off a
  *    3-segment `{app}.{schema}.{verb}` id's own text — unchanged from this
  *    class's original (pre-hints) behaviour, preserved exactly for un-annotated
  *    derived tools (design.md "Declarative vs Imperative": the *rule* is code,

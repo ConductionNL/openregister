@@ -35,42 +35,48 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\AvgRetentionService;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * Daily AVG retention enforcement.
  */
-class AvgRetentionJob extends TimedJob {
-
-	/**
-	 * Default interval — once per 24 hours.
-	 *
-	 * @var int
-	 */
-	private const RUN_INTERVAL_SECONDS = 86400;
+class AvgRetentionJob extends AbstractRetentionJob {
 
 	/**
 	 * App-config key for the enable/disable toggle.
 	 *
 	 * @var string
 	 */
-	private const CONFIG_KEY_ENABLED = 'avg_retention_enabled';
+	protected const CONFIG_KEY_ENABLED = 'avg_retention_enabled';
 
 	/**
 	 * App-config key for the dry-run toggle.
 	 *
 	 * @var string
 	 */
-	private const CONFIG_KEY_DRY_RUN = 'avg_retention_dry_run';
+	protected const CONFIG_KEY_DRY_RUN = 'avg_retention_dry_run';
 
 	/**
-	 * App identifier for app-config lookups.
+	 * Log line of a job that is switched off.
 	 *
 	 * @var string
 	 */
-	private const APP_ID = 'openregister';
+	protected const LOG_DISABLED = '[AvgRetentionJob] Retention enforcement disabled (avg_retention_enabled=false), skipping';
+
+	/**
+	 * Log line of a finished pass.
+	 *
+	 * @var string
+	 */
+	protected const LOG_COMPLETE = '[AvgRetentionJob] Retention pass complete';
+
+	/**
+	 * Log line of a failed pass, followed by the error.
+	 *
+	 * @var string
+	 */
+	protected const LOG_FAILED = '[AvgRetentionJob] Retention pass failed: ';
 
 	/**
 	 * Constructor.
@@ -84,80 +90,35 @@ class AvgRetentionJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
+		IAppConfig $appConfig,
 		private readonly AvgRetentionService $retentionService,
-		private readonly LoggerInterface $logger,
+		LoggerInterface $logger,
 	) {
-		parent::__construct(time: $time);
-		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
-
+		parent::__construct(time: $time, appConfig: $appConfig, logger: $logger);
 	}//end __construct()
 
 	/**
-	 * Drive the retention pass.
+	 * Run the pass and report its counts.
 	 *
-	 * @param mixed $argument Job arguments (unused for recurring jobs).
+	 * @param bool $dryRun Whether to report without erasing anything.
 	 *
-	 * @return void
+	 * @return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry run is the admin's own switch, passed on as it is.
 	 *
 	 * @spec openspec/specs/retention-management/spec.md
 	 */
-	protected function run($argument): void {
-		$enabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_ENABLED,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
+	protected function runPass(bool $dryRun): array {
+		$summary = $this->retentionService->runRetentionPass(dryRun: $dryRun);
 
-		if ($enabled === false) {
-			$this->logger->info(
-				message: '[AvgRetentionJob] Retention enforcement disabled (avg_retention_enabled=false), skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		$dryRun = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_DRY_RUN,
-				default: 'false'
-			),
-			FILTER_VALIDATE_BOOLEAN
-		);
-
-		try {
-			$summary = $this->retentionService->runRetentionPass(dryRun: $dryRun);
-			$this->logger->info(
-				message: '[AvgRetentionJob] Retention pass complete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'dryRun' => $dryRun,
-					'evaluatedActivities' => $summary['evaluatedActivities'],
-					'skippedActivities' => $summary['skippedActivities'],
-					'objectsErased' => $summary['objectsErased'],
-					// A record the archival obligation kept must be visible from
-					// the cron log. Counting it as erased, or not counting it at
-					// all, is how a refusal turns back into a silent skip.
-					'objectsWithheld' => $summary['objectsWithheld'],
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[AvgRetentionJob] Retention pass failed: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-
-	}//end run()
+		return [
+			'evaluatedActivities' => $summary['evaluatedActivities'],
+			'skippedActivities' => $summary['skippedActivities'],
+			'objectsErased' => $summary['objectsErased'],
+			// A record the archival obligation kept must be visible from the cron
+			// log. Counting it as erased, or not counting it at all, is how a
+			// refusal turns back into a silent skip.
+			'objectsWithheld' => $summary['objectsWithheld'],
+		];
+	}//end runPass()
 }//end class

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Search;
 
+use OCA\OpenRegister\AppHost\SchemaScopedProvider;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -59,6 +60,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 abstract class AbstractSchemaSearchProvider implements IProvider {
+	use SchemaScopedProvider;
 
 	/**
 	 * Maximum number of results returned per unified-search page, matching
@@ -69,20 +71,11 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	private const PAGE_LIMIT = 25;
 
 	/**
-	 * Memoized resolved register database ID. `false` means resolution was
-	 * attempted and failed (distinct from `null`, meaning not yet attempted).
+	 * The name this provider's debug lines carry.
 	 *
-	 * @var int|false|null
+	 * @var string
 	 */
-	private int|false|null $registerId = null;
-
-	/**
-	 * Memoized resolved schema database ID. `false` means resolution was
-	 * attempted and failed (distinct from `null`, meaning not yet attempted).
-	 *
-	 * @var int|false|null
-	 */
-	private int|false|null $schemaId = null;
+	private const LOG_NAME = 'AbstractSchemaSearchProvider';
 
 	/**
 	 * Constructor for AbstractSchemaSearchProvider.
@@ -145,21 +138,7 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
 	 */
 	final public function getName(): string {
-		$schemaId = $this->resolveSchemaId();
-		if ($schemaId === false) {
-			return $this->getSchemaSlug();
-		}
-
-		try {
-			$title = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->getTitle();
-			if ($title !== null && $title !== '') {
-				return $title;
-			}
-		} catch (\Exception $e) {
-			// Fall through to slug fallback.
-		}
-
-		return $this->getSchemaSlug();
+		return $this->schemaTitle();
 	}//end getName()
 
 	/**
@@ -195,162 +174,157 @@ abstract class AbstractSchemaSearchProvider implements IProvider {
 	 * @return SearchResult The search results, scoped to this schema
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 * @SuppressWarnings(PHPMD.StaticAccess)          SearchResult::complete/paginated is standard Nextcloud search pattern
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Mirrors ObjectsProvider::search(), which forces the same filter/pagination handling
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Mirrors ObjectsProvider::search()'s filter/pagination branching
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
 		unset($user);
 
+		$scope = $this->searchScope();
+		if ($scope === []) {
+			return $this->resultOf(entries: []);
+		}
+
+		$page  = new SchemaSearchPage(term: $query->getTerm(), limit: $this->limitOf(query: $query), offset: $this->offsetOf(query: $query));
+		$found = $this->find(query: $this->searchQuery(scope: $scope, page: $page));
+		if ($found === null) {
+			return $this->resultOf(entries: []);
+		}
+
+		return $this->pageResult(results: ($found['results'] ?? []), page: $page);
+	}//end search()
+
+	/**
+	 * The `@self` filter of this provider's schema, or empty when it may not search.
+	 *
+	 * @return array<string, int>
+	 *
+	 * @spec openspec/changes/schema-scoped-smart-picker/specs/schema-scoped-reference-providers/spec.md
+	 */
+	private function searchScope(): array {
 		if ($this->isSmartPickerEnabled() === false) {
-			return SearchResult::complete($this->getName(), []);
+			return [];
 		}
 
 		$registerId = $this->resolveRegisterId();
-		$schemaId = $this->resolveSchemaId();
+		$schemaId   = $this->resolveSchemaId();
 		if ($registerId === false || $schemaId === false) {
-			return SearchResult::complete($this->getName(), []);
+			return [];
 		}
 
-		$term = $query->getTerm();
+		return ['register' => $registerId, 'schema' => $schemaId];
+	}//end searchScope()
 
-		$searchQuery = [];
-		if ($term !== '') {
-			$searchQuery['_search'] = $term;
+	/**
+	 * The page size: the query's when that is positive and below the cap, else the cap.
+	 *
+	 * @param ISearchQuery $query The search query from Nextcloud.
+	 *
+	 * @return int
+	 */
+	private function limitOf(ISearchQuery $query): int {
+		$limit = $query->getLimit();
+		if ($limit > 0 && $limit < self::PAGE_LIMIT) {
+			return $limit;
 		}
 
-		$searchQuery['@self']['register'] = $registerId;
-		$searchQuery['@self']['schema'] = $schemaId;
+		return self::PAGE_LIMIT;
+	}//end limitOf()
 
-		// Widen the match to attached-file text under the same guard rails
-		// as the generic provider (ZKN-CONTENT-001): `_rbac`/`_multitenancy`
-		// are forwarded into the chunk fan-out, so this never becomes a
-		// second, less-guarded search path.
-		$searchQuery['_content_search'] = true;
-
-		$limit = self::PAGE_LIMIT;
-		$queryLimit = $query->getLimit();
-		if ($queryLimit > 0 && $queryLimit < $limit) {
-			$limit = $queryLimit;
-		}
-
-		$offset = 0;
+	/**
+	 * The offset a numeric cursor names, never below zero.
+	 *
+	 * @param ISearchQuery $query The search query from Nextcloud.
+	 *
+	 * @return int
+	 */
+	private function offsetOf(ISearchQuery $query): int {
 		$cursor = $query->getCursor();
 		if (is_numeric($cursor) === true) {
-			$offset = max(0, (int)$cursor);
+			return max(0, (int)$cursor);
 		}
 
-		$searchQuery['_limit'] = $limit;
-		$searchQuery['_offset'] = $offset;
+		return 0;
+	}//end offsetOf()
 
+	/**
+	 * The query for one page of this provider's schema.
+	 *
+	 * Widens the match to attached-file text under the same guard rails as the
+	 * generic provider (ZKN-CONTENT-001): `_rbac`/`_multitenancy` are forwarded into
+	 * the chunk fan-out, so this never becomes a second, less-guarded search path.
+	 *
+	 * @param array<string, int> $scope The `@self` filter.
+	 * @param SchemaSearchPage   $page  The page asked for.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function searchQuery(array $scope, SchemaSearchPage $page): array {
+		$searchQuery = [];
+		if ($page->term !== '') {
+			$searchQuery['_search'] = $page->term;
+		}
+
+		$searchQuery['@self'] = $scope;
+		$searchQuery['_content_search'] = true;
+		$searchQuery['_limit'] = $page->limit;
+		$searchQuery['_offset'] = $page->offset;
+
+		return $searchQuery;
+	}//end searchQuery()
+
+	/**
+	 * Run the search under RBAC and multitenancy, or log why it failed.
+	 *
+	 * @param array<string, mixed> $query The query.
+	 *
+	 * @return array<string, mixed>|null The result, or null when the search failed.
+	 */
+	private function find(array $query): ?array {
 		try {
-			$searchResults = $this->objectService->searchObjectsPaginated(
-				query: $searchQuery,
-				_rbac: true,
-				_multitenancy: true
-			);
+			return $this->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[AbstractSchemaSearchProvider] Search failed for schema "{schema}", returning empty result: {error}',
 				['schema' => $this->getSchemaSlug(), 'error' => $e->getMessage()]
 			);
-			return SearchResult::complete($this->getName(), []);
+			return null;
 		}
+	}//end find()
 
+	/**
+	 * One page of results: complete when it is not full, else with the next offset as its cursor.
+	 *
+	 * @param array<int, mixed> $results The matched objects.
+	 * @param SchemaSearchPage  $page    The page asked for.
+	 *
+	 * @return SearchResult
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::paginated is the standard Nextcloud search pattern.
+	 */
+	private function pageResult(array $results, SchemaSearchPage $page): SearchResult {
 		$entries = [];
-		if (empty($searchResults['results']) === false) {
-			foreach ($searchResults['results'] as $result) {
-				$entries[] = $this->resultFormatter->format(result: $result, term: $term);
-			}
+		foreach ($results as $result) {
+			$entries[] = $this->resultFormatter->format(result: $result, term: $page->term);
 		}
 
-		if (count($entries) >= $limit) {
-			return SearchResult::paginated($this->getName(), $entries, ($offset + $limit));
+		if (count($entries) >= $page->limit) {
+			return SearchResult::paginated($this->getName(), $entries, ($page->offset + $page->limit));
 		}
 
+		return $this->resultOf(entries: $entries);
+	}//end pageResult()
+
+	/**
+	 * A complete result under this provider's name.
+	 *
+	 * @param array<int, mixed> $entries The entries.
+	 *
+	 * @return SearchResult
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::complete is the standard Nextcloud search pattern.
+	 */
+	private function resultOf(array $entries): SearchResult {
 		return SearchResult::complete($this->getName(), $entries);
-	}//end search()
-
-	/**
-	 * Whether this provider's configured schema has opted in to its own
-	 * Smart Picker entry's functionality. `false` for an unresolvable
-	 * schema slug, matching the fail-closed default.
-	 *
-	 * @return bool True when the schema's `smartPickerEnabled` flag is set
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d2a
-	 */
-	protected function isSmartPickerEnabled(): bool {
-		$schemaId = $this->resolveSchemaId();
-		if ($schemaId === false) {
-			return false;
-		}
-
-		try {
-			return $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->isSmartPickerEnabled();
-		} catch (\Exception $e) {
-			return false;
-		}
-	}//end isSmartPickerEnabled()
-
-	/**
-	 * Lazily resolve {@see self::getRegisterSlug()} to its database ID,
-	 * memoized per-instance for the lifetime of the request.
-	 *
-	 * @return int|false The resolved register ID, or `false` when the slug
-	 *                    could not be resolved
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d3
-	 */
-	private function resolveRegisterId(): int|false {
-		if ($this->registerId === null) {
-			try {
-				$this->registerId = (int)$this->registerMapper->find(
-					$this->getRegisterSlug(),
-					_rbac: false,
-					_multitenancy: false
-				)->getId();
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					'[AbstractSchemaSearchProvider] Failed to resolve register slug "{slug}": {error}',
-					['slug' => $this->getRegisterSlug(), 'error' => $e->getMessage()]
-				);
-				$this->registerId = false;
-			}
-		}
-
-		return $this->registerId;
-	}//end resolveRegisterId()
-
-	/**
-	 * Lazily resolve {@see self::getSchemaSlug()} to its database ID,
-	 * memoized per-instance for the lifetime of the request.
-	 *
-	 * @return int|false The resolved schema ID, or `false` when the slug
-	 *                    could not be resolved
-	 *
-	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d3
-	 */
-	private function resolveSchemaId(): int|false {
-		if ($this->schemaId === null) {
-			try {
-				$this->schemaId = (int)$this->schemaMapper->find(
-					$this->getSchemaSlug(),
-					_multitenancy: false,
-					_rbac: false
-				)->getId();
-			} catch (\Exception $e) {
-				$this->logger->debug(
-					'[AbstractSchemaSearchProvider] Failed to resolve schema slug "{slug}": {error}',
-					['slug' => $this->getSchemaSlug(), 'error' => $e->getMessage()]
-				);
-				$this->schemaId = false;
-			}
-		}
-
-		return $this->schemaId;
-	}//end resolveSchemaId()
+	}//end resultOf()
 }//end class

@@ -6,14 +6,10 @@
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load extraction data')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- No extraction data -->
 		<NcEmptyContent
@@ -166,17 +162,17 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
 
 export default {
 	name: 'ExtractionTab',
 
 	components: {
+		TabErrorState,
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
-		AlertCircleOutline,
 		FileSearchOutline,
 	},
 
