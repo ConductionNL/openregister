@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Rules;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class DependentValueTable {
+final class DependentValueTable implements DependentValueTableInterface {
 
 	/**
 	 * The property annotation this class reads.
@@ -54,13 +54,6 @@ final class DependentValueTable {
 	 * @var string
 	 */
 	public const ANNOTATION = 'x-openregister-dependent-values';
-
-	/**
-	 * The refusal code an object save carries when a value is outside the table.
-	 *
-	 * @var string
-	 */
-	public const CODE_VALUE_NOT_ALLOWED = 'dependent-value-not-allowed';
 
 	/**
 	 * Every declared table, keyed by the property it constrains.

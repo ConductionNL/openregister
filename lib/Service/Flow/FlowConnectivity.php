@@ -95,12 +95,12 @@ class FlowConnectivity {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry Resolves whether a type ends a path.
+	 * @param FlowNodeCatalogueInterface $registry Resolves whether a type ends a path.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 	) {
 		$this->graph = new FlowGraph();
 

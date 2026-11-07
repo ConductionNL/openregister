@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapper;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Service\Audit\ContentReportService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -52,7 +52,7 @@ class ContentReportController extends Controller {
 	 * @param IRequest            $request     Active request.
 	 * @param ContentReportMapper $reports     The reports and their copies.
 	 * @param ContentReportService $service    Files a report and resolves reviewer access.
-	 * @param MagicMapperInterface         $objects     Resolves the content being reported.
+	 * @param MagicObjectFinderInterface         $objects     Resolves the content being reported.
 	 * @param IUserSession        $userSession Current user session.
 	 */
 	public function __construct(
@@ -60,7 +60,7 @@ class ContentReportController extends Controller {
 		IRequest $request,
 		private readonly ContentReportMapper $reports,
 		private readonly ContentReportService $service,
-		private readonly MagicMapperInterface $objects,
+		private readonly MagicObjectFinderInterface $objects,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
