@@ -82,14 +82,24 @@ use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
@@ -231,6 +241,7 @@ final class ContractBindings {
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
+		IterateNodeInterface::class => IterateNode::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
@@ -238,8 +249,10 @@ final class ContractBindings {
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,
+		MapNodeInterface::class => MapNode::class,
 		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		MergeNodeInterface::class => MergeNode::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
@@ -267,6 +280,8 @@ final class ContractBindings {
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		PartyRoleServiceInterface::class => PartyRoleService::class,
 		PartyServiceInterface::class => PartyService::class,
+		RouterNodeInterface::class => RouterNode::class,
+		WaitNodeInterface::class => WaitNode::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
 		PollLinkServiceInterface::class => PollLinkService::class,

@@ -32,14 +32,24 @@ use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use PHPUnit\Framework\TestCase;
@@ -67,10 +77,15 @@ final class D6InterfaceBindingsTest extends TestCase {
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
 		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		IterateNode::class => [IterateNodeInterface::class, ContractBindings::class],
+		MapNode::class => [MapNodeInterface::class, ContractBindings::class],
+		MergeNode::class => [MergeNodeInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
 		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
 		PortalTaskNode::class => [PortalTaskNodeInterface::class, ContractBindings::class],
+		RouterNode::class => [RouterNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
+		WaitNode::class => [WaitNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
