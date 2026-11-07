@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Vectorization\Handlers;
 
 use Exception;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -87,131 +88,193 @@ class VectorStorageHandler implements VectorStorageHandlerInterface {
 		array $metadata = [],
 	): int {
 		return $this->storeVectorInDatabase(
-			entityType: $entityType,
-			entityId: $entityId,
-			embedding: $embedding,
-			model: $model,
-			dimensions: $dimensions,
-			chunkIndex: $chunkIndex,
-			totalChunks: $totalChunks,
-			chunkText: $chunkText,
-			metadata: $metadata
+			vector: new StoredVector(
+				entityType: $entityType,
+				entityId: $entityId,
+				embedding: $embedding,
+				model: $model,
+				dimensions: $dimensions,
+				chunkIndex: $chunkIndex,
+				totalChunks: $totalChunks,
+				chunkText: $chunkText,
+				metadata: $metadata
+			)
 		);
 	}//end storeVector()
 
 	/**
 	 * Store vector embedding in database
 	 *
-	 * @param string $entityType Entity type ('object' or 'file')
-	 * @param string $entityId Entity UUID
-	 * @param array $embedding Vector embedding (array of floats)
-	 * @param string $model Model used to generate embedding
-	 * @param int $dimensions Number of dimensions
-	 * @param int $chunkIndex Chunk index (0 for objects, N for file chunks)
-	 * @param int $totalChunks Total number of chunks
-	 * @param string|null $chunkText The text that was embedded
-	 * @param array $metadata Additional metadata as associative array
+	 * @param StoredVector $vector The entity, embedding, model and chunk to store.
 	 *
 	 * @return int The ID of the inserted vector
 	 *
 	 * @throws \Exception If storage fails
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	private function storeVectorInDatabase(
-		string $entityType,
-		string $entityId,
-		array $embedding,
-		string $model,
-		int $dimensions,
-		int $chunkIndex = 0,
-		int $totalChunks = 1,
-		?string $chunkText = null,
-		array $metadata = [],
-	): int {
+	private function storeVectorInDatabase(StoredVector $vector): int {
+		$this->logStoring(vector: $vector);
+
+		try {
+			$vectorId = $this->insertVector(vector: $vector);
+
+			// Additive pgvector dual-write (hybrid-document-search, decision 1): the
+			// fast-path column is filled when it fits; the BLOB stays the storage of record.
+			$this->populateVectorColumn(vectorId: $vectorId, embedding: $vector->embedding);
+			$this->logStored(vector: $vector, vectorId: $vectorId);
+
+			return $vectorId;
+		} catch (Exception $e) {
+			$this->logStoreFailure(vector: $vector, error: $e);
+			throw new Exception('Vector storage failed: ' . $e->getMessage());
+		}//end try
+	}//end storeVectorInDatabase()
+
+	/**
+	 * Insert the vector row.
+	 *
+	 * @param StoredVector $vector The vector to insert.
+	 *
+	 * @return int The ID of the inserted row.
+	 */
+	private function insertVector(StoredVector $vector): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->insert('openregister_vectors')
+			->values(values: $this->rowValues(qb: $qb, vector: $vector))
+			->executeStatement();
+
+		return $qb->getLastInsertId();
+	}//end insertVector()
+
+	/**
+	 * The bound columns of one vector row.
+	 *
+	 * @param IQueryBuilder $qb     The insert being built.
+	 * @param StoredVector  $vector The vector to insert.
+	 *
+	 * @return array<string, mixed> The column values.
+	 */
+	private function rowValues(IQueryBuilder $qb, StoredVector $vector): array {
+		$chunkText = $this->sanitizedChunkText(vector: $vector);
+		return [
+			'entity_type' => $qb->createNamedParameter($vector->entityType),
+			'entity_id' => $qb->createNamedParameter($vector->entityId),
+			'chunk_index' => $qb->createNamedParameter($vector->chunkIndex, \PDO::PARAM_INT),
+			'total_chunks' => $qb->createNamedParameter($vector->totalChunks, \PDO::PARAM_INT),
+			'chunk_text' => $qb->createNamedParameter($chunkText),
+			'embedding' => $qb->createNamedParameter(serialize($vector->embedding), \PDO::PARAM_LOB),
+			'embedding_model' => $qb->createNamedParameter($vector->model),
+			'embedding_dimensions' => $qb->createNamedParameter($vector->dimensions, \PDO::PARAM_INT),
+			'metadata' => $qb->createNamedParameter($this->metadataJson(vector: $vector)),
+			'created_at' => $qb->createNamedParameter(date('Y-m-d H:i:s')),
+			'updated_at' => $qb->createNamedParameter(date('Y-m-d H:i:s')),
+		];
+	}//end rowValues()
+
+	/**
+	 * The metadata as JSON, or null when there is none.
+	 *
+	 * @param StoredVector $vector The vector.
+	 *
+	 * @return string|false|null The JSON, false when it cannot be encoded, or null.
+	 */
+	private function metadataJson(StoredVector $vector): string|false|null {
+		if (empty($vector->metadata) === true) {
+			return null;
+		}
+
+		return json_encode($vector->metadata);
+	}//end metadataJson()
+
+	/**
+	 * The embedded text made safe for UTF-8 storage, or null when there is none.
+	 *
+	 * @param StoredVector $vector The vector.
+	 *
+	 * @return string|null The text.
+	 */
+	private function sanitizedChunkText(StoredVector $vector): ?string {
+		if ($vector->chunkText === null) {
+			return null;
+		}
+
+		return $this->sanitizeText(text: $vector->chunkText);
+	}//end sanitizedChunkText()
+
+	/**
+	 * Log that a vector is about to be stored.
+	 *
+	 * @param StoredVector $vector The vector.
+	 *
+	 * @return void
+	 */
+	private function logStoring(StoredVector $vector): void {
 		$this->logger->debug(
 			message: '[VectorStorageHandler] Storing vector in database',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'entity_type' => $entityType,
-				'entity_id' => $entityId,
-				'chunk_index' => $chunkIndex,
-				'dimensions' => $dimensions,
+				...$this->entityContext(vector: $vector),
+				'chunk_index' => $vector->chunkIndex,
+				'dimensions' => $vector->dimensions,
 			]
 		);
+	}//end logStoring()
 
-		try {
-			// Serialize embedding to binary format.
-			$embeddingBlob = serialize($embedding);
+	/**
+	 * Log that a vector was stored.
+	 *
+	 * @param StoredVector $vector   The vector.
+	 * @param int          $vectorId The ID of the inserted row.
+	 *
+	 * @return void
+	 */
+	private function logStored(StoredVector $vector, int $vectorId): void {
+		$this->logger->info(
+			message: '[VectorStorageHandler] Vector stored successfully in database',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'vector_id' => $vectorId,
+				...$this->entityContext(vector: $vector),
+			]
+		);
+	}//end logStored()
 
-			// Serialize metadata to JSON.
-			$metadataJson = null;
-			if (empty($metadata) === false) {
-				$metadataJson = json_encode($metadata);
-			}
+	/**
+	 * Log that storing a vector failed.
+	 *
+	 * @param StoredVector $vector The vector.
+	 * @param Exception    $error  The failure.
+	 *
+	 * @return void
+	 */
+	private function logStoreFailure(StoredVector $vector, Exception $error): void {
+		$this->logger->error(
+			message: '[VectorStorageHandler] Failed to store vector in database',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+				...$this->entityContext(vector: $vector),
+			]
+		);
+	}//end logStoreFailure()
 
-			// Sanitize chunk_text to prevent encoding errors.
-			$sanitizedChunkText = null;
-			if ($chunkText !== null) {
-				$sanitizedChunkText = $this->sanitizeText(text: $chunkText);
-			}
-
-			$qb = $this->db->getQueryBuilder();
-			$qb->insert('openregister_vectors')
-				->values(
-					values: [
-						'entity_type' => $qb->createNamedParameter($entityType),
-						'entity_id' => $qb->createNamedParameter($entityId),
-						'chunk_index' => $qb->createNamedParameter($chunkIndex, \PDO::PARAM_INT),
-						'total_chunks' => $qb->createNamedParameter($totalChunks, \PDO::PARAM_INT),
-						'chunk_text' => $qb->createNamedParameter($sanitizedChunkText),
-						'embedding' => $qb->createNamedParameter($embeddingBlob, \PDO::PARAM_LOB),
-						'embedding_model' => $qb->createNamedParameter($model),
-						'embedding_dimensions' => $qb->createNamedParameter($dimensions, \PDO::PARAM_INT),
-						'metadata' => $qb->createNamedParameter($metadataJson),
-						'created_at' => $qb->createNamedParameter(date('Y-m-d H:i:s')),
-						'updated_at' => $qb->createNamedParameter(date('Y-m-d H:i:s')),
-					]
-				)
-				->executeStatement();
-
-			$vectorId = $qb->getLastInsertId();
-
-			// Additive pgvector dual-write (hybrid-document-search, decision 1):
-			// populate the PostgreSQL fast-path column when available and the
-			// dimension matches; the BLOB write above stays the storage of record.
-			$this->populateVectorColumn(vectorId: $vectorId, embedding: $embedding);
-
-			$this->logger->info(
-				message: '[VectorStorageHandler] Vector stored successfully in database',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'vector_id' => $vectorId,
-					'entity_type' => $entityType,
-					'entity_id' => $entityId,
-				]
-			);
-
-			return $vectorId;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorStorageHandler] Failed to store vector in database',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'entity_type' => $entityType,
-					'entity_id' => $entityId,
-				]
-			);
-			throw new Exception('Vector storage failed: ' . $e->getMessage());
-		}//end try
-	}//end storeVectorInDatabase()
+	/**
+	 * The entity a vector belongs to, as log context.
+	 *
+	 * @param StoredVector $vector The vector.
+	 *
+	 * @return array{entity_type: string, entity_id: string} The context.
+	 */
+	private function entityContext(StoredVector $vector): array {
+		return [
+			'entity_type' => $vector->entityType,
+			'entity_id' => $vector->entityId,
+		];
+	}//end entityContext()
 
 	/**
 	 * Upsert the pgvector ANN sidecar row for a stored vector.
