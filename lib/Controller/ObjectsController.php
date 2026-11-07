@@ -870,7 +870,7 @@ class ObjectsController extends Controller {
 	 * @return array<int, array> The rows.
 	 */
 	private function crossTableRows(array $results, array $query): array {
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class);
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac']);
 		$renderHandler->applyLensesToRows(rows: $results, _rbac: $query['_rbac']);
 		$renderHandler->resolveTranslationsForRows(rows: $results);
@@ -1545,7 +1545,7 @@ class ObjectsController extends Controller {
 	private function fullyRenderedRows(array $results, array $listing): array {
 		$query = $listing['query'];
 
-		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class)->renderEntities(
+		return $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class)->renderEntities(
 			entities: $results,
 			_extend: $listing['extend'],
 			_filter: ($query['_filter'] ?? null),
@@ -2713,7 +2713,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	private function renderedMagicRows(array $results, bool $rbac): array {
-		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+		$renderHandler = $this->container->get(\OCA\OpenRegister\Service\Object\RenderObjectInterface::class);
 		$renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 		$renderHandler->applyLensesToRows(rows: $results, _rbac: $rbac);
 		$renderHandler->resolveTranslationsForRows(rows: $results);

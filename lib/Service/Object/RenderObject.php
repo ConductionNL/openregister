@@ -93,7 +93,7 @@ use WeakMap;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class RenderObject {
+class RenderObject implements RenderObjectInterface {
 
 	/**
 	 * Cache of registers indexed by ID
