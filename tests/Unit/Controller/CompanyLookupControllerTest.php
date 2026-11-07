@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\CompanyLookupController;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\AppFramework\Http\JSONResponse;
@@ -106,7 +107,7 @@ class CompanyLookupControllerTest extends TestCase {
 
 		$this->kvk->expects($this->once())
 			->method('searchCompanies')
-			->with('Conduction', ['plaats' => 'Utrecht'], 5, 2)
+			->with((new CompanySearch('Conduction', 5, 2))->narrowedBy(['plaats' => 'Utrecht']))
 			->willReturn(
 				[
 					'results' => [['kvkNummer' => '12345678', 'naam' => 'Conduction B.V.']],
@@ -145,7 +146,7 @@ class CompanyLookupControllerTest extends TestCase {
 
 		$this->openCorporates->expects($this->once())
 			->method('searchCompanies')
-			->with('Acme', 'nl', 10, 1)
+			->with((new CompanySearch('Acme', 10, 1))->narrowedBy(['jurisdiction' => 'nl']))
 			->willReturn(['results' => [['name' => 'Acme N.V.']], 'total' => 1, 'limit' => 10, 'page' => 1]);
 
 		$response = $this->controller->openCorporatesSearch();

@@ -28,73 +28,47 @@ import {
 			</div>
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{
-							t(
-								'openregister',
-								'Showing {showing} of {total} deleted items',
-								{
-									showing: paginatedItems.length,
-									total: deletedStore.deletedPagination.total,
-								},
-							)
-						}}
-					</span>
-					<span v-if="selectedItems.length > 0" class="viewIndicator">
-						({{
-							t('openregister', '{count} selected', {
-								count: selectedItems.length,
-							})
-						}})
-					</span>
-				</div>
-				<div class="viewActions">
-					<!-- Mass Actions Dropdown -->
-					<NcActions
-						:forceName="true"
+			<ListActionsBar
+				:summary="
+					t('openregister', 'Showing {showing} of {total} deleted items', {
+						showing: paginatedItems.length,
+						total: deletedStore.deletedPagination.total,
+					})
+				"
+				:selectedCount="selectedItems.length"
+				:actions="[refreshAction(refreshItems)]">
+				<NcActions
+					:forceName="true"
+					:disabled="selectedItems.length === 0"
+					:title="
+						selectedItems.length === 0
+							? 'Select one or more objects to use mass actions'
+							: `Mass actions (${selectedItems.length} selected)`
+					"
+					:menuName="`Mass Actions (${selectedItems.length})`">
+					<template #icon>
+						<FormatListChecks :size="20" />
+					</template>
+					<NcActionButton
 						:disabled="selectedItems.length === 0"
-						:title="
-							selectedItems.length === 0
-								? 'Select one or more objects to use mass actions'
-								: `Mass actions (${selectedItems.length} selected)`
-						"
-						:menuName="`Mass Actions (${selectedItems.length})`">
+						closeAfterClick
+						@click="bulkRestore">
 						<template #icon>
-							<FormatListChecks :size="20" />
+							<Restore :size="20" />
 						</template>
-						<NcActionButton
-							:disabled="selectedItems.length === 0"
-							closeAfterClick
-							@click="bulkRestore">
-							<template #icon>
-								<Restore :size="20" />
-							</template>
-							Restore
-						</NcActionButton>
-						<NcActionButton
-							:disabled="selectedItems.length === 0"
-							closeAfterClick
-							@click="bulkDelete">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							Purge
-						</NcActionButton>
-					</NcActions>
-
-					<!-- Regular Actions -->
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshItems">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						Restore
+					</NcActionButton>
+					<NcActionButton
+						:disabled="selectedItems.length === 0"
+						closeAfterClick
+						@click="bulkDelete">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						Purge
+					</NcActionButton>
+				</NcActions>
+			</ListActionsBar>
 
 			<!-- Items Table -->
 			<NcEmptyContent
@@ -207,24 +181,7 @@ import {
 								{{ daysLeftLabel(item) }}
 							</td>
 							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="restoreItem(item)">
-										<template #icon>
-											<Restore :size="20" />
-										</template>
-										{{ t('openregister', 'Restore') }}
-									</NcActionButton>
-									<NcActionButton
-										closeAfterClick
-										@click="permanentlyDelete(item)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Permanently Delete') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="itemActions(item)" />
 							</td>
 						</tr>
 					</tbody>
@@ -259,11 +216,16 @@ import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
+import { refreshAction } from '../../services/menuActions.js'
 
 export default {
 	name: 'DeletedIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
@@ -273,7 +235,6 @@ export default {
 		DeleteEmpty,
 		Restore,
 		Delete,
-		Refresh,
 		FormatListChecks,
 		PaginationComponent,
 	},
@@ -421,6 +382,30 @@ export default {
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a deleted item.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} item The item
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		itemActions(item) {
+			return [
+				{
+					label: t('openregister', 'Restore'),
+					icon: Restore,
+					run: () => this.restoreItem(item),
+				},
+				{
+					label: t('openregister', 'Permanently Delete'),
+					icon: Delete,
+					run: () => this.permanentlyDelete(item),
+				},
+			]
+		},
+
 		/**
 		 * Load deleted items from store
 		 *

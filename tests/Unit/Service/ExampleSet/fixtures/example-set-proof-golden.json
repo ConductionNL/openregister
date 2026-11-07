@@ -1,0 +1,112 @@
+{
+    "same scalar": [],
+    "other scalar": [
+        ""
+    ],
+    "other scalar with path": [
+        "x.y"
+    ],
+    "empty text as null": [],
+    "null as empty text": [
+        ""
+    ],
+    "equal numbers": [],
+    "unequal numbers": [
+        ""
+    ],
+    "number and text": [
+        ""
+    ],
+    "same moment two offsets": [],
+    "other moment": [
+        ""
+    ],
+    "moment not a moment": [
+        ""
+    ],
+    "moment stored not text": [
+        ""
+    ],
+    "date without time": [
+        ""
+    ],
+    "bad moment both": [
+        ""
+    ],
+    "true and 1": [
+        ""
+    ],
+    "flat map kept": [],
+    "flat map lost one": [
+        "b"
+    ],
+    "missing key": [
+        "b"
+    ],
+    "missing key empty": [],
+    "missing key with path": [
+        "root.a"
+    ],
+    "nested lost": [
+        "a.b.d"
+    ],
+    "nested missing map": [
+        "a"
+    ],
+    "stored scalar for map": [
+        "a"
+    ],
+    "stored null for map": [
+        "a"
+    ],
+    "list kept": [],
+    "list lost": [
+        "0",
+        "1"
+    ],
+    "json text stored": [],
+    "json text stored lost": [
+        "a"
+    ],
+    "json text declared": [],
+    "json text declared lost": [
+        "b"
+    ],
+    "json scalar text declared": [
+        ""
+    ],
+    "text declared map stored": [
+        ""
+    ],
+    "language map read": [],
+    "language map other text": [
+        "nl",
+        "en"
+    ],
+    "language map region codes": [],
+    "language map bad code": [
+        "dutch"
+    ],
+    "language map numeric key": [
+        "0"
+    ],
+    "language map non text": [
+        "nl"
+    ],
+    "language map non text stored": [
+        "nl"
+    ],
+    "empty map vs text": [],
+    "empty map vs map": [],
+    "language map json stored": [],
+    "language map json other": [
+        "nl"
+    ],
+    "nested language map": [],
+    "numeric keys path": [
+        "a.1.b"
+    ],
+    "nested json text": [
+        "a.b"
+    ]
+}

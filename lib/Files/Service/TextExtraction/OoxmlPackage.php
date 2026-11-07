@@ -88,33 +88,18 @@ class OoxmlPackage {
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
 	 */
 	public function readXml(string $path): ?DOMDocument {
-		$index = $this->zip->locateName($path, ZipArchive::FL_NOCASE);
-		if ($index === false) {
+		$xml = $this->rawPart(path: $path);
+		if ($xml === null) {
 			return null;
 		}
 
-		// Read one byte past the cap: a longer read proves the part is too large,
-		// whatever size the zip directory claims.
-		$xml = $this->zip->getFromIndex($index, ($this->maxPartBytes + 1));
-		if ($xml === false || $xml === '') {
-			return null;
+		$document = null;
+		if ($this->withinBounds(xml: $xml) === true) {
+			$document = $this->parse(xml: $xml);
 		}
 
-		if (strlen($xml) > $this->maxPartBytes || stripos($xml, '<!DOCTYPE') !== false) {
+		if ($document === null) {
 			$this->refusedParts[] = $path;
-			return null;
-		}
-
-		$previous = libxml_use_internal_errors(true);
-		$document = new DOMDocument();
-		$loaded = $document->loadXML($xml, (LIBXML_NONET | LIBXML_COMPACT));
-		libxml_clear_errors();
-		libxml_use_internal_errors($previous);
-
-		// The byte check above misses a DOCTYPE in a UTF-16 part; the parsed tree does not.
-		if ($loaded === false || $document->documentElement === null || $document->doctype !== null) {
-			$this->refusedParts[] = $path;
-			return null;
 		}
 
 		return $document;
@@ -134,14 +119,8 @@ class OoxmlPackage {
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
 	 */
 	public function relationships(string $partPath): array {
-		$folder = '';
-		$relsPath = '_rels/.rels';
-		if ($partPath !== '') {
-			$folder = $this->folderOf(path: $partPath);
-			$relsPath = ltrim($folder . '/_rels/' . basename($partPath) . '.rels', '/');
-		}
-
-		$document = $this->readXml(path: $relsPath);
+		$folder = $this->folderOf(path: $partPath);
+		$document = $this->readXml(path: $this->relationshipsPathOf(partPath: $partPath));
 		if ($document === null) {
 			return [];
 		}
@@ -188,6 +167,80 @@ class OoxmlPackage {
 	}//end relationship()
 
 	/**
+	 * The bytes of one part, read at most one byte past the cap, or null when
+	 * the part is missing, unreadable or empty.
+	 *
+	 * Reading one byte past the cap proves a part is too large, whatever size
+	 * the zip directory claims.
+	 *
+	 * @param string $path The part path inside the package, without a leading slash.
+	 *
+	 * @return string|null
+	 */
+	private function rawPart(string $path): ?string {
+		$index = $this->zip->locateName($path, ZipArchive::FL_NOCASE);
+		if ($index === false) {
+			return null;
+		}
+
+		$xml = $this->zip->getFromIndex($index, ($this->maxPartBytes + 1));
+		if ($xml === false || $xml === '') {
+			return null;
+		}
+
+		return $xml;
+	}//end rawPart()
+
+	/**
+	 * Whether part bytes fit the cap and carry no DOCTYPE.
+	 *
+	 * @param string $xml The part bytes.
+	 *
+	 * @return bool
+	 */
+	private function withinBounds(string $xml): bool {
+		return strlen($xml) <= $this->maxPartBytes && stripos($xml, '<!DOCTYPE') === false;
+	}//end withinBounds()
+
+	/**
+	 * Parse part bytes, or null when they are not XML, have no root or declare a DOCTYPE.
+	 *
+	 * The byte check in withinBounds() misses a DOCTYPE in a UTF-16 part; the parsed tree does not.
+	 *
+	 * @param string $xml The part bytes.
+	 *
+	 * @return DOMDocument|null
+	 */
+	private function parse(string $xml): ?DOMDocument {
+		$previous = libxml_use_internal_errors(true);
+		$document = new DOMDocument();
+		$loaded = $document->loadXML($xml, (LIBXML_NONET | LIBXML_COMPACT));
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		if ($loaded === false || $document->documentElement === null || $document->doctype !== null) {
+			return null;
+		}
+
+		return $document;
+	}//end parse()
+
+	/**
+	 * The path of a part's relationships part.
+	 *
+	 * @param string $partPath The part path; '' for the package itself.
+	 *
+	 * @return string E.g. `ppt/slides/_rels/slide1.xml.rels`.
+	 */
+	private function relationshipsPathOf(string $partPath): string {
+		if ($partPath === '') {
+			return '_rels/.rels';
+		}
+
+		return ltrim($this->folderOf(path: $partPath) . '/_rels/' . basename($partPath) . '.rels', '/');
+	}//end relationshipsPathOf()
+
+	/**
 	 * Resolve a relative (or package-absolute) target against a folder.
 	 *
 	 * @param string $folder The base folder, '' for the package root.
@@ -203,24 +256,40 @@ class OoxmlPackage {
 
 		$segments = [];
 		foreach (explode('/', $combined) as $segment) {
-			if ($segment === '' || $segment === '.') {
-				continue;
+			$segments = $this->applySegment(segments: $segments, segment: $segment);
+			if ($segments === null) {
+				return null;
 			}
-
-			if ($segment === '..') {
-				if ($segments === []) {
-					return null;
-				}
-
-				array_pop($segments);
-				continue;
-			}
-
-			$segments[] = $segment;
 		}
 
 		return implode('/', $segments);
 	}//end resolve()
+
+	/**
+	 * Apply one path segment to the segments resolved so far.
+	 *
+	 * @param list<string> $segments The segments so far.
+	 * @param string       $segment  The next segment.
+	 *
+	 * @return list<string>|null The new segments, or null when `..` climbs above the root.
+	 */
+	private function applySegment(array $segments, string $segment): ?array {
+		if ($segment === '' || $segment === '.') {
+			return $segments;
+		}
+
+		if ($segment !== '..') {
+			$segments[] = $segment;
+			return $segments;
+		}
+
+		if ($segments === []) {
+			return null;
+		}
+
+		array_pop($segments);
+		return $segments;
+	}//end applySegment()
 
 	/**
 	 * The folder of a part path, '' for a part at the package root.

@@ -1,0 +1,819 @@
+{
+    "vtodo enabled dav": {
+        "result": true,
+        "observed": []
+    },
+    "vtodo enabled tasks": {
+        "result": true,
+        "observed": []
+    },
+    "vtodo enabled calendar": {
+        "result": true,
+        "observed": []
+    },
+    "vtodo enabled none": {
+        "result": false,
+        "observed": []
+    },
+    "vtodo enabled throws": {
+        "result": false,
+        "observed": []
+    },
+    "vtodo findAll default": {
+        "result": [
+            [
+                "uid-1",
+                "3",
+                "9",
+                {
+                    "id": "uid-1",
+                    "title": "Minutes",
+                    "description": "Follow up",
+                    "status": "needs-action",
+                    "dueDate": "2026-07-01",
+                    "completed": null,
+                    "priority": 5
+                }
+            ],
+            [
+                "uri-3.ics",
+                "3",
+                "9",
+                {
+                    "id": "uri-3.ics",
+                    "title": "Overridden",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null,
+                    "assignee": "Ann"
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll unscoped": {
+        "result": [
+            [
+                "uid-1",
+                "3",
+                "9",
+                {
+                    "id": "uid-1",
+                    "title": "Minutes",
+                    "description": "Follow up",
+                    "status": "needs-action",
+                    "dueDate": "2026-07-01",
+                    "completed": null,
+                    "priority": 5
+                }
+            ],
+            [
+                "uid-2",
+                "3",
+                "9",
+                {
+                    "id": "uid-2",
+                    "title": "Other schema",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ],
+            [
+                "uri-3.ics",
+                "3",
+                "9",
+                {
+                    "id": "uri-3.ics",
+                    "title": "Overridden",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null,
+                    "assignee": "Ann"
+                }
+            ],
+            [
+                "uid-4",
+                "3",
+                "9",
+                {
+                    "id": "uid-4",
+                    "title": "",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ],
+            [
+                "uid-5",
+                "3",
+                "9",
+                {
+                    "id": "uid-5",
+                    "title": "",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ],
+            [
+                "",
+                "3",
+                "9",
+                {
+                    "id": "",
+                    "title": "Unlinked",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll unscoped not strictly true": {
+        "result": [
+            [
+                "uid-1",
+                "3",
+                "9",
+                {
+                    "id": "uid-1",
+                    "title": "Minutes",
+                    "description": "Follow up",
+                    "status": "needs-action",
+                    "dueDate": "2026-07-01",
+                    "completed": null,
+                    "priority": 5
+                }
+            ],
+            [
+                "uri-3.ics",
+                "3",
+                "9",
+                {
+                    "id": "uri-3.ics",
+                    "title": "Overridden",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null,
+                    "assignee": "Ann"
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll register override": {
+        "result": [
+            [
+                "uid-4",
+                "3",
+                "9",
+                {
+                    "id": "uid-4",
+                    "title": "",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll schema override": {
+        "result": [
+            [
+                "uid-2",
+                "3",
+                "9",
+                {
+                    "id": "uid-2",
+                    "title": "Other schema",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll schemas list": {
+        "result": [
+            [
+                "uid-2",
+                "3",
+                "9",
+                {
+                    "id": "uid-2",
+                    "title": "Other schema",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ],
+            [
+                "uid-5",
+                "3",
+                "9",
+                {
+                    "id": "uid-5",
+                    "title": "",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll empty schemas falls back": {
+        "result": [
+            [
+                "uid-5",
+                "3",
+                "9",
+                {
+                    "id": "uid-5",
+                    "title": "",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll schemas not a list": {
+        "result": [
+            [
+                "uid-1",
+                "3",
+                "9",
+                {
+                    "id": "uid-1",
+                    "title": "Minutes",
+                    "description": "Follow up",
+                    "status": "needs-action",
+                    "dueDate": "2026-07-01",
+                    "completed": null,
+                    "priority": 5
+                }
+            ],
+            [
+                "uri-3.ics",
+                "3",
+                "9",
+                {
+                    "id": "uri-3.ics",
+                    "title": "Overridden",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null,
+                    "assignee": "Ann"
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo findAll paging and status": {
+        "result": [
+            [
+                "uid-2",
+                "3",
+                "9",
+                {
+                    "id": "uid-2",
+                    "title": "Other schema",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null
+                }
+            ],
+            [
+                "uri-3.ics",
+                "3",
+                "9",
+                {
+                    "id": "uri-3.ics",
+                    "title": "Overridden",
+                    "description": "",
+                    "status": "",
+                    "dueDate": null,
+                    "completed": null,
+                    "priority": null,
+                    "assignee": "Ann"
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                "completed",
+                2,
+                1
+            ]
+        ]
+    },
+    "vtodo findAll service throws": {
+        "result": [],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:caldav-vtodo] could not read VTODOs: caldav down"
+            ]
+        ]
+    },
+    "vtodo count default": {
+        "result": 2,
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                200,
+                0
+            ]
+        ]
+    },
+    "vtodo count unscoped": {
+        "result": 3,
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                3,
+                0
+            ]
+        ]
+    },
+    "vtodo find by uid": {
+        "result": [
+            "uid-1",
+            "3",
+            "9",
+            {
+                "id": "uid-1",
+                "title": "Minutes",
+                "description": "Follow up",
+                "status": "needs-action",
+                "dueDate": "2026-07-01",
+                "completed": null,
+                "priority": 5
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find by uri": {
+        "result": [
+            "uri-3.ics",
+            "3",
+            "9",
+            {
+                "id": "uri-3.ics",
+                "title": "Overridden",
+                "description": "",
+                "status": "",
+                "dueDate": null,
+                "completed": null,
+                "priority": null,
+                "assignee": "Ann"
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find out of scope": {
+        "result": null,
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find out of scope unscoped": {
+        "result": [
+            "uid-2",
+            "3",
+            "9",
+            {
+                "id": "uid-2",
+                "title": "Other schema",
+                "description": "",
+                "status": "",
+                "dueDate": null,
+                "completed": null,
+                "priority": null
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find empty id unscoped": {
+        "result": [
+            "uri-3.ics",
+            "3",
+            "9",
+            {
+                "id": "uri-3.ics",
+                "title": "Overridden",
+                "description": "",
+                "status": "",
+                "dueDate": null,
+                "completed": null,
+                "priority": null,
+                "assignee": "Ann"
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find missing": {
+        "result": null,
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ]
+        ]
+    },
+    "vtodo find service throws": {
+        "result": null,
+        "observed": [
+            [
+                "getAllUserTasks",
+                null,
+                1000,
+                0
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:caldav-vtodo] could not read VTODOs: caldav down"
+            ]
+        ]
+    },
+    "vevent enabled dav": {
+        "result": true,
+        "observed": []
+    },
+    "vevent enabled calendar": {
+        "result": true,
+        "observed": []
+    },
+    "vevent enabled tasks only": {
+        "result": false,
+        "observed": []
+    },
+    "vevent enabled throws": {
+        "result": false,
+        "observed": []
+    },
+    "vevent findAll": {
+        "result": [
+            [
+                "ev-1",
+                "3",
+                "9",
+                {
+                    "id": "ev-1",
+                    "summary": "Council",
+                    "startDate": "2026-01-02T10:00:00",
+                    "endDate": "2026-01-02T11:00:00",
+                    "location": "Hall"
+                }
+            ],
+            [
+                "e2.ics",
+                "3",
+                "9",
+                {
+                    "id": "e2.ics",
+                    "summary": "42",
+                    "startDate": null,
+                    "endDate": null,
+                    "location": null
+                }
+            ],
+            [
+                "ev-3",
+                "3",
+                "9",
+                {
+                    "id": "ev-3",
+                    "summary": "",
+                    "startDate": null,
+                    "endDate": null,
+                    "location": null
+                }
+            ],
+            [
+                "",
+                "3",
+                "9",
+                {
+                    "id": "",
+                    "summary": "",
+                    "startDate": null,
+                    "endDate": null,
+                    "location": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                200,
+                0
+            ]
+        ]
+    },
+    "vevent findAll paging": {
+        "result": [
+            [
+                "e2.ics",
+                "3",
+                "9",
+                {
+                    "id": "e2.ics",
+                    "summary": "42",
+                    "startDate": null,
+                    "endDate": null,
+                    "location": null
+                }
+            ],
+            [
+                "ev-3",
+                "3",
+                "9",
+                {
+                    "id": "ev-3",
+                    "summary": "",
+                    "startDate": null,
+                    "endDate": null,
+                    "location": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                2,
+                1
+            ]
+        ]
+    },
+    "vevent findAll service throws": {
+        "result": [],
+        "observed": [
+            [
+                "getAllUserEvents",
+                200,
+                0
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:calendar-event-source] could not read VEVENTs: calendar down"
+            ]
+        ]
+    },
+    "vevent count": {
+        "result": 3,
+        "observed": [
+            [
+                "getAllUserEvents",
+                3,
+                0
+            ]
+        ]
+    },
+    "vevent find by uid": {
+        "result": [
+            "ev-1",
+            "3",
+            "9",
+            {
+                "id": "ev-1",
+                "summary": "Council",
+                "startDate": "2026-01-02T10:00:00",
+                "endDate": "2026-01-02T11:00:00",
+                "location": "Hall"
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ]
+        ]
+    },
+    "vevent find by id": {
+        "result": [
+            "ev-1",
+            "3",
+            "9",
+            {
+                "id": "ev-1",
+                "summary": "Council",
+                "startDate": "2026-01-02T10:00:00",
+                "endDate": "2026-01-02T11:00:00",
+                "location": "Hall"
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ]
+        ]
+    },
+    "vevent find id without uid": {
+        "result": [
+            "e2.ics",
+            "3",
+            "9",
+            {
+                "id": "e2.ics",
+                "summary": "42",
+                "startDate": null,
+                "endDate": null,
+                "location": null
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ]
+        ]
+    },
+    "vevent find empty id": {
+        "result": [
+            "e2.ics",
+            "3",
+            "9",
+            {
+                "id": "e2.ics",
+                "summary": "42",
+                "startDate": null,
+                "endDate": null,
+                "location": null
+            }
+        ],
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ]
+        ]
+    },
+    "vevent find missing": {
+        "result": null,
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ]
+        ]
+    },
+    "vevent find service throws": {
+        "result": null,
+        "observed": [
+            [
+                "getAllUserEvents",
+                1000,
+                0
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:calendar-event-source] could not read VEVENTs: calendar down"
+            ]
+        ]
+    }
+}

@@ -25,6 +25,8 @@ return array (
   'type object for array' => 'Property \'p\' should be type \'array\' but is \'object\'. Please provide a value of the correct type.',
   'type filled list for object' => 'Property \'p\' should be type \'object\' but is \'array\'. Please provide a value of the correct type.',
   'type null' => 'Property \'0.p\' should be type \'integer\' but is \'null\'. Please provide a value of the correct type.',
+  'type null for string' => "Property 'p' should be type 'string' but is 'null'. Please provide a value of the correct type.",
+  'type false for array' => "Property 'p' should be type 'array' but is 'boolean'. Please provide a value of the correct type.",
   'minItems' => 'Property \'tags\' requires at least 2 items, has 1. Please add more items to the array or set to null if the property is not required.',
   'minItems not a list' => 'Property \'tags\' requires at least 0 items, has 0. Please add more items to the array or set to null if the property is not required.',
   'maxItems' => 'Property \'tags\' allows at most 2 items, has 3. Please remove some items from the array.',

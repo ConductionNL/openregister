@@ -64,6 +64,19 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
 		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],
+		'lib/Service/Object/SaveObject/InverseWriteBack.php' => ['writeToTarget'],
+	];
+
+	/**
+	 * Lookups whose `fn ()` sits on the line after `WriteCause::asLookup(`.
+	 *
+	 * Keyed by file, valued by the enclosing method. A listed call still has to
+	 * be wrapped in the lookup: being listed decides nothing by itself.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const WRAPPED_LOOKUPS = [
+		'lib/Files/Controller/FilesController.php' => ['objectUnderReadCheck'],
 	];
 
 	/**
@@ -172,6 +185,8 @@ class RecentLensLookupCallSitesTest extends TestCase {
 					|| preg_match('/_audit:\s*false/', $call) === 1
 					|| in_array($method, (self::OPENED[$relative] ?? []), true) === true
 					|| in_array($method, (self::NOT_OBJECT_SERVICE[$relative] ?? []), true) === true
+					|| (in_array($method, (self::WRAPPED_LOOKUPS[$relative] ?? []), true) === true
+					&& preg_match('/WriteCause::asLookup\(\s+fn \(\) => $/', $prefix) === 1)
 				) {
 					continue;
 				}
