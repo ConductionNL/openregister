@@ -31,11 +31,14 @@ use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupLinks;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
+use ReflectionMethod;
+use ReflectionNamedType;
 use Stringable;
 
 /**
@@ -119,10 +122,12 @@ class ObjectRelationCleanupServiceGoldenTest extends TestCase {
 		return new ObjectRelationCleanupService(
 			$this->recorder(NoteService::class, 'notes', ['deleteNotesForObject' => null]),
 			$this->recorder(TaskService::class, 'tasks', ['getTasksForObject' => $tasks, 'deleteTask' => null]),
-			$this->recorder(EmailService::class, 'emails', ['deleteLinksForObject' => 2, 'getEmailsForObject' => [1, 2]]),
-			$this->recorder(CalendarEventService::class, 'events', ['unlinkEventsForObject' => null, 'getEventsForObject' => [1]]),
-			$this->recorder(ContactService::class, 'contacts', ['deleteLinksForObject' => null, 'getContactsForObject' => [1, 2, 3]]),
-			$this->recorder(DeckCardService::class, 'deck', ['deleteLinksForObject' => 0, 'getCardsForObject' => [1, 2, 3, 4]]),
+			new ObjectRelationCleanupLinks(
+				$this->recorder(EmailService::class, 'emails', ['deleteLinksForObject' => 2, 'getEmailsForObject' => [1, 2]]),
+				$this->recorder(CalendarEventService::class, 'events', ['unlinkEventsForObject' => null, 'getEventsForObject' => [1]]),
+				$this->recorder(ContactService::class, 'contacts', ['deleteLinksForObject' => null, 'getContactsForObject' => [1, 2, 3]]),
+				$this->recorder(DeckCardService::class, 'deck', ['deleteLinksForObject' => 0, 'getCardsForObject' => [1, 2, 3, 4]])
+			),
 			$logger
 		);
 	}//end build()
@@ -234,4 +239,21 @@ class ObjectRelationCleanupServiceGoldenTest extends TestCase {
 		$this->assertSame(['warning: Could not count contacts for object u5: contacts getContactsForObject broke'], $this->lines);
 		$this->assertNotContains('notes.deleteNotesForObject(u5)', $this->calls);
 	}//end testCountTimelineLinks()
+
+	/**
+	 * The container autowires the service and its bundle: every constructor
+	 * parameter is a class or interface, none scalar, none untyped.
+	 *
+	 * @return void
+	 */
+	public function testConstructorsAreAutowirable(): void {
+		foreach ([ObjectRelationCleanupService::class, ObjectRelationCleanupLinks::class] as $class) {
+			foreach ((new ReflectionMethod($class, '__construct'))->getParameters() as $parameter) {
+				$type = $parameter->getType();
+				$this->assertInstanceOf(ReflectionNamedType::class, $type, $class . '::$' . $parameter->getName());
+				$this->assertFalse($type->isBuiltin(), $class . '::$' . $parameter->getName());
+				$this->assertTrue(class_exists($type->getName()) || interface_exists($type->getName()), $type->getName());
+			}
+		}
+	}//end testConstructorsAreAutowirable()
 }//end class
