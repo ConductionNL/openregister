@@ -61,7 +61,7 @@ use Throwable;
  *                                                   the rebuild runs on PostgreSQL only and
  *                                                   refuses elsewhere with its reason.
  */
-class SearchIndexMaintenance {
+class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	/**
 	 * The app config key holding the report of the last rebuild.
 	 */

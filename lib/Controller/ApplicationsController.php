@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Db\ApplicationMapper;
-use OCA\OpenRegister\Service\ApplicationService;
+use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -60,9 +60,9 @@ class ApplicationsController extends Controller {
 	 *
 	 * Handles application business logic, validation, and service layer operations.
 	 *
-	 * @var ApplicationService Application service instance
+	 * @var ApplicationServiceInterface Application service instance
 	 */
-	private readonly ApplicationService $applicationService;
+	private readonly ApplicationServiceInterface $applicationService;
 
 	/**
 	 * Application mapper for direct database operations
@@ -90,7 +90,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ApplicationService $applicationService Application service for business logic
+	 * @param ApplicationServiceInterface $applicationService Application service for business logic
 	 * @param ApplicationMapper $applicationMapper Application mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 *
@@ -99,7 +99,7 @@ class ApplicationsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		ApplicationService $applicationService,
+		ApplicationServiceInterface $applicationService,
 		ApplicationMapper $applicationMapper,
 		LoggerInterface $logger,
 	) {

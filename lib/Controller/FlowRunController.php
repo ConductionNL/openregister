@@ -34,7 +34,7 @@ use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Exception\FlowSignalRefused;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalService;
@@ -98,9 +98,9 @@ class FlowRunController extends Controller {
 	/**
 	 * Resolves a flow id to its document.
 	 *
-	 * @var FlowLocator
+	 * @var FlowLocatorInterface
 	 */
-	private readonly FlowLocator $resolvers;
+	private readonly FlowLocatorInterface $resolvers;
 
 	/**
 	 * Attributes a retried run to the caller.

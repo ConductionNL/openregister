@@ -48,27 +48,83 @@ use Psr\Log\LoggerInterface;
  */
 class FileSidebarService {
 	/**
+	 * Register mapper for RBAC-aware register lookups.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for schema lookups.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Database connection for magic table queries.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Chunk mapper for extraction data.
+	 *
+	 * @var ChunkMapper
+	 */
+	private readonly ChunkMapper $chunkMapper;
+
+	/**
+	 * Entity relation mapper for PII data.
+	 *
+	 * @var EntityRelationMapperInterface
+	 */
+	private readonly EntityRelationMapperInterface $entityRelationMapper;
+
+	/**
+	 * GDPR entity mapper for entity type lookups.
+	 *
+	 * @var GdprEntityMapper
+	 */
+	private readonly GdprEntityMapper $gdprEntityMapper;
+
+	/**
+	 * Risk level computation service.
+	 *
+	 * @var RiskLevelService
+	 */
+	private readonly RiskLevelService $riskLevelService;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper for RBAC-aware register lookups.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema lookups.
-	 * @param IDBConnection $db Database connection for magic table queries.
-	 * @param ChunkMapper $chunkMapper Chunk mapper for extraction data.
-	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper for PII data.
-	 * @param GdprEntityMapper $gdprEntityMapper GDPR entity mapper for entity type lookups.
-	 * @param RiskLevelService $riskLevelService Risk level computation service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param FileSidebarSchemaLookup $schemas          The register and schema mappers
+	 * @param FileSidebarEntityStore  $entities         The database, chunk, entity relation and GDPR entity mappers
+	 * @param RiskLevelService        $riskLevelService Risk level computation service.
+	 * @param LoggerInterface         $logger           Logger.
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly IDBConnection $db,
-		private readonly ChunkMapper $chunkMapper,
-		private readonly EntityRelationMapperInterface $entityRelationMapper,
-		private readonly GdprEntityMapper $gdprEntityMapper,
-		private readonly RiskLevelService $riskLevelService,
-		private readonly LoggerInterface $logger,
+		FileSidebarSchemaLookup $schemas,
+		FileSidebarEntityStore $entities,
+		RiskLevelService $riskLevelService,
+		LoggerInterface $logger,
 	) {
+		$this->registerMapper = $schemas->registerMapper;
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->db = $entities->db;
+		$this->chunkMapper = $entities->chunkMapper;
+		$this->entityRelationMapper = $entities->entityRelationMapper;
+		$this->gdprEntityMapper = $entities->gdprEntityMapper;
+		$this->riskLevelService = $riskLevelService;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

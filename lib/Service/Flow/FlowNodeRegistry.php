@@ -40,7 +40,7 @@ use UnexpectedValueException;
 /**
  * Holds the registered node types and resolves a step's type to one.
  */
-class FlowNodeRegistry {
+class FlowNodeRegistry implements FlowNodeRegistryInterface {
 
 	/**
 	 * Registered nodes, keyed by their id.
@@ -64,17 +64,7 @@ class FlowNodeRegistry {
 	 *
 	 * @var array<string, string>
 	 */
-	private const RENAMED = [
-		// Renamed because it never looped: it splits items into fixed-size
-		// batches. Sitting next to the real `openregister.iterate`, the old name
-		// was a trap that re-armed for every new reader.
-		'openregister.loop' => 'openregister.batch',
-		// Renamed so one word carries the concept everywhere. The node ended a
-		// path and called itself "Stop", the interface said "terminal" and the
-		// palette badge said "ends" — three names for one idea. It is `end`
-		// now, in the id, the class, the display name and the badge.
-		'openregister.stop' => 'openregister.end',
-	];
+	private const RENAMED = self::RENAMED_TYPES;
 
 	/**
 	 * The rename map, for the one caller that has to REWRITE rather than resolve.

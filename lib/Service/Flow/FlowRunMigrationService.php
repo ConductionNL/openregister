@@ -63,7 +63,7 @@ use Throwable;
  *
  * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
  */
-class FlowRunMigrationService {
+class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 
 	/**
 	 * What a migration is called in the run log and on a superseded timer.
