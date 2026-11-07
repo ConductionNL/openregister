@@ -129,10 +129,10 @@ class OAuth2InstanceClient {
 		string $scope,
 		?string $organisation = null,
 	): array {
-		$endpoint = $instanceBaseUrl . '/' . ltrim((string)$provider['oauth2']['registrationEndpoint'], '/');
-		$options = $this->registrationRequest(provider: $provider, redirectUri: $redirectUri, scopes: $scopes);
-		$decoded = $this->registeredClient(endpoint: $endpoint, options: $options);
-		$clientRef = $this->mintClientSecret(instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, owner: $owner, scope: $scope, organisation: $organisation);
+		$decoded = $this->registeredClient(provider: $provider, instanceBaseUrl: $instanceBaseUrl, redirectUri: $redirectUri, scopes: $scopes);
+		$clientRef = $this->mintClientSecret(
+			instanceBaseUrl: $instanceBaseUrl, decoded: $decoded, owner: $owner, scope: $scope, organisation: $organisation
+		);
 
 		return ['clientId' => (string)$decoded['client_id'], 'clientCredentialRef' => $clientRef];
 	}//end register()
@@ -150,15 +150,16 @@ class OAuth2InstanceClient {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	private function mintClientSecret(string $instanceBaseUrl, #[\SensitiveParameter] array $decoded, string $owner, string $scope, ?string $organisation): string {
+	private function mintClientSecret(
+		string $instanceBaseUrl,
+		#[\SensitiveParameter] array $decoded,
+		string $owner,
+		string $scope,
+		?string $organisation,
+	): string {
 		$minted = $this->broker->mint(
-			name: 'OAuth2 client for ' . $instanceBaseUrl,
-			provider: 'generic-oauth2',
-			owner: $owner,
-			allowedApps: ['openregister'],
-			secret: (string)($decoded['client_secret'] ?? ''),
-			scope: $scope,
-			organisation: $organisation
+			name: 'OAuth2 client for ' . $instanceBaseUrl, provider: 'generic-oauth2', owner: $owner, allowedApps: ['openregister'],
+			secret: (string)($decoded['client_secret'] ?? ''), scope: $scope, organisation: $organisation
 		);
 
 		return (string)$minted->getUuid();
@@ -240,8 +241,10 @@ class OAuth2InstanceClient {
 	/**
 	 * Post the registration and insist on a client id in the answer.
 	 *
-	 * @param string $endpoint The registration endpoint.
-	 * @param array<string, mixed> $options The HTTP client options.
+	 * @param array<string, mixed> $provider The catalogue provider entry.
+	 * @param string $instanceBaseUrl The pinned, already-validated host.
+	 * @param string $redirectUri The callback to register.
+	 * @param array<int, string> $scopes The scopes to register for.
 	 *
 	 * @return array<string, mixed> The decoded answer, carrying a string `client_id`.
 	 *
@@ -249,7 +252,10 @@ class OAuth2InstanceClient {
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
-	private function registeredClient(string $endpoint, array $options): array {
+	private function registeredClient(array $provider, string $instanceBaseUrl, string $redirectUri, array $scopes): array {
+		$endpoint = $instanceBaseUrl . '/' . ltrim((string)$provider['oauth2']['registrationEndpoint'], '/');
+		$options = $this->registrationRequest(provider: $provider, redirectUri: $redirectUri, scopes: $scopes);
+
 		try {
 			$response = $this->clientService->newClient()->post($endpoint, $options);
 			$decoded = json_decode((string)$response->getBody(), true);
