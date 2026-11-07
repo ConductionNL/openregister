@@ -102,9 +102,9 @@ class OperatorEvaluatorAccessGoldenTest extends TestCase {
 	/**
 	 * Every verdict is unchanged.
 	 *
-	 * @param mixed $value     The object value.
+	 * @param mixed $value The object value.
 	 * @param array $operators The operator conditions.
-	 * @param bool  $expected  Whether the match is allowed.
+	 * @param bool $expected Whether the match is allowed.
 	 *
 	 * @return void
 	 */
