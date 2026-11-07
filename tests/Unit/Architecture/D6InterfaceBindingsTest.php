@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use PHPUnit\Framework\TestCase;
@@ -47,6 +49,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
