@@ -1,0 +1,393 @@
+{
+    "deadEnds: empty": {
+        "findings": [],
+        "asked": []
+    },
+    "entryAndExit: empty": {
+        "findings": [],
+        "asked": []
+    },
+    "deadEnds: nodes not a list": {
+        "findings": [],
+        "asked": []
+    },
+    "entryAndExit: nodes not a list": {
+        "findings": [],
+        "asked": []
+    },
+    "deadEnds: nodes empty": {
+        "findings": [],
+        "asked": []
+    },
+    "entryAndExit: nodes empty": {
+        "findings": [],
+        "asked": []
+    },
+    "deadEnds: healthy": {
+        "findings": [],
+        "asked": [
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: healthy": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: dead end": {
+        "findings": [
+            {
+                "type": "x.step",
+                "app": "x",
+                "step": "a",
+                "reason": "node-dead-end",
+                "detail": "Node \"a\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:x.step",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: dead end": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: exit flag": {
+        "findings": [
+            {
+                "type": "x.step",
+                "app": "x",
+                "step": "b",
+                "reason": "node-dead-end",
+                "detail": "Node \"b\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:x.step",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: exit flag": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: untyped and blank": {
+        "findings": [
+            {
+                "type": "openregister.trigger-manual",
+                "app": "openregister",
+                "step": "t",
+                "reason": "node-dead-end",
+                "detail": "Node \"t\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:openregister.trigger-manual",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: untyped and blank": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: junk entries": {
+        "findings": [
+            {
+                "type": "openregister.trigger-manual",
+                "app": "openregister",
+                "step": "t",
+                "reason": "node-dead-end",
+                "detail": "Node \"t\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:openregister.trigger-manual",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: junk entries": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: unnamespaced and leading dot": {
+        "findings": [
+            {
+                "type": "step",
+                "app": "",
+                "step": "a",
+                "reason": "node-dead-end",
+                "detail": "Node \"a\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            },
+            {
+                "type": ".step",
+                "app": "",
+                "step": "b",
+                "reason": "node-dead-end",
+                "detail": "Node \"b\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            },
+            {
+                "type": "app.",
+                "app": "app",
+                "step": "c",
+                "reason": "node-dead-end",
+                "detail": "Node \"c\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:step",
+            "isEnd:.step",
+            "isEnd:app."
+        ]
+    },
+    "entryAndExit: unnamespaced and leading dot": {
+        "findings": [
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-trigger",
+                "detail": "This flow has no trigger node, so nothing can ever start it. Add a trigger — an object change, a schedule, or someone running it by hand."
+            },
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-end",
+                "detail": "This flow has no end node, so no path finishes deliberately. Add an End node — it may end in success or in error, but the flow must say where it stops."
+            }
+        ],
+        "asked": [
+            "isTrigger:step",
+            "isEnd:step",
+            "isTrigger:.step",
+            "isEnd:.step",
+            "isTrigger:app.",
+            "isEnd:app."
+        ]
+    },
+    "deadEnds: fan-out endpoints": {
+        "findings": [],
+        "asked": [
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: fan-out endpoints": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: source spelling": {
+        "findings": [
+            {
+                "type": "openregister.trigger-manual",
+                "app": "openregister",
+                "step": "t",
+                "reason": "node-dead-end",
+                "detail": "Node \"t\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:openregister.trigger-manual",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: source spelling": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: other app roles": {
+        "findings": [],
+        "asked": [
+            "isEnd:other.finish"
+        ]
+    },
+    "entryAndExit: other app roles": {
+        "findings": [],
+        "asked": [
+            "isTrigger:other.start",
+            "isEnd:other.start",
+            "isTrigger:other.finish",
+            "isEnd:other.finish"
+        ]
+    },
+    "deadEnds: no trigger": {
+        "findings": [],
+        "asked": [
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: no trigger": {
+        "findings": [
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-trigger",
+                "detail": "This flow has no trigger node, so nothing can ever start it. Add a trigger — an object change, a schedule, or someone running it by hand."
+            }
+        ],
+        "asked": [
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: no end": {
+        "findings": [],
+        "asked": []
+    },
+    "entryAndExit: no end": {
+        "findings": [
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-end",
+                "detail": "This flow has no end node, so no path finishes deliberately. Add an End node — it may end in success or in error, but the flow must say where it stops."
+            }
+        ],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step"
+        ]
+    },
+    "deadEnds: neither": {
+        "findings": [],
+        "asked": []
+    },
+    "entryAndExit: neither": {
+        "findings": [
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-trigger",
+                "detail": "This flow has no trigger node, so nothing can ever start it. Add a trigger — an object change, a schedule, or someone running it by hand."
+            },
+            {
+                "type": "",
+                "app": "",
+                "step": "",
+                "reason": "flow-has-no-end",
+                "detail": "This flow has no end node, so no path finishes deliberately. Add an End node — it may end in success or in error, but the flow must say where it stops."
+            }
+        ],
+        "asked": [
+            "isTrigger:x.step",
+            "isEnd:x.step"
+        ]
+    },
+    "deadEnds: edges missing": {
+        "findings": [
+            {
+                "type": "openregister.trigger-manual",
+                "app": "openregister",
+                "step": "t",
+                "reason": "node-dead-end",
+                "detail": "Node \"t\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            },
+            {
+                "type": "x.step",
+                "app": "x",
+                "step": "a",
+                "reason": "node-dead-end",
+                "detail": "Node \"a\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:openregister.trigger-manual",
+            "isEnd:x.step",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: edges missing": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    },
+    "deadEnds: numeric id": {
+        "findings": [
+            {
+                "type": "x.step",
+                "app": "x",
+                "step": "5",
+                "reason": "node-dead-end",
+                "detail": "Node \"5\" has no outgoing edge and does not end the flow, so its token would arrive, run, and stop with the run reported as completed. Connect it, give it a terminal step type, or mark it \"exit\": true if stopping there is deliberate."
+            }
+        ],
+        "asked": [
+            "isEnd:x.step",
+            "isEnd:openregister.end"
+        ]
+    },
+    "entryAndExit: numeric id": {
+        "findings": [],
+        "asked": [
+            "isTrigger:openregister.trigger-manual",
+            "isEnd:openregister.trigger-manual",
+            "isTrigger:x.step",
+            "isEnd:x.step",
+            "isTrigger:openregister.end",
+            "isEnd:openregister.end"
+        ]
+    }
+}
