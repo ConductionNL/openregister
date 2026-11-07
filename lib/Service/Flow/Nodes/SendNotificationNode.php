@@ -48,7 +48,14 @@ use UnexpectedValueException;
 /**
  * The "Send a notification" step.
  */
-class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
+class SendNotificationNode implements
+	IFlowNode,
+	SendNotificationNodeInterface,
+	IFlowNodeConfigKeys,
+	IFlowNodeConfigForm,
+	IFlowNodeTaxonomy,
+	IFlowNodePreview
+{
 
 	/**
 	 * The step type this node answers to.

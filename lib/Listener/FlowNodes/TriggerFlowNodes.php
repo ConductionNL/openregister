@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 
@@ -44,12 +44,12 @@ final readonly class TriggerFlowNodes {
 	 *
 	 * @param TriggerObjectNodeInterface $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNodeInterface $triggerSchedule The "On a schedule" entry point.
-	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
+	 * @param TriggerManualNodeInterface $triggerManual The "When someone runs it" entry point.
 	 */
 	public function __construct(
 		private TriggerObjectNodeInterface $triggerObject,
 		private TriggerScheduleNodeInterface $triggerSchedule,
-		private TriggerManualNode $triggerManual,
+		private TriggerManualNodeInterface $triggerManual,
 	) {
 	}//end __construct()
 

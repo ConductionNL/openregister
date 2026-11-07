@@ -48,6 +48,18 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
@@ -84,16 +96,22 @@ final class D12InterfaceBindingsTest extends TestCase {
 		CasePlanItemTimers::class => [CasePlanItemTimersInterface::class, ContractBindings::class],
 		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
 		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
+		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
 		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
 		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
 		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
 		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
 		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
 		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		LoopNode::class => [LoopNodeInterface::class, ContractBindings::class],
 		ObjectActionBulk::class => [ObjectActionBulkInterface::class, ContractBindings::class],
 		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
 		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
+		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
+		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
+		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
+		TriggerManualNode::class => [TriggerManualNodeInterface::class, ContractBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];
 
