@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\MigrationService;
 use OCA\OpenRegister\Service\MigrationServiceInterface;
+use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
@@ -50,6 +52,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
+		NotificationService::class => [NotificationServiceInterface::class, ContractBindings::class],
 		OasService::class => [OasServiceInterface::class, ContractBindings::class],
 		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
 	];

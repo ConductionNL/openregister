@@ -125,6 +125,7 @@ final class ContractBindings {
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
+		NotificationServiceInterface::class => NotificationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		OasServiceInterface::class => OasService::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
