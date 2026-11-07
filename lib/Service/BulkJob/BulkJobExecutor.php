@@ -67,29 +67,81 @@ class BulkJobExecutor {
 	public const RULE_NOT_VISIBLE = 'the object does not exist, or the read rule on its schema does not include you';
 
 	/**
+	 * Job persistence.
+	 *
+	 * @var BulkJobMapperInterface
+	 */
+	private readonly BulkJobMapperInterface $jobMapper;
+
+	/**
+	 * Member persistence.
+	 *
+	 * @var BulkJobMemberMapperInterface
+	 */
+	private readonly BulkJobMemberMapperInterface $memberMapper;
+
+	/**
+	 * Schema lookup for the access check.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Audit entries per member.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Selection resolution.
+	 *
+	 * @var BulkSelectionResolver
+	 */
+	private readonly BulkSelectionResolver $resolver;
+
+	/**
+	 * The catalogue of registered actions.
+	 *
+	 * @var BulkActionRegistry
+	 */
+	private readonly BulkActionRegistry $registry;
+
+	/**
+	 * Per-object access checks.
+	 *
+	 * @var PermissionHandlerInterface
+	 */
+	private readonly PermissionHandlerInterface $permissionHandler;
+
+	/**
+	 * Actor lookup.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapperInterface $jobMapper Job persistence.
-	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
-	 * @param BulkSelectionResolver $resolver Selection resolution.
-	 * @param BulkActionRegistry $registry The catalogue of registered actions.
-	 * @param PermissionHandlerInterface $permissionHandler Per-object access checks.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the access check.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries per member.
-	 * @param IUserManager $userManager Actor lookup.
-	 * @param LoggerInterface $logger Logger.
+	 * @param BulkJobExecutorStores   $stores   The persistence collaborators of the bulk job executor.
+	 * @param BulkJobExecutorServices $services The selection, action, access and actor collaborators of the bulk job executor.
+	 * @param LoggerInterface         $logger   Logger.
 	 */
 	public function __construct(
-		private readonly BulkJobMapperInterface $jobMapper,
-		private readonly BulkJobMemberMapperInterface $memberMapper,
-		private readonly BulkSelectionResolver $resolver,
-		private readonly BulkActionRegistry $registry,
-		private readonly PermissionHandlerInterface $permissionHandler,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly IUserManager $userManager,
+		BulkJobExecutorStores $stores,
+		BulkJobExecutorServices $services,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->jobMapper = $stores->jobMapper;
+		$this->memberMapper = $stores->memberMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->auditTrailMapper = $stores->auditTrailMapper;
+		$this->resolver = $services->resolver;
+		$this->registry = $services->registry;
+		$this->permissionHandler = $services->permissionHandler;
+		$this->userManager = $services->userManager;
 	}//end __construct()
 
 	/**

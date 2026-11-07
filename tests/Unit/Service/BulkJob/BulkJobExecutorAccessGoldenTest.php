@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IUser;
@@ -200,14 +202,18 @@ final class BulkJobExecutorAccessGoldenTest extends TestCase {
 		);
 
 		return new BulkJobExecutor(
-			$this->createMock(BulkJobMapper::class),
-			$memberMapper,
-			$this->createMock(BulkSelectionResolver::class),
-			$this->createMock(BulkActionRegistry::class),
-			$permissions,
-			$schemaMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(IUserManager::class),
+			new BulkJobExecutorStores(
+				$this->createMock(BulkJobMapper::class),
+				$memberMapper,
+				$schemaMapper,
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new BulkJobExecutorServices(
+				$this->createMock(BulkSelectionResolver::class),
+				$this->createMock(BulkActionRegistry::class),
+				$permissions,
+				$this->createMock(IUserManager::class)
+			),
 			new NullLogger()
 		);
 	}
