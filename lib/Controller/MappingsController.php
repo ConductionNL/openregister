@@ -29,7 +29,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\MappingsControllerServices;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -77,9 +77,9 @@ class MappingsController extends Controller {
 	/**
 	 * Mapping service for executing mappings
 	 *
-	 * @var MappingService
+	 * @var MappingServiceInterface
 	 */
-	private readonly MappingService $mappingService;
+	private readonly MappingServiceInterface $mappingService;
 
 	/**
 	 * Organisation service for multi-tenancy

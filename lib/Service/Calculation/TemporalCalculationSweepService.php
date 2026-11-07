@@ -62,7 +62,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
  */
-class TemporalCalculationSweepService {
+class TemporalCalculationSweepService implements TemporalCalculationSweepServiceInterface {
 	/**
 	 * Constructor.
 	 *

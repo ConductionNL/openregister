@@ -30,22 +30,22 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
-use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
-use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
-use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
-use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
-use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
@@ -53,13 +53,13 @@ use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -74,28 +74,28 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param SetFieldsNode $setFields The built-in "Edit fields" node.
-	 * @param ExplodeNode $explode The built-in "Explode" node.
-	 * @param FilterNode $filter The built-in "Filter" node.
-	 * @param WaitNode $wait The built-in "Wait" node.
+	 * @param ExplodeNodeInterface $explode The built-in "Explode" node.
+	 * @param FilterNodeInterface $filter The built-in "Filter" node.
+	 * @param WaitNodeInterface $wait The built-in "Wait" node.
 	 * @param AwaitSignalNode $awaitSignal The built-in "Wait for an answer" node.
 	 * @param SwitchNode $switch The built-in "Switch" node.
 	 * @param EndNode $end The built-in "End" node.
-	 * @param MergeNode $merge The built-in "Merge" node.
+	 * @param MergeNodeInterface $merge The built-in "Merge" node.
 	 * @param LockObjectNode $lockObject The built-in "Lock an object" node.
 	 * @param UnlockObjectNode $unlockObject The built-in "Unlock an object" node.
 	 * @param LoopNode $loop The built-in "Loop over items" node.
 	 * @param SubFlowNode $subFlow The built-in "Run a flow" node.
-	 * @param RouterNode $router The built-in "Route items" node.
+	 * @param RouterNodeInterface $router The built-in "Route items" node.
 	 * @param ObjectWriteNodeInterface $objectWrite The built-in "Write an object" node.
 	 * @param ObjectReadNodeInterface $objectRead The built-in "Read objects" node.
 	 * @param FlowStateNode $flowState The built-in "Flow state" node.
-	 * @param MapNode $map The built-in "Map" node.
-	 * @param IterateNode $iterate The built-in "Repeat until done" node.
+	 * @param MapNodeInterface $map The built-in "Map" node.
+	 * @param IterateNodeInterface $iterate The built-in "Repeat until done" node.
 	 * @param SendNotificationNode $sendNotification The built-in "Send a notification" node.
 	 * @param SendEmailNode $sendEmail The built-in "Send an email" node.
 	 * @param SendTalkMessageNode $sendTalkMessage The built-in "Send a Talk message" node.
-	 * @param TriggerObjectNode $triggerObject The "When an object changes" entry point.
-	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
+	 * @param TriggerObjectNodeInterface $triggerObject The "When an object changes" entry point.
+	 * @param TriggerScheduleNodeInterface $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNodeInterface $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNodeInterface $portalTask The built-in "Ask a party outside the organisation" node.
@@ -103,33 +103,33 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
 	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
 	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
-	 * @param TransitionNode $transition The built-in "Lifecycle transition" node.
+	 * @param TransitionNodeInterface $transition The built-in "Lifecycle transition" node.
 	 * @param LinkObjectNode $linkObject The built-in "Create or link an object" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
-		private readonly ExplodeNode $explode,
-		private readonly FilterNode $filter,
-		private readonly WaitNode $wait,
+		private readonly ExplodeNodeInterface $explode,
+		private readonly FilterNodeInterface $filter,
+		private readonly WaitNodeInterface $wait,
 		private readonly AwaitSignalNode $awaitSignal,
 		private readonly SwitchNode $switch,
 		private readonly EndNode $end,
-		private readonly MergeNode $merge,
+		private readonly MergeNodeInterface $merge,
 		private readonly LockObjectNode $lockObject,
 		private readonly UnlockObjectNode $unlockObject,
 		private readonly LoopNode $loop,
 		private readonly SubFlowNode $subFlow,
-		private readonly RouterNode $router,
+		private readonly RouterNodeInterface $router,
 		private readonly ObjectWriteNodeInterface $objectWrite,
 		private readonly ObjectReadNodeInterface $objectRead,
 		private readonly FlowStateNode $flowState,
-		private readonly MapNode $map,
-		private readonly IterateNode $iterate,
+		private readonly MapNodeInterface $map,
+		private readonly IterateNodeInterface $iterate,
 		private readonly SendNotificationNode $sendNotification,
 		private readonly SendEmailNode $sendEmail,
 		private readonly SendTalkMessageNode $sendTalkMessage,
-		private readonly TriggerObjectNode $triggerObject,
-		private readonly TriggerScheduleNode $triggerSchedule,
+		private readonly TriggerObjectNodeInterface $triggerObject,
+		private readonly TriggerScheduleNodeInterface $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNodeInterface $userTask,
 		private readonly PortalTaskNodeInterface $portalTask,
@@ -137,7 +137,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly CaseOpenNode $caseOpen,
 		private readonly CaseAdvanceNode $caseAdvance,
 		private readonly ActionInputsNode $actionInputs,
-		private readonly TransitionNode $transition,
+		private readonly TransitionNodeInterface $transition,
 		private readonly LinkObjectNode $linkObject,
 	) {
 

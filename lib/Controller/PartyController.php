@@ -33,9 +33,9 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -63,16 +63,16 @@ class PartyController extends Controller {
 	/**
 	 * The parties on an object.
 	 *
-	 * @var PartyRoleService
+	 * @var PartyRoleServiceInterface
 	 */
-	private readonly PartyRoleService $roles;
+	private readonly PartyRoleServiceInterface $roles;
 
 	/**
 	 * The party records.
 	 *
-	 * @var PartyService
+	 * @var PartyServiceInterface
 	 */
-	private readonly PartyService $parties;
+	private readonly PartyServiceInterface $parties;
 
 	/**
 	 * The declared effects.

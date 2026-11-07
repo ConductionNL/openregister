@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Throwable;
 
 /**
@@ -47,13 +47,13 @@ class ApplicationRegister {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registers Names an object's register.
-	 * @param SchemaMapper $schemas Names an object's schema.
+	 * @param RegisterMapperInterface $registers Names an object's register.
+	 * @param SchemaMapperInterface   $schemas   Names an object's schema.
 	 * @param RegisterSlugResolverInterface $slugs Finds the slug this instance carries.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
 		private readonly RegisterSlugResolverInterface $slugs,
 	) {
 	}//end __construct()

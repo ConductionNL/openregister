@@ -17,6 +17,12 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -47,6 +53,26 @@ final class D1InterfaceBindingsTest extends TestCase {
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
 		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
+		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
+		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
+		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
+	];
+
+	/**
+	 * Class => the outside callers deliberately left naming it, relative to lib/.
+	 *
+	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete RegisterMapper and SchemaMapper.
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
+	 * public signature this refactor keeps unchanged.
+	 *
+	 * @var array<class-string, list<string>>
+	 */
+	private const LEFT = [
+		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
+		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
+		TranslationMapper::class => ['Command/BackfillTranslationSourceLanguageCommand.php'],
 	];
 
 	/**
@@ -103,12 +129,15 @@ final class D1InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('hiddenClasses')]
 	public function testNoOtherComponentNamesTheClass(string $class, string $interface, string $registrar, string $component): void {
+		$lib    = realpath(self::LIB) . '/';
 		$naming = array_filter(
 			$this->filesOutside(component: $component),
 			fn (string $path): bool => in_array($class, $this->namesIn(path: $path), true)
 		);
+		$naming = array_map(static fn (string $path): string => substr($path, strlen($lib)), array_values($naming));
+		sort($naming);
 
-		$this->assertSame([], array_values($naming), $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
+		$this->assertSame(self::LEFT[$class] ?? [], $naming, $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
 	}//end testNoOtherComponentNamesTheClass()
 
 	/**

@@ -42,8 +42,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
-use OCA\OpenRegister\Service\Import\ImportPreviewService;
-use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -81,9 +81,9 @@ class ImportPreviewController extends Controller {
 	/**
 	 * The preview lifecycle.
 	 *
-	 * @var ImportPreviewService
+	 * @var ImportPreviewServiceInterface
 	 */
-	private readonly ImportPreviewService $service;
+	private readonly ImportPreviewServiceInterface $service;
 
 	/**
 	 * Preview persistence.
@@ -102,9 +102,9 @@ class ImportPreviewController extends Controller {
 	/**
 	 * The file reader, for hashing and staging.
 	 *
-	 * @var SourceRowReader
+	 * @var SourceRowReaderInterface
 	 */
-	private readonly SourceRowReader $reader;
+	private readonly SourceRowReaderInterface $reader;
 
 	/**
 	 * Register lookup.
@@ -196,7 +196,7 @@ class ImportPreviewController extends Controller {
 					],
 				],
 				'default' => ConflictPolicy::DEFAULT_POLICY,
-				'formats' => SourceRowReader::FORMATS,
+				'formats' => SourceRowReaderInterface::FORMATS,
 			]
 		);
 	}//end policies()

@@ -49,7 +49,7 @@ use UnexpectedValueException;
 /**
  * Bundles, publishes and installs shareable configuration.
  */
-class FederatedConfigService {
+class FederatedConfigService implements FederatedConfigServiceInterface {
 
 	/**
 	 * The app its config lives under.

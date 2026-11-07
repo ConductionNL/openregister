@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class ObjectRelationService {
+class ObjectRelationService implements ObjectRelationServiceInterface {
 	/**
 	 * Constructor.
 	 *

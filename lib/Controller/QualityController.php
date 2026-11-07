@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
+use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -44,14 +44,14 @@ class QualityController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param QualityStatisticsService $statistics Quality statistics/query service.
+	 * @param string                            $appName    The application name.
+	 * @param IRequest                          $request    The current request.
+	 * @param QualityStatisticsServiceInterface $statistics Quality statistics/query service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly QualityStatisticsService $statistics,
+		private readonly QualityStatisticsServiceInterface $statistics,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

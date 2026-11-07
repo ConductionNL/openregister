@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -54,9 +54,9 @@ class CalculationsController extends Controller {
 	/**
 	 * Dry-run evaluation of an unsaved declaration.
 	 *
-	 * @var CalculationTrialService
+	 * @var CalculationTrialServiceInterface
 	 */
-	private readonly CalculationTrialService $trials;
+	private readonly CalculationTrialServiceInterface $trials;
 
 	/**
 	 * Register lookup, scoped to the caller.

@@ -78,7 +78,7 @@ use Psr\Log\LoggerInterface;
  * subscription lookup can never take out an object read or a dispatch. Removing a branch
  * here means removing a fail-safe.
  */
-class WatcherService {
+class WatcherService implements WatcherServiceInterface {
 
 	/**
 	 * What the current user follows, loaded once per request: uuid to whether
