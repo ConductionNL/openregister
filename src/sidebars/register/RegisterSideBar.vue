@@ -197,7 +197,6 @@ import {
 	CnKpiGrid,
 	CnStatsBlock,
 } from '@conduction/nextcloud-vue'
-import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import {
 	NcActionButton,
@@ -219,6 +218,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import formatBytes from '../../services/formatBytes.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 
 export default {
 	name: 'RegisterSideBar',
@@ -345,20 +345,8 @@ export default {
 		async downloadOas() {
 			if (!this.register) return
 
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
 			try {
-				const response = await axios.get(apiUrl)
-				const blob = new Blob([JSON.stringify(response.data, null, 2)], {
-					type: 'application/json',
-				})
-				const downloadLink = document.createElement('a')
-				downloadLink.href = URL.createObjectURL(blob)
-				downloadLink.download = `${this.register.title.toLowerCase()}-api-specification.json`
-				document.body.appendChild(downloadLink)
-				downloadLink.click()
-				document.body.removeChild(downloadLink)
-				URL.revokeObjectURL(downloadLink.href)
+				await downloadRegisterOas(this.register)
 			} catch (error) {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
@@ -374,12 +362,7 @@ export default {
 		viewOasDoc() {
 			if (!this.register) return
 
-			const baseUrl = window.location.origin
-			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.register.id}/oas`
-			window.open(
-				`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`,
-				'_blank',
-			)
+			viewRegisterOas(this.register.id)
 		},
 
 		/**

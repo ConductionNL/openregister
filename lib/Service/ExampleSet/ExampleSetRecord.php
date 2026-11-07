@@ -38,7 +38,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
  */
-class ExampleSetRecord {
+class ExampleSetRecord implements ExampleSetRecordInterface {
 	/**
 	 * The prefix of the app-config key that holds a record.
 	 */
