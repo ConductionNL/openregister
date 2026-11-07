@@ -47,21 +47,7 @@ use Throwable;
  *
  * @spec openspec/specs/context-chat-provider/spec.md
  */
-class ContentProvider implements IContentProvider {
-
-	/**
-	 * The app id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const APP_ID = 'openregister';
-
-	/**
-	 * The provider id this provider is registered under.
-	 *
-	 * @var string
-	 */
-	public const PROVIDER_ID = 'openregister_objects';
+class ContentProvider implements IContentProvider, ContentProviderInterface {
 
 	/**
 	 * Batch size used when walking a (register, schema) pair during import.

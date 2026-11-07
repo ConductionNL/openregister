@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  */
-class OasService {
+class OasService implements OasServiceInterface {
 	/**
 	 * Base path to OAS resources
 	 *
