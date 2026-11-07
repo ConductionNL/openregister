@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -49,11 +49,11 @@ final class WatcherPruneListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherService $watchers The subscription primitive, which owns the cleanup.
-	 * @param LoggerInterface $logger PSR logger.
+	 * @param WatcherServiceInterface $watchers The subscription primitive, which owns the cleanup.
+	 * @param LoggerInterface         $logger   PSR logger.
 	 */
 	public function __construct(
-		private readonly WatcherService $watchers,
+		private readonly WatcherServiceInterface $watchers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

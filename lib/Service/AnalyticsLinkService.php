@@ -80,7 +80,7 @@ use Throwable;
  *     are referenced FQN-only on purpose — importing them would break
  *     autoloading when Analytics is not installed.
  */
-class AnalyticsLinkService {
+class AnalyticsLinkService implements AnalyticsLinkServiceInterface {
 	/**
 	 * NC Analytics app id.
 	 *

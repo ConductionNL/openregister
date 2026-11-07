@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
-use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,17 +75,17 @@ class FederatedConfigController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
-	 * @param IRequest $request The request.
-	 * @param FederatedConfigService $service The federation engine.
-	 * @param FederatedConfigAccess $access Per-org publish/install gating.
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param IConfig $config Reads the user's chosen store credential.
+	 * @param string                          $appName The app id.
+	 * @param IRequest                        $request The request.
+	 * @param FederatedConfigServiceInterface $service The federation engine.
+	 * @param FederatedConfigAccess           $access  Per-org publish/install gating.
+	 * @param ControllerSession               $session Session, group manager and logger.
+	 * @param IConfig                         $config  Reads the user's chosen store credential.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly FederatedConfigService $service,
+		private readonly FederatedConfigServiceInterface $service,
 		private readonly FederatedConfigAccess $access,
 		ControllerSession $session,
 		private readonly IConfig $config,

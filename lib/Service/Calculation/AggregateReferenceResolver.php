@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
  */
-class AggregateReferenceResolver {
+class AggregateReferenceResolver implements AggregateReferenceResolverInterface {
 
 	use PayloadTokenReading;
 	/**

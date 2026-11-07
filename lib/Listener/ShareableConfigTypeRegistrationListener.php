@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent;
-use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
 use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
@@ -44,16 +44,16 @@ class ShareableConfigTypeRegistrationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowShareableConfigType $flows The built-in "Flows" type.
-	 * @param RegisterSchemaShareableConfigType $registers The built-in "Registers & schemas" type.
-	 * @param ConfigSetShareableConfigType $configSet The built-in "Configuration set" type.
-	 * @param SchemaShareableConfigScanner $scanner Turns shareable-marked schemas into types.
+	 * @param FlowShareableConfigType               $flows     The built-in "Flows" type.
+	 * @param RegisterSchemaShareableConfigType     $registers The built-in "Registers & schemas" type.
+	 * @param ConfigSetShareableConfigType          $configSet The built-in "Configuration set" type.
+	 * @param SchemaShareableConfigScannerInterface $scanner   Turns shareable-marked schemas into types.
 	 */
 	public function __construct(
 		private readonly FlowShareableConfigType $flows,
 		private readonly RegisterSchemaShareableConfigType $registers,
 		private readonly ConfigSetShareableConfigType $configSet,
-		private readonly SchemaShareableConfigScanner $scanner,
+		private readonly SchemaShareableConfigScannerInterface $scanner,
 	) {
 
 	}//end __construct()

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
@@ -93,7 +93,7 @@ use WeakMap;
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class RenderObject {
+class RenderObject implements RenderObjectInterface {
 
 	/**
 	 * Cache of registers indexed by ID
@@ -240,7 +240,7 @@ class RenderObject {
 	 * @param CalculationEvaluatorInterface $calculationEvaluator Evaluator for derived/computed properties.
 	 * @param UrnService $urnService URN resolver for register/schema/object identifiers.
 	 * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
-	 * @param TranslationMapper $translationMapper Translation mapper for database operations.
+	 * @param TranslationMapperInterface $translationMapper Translation mapper for database operations.
 	 * @param LanguageService $languageService Language service for source-language resolution.
 	 * @param IRequest|null $request Current request, used to read `?recurrenceOccurrences=N`.
 	 * @param ObjectSourceRegistry|null $objectSourceRegistry Resolves object-source providers for `$ref` extends into virtual schemas.
@@ -278,7 +278,7 @@ class RenderObject {
 		private readonly CalculationEvaluatorInterface $calculationEvaluator,
 		private readonly UrnService $urnService,
 		private readonly TranslationStatusService $translationStatusService,
-		private readonly TranslationMapper $translationMapper,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly LanguageService $languageService,
 		private readonly ?IRequest $request = null,
 		private readonly ?ObjectSourceRegistry $objectSourceRegistry = null,

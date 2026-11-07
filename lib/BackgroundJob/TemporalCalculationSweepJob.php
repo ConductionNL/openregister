@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -90,15 +90,15 @@ class TemporalCalculationSweepJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory required by parent.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param TemporalCalculationSweepService $sweepService Domain sweep service.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory                             $time         Time factory required by parent.
+	 * @param IAppConfig                               $appConfig    App-config reader.
+	 * @param TemporalCalculationSweepServiceInterface $sweepService Domain sweep service.
+	 * @param LoggerInterface                          $logger       Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly IAppConfig $appConfig,
-		private readonly TemporalCalculationSweepService $sweepService,
+		private readonly TemporalCalculationSweepServiceInterface $sweepService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);

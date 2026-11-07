@@ -70,7 +70,7 @@ use Throwable;
  *     required for one of the Tier-2 flows (link, create, unlink, list,
  *     picker, graceful degradation).
  */
-class MapLinkService {
+class MapLinkService implements MapLinkServiceInterface {
 	private const REQUIRED_APP = 'maps';
 
 	private const FAVORITES_SERVICE = 'OCA\\Maps\\Service\\FavoritesService';

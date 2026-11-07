@@ -45,9 +45,9 @@ use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Relation\AffectedSet;
 use OCA\OpenRegister\Service\Relation\AffectedSetQuery;
-use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
-use OCA\OpenRegister\Service\Relation\RelationGraphService;
+use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -71,16 +71,16 @@ class ObjectRelationsController extends Controller {
 	/**
 	 * The relation row service.
 	 *
-	 * @var ObjectRelationService
+	 * @var ObjectRelationServiceInterface
 	 */
-	private readonly ObjectRelationService $relations;
+	private readonly ObjectRelationServiceInterface $relations;
 
 	/**
 	 * The bounded graph walk.
 	 *
-	 * @var RelationGraphService
+	 * @var RelationGraphServiceInterface
 	 */
-	private readonly RelationGraphService $graphs;
+	private readonly RelationGraphServiceInterface $graphs;
 
 	/**
 	 * Filters the graph to who else is affected.
