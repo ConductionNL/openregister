@@ -13,13 +13,13 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\NotesControllerFactory;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\NotesController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +35,6 @@ class NotesControllerTest extends TestCase {
 	private ObjectService&MockObject $objectService;
 	private TimelineVisibilityService&MockObject $visibility;
 	private TimelineWriteService&MockObject $timeline;
-	private TimelineEntryService&MockObject $entries;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -56,7 +55,6 @@ class NotesControllerTest extends TestCase {
 		// the notes endpoint keeps its own shape and its own answers, which is
 		// exactly what task 1.3 asks for.
 		$this->timeline = $this->createMock(TimelineWriteService::class);
-		$this->entries = $this->createMock(TimelineEntryService::class);
 
 		$this->controller = NotesControllerFactory::create(
 			'openregister',
@@ -64,8 +62,7 @@ class NotesControllerTest extends TestCase {
 			$this->noteService,
 			$this->objectService,
 			$this->visibility,
-			$this->timeline,
-			$this->entries
+			$this->timeline
 		);
 	}
 
@@ -175,6 +172,27 @@ class NotesControllerTest extends TestCase {
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
 		$this->assertTrue($data['success']);
+	}
+
+	public function testANoteOfAnotherObjectIsNotFoundAndStays(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('requireNoteOf')->willThrowException(new Exception('Note not found', 404));
+		$this->noteService->expects($this->never())->method('deleteNote');
+		$this->noteService->expects($this->never())->method('updateNote');
+
+		$this->assertSame(404, $this->controller->destroy('reg', 'schema', 'obj-id', '1')->getStatus());
+		$this->assertSame(404, $this->controller->update('reg', 'schema', 'obj-id', '1')->getStatus());
+	}
+
+	public function testTheHistoryOfANoteOfAnotherObjectIsNotFound(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->noteService->method('requireNoteOf')->willThrowException(new Exception('Note not found', 404));
+		$this->noteService->expects($this->never())->method('getNote');
+		$this->noteService->expects($this->never())->method('noteVersions');
+
+		$this->assertSame(404, $this->controller->versions('reg', 'schema', 'obj-id', '1')->getStatus());
 	}
 
 	public function testDestroyReturns404WhenObjectNotFound(): void {
@@ -390,7 +408,7 @@ class NotesControllerTest extends TestCase {
 
 		$entry = new \OCA\OpenRegister\Notifications\Db\TimelineEntry();
 		$entry->setUuid('entry-a');
-		$this->entries->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
+		$this->timeline->expects($this->once())->method('entryForNote')->with(41)->willReturn($entry);
 		$this->timeline->expects($this->once())->method('forgetNote')->with(41, 'entry-a');
 
 		$this->assertTrue($this->controller->destroy('zaken', 'zaak', 'uuid-123', '41')->getData()['success']);
@@ -434,6 +452,32 @@ class NotesControllerTest extends TestCase {
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');
 
 		$this->assertSame(403, $result->getStatus());
+	}
+
+	/**
+	 * The manage answer reaches the note service as the visibility service gave it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	#[TestWith([true])]
+	#[TestWith([false])]
+	public function testAnEditCarriesTheManageAnswer(bool $mayManage): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'rewritten']);
+		$this->visibility->expects($this->once())
+			->method('mayManageObject')
+			->with($object)
+			->willReturn($mayManage);
+
+		$this->noteService->expects($this->once())
+			->method('updateNote')
+			->with(5, 'rewritten', null, $mayManage)
+			->willReturn(['id' => 5, 'versionCount' => 1]);
+
+		$this->assertSame(200, $this->controller->update('reg', 'schema', 'obj-id', '5')->getStatus());
 	}
 
 	/**

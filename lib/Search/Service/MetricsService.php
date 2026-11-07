@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -42,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy
  */
 
-class MetricsService {
+class MetricsService implements MetricsRetentionInterface {
 
 	/**
 	 * Database connection instance.

@@ -1,0 +1,501 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`list page entities renders its header 1`] = `
+"<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Entities</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Hide Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage and view detected entities from files and objects</p>
+</div>"
+`;
+
+exports[`list page entities toggles the filters 1`] = `
+{
+  "after": true,
+  "before": true,
+  "html": "<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Entities</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Hide Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage and view detected entities from files and objects</p>
+</div>",
+  "stored": [
+    [
+      "entities",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`list page files pages forward and back within the total 1`] = `
+{
+  "log": [
+    "loadFiles",
+    "loadFiles",
+    "loadFiles",
+    "loadFiles",
+  ],
+  "seen": [
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+  ],
+}
+`;
+
+exports[`list page files renders its header 1`] = `
+"<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Files</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Show Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage and monitor file text extraction status</p>
+</div>"
+`;
+
+exports[`list page files toggles the filters 1`] = `
+{
+  "after": true,
+  "before": false,
+  "html": "<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Files</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Hide Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage and monitor file text extraction status</p>
+</div>",
+  "stored": [],
+}
+`;
+
+exports[`list page templates pages forward and back within the total 1`] = `
+{
+  "log": [
+    "loadTemplates",
+    "loadTemplates",
+    "loadTemplates",
+    "loadTemplates",
+  ],
+  "seen": [
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+  ],
+}
+`;
+
+exports[`list page templates renders its header 1`] = `
+"<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Templates</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Show Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage document templates and themes</p>
+</div>"
+`;
+
+exports[`list page templates toggles the filters 1`] = `
+{
+  "after": true,
+  "before": false,
+  "html": "<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Templates</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Hide Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage document templates and themes</p>
+</div>",
+  "stored": [],
+}
+`;
+
+exports[`list page webhookLogs pages forward and back within the total 1`] = `
+{
+  "log": [
+    "loadLogs",
+    "loadLogs",
+    "loadLogs",
+    "loadLogs",
+  ],
+  "seen": [
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+  ],
+}
+`;
+
+exports[`list page webhooks pages forward and back within the total 1`] = `
+{
+  "log": [],
+  "seen": [
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      20,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":3,"total":3}</span>
+  <x-ncbutton disabled="true">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      10,
+      "<div class="pagination">
+  <x-ncbutton disabled="false">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":2,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+    [
+      0,
+      "<div class="pagination">
+  <x-ncbutton disabled="true">
+    <slot-default>t:Previous</slot-default>
+  </x-ncbutton><span class="pagination-info">t:Page {current} of {total} {"current":1,"total":3}</span>
+  <x-ncbutton disabled="false">
+    <slot-default>t:Next</slot-default>
+  </x-ncbutton>
+</div>",
+    ],
+  ],
+}
+`;
+
+exports[`list page webhooks renders its header 1`] = `
+"<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Webhooks</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Show Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage webhooks for event-driven integrations</p>
+</div>"
+`;
+
+exports[`list page webhooks toggles the filters 1`] = `
+{
+  "after": true,
+  "before": false,
+  "html": "<div class="viewHeader">
+  <div class="viewHeaderTitle">
+    <h1 class="viewHeaderTitleIndented">t:Webhooks</h1>
+    <x-ncbutton variant="tertiary" aria-label="t:Toggle search sidebar">
+      <slot-default> t:Hide Filters</slot-default>
+      <slot-icon>
+        <x-filtervariant size="20"></x-filtervariant>
+      </slot-icon>
+    </x-ncbutton>
+  </div>
+  <p>t:Manage webhooks for event-driven integrations</p>
+</div>",
+  "stored": [],
+}
+`;

@@ -65,6 +65,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\NullFilter;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -239,11 +240,11 @@ class MagicSearchHandler {
 	private array $ignoredFilters = [];
 
 	/**
-	 * Cached result of pg_trgm extension availability check.
+	 * The pg_trgm probe, built on first use.
 	 *
-	 * @var boolean|null
+	 * @var MagicPgTrgmProbe|null
 	 */
-	private ?bool $hasPgTrgm = null;
+	private ?MagicPgTrgmProbe $trgmProbe = null;
 
 	/**
 	 * PERF-4: request-scoped memo of the per-schema property-type and
@@ -335,32 +336,9 @@ class MagicSearchHandler {
 	 * @return bool True if pg_trgm is available, false otherwise.
 	 */
 	public function hasPgTrgmExtension(): bool {
-		// Return cached result if available.
-		if ($this->hasPgTrgm !== null) {
-			return $this->hasPgTrgm;
-		}
+		$this->trgmProbe ??= new MagicPgTrgmProbe(db: $this->db, logger: $this->logger);
 
-		// Not PostgreSQL = no pg_trgm.
-		if ($this->isPostgresPlatform() === false) {
-			$this->hasPgTrgm = false;
-			return false;
-		}
-
-		// Check if pg_trgm extension is installed.
-		try {
-			$stmt = $this->db->prepare("SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_trgm'");
-			$result = $stmt->execute();
-			$count = (int)$result->fetchOne();
-			$this->hasPgTrgm = $count > 0;
-		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[MagicSearchHandler] Failed to check pg_trgm extension availability',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-			);
-			$this->hasPgTrgm = false;
-		}
-
-		return $this->hasPgTrgm;
+		return $this->trgmProbe->available();
 	}//end hasPgTrgmExtension()
 
 	/**
@@ -420,15 +398,7 @@ class MagicSearchHandler {
 		$limit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
-		$order = $query['_order'] ?? [];
-		// The _order parameter may arrive as a JSON string from URL query params.
-		if (is_string($order) === true) {
-			$decoded = json_decode($order, true);
-			$order = [];
-			if (is_array($decoded) === true) {
-				$order = $decoded;
-			}
-		}
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		$count = $query['_count'] ?? false;
 		$search = $query['_search'] ?? null;
@@ -920,11 +890,7 @@ class MagicSearchHandler {
 			);
 		}
 
-		// Apply relations contains filter if provided.
-		$relationsContains = $query['_relations_contains'] ?? null;
-		if ($relationsContains !== null && empty($relationsContains) === false) {
-			$this->applyRelationsContainsFilter(qb: $qb, uuid: $relationsContains);
-		}
+		$this->applyRelationsContains(qb: $qb, query: $query);
 
 		// Apply dotted relation-field filters: `_relations.<field>` => <id>.
 		$this->applyRelationFieldFilters(qb: $qb, query: $query);
@@ -1755,11 +1721,11 @@ class MagicSearchHandler {
 	 * The quoted column of a property, so reserved words (e.g. 'case', 'status') stay valid SQL.
 	 *
 	 * @param SearchLeafScope $scope    The search scope.
-	 * @param string          $propName The property name.
+	 * @param int|string      $propName The property name; PHP keeps a numeric array key as an int.
 	 *
 	 * @return string The quoted column name.
 	 */
-	private function searchColumn(SearchLeafScope $scope, string $propName): string {
+	private function searchColumn(SearchLeafScope $scope, int|string $propName): string {
 		return $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $propName), isPostgres: $scope->isPostgres);
 	}//end searchColumn()
 
@@ -3738,6 +3704,24 @@ class MagicSearchHandler {
 	}//end applyIdFilters()
 
 	/**
+	 * Keep the objects that reference every `_relations_contains` value.
+	 *
+	 * @param IQueryBuilder $qb    Query builder to modify
+	 * @param array         $query The search query
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function applyRelationsContains(IQueryBuilder $qb, array $query): void {
+		foreach ((array)($query['_relations_contains'] ?? []) as $uuid) {
+			if (empty($uuid) === false) {
+				$this->applyRelationsContainsFilter(qb: $qb, uuid: $uuid);
+			}
+		}
+	}//end applyRelationsContains()
+
+	/**
 	 * Apply relations contains filter to find objects referencing a specific UUID.
 	 *
 	 * Relations can be stored as either an array (`["uuid1", "uuid2", ...]`, the
@@ -4083,6 +4067,7 @@ class MagicSearchHandler {
 		$properties = $sort->schema->getProperties();
 
 		foreach ($sort->order as $field => $direction) {
+			$field = (string) $field;
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';

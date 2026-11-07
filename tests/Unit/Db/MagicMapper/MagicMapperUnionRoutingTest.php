@@ -52,6 +52,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
@@ -161,4 +165,15 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$this->assertFalse($route->invoke($mapper, ['_referenced' => $related]));
 		$this->assertFalse($route->invoke($mapper, ['_aggregations' => ['x']]));
 	}//end testARelatedRowFilterTakesTheSequentialRoute()
+
+	/**
+	 * The raw-SQL union has no relation filter, so a search on one takes the sequential route.
+	 *
+	 * @return void
+	 */
+	public function testARelationFilterTakesTheSequentialRoute(): void {
+		$route = new \ReflectionMethod(MagicMapper::class, 'shouldUseUnionQuery');
+
+		$this->assertFalse($route->invoke($this->makeMapper(), ['_relations_contains' => 'u']));
+	}//end testARelationFilterTakesTheSequentialRoute()
 }//end class
