@@ -58,7 +58,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -153,7 +153,7 @@ class AggregationRunner {
 	 * @param MagicMapperInterface $magicMapper Magic-table mapper used for the PHP fallback path.
 	 * @param RegisterMapperInterface $registerMapper Register loader.
 	 * @param SchemaMapperInterface $schemaMapper Schema loader.
-	 * @param PlaceholderResolver $placeholders Resolves dynamic placeholders inside filters.
+	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
 	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
@@ -182,7 +182,7 @@ class AggregationRunner {
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PlaceholderResolver $placeholders,
+		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,
 		private readonly PermissionHandler $permissionHandler,
