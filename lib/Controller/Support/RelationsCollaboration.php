@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
-use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\DeckCardService;
 
 /**
@@ -36,14 +36,14 @@ final class RelationsCollaboration {
 	 * Bundle the services.
 	 *
 	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service
-	 * @param ContactService                $contactService       Contact service
+	 * @param ContactServiceInterface       $contactService       Contact service
 	 * @param DeckCardService               $deckCardService      Deck card service
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-1
 	 */
 	public function __construct(
 		public readonly ObjectCalendarEventsInterface $calendarEventService,
-		public readonly ContactService $contactService,
+		public readonly ContactServiceInterface $contactService,
 		public readonly DeckCardService $deckCardService,
 	) {
 	}//end __construct()
