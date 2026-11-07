@@ -81,21 +81,12 @@ class HandoffQueueDrainListener implements IEventListener {
 	 *   (Scenario: No provider installed, queue mode)
 	 */
 	public function handle(Event $event): void {
-		$isDrainTrigger = ($event instanceof SchemaCreatedEvent
-			|| $event instanceof SchemaUpdatedEvent
-			|| $event instanceof AppEnableEvent);
-		if ($isDrainTrigger === false) {
+		if ($this->isDrainTrigger(event: $event) === false) {
 			return;
 		}
 
 		try {
-			$summary = $this->handoffService->drainParked();
-			if ($summary['drained'] > 0 || $summary['failed'] > 0) {
-				$this->logger->info(
-					message: '[HandoffQueueDrainListener] Drained parked handoffs after ' . get_class($event),
-					context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
-				);
-			}
+			$this->drain(event: $event);
 		} catch (\Throwable $e) {
 			// The triggering save/enable must never fail because of a drain error.
 			$this->logger->warning(
@@ -103,6 +94,37 @@ class HandoffQueueDrainListener implements IEventListener {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'event' => get_class($event)]
 			);
 		}
-
 	}//end handle()
+
+	/**
+	 * Whether the event may have made a provider appear: a schema save or an app enable.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return bool
+	 */
+	private function isDrainTrigger(Event $event): bool {
+		return $event instanceof SchemaCreatedEvent
+			|| $event instanceof SchemaUpdatedEvent
+			|| $event instanceof AppEnableEvent;
+
+	}//end isDrainTrigger()
+
+	/**
+	 * Sweep the parked queue, logging the summary when anything was drained or failed.
+	 *
+	 * @param Event $event The triggering event.
+	 *
+	 * @return void
+	 */
+	private function drain(Event $event): void {
+		$summary = $this->handoffService->drainParked();
+		if ($summary['drained'] > 0 || $summary['failed'] > 0) {
+			$this->logger->info(
+				message: '[HandoffQueueDrainListener] Drained parked handoffs after ' . get_class($event),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'summary' => $summary]
+			);
+		}
+
+	}//end drain()
 }//end class
