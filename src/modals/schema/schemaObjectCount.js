@@ -1,7 +1,7 @@
 /**
  * The object count of the active schema, for the dialogs that act on all its
- * objects: loaded on mount, and again when the schema changes before any
- * objects were counted.
+ * objects: loaded when the dialog mounts, and again when the schema changes
+ * before any objects were counted.
  *
  * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
  * @license EUPL-1.2
@@ -11,7 +11,8 @@ import { schemaStore } from '../../store/store.js'
 
 /**
  * A mixin holding the object count of the active schema. The dialog using it
- * reports a failed count through its own `logCountFailure(error)` method.
+ * loads the count from its own mounted hook, and reports a failed count
+ * through its own `logCountFailure(error)` method.
  */
 export const schemaObjectCount = {
 	data() {
@@ -40,13 +41,6 @@ export const schemaObjectCount = {
 				}
 			},
 		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
-	 */
-	async mounted() {
-		await this.loadObjectCount()
 	},
 
 	methods: {

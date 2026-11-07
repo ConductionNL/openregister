@@ -312,6 +312,13 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
+	 */
+	async mounted() {
+		await this.loadObjectCount()
+	},
+
 	methods: {
 		/**
 		 * Report a failed object count.
