@@ -101,6 +101,31 @@ class ArchivalDecisionResolver {
     private const IMMUTABLE_STATES = ['transferred', 'destroyed'];
 
     /**
+     * The archival facts MDTO asks for, each with its TMLO spelling.
+     *
+     * The abstract key is also the key in the retention block and in the
+     * evaluated annotation.
+     *
+     * @var array<string, string>
+     */
+    private const TMLO_FACT_KEYS = [
+        'aggregationLevel' => 'aggregatieniveau',
+        'useRestriction' => 'beperkingGebruik',
+        'temporalCoverage' => 'dekkingInTijd',
+    ];
+
+    /**
+     * The ZGW archival properties a record may declare, both spellings each.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const DECLARED_FIELDS = [
+        'appraisal' => ['archiveNomination', 'archiefnominatie'],
+        'disposalDate' => ['archiveActionDate', 'archiefactiedatum'],
+        'recordState' => ['archiveStatus', 'archiefstatus'],
+    ];
+
+    /**
      * Resolve an object's archival decision.
      *
      * Returns null when the object has nothing to say about its own archiving.
@@ -116,90 +141,153 @@ class ArchivalDecisionResolver {
      * @spec openspec/specs/retention-management/spec.md
      */
     public function resolve(ObjectEntity $entity): ?array {
-        $retention = ($entity->getRetention() ?? []);
-        if (is_array($retention) === false) {
-            $retention = [];
-        }
+        $sources = $this->sourcesOf(entity: $entity);
+
+        $decision = $this->classification(entity: $entity, sources: $sources);
+        $decision = $this->withPeriodAndDate(decision: $decision, sources: $sources);
+        $decision = $this->withRecordState(decision: $decision, sources: $sources);
+        $decision = $this->withDeclaredFacts(decision: $decision, sources: $sources);
+        $decision = $this->withProvenance(decision: $decision, sources: $sources);
+        $decision = $this->withAnnotation(decision: $decision, annotation: $sources->annotation);
+
+        // Omitted, not nulled, so every verb returns the same block. The read
+        // path strips empty values and create does not; see UnestablishedValues.
+        return $this->establishedOrNull(decision: (new UnestablishedValues())->without(values: $decision));
+    }//end resolve()
+
+    /**
+     * Read the blocks the decision is resolved from off the object.
+     *
+     * @param ObjectEntity $entity The object to resolve for.
+     *
+     * @return ArchivalDecisionSources The blocks.
+     */
+    private function sourcesOf(ObjectEntity $entity): ArchivalDecisionSources {
+        $retention = $this->blockOf(value: $entity->getRetention());
 
         // GAP A1: the TMLO block is a first-class source, not an afterthought.
         // TmloService writes it, MdtoXmlGenerator exports from it, and until
         // this line it was the one source `_retention` could not see.
-        $tmlo = ($entity->getTmlo() ?? []);
-        if (is_array($tmlo) === false) {
-            $tmlo = [];
+        return new ArchivalDecisionSources(
+            retention: $retention,
+            tmlo: $this->blockOf(value: $entity->getTmlo()),
+            annotation: $this->blockOf(value: ($retention['annotation'] ?? [])),
+            declared: $this->declaredArchivalFields(entity: $entity)
+        );
+    }//end sourcesOf()
+
+    /**
+     * A stored block, or an empty one when it is absent or not an array.
+     *
+     * @param mixed $value The stored block.
+     *
+     * @return array<string, mixed> The block.
+     */
+    private function blockOf(mixed $value): array {
+        if (is_array($value) === false) {
+            return [];
         }
 
-        $annotation = ($retention['annotation'] ?? []);
-        if (is_array($annotation) === false) {
-            $annotation = [];
-        }
+        return $value;
+    }//end blockOf()
 
-        $declared = $this->declaredArchivalFields(entity: $entity);
+    /**
+     * Start the decision: the appraisal, the disposal category and the legal hold.
+     *
+     * @param ObjectEntity            $entity   The object being resolved.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
+     *
+     * @return array<string, mixed> The decision so far.
+     *
+     * @spec openspec/specs/retention-management/spec.md
+     */
+    private function classification(ObjectEntity $entity, ArchivalDecisionSources $sources): array {
+        $appraisal = $sources->firstText('retention.archiefnominatie', 'tmlo.archiefnominatie', 'declared.appraisal');
+        $category = $sources->firstText('retention.classification', 'tmlo.classification', 'tmlo.vernietigingsCategorie');
 
-        $decision = [
-            'appraisal' => $this->normaliseAppraisal(
-                value: $this->firstNonEmpty(
-                    values: [
-                        ($retention['archiefnominatie'] ?? null),
-                        ($tmlo['archiefnominatie'] ?? null),
-                        ($declared['appraisal'] ?? null),
-                    ]
-                )
-            ),
-            'disposalCategory' => $this->firstNonEmpty(
-                values: [
-                    ($retention['classification'] ?? null),
-                    ($tmlo['classification'] ?? null),
-                    ($tmlo['vernietigingsCategorie'] ?? null),
-                ]
-            ),
-            'legalHold' => $this->resolveLegalHold(entity: $entity, retention: $retention),
+        return [
+            'appraisal' => $this->normaliseAppraisal(value: $appraisal),
+            'disposalCategory' => $category,
+            'legalHold' => $this->resolveLegalHold(entity: $entity, retention: $sources->retention),
         ];
+    }//end classification()
 
-        $decision['retentionPeriod'] = $this->firstNonEmpty(
-            values: [
-                ($retention['bewaartermijn'] ?? null),
-                ($tmlo['bewaarTermijn'] ?? null),
-                ($annotation['effectiveRetention'] ?? null),
-            ]
+    /**
+     * Add the retention period and the disposal date.
+     *
+     * @param array<string, mixed>    $decision The decision so far.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
+     *
+     * @return array<string, mixed> The decision, with period and date.
+     *
+     * @spec openspec/specs/retention-management/spec.md
+     */
+    private function withPeriodAndDate(array $decision, ArchivalDecisionSources $sources): array {
+        $decision['retentionPeriod'] = $sources->firstText('retention.bewaartermijn', 'tmlo.bewaarTermijn', 'annotation.effectiveRetention');
+        $decision['disposalDate'] = $sources->firstText(
+            'retention.archiefactiedatum',
+            'tmlo.archiefactiedatum',
+            'declared.disposalDate',
+            'annotation.expiresAt'
         );
 
-        $decision['disposalDate'] = $this->firstNonEmpty(
-            values: [
-                ($retention['archiefactiedatum'] ?? null),
-                ($tmlo['archiefactiedatum'] ?? null),
-                ($declared['disposalDate'] ?? null),
-                ($annotation['expiresAt'] ?? null),
-            ]
-        );
+        return $decision;
+    }//end withPeriodAndDate()
 
-        $decision = $this->withRecordState(decision: $decision, retention: $retention, tmlo: $tmlo, declared: $declared);
-        $decision = $this->withDeclaredFacts(decision: $decision, retention: $retention, tmlo: $tmlo, annotation: $annotation);
+    /**
+     * Add WHERE the answer came from, and the selection list it rests on.
+     *
+     * So a reader can tell a selectielijst obligation from a schema default
+     * from a hand-set date. Without this a records officer sees a destruction
+     * date and cannot say who claimed it.
+     *
+     * @param array<string, mixed>    $decision The decision so far.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
+     *
+     * @return array<string, mixed> The decision, with its basis and provenance.
+     *
+     * @spec openspec/specs/retention-management/spec.md
+     */
+    private function withProvenance(array $decision, ArchivalDecisionSources $sources): array {
+        $decision['basis'] = $this->resolveBasis(sources: $sources);
+        $decision['source'] = ArchivalText::fromString(value: ($sources->retention['selectielijstBron'] ?? null));
+        $decision = $this->withSourceProvenance(decision: $decision, retention: $sources->retention);
 
-        // WHERE the answer came from, so a reader can tell a selectielijst
-        // obligation from a schema default from a hand-set date. Without this a
-        // records officer sees a destruction date and cannot say who claimed it.
-        $decision['basis'] = $this->resolveBasis(retention: $retention, tmlo: $tmlo, annotation: $annotation, declared: $declared);
-        $decision['source'] = $this->stringOrNull(value: ($retention['selectielijstBron'] ?? null));
-        $decision = $this->withSourceProvenance(decision: $decision, retention: $retention);
-        $decision = $this->withProcessRecord(decision: $decision, retention: $retention);
+        return $this->withProcessRecord(decision: $decision, retention: $sources->retention);
+    }//end withProvenance()
 
-        // The raw annotation evaluation is passed through rather than folded
-        // away: `matchedRule` is the only thing that says WHICH rule in the
-        // schema's `x-openregister-archival` block fired, and debugging a wrong
-        // destruction date without it means re-evaluating the whole annotation
-        // by hand.
+    /**
+     * Pass the raw annotation evaluation through rather than folding it away.
+     *
+     * `matchedRule` is the only thing that says WHICH rule in the schema's
+     * `x-openregister-archival` block fired, and debugging a wrong destruction
+     * date without it means re-evaluating the whole annotation by hand.
+     *
+     * @param array<string, mixed> $decision   The decision so far.
+     * @param array<string, mixed> $annotation The evaluated annotation block.
+     *
+     * @return array<string, mixed> The decision, with the annotation when there is one.
+     */
+    private function withAnnotation(array $decision, array $annotation): array {
         if ($annotation !== []) {
             $decision['annotation'] = $this->annotationForRender(annotation: $annotation);
         }
 
-        // Omitted, not nulled, so every verb returns the same block. The read
-        // path strips empty values and create does not; see UnestablishedValues.
-        $decision = (new UnestablishedValues())->without(values: $decision);
+        return $decision;
+    }//end withAnnotation()
 
-        // Nothing was established. Distinct from "kept forever": every field is
-        // absent, not merely permissive, so the object genuinely has no
-        // archival claim on it and the key is omitted.
+    /**
+     * The decision, or null when nothing was established.
+     *
+     * Distinct from "kept forever": every field is absent, not merely
+     * permissive, so the object genuinely has no archival claim on it and the
+     * key is omitted.
+     *
+     * @param array<string, mixed> $decision The decision without unestablished values.
+     *
+     * @return array<string, mixed>|null The decision, or null.
+     */
+    private function establishedOrNull(array $decision): ?array {
         $established = array_filter(
             $decision,
             static function ($value) {
@@ -212,7 +300,7 @@ class ArchivalDecisionResolver {
         }
 
         return $decision;
-    }//end resolve()
+    }//end establishedOrNull()
 
     /**
      * Shape the schema annotation's evaluation for the response.
@@ -280,47 +368,42 @@ class ArchivalDecisionResolver {
      * declared stays absent rather than becoming a placeholder, which is what
      * UnestablishedValues enforces for the rest of the block.
      *
-     * @param array<string, mixed> $decision The decision so far.
-     * @param array<string, mixed> $retention The stored retention block.
-     * @param array<string, mixed> $tmlo The stored TMLO block.
-     * @param array<string, mixed> $annotation The evaluated annotation block.
+     * @param array<string, mixed>    $decision The decision so far.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
      *
      * @return array<string, mixed> The decision, with whichever facts are established.
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
      */
-    private function withDeclaredFacts(array $decision, array $retention, array $tmlo, array $annotation): array {
-        $sources = [
-            'aggregationLevel' => [
-                ($retention['aggregationLevel'] ?? null),
-                ($tmlo['aggregatieniveau'] ?? null),
-                ($annotation['aggregationLevel'] ?? null),
-            ],
-            'useRestriction' => [
-                ($retention['useRestriction'] ?? null),
-                ($tmlo['beperkingGebruik'] ?? null),
-                ($annotation['useRestriction'] ?? null),
-            ],
-            'temporalCoverage' => [
-                ($retention['temporalCoverage'] ?? null),
-                ($tmlo['dekkingInTijd'] ?? null),
-                ($annotation['temporalCoverage'] ?? null),
-            ],
-        ];
-
-        foreach ($sources as $key => $candidates) {
-            foreach ($candidates as $candidate) {
-                if ($candidate === null || $candidate === '' || $candidate === []) {
-                    continue;
-                }
-
-                $decision[$key] = $candidate;
-                break;
+    private function withDeclaredFacts(array $decision, ArchivalDecisionSources $sources): array {
+        foreach (self::TMLO_FACT_KEYS as $key => $tmloKey) {
+            $value = $this->firstEstablished(
+                candidates: [($sources->retention[$key] ?? null), ($sources->tmlo[$tmloKey] ?? null), ($sources->annotation[$key] ?? null)]
+            );
+            if ($value !== null) {
+                $decision[$key] = $value;
             }
         }
 
         return $decision;
     }//end withDeclaredFacts()
+
+    /**
+     * The first candidate that is neither null, an empty string nor an empty array.
+     *
+     * @param array<int, mixed> $candidates Candidates in priority order.
+     *
+     * @return mixed The first established candidate, or null.
+     */
+    private function firstEstablished(array $candidates): mixed {
+        foreach ($candidates as $candidate) {
+            if ($candidate !== null && $candidate !== '' && $candidate !== []) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }//end firstEstablished()
 
     /**
      * Add the Archiefwet record state, and whether it is final.
@@ -334,23 +417,15 @@ class ArchivalDecisionResolver {
      * `immutable` is derived rather than stored so a consumer never has to know
      * the lifecycle to act on it: it can grey an edit from the boolean alone.
      *
-     * @param array<string, mixed> $decision The decision so far.
-     * @param array<string, mixed> $retention The stored retention block.
-     * @param array<string, mixed> $tmlo The stored TMLO block.
-     * @param array<string, string> $declared The record's own archival fields.
+     * @param array<string, mixed>    $decision The decision so far.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
      *
      * @return array<string, mixed> The decision, with state.
      *
      * @spec openspec/specs/retention-management/spec.md
      */
-    private function withRecordState(array $decision, array $retention, array $tmlo, array $declared): array {
-        $raw = $this->firstNonEmpty(
-            values: [
-                ($retention['archiefstatus'] ?? null),
-                ($tmlo['archiefstatus'] ?? null),
-                ($declared['recordState'] ?? null),
-            ]
-        );
+    private function withRecordState(array $decision, ArchivalDecisionSources $sources): array {
+        $raw = $sources->firstText('retention.archiefstatus', 'tmlo.archiefstatus', 'declared.recordState');
 
         if ($raw === null) {
             $decision['recordState'] = null;
@@ -402,20 +477,11 @@ class ArchivalDecisionResolver {
             return [];
         }
 
-        $map = [
-            'appraisal' => ['archiveNomination', 'archiefnominatie'],
-            'disposalDate' => ['archiveActionDate', 'archiefactiedatum'],
-            'recordState' => ['archiveStatus', 'archiefstatus'],
-        ];
-
         $found = [];
-        foreach ($map as $key => $candidates) {
-            foreach ($candidates as $candidate) {
-                $value = $this->stringOrNull(value: ($object[$candidate] ?? null));
-                if ($value !== null) {
-                    $found[$key] = $value;
-                    break;
-                }
+        foreach (self::DECLARED_FIELDS as $key => $candidates) {
+            $value = $this->firstNonEmpty(values: array_map(static fn (string $name) => ($object[$name] ?? null), $candidates));
+            if ($value !== null) {
+                $found[$key] = $value;
             }
         }
 
@@ -468,22 +534,46 @@ class ArchivalDecisionResolver {
             return null;
         }
 
-        $active = $entity->hasActiveLegalHold();
-        $state = ['active' => $active];
-
-        if ($active === true) {
-            $state['reason'] = $this->stringOrNull(value: ($hold['reason'] ?? null));
-            $state['placedBy'] = $this->stringOrNull(value: ($hold['placedBy'] ?? null));
-            $state['placedDate'] = $this->stringOrNull(value: ($hold['placedDate'] ?? null));
+        $state = ['active' => $entity->hasActiveLegalHold()];
+        if ($state['active'] === true) {
+            $state = array_merge($state, $this->activeHoldDetails(hold: $hold));
         }
 
+        return $this->withReleasedCount(state: $state, hold: $hold);
+    }//end resolveLegalHold()
+
+    /**
+     * Add how often a hold was released, when it ever was.
+     *
+     * @param array<string, mixed> $state The hold state so far.
+     * @param array<string, mixed> $hold  The stored legal-hold block.
+     *
+     * @return array<string, mixed> The hold state.
+     */
+    private function withReleasedCount(array $state, array $hold): array {
         $history = ($hold['history'] ?? []);
         if (is_array($history) === true && $history !== []) {
             $state['releasedCount'] = count($history);
         }
 
         return $state;
-    }//end resolveLegalHold()
+    }//end withReleasedCount()
+
+    /**
+     * Who placed an active hold, when, and why.
+     *
+     * @param array<string, mixed> $hold The stored legal-hold block.
+     *
+     * @return array<string, string|null> The reason, placer and placement date.
+     */
+    private function activeHoldDetails(array $hold): array {
+        $details = [];
+        foreach (['reason', 'placedBy', 'placedDate'] as $key) {
+            $details[$key] = ArchivalText::fromString(value: ($hold[$key] ?? null));
+        }
+
+        return $details;
+    }//end activeHoldDetails()
 
     /**
      * Add the selection list's version and the moment it was consulted.
@@ -505,12 +595,12 @@ class ArchivalDecisionResolver {
      * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function withSourceProvenance(array $decision, array $retention): array {
-        $version = $this->stringOrNull(value: ($retention['selectionListVersion'] ?? null));
+        $version = ArchivalText::fromString(value: ($retention['selectionListVersion'] ?? null));
         if ($version !== null) {
             $decision['sourceVersion'] = $version;
         }
 
-        $consultedAt = $this->stringOrNull(value: ($retention['selectionListConsultedAt'] ?? null));
+        $consultedAt = ArchivalText::fromString(value: ($retention['selectionListConsultedAt'] ?? null));
         if ($consultedAt !== null) {
             $decision['sourceConsultedAt'] = $consultedAt;
         }
@@ -544,19 +634,16 @@ class ArchivalDecisionResolver {
      * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
      */
     private function withProcessRecord(array $decision, array $retention): array {
-        $row = $this->stringOrNull(value: ($retention['selectielijstRow'] ?? null));
+        $row = ArchivalText::fromString(value: ($retention['selectielijstRow'] ?? null));
         if ($row !== null) {
             $decision['selectionListRow'] = $row;
         }
 
-        $nomination = ($retention['nomination'] ?? null);
-        if (is_array($nomination) === true && $nomination !== []) {
-            $decision['nomination'] = $nomination;
-        }
-
-        $outcome = ($retention['outcome'] ?? null);
-        if (is_array($outcome) === true && $outcome !== []) {
-            $decision['outcome'] = $outcome;
+        foreach (['nomination', 'outcome'] as $key) {
+            $record = ($retention[$key] ?? null);
+            if (is_array($record) === true && $record !== []) {
+                $decision[$key] = $record;
+            }
         }
 
         return $decision;
@@ -572,42 +659,29 @@ class ArchivalDecisionResolver {
      * that has simply not configured `selectielijstRegister` otherwise gets a
      * plausible-looking default with no signal at all.
      *
-     * @param array<string, mixed> $retention The stored retention block.
-     * @param array<string, mixed> $tmlo The stored TMLO block.
-     * @param array<string, mixed> $annotation The schema annotation evaluation.
-     * @param array<string, string> $declared The record's own archival fields.
+     * @param ArchivalDecisionSources $sources  The blocks the decision is resolved from.
      *
      * @return string|null The basis, or null when nothing established one.
      *
      * @spec openspec/specs/retention-management/spec.md
      */
-    private function resolveBasis(array $retention, array $tmlo, array $annotation, array $declared): ?string {
-        if ($this->stringOrNull(value: ($retention['selectielijstBron'] ?? null)) !== null) {
-            return 'selection_list';
+    private function resolveBasis(ArchivalDecisionSources $sources): ?string {
+        // In priority order: the first basis whose condition holds answers.
+        $bases = [
+            'selection_list' => ArchivalText::fromString(value: ($sources->retention['selectielijstBron'] ?? null)) !== null,
+            'selection_list_not_consulted' => ArchivalText::fromString(value: ($sources->retention['classification'] ?? null)) !== null,
+            'schema' => ArchivalText::fromString(value: ($sources->retention['bewaartermijn'] ?? null)) !== null,
+            'tmlo' => (($sources->tmlo['bewaarTermijn'] ?? null) !== null || ($sources->tmlo['archiefnominatie'] ?? null) !== null),
+            'record' => $sources->declared !== [],
+            'schema_annotation' => ArchivalText::fromString(value: ($sources->annotation['effectiveRetention'] ?? null)) !== null,
+        ];
+
+        $basis = array_search(true, $bases, true);
+        if ($basis === false) {
+            return null;
         }
 
-        $expectedList = $this->stringOrNull(value: ($retention['classification'] ?? null));
-        if ($expectedList !== null) {
-            return 'selection_list_not_consulted';
-        }
-
-        if ($this->stringOrNull(value: ($retention['bewaartermijn'] ?? null)) !== null) {
-            return 'schema';
-        }
-
-        if (($tmlo['bewaarTermijn'] ?? null) !== null || ($tmlo['archiefnominatie'] ?? null) !== null) {
-            return 'tmlo';
-        }
-
-        if ($declared !== []) {
-            return 'record';
-        }
-
-        if ($this->stringOrNull(value: ($annotation['effectiveRetention'] ?? null)) !== null) {
-            return 'schema_annotation';
-        }
-
-        return null;
+        return $basis;
     }//end resolveBasis()
 
     /**
@@ -621,7 +695,7 @@ class ArchivalDecisionResolver {
      */
     private function firstNonEmpty(array $values): ?string {
         foreach ($values as $value) {
-            $candidate = $this->stringOrNull(value: $value);
+            $candidate = ArchivalText::fromString(value: $value);
             if ($candidate !== null) {
                 return $candidate;
             }
@@ -629,27 +703,5 @@ class ArchivalDecisionResolver {
 
         return null;
     }//end firstNonEmpty()
-
-    /**
-     * Coerce a value to a non-empty string, or null.
-     *
-     * @param mixed $value The value to coerce.
-     *
-     * @return string|null The trimmed string, or null when empty or not scalar.
-     *
-     * @spec openspec/specs/retention-management/spec.md
-     */
-    private function stringOrNull(mixed $value): ?string {
-        if (is_string($value) === false) {
-            return null;
-        }
-
-        $trimmed = trim($value);
-        if ($trimmed === '') {
-            return null;
-        }
-
-        return $trimmed;
-    }//end stringOrNull()
 
 }//end class

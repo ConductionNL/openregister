@@ -600,6 +600,23 @@ const INITIAL_STATE = {
 	metadataExpanded: true, // Metadata section expanded by default
 }
 
+/**
+ * An NcSelect options bag for a multi-select that returns only the IDs.
+ *
+ * @param {Array<object>} options The options, each with a value and a title
+ * @return {object} The options bag
+ */
+function pickerOptions(options) {
+	return {
+		options,
+		reduce: (option) => option.value, // Return only the ID for multi-select
+		label: 'title',
+		getOptionLabel: (option) => {
+			return option.title || option.label || ''
+		},
+	}
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
@@ -655,21 +672,15 @@ export default {
 		 * @return {object} NcSelect options bag for registers
 		 */
 		registerOptions() {
-			return {
-				options: registerStore.registerList.map((register) => ({
+			return pickerOptions(
+				registerStore.registerList.map((register) => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
 					description: register.description,
 					register,
 				})),
-
-				reduce: (option) => option.value, // Return only the ID for multi-select
-				label: 'title',
-				getOptionLabel: (option) => {
-					return option.title || option.label || ''
-				},
-			}
+			)
 		},
 
 		/**
@@ -692,8 +703,8 @@ export default {
 				}
 			})
 
-			return {
-				options: schemaStore.schemaList
+			return pickerOptions(
+				schemaStore.schemaList
 					.filter((schema) => schemaIds.has(schema.id))
 					.map((schema) => ({
 						value: schema.id,
@@ -702,13 +713,7 @@ export default {
 						description: schema.description,
 						schema,
 					})),
-
-				reduce: (option) => option.value, // Return only the ID for multi-select
-				label: 'title',
-				getOptionLabel: (option) => {
-					return option.title || option.label || ''
-				},
-			}
+			)
 		},
 
 		/**
@@ -1687,6 +1692,23 @@ export default {
 		},
 
 		/**
+		 * The query parameters of the current search a saved view keeps (not UI
+		 * state like pagination, sorting or columns).
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md
+		 * @return {object} The view configuration
+		 */
+		viewConfiguration() {
+			return {
+				registers: this.selectedRegisters,
+				schemas: this.selectedSchemas,
+				searchTerms: this.searchTerms,
+				facetFilters: this.facetFilters,
+				enabledFacets: this.enabledFacets,
+			}
+		},
+
+		/**
 		 * Persist the current search configuration as a new saved view.
 		 *
 		 * @spec openspec/specs/saved-search-views/spec.md
@@ -1702,14 +1724,7 @@ export default {
 					description: this.viewDescription || '',
 					isPublic: this.viewIsPublic,
 					isDefault: this.viewIsDefault,
-					configuration: {
-						// Query parameters only
-						registers: this.selectedRegisters,
-						schemas: this.selectedSchemas,
-						searchTerms: this.searchTerms,
-						facetFilters: this.facetFilters,
-						enabledFacets: this.enabledFacets,
-					},
+					configuration: this.viewConfiguration(),
 				}
 
 				const newView = await viewsStore.createView(viewData)
@@ -1773,14 +1788,7 @@ export default {
 					description: viewsStore.activeView.description || '',
 					isPublic: viewsStore.activeView.isPublic,
 					isDefault: viewsStore.activeView.isDefault,
-					configuration: {
-						// Query parameters only
-						registers: this.selectedRegisters,
-						schemas: this.selectedSchemas,
-						searchTerms: this.searchTerms,
-						facetFilters: this.facetFilters,
-						enabledFacets: this.enabledFacets,
-					},
+					configuration: this.viewConfiguration(),
 				}
 
 				const updatedView = await viewsStore.updateView(

@@ -70,6 +70,11 @@ use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetHistoryRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetLinkRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetOwnRowKinds;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetWorkRowKinds;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -390,25 +395,35 @@ abstract class ExampleSetTestCase extends TestCase {
 			appConfig: $setConfig,
 			userPreferences: $preferences,
 			engineRows: new ExampleSetEngineKinds(
-				tasks: new ExampleSetTasks(container: $container),
-				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container),
-				parties: new ExampleSetParties(container: $container),
-				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container),
-				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container),
-				accessLinks: new ExampleSetAccessLinks(container: $container),
-				grants: new ExampleSetGrants(container: $container)
+				work: new ExampleSetWorkRowKinds(
+					tasks: new ExampleSetTasks(container: $container),
+					notes: new ExampleSetNotes(container: $container),
+					readStates: new ExampleSetReadStates(container: $container),
+					watchers: new ExampleSetWatchers(container: $container)
+				),
+				own: new ExampleSetOwnRowKinds(
+					views: new ExampleSetViews(container: $container),
+					flows: new ExampleSetFlows(container: $container),
+					casePlans: new ExampleSetCasePlans(container: $container)
+				),
+				links: new ExampleSetLinkRowKinds(
+					parties: new ExampleSetParties(container: $container),
+					emailLinks: new ExampleSetEmailLinks(container: $container),
+					accessLinks: new ExampleSetAccessLinks(container: $container),
+					grants: new ExampleSetGrants(container: $container)
+				),
+				apps: new ExampleSetAppRowKinds(
+					deckCards: new ExampleSetDeckCards(container: $container),
+					appointments: new ExampleSetAppointments(container: $container),
+					collectivesPages: new ExampleSetCollectivesPages(container: $container),
+					talkConversations: new ExampleSetTalkConversations(container: $container)
+				),
+				history: new ExampleSetHistoryRowKinds(
+					exportRuns: new ExampleSetExportRuns(container: $container),
+					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+					auditEntries: new ExampleSetAuditEntries(container: $container),
+					timelineEntries: new ExampleSetTimelineEntries(container: $container)
+				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -423,25 +438,35 @@ abstract class ExampleSetTestCase extends TestCase {
 			instance: $instance,
 			userPreferences: $preferences,
 			engineRows: new ExampleSetEngineKinds(
-				tasks: new ExampleSetTasks(container: $container),
-				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container),
-				parties: new ExampleSetParties(container: $container),
-				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container),
-				flows: new ExampleSetFlows(container: $container),
-				archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
-				exportRuns: new ExampleSetExportRuns(container: $container),
-				deckCards: new ExampleSetDeckCards(container: $container),
-				appointments: new ExampleSetAppointments(container: $container),
-				casePlans: new ExampleSetCasePlans(container: $container),
-				collectivesPages: new ExampleSetCollectivesPages(container: $container),
-				talkConversations: new ExampleSetTalkConversations(container: $container),
-				auditEntries: new ExampleSetAuditEntries(container: $container),
-				timelineEntries: new ExampleSetTimelineEntries(container: $container),
-				emailLinks: new ExampleSetEmailLinks(container: $container),
-				accessLinks: new ExampleSetAccessLinks(container: $container),
-				grants: new ExampleSetGrants(container: $container)
+				work: new ExampleSetWorkRowKinds(
+					tasks: new ExampleSetTasks(container: $container),
+					notes: new ExampleSetNotes(container: $container),
+					readStates: new ExampleSetReadStates(container: $container),
+					watchers: new ExampleSetWatchers(container: $container)
+				),
+				own: new ExampleSetOwnRowKinds(
+					views: new ExampleSetViews(container: $container),
+					flows: new ExampleSetFlows(container: $container),
+					casePlans: new ExampleSetCasePlans(container: $container)
+				),
+				links: new ExampleSetLinkRowKinds(
+					parties: new ExampleSetParties(container: $container),
+					emailLinks: new ExampleSetEmailLinks(container: $container),
+					accessLinks: new ExampleSetAccessLinks(container: $container),
+					grants: new ExampleSetGrants(container: $container)
+				),
+				apps: new ExampleSetAppRowKinds(
+					deckCards: new ExampleSetDeckCards(container: $container),
+					appointments: new ExampleSetAppointments(container: $container),
+					collectivesPages: new ExampleSetCollectivesPages(container: $container),
+					talkConversations: new ExampleSetTalkConversations(container: $container)
+				),
+				history: new ExampleSetHistoryRowKinds(
+					exportRuns: new ExampleSetExportRuns(container: $container),
+					archival: new ExampleSetArchival(appConfig: $this->appConfigOfApps()),
+					auditEntries: new ExampleSetAuditEntries(container: $container),
+					timelineEntries: new ExampleSetTimelineEntries(container: $container)
+				)
 			),
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
@@ -900,9 +925,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			return $found !== null ? ['id' => $found, 'created' => false] : ['id' => $add('labels', ['board' => $board, 'title' => $title, 'color' => $color]), 'created' => true];
 		});
 		$store->method('insertCard')->willReturnCallback(
-			fn (int $stack, string $owner, string $title, string $description, ?\DateTime $due, ?\DateTime $done, array $labels, array $assignees): int => $add(
+			fn (int $stack, array $card): int => $add(
 				'cards',
-				['stack' => $stack, 'owner' => $owner, 'title' => $title, 'due' => $due?->format('Y-m-d'), 'labels' => $labels, 'assignees' => $assignees]
+				['stack' => $stack, 'owner' => $card['owner'], 'title' => $card['title'], 'due' => $card['due']?->format('Y-m-d'), 'labels' => $card['labels'], 'assignees' => $card['assignees']]
 			)
 		);
 		$store->method('cardExists')->willReturnCallback(fn (int $card): bool => isset($this->deck['cards'][$card]));

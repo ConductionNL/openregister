@@ -201,17 +201,8 @@ class FormIdempotencyStore implements FormIdempotencyStoreInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function find(string $scope, string $key, string $binding): ?array {
-		$folder = $this->folder(create: false);
-		$name = $this->name(scope: $scope, key: $key);
-		if ($folder === null || $folder->fileExists($name) === false) {
-			return null;
-		}
-
-		$file = $folder->getFile($name);
-		$entry = $this->read(file: $file);
-		if ($entry === null || $entry['expiresAt'] <= $this->time->getTime()) {
-			$file->delete();
-
+		$entry = $this->liveEntry(scope: $scope, key: $key);
+		if ($entry === null) {
 			return null;
 		}
 
@@ -226,6 +217,48 @@ class FormIdempotencyStore implements FormIdempotencyStoreInterface {
 
 		return $entry['response'];
 	}//end find()
+
+	/**
+	 * The live entry under a key; an expired or unreadable one is deleted on sight.
+	 *
+	 * @param string $scope The form scope.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return array{expiresAt: int, binding: string, response: array<string, mixed>}|null The entry.
+	 */
+	private function liveEntry(string $scope, string $key): ?array {
+		$file = $this->existingFile(scope: $scope, key: $key);
+		if ($file === null) {
+			return null;
+		}
+
+		$entry = $this->read(file: $file);
+		if ($entry === null || $entry['expiresAt'] <= $this->time->getTime()) {
+			$file->delete();
+
+			return null;
+		}
+
+		return $entry;
+	}//end liveEntry()
+
+	/**
+	 * The file an answer under a key is stored in, or null when there is none.
+	 *
+	 * @param string $scope The form scope.
+	 * @param string $key   The Idempotency-Key.
+	 *
+	 * @return ISimpleFile|null The file.
+	 */
+	private function existingFile(string $scope, string $key): ?ISimpleFile {
+		$folder = $this->folder(create: false);
+		$name = $this->name(scope: $scope, key: $key);
+		if ($folder === null || $folder->fileExists($name) === false) {
+			return null;
+		}
+
+		return $folder->getFile($name);
+	}//end existingFile()
 
 	/**
 	 * Remember an answer under a key for 24 hours.
@@ -268,17 +301,30 @@ class FormIdempotencyStore implements FormIdempotencyStoreInterface {
 		$deleted = 0;
 		$now = $this->time->getTime();
 		foreach ($folder->getDirectoryListing() as $file) {
-			$entry = $this->read(file: $file);
-			if ($entry !== null && $entry['expiresAt'] > $now) {
-				continue;
-			}
-
-			$file->delete();
-			$deleted++;
+			$deleted += $this->purgeIfExpired(file: $file, now: $now);
 		}
 
 		return $deleted;
 	}//end purge()
+
+	/**
+	 * Delete one answer file when it expired or cannot be read.
+	 *
+	 * @param ISimpleFile $file The file.
+	 * @param int         $now  The moment of the purge.
+	 *
+	 * @return int 1 when deleted, else 0.
+	 */
+	private function purgeIfExpired(ISimpleFile $file, int $now): int {
+		$entry = $this->read(file: $file);
+		if ($entry !== null && $entry['expiresAt'] > $now) {
+			return 0;
+		}
+
+		$file->delete();
+
+		return 1;
+	}//end purgeIfExpired()
 
 	/**
 	 * The stored entry of a file, or null when unreadable.

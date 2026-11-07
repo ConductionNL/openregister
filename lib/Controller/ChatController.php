@@ -39,6 +39,7 @@ use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -173,12 +174,7 @@ class ChatController extends Controller {
 	 *
 	 * @return void
 	 */
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		ChatControllerServices $services,
-		string $userId,
-	) {
+	public function __construct(string $appName, IRequest $request, ChatControllerServices $services, string $userId) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 
@@ -216,54 +212,48 @@ class ChatController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function extractMessageRequestParams(): array {
-		// Extract basic parameters.
-		$conversationUuid = (string)$this->request->getParam('conversation');
-		$agentUuid = (string)$this->request->getParam('agentUuid');
-		$message = (string)$this->request->getParam('message');
+		return [
+			'conversationUuid' => (string)$this->request->getParam('conversation'),
+			'agentUuid' => (string)$this->request->getParam('agentUuid'),
+			'message' => (string)$this->request->getParam('message'),
+			'selectedViews' => $this->arrayParam(name: 'views'),
+			'selectedTools' => $this->arrayParam(name: 'tools'),
+			'ragSettings' => $this->ragSettings(),
+			// Optional CnAiContext snapshot (the user's current scope); anything
+			// that is not an array is dropped — the column defaults to '{}'.
+			'context' => $this->arrayParam(name: 'context'),
+		];
+	}//end extractMessageRequestParams()
 
-		// Extract selectedViews array.
-		$viewsParam = $this->request->getParam('views');
-		$selectedViews = [];
-		if ($viewsParam !== null && is_array($viewsParam) === true) {
-			$selectedViews = $viewsParam;
+	/**
+	 * A request parameter that must be an array; anything else reads as empty.
+	 *
+	 * @param string $name The parameter name
+	 *
+	 * @return array The parameter, or [] when it is missing or not an array
+	 */
+	private function arrayParam(string $name): array {
+		$value = $this->request->getParam($name);
+		if (is_array($value) === true) {
+			return $value;
 		}
 
-		// Extract selectedTools array.
-		$toolsParam = $this->request->getParam('tools');
-		$selectedTools = [];
-		if ($toolsParam !== null && is_array($toolsParam) === true) {
-			$selectedTools = $toolsParam;
-		}
+		return [];
+	}//end arrayParam()
 
-		// Extract RAG configuration settings.
-		$ragSettings = [
+	/**
+	 * The RAG configuration of a message request, with its defaults.
+	 *
+	 * @return array{includeObjects: mixed, includeFiles: mixed, numSourcesFiles: mixed, numSourcesObjects: mixed}
+	 */
+	private function ragSettings(): array {
+		return [
 			'includeObjects' => $this->request->getParam('includeObjects') ?? true,
 			'includeFiles' => $this->request->getParam('includeFiles') ?? true,
 			'numSourcesFiles' => $this->request->getParam('numSourcesFiles') ?? 5,
 			'numSourcesObjects' => $this->request->getParam('numSourcesObjects') ?? 5,
 		];
-
-		// Extract optional CnAiContext snapshot. Frontend sends a plain JSON
-		// object describing the user's current scope (selected register,
-		// schema, object id, recent search query, etc.). Anything that is
-		// not an associative array is silently dropped — the column has a
-		// DEFAULT '{}' so a missing context is fine.
-		$contextParam = $this->request->getParam('context');
-		$context = [];
-		if (is_array($contextParam) === true) {
-			$context = $contextParam;
-		}
-
-		return [
-			'conversationUuid' => $conversationUuid,
-			'agentUuid' => $agentUuid,
-			'message' => $message,
-			'selectedViews' => $selectedViews,
-			'selectedTools' => $selectedTools,
-			'ragSettings' => $ragSettings,
-			'context' => $context,
-		];
-	}//end extractMessageRequestParams()
+	}//end ragSettings()
 
 	/**
 	 * Load an existing conversation by UUID.
@@ -296,46 +286,53 @@ class ChatController extends Controller {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function createNewConversation(string $agentUuid): Conversation {
-		// Get active organisation.
 		$organisation = $this->organisationService->getActiveOrganisation();
+		$agent        = $this->findAgent(agentUuid: $agentUuid);
+		$defaultTitle = $this->chatService->ensureUniqueTitle(baseTitle: 'New Conversation', userId: $this->userId, agentId: $agent->getId());
 
-		// Look up agent by UUID.
-		try {
-			$agent = $this->agentMapper->findByUuid($agentUuid);
-		} catch (Exception $e) {
-			throw new Exception('The agent with UUID ' . $agentUuid . ' does not exist', 404);
-		}
-
-		// Generate unique default title.
-		$defaultTitle = $this->chatService->ensureUniqueTitle(
-			baseTitle: 'New Conversation',
-			userId: $this->userId,
-			agentId: $agent->getId()
-		);
-
-		// Create and insert new conversation.
 		$conversation = new Conversation();
 		$conversation->setUserId($this->userId);
 		$conversation->setOrganisation($organisation?->getUuid());
 		$conversation->setAgentId($agent->getId());
 		$conversation->setTitle($defaultTitle);
 		$conversation = $this->conversationMapper->insert($conversation);
-
-		// Log conversation creation.
-		$this->logger->info(
-			message: '[ChatController] New conversation created',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $conversation->getUuid(),
-				'userId' => $this->userId,
-				'agentId' => $agent->getId(),
-				'title' => $defaultTitle,
-			]
-		);
+		$this->logConversationCreated(conversation: $conversation, agentId: $agent->getId());
 
 		return $conversation;
 	}//end createNewConversation()
+
+	/**
+	 * Log a conversation created for a message.
+	 *
+	 * @param Conversation $conversation The inserted conversation
+	 * @param int          $agentId      The agent it was created for
+	 *
+	 * @return void
+	 */
+	private function logConversationCreated(Conversation $conversation, int $agentId): void {
+		$this->logger->info(
+			message: '[ChatController] New conversation created',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $conversation->getUuid(),
+				'userId' => $this->userId, 'agentId' => $agentId, 'title' => $conversation->getTitle()]
+		);
+	}//end logConversationCreated()
+
+	/**
+	 * Look up an agent by UUID.
+	 *
+	 * @param string $agentUuid Agent UUID
+	 *
+	 * @return Entity The agent
+	 *
+	 * @throws Exception With code 404 when the agent does not exist
+	 */
+	private function findAgent(string $agentUuid): Entity {
+		try {
+			return $this->agentMapper->findByUuid($agentUuid);
+		} catch (Exception $e) {
+			throw new Exception('The agent with UUID ' . $agentUuid . ' does not exist', 404);
+		}
+	}//end findAgent()
 
 	/**
 	 * Resolve conversation from UUID or create new one with agent.
@@ -397,96 +394,96 @@ class ChatController extends Controller {
 	 */
 	public function sendMessage(): JSONResponse {
 		try {
-			// Extract and normalize request parameters.
 			$params = $this->extractMessageRequestParams();
-
-			// Validate message is not empty.
 			if (empty($params['message']) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Missing message'),
-						'message' => $this->l10n->t('message content is required'),
-					],
-					statusCode: 400
-				);
+				return $this->errorResponse(error: $this->l10n->t('Missing message'), message: $this->l10n->t('message content is required'), statusCode: 400);
 			}
 
-			// Log request with settings.
-			$this->logger->info(
-				message: '[ChatController] Received message with settings',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'views' => count($params['selectedViews']),
-					'tools' => count($params['selectedTools']),
-					'ragSettings' => $params['ragSettings'],
-				]
-			);
-
-			// Resolve conversation (load existing or create new).
-			$conversation = $this->resolveConversation(
-				conversationUuid: $params['conversationUuid'],
-				agentUuid: $params['agentUuid']
-			);
-
-			// Verify user has access to conversation.
+			$this->logReceived(params: $params);
+			$conversation = $this->resolveConversation(conversationUuid: $params['conversationUuid'], agentUuid: $params['agentUuid']);
 			$this->verifyConversationAccess(conversation: $conversation);
 
-			// Process message through ChatService.
-			$result = $this->chatService->processMessage(
-				conversationId: $conversation->getId(),
-				userId: $this->userId,
-				userMessage: $params['message'],
-				selectedViews: $params['selectedViews'],
-				selectedTools: $params['selectedTools'],
-				ragSettings: $params['ragSettings'],
-				context: $params['context']
-			);
-
-			// Add conversation UUID to result for frontend.
-			$result['conversation'] = $conversation->getUuid();
-
-			return new JSONResponse(data: $result, statusCode: 200);
+			return new JSONResponse(data: $this->processMessage(conversation: $conversation, params: $params), statusCode: 200);
 		} catch (Exception $e) {
-			// Determine status code from exception or default to 500.
-			$statusCode = (int)$e->getCode();
-			if ($statusCode < 400 || $statusCode >= 600) {
-				$statusCode = 500;
-			}
-
-			// Log error with trace.
-			$this->logger->error(
-				message: '[ChatController] Failed to send message',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			// Determine appropriate error message based on status code.
-			$errorType = match ($statusCode) {
-				400 => $this->l10n->t('Missing conversation or agentUuid'),
-				403 => $this->l10n->t('Access denied'),
-				404 => $this->l10n->t('Conversation not found'),
-				503 => $this->l10n->t('AI service not configured'),
-				default => $this->l10n->t('Failed to process message'),
-			};
-
-			/*
-			 * @psalm-suppress InvalidArgument
-			 */
-
-			return new JSONResponse(
-				data: [
-					'error' => $errorType,
-					'message' => $e->getMessage(),
-				],
-				statusCode: $statusCode
-			);
-		}//end try
+			return $this->sendMessageFailure(error: $e);
+		}
 	}//end sendMessage()
+
+	/**
+	 * Log the settings a message arrived with.
+	 *
+	 * @param array $params The normalised request (extractMessageRequestParams)
+	 *
+	 * @return void
+	 */
+	private function logReceived(array $params): void {
+		$this->logger->info(
+			message: '[ChatController] Received message with settings',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'views' => count($params['selectedViews']),
+				'tools' => count($params['selectedTools']), 'ragSettings' => $params['ragSettings']]
+		);
+	}//end logReceived()
+
+	/**
+	 * Run a message through the ChatService.
+	 *
+	 * @param Conversation $conversation The conversation the caller may use
+	 * @param array        $params       The normalised request (extractMessageRequestParams)
+	 *
+	 * @return array The ChatService result plus the conversation UUID
+	 */
+	private function processMessage(Conversation $conversation, array $params): array {
+		$result = $this->chatService->processMessage(
+			conversationId: $conversation->getId(),
+			userId: $this->userId,
+			userMessage: $params['message'],
+			selectedViews: $params['selectedViews'],
+			selectedTools: $params['selectedTools'],
+			ragSettings: $params['ragSettings'],
+			context: $params['context']
+		);
+		$result['conversation'] = $conversation->getUuid();
+
+		return $result;
+	}//end processMessage()
+
+	/**
+	 * The response to a failed sendMessage: the exception code when it is an
+	 * HTTP error status, else 500.
+	 *
+	 * @param Exception $error The failure
+	 *
+	 * @return JSONResponse The error response
+	 *
+	 * @psalm-suppress InvalidArgument
+	 */
+	private function sendMessageFailure(Exception $error): JSONResponse {
+		$statusCode = (int)$error->getCode();
+		if ($statusCode < 400 || $statusCode >= 600) {
+			$statusCode = 500;
+		}
+
+		$this->logFailure(message: 'Failed to send message', context: $this->traced(line: __LINE__, error: $error));
+
+		return $this->errorResponse(error: $this->sendMessageErrorType(statusCode: $statusCode), message: $error->getMessage(), statusCode: $statusCode);
+	}//end sendMessageFailure()
+
+	/**
+	 * The error label of a failed sendMessage status.
+	 *
+	 * @param int $statusCode The HTTP status
+	 *
+	 * @return string The translated label
+	 */
+	private function sendMessageErrorType(int $statusCode): string {
+		return match ($statusCode) {
+			400 => $this->l10n->t('Missing conversation or agentUuid'),
+			403 => $this->l10n->t('Access denied'),
+			404 => $this->l10n->t('Conversation not found'),
+			503 => $this->l10n->t('AI service not configured'),
+			default => $this->l10n->t('Failed to process message'),
+		};
+	}//end sendMessageErrorType()
 
 	/**
 	 * Get conversation history (messages)
@@ -508,78 +505,78 @@ class ChatController extends Controller {
 	 */
 	public function getHistory(): JSONResponse {
 		try {
-			// Get conversation ID from request.
 			$conversationId = (int)$this->request->getParam('conversationId');
-
-			if (empty($conversationId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Missing conversationId'),
-						'message' => $this->l10n->t('conversationId is required'),
-					],
-					statusCode: 400
-				);
+			$refused        = $this->refuseConversation(conversationId: $conversationId);
+			if ($refused !== null) {
+				return $refused;
 			}
 
-			// Get conversation.
-			$conversation = $this->conversationMapper->find($conversationId);
-
-			// Verify ownership.
-			if ($conversation->getUserId() !== $this->userId) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Access denied'),
-						'message' => $this->l10n->t('You do not have access to this conversation'),
-					],
-					statusCode: 403
-				);
-			}
-
-			// Get messages.
-			$limit = (int)($this->request->getParam('limit') ?? 100);
-			$offset = (int)($this->request->getParam('offset') ?? 0);
-
-			$messages = $this->messageMapper->findByConversation(
-				conversationId: $conversationId,
-				limit: $limit,
-				offset: $offset
-			);
-
-			$serializedMessages = array_map(
-				function ($msg) {
-					return $msg->jsonSerialize();
-				},
-				$messages
-			);
-
-			return new JSONResponse(
-				data: [
-					'messages' => $serializedMessages,
-					'total' => $this->messageMapper->countByConversation($conversationId),
-					'conversationId' => $conversationId,
-				],
-				statusCode: 200
-			);
+			return new JSONResponse(data: $this->historyPage(conversationId: $conversationId), statusCode: 200);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ChatController] Failed to get history',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $this->l10n->t('Failed to fetch conversation history'),
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			$this->logFailure(message: 'Failed to get history', context: $this->traced(line: __LINE__, error: $e));
+			return $this->errorResponse(error: $this->l10n->t('Failed to fetch conversation history'), message: $e->getMessage(), statusCode: 500);
+		}
 	}//end getHistory()
+
+	/**
+	 * One page of a conversation's messages (`limit`, default 100, and `offset`).
+	 *
+	 * @param int $conversationId The conversation id
+	 *
+	 * @return array{messages: array, total: int, conversationId: int}
+	 */
+	private function historyPage(int $conversationId): array {
+		$messages = $this->messageMapper->findByConversation(
+			conversationId: $conversationId,
+			limit: (int)($this->request->getParam('limit') ?? 100),
+			offset: (int)($this->request->getParam('offset') ?? 0)
+		);
+
+		return [
+			'messages' => array_map(fn ($msg) => $msg->jsonSerialize(), $messages),
+			'total' => $this->messageMapper->countByConversation($conversationId),
+			'conversationId' => $conversationId,
+		];
+	}//end historyPage()
+
+	/**
+	 * Refuse a request on a conversation id that is missing (400) or on a
+	 * conversation the current user does not own (403).
+	 *
+	 * @param int $conversationId The requested conversation id
+	 *
+	 * @return JSONResponse|null The refusal, or null when the caller may proceed
+	 *
+	 * @throws Exception When the conversation cannot be loaded
+	 */
+	private function refuseConversation(int $conversationId): ?JSONResponse {
+		if (empty($conversationId) === true) {
+			return $this->errorResponse(
+				error: $this->l10n->t('Missing conversationId'),
+				message: $this->l10n->t('conversationId is required'),
+				statusCode: 400
+			);
+		}
+
+		if ($this->conversationMapper->find($conversationId)->getUserId() !== $this->userId) {
+			return $this->accessDenied();
+		}
+
+		return null;
+	}//end refuseConversation()
+
+	/**
+	 * The 403 response for a conversation the current user does not own.
+	 *
+	 * @return JSONResponse The refusal
+	 */
+	private function accessDenied(): JSONResponse {
+		return $this->errorResponse(
+			error: $this->l10n->t('Access denied'),
+			message: $this->l10n->t('You do not have access to this conversation'),
+			statusCode: 403
+		);
+	}//end accessDenied()
 
 	/**
 	 * Clear conversation history (soft delete)
@@ -598,73 +595,38 @@ class ChatController extends Controller {
 	 */
 	public function clearHistory(): JSONResponse {
 		try {
-			// Get conversation ID from request.
 			$conversationId = (int)$this->request->getParam('conversationId');
-
-			if (empty($conversationId) === true) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Missing conversationId'),
-						'message' => $this->l10n->t('conversationId is required'),
-					],
-					statusCode: 400
-				);
+			$refused        = $this->refuseConversation(conversationId: $conversationId);
+			if ($refused !== null) {
+				return $refused;
 			}
 
-			// Get conversation.
-			$conversation = $this->conversationMapper->find($conversationId);
-
-			// Verify ownership.
-			if ($conversation->getUserId() !== $this->userId) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Access denied'),
-						'message' => $this->l10n->t('You do not have access to this conversation'),
-					],
-					statusCode: 403
-				);
-			}
-
-			// Soft delete conversation.
-			$this->conversationMapper->softDelete($conversationId);
-
-			$this->logger->info(
-				message: '[ChatController] Conversation cleared (soft deleted)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'conversationId' => $conversationId,
-					'userId' => $this->userId,
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'message' => $this->l10n->t('Conversation cleared successfully'),
-					'conversationId' => $conversationId,
-				],
-				statusCode: 200
-			);
+			return $this->softDelete(conversationId: $conversationId);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ChatController] Failed to clear history',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $this->l10n->t('Failed to clear conversation'),
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			$this->logFailure(message: 'Failed to clear history', context: $this->traced(line: __LINE__, error: $e));
+			return $this->errorResponse(error: $this->l10n->t('Failed to clear conversation'), message: $e->getMessage(), statusCode: 500);
+		}
 	}//end clearHistory()
+
+	/**
+	 * Soft delete a conversation the caller owns.
+	 *
+	 * @param int $conversationId The conversation id
+	 *
+	 * @return JSONResponse The success response
+	 */
+	private function softDelete(int $conversationId): JSONResponse {
+		$this->conversationMapper->softDelete($conversationId);
+		$this->logger->info(
+			message: '[ChatController] Conversation cleared (soft deleted)',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'conversationId' => $conversationId, 'userId' => $this->userId]
+		);
+
+		return new JSONResponse(
+			data: ['message' => $this->l10n->t('Conversation cleared successfully'), 'conversationId' => $conversationId],
+			statusCode: 200
+		);
+	}//end softDelete()
 
 	/**
 	 * Submit or update feedback on a message
@@ -684,76 +646,66 @@ class ChatController extends Controller {
 	 */
 	public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse {
 		try {
-			// Get request parameters.
-			$type = (string)$this->request->getParam('type');
-			$comment = (string)$this->request->getParam('comment', '');
-
-			// Validate feedback type.
-			if (in_array($type, ['positive', 'negative'], true) === false) {
-				return $this->feedbackError(
-					texts: [
-						$this->l10n->t('Invalid feedback type'),
-						$this->l10n->t('type must be "positive" or "negative"'),
-					],
-					statusCode: 400
-				);
-			}
-
-			// Get conversation by UUID.
-			$conversation = $this->conversationMapper->findByUuid($conversationUuid);
-
-			// Verify user has access to this conversation.
-			if ($conversation->getUserId() !== $this->userId) {
-				return new JSONResponse(
-					data: [
-						'error' => $this->l10n->t('Access denied'),
-						'message' => $this->l10n->t('You do not have access to this conversation'),
-					],
-					statusCode: 403
-				);
-			}
-
-			// Get message and verify it belongs to this conversation.
-			$message = $this->messageMapper->find($messageId);
-
-			if ($message->getConversationId() !== $conversation->getId()) {
-				return $this->feedbackError(
-					texts: [
-						$this->l10n->t('Message not found'),
-						$this->l10n->t('Message does not belong to this conversation'),
-					],
-					statusCode: 404
-				);
-			}
-
-			// Get active organisation.
-			$organisation = $this->organisationService->getActiveOrganisation();
-			$input = [
-				'messageId' => $messageId,
-				'type' => $type,
-				'comment' => $comment,
-				'organisation' => $organisation?->getUuid(),
-			];
-
-			// Check if feedback already exists for this message.
-			$existingFeedback = $this->feedbackMapper->findByMessage(messageId: $messageId, userId: $this->userId);
-
-			if ($existingFeedback !== null) {
-				$feedback = $this->updateFeedback(feedback: $existingFeedback, input: $input);
-			}
-
-			if ($existingFeedback === null) {
-				$feedback = $this->createFeedback(conversation: $conversation, input: $input);
-			}
-
-			return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
+			return $this->recordFeedback(conversationUuid: $conversationUuid, messageId: $messageId);
 		} catch (Exception $e) {
-			return $this->feedbackFailure(
-				error: $e,
-				ids: ['conversationUuid' => $conversationUuid, 'messageId' => $messageId]
-			);
-		}//end try
+			return $this->feedbackFailure(error: $e, ids: ['conversationUuid' => $conversationUuid, 'messageId' => $messageId]);
+		}
 	}//end sendFeedback()
+
+	/**
+	 * Validate and save feedback on a message: the type must be positive or
+	 * negative and the conversation must be the current user's.
+	 *
+	 * @param string $conversationUuid Conversation UUID
+	 * @param int    $messageId        Message ID
+	 *
+	 * @return JSONResponse The saved feedback or the refusal
+	 *
+	 * @throws Exception When a lookup or the save fails
+	 */
+	private function recordFeedback(string $conversationUuid, int $messageId): JSONResponse {
+		$type    = (string)$this->request->getParam('type');
+		$comment = (string)$this->request->getParam('comment', '');
+		if (in_array($type, ['positive', 'negative'], true) === false) {
+			return $this->feedbackError(
+				texts: [$this->l10n->t('Invalid feedback type'), $this->l10n->t('type must be "positive" or "negative"')],
+				statusCode: 400
+			);
+		}
+
+		$conversation = $this->conversationMapper->findByUuid($conversationUuid);
+		if ($conversation->getUserId() !== $this->userId) {
+			return $this->accessDenied();
+		}
+
+		return $this->saveFeedback(conversation: $conversation, input: ['messageId' => $messageId, 'type' => $type, 'comment' => $comment]);
+	}//end recordFeedback()
+
+	/**
+	 * Create or update the current user's feedback on a message of a
+	 * conversation they own.
+	 *
+	 * @param Conversation $conversation The conversation
+	 * @param array        $input        The messageId, type (positive or negative) and comment
+	 *
+	 * @return JSONResponse The saved feedback, or 404 when the message is not in the conversation
+	 */
+	private function saveFeedback(Conversation $conversation, array $input): JSONResponse {
+		if ($this->messageMapper->find($input['messageId'])->getConversationId() !== $conversation->getId()) {
+			return $this->feedbackError(
+				texts: [$this->l10n->t('Message not found'), $this->l10n->t('Message does not belong to this conversation')],
+				statusCode: 404
+			);
+		}
+
+		$input['organisation'] = $this->organisationService->getActiveOrganisation()?->getUuid();
+		$existingFeedback      = $this->feedbackMapper->findByMessage(messageId: $input['messageId'], userId: $this->userId);
+		if ($existingFeedback !== null) {
+			return new JSONResponse(data: $this->updateFeedback(feedback: $existingFeedback, input: $input)->jsonSerialize(), statusCode: 200);
+		}
+
+		return new JSONResponse(data: $this->createFeedback(conversation: $conversation, input: $input)->jsonSerialize(), statusCode: 200);
+	}//end saveFeedback()
 
 	/**
 	 * Build a feedback error response from a translated error and message.
@@ -764,14 +716,45 @@ class ChatController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function feedbackError(array $texts, int $statusCode): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'error' => $texts[0],
-				'message' => $texts[1],
-			],
-			statusCode: $statusCode
-		);
+		return $this->errorResponse(error: $texts[0], message: $texts[1], statusCode: $statusCode);
 	}//end feedbackError()
+
+	/**
+	 * An error response with an error label and a message.
+	 *
+	 * @param string $error      The error label
+	 * @param string $message    The message
+	 * @param int    $statusCode The HTTP status
+	 *
+	 * @return JSONResponse The response
+	 */
+	private function errorResponse(string $error, string $message, int $statusCode): JSONResponse {
+		return new JSONResponse(data: ['error' => $error, 'message' => $message], statusCode: $statusCode);
+	}//end errorResponse()
+
+	/**
+	 * Log context for a failure: line, error message and trace.
+	 *
+	 * @param int       $line  The line the failure was caught on
+	 * @param Exception $error The failure
+	 *
+	 * @return array<string, mixed> The context
+	 */
+	private function traced(int $line, Exception $error): array {
+		return ['line' => $line, 'error' => $error->getMessage(), 'trace' => $error->getTraceAsString()];
+	}//end traced()
+
+	/**
+	 * Log an error of this controller.
+	 *
+	 * @param string               $message The message, without the controller prefix
+	 * @param array<string, mixed> $context The context, without the file
+	 *
+	 * @return void
+	 */
+	private function logFailure(string $message, array $context): void {
+		$this->logger->error(message: '[ChatController] '.$message, context: ['file' => __FILE__] + $context);
+	}//end logFailure()
 
 	/**
 	 * Update the acting user's existing feedback on a message.
@@ -826,14 +809,8 @@ class ChatController extends Controller {
 	private function logFeedbackSaved(Feedback $feedback, array $input): void {
 		$this->logger->info(
 			message: '[ChatController] Message feedback ' . $input['action'],
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'feedbackId' => $feedback->getId(),
-				'messageId' => $input['messageId'],
-				'type' => $input['type'],
-				'hasComment' => empty($input['comment']) === false,
-			]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'feedbackId' => $feedback->getId(), 'messageId' => $input['messageId'],
+				'type' => $input['type'], 'hasComment' => empty($input['comment']) === false]
 		);
 	}//end logFeedbackSaved()
 
@@ -846,25 +823,8 @@ class ChatController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function feedbackFailure(Exception $error, array $ids): JSONResponse {
-		$this->logger->error(
-			message: '[ChatController] Failed to save feedback',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'conversationUuid' => $ids['conversationUuid'],
-				'messageId' => $ids['messageId'],
-				'error' => $error->getMessage(),
-				'trace' => $error->getTraceAsString(),
-			]
-		);
-
-		return new JSONResponse(
-			data: [
-				'error' => $this->l10n->t('Failed to save feedback'),
-				'message' => $error->getMessage(),
-			],
-			statusCode: 500
-		);
+		$this->logFailure(message: 'Failed to save feedback', context: ['line' => __LINE__] + $ids + $this->traced(line: __LINE__, error: $error));
+		return $this->errorResponse(error: $this->l10n->t('Failed to save feedback'), message: $error->getMessage(), statusCode: 500);
 	}//end feedbackFailure()
 
 	/**
@@ -899,63 +859,41 @@ class ChatController extends Controller {
 	 */
 	public function getChatStats(): JSONResponse {
 		try {
-			// Resolve the active organisation once; every count below is
-			// scoped to it, mirroring the OrganisationService pattern used
-			// in createNewConversation() and sendFeedback() above.
-			$organisation = $this->organisationService->getActiveOrganisation();
-			$organisationUuid = $organisation?->getUuid();
-
-			// No resolvable organisation means there is nothing this caller
-			// may count: return zeros rather than falling back to unscoped,
-			// instance-wide totals (multi-tenant leak,
-			// or-chat-engine-decommission REQ "Usage statistics are
+			// Every count is scoped to the active organisation. Without one there
+			// is nothing this caller may count: zeros, never instance-wide totals
+			// (or-chat-engine-decommission REQ "Usage statistics are
 			// organisation-scoped, never instance-wide").
+			$organisationUuid = $this->organisationService->getActiveOrganisation()?->getUuid();
 			if ($organisationUuid === null) {
-				return new JSONResponse(
-					data: [
-						'total_agents' => 0,
-						'total_conversations' => 0,
-						'total_messages' => 0,
-					],
-					statusCode: 200
-				);
+				return new JSONResponse(data: ['total_agents' => 0, 'total_conversations' => 0, 'total_messages' => 0], statusCode: 200);
 			}
 
-			$totalAgents = $this->countByOrganisation(table: 'openregister_agents', organisationUuid: $organisationUuid);
-			$totalConversations = $this->countByOrganisation(table: 'openregister_conversations', organisationUuid: $organisationUuid);
-
-			// Messages have no organisation column of their own, so they are
-			// scoped via the conversation ids of the active organisation.
-			$conversationIds = $this->organisationConversationIds(organisationUuid: $organisationUuid);
-			$totalMessages = $this->countMessagesIn(conversationIds: $conversationIds);
-
-			return new JSONResponse(
-				data: [
-					'total_agents' => $totalAgents,
-					'total_conversations' => $totalConversations,
-					'total_messages' => $totalMessages,
-				],
-				statusCode: 200
-			);
+			return new JSONResponse(data: $this->organisationStats(organisationUuid: $organisationUuid), statusCode: 200);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ChatController] Failed to get chat stats',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $this->l10n->t('Failed to get chat statistics'),
-					'message' => $e->getMessage(),
-				],
-				statusCode: 500
-			);
-		}//end try
+			$this->logFailure(message: 'Failed to get chat stats', context: ['line' => __LINE__, 'error' => $e->getMessage()]);
+			return $this->errorResponse(error: $this->l10n->t('Failed to get chat statistics'), message: $e->getMessage(), statusCode: 500);
+		}
 	}//end getChatStats()
+
+	/**
+	 * The agent, conversation and message counts of one organisation.
+	 *
+	 * Messages have no organisation column of their own, so they are scoped
+	 * via the conversation ids of the organisation.
+	 *
+	 * @param string $organisationUuid The organisation
+	 *
+	 * @return array{total_agents: int, total_conversations: int, total_messages: int}
+	 */
+	private function organisationStats(string $organisationUuid): array {
+		return [
+			'total_agents' => $this->countByOrganisation(table: 'openregister_agents', organisationUuid: $organisationUuid),
+			'total_conversations' => $this->countByOrganisation(table: 'openregister_conversations', organisationUuid: $organisationUuid),
+			'total_messages' => $this->countMessagesIn(
+				conversationIds: $this->organisationConversationIds(organisationUuid: $organisationUuid)
+			),
+		];
+	}//end organisationStats()
 
 	/**
 	 * Count the rows of a table that belong to an organisation.

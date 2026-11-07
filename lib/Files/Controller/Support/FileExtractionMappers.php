@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller\Support;
 
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 
 /**
@@ -34,13 +34,13 @@ final class FileExtractionMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ChunkMapper          $chunkMapper          Chunk mapper for text chunks
+	 * @param ChunkIndexOverviewInterface   $chunkMapper          Chunk mapper for text chunks
 	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly ChunkMapper $chunkMapper,
+		public readonly ChunkIndexOverviewInterface $chunkMapper,
 		public readonly EntityRelationMapperInterface $entityRelationMapper,
 	) {
 	}//end __construct()
