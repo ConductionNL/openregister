@@ -143,47 +143,9 @@ class NamesController extends Controller {
 
 			$names = [];
 
-			// Handle different input formats for IDs.
 			if ($requestedIds !== null) {
-				// Parse IDs from different possible formats.
-				if (is_string($requestedIds) === true) {
-					// Handle comma-separated string or JSON array string.
-					if (str_starts_with($requestedIds, '[') === true) {
-						$requestedIds = json_decode($requestedIds, true) ?? [];
-					}
-
-					if (is_string($requestedIds) === true) {
-						$requestedIds = array_map('trim', explode(',', $requestedIds));
-					}
-				}
-
-				// Not `is_string() === false && ...`: every path above turns a
-				// string into an array (explode/array_map, or json_decode of a
-				// '['-prefixed string), and a non-string never enters that block,
-				// so the string test here can only ever be true.
-				if (is_array($requestedIds) === false) {
-					$requestedIds = [(string)$requestedIds];
-				}
-
-				/*
-				 * Get names for specific IDs.
-				 *
-				 * @var array<string, string> $names
-				 */
-
-				$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
-
-				$this->logger->debug(
-					message: '[NamesController] 📦 BULK NAME LOOKUP REQUEST',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'requested_count' => count($requestedIds),
-						'found_count' => count($names),
-						'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
-					]
-				);
-			}//end if
+				$names = $this->requestedNames(requestedIds: $requestedIds, startTime: $startTime);
+			}
 
 			if ($requestedIds === null) {
 				// Get all object names (triggers warmup if needed).
@@ -231,6 +193,65 @@ class NamesController extends Controller {
 			);
 		}//end try
 	}//end index()
+
+	/**
+	 * Look up the names of the requested ids and log the lookup.
+	 *
+	 * @param mixed $requestedIds The `ids` request parameter: an array, a comma-separated string or a JSON array string.
+	 * @param float $startTime    When the request started, from microtime(true).
+	 *
+	 * @return array<string, string> The names by id.
+	 */
+	private function requestedNames(mixed $requestedIds, float $startTime): array {
+		$requestedIds = $this->parseRequestedIds(requestedIds: $requestedIds);
+
+		/*
+		 * Get names for specific IDs.
+		 *
+		 * @var array<string, string> $names
+		 */
+
+		$names = $this->objectCacheService->getMultipleObjectNames($requestedIds);
+
+		$this->logger->debug(
+			message: '[NamesController] 📦 BULK NAME LOOKUP REQUEST',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'requested_count' => count($requestedIds),
+				'found_count' => count($names),
+				'execution_time' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
+			]
+		);
+
+		return $names;
+	}//end requestedNames()
+
+	/**
+	 * Turn the `ids` request parameter into a list of ids.
+	 *
+	 * @param mixed $requestedIds An array, a comma-separated string, a JSON array string or a single value.
+	 *
+	 * @return array The ids.
+	 */
+	private function parseRequestedIds(mixed $requestedIds): array {
+		if (is_string($requestedIds) === true) {
+			// Handle comma-separated string or JSON array string.
+			if (str_starts_with($requestedIds, '[') === true) {
+				$requestedIds = json_decode($requestedIds, true) ?? [];
+			}
+
+			if (is_string($requestedIds) === true) {
+				$requestedIds = array_map('trim', explode(',', $requestedIds));
+			}
+		}
+
+		if (is_array($requestedIds) === false) {
+			$requestedIds = [(string)$requestedIds];
+		}
+
+		return $requestedIds;
+	}//end parseRequestedIds()
 
 	/**
 	 * Get multiple object names via POST request with JSON body

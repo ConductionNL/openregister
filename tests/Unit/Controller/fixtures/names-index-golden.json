@@ -1,0 +1,487 @@
+{
+    "all names": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getAllObjectNames": [
+                    false
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📋 ALL NAMES REQUEST",
+                    {
+                        "total_names": 2,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "o1": "One",
+                "o2": "Two"
+            },
+            "total": 2,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "all names lookup fails": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getAllObjectNames": [
+                    false
+                ]
+            },
+            {
+                "logger.error": [
+                    "[NamesController] Names endpoint failed",
+                    {
+                        "error": "all failed"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve object names",
+            "message": "all failed"
+        }
+    },
+    "an id the caller may not read gets no name": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "a",
+                        "hidden"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 2,
+                        "found_count": 1,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "a": "Name of a"
+            },
+            "total": 1,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "array of ids": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "u1",
+                        "u2",
+                        "u3"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 3,
+                        "found_count": 3,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "u1": "Name of u1",
+                "u2": "Name of u2",
+                "u3": "Name of u3"
+            },
+            "total": 3,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "bulk lookup fails": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "a"
+                    ]
+                ]
+            },
+            {
+                "logger.error": [
+                    "[NamesController] Names endpoint failed",
+                    {
+                        "error": "bulk failed"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve object names",
+            "message": "bulk failed"
+        }
+    },
+    "comma separated ids": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "a",
+                        "b",
+                        "c"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 3,
+                        "found_count": 3,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "a": "Name of a",
+                "b": "Name of b",
+                "c": "Name of c"
+            },
+            "total": 3,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "empty string": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        ""
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 1,
+                        "found_count": 1,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "": "Name of "
+            },
+            "total": 1,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "invalid json array string": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    []
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 0,
+                        "found_count": 0,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": [],
+            "total": 0,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "json array string": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "x",
+                        "y"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 2,
+                        "found_count": 2,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "x": "Name of x",
+                "y": "Name of y"
+            },
+            "total": 2,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "json array string of a number": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        5
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 1,
+                        "found_count": 1,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "5": "Name of 5"
+            },
+            "total": 1,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    },
+    "not signed in": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            }
+        ],
+        "status": 401,
+        "data": {
+            "error": "Authentication required"
+        }
+    },
+    "single number": {
+        "calls": [
+            {
+                "userSession.getUser": []
+            },
+            {
+                "request.getParam": [
+                    "ids",
+                    null
+                ]
+            },
+            {
+                "cache.getMultipleObjectNames": [
+                    [
+                        "42"
+                    ]
+                ]
+            },
+            {
+                "logger.debug": [
+                    "[NamesController] 📦 BULK NAME LOOKUP REQUEST",
+                    {
+                        "requested_count": 1,
+                        "found_count": 1,
+                        "execution_time": "(n)ms"
+                    }
+                ]
+            },
+            {
+                "cache.getStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "names": {
+                "42": "Name of 42"
+            },
+            "total": 1,
+            "cached": true,
+            "execution_time": "(n)ms",
+            "cache_stats": {
+                "hits": 3
+            }
+        }
+    }
+}
