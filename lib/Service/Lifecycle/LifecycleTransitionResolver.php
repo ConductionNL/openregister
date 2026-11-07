@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class LifecycleTransitionResolver {
+class LifecycleTransitionResolver implements LifecycleTransitionResolverInterface {
 
 	/**
 	 * Constructor.

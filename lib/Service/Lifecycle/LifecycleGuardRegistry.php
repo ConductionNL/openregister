@@ -42,7 +42,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class LifecycleGuardRegistry {
+final class LifecycleGuardRegistry implements LifecycleGuardRegistryInterface {
 	use ResolvesThroughContainers;
 
 	/**
