@@ -369,18 +369,41 @@ class RenderObject {
 			return [];
 		}
 
+		return self::writeOnlyNames(properties: ($schema->getProperties() ?? []));
+	}//end getWriteOnlyProperties()
+
+	/**
+	 * The names of the properties that declare `writeOnly: true`.
+	 *
+	 * @param array $properties The schema properties.
+	 *
+	 * @return array<int, string> The write-only property names.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+	 */
+	private static function writeOnlyNames(array $properties): array {
 		$writeOnly = [];
-		foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& ($propertyConfig['writeOnly'] ?? false) === true
-				&& is_string($propertyName) === true
-			) {
+		foreach ($properties as $propertyName => $propertyConfig) {
+			if (is_string($propertyName) === true && self::isWriteOnly(propertyConfig: $propertyConfig) === true) {
 				$writeOnly[] = $propertyName;
 			}
 		}
 
 		return $writeOnly;
-	}//end getWriteOnlyProperties()
+	}//end writeOnlyNames()
+
+	/**
+	 * Whether a property definition declares `writeOnly: true`.
+	 *
+	 * @param mixed $propertyConfig The property definition.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+	 */
+	private static function isWriteOnly(mixed $propertyConfig): bool {
+		return is_array($propertyConfig) === true && ($propertyConfig['writeOnly'] ?? false) === true;
+	}//end isWriteOnly()
 
 	/**
 	 * Check if a string looks like a UUID (using regex, not strict RFC 4122 validation).
@@ -414,28 +437,57 @@ class RenderObject {
 			return $this->objectsCache[$id];
 		}
 
+		return $this->loadReadableObject(id: $id);
+	}//end getObject()
+
+	/**
+	 * Load an object the local cache does not hold, if the reader may read it.
+	 *
+	 * The cache service's own cache answers without a read check, so the answer is checked here.
+	 *
+	 * @param int|string $id The object ID or UUID
+	 *
+	 * @return ObjectEntity|null The object, or null if not found or not readable
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function loadReadableObject(int|string $id): ?ObjectEntity {
 		if ($this->extendReads()->refused(id: $id) === true) {
 			return null;
 		}
 
 		// Use cache service for optimized loading (only if not in ultra cache).
-		// Its own cache answers without a read check, so the answer is checked here.
 		$object = $this->objectCacheService->getObject($id);
-		if ($object !== null && $this->readableExtendTargets(objects: [$object]) === []) {
+		if ($object === null) {
+			return null;
+		}
+
+		if ($this->readableExtendTargets(objects: [$object]) === []) {
 			$this->extendReads()->refuse(id: $id);
 			return null;
 		}
 
-		// Update local cache for backward compatibility.
-		if ($object !== null) {
-			$this->objectsCache[$id] = $object;
-			if ($object->getUuid() !== null && $object->getUuid() !== '') {
-				$this->objectsCache[$object->getUuid()] = $object;
-			}
-		}
+		$this->cacheLoadedObject(id: $id, object: $object);
 
 		return $object;
-	}//end getObject()
+	}//end loadReadableObject()
+
+	/**
+	 * Keep a loaded object in the local cache, by the id asked for and by its uuid.
+	 *
+	 * @param int|string   $id     The id the object was asked for by
+	 * @param ObjectEntity $object The object
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function cacheLoadedObject(int|string $id, ObjectEntity $object): void {
+		$this->objectsCache[$id] = $object;
+		if ($object->getUuid() !== null && $object->getUuid() !== '') {
+			$this->objectsCache[$object->getUuid()] = $object;
+		}
+	}//end cacheLoadedObject()
 
 	/**
 	 * Clear all caches
@@ -465,16 +517,33 @@ class RenderObject {
 		foreach ($this->objectsCache as $key => $object) {
 			// Only include entries keyed by UUID (skip numeric IDs).
 			if (is_string($key) === true && UuidFormat::isCanonical(value: $key) === true) {
-				if ($object instanceof ObjectEntity) {
-					$result[$key] = $this->renderedCopy(object: $object);
-				} elseif (is_array($object) === true) {
-					$result[$key] = $object;
-				}
+				$result[$key] = $this->serializedCacheEntry(object: $object);
 			}
 		}
 
-		return $result;
+		return array_filter($result, static fn ($entry) => $entry !== null);
 	}//end getObjectsCache()
+
+	/**
+	 * A cache entry as an array: an object as a reader may get it, an array as it is.
+	 *
+	 * @param mixed $object The cache entry.
+	 *
+	 * @return array|null The serialized entry, or null for anything else.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function serializedCacheEntry(mixed $object): ?array {
+		if ($object instanceof ObjectEntity) {
+			return $this->renderedCopy(object: $object);
+		}
+
+		if (is_array($object) === true) {
+			return $object;
+		}
+
+		return null;
+	}//end serializedCacheEntry()
 
 	/**
 	 * A cached object as a reader may get it: an object that was only loaded is rendered first.
@@ -2460,16 +2529,32 @@ class RenderObject {
 			$entity->setObject($redacted);
 		}
 
-		$relations = $entity->getRelations();
-		if (is_array($relations) === true && empty($relations) === false) {
-			$redactedRelations = self::withoutKeys(data: $relations, keys: $writeOnly);
-			if ($redactedRelations !== $relations) {
-				$entity->setRelations($redactedRelations);
-			}
-		}
+		self::redactRelations(entity: $entity, writeOnly: $writeOnly);
 
 		return $redacted;
 	}//end redactWriteOnlyForRbac()
+
+	/**
+	 * Remove write-only properties from an entity's `relations` search-index copy.
+	 *
+	 * @param ObjectEntity $entity    The entity being rendered
+	 * @param array        $writeOnly The write-only property names
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function redactRelations(ObjectEntity $entity, array $writeOnly): void {
+		$relations = $entity->getRelations();
+		if (is_array($relations) === false || empty($relations) === true) {
+			return;
+		}
+
+		$redactedRelations = self::withoutKeys(data: $relations, keys: $writeOnly);
+		if ($redactedRelations !== $relations) {
+			$entity->setRelations($redactedRelations);
+		}
+	}//end redactRelations()
 
 	/**
 	 * The data without the given keys.
@@ -2874,9 +2959,8 @@ class RenderObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function stripUnreadableProperties(ObjectEntity $entity, ?Schema $schema, array $objectData, bool $rbac): array {
-		$stripAuthz  = ($rbac !== false) && (SystemOperationContext::isActive() === false);
 		$doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
-		$doAuthz     = ($stripAuthz === true && $schema !== null && $schema->hasPropertyAuthorization() === true);
+		$doAuthz     = self::stripsAuthorizedProperties(schema: $schema, rbac: $rbac);
 		if ($doWriteOnly === false && $doAuthz === false) {
 			return $objectData;
 		}
@@ -2893,6 +2977,26 @@ class RenderObject {
 
 		return $objectData;
 	}//end stripUnreadableProperties()
+
+	/**
+	 * Whether a read strips by property `authorization.read`.
+	 *
+	 * @param Schema|null $schema The object's schema
+	 * @param bool        $rbac   Whether access control applies
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The rbac flag gates the authorization strip
+	 * @SuppressWarnings(PHPMD.StaticAccess)        SystemOperationContext is a static execution-context holder by design
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private static function stripsAuthorizedProperties(?Schema $schema, bool $rbac): bool {
+		return $rbac !== false
+			&& SystemOperationContext::isActive() === false
+			&& $schema !== null
+			&& $schema->hasPropertyAuthorization() === true;
+	}//end stripsAuthorizedProperties()
 
 	/**
 	 * Strip the properties the reader's groups may not read, writeOnly included.
@@ -3359,32 +3463,46 @@ class RenderObject {
 		}
 
 		try {
-			$watchers = $this->container->get(WatcherService::class);
-
-			// Anonymous reads get no marker at all: there is no "you" to answer
-			// for, and a hard false would read as "you do not follow this",
-			// which is a different claim.
-			if ($watchers->callerUid() === null) {
-				return;
-			}
-
-			$entity->setWatching(
-				$watchers->isWatchedByCaller(objectUuid: $uuid),
-				$watchers->notifyForCaller(objectUuid: $uuid)
-			);
-
-			// The count is a fact about the object's audience, so it is only
-			// told to a reader who may edit the object.
-			if ($watchers->maySeeWatchers(object: $entity) === true) {
-				$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
-			}
+			$this->setWatcherMarkers(entity: $entity, uuid: $uuid);
 		} catch (\Throwable $e) {
 			// A subscription lookup must never take out object rendering.
 			$this->logger->debug(
 				sprintf('[RenderObject] watcher markers skipped for %s: %s', $uuid, $e->getMessage())
 			);
-		}//end try
+		}
 	}//end applyWatcherMarkers()
+
+	/**
+	 * Set the caller's own watch state, and the watcher count for a reader who may edit the object.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param string       $uuid   Its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function setWatcherMarkers(ObjectEntity $entity, string $uuid): void {
+		$watchers = $this->container->get(WatcherService::class);
+
+		// Anonymous reads get no marker at all: there is no "you" to answer
+		// for, and a hard false would read as "you do not follow this",
+		// which is a different claim.
+		if ($watchers->callerUid() === null) {
+			return;
+		}
+
+		$entity->setWatching(
+			$watchers->isWatchedByCaller(objectUuid: $uuid),
+			$watchers->notifyForCaller(objectUuid: $uuid)
+		);
+
+		// The count is a fact about the object's audience, so it is only
+		// told to a reader who may edit the object.
+		if ($watchers->maySeeWatchers(object: $entity) === true) {
+			$entity->setWatcherCount($watchers->watcherCount(objectUuid: $uuid));
+		}
+	}//end setWatcherMarkers()
 
 	/**
 	 * Attach `@self.unread` and the per-sub-resource badge counts.
@@ -3460,39 +3578,66 @@ class RenderObject {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 	 */
 	private function applyUpdateRightMarker(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
-		if ($this->container === null || $schema === null || $extend === null || $extend === '' || $extend === []) {
-			return;
-		}
-
-		if (is_string($extend) === true) {
-			$extend = array_map('trim', explode(',', $extend));
-		}
-
-		if (in_array('@self.can', $extend, true) === false) {
+		if ($schema === null || self::asksForRights(extend: $extend) === false) {
 			return;
 		}
 
 		try {
-			$permissions = $this->container->get(PermissionHandler::class);
-			$owner       = $entity->getOwner();
-			if (is_string($owner) === false) {
-				$owner = null;
-			}
-
-			$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
-			$can['update'] = $permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $owner,
-				object: $entity
-			);
-			$entity->setCan($can);
+			$this->setRightsMarker(entity: $entity, schema: $schema);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
 			);
-		}//end try
+		}
 	}//end applyUpdateRightMarker()
+
+	/**
+	 * Whether an extend parameter asks for `@self.can`.
+	 *
+	 * @param array|string|null $extend The _extend parameter.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	private static function asksForRights(array|string|null $extend): bool {
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		return in_array('@self.can', ($extend ?? []), true);
+	}//end asksForRights()
+
+	/**
+	 * Set the `can` marker: the actions the caller may run, and PermissionHandler's verdict on update.
+	 *
+	 * @param ObjectEntity $entity The entity being rendered.
+	 * @param Schema       $schema The object's schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	private function setRightsMarker(ObjectEntity $entity, Schema $schema): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		$permissions = $this->container->get(PermissionHandler::class);
+		$owner       = $entity->getOwner();
+		if (is_string($owner) === false) {
+			$owner = null;
+		}
+
+		$can = $this->container->get(ObjectActionList::class)->canRun(object: $entity, schema: $schema);
+		$can['update'] = $permissions->hasPermission(
+			schema: $schema,
+			action: 'update',
+			objectOwner: $owner,
+			object: $entity
+		);
+		$entity->setCan($can);
+	}//end setRightsMarker()
 
 	/**
 	 * Check whether the current request opts in to the `_translationMeta`
@@ -4074,23 +4219,30 @@ class RenderObject {
 			return [];
 		}
 
-		if ($this->relationTypes === null) {
-			$this->relationTypes = new RelationTypeResolver();
-		}
-
-		if ($this->linkExposure === null) {
-			$this->linkExposure = new LinkExposure();
-		}
+		$this->relationTypes ??= new RelationTypeResolver();
 
 		$exposures = [];
 		foreach ($this->relationTypes->descriptors(schema: $schema) as $property => $descriptor) {
-			if ($this->linkExposure->declaresExposure(relationType: $descriptor) === true) {
+			if ($this->exposureRules()->declaresExposure(relationType: $descriptor) === true) {
 				$exposures[(string)$property] = $descriptor;
 			}
 		}
 
 		return $exposures;
 	}//end exposuresFor()
+
+	/**
+	 * The link exposure rules.
+	 *
+	 * @return LinkExposure
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposureRules(): LinkExposure {
+		$this->linkExposure ??= new LinkExposure();
+
+		return $this->linkExposure;
+	}//end exposureRules()
 
 	/**
 	 * Narrow one extended far record to what its link declares it exposes.
@@ -4118,10 +4270,31 @@ class RenderObject {
 			return $rendered;
 		}
 
-		if ($this->linkExposure === null) {
-			$this->linkExposure = new LinkExposure();
+		[$envelope, $body] = self::splitEnvelope(rendered: $rendered);
+
+		$projected = $this->exposureRules()->project(
+			farObject: $body,
+			relationType: $descriptor,
+			readable: array_map('strval', array_keys($body))
+		);
+
+		if (is_array($envelope['@self'] ?? null) === true) {
+			$envelope['@self'] = $this->exposureRules()->envelope(self: $envelope['@self'], shown: $projected);
 		}
 
+		return array_merge($projected, $envelope);
+	}//end applyLinkExposure()
+
+	/**
+	 * Split a rendered record into its envelope (`id` and `@` keys) and its body.
+	 *
+	 * @param array<string, mixed> $rendered The rendered record.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The envelope and the body.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
+	 */
+	private static function splitEnvelope(array $rendered): array {
 		$envelope = [];
 		$body = [];
 		foreach ($rendered as $property => $value) {
@@ -4134,18 +4307,8 @@ class RenderObject {
 			$body[$property] = $value;
 		}
 
-		$projected = $this->linkExposure->project(
-			farObject: $body,
-			relationType: $descriptor,
-			readable: array_map('strval', array_keys($body))
-		);
-
-		if (is_array($envelope['@self'] ?? null) === true) {
-			$envelope['@self'] = $this->linkExposure->envelope(self: $envelope['@self'], shown: $projected);
-		}
-
-		return array_merge($projected, $envelope);
-	}//end applyLinkExposure()
+		return [$envelope, $body];
+	}//end splitEnvelope()
 
 	/**
 	 * Extends an object with additional data based on the extension configuration
