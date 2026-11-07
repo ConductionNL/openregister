@@ -30,6 +30,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
+use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Files\Service\UploadService;
+use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -101,6 +104,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 			[
 				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
 			],
+		],
+		UploadService::class => [
+			UploadServiceInterface::class,
+			FilesRegistrar::class,
+			[],
 		],
 		VectorizationService::class => [
 			VectorizationServiceInterface::class,
