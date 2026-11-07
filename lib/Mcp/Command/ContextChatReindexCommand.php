@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Mcp\Command;
 
-use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use Psr\Container\ContainerInterface;
@@ -156,7 +156,7 @@ class ContextChatReindexCommand extends Command {
 		try {
 			// Resolved here, not in the constructor — this is the first point
 			// at which loading ContentProvider is safe. See the constructor.
-			$contentProvider = $this->container->get(ContentProvider::class);
+			$contentProvider = $this->container->get(ContentProviderInterface::class);
 
 			$submitted = $contentProvider->reindex(registerId: $registerId, schemaId: $schemaId);
 		} catch (Throwable $e) {
