@@ -167,6 +167,7 @@ final class ContractBindings {
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
+		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
