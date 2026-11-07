@@ -34,7 +34,6 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Oas\OasPropertySanitizer;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
@@ -442,13 +441,28 @@ class OasService {
 			$this->addRegisterPaths(register: $register, context: $context);
 		}
 
+		$this->assertOasValid(strict: $strict);
+
+		return $this->oas;
+	}//end createOas()
+
+	/**
+	 * Check the generated document; in strict mode an invalid one is refused.
+	 *
+	 * @param bool $strict Whether an invalid document fails the generation.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Strict mode is the caller's choice on createOas()
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function assertOasValid(bool $strict): void {
 		$invalid = $this->checkOas();
 		if ($strict === true && $invalid === true) {
 			throw $this->report->strictFailure();
 		}
-
-		return $this->oas;
-	}//end createOas()
+	}//end assertOasValid()
 
 	/**
 	 * The registers a document describes: the one asked for, or all of them.
@@ -489,7 +503,7 @@ class OasService {
 	 *
 	 * @param array $registers The registers.
 	 *
-	 * @return array<int|string, Schema> The schemas by id.
+	 * @return array<int|string, object> The schemas by id.
 	 *
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
@@ -572,7 +586,7 @@ class OasService {
 	/**
 	 * Add each titled schema as a component, with a tag named by its title.
 	 *
-	 * @param array<int|string, Schema> $schemas The schemas.
+	 * @param array<int|string, object> $schemas The schemas.
 	 *
 	 * @return void
 	 *
@@ -602,7 +616,7 @@ class OasService {
 	/**
 	 * Declare an OAuth2 scope for every group the schemas grant, plus admin.
 	 *
-	 * @param array<int|string, Schema> $schemas The schemas.
+	 * @param array<int|string, object> $schemas The schemas.
 	 *
 	 * @return array<int|string, array> Each schema's groups per operation, by schema id.
 	 *
@@ -981,6 +995,20 @@ class OasService {
 			return $parameters;
 		}
 
+		return [...$parameters, ...$this->propertyFilterParameters(schema: $schema)];
+	}//end createCommonQueryParameters()
+
+	/**
+	 * The filter parameter of every schema property a collection can filter on.
+	 *
+	 * @param object $schema The schema.
+	 *
+	 * @return array The parameters.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function propertyFilterParameters(object $schema): array {
+		$parameters = [];
 		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDefinition) {
 			// Metadata properties are skipped, and id is already a path parameter.
 			if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
@@ -991,7 +1019,7 @@ class OasService {
 		}
 
 		return $parameters;
-	}//end createCommonQueryParameters()
+	}//end propertyFilterParameters()
 
 	/**
 	 * The query parameter that filters a collection by one schema property.
@@ -1452,8 +1480,9 @@ class OasService {
 	 * @spec openspec/specs/oas-generation/spec.md
 	 */
 	private function validateOasIntegrity(): void {
-		$this->validateComponentReferences();
-		$this->validateResponseReferences();
+		$this->report->referenceRepair(
+			componentNames: array_map('strval', array_keys($this->oas['components']['schemas'] ?? []))
+		)->repairDocument(oas: $this->oas);
 		$this->validateServerUrls();
 		$this->validateOperationIdUniqueness();
 		$this->validateTagConsistency();
@@ -1463,69 +1492,8 @@ class OasService {
 		$this->validateAgainstMetaSchema();
 	}//end validateOasIntegrity()
 
-	/**
-	 * Repair the $ref and allOf use inside every component schema.
-	 *
-	 * @return void
-	 */
-	private function validateComponentReferences(): void {
-		if (isset($this->oas['components']['schemas']) === false) {
-			return;
-		}
 
-		foreach (array_keys($this->oas['components']['schemas']) as $schemaName) {
-			if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
-				$this->validateSchemaReferences(
-					schema: $this->oas['components']['schemas'][$schemaName],
-					context: 'components.schemas.' . $schemaName
-				);
-			}
-		}
-	}//end validateComponentReferences()
 
-	/**
-	 * Report broken references in the JSON response schemas of every operation.
-	 *
-	 * The response schemas are checked on a copy: the document keeps them as they are.
-	 *
-	 * @return void
-	 */
-	private function validateResponseReferences(): void {
-		if (isset($this->oas['paths']) === false) {
-			return;
-		}
-
-		foreach (array_keys($this->oas['paths']) as $pathName) {
-			foreach (array_keys($this->oas['paths'][$pathName]) as $method) {
-				$this->validateOperationResponses(pathName: $pathName, method: $method);
-			}
-		}
-	}//end validateResponseReferences()
-
-	/**
-	 * Report broken references in the JSON response schemas of one operation.
-	 *
-	 * @param int|string $pathName The path.
-	 * @param int|string $method   The method key under the path.
-	 *
-	 * @return void
-	 */
-	private function validateOperationResponses(int|string $pathName, int|string $method): void {
-		$operation = $this->oas['paths'][$pathName][$method];
-		if (is_array($operation) === false || isset($operation['responses']) === false) {
-			return;
-		}
-
-		foreach (array_keys($operation['responses']) as $statusCode) {
-			$respSchema = ($operation['responses'][$statusCode]['content']['application/json']['schema'] ?? null);
-			if ($respSchema !== null) {
-				$this->validateSchemaReferences(
-					schema: $respSchema,
-					context: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode
-				);
-			}
-		}
-	}//end validateOperationResponses()
 
 	/**
 	 * Validate the generated OAS document against the vendored OpenAPI 3.1
@@ -1832,20 +1800,33 @@ class OasService {
 	 * @return void
 	 */
 	private function validateNlGovRules(): void {
-		if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+		$paths = ($this->oas['paths'] ?? null);
+		if (is_array($paths) === false) {
 			return;
 		}
 
-		foreach ($this->oas['paths'] as $pathName => $pathItem) {
-			if (is_array($pathItem) === false) {
-				continue;
-			}
-
-			foreach (array_keys($pathItem) as $method) {
-				$this->checkNlGovOperation(pathName: $pathName, method: $method);
+		foreach ($paths as $pathName => $pathItem) {
+			if (is_array($pathItem) === true) {
+				$this->validateNlGovPath(pathName: $pathName, pathItem: $pathItem);
 			}
 		}
 	}//end validateNlGovRules()
+
+	/**
+	 * Check every operation of a path against the NLGov rules.
+	 *
+	 * @param int|string $pathName The path.
+	 * @param array      $pathItem The path's operations.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md
+	 */
+	private function validateNlGovPath(int|string $pathName, array $pathItem): void {
+		foreach (array_keys($pathItem) as $method) {
+			$this->checkNlGovOperation(pathName: $pathName, method: $method);
+		}
+	}//end validateNlGovPath()
 
 	/**
 	 * Check one path item entry against the NLGov method and status code rules.
@@ -1896,207 +1877,5 @@ class OasService {
 			}
 		}
 	}//end checkNlGovStatusCodes()
-
-	/**
-	 * Validate schema references recursively
-	 *
-	 * @param array<string, mixed> $schema The schema to validate (passed by reference for modifications)
-	 * @param string $context Context information for debugging
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
-	 */
-	private function validateSchemaReferences(array &$schema, string $context): void {
-		$this->validateAllOf(schema: $schema, context: $context);
-		$this->validateRef(schema: $schema, context: $context);
-		$this->validateNestedReferences(schema: $schema, context: $context);
-	}//end validateSchemaReferences()
-
-	/**
-	 * Keep only the allOf items that carry a $ref, a type or properties; drop an allOf left empty.
-	 *
-	 * @param array<string, mixed> $schema  The schema, repaired in place.
-	 * @param string               $context The schema's path, for the report.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md
-	 */
-	private function validateAllOf(array &$schema, string $context): void {
-		if (isset($schema['allOf']) === false) {
-			return;
-		}
-
-		if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
-			unset($schema['allOf']);
-			return;
-		}
-
-		$validAllOfItems = array_values(
-			array_filter($schema['allOf'], fn ($item): bool => is_array($item) === true && $this->isUsableAllOfItem(item: $item))
-		);
-		if (empty($validAllOfItems) === false) {
-			$schema['allOf'] = $validAllOfItems;
-			return;
-		}
-
-		unset($schema['allOf']);
-		$this->report->addAutoCorrection(
-			path: $context . '.allOf',
-			message: 'allOf with no valid items was removed.',
-			code: OasValidationReport::CODE_INVALID_ALLOF,
-		);
-	}//end validateAllOf()
-
-	/**
-	 * Whether an allOf item carries a non-empty string $ref, a type or properties.
-	 *
-	 * @param array<int|string, mixed> $item The allOf item.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md
-	 */
-	private function isUsableAllOfItem(array $item): bool {
-		if (empty($item) === true) {
-			return false;
-		}
-
-		if (empty($item['$ref']) === false && is_string($item['$ref']) === true) {
-			return true;
-		}
-
-		return ($item['type'] ?? null) !== null || ($item['properties'] ?? null) !== null;
-	}//end isUsableAllOfItem()
-
-	/**
-	 * Repair a $ref: drop an empty or non-string one, match a component name case-insensitively,
-	 * and replace a dangling component reference with a string type.
-	 *
-	 * @param array<string, mixed> $schema  The schema, repaired in place.
-	 * @param string               $context The schema's path, for the report.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md
-	 */
-	private function validateRef(array &$schema, string $context): void {
-		if (($schema['$ref'] ?? null) === null) {
-			return;
-		}
-
-		if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
-			unset($schema['$ref']);
-			return;
-		}
-
-		$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-		if (strpos($schema['$ref'], '#/components/schemas/') !== 0
-			|| isset($this->oas['components']['schemas'][$refPath]) === true
-		) {
-			return;
-		}
-
-		$existingName = $this->componentNamedLike(refPath: $refPath);
-		if ($existingName !== null) {
-			$schema['$ref'] = '#/components/schemas/' . $existingName;
-			return;
-		}
-
-		$this->replaceDanglingRef(schema: $schema, context: $context);
-	}//end validateRef()
-
-	/**
-	 * Replace a $ref to a missing component with type=string and report it.
-	 *
-	 * @param array<string, mixed> $schema  The schema, repaired in place.
-	 * @param string               $context The schema's path, for the report.
-	 *
-	 * @return void
-	 */
-	private function replaceDanglingRef(array &$schema, string $context): void {
-		$refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
-		unset($schema['$ref']);
-		if (isset($schema['type']) === false) {
-			$schema['type'] = 'string';
-			$schema['description'] = $schema['description'] ?? 'Reference to ' . $refPath;
-		}
-
-		$this->report->addError(
-			path: $context . '.$ref',
-			message: 'Dangling $ref to "#/components/schemas/' . $refPath . '"; substituted with type=string.',
-			code: OasValidationReport::CODE_DANGLING_REF,
-		);
-	}//end replaceDanglingRef()
-
-	/**
-	 * The component schema whose name matches ignoring case, if any.
-	 *
-	 * @param string $refPath The referenced component name.
-	 *
-	 * @return string|null The existing name.
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md
-	 */
-	private function componentNamedLike(string $refPath): ?string {
-		foreach (array_keys($this->oas['components']['schemas'] ?? []) as $existingName) {
-			if (strtolower($existingName) === strtolower($refPath)) {
-				return $existingName;
-			}
-		}
-
-		return null;
-	}//end componentNamedLike()
-
-	/**
-	 * Validate the references in properties, items and oneOf/anyOf/allOf items, in place.
-	 *
-	 * @param array<string, mixed> $schema  The schema, repaired in place.
-	 * @param string               $context The schema's path, for the report.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-validation/spec.md
-	 */
-	private function validateNestedReferences(array &$schema, string $context): void {
-		if (($schema['properties'] ?? null) !== null) {
-			foreach ($schema['properties'] as $propName => &$property) {
-				if (is_array($property) === true) {
-					$this->validateSchemaReferences(schema: $property, context: "{$context}.properties.{$propName}");
-				}
-			}
-
-			unset($property);
-		}
-
-		if (($schema['items'] ?? null) !== null && is_array($schema['items']) === true) {
-			$this->validateSchemaReferences(schema: $schema['items'], context: "{$context}.items");
-		}
-
-		foreach (['oneOf', 'anyOf', 'allOf'] as $compositionKey) {
-			if (is_array($schema[$compositionKey] ?? null) === true) {
-				$this->validateCompositionItems(items: $schema[$compositionKey], context: "{$context}.{$compositionKey}");
-			}
-		}
-	}//end validateNestedReferences()
-
-	/**
-	 * Repair the references inside each schema of a oneOf, anyOf or allOf list.
-	 *
-	 * @param array<int|string, mixed> $items   The list, repaired in place.
-	 * @param string                   $context The list's path, for the report.
-	 *
-	 * @return void
-	 */
-	private function validateCompositionItems(array &$items, string $context): void {
-		foreach ($items as $idx => &$compositionItem) {
-			if (is_array($compositionItem) === true) {
-				$this->validateSchemaReferences(schema: $compositionItem, context: "{$context}[{$idx}]");
-			}
-		}
-
-		unset($compositionItem);
-	}//end validateCompositionItems()
 
 }//end class
