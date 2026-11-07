@@ -3,10 +3,11 @@
 /**
  * Role interfaces next to top-level Service classes are implemented and bound.
  *
- * FileService had 27 files naming it. Its callers now type against role
- * interfaces (reader, writer, folders, handler support) that FileService
- * implements and ContractBindings aliases to it. A missing alias is a runtime
- * 500 that no other unit test sees, so this test pins each binding.
+ * FileService had 27 files naming it, ConfigurationServiceInterface 19 and
+ * DeepLinkRegistryServiceInterface 12. Their callers now type against narrow
+ * role interfaces that the class implements and ContractBindings aliases to it;
+ * the original interface extends its roles. A missing alias is a runtime 500
+ * that no other unit test sees, so this test pins each binding.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -21,7 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
+use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\ConfigurationServiceInterface;
+use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCA\OpenRegister\Service\FileReaderInterface;
@@ -43,6 +51,9 @@ final class A19InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, class-string>
 	 */
 	private const BOUND = [
+		AppConfigurationImporterInterface::class => ConfigurationService::class,
+		ConfigurationTransferInterface::class => ConfigurationService::class,
+		DeepLinkResolverInterface::class => DeepLinkRegistryService::class,
 		FileFolderServiceInterface::class => FileService::class,
 		FileHandlerSupportInterface::class => FileService::class,
 		FileReaderInterface::class => FileService::class,
@@ -56,6 +67,9 @@ final class A19InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<class-string>>
 	 */
 	private const EXTENDS = [
+		ConfigurationServiceInterface::class => [ConfigurationTransferInterface::class],
+		ConfigurationTransferInterface::class => [AppConfigurationImporterInterface::class],
+		DeepLinkRegistryServiceInterface::class => [DeepLinkResolverInterface::class],
 		FileServiceInterface::class => [ObjectFilesInterface::class, FileFolderServiceInterface::class],
 		ObjectFilesInterface::class => [FileReaderInterface::class, FileWriterInterface::class],
 		FileHandlerSupportInterface::class => [ObjectFilesInterface::class, FileFolderServiceInterface::class],

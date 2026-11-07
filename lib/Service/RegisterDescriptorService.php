@@ -75,7 +75,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	 *
 	 * @param IAppManager          $appManager           Enumerates installed apps and resolves their paths.
 	 * @param RegisterMapperInterface       $registerMapper       Reads the registers that actually exist.
-	 * @param ConfigurationServiceInterface    $configurationService Performs the mock import.
+	 * @param AppConfigurationImporterInterface    $configurationService Performs the mock import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
 	 * @param CountedRegisterImport   $counted              Runs a re-import under the decision and counts what changed.
 	 * @param AppRegisterImportRunner $importRunner         Runs the app's real, forced import.
@@ -85,7 +85,7 @@ class RegisterDescriptorService implements RegisterDescriptorServiceInterface {
 	public function __construct(
 		private readonly IAppManager $appManager,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly AppConfigurationImporterInterface $configurationService,
 		private readonly LoggerInterface $logger,
 		private readonly CountedRegisterImport $counted,
 		private readonly AppRegisterImportRunner $importRunner,

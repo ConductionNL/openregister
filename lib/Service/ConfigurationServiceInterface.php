@@ -25,9 +25,6 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Configuration;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
@@ -38,7 +35,7 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Every public method of ConfigurationService. Callers depend on this interface, not on the class.
  */
-interface ConfigurationServiceInterface {
+interface ConfigurationServiceInterface extends ConfigurationTransferInterface {
 
 	/**
 	 * Checks if the OpenConnector service is available from the container.
@@ -49,27 +46,6 @@ interface ConfigurationServiceInterface {
 	 * @spec exclude Facade plumbing: peer-app presence probe (installed-apps check + container resolve), no standalone behavioral contract.
 	 */
 	public function hasOpenConnector(): bool;
-
-	/**
-	 * Build OpenAPI Specification from configuration or register
-	 *
-	 * @param array|Configuration|Register $input The configuration array, Configuration object,
-	 *                                            or Register object to build the OAS from.
-	 * @param bool $includeObjects Whether to include objects in the registers.
-	 *
-	 * @psalm-param   array<string, mixed>|Configuration|Register $input
-	 * @phpstan-param array<string, mixed>|Configuration|Register $input
-	 *
-	 * @return array The OpenAPI specification.
-	 *
-	 * @throws Exception If configuration is invalid.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Toggle to include/exclude objects in export
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input types
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
-	 */
-	public function exportConfig(array|Configuration|Register $input = [], bool $includeObjects = false): array;
 
 	/**
 	 * Gets the uploaded json from the request data and returns it as a PHP array.
@@ -87,128 +63,6 @@ interface ConfigurationServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
 	public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse;
-
-	/**
-	 * Import configuration from a JSON file.
-	 *
-	 * This method imports configuration data from a JSON file. It can handle:
-	 * - Full configurations with schemas, registers, and objects
-	 * - Partial configurations with only objects (using existing schemas and registers)
-	 * - Objects with references to existing schemas and registers
-	 * - Version checking to prevent unnecessary imports
-	 *
-	 * ⚠️ IMPORTANT: This method MUST be called with a Configuration entity.
-	 * Direct calls without a Configuration entity will throw an exception.
-	 * This ensures proper tracking of imported entities.
-	 *
-	 * @param array $data The configuration JSON content
-	 * @param Configuration|null $configuration The configuration entity (REQUIRED)
-	 * @param string|null $owner The owner of the imported data (deprecated, use configuration->app)
-	 * @param string|null $appId The app ID for version tracking (deprecated, use configuration->app)
-	 * @param string|null $version The version for version tracking (deprecated, use data version)
-	 * @param bool $force Force import even if the same or newer version already exists
-	 *
-	 * @throws Exception If called without a Configuration entity or if import fails
-	 * @return array Array of created/updated entities
-	 *
-	 * @phpstan-return array{
-	 *     registers: array<Register>,
-	 *     schemas: array<Schema>,
-	 *     objects: array<ObjectEntity>,
-	 *     endpoints: array,
-	 *     sources: array,
-	 *     mappings: array,
-	 *     jobs: array,
-	 *     synchronizations: array,
-	 *     rules: array
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Force flag to override version checks
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Configuration import requires many optional parameters
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
-	 */
-	public function importFromJson(
-		array $data, ?Configuration $configuration = null, ?string $owner = null, ?string $appId = null, ?string $version = null,
-		bool $force = false
-	): array;
-
-	/**
-	 * Import configuration from a file path.
-	 *
-	 * This method reads a configuration file from the filesystem and imports it.
-	 * It's designed to be used by apps that store their configurations as JSON files
-	 * and want OpenRegister to handle the file reading and import process.
-	 *
-	 * The file path should be relative to the Nextcloud root
-	 * (e.g., 'apps-extra/opencatalogi/lib/Settings/publication_register.json')
-	 * This enables the cron job to later check if the configuration file has been updated.
-	 *
-	 * @param string $appId The application ID (e.g. 'opencatalogi')
-	 * @param string $filePath The file path relative to Nextcloud root
-	 * @param string $version The version of the configuration
-	 * @param bool $force Whether to force import regardless of version checks
-	 *
-	 * @return (ObjectEntity|Register|Schema|mixed)[][] Import result with counts and IDs
-	 *
-	 * @throws Exception If file cannot be read or import fails
-	 *
-	 * @since 0.2.10
-	 *
-	 * @psalm-suppress PossiblyUnusedReturnValue
-	 *
-	 * @psalm-return array{
-	 *     registers: array<Register>,
-	 *     schemas: array<Schema>,
-	 *     objects: array<ObjectEntity>,
-	 *     endpoints: array,
-	 *     sources: array,
-	 *     mappings: array,
-	 *     jobs: array,
-	 *     synchronizations: array,
-	 *     rules: array
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
-	 */
-	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array;
-
-	/**
-	 * Import configuration from an app's JSON data.
-	 *
-	 * This is a convenience wrapper method for apps that want to import their
-	 * configuration without manually managing Configuration entities. It:
-	 * - Finds or creates a Configuration entity for the app
-	 * - Handles version checking
-	 * - Calls importFromJson with proper entity tracking
-	 *
-	 * @param string $appId The application ID (e.g. 'opencatalogi')
-	 * @param array $data The configuration data to import
-	 * @param string $version The version of the configuration
-	 * @param bool $force Whether to force import regardless of version checks
-	 *
-	 * @return array The import results
-	 * @throws Exception If import fails
-	 *
-	 * @phpstan-return array{
-	 *     registers: array<Register>,
-	 *     schemas: array<Schema>,
-	 *     objects: array<ObjectEntity>,
-	 *     endpoints: array,
-	 *     sources: array,
-	 *     mappings: array,
-	 *     jobs: array,
-	 *     synchronizations: array,
-	 *     rules: array
-	 * }
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
-	 */
-	public function importFromApp(string $appId, array $data, string $version, bool $force = false): array;
 
 	/**
 	 * The recorded import jobs of an app id, oldest first.
