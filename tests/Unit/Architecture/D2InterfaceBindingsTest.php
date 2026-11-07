@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
@@ -54,6 +56,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: array<class-string, class-string>, 2: string}>
 	 */
 	private const CLASSES = [
+		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		FacetCacheVersion::class => [FacetCacheVersionInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, ContractBindings::BINDINGS, 'Service'],
 		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::BINDINGS, 'Service'],
