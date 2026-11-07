@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Service\SequenceService;
+use OCA\OpenRegister\Service\SequenceServiceInterface;
 
 /**
  * Authorises (and scopes) sequence consumption for a single save.
@@ -41,14 +41,14 @@ final class SequenceContext {
 	/**
 	 * Wire the reservation service and the register/schema scope.
 	 *
-	 * @param SequenceService $service Atomic sequence reservation service.
+	 * @param SequenceServiceInterface $service Atomic sequence reservation service.
 	 * @param int $registerId The register the sequence is scoped to.
 	 * @param int $schemaId The schema the sequence is scoped to.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SequenceService $service,
+		private readonly SequenceServiceInterface $service,
 		private readonly int $registerId,
 		private readonly int $schemaId,
 	) {

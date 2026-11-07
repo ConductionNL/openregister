@@ -512,6 +512,7 @@ import {
 	statusVariant,
 	triggerLabel,
 } from './flowDetail.js'
+import { flowPageMethods } from './flowPageMethods.js'
 
 /**
  * How many runs the overview reads. The history endpoint caps a page at 200;
@@ -638,6 +639,7 @@ export default {
 	},
 
 	methods: {
+		...flowPageMethods,
 		formatDateTime,
 		formatDuration,
 		nodeDetail,
@@ -695,26 +697,6 @@ export default {
 			})
 			this.runs = data?.results || []
 			this.page = 0
-		},
-
-		/**
-		 * A GET whose failure leaves its panel empty.
-		 *
-		 * @param {string} path The app path.
-		 * @param {object} params Query parameters.
-		 * @return {Promise<object|null>} The response body, or null.
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
-		 */
-		async quietGet(path, params = undefined) {
-			try {
-				const response = await axios.get(
-					generateUrl(path),
-					params ? { params } : undefined,
-				)
-				return response?.data ?? null
-			} catch {
-				return null
-			}
 		},
 
 		/**
@@ -849,27 +831,6 @@ export default {
 				)
 				this.$router.push(this.editorRoute)
 			})
-		},
-
-		/**
-		 * Run one action, and show the server's refusal in its own words.
-		 *
-		 * @param {() => Promise<void>} action The action.
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
-		 */
-		async act(action) {
-			this.busy = true
-			this.actionError = ''
-			try {
-				await action()
-			} catch (error) {
-				this.actionError =
-					error?.response?.data?.error
-					|| t('openregister', 'That did not work. Try again.')
-			} finally {
-				this.busy = false
-			}
 		},
 	},
 }
