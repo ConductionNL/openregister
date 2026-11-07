@@ -163,13 +163,15 @@ final class MoveObjectTest extends TestCase {
 	}
 
 	/**
-	 * States that keep an object where it is, for a caller who is not the lock holder.
+	 * States that keep an object where it is, whoever asks to move it.
 	 *
 	 * @return array<string, array{0: string, 1: array}>
 	 */
 	public static function keptStates(): array {
 		return [
 			'locked by someone else' => ['setLocked', ['user' => 'bert']],
+			'locked by the mover' => ['setLocked', ['user' => 'anna']],
+			'locked by a run' => ['setLocked', ['kind' => 'run', 'runUuid' => 'run-1']],
 			'archived' => ['setArchived', ['date' => '2026-01-01']],
 			'frozen' => ['setFrozen', ['date' => '2026-01-01']],
 		];
@@ -250,30 +252,49 @@ final class MoveObjectTest extends TestCase {
 		);
 
 		$reason = (new MoveObject($this->objects, $this->validator, $this->audit, new NullLogger(), $events))
-			->keptReason(object: $this->object(), actor: 'anna');
+			->keptReason(object: $this->object());
 
 		self::assertSame('Other records still need this object where it is, so it was not moved.', $reason);
 	}
 
 	/**
-	 * The holder of a lock may move what they locked.
+	 * A locked object is not moved, also not by the lock holder, and the move path and the migration path say why.
 	 *
 	 * @return void
 	 */
-	public function testTheLockHolderMovesTheObject(): void {
+	public function testALockedObjectIsNotMovedByItsHolderEither(): void {
 		$object = $this->object();
 		$object->setLocked(['user' => 'anna']);
+		$service = $this->service();
 
-		$outcome = $this->service()->move(
+		$outcome = $service->move(
 			object: $object,
-			sourceRegister: $this->register(1),
-			sourceSchema: $this->schema(10),
-			targetRegister: $this->register(2),
-			targetSchema: $this->schema(20),
+			sourceRegister: $this->register(id: 1),
+			sourceSchema: $this->schema(id: 10),
+			targetRegister: $this->register(id: 2),
+			targetSchema: $this->schema(id: 20),
 			actor: 'anna',
 		);
 
-		self::assertTrue($outcome['moved']);
+		self::assertFalse(condition: $outcome['moved']);
+		self::assertSame(expected: ['This object is locked, so it was not moved.'], actual: $outcome['errors']);
+		self::assertSame(expected: 'This object is locked, so it was not moved.', actual: $service->keptReason(object: $object));
+	}
+
+	/**
+	 * The state markers that keep an object, as the migration path asks them.
+	 *
+	 * @param string $setter The state's setter.
+	 * @param array  $state  The state.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('keptStates')]
+	public function testAMigrationKeepsAKeptObject(string $setter, array $state): void {
+		$object = $this->object();
+		$object->$setter($state);
+
+		self::assertNotNull(actual: $this->service()->keptReason(object: $object));
 	}
 
 	/**

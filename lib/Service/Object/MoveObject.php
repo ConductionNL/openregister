@@ -203,7 +203,6 @@ class MoveObject {
 	 */
 	public function perform(ObjectMove $move): array {
 		$object = $move->object;
-		$actor  = $move->actor;
 		if ($move->source->ids() === $move->target->ids()) {
 			return $this->refusal(move: $move, error: 'This object is already there.');
 		}
@@ -212,7 +211,7 @@ class MoveObject {
 			return $this->refusal(move: $move, error: 'This object does not live at the address it is being moved from.');
 		}
 
-		$kept = $this->keptReason(object: $object, actor: $actor);
+		$kept = $this->keptReason(object: $object);
 		if ($kept !== null) {
 			return $this->refusal(move: $move, error: $kept);
 		}
@@ -249,15 +248,14 @@ class MoveObject {
 	 * the guards read what the row holds now.
 	 *
 	 * @param ObjectEntity $object The object, as stored at its source.
-	 * @param string       $actor  Who asked.
 	 *
 	 * @return string|null The reason.
 	 *
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
-	public function keptReason(ObjectEntity $object, string $actor): ?string {
-		if ($object->isLockedBySomeoneElse(userId: $actor) === true) {
-			return 'This object is locked by someone else, so it was not moved.';
+	public function keptReason(ObjectEntity $object): ?string {
+		if ($object->isLocked() === true) {
+			return 'This object is locked, so it was not moved.';
 		}
 
 		return ((new FileWriteGuard())->refusalFor(object: $object)?->getMessage() ?? $this->heldReason(object: $object));
