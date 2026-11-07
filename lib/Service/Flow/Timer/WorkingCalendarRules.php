@@ -67,6 +67,8 @@ final class WorkingCalendarRules {
 	 * @return array<int, array<string, mixed>> The normalised rules.
 	 *
 	 * @throws FlowTimerValidationException On an unknown kind or a malformed rule.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validRules(mixed $value): array {
 		if (is_array($value) === false) {
@@ -219,6 +221,8 @@ final class WorkingCalendarRules {
 	 * @return array<string, string> `Y-m-d` => name, sorted.
 	 *
 	 * @throws FlowTimerValidationException On a malformed date.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validExceptions(mixed $value): array {
 		if (is_array($value) === false) {
