@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ApiCaller;
 
 use DateTime;
 use OCA\OpenRegister\Db\ApiCallRecord;
+use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCP\IAppConfig;
@@ -130,10 +131,7 @@ class ApiCallRecorderTest extends TestCase {
 		$mapper->expects($this->once())
 			->method('count')
 			->with(
-				$this->equalTo('leverancier'),
-				$this->equalTo('/apps/openregister/api/objects/zaken/melding/{id}'),
-				$this->equalTo('GET'),
-				$this->equalTo('1'),
+				$this->equalTo(new ApiCallKey('leverancier', '/apps/openregister/api/objects/zaken/melding/{id}', 'GET', '1')),
 				$this->isInstanceOf(DateTime::class),
 			)
 			->willReturn(true);
