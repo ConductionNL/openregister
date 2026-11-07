@@ -80,28 +80,64 @@ class TranslationMapper extends QBMapper {
 		$entity->setProperty($property);
 		$entity->setLanguage($language);
 		$entity->setValue($value);
-		if ($status !== null) {
-			$entity->setStatus($status);
-		} elseif ($entity->getStatus() === null) {
-			$entity->setStatus(Translation::STATUS_DRAFT);
-		}
-
+		$this->applyStatus(entity: $entity, status: $status);
 		if ($translator !== null) {
 			$entity->setTranslator($translator);
 		}
 
-		if ($sourceLanguage !== null && $sourceLanguage !== '') {
-			$entity->setSourceLanguage($sourceLanguage);
+		$this->applySourceLanguage(entity: $entity, sourceLanguage: $sourceLanguage);
+		$entity->setUpdated(new DateTime());
+		return $this->persist(entity: $entity, isNew: ($existing === null));
+	}//end upsert()
+
+	/**
+	 * Set the workflow status: the override when given, else draft for a slot without one.
+	 *
+	 * @param Translation $entity The slot being written.
+	 * @param string|null $status Optional workflow status override.
+	 *
+	 * @return void
+	 */
+	private function applyStatus(Translation $entity, ?string $status): void {
+		if ($status !== null) {
+			$entity->setStatus($status);
+			return;
 		}
 
-		$entity->setUpdated(new DateTime());
+		if ($entity->getStatus() === null) {
+			$entity->setStatus(Translation::STATUS_DRAFT);
+		}
+	}//end applyStatus()
 
-		if ($existing === null) {
+	/**
+	 * Set the canonical source language when a non-empty one is given.
+	 *
+	 * @param Translation $entity The slot being written.
+	 * @param string|null $sourceLanguage Optional canonical source language.
+	 *
+	 * @return void
+	 */
+	private function applySourceLanguage(Translation $entity, ?string $sourceLanguage): void {
+		if (in_array($sourceLanguage, ['', null], true) === false) {
+			$entity->setSourceLanguage($sourceLanguage);
+		}
+	}//end applySourceLanguage()
+
+	/**
+	 * Insert a new slot or update an existing one.
+	 *
+	 * @param Translation $entity The slot to persist.
+	 * @param bool $isNew Whether the slot has no row yet.
+	 *
+	 * @return Translation Persisted translation row.
+	 */
+	private function persist(Translation $entity, bool $isNew): Translation {
+		if ($isNew === true) {
 			return $this->insert(entity: $entity);
 		}
 
 		return $this->update(entity: $entity);
-	}//end upsert()
+	}//end persist()
 
 	/**
 	 * Find a single translation slot by its natural key.
@@ -172,18 +208,15 @@ class TranslationMapper extends QBMapper {
 		$qb->select('language')
 			->selectAlias($qb->createFunction('COUNT(*)'), 'count')
 			->from('openregister_translations')
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->isNotNull('value'))
-			->andWhere($qb->expr()->neq('value', $qb->createNamedParameter('')))
-			->groupBy('language');
-		$stmt = $qb->executeQuery();
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+		$this->whereValuePresent(qb: $qb);
+		$qb->groupBy('language');
 
 		$out = [];
-		while (($row = $stmt->fetch()) !== false) {
+		foreach ($this->fetchRows(qb: $qb) as $row) {
 			$out[(string)$row['language']] = (int)$row['count'];
 		}
 
-		$stmt->closeCursor();
 		return $out;
 	}//end getCompletenessByObject()
 
@@ -228,36 +261,13 @@ class TranslationMapper extends QBMapper {
 		$qb->select('*')
 			->from('openregister_translations')
 			->setMaxResults(max(1, min(1000, $limit)));
-
-		if ($query !== null && $query !== '') {
-			$qb->andWhere(
-				$qb->expr()->iLike(
-					'value',
-					$qb->createNamedParameter('%' . $this->escapeLike(value: $query) . '%')
-				)
-			);
-		}
-
-		if ($language !== null && $language !== '') {
-			$qb->andWhere($qb->expr()->eq('language', $qb->createNamedParameter($language)));
-		}
-
-		if ($status !== null && $status !== '') {
-			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
-		}
-
-		if ($objectUuid !== null && $objectUuid !== '') {
-			$qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-		}
-
-		if ($sourceLanguage !== null && $sourceLanguage !== '') {
-			$qb->andWhere($qb->expr()->eq('source_language', $qb->createNamedParameter($sourceLanguage)));
-		}
-
+		$this->whereValueContains(qb: $qb, query: $query);
+		$filters = [['language', $language], ['status', $status], ['object_uuid', $objectUuid], ['source_language', $sourceLanguage]];
 		if ($isOutOfDate === true) {
-			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(Translation::STATUS_OUTDATED)));
+			$filters[] = ['status', Translation::STATUS_OUTDATED];
 		}
 
+		$this->whereEachEquals(qb: $qb, filters: $filters);
 		return $this->findEntities(query: $qb);
 	}//end search()
 
@@ -285,15 +295,7 @@ class TranslationMapper extends QBMapper {
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
 			->andWhere($qb->expr()->neq('language', $qb->createNamedParameter($sourceLanguage)))
-			->andWhere(
-				$qb->expr()->in(
-					'status',
-					$qb->createNamedParameter(
-						Translation::FLIPPABLE_STATUSES,
-						IQueryBuilder::PARAM_STR_ARRAY
-					)
-				)
-			);
+			->andWhere($qb->expr()->in('status', $qb->createNamedParameter(Translation::FLIPPABLE_STATUSES, IQueryBuilder::PARAM_STR_ARRAY)));
 
 		return $qb->executeStatement();
 	}//end markDerivedOutdated()
@@ -316,63 +318,91 @@ class TranslationMapper extends QBMapper {
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
 	 */
 	public function backfillSourceLanguage(array $registerDefaults, int $batchSize = 1000): int {
-		$totalUpdated = 0;
-
-		// Distinct register ids present in the registers map.
-		$registerIds = array_keys($registerDefaults);
-		if (count($registerIds) === 0) {
-			// Fallback: blanket-fill every empty row with 'nl' so the
-			// NOT NULL DEFAULT '' constraint is honoured.
-			$qb = $this->db->getQueryBuilder();
-			$qb->update('openregister_translations')
-				->set('source_language', $qb->createNamedParameter('nl'))
-				->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
-			return $qb->executeStatement();
+		if (count($registerDefaults) === 0) {
+			return $this->fillEmptySourceLanguage();
 		}
 
+		$totalUpdated = 0;
 		foreach ($registerDefaults as $registerId => $defaultLanguage) {
-			if ($defaultLanguage === '' || $defaultLanguage === null) {
-				$defaultLanguage = 'nl';
-			}
+			$language = $this->languageOrDefault(language: $defaultLanguage);
+			$scope = new TranslationBackfillScope(registerId: (string)$registerId, language: $language, batchSize: $batchSize);
+			$totalUpdated += $this->backfillRegister(scope: $scope);
+		}
 
-			$qb = $this->db->getQueryBuilder();
-			$qb->update('openregister_translations', 't')
-				->set('source_language', $qb->createNamedParameter((string)$defaultLanguage))
-				->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')))
-				->andWhere(
-					'object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = '
-					. $qb->createNamedParameter((string)$registerId) . ')'
-				)
-				->setMaxResults(max(1, $batchSize));
+		// Catch-all for orphans: rows whose object UUID no longer joins back to a register.
+		return $totalUpdated + $this->fillEmptySourceLanguage();
+	}//end backfillSourceLanguage()
 
-			try {
-				$updated = $qb->executeStatement();
-				$totalUpdated += $updated;
-			} catch (\Throwable $e) {
-				// Driver doesn't support setMaxResults on UPDATE — fall back to
-				// a single non-bounded UPDATE for this register.
-				$qb2 = $this->db->getQueryBuilder();
-				$qb2->update('openregister_translations')
-					->set('source_language', $qb2->createNamedParameter((string)$defaultLanguage))
-					->where($qb2->expr()->eq('source_language', $qb2->createNamedParameter('')))
-					->andWhere(
-						'object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = '
-						. $qb2->createNamedParameter((string)$registerId) . ')'
-					);
-				$totalUpdated += (int)$qb2->executeStatement();
-			}
-		}//end foreach
+	/**
+	 * The register's default language, or 'nl' when it has none.
+	 *
+	 * @param mixed $language The register's configured default language.
+	 *
+	 * @return string The language to back-fill with.
+	 */
+	private function languageOrDefault(mixed $language): string {
+		if (in_array($language, ['', null], true) === true) {
+			return 'nl';
+		}
 
-		// Catch-all: rows whose object UUID no longer joins back to a
-		// register (orphans). Use 'nl' as the conservative fallback.
+		return (string)$language;
+	}//end languageOrDefault()
+
+	/**
+	 * Back-fill one register's empty rows, bounded by the batch size where the driver allows it.
+	 *
+	 * @param TranslationBackfillScope $scope The register, its language and the batch size.
+	 *
+	 * @return int Number of rows updated.
+	 */
+	private function backfillRegister(TranslationBackfillScope $scope): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('openregister_translations', 't');
+		$this->scopeToRegister(qb: $qb, scope: $scope)->setMaxResults(max(1, $scope->batchSize));
+
+		try {
+			return $qb->executeStatement();
+		} catch (\Throwable $e) {
+			// Driver doesn't support setMaxResults on UPDATE — fall back to
+			// a single non-bounded UPDATE for this register.
+			$fallback = $this->db->getQueryBuilder();
+			$fallback->update('openregister_translations');
+			return (int)$this->scopeToRegister(qb: $fallback, scope: $scope)->executeStatement();
+		}
+	}//end backfillRegister()
+
+	/**
+	 * Set the source language on the register's rows that still have the empty default.
+	 *
+	 * @param IQueryBuilder $qb An UPDATE on the translations table.
+	 * @param TranslationBackfillScope $scope The register and its language.
+	 *
+	 * @return IQueryBuilder The same builder.
+	 */
+	private function scopeToRegister(IQueryBuilder $qb, TranslationBackfillScope $scope): IQueryBuilder {
+		return $qb->set('source_language', $qb->createNamedParameter($scope->language))
+			->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')))
+			->andWhere(
+				'object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = '
+				. $qb->createNamedParameter($scope->registerId) . ')'
+			);
+	}//end scopeToRegister()
+
+	/**
+	 * Set 'nl' as the source language on every row that still has the empty default.
+	 *
+	 * Used when no register is given, so the NOT NULL DEFAULT '' constraint is
+	 * honoured, and as the conservative fallback for orphaned rows.
+	 *
+	 * @return int Number of rows updated.
+	 */
+	private function fillEmptySourceLanguage(): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update('openregister_translations')
 			->set('source_language', $qb->createNamedParameter('nl'))
 			->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
-		$totalUpdated += (int)$qb->executeStatement();
-
-		return $totalUpdated;
-	}//end backfillSourceLanguage()
+		return (int)$qb->executeStatement();
+	}//end fillEmptySourceLanguage()
 
 	/**
 	 * Count rows whose `source_language` is the empty back-fill default.
@@ -389,9 +419,7 @@ class TranslationMapper extends QBMapper {
 			->from('openregister_translations')
 			->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
 
-		$stmt = $qb->executeQuery();
-		$row = $stmt->fetch();
-		$stmt->closeCursor();
+		$row = $this->fetchSingleRow(qb: $qb);
 		return (int)($row['pending'] ?? 0);
 	}//end countMissingSourceLanguage()
 
@@ -414,18 +442,9 @@ class TranslationMapper extends QBMapper {
 			->from('openregister_translations')
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->neq('source_language', $qb->createNamedParameter('')))
-			->groupBy('source_language')
-			->orderBy('cnt', 'DESC')
-			->setMaxResults(1);
+			->groupBy('source_language')->orderBy('cnt', 'DESC')->setMaxResults(1);
 
-		$stmt = $qb->executeQuery();
-		$row = $stmt->fetch();
-		$stmt->closeCursor();
-		if ($row === false || isset($row['source_language']) === false) {
-			return null;
-		}
-
-		$value = (string)$row['source_language'];
+		$value = (string)($this->fetchSingleRow(qb: $qb)['source_language'] ?? '');
 		if ($value === '') {
 			return null;
 		}
@@ -436,6 +455,9 @@ class TranslationMapper extends QBMapper {
 	/**
 	 * Find object UUIDs missing a translation in the given language for
 	 * one or more properties.
+	 *
+	 * Finds the (uuid, property) pairs that DO have the language and subtracts
+	 * them from the (uuid × property) cross-product to get the missing slots.
 	 *
 	 * @param string $language BCP-47 language tag to test for completeness.
 	 * @param string[] $properties Property paths required for completeness.
@@ -448,47 +470,130 @@ class TranslationMapper extends QBMapper {
 			return [];
 		}
 
-		// Find (uuid, property) pairs that DO have the language; subtract
-		// from the (uuid × property) cross-product to get the missing slots.
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('object_uuid', 'property')
-			->from('openregister_translations')
+		$qb->select('object_uuid', 'property')->from('openregister_translations')
 			->where($qb->expr()->eq('language', $qb->createNamedParameter($language)))
-			->andWhere(
-				$qb->expr()->in(
-					'object_uuid',
-					$qb->createNamedParameter($candidateUuids, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
-			->andWhere(
-				$qb->expr()->in(
-					'property',
-					$qb->createNamedParameter($properties, IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
-			->andWhere($qb->expr()->isNotNull('value'))
-			->andWhere($qb->expr()->neq('value', $qb->createNamedParameter('')));
-		$stmt = $qb->executeQuery();
+			->andWhere($qb->expr()->in('object_uuid', $qb->createNamedParameter($candidateUuids, IQueryBuilder::PARAM_STR_ARRAY)))
+			->andWhere($qb->expr()->in('property', $qb->createNamedParameter($properties, IQueryBuilder::PARAM_STR_ARRAY)));
+		$this->whereValuePresent(qb: $qb);
+		$present = $this->presentSlots(qb: $qb);
 
+		return array_values(
+			array_filter($candidateUuids, fn (string $uuid): bool => $this->lacksAnyProperty(present: ($present[$uuid] ?? []), properties: $properties))
+		);
+	}//end findObjectsMissingLanguage()
+
+	/**
+	 * Index the (object, property) slots a query returns.
+	 *
+	 * @param IQueryBuilder $qb A select of object_uuid and property.
+	 *
+	 * @return array<string, array<string, true>> Present properties per object uuid.
+	 */
+	private function presentSlots(IQueryBuilder $qb): array {
 		$present = [];
-		while (($row = $stmt->fetch()) !== false) {
+		foreach ($this->fetchRows(qb: $qb) as $row) {
 			$present[(string)$row['object_uuid']][(string)$row['property']] = true;
 		}
 
-		$stmt->closeCursor();
+		return $present;
+	}//end presentSlots()
 
-		$missing = [];
-		foreach ($candidateUuids as $uuid) {
-			foreach ($properties as $prop) {
-				if (isset($present[$uuid][$prop]) === false) {
-					$missing[] = $uuid;
-					continue 2;
-				}
-			}
+	/**
+	 * Whether at least one required property is absent.
+	 *
+	 * @param array<string, true> $present Properties the object has a value for.
+	 * @param string[] $properties Property paths required for completeness.
+	 *
+	 * @return bool True when one or more properties are missing.
+	 */
+	private function lacksAnyProperty(array $present, array $properties): bool {
+		return count(array_diff($properties, array_keys($present))) > 0;
+	}//end lacksAnyProperty()
+
+	/**
+	 * Narrow to rows with a non-null, non-empty value.
+	 *
+	 * @param IQueryBuilder $qb The query to narrow.
+	 *
+	 * @return void
+	 */
+	private function whereValuePresent(IQueryBuilder $qb): void {
+		$qb->andWhere($qb->expr()->isNotNull('value'))
+			->andWhere($qb->expr()->neq('value', $qb->createNamedParameter('')));
+	}//end whereValuePresent()
+
+	/**
+	 * Narrow to rows whose value contains the query, case-insensitively, when a query is given.
+	 *
+	 * @param IQueryBuilder $qb The query to narrow.
+	 * @param string|null $query Substring to look for.
+	 *
+	 * @return void
+	 */
+	private function whereValueContains(IQueryBuilder $qb, ?string $query): void {
+		if (in_array($query, ['', null], true) === true) {
+			return;
 		}
 
-		return $missing;
-	}//end findObjectsMissingLanguage()
+		$qb->andWhere(
+			$qb->expr()->iLike('value', $qb->createNamedParameter('%' . $this->escapeLike(value: $query) . '%'))
+		);
+	}//end whereValueContains()
+
+	/**
+	 * Add an equality predicate for each filter whose value is neither null nor empty.
+	 *
+	 * @param IQueryBuilder $qb The query to narrow.
+	 * @param array<int, array{0: string, 1: string|null}> $filters Column and value pairs, in order.
+	 *
+	 * @return void
+	 */
+	private function whereEachEquals(IQueryBuilder $qb, array $filters): void {
+		foreach ($filters as [$column, $value]) {
+			if (in_array($value, ['', null], true) === true) {
+				continue;
+			}
+
+			$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value)));
+		}
+	}//end whereEachEquals()
+
+	/**
+	 * Execute a query and return every row.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function fetchRows(IQueryBuilder $qb): array {
+		$stmt = $qb->executeQuery();
+		$rows = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$rows[] = $row;
+		}
+
+		$stmt->closeCursor();
+		return $rows;
+	}//end fetchRows()
+
+	/**
+	 * Execute a query and return its first row, or an empty array when there is none.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function fetchSingleRow(IQueryBuilder $qb): array {
+		$stmt = $qb->executeQuery();
+		$row = $stmt->fetch();
+		$stmt->closeCursor();
+		if ($row === false) {
+			return [];
+		}
+
+		return $row;
+	}//end fetchSingleRow()
 
 	/**
 	 * Escape `%` and `_` for use inside a LIKE pattern.

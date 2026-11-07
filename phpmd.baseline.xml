@@ -134,8 +134,6 @@
   <violation rule="PHPMD\Rule\Design\TooManyFields" file="lib/Db/Source.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/SourceMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Db/SyncRecordMapper.php"/>
-  <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Db/TranslationMapper.php" method="search"/>
-  <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Db/TranslationMapper.php" method="search"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Db/TranslationMapper.php"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Event/AgentRunRequestedEvent.php" method="__construct"/>
   <violation rule="PHPMD\Rule\Design\LongParameterList" file="lib/Event/HandoffExecutedEvent.php" method="__construct"/>
