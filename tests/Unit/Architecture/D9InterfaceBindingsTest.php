@@ -42,6 +42,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -99,6 +101,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 			[
 				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
 			],
+		],
+		VectorizationService::class => [
+			VectorizationServiceInterface::class,
+			SearchRegistrar::class,
+			[],
 		],
 		WebhookInterceptionCache::class => [
 			WebhookInterceptionCacheInterface::class,
