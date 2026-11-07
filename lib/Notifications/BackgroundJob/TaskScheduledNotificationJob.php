@@ -88,31 +88,83 @@ class TaskScheduledNotificationJob extends TimedJob {
 	private const SWEEP_UID = '__openregister_task_sweep__';
 
 	/**
+	 * The task rule registry.
+	 *
+	 * @var TaskNotificationRules
+	 */
+	private readonly TaskNotificationRules $rules;
+
+	/**
+	 * The candidate query.
+	 *
+	 * @var TaskMapper
+	 */
+	private readonly TaskMapper $tasks;
+
+	/**
+	 * The row the adapter is built from.
+	 *
+	 * @var TaskInboxService
+	 */
+	private readonly TaskInboxService $inbox;
+
+	/**
+	 * The operator-object filter evaluator.
+	 *
+	 * @var ScheduledFilterEvaluator
+	 */
+	private readonly ScheduledFilterEvaluator $filters;
+
+	/**
+	 * Per-(rule, task) fire state.
+	 *
+	 * @var NotificationDedupeStateMapper
+	 */
+	private readonly NotificationDedupeStateMapper $dedupe;
+
+	/**
+	 * The one dispatcher.
+	 *
+	 * @var AnnotationNotificationDispatcher
+	 */
+	private readonly AnnotationNotificationDispatcher $dispatcher;
+
+	/**
+	 * Last-fire timestamps per rule.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Failure reporting.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time The clock.
-	 * @param TaskNotificationRules $rules The task rule registry.
-	 * @param TaskMapper $tasks The candidate query.
-	 * @param TaskInboxService $inbox The row the adapter is built from.
-	 * @param ScheduledFilterEvaluator $filters The operator-object filter evaluator.
-	 * @param NotificationDedupeStateMapper $dedupe Per-(rule, task) fire state.
-	 * @param AnnotationNotificationDispatcher $dispatcher The one dispatcher.
-	 * @param IAppConfig $appConfig Last-fire timestamps per rule.
-	 * @param LoggerInterface $logger Failure reporting.
+	 * @param ITimeFactory               $time       The clock.
+	 * @param TaskNotificationCandidates $candidates The rules, the candidate query, the inbox row and the filter evaluator.
+	 * @param TaskNotificationDelivery   $delivery   The dedupe state, the dispatcher, the app config and the logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly TaskNotificationRules $rules,
-		private readonly TaskMapper $tasks,
-		private readonly TaskInboxService $inbox,
-		private readonly ScheduledFilterEvaluator $filters,
-		private readonly NotificationDedupeStateMapper $dedupe,
-		private readonly AnnotationNotificationDispatcher $dispatcher,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		TaskNotificationCandidates $candidates,
+		TaskNotificationDelivery $delivery,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 3600);
+		$this->rules = $candidates->rules;
+		$this->tasks = $candidates->tasks;
+		$this->inbox = $candidates->inbox;
+		$this->filters = $candidates->filters;
+		$this->dedupe = $delivery->dedupe;
+		$this->dispatcher = $delivery->dispatcher;
+		$this->appConfig = $delivery->appConfig;
+		$this->logger = $delivery->logger;
 
 	}//end __construct()
 
