@@ -79,6 +79,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionScore;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -1645,48 +1646,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function countUnionBatch(array $query, array $registerSchemaPairs): int {
 		$arms = [];
 		foreach ($registerSchemaPairs as $pair) {
-			$register = ($pair['register'] ?? null);
-			$schema = ($pair['schema'] ?? null);
-			if ($register === null || $schema === null
-				|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
-			) {
-				continue;
+			$arm = $this->unionCountArm(query: $query, pair: $pair);
+			if ($arm !== null) {
+				$arms[] = $this->unionCountSql(arm: $arm);
 			}
-
-			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
-			// The columns the search arm would search, as buildUnionSelectPart()
-			// collects them for its metadata-only projection.
-			$existingColumns = [];
-			foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
-					$existingColumns[] = $ownColumn;
-				}
-			}
-
-			$armQuery = $query;
-			if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
-				&& array_key_exists('schema', $armQuery['@self']) === true
-			) {
-				$armQuery['@self']['schema'] = $schema->getId();
-			}
-
-			$where = $this->searchHandler->buildWhereConditionsSql(
-				query: $armQuery,
-				schema: $schema,
-				existingColumns: $existingColumns,
-				registerId: $register->getId(),
-				tableName: $tableName
-			);
-
-			$arm = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $tableName);
-			if (empty($where) === false) {
-				$arm .= ' WHERE '.implode(' AND ', $where);
-			}
-
-			$arms[] = $arm;
-		}//end foreach
+		}
 
 		if ($arms === []) {
 			return 0;
@@ -1700,6 +1664,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return (int) ($row['total'] ?? 0);
 	}//end countUnionBatch()
+
+	/**
+	 * The arm a count reads for one pair, or null without a pair or a table.
+	 *
+	 * A count never creates a table: a missing one holds no rows.
+	 *
+	 * @param array $query The search query.
+	 * @param array $pair  The register+schema pair.
+	 *
+	 * @return MagicUnionArm|null The arm, with its table's own columns.
+	 */
+	private function unionCountArm(array $query, array $pair): ?MagicUnionArm {
+		$register = ($pair['register'] ?? null);
+		$schema = ($pair['schema'] ?? null);
+		if ($register === null || $schema === null
+			|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
+		) {
+			return null;
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $schema, register: $register);
+		$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
+
+		return $arm;
+	}//end unionCountArm()
+
+	/**
+	 * The `COUNT(*)` statement of one arm, on the same WHERE as its search arm.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return string The statement.
+	 */
+	private function unionCountSql(MagicUnionArm $arm): string {
+		$sql = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $arm->tableName);
+		$where = $this->unionArmWhereClauses(arm: $arm);
+		if (empty($where) === false) {
+			$sql .= ' WHERE '.implode(' AND ', $where);
+		}
+
+		return $sql;
+	}//end unionCountSql()
 
 	/**
 	 * Determine if we should use UNION ALL optimization.
@@ -2137,13 +2144,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function unionPropertySelect(MagicUnionArm $arm): array {
 		$arm->existingColumns = [];
 		if ($arm->metadataOnly === true) {
-			foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
-					$arm->existingColumns[] = $ownColumn;
-				}
-			}
-
+			$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
 			return [];
 		}
 
@@ -2161,6 +2162,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $selectColumns;
 	}//end unionPropertySelect()
+
+	/**
+	 * The columns of the arm's own schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionOwnColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
+			$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+			if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
+				$columns[] = $ownColumn;
+			}
+		}
+
+		return $columns;
+	}//end unionOwnColumns()
 
 	/**
 	 * The `_search_score` column of a UNION arm.
@@ -2185,38 +2205,40 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		// The connection quote() adds the quotes itself.
-		$quotedTerm = $this->db->getQueryBuilder()->getConnection()->quote($searchTerm);
-		$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
-		$hasTrgm = $this->hasPgTrgmExtension();
+		$score = new MagicUnionScore(
+			quotedTerm: $this->db->getQueryBuilder()->getConnection()->quote($searchTerm),
+			isPostgres: $arm->isPostgres,
+			hasTrgm: $this->hasPgTrgmExtension()
+		);
 
 		$scores = [];
-		foreach ($schemaProps as $propName => $propDef) {
-			$columnName = $this->sanitizeColumnName(name: $propName);
-			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === false
-				|| $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === false
-			) {
-				continue;
-			}
-
-			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres);
-			$score = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
-			if ($arm->isPostgres === true) {
-				$score = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-			}
-
-			if ($arm->isPostgres === true && $hasTrgm === true) {
-				$score = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
-			}
-
-			$scores[] = $score;
-		}//end foreach
-
-		if ($scores === []) {
-			return '0 AS _search_score';
+		foreach ($this->unionScorableColumns(arm: $arm) as $columnName) {
+			$scores[] = $score->ofColumn(column: $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres));
 		}
 
-		return 'GREATEST(' . implode(', ', $scores) . ') AS _search_score';
+		return $score->greatest(scores: $scores);
 	}//end unionSearchScore()
+
+	/**
+	 * The string and text columns of the arm's schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionScorableColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (($arm->schema->getProperties() ?? []) as $propName => $propDef) {
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === true
+				&& $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === true
+			) {
+				$columns[] = $columnName;
+			}
+		}
+
+		return $columns;
+	}//end unionScorableColumns()
 
 	/**
 	 * The WHERE conditions of a UNION arm, from the shared filter builder that
