@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
+use OCA\OpenRegister\Service\Object\BatchOperationStatus;
+use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
@@ -63,6 +65,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
+		BatchOperationStatus::class => [BatchOperationStatusInterface::class, ContractBindings::BINDINGS, 'Service'],
 		FacetCacheVersion::class => [FacetCacheVersionInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
