@@ -41,7 +41,7 @@ class AccessEventDeclarationsGoldenTest extends TestCase {
 	public function testVerbDeclarationsAcceptAndRefuse(): void {
 		$event = new PermissionsDeclaringEvent();
 
-		$this->assertTrue($event->declareVerb('sign_off', 'appA', 'Sign off', ['schema', 3, 'object']));
+		$this->assertTrue($event->declareVerb('sign_off', 'appA', 'Sign off', ['schema', 'object']));
 		$this->assertTrue($event->declareVerb('Read-2', 'appB', 'Second read'));
 		$this->assertFalse($event->declareVerb('sign_off', 'appC', 'Steal'));
 		$this->assertFalse($event->declareVerb('bad verb', 'appD', 'Space'));
