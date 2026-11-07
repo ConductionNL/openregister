@@ -739,31 +739,6 @@ class ImportHandler {
 	}//end setObjectMapper()
 
 	/**
-	 * Recursively converts stdClass objects to arrays.
-	 *
-	 * @param mixed $data The data to convert.
-	 *
-	 * @return array The converted array data.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	public function ensureArrayStructure(mixed $data): array {
-		if (is_object($data) === true) {
-			$data = (array)$data;
-		}
-
-		if (is_array($data) === true) {
-			foreach ($data as $key => $value) {
-				if (is_object($value) === true || is_array($value) === true) {
-					$data[$key] = $this->ensureArrayStructure(data: $value);
-				}
-			}
-		}
-
-		return $data;
-	}//end ensureArrayStructure()
-
-	/**
 	 * Import a register from configuration data.
 	 *
 	 * @param array $data The register data.
@@ -790,7 +765,7 @@ class ImportHandler {
 		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
 		try {
 			// Ensure data is consistently an array by converting any stdClass objects.
-			$data = $this->ensureArrayStructure(data: $data);
+			$data = (new ArrayStructure())->toArrays(data: $data);
 
 			// Remove id, uuid, and organisation from the data.
 			// Organisation is instance-specific and should not be imported.
@@ -2102,7 +2077,7 @@ class ImportHandler {
 		}
 
 		// Ensure data is consistently an array by converting any stdClass objects.
-		$run = new ImportRun(data: $this->ensureArrayStructure(data: $data), configuration: $configuration);
+		$run = new ImportRun(data: (new ArrayStructure())->toArrays(data: $data), configuration: $configuration);
 		$run->owner = $owner;
 		// Extract appId and version from data if not provided as parameters.
 		$run->appId = $appId ?? ($run->data['appId'] ?? null);
@@ -3821,7 +3796,7 @@ class ImportHandler {
 		try {
 			$import = new AppImport(
 				appId: $appId,
-				data: $this->ensureArrayStructure(data: $data),
+				data: (new ArrayStructure())->toArrays(data: $data),
 				version: $version,
 				force: $force
 			);
