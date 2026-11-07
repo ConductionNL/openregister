@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationService;
@@ -43,39 +44,9 @@ use Psr\Log\LoggerInterface;
 class ConfigurationCheckJob extends TimedJob {
 
 	/**
-	 * Configuration mapper instance.
-	 *
-	 * @var ConfigurationMapper The configuration mapper instance.
+	 * The prefix of every message this job logs.
 	 */
-	private ConfigurationMapper $configurationMapper;
-
-	/**
-	 * Configuration service instance.
-	 *
-	 * @var ConfigurationServiceInterface The configuration service instance.
-	 */
-	private ConfigurationServiceInterface $configurationService;
-
-	/**
-	 * Notification service instance.
-	 *
-	 * @var NotificationService The notification service instance.
-	 */
-	private NotificationService $notificationService;
-
-	/**
-	 * App configuration instance.
-	 *
-	 * @var IAppConfig The app configuration instance.
-	 */
-	private IAppConfig $appConfig;
-
-	/**
-	 * Logger instance.
-	 *
-	 * @var LoggerInterface The logger instance.
-	 */
-	private LoggerInterface $logger;
+	private const TAG = '[ConfigurationCheckJob] ';
 
 	/**
 	 * Constructor
@@ -91,40 +62,82 @@ class ConfigurationCheckJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		ConfigurationMapper $configurationMapper,
-		ConfigurationServiceInterface $configurationService,
-		NotificationService $notificationService,
-		IAppConfig $appConfig,
-		LoggerInterface $logger,
+		private readonly ConfigurationMapper $configurationMapper,
+		private readonly ConfigurationServiceInterface $configurationService,
+		private readonly NotificationService $notificationService,
+		private readonly IAppConfig $appConfig,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
+		$this->applyInterval(interval: $this->configuredInterval());
+	}//end __construct()
 
-		$this->configurationMapper = $configurationMapper;
-		$this->configurationService = $configurationService;
-		$this->notificationService = $notificationService;
-		$this->appConfig = $appConfig;
-		$this->logger = $logger;
+	/**
+	 * The configured check interval in seconds (default 3600 = 1 hour); 0 disables the job.
+	 *
+	 * @return int The interval.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function configuredInterval(): int {
+		return (int)$this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
+	}//end configuredInterval()
 
-		// Set interval based on app configuration (default 3600 seconds = 1 hour).
-		$interval = (int)$this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
-
-		// If interval is 0, disable the job by setting a very long interval.
+	/**
+	 * Schedule the job: a disabled job (interval 0) gets a very long interval.
+	 *
+	 * @param int $interval The configured interval.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function applyInterval(int $interval): void {
 		if ($interval === 0) {
-			$this->setInterval(seconds: 86400 * 365);
 			// 1 year.
-			$this->logger->debug(
-				message: '[ConfigurationCheckJob] Configuration check job is disabled (interval set to 0)',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->setInterval(seconds: 86400 * 365);
+			$this->debug(message: 'Configuration check job is disabled (interval set to 0)', line: __LINE__);
 			return;
 		}
 
 		$this->setInterval(seconds: $interval);
-		$this->logger->debug(
-			message: "[ConfigurationCheckJob] Configuration check job interval set to {$interval} seconds",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-	}//end __construct()
+		$this->debug(message: "Configuration check job interval set to {$interval} seconds", line: __LINE__);
+	}//end applyInterval()
+
+	/**
+	 * Log a debug message, prefixed with the job's tag.
+	 *
+	 * @param string $message The message without the tag.
+	 * @param int    $line    The calling line.
+	 *
+	 * @return void
+	 */
+	private function debug(string $message, int $line): void {
+		$this->logger->debug(message: self::TAG . $message, context: self::at(line: $line));
+	}//end debug()
+
+	/**
+	 * Log an error message, prefixed with the job's tag.
+	 *
+	 * @param string $message The message without the tag.
+	 * @param int    $line    The calling line.
+	 *
+	 * @return void
+	 */
+	private function error(string $message, int $line): void {
+		$this->logger->error(message: self::TAG . $message, context: self::at(line: $line));
+	}//end error()
+
+	/**
+	 * The log context naming where in this file a message was written.
+	 *
+	 * @param int $line The calling line.
+	 *
+	 * @return array{file: string, line: int} The context.
+	 */
+	private static function at(int $line): array {
+		return ['file' => __FILE__, 'line' => $line];
+	}//end at()
 
 	/**
 	 * Run the background job
@@ -141,46 +154,40 @@ class ConfigurationCheckJob extends TimedJob {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	protected function run($argument): void {
-		$this->logger->debug(
-			message: '[ConfigurationCheckJob] Starting configuration check job',
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-
-		// Check if the job is disabled.
+		$this->debug(message: 'Starting configuration check job', line: __LINE__);
 		if ($this->isJobDisabled() === true) {
 			return;
 		}
 
 		try {
-			// Get all configurations.
-			$configurations = $this->configurationMapper->findAll();
-			$this->logger->debug(
-				message: '[ConfigurationCheckJob] Found ' . count($configurations) . ' configurations to check',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			$stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
-
-			foreach ($configurations as $configuration) {
-				$this->checkSingleConfiguration(configuration: $configuration, stats: $stats);
-			}
-
-			$checked = $stats['checked'];
-			$updated = $stats['updated'];
-			$failed = $stats['failed'];
-			$msg = "[ConfigurationCheckJob] Completed: {$checked} checked, {$updated} updated, {$failed} failed"
-			;
-			$this->logger->debug(
-				message: $msg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$stats = $this->checkAll();
+			$msg = "Completed: {$stats['checked']} checked, {$stats['updated']} updated, {$stats['failed']} failed";
+			$this->debug(message: $msg, line: __LINE__);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ConfigurationCheckJob] Configuration check job failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end try
+			$this->error(message: 'Configuration check job failed: ' . $e->getMessage(), line: __LINE__);
+		}
 	}//end run()
+
+	/**
+	 * Check every configuration and tally the outcome.
+	 *
+	 * @return array{checked: int, updated: int, failed: int} The statistics.
+	 *
+	 * @throws Exception When the configurations cannot be listed.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function checkAll(): array {
+		$configurations = $this->configurationMapper->findAll();
+		$this->debug(message: 'Found ' . count($configurations) . ' configurations to check', line: __LINE__);
+
+		$stats = ['checked' => 0, 'updated' => 0, 'failed' => 0];
+		foreach ($configurations as $configuration) {
+			$this->checkSingleConfiguration(configuration: $configuration, stats: $stats);
+		}
+
+		return $stats;
+	}//end checkAll()
 
 	/**
 	 * Check if the job is currently disabled via configuration
@@ -190,12 +197,8 @@ class ConfigurationCheckJob extends TimedJob {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function isJobDisabled(): bool {
-		$interval = (int)$this->appConfig->getValueString('openregister', 'configuration_check_interval', '3600');
-		if ($interval === 0) {
-			$this->logger->debug(
-				message: '[ConfigurationCheckJob] Configuration check job is disabled, skipping',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+		if ($this->configuredInterval() === 0) {
+			$this->debug(message: 'Configuration check job is disabled, skipping', line: __LINE__);
 			return true;
 		}
 
@@ -203,107 +206,118 @@ class ConfigurationCheckJob extends TimedJob {
 	}//end isJobDisabled()
 
 	/**
-	 * Check a single configuration for updates
+	 * Check a single configuration for updates; a failure counts and is logged.
 	 *
-	 * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to check.
+	 * @param Configuration $configuration Configuration to check.
 	 * @param array $stats Statistics array (passed by reference).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function checkSingleConfiguration($configuration, array &$stats): void {
+	private function checkSingleConfiguration(Configuration $configuration, array &$stats): void {
 		try {
-			// Only check remote configurations.
-			if ($configuration->isRemoteSource() === false) {
-				return;
-			}
-
-			$checkMsg = "[ConfigurationCheckJob] Checking {$configuration->getTitle()} (ID: {$configuration->getId()})";
-			$this->logger->debug(
-				message: $checkMsg,
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Check remote version.
-			$remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
-			$stats['checked']++;
-
-			if ($remoteVersion === null) {
-				$noVersionMsg = "[ConfigurationCheckJob] No remote version for config {$configuration->getId()}";
-				$this->logger->warning(
-					message: $noVersionMsg,
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return;
-			}
-
-			// Check if update is available.
-			if ($configuration->hasUpdateAvailable() === false) {
-				$this->logger->debug(
-					message: "[ConfigurationCheckJob] Configuration {$configuration->getTitle()} is up to date",
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				return;
-			}
-
-			$title = $configuration->getTitle();
-			$localVersion = $configuration->getLocalVersion();
-			$this->logger->debug(
-				message: "[ConfigurationCheckJob] Update available for {$title}: {$localVersion} → {$remoteVersion}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			// Handle the update based on auto-update setting.
-			if ($configuration->getAutoUpdate() === true) {
-				$this->handleAutoUpdate(configuration: $configuration, stats: $stats);
-				return;
-			}
-
-			$this->sendUpdateNotification(configuration: $configuration);
+			$this->checkRemoteConfiguration(configuration: $configuration, stats: $stats);
 		} catch (Exception $e) {
 			$stats['failed']++;
-			$this->logger->error(
-				message: "[ConfigurationCheckJob] Error checking configuration {$configuration->getId()}: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end try
+			$this->error(message: "Error checking configuration {$configuration->getId()}: " . $e->getMessage(), line: __LINE__);
+		}
 	}//end checkSingleConfiguration()
+
+	/**
+	 * Check a remote configuration's version, then import or notify.
+	 *
+	 * @param Configuration $configuration Configuration to check.
+	 * @param array $stats Statistics array (passed by reference).
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the remote check or the notification step fails.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function checkRemoteConfiguration(Configuration $configuration, array &$stats): void {
+		// Only check remote configurations.
+		if ($configuration->isRemoteSource() === false) {
+			return;
+		}
+
+		$this->debug(message: "Checking {$configuration->getTitle()} (ID: {$configuration->getId()})", line: __LINE__);
+		$remoteVersion = $this->configurationService->checkRemoteVersion(configuration: $configuration);
+		$stats['checked']++;
+		if ($this->updatePending(configuration: $configuration, remoteVersion: $remoteVersion) === false) {
+			return;
+		}
+
+		$this->applyUpdate(configuration: $configuration, stats: $stats);
+	}//end checkRemoteConfiguration()
+
+	/**
+	 * Whether a checked configuration has an update to act on.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 * @param string|null $remoteVersion The remote version, or null when none was found.
+	 *
+	 * @return bool True when an update is available.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function updatePending(Configuration $configuration, ?string $remoteVersion): bool {
+		if ($remoteVersion === null) {
+			$this->logger->warning(message: self::TAG . "No remote version for config {$configuration->getId()}", context: self::at(line: __LINE__));
+			return false;
+		}
+
+		$title = $configuration->getTitle();
+		if ($configuration->hasUpdateAvailable() === false) {
+			$this->debug(message: "Configuration {$title} is up to date", line: __LINE__);
+			return false;
+		}
+
+		$this->debug(message: "Update available for {$title}: {$configuration->getLocalVersion()} → {$remoteVersion}", line: __LINE__);
+		return true;
+	}//end updatePending()
+
+	/**
+	 * Handle the update based on the configuration's auto-update setting.
+	 *
+	 * @param Configuration $configuration The configuration.
+	 * @param array $stats Statistics array (passed by reference).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function applyUpdate(Configuration $configuration, array &$stats): void {
+		if ($configuration->getAutoUpdate() === true) {
+			$this->handleAutoUpdate(configuration: $configuration, stats: $stats);
+			return;
+		}
+
+		$this->sendUpdateNotification(configuration: $configuration);
+	}//end applyUpdate()
 
 	/**
 	 * Handle automatic update of a configuration
 	 *
-	 * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to update.
+	 * @param Configuration $configuration Configuration to update.
 	 * @param array $stats Statistics array (passed by reference).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function handleAutoUpdate($configuration, array &$stats): void {
-		$this->logger->debug(
-			message: "[ConfigurationCheckJob] Auto-update enabled, importing updates for {$configuration->getTitle()}",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+	private function handleAutoUpdate(Configuration $configuration, array &$stats): void {
+		$title = $configuration->getTitle();
+		$this->debug(message: "Auto-update enabled, importing updates for {$title}", line: __LINE__);
 
 		try {
-			// Import all changes (no selection, import everything).
-			$this->configurationService->importConfigurationWithSelection(
-				configuration: $configuration,
-				selection: []
-				// Empty selection means import all.
-			);
-
+			// Import all changes: an empty selection means import everything.
+			$this->configurationService->importConfigurationWithSelection(configuration: $configuration, selection: []);
 			$stats['updated']++;
-			$this->logger->debug(
-				message: "[ConfigurationCheckJob] Successfully auto-updated configuration {$configuration->getTitle()}",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->debug(message: "Successfully auto-updated configuration {$title}", line: __LINE__);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[ConfigurationCheckJob] Auto-update failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->error(message: 'Auto-update failed: ' . $e->getMessage(), line: __LINE__);
 			$stats['failed']++;
 		}
 	}//end handleAutoUpdate()
@@ -311,17 +325,15 @@ class ConfigurationCheckJob extends TimedJob {
 	/**
 	 * Send update notification for a configuration
 	 *
-	 * @param \OCA\OpenRegister\Db\Configuration $configuration Configuration to notify about.
+	 * @param Configuration $configuration Configuration to notify about.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function sendUpdateNotification($configuration): void {
-		$this->logger->debug(
-			message: "[ConfigurationCheckJob] Auto-update disabled for {$configuration->getTitle()}, sending notification",
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
+	private function sendUpdateNotification(Configuration $configuration): void {
+		$title = $configuration->getTitle();
+		$this->debug(message: "Auto-update disabled for {$title}, sending notification", line: __LINE__);
 
 		try {
 			// Send notification to configured groups.
@@ -329,16 +341,9 @@ class ConfigurationCheckJob extends TimedJob {
 			// Info: notifications reached real people. That is an outcome
 			// someone may need to account for later, unlike the steps that
 			// decided to send them.
-			$this->logger->info(
-				message: "[ConfigurationCheckJob] Sent {$notificationCount} notifications",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->logger->info(message: self::TAG . "Sent {$notificationCount} notifications", context: self::at(line: __LINE__));
 		} catch (Exception $e) {
-			$title = $configuration->getTitle();
-			$this->logger->error(
-				message: "[ConfigurationCheckJob] Failed to send notifications for {$title}: " . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
+			$this->error(message: "Failed to send notifications for {$title}: " . $e->getMessage(), line: __LINE__);
 		}
 	}//end sendUpdateNotification()
 }//end class
