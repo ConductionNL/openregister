@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DeleteSchemaObjects object count counts the objects of the schema on mount 1`] = `""`;
+
+exports[`DeleteSchemaObjects object count marks a failed count and logs it 1`] = `""`;
+
+exports[`ValidateSchema object count counts the objects of the schema on mount 1`] = `""`;
+
+exports[`ValidateSchema object count marks a failed count and logs it 1`] = `""`;

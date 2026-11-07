@@ -261,7 +261,7 @@ final class ShippedSchemaBaseline
 		$paths = array_column($conflicts, 'path');
 		$this->keptLocal[] = ['slug' => $slug, 'paths' => $paths];
 		$this->logger->warning(
-			message: '[ImportHandler] schema kept its local definition for parts the app also changed',
+			message: ImportLogTag::PREFIX.'schema kept its local definition for parts the app also changed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'schema_slug' => $slug, 'conflicts' => $paths]
 		);
 	}//end noteKeptLocal()

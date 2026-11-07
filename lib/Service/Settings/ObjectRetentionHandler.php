@@ -40,7 +40,7 @@ use RuntimeException;
  *
  * @link https://www.OpenRegister.nl
  */
-class ObjectRetentionHandler {
+class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, RetentionSettingsReaderInterface {
 	use SettingsSectionDefaults;
 
 	/**

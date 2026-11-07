@@ -1,0 +1,1467 @@
+{
+    "branches": {
+        "returned": [
+            {
+                "name": "main",
+                "commit": "abc",
+                "protected": true
+            },
+            {
+                "name": "feature",
+                "commit": null,
+                "protected": false
+            }
+        ],
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching branches from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/branches",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "branches-404": {
+        "threw": "Exception",
+        "message": "Failed to fetch branches: HTTP 404",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching branches from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/branches",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get branches failed",
+                {
+                    "error": "HTTP 404",
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ]
+        ]
+    },
+    "branches-connect": {
+        "threw": "Exception",
+        "message": "Failed to fetch branches: could not connect",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching branches from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/branches",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get branches failed",
+                {
+                    "error": "could not connect",
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ]
+        ]
+    },
+    "branches-no-token": {
+        "returned": [
+            {
+                "name": "main",
+                "commit": "abc",
+                "protected": true
+            },
+            {
+                "name": "feature",
+                "commit": null,
+                "protected": false
+            }
+        ],
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching branches from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/branches",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ]
+        ]
+    },
+    "enrich": {
+        "returned": {
+            "title": "Conf",
+            "description": "A conf",
+            "version": "3.1.0",
+            "app": "app",
+            "type": "app",
+            "openregister": "^2.0"
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/org/app/dev/dir/conf.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/org/app/dev/dir/conf.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ]
+        ]
+    },
+    "enrich-bare": {
+        "returned": {
+            "title": "conf",
+            "description": "",
+            "version": "v.unknown",
+            "app": null,
+            "type": "unknown",
+            "openregister": null
+        },
+        "calls": [
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/org/app/main/dir/conf.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/org/app/main/dir/conf.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ]
+        ]
+    },
+    "enrich-fails": {
+        "returned": null,
+        "calls": [
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/org/app/main/conf.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/org/app/main/conf.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] Failed to enrich configuration details",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "conf.json",
+                    "error": "HTTP 500"
+                }
+            ]
+        ]
+    },
+    "enrich-invalid": {
+        "returned": null,
+        "calls": [
+            [
+                "log.debug",
+                "[GitHubHandler] Enriching configuration details from raw URL",
+                {
+                    "url": "https://raw.githubusercontent.com/org/app/main/bad.json"
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://raw.githubusercontent.com/org/app/main/bad.json",
+                {
+                    "headers": {
+                        "Accept": "application/json"
+                    },
+                    "allow_redirects": false
+                }
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] Failed to parse configuration JSON",
+                {
+                    "url": "https://raw.githubusercontent.com/org/app/main/bad.json",
+                    "error": "Syntax error"
+                }
+            ]
+        ]
+    },
+    "file": {
+        "returned": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Good",
+                "version": "1.2.0"
+            },
+            "x-openregister": {
+                "app": "app",
+                "type": "app",
+                "description": "From x"
+            }
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "good.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/good.json",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "file-500": {
+        "threw": "Exception",
+        "message": "Failed to fetch file: HTTP 500",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "good.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/good.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get file content failed",
+                {
+                    "error": "HTTP 500",
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "good.json",
+                    "branch": "main"
+                }
+            ]
+        ]
+    },
+    "file-default-branch": {
+        "returned": {
+            "title": "not a configuration"
+        },
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "plain.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/plain.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "file-invalid-json": {
+        "threw": "Exception",
+        "message": "Invalid JSON in file: Syntax error",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "bad.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/bad.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "file-no-content": {
+        "threw": "Exception",
+        "message": "No content found in file",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "empty.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/empty.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "info": {
+        "returned": {
+            "id": 7,
+            "name": "app",
+            "full_name": "org/app",
+            "owner": "org",
+            "private": true,
+            "description": "An app",
+            "default_branch": "dev",
+            "url": "https://github.com/org/app"
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "info-404": {
+        "threw": "Exception",
+        "message": "Failed to fetch repository info: HTTP 404",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get repository info failed",
+                {
+                    "error": "HTTP 404",
+                    "owner": "org",
+                    "repo": "app"
+                }
+            ]
+        ]
+    },
+    "info-sparse": {
+        "returned": {
+            "id": null,
+            "name": "tool",
+            "full_name": "me/tool",
+            "owner": "me",
+            "private": false,
+            "description": "",
+            "default_branch": "main",
+            "url": ""
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/me/tool",
+                {
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "list": {
+        "returned": [
+            {
+                "path": "good.json",
+                "sha": "s1",
+                "url": "https://github.com/org/app/blob/main/good.json",
+                "config": {
+                    "title": "Good",
+                    "description": "From x",
+                    "version": "1.2.0",
+                    "app": "app",
+                    "type": "app"
+                }
+            },
+            {
+                "path": "lib/xonly.openregister.json",
+                "sha": null,
+                "url": null,
+                "config": {
+                    "title": "X title",
+                    "description": "",
+                    "version": "9.0.0",
+                    "app": null,
+                    "type": "manual"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Listing configuration files from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "branch": "dev",
+                    "path": "lib"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "repo:org/app filename:openregister.json OR filename:*.openregister.json extension:json"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "good.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/good.json",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/xonly.openregister.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/lib/xonly.openregister.json",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "plain.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/plain.json",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] File does not contain required OpenRegister structure",
+                {
+                    "path": "plain.json"
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "bad.json",
+                    "branch": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/bad.json",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Failed to parse configuration file",
+                {
+                    "path": "bad.json",
+                    "error": "Invalid JSON in file: Syntax error"
+                }
+            ]
+        ]
+    },
+    "list-403": {
+        "threw": "Exception",
+        "message": "Failed to list configuration files: HTTP 403",
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Listing configuration files from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "branch": "main",
+                    "path": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "repo:org/app filename:openregister.json OR filename:*.openregister.json extension:json"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API list files failed",
+                {
+                    "error": "HTTP 403",
+                    "owner": "org",
+                    "repo": "app",
+                    "branch": "main"
+                }
+            ]
+        ]
+    },
+    "list-defaults": {
+        "returned": [
+            {
+                "path": "good.json",
+                "sha": "s1",
+                "url": "https://github.com/org/app/blob/main/good.json",
+                "config": {
+                    "title": "Good",
+                    "description": "From x",
+                    "version": "1.2.0",
+                    "app": "app",
+                    "type": "app"
+                }
+            },
+            {
+                "path": "lib/xonly.openregister.json",
+                "sha": null,
+                "url": null,
+                "config": {
+                    "title": "X title",
+                    "description": "",
+                    "version": "9.0.0",
+                    "app": null,
+                    "type": "manual"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Listing configuration files from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "branch": "main",
+                    "path": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "repo:org/app filename:openregister.json OR filename:*.openregister.json extension:json"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "good.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/good.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "lib/xonly.openregister.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/lib/xonly.openregister.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "plain.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/plain.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] File does not contain required OpenRegister structure",
+                {
+                    "path": "plain.json"
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching file from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "path": "bad.json",
+                    "branch": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.warning",
+                "[GitHubHandler] No GitHub API token configured - unauthenticated access (60 requests/hour limit)",
+                []
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/repos/org/app/contents/bad.json",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Failed to parse configuration file",
+                {
+                    "path": "bad.json",
+                    "error": "Invalid JSON in file: Syntax error"
+                }
+            ]
+        ]
+    },
+    "list-no-items": {
+        "returned": [],
+        "calls": [
+            [
+                "log.info",
+                "[GitHubHandler] Listing configuration files from GitHub",
+                {
+                    "owner": "org",
+                    "repo": "app",
+                    "branch": "main",
+                    "path": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/search/code",
+                {
+                    "query": {
+                        "q": "repo:org/app filename:openregister.json OR filename:*.openregister.json extension:json"
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "repos": {
+        "returned": [
+            {
+                "id": 1,
+                "name": "app",
+                "full_name": "org/app",
+                "owner": "org",
+                "owner_type": "Organization",
+                "private": false,
+                "description": "An app",
+                "default_branch": "dev",
+                "url": "https://github.com/org/app",
+                "api_url": "https://api.github.com/repos/org/app"
+            },
+            {
+                "id": 2,
+                "name": "tool",
+                "full_name": "me/tool",
+                "owner": "me",
+                "owner_type": "User",
+                "private": true,
+                "description": "",
+                "default_branch": "main",
+                "url": "https://github.com/me/tool",
+                "api_url": "https://api.github.com/repos/me/tool"
+            }
+        ],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching repositories from GitHub",
+                {
+                    "page": 2,
+                    "per_page": 250
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/user/repos",
+                {
+                    "query": {
+                        "type": "all",
+                        "sort": "updated",
+                        "direction": "desc",
+                        "page": 2,
+                        "per_page": 100
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "repos-401": {
+        "returned": [],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching repositories from GitHub",
+                {
+                    "page": 1,
+                    "per_page": 100
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/user/repos",
+                {
+                    "query": {
+                        "type": "all",
+                        "sort": "updated",
+                        "direction": "desc",
+                        "page": 1,
+                        "per_page": 100
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] GitHub API auth failed or not configured - returning empty list",
+                {
+                    "status_code": 401,
+                    "has_token": true
+                }
+            ]
+        ]
+    },
+    "repos-500": {
+        "threw": "Exception",
+        "message": "Failed to fetch repositories: HTTP 500",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching repositories from GitHub",
+                {
+                    "page": 1,
+                    "per_page": 100
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/user/repos",
+                {
+                    "query": {
+                        "type": "all",
+                        "sort": "updated",
+                        "direction": "desc",
+                        "page": 1,
+                        "per_page": 100
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get repositories failed",
+                {
+                    "error": "HTTP 500",
+                    "status_code": 500
+                }
+            ]
+        ]
+    },
+    "repos-connect": {
+        "threw": "Exception",
+        "message": "Failed to fetch repositories: could not connect",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] Fetching repositories from GitHub",
+                {
+                    "page": 1,
+                    "per_page": 100
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.debug",
+                "[GitHubHandler] Using GitHub API token for authentication",
+                {
+                    "has_token": true
+                }
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://api.github.com/user/repos",
+                {
+                    "query": {
+                        "type": "all",
+                        "sort": "updated",
+                        "direction": "desc",
+                        "page": 1,
+                        "per_page": 100
+                    },
+                    "headers": {
+                        "Accept": "application/vnd.github+json",
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        "Authorization": "Bearer tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitHubHandler] GitHub API get repositories failed",
+                {
+                    "error": "could not connect",
+                    "status_code": null
+                }
+            ]
+        ]
+    },
+    "repos-no-token": {
+        "returned": [],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "github_api_token"
+            ],
+            [
+                "log.info",
+                "[GitHubHandler] GitHub API token not configured - returning empty repositories list",
+                []
+            ]
+        ]
+    }
+}

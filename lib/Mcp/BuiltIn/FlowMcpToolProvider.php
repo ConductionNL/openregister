@@ -35,7 +35,6 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
@@ -45,7 +44,7 @@ use UnexpectedValueException;
 /**
  * MCP tools for listing and running flows.
  */
-class FlowMcpToolProvider implements IMcpToolProvider {
+class FlowMcpToolProvider extends AbstractBuiltInToolProvider {
 	/**
 	 * Constructor.
 	 *
@@ -68,20 +67,24 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 	}//end __construct()
 
 	/**
-	 * The owning app id.
-	 *
-	 * @return string The app id.
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
 	 * The tool definitions.
 	 *
+	 * Every descriptor declares its MCP 2025-11-25 annotation hints and an
+	 * advisory `scope` (ADR-063, ConductionNL/openregister#2159) rather than
+	 * leaving a consumer to guess. Without them a consumer's fail-closed
+	 * fallback classifies every tool as write/destructive, which puts a
+	 * read-only status poll behind the same approval prompt as starting a run.
+	 * `runFlow` is genuinely not read-only and not idempotent — each call
+	 * queues another run — and is marked destructive because the flow it
+	 * starts may do anything a flow can do, including delete. The hints are
+	 * advisory UX metadata only; OpenRegister RBAC remains the authoritative
+	 * invoke-time gate.
+	 *
 	 * @var array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => 'openregister.runFlow',
 			'name' => 'Run a flow',
@@ -167,30 +170,6 @@ class FlowMcpToolProvider implements IMcpToolProvider {
 			'reach' => 'user',
 		],
 	];
-
-	/**
-	 * The tools this provider offers.
-	 *
-	 * Both descriptors declare their MCP 2025-11-25 annotation hints and an
-	 * advisory `scope` (ADR-063, ConductionNL/openregister#2159) rather than
-	 * leaving a consumer to guess. Without them a consumer's fail-closed
-	 * fallback classifies BOTH tools as write/destructive, which puts a
-	 * read-only status poll behind the same approval prompt as starting a run.
-	 * `runFlow` is genuinely not read-only and not idempotent — each call
-	 * queues another run — and is marked destructive because the flow it
-	 * starts may do anything a flow can do, including delete. The hints are
-	 * advisory UX metadata only; OpenRegister RBAC remains the authoritative
-	 * invoke-time gate.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
-	 *         readOnlyHint: bool, destructiveHint: bool, idempotentHint: bool, scope: string,
-	 *         reach: string}> The tools.
-	 *
-	 * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke a flow tool.

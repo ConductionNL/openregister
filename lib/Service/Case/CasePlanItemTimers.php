@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -263,14 +263,14 @@ class CasePlanItemTimers implements CasePlanItemTimersInterface {
 			return false;
 		}
 
-		$unit = SlaCalculator::UNIT_HOURS;
+		$unit = SlaCalculatorInterface::UNIT_HOURS;
 		$step = 3600;
-		if ((int)ceil($seconds / 3600) > SlaCalculator::MAX_VALUE) {
-			$unit = SlaCalculator::UNIT_CALENDAR_DAYS;
+		if ((int)ceil($seconds / 3600) > SlaCalculatorInterface::MAX_VALUE) {
+			$unit = SlaCalculatorInterface::UNIT_CALENDAR_DAYS;
 			$step = 86400;
 		}
 
-		$value = max(SlaCalculator::MIN_VALUE, (int)ceil($seconds / $step));
+		$value = max(SlaCalculatorInterface::MIN_VALUE, (int)ceil($seconds / $step));
 		$anchor = DateTimeImmutable::createFromInterface($deadline)->modify(sprintf('-%d seconds', $value * $step));
 
 		$config = [
