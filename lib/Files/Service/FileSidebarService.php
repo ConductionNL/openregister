@@ -47,6 +47,23 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FileSidebarService {
+
+	/**
+	 * The extraction status of a file that has no chunks, after its fileId.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const NOT_EXTRACTED = [
+		'extractionStatus' => 'none',
+		'chunkCount' => 0,
+		'entityCount' => 0,
+		'riskLevel' => 'none',
+		'extractedAt' => null,
+		'entities' => [],
+		'anonymized' => false,
+		'anonymizedAt' => null,
+		'anonymizedFileId' => null,
+	];
 	/**
 	 * Register mapper for RBAC-aware register lookups.
 	 *
@@ -331,83 +348,83 @@ class FileSidebarService {
 	 */
 	public function getExtractionStatus(int $fileId): array {
 		// Get chunks for this file.
-		$chunks = $this->chunkMapper->findBySource('file', $fileId);
-		$chunkCount = count($chunks);
+		$chunkCount = count($this->chunkMapper->findBySource('file', $fileId));
 
 		// If no chunks exist, this file has not been extracted.
 		if ($chunkCount === 0) {
-			return [
-				'fileId' => $fileId,
-				'extractionStatus' => 'none',
-				'chunkCount' => 0,
-				'entityCount' => 0,
-				'riskLevel' => 'none',
-				'extractedAt' => null,
-				'entities' => [],
-				'anonymized' => false,
-				'anonymizedAt' => null,
-				'anonymizedFileId' => null,
-			];
+			return ['fileId' => $fileId] + self::NOT_EXTRACTED;
 		}
 
-		// Get extraction timestamp from chunk mapper.
-		$timestamp = $this->chunkMapper->getLatestUpdatedTimestamp('file', $fileId);
-		$extractedAt = null;
-		if ($timestamp !== null) {
-			$extractedAt = date('c', $timestamp);
-		}
-
-		// Get entity relations for this file.
+		// Extraction timestamp from the chunk mapper, then the file's entity relations.
+		$extractedAt     = $this->extractedAt(fileId: $fileId);
 		$entityRelations = $this->entityRelationMapper->findByFileId($fileId);
-		$entityCount = count($entityRelations);
+		$entities        = $this->entitiesByType(entityRelations: $entityRelations);
 
-		// Aggregate entities by type.
+		return [
+			'fileId' => $fileId, 'extractionStatus' => 'completed', 'chunkCount' => $chunkCount, 'entityCount' => count($entityRelations),
+			'riskLevel' => $this->riskLevelService->getRiskLevel($fileId), 'extractedAt' => $extractedAt, 'entities' => $entities,
+			'anonymized' => $this->anyAnonymized(entityRelations: $entityRelations), 'anonymizedAt' => null, 'anonymizedFileId' => null,
+		];
+	}//end getExtractionStatus()
+
+	/**
+	 * When the file's chunks were last updated, as ISO 8601, or null.
+	 *
+	 * @param int $fileId The Nextcloud file ID.
+	 *
+	 * @return string|null
+	 */
+	private function extractedAt(int $fileId): ?string {
+		$timestamp = $this->chunkMapper->getLatestUpdatedTimestamp('file', $fileId);
+		if ($timestamp === null) {
+			return null;
+		}
+
+		return date('c', $timestamp);
+	}//end extractedAt()
+
+	/**
+	 * Count the file's entities by their GDPR entity type; a relation whose entity is gone is skipped.
+	 *
+	 * @param array $entityRelations The file's entity relations.
+	 *
+	 * @return array<int, array{type: string, count: int}>
+	 */
+	private function entitiesByType(array $entityRelations): array {
 		$entityTypeCounts = [];
-		$anonymized = false;
 		foreach ($entityRelations as $relation) {
-			// Check anonymization status.
-			if ($relation->getAnonymized() === true) {
-				$anonymized = true;
-			}
-
 			// Look up entity type from GdprEntity.
 			try {
-				$entity = $this->gdprEntityMapper->find($relation->getEntityId());
-				$type = $entity->getType();
-				if (isset($entityTypeCounts[$type]) === false) {
-					$entityTypeCounts[$type] = 0;
-				}
-
-				$entityTypeCounts[$type]++;
+				$type = $this->gdprEntityMapper->find($relation->getEntityId())->getType();
+				$entityTypeCounts[$type] = ($entityTypeCounts[$type] ?? 0) + 1;
 			} catch (\Exception $e) {
 				// Entity not found — skip.
 				continue;
 			}
-		}//end foreach
-
-		// Build entity type array.
-		$entities = [];
-		foreach ($entityTypeCounts as $type => $count) {
-			$entities[] = [
-				'type' => $type,
-				'count' => $count,
-			];
 		}
 
-		// Get risk level.
-		$riskLevel = $this->riskLevelService->getRiskLevel($fileId);
+		$entities = [];
+		foreach ($entityTypeCounts as $type => $count) {
+			$entities[] = ['type' => $type, 'count' => $count];
+		}
 
-		return [
-			'fileId' => $fileId,
-			'extractionStatus' => 'completed',
-			'chunkCount' => $chunkCount,
-			'entityCount' => $entityCount,
-			'riskLevel' => $riskLevel,
-			'extractedAt' => $extractedAt,
-			'entities' => $entities,
-			'anonymized' => $anonymized,
-			'anonymizedAt' => null,
-			'anonymizedFileId' => null,
-		];
-	}//end getExtractionStatus()
+		return $entities;
+	}//end entitiesByType()
+
+	/**
+	 * Whether any of the file's entity relations is anonymized.
+	 *
+	 * @param array $entityRelations The file's entity relations.
+	 *
+	 * @return bool
+	 */
+	private function anyAnonymized(array $entityRelations): bool {
+		foreach ($entityRelations as $relation) {
+			if ($relation->getAnonymized() === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyAnonymized()
 }//end class
