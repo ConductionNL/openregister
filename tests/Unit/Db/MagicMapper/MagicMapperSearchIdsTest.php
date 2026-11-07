@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -51,6 +52,13 @@ class MagicMapperSearchIdsTest extends TestCase {
 	 * @var array<string, array<string, int>>
 	 */
 	private const SCOPE = ['@self' => ['register' => 7, 'schema' => 9]];
+
+	/**
+	 * The id of a schema that no longer exists.
+	 *
+	 * @var int
+	 */
+	private const GONE_SCHEMA = 404;
 
 	/**
 	 * The queries the table search and the table count received.
@@ -87,7 +95,15 @@ class MagicMapperSearchIdsTest extends TestCase {
 		$registers = $this->createMock(RegisterMapper::class);
 		$registers->method('find')->willReturn($register);
 		$schemas = $this->createMock(SchemaMapper::class);
-		$schemas->method('find')->willReturn($schema);
+		$schemas->method('find')->willReturnCallback(
+			static function (int $id) use ($schema): Schema {
+				if ($id === self::GONE_SCHEMA) {
+					throw new DoesNotExistException('The schema is gone.');
+				}
+
+				return $schema;
+			}
+		);
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs(
@@ -451,6 +467,25 @@ class MagicMapperSearchIdsTest extends TestCase {
 		$this->assertSame(0, $result['total']);
 		$this->assertSame([], $this->tableQueries);
 	}//end testAnUnknownIdReadsNoTable()
+
+	/**
+	 * A row whose schema is gone names no table; the other rows still answer.
+	 *
+	 * @return void
+	 */
+	public function testARowOfAGoneTableIsSkipped(): void {
+		$gone = $this->locatedRow();
+		$gone->setSchema((string) self::GONE_SCHEMA);
+
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn([$gone, $this->locatedRow()]);
+
+		$query  = ['_ids' => ['located']];
+		$result = $mapper->searchObjectsPaginated(searchQuery: $query, countQuery: $query);
+
+		$this->assertCount(1, $result['results']);
+		$this->assertCount(2, $this->tableQueries);
+	}//end testARowOfAGoneTableIsSkipped()
 
 	/**
 	 * The response names a table only when a row of it is on the page.
