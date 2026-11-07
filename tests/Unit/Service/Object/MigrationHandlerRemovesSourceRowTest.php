@@ -18,6 +18,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\MigrationMapping;
+use OCA\OpenRegister\Service\Object\MigrationStorage;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -260,12 +262,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 		);
 
 		return new MigrationHandler(
-			objectMapper: $mapper,
-			utilityHandler: $this->utility(),
-			dataManipHandler: $manipulation,
-			mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger, events: ($this->guards ?? $this->createStub(IEventDispatcher::class))),
-			relationScanner: $scanner,
-			auditTrail: $audit,
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger, events: ($this->guards ?? $this->createStub(IEventDispatcher::class))), auditTrail: $audit),
+			mapping: new MigrationMapping(utilityHandler: $this->utility(), dataManipHandler: $manipulation, relationScanner: $scanner),
 			logger: $logger
 		);
 	}//end handler()
