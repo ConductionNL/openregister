@@ -70,6 +70,8 @@ use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverObjects;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverSettings;
 use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
@@ -413,15 +415,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			lock: new ExampleSetLock(locks: $this->locks)
 		);
 		$this->remover   = new ExampleSetRemover(
-			store: $this->store,
+			objects: new ExampleSetRemoverObjects(store: $this->store, record: $this->record, files: $files, changes: $changes),
+			settings: new ExampleSetRemoverSettings(appConfig: $setConfig, userPreferences: $preferences, registers: $this->registers, instance: $instance),
 			accounts: $this->accounts,
-			record: $this->record,
-			changes: $changes,
-			registers: $this->registers,
-			files: $files,
-			appConfig: $setConfig,
-			instance: $instance,
-			userPreferences: $preferences,
 			engineRows: new ExampleSetEngineKinds(
 				tasks: new ExampleSetTasks(container: $container),
 				views: new ExampleSetViews(container: $container),
