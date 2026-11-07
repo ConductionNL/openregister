@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
@@ -30,6 +30,7 @@ use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 
 /**
  * Handles file publishing and archiving operations.

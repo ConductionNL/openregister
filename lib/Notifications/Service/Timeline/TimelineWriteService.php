@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -58,7 +58,7 @@ class TimelineWriteService {
 	/**
 	 * Constructor.
 	 *
-	 * @param NoteService          $notes      Writes the comment that carries the text.
+	 * @param NoteServiceInterface          $notes      Writes the comment that carries the text.
 	 * @param TimelineEntryService $entries    Writes the record.
 	 * @param ReferenceService     $references Records what the text points at.
 	 * @param EntryMentionService  $mentions   Notifies and subscribes whoever was named.
@@ -68,7 +68,7 @@ class TimelineWriteService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly NoteService $notes,
+		private readonly NoteServiceInterface $notes,
 		private readonly TimelineEntryService $entries,
 		private readonly ReferenceService $references,
 		private readonly EntryMentionService $mentions,
