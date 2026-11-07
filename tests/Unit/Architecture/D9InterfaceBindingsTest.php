@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -50,6 +52,13 @@ final class D9InterfaceBindingsTest extends TestCase {
 			TimeseriesRequestValidatorInterface::class,
 			SearchRegistrar::class,
 			[],
+		],
+		UniqueHintAnnotationValidator::class => [
+			UniqueHintAnnotationValidatorInterface::class,
+			SearchRegistrar::class,
+			[
+				'lib/Db/SchemaMapper/RecordAnnotationRefusals.php',
+			],
 		],
 	];
 
