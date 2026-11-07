@@ -67,11 +67,11 @@ final class D1InterfaceBindingsTest extends TestCase {
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
 	 *
-	 *
-	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
 	 * checked against; permission code is out of scope for this refactor, so
 	 * it keeps its concrete RegisterMapper and SchemaMapper.
-	 * ObjectActionElevationEntries resolves the ids a permission elevation is
+	 *
+	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
 	 * public signature this refactor keeps unchanged.
 	 *
 	 * ExportHandler and ImportHandler are rewritten by the open flow
