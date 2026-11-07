@@ -62,15 +62,6 @@ use Psr\Log\LoggerInterface;
 class SearchQueryHandler {
 
 	/**
-	 * The id a `_watching=true` query falls back to when there is no caller.
-	 * It is deliberately not a uuid, so no object can ever carry it and the
-	 * lens cannot accidentally widen to the whole register.
-	 *
-	 * @var string
-	 */
-	private const NO_WATCHED_OBJECTS = '__no-watched-objects__';
-
-	/**
 	 * The parameters that filter on an object's metadata, moved into `@self`.
 	 *
 	 * @var array<int, string>
@@ -86,31 +77,6 @@ class SearchQueryHandler {
 		'updated',
 		'deleted',
 	];
-
-	/**
-	 * The id an `_unread=true` query falls back to when there is no caller.
-	 *
-	 * An anonymous reader has no read state, so a naive `NOT EXISTS` would be
-	 * true for every row and the lens would answer the WHOLE register instead of
-	 * nothing. That is the silent-widening failure the watchers lens guards
-	 * against too, and it is guarded the same way: a literal no object can
-	 * carry.
-	 *
-	 * @var string
-	 */
-	private const NO_UNREAD_READER = '__no-unread-reader__';
-
-	/**
-	 * The id a `_favourite=true` or `_recent=true` query falls back to when
-	 * there is no caller.
-	 *
-	 * Anonymous has starred nothing and opened nothing, so an unguarded lens
-	 * would drop its own restriction and answer the WHOLE register. Guarded the
-	 * same way as the two above: a literal no object can carry.
-	 *
-	 * @var string
-	 */
-	private const NO_PERSONAL_LENS_USER = '__no-personal-lens-user__';
 
 	/**
 	 * Memoized effective search-trail recording mode for this request.
@@ -186,186 +152,6 @@ class SearchQueryHandler {
 		private readonly ?ReadHistoryService $readHistory = null,
 	) {
 	}//end __construct()
-
-	/**
-	 * Narrow a query to the objects the calling user follows.
-	 *
-	 * `_watching=true` is a LENS, not a filter: it does not ask the object a
-	 * question, it restricts the result to this user's follows and lets every
-	 * other filter, the RBAC gate and the paging run over what is left.
-	 *
-	 * It is resolved INSIDE the query (`merge-follow-and-favourites` D-4): the
-	 * caller's uid lands on `_watchingFor`, which the mapper turns into a
-	 * correlated `EXISTS` against `openregister_watchers`, like the unread
-	 * lens. It used to load every followed uuid onto `_ids`, a list that grew
-	 * with every follow and, once favourites moved in, with every star too.
-	 * An explicit `_ids` therefore composes by AND, so "these five cases, of
-	 * which I follow two" still answers two.
-	 *
-	 * `_favourite=true` is the deprecated alias of this lens for one release:
-	 * a favourite IS a follow now, so both flags ask the same question and
-	 * either one turns the lens on.
-	 *
-	 * Anonymous callers get a literal id no object carries, so the answer is
-	 * an honest empty page rather than the whole register.
-	 *
-	 * @param array<string, mixed> $query The query built so far.
-	 *
-	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
-	 */
-	private function applyWatchingLens(array $query): array {
-		// Never trust a resolved key from the outside: a caller must not hand
-		// in somebody else's uid.
-		unset($query['_watchingFor']);
-
-		$asked = false;
-		foreach (['_watching', '_favourite'] as $flag) {
-			if (array_key_exists($flag, $query) === true) {
-				$asked = ($asked || filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN));
-				unset($query[$flag]);
-			}
-		}
-
-		if ($asked === false) {
-			return $query;
-		}
-
-		$uid = $this->userSession?->getUser()?->getUID();
-		if ($uid === null || $uid === '') {
-			$query['_ids'] = [self::NO_WATCHED_OBJECTS];
-			return $query;
-		}
-
-		$query['_watchingFor'] = $uid;
-
-		return $query;
-	}//end applyWatchingLens()
-
-	/**
-	 * Resolve `_unread=true` into the uid whose read state the query reads.
-	 *
-	 * The lens is resolved INSIDE the query, not applied to a fetched page: the
-	 * mapper turns `_unreadFor` into a correlated `NOT EXISTS` against the
-	 * read-state table, so the page, the total and the facets all see the same
-	 * restriction. A post-filter would give a first page of 25 with a total of
-	 * 120 and a second page that skipped rows, which reads as a paging bug and
-	 * is not one.
-	 *
-	 * Identity is resolved HERE, at the edge, and never in the query builder:
-	 * ADR-005 wants the principal named where the request arrives, and it also
-	 * means the mapper can be tested with a uid rather than a session.
-	 *
-	 * @param array<string, mixed> $query The query built so far.
-	 *
-	 * @return array<string, mixed> The query, carrying the resolved reader.
-	 *
-	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
-	 */
-	private function applyUnreadLens(array $query): array {
-		if (array_key_exists('_unread', $query) === false) {
-			return $query;
-		}
-
-		$asked = filter_var($query['_unread'], FILTER_VALIDATE_BOOLEAN);
-		unset($query['_unread']);
-		if ($asked === false) {
-			return $query;
-		}
-
-		$uid = $this->userSession?->getUser()?->getUID();
-		if ($uid === null || $uid === '') {
-			// No reader, so nothing can be unread FOR them. An honest empty
-			// page, never the whole register.
-			$query['_ids'] = [self::NO_UNREAD_READER];
-			return $query;
-		}
-
-		$query['_unreadFor'] = $uid;
-
-		return $query;
-	}//end applyUnreadLens()
-
-	/**
-	 * Resolve the personal lenses still handled here: `_recent=true`.
-	 *
-	 * `_favourite=true` used to be resolved here too. Since
-	 * `merge-follow-and-favourites` it is an alias of `_watching=true` and is
-	 * consumed by applyWatchingLens(), which runs first.
-	 *
-	 * Resolved INSIDE the query, never on a fetched page, so the page, the
-	 * total and the facets see one restriction. Identity is resolved here, at
-	 * the edge (ADR-005), never in the query builder.
-	 *
-	 * @param array<string, mixed> $query The query built so far.
-	 *
-	 * @return array<string, mixed> The query, carrying the resolved user.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
-	 */
-	private function applyPersonalLenses(array $query): array {
-		return $this->applyRecentLens(query: $query);
-	}//end applyPersonalLenses()
-
-	/**
-	 * Resolve `_recent=true` from the caller's read history on the audit trail.
-	 *
-	 * The history lands on `_ids` (intersected, history order kept), so every
-	 * search path honours it and RBAC still decides. `_recentViews` (uuid =>
-	 * ISO 8601) drives the order and `@self.viewedAt`; `_recentLens` is the
-	 * response report. Audit trail off: empty, with a reason, no shadow log.
-	 * Caller-supplied copies of the internal keys are stripped first.
-	 *
-	 * @param array<string, mixed> $query The query built so far.
-	 *
-	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
-	 */
-	private function applyRecentLens(array $query): array {
-		unset($query['_recentFor'], $query['_recentViews'], $query['_recentLens']);
-
-		if (array_key_exists('_recent', $query) === false) {
-			return $query;
-		}
-
-		$asked = filter_var($query['_recent'], FILTER_VALIDATE_BOOLEAN);
-		unset($query['_recent']);
-		if ($asked === false) {
-			return $query;
-		}
-
-		$uid = $this->userSession?->getUser()?->getUID();
-		$lens = [
-			'available' => false,
-			'reason' => ReadHistoryService::REASON_UNAVAILABLE,
-			'views' => [],
-		];
-		if ($this->readHistory !== null) {
-			$lens = $this->readHistory->resolveRecentLens(userId: $uid);
-		}
-
-		$query['_recentLens'] = ['available' => $lens['available'], 'reason' => $lens['reason']];
-
-		$views = $lens['views'];
-		$existing = ($query['_ids'] ?? null);
-		if (is_array($existing) === true && $existing !== []) {
-			// Intersect, keeping the history's order.
-			$views = array_intersect_key($views, array_flip(array_map('strval', $existing)));
-		}
-
-		if ($views === []) {
-			// Nothing to show: an honest empty page, never the whole register.
-			$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
-			return $query;
-		}
-
-		$query['_ids'] = array_keys($views);
-		$query['_recentViews'] = $views;
-
-		return $query;
-	}//end applyRecentLens()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL
@@ -476,8 +262,17 @@ class SearchQueryHandler {
 			$query['_ids'] = $ids;
 		}
 
-		return $this->applyLenses(query: $this->mergeSpecialParams(query: $query, special: $parts->special));
+		return $this->lenses()->apply(query: $this->mergeSpecialParams(query: $query, special: $parts->special));
 	}//end buildSearchQuery()
+
+	/**
+	 * The lenses of this request.
+	 *
+	 * @return SearchLenses The lenses.
+	 */
+	private function lenses(): SearchLenses {
+		return new SearchLenses(userSession: $this->userSession, readHistory: $this->readHistory);
+	}//end lenses()
 
 	/**
 	 * The request parameters a search can filter on, under their real names.
@@ -516,22 +311,6 @@ class SearchQueryHandler {
 
 		return $this->codedFilters->expand(filters: $filters, schemaRef: $schema);
 	}//end expandedFilters()
-
-	/**
-	 * Apply the lenses, in the order that lets them narrow each other.
-	 *
-	 * The watching lens comes after `_ids` is normalised to an array, so the
-	 * two intersect. The unread lens comes next, so "unread among what I follow"
-	 * narrows twice. The personal lenses come last, so they compose with every
-	 * earlier narrowing of `_ids` rather than replacing it.
-	 *
-	 * @param array $query The query.
-	 *
-	 * @return array The query.
-	 */
-	private function applyLenses(array $query): array {
-		return $this->applyPersonalLenses(query: $this->applyUnreadLens(query: $this->applyWatchingLens(query: $query)));
-	}//end applyLenses()
 
 	/**
 	 * Undo PHP's dot-to-underscore mangling of parameter names (`@self_register` back to `@self.register`).
