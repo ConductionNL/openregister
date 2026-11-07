@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
 /**
  * Validates the input shape of an ad-hoc timeseries aggregation request.
  */
-class TimeseriesRequestValidator {
+class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface {
 
 	/**
 	 * Magic-table metadata columns that are allowed as bucketing /
