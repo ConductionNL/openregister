@@ -80,14 +80,20 @@ use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
@@ -100,6 +106,10 @@ use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
@@ -210,7 +220,17 @@ final class ContractBindings {
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
+		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
 		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		FlowStateNodeInterface::class => FlowStateNode::class,
+		IterateNodeInterface::class => IterateNode::class,
+		LinkObjectNodeInterface::class => LinkObjectNode::class,
+		MapNodeInterface::class => MapNode::class,
+		MergeNodeInterface::class => MergeNode::class,
+		RouterNodeInterface::class => RouterNode::class,
+		SetFieldsNodeInterface::class => SetFieldsNode::class,
+		SubFlowNodeInterface::class => SubFlowNode::class,
+		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
@@ -222,10 +242,12 @@ final class ContractBindings {
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		DeckCardServiceInterface::class => DeckCardService::class,
+		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		EndpointServiceInterface::class => EndpointService::class,
@@ -261,11 +283,11 @@ final class ContractBindings {
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
+		ManifestServiceInterface::class => ManifestService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,
 		MapNodeInterface::class => MapNode::class,
 		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
-		MergeNodeInterface::class => MergeNode::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
@@ -304,6 +326,8 @@ final class ContractBindings {
 		WaitNodeInterface::class => WaitNode::class,
 		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
 		ReferenceResolverInterface::class => ReferenceResolver::class,
+		RouterNodeInterface::class => RouterNode::class,
+		WaitNodeInterface::class => WaitNode::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
