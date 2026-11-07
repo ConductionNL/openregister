@@ -17,6 +17,10 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
@@ -49,11 +53,17 @@ final class D1InterfaceBindingsTest extends TestCase {
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
 		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
+		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
+		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
 	];
 
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
+	 *
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete RegisterMapper and SchemaMapper.
 	 *
 	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
 	 * public signature this refactor keeps unchanged.
@@ -61,6 +71,8 @@ final class D1InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const LEFT = [
+		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
+		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 		TranslationMapper::class => ['Command/BackfillTranslationSourceLanguageCommand.php'],
 	];
 

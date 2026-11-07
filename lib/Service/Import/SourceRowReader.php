@@ -42,39 +42,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class SourceRowReader {
-
-	/**
-	 * Comma-separated values.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_CSV = 'csv';
-
-	/**
-	 * A spreadsheet.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_EXCEL = 'excel';
-
-	/**
-	 * A JSON list, or a `{"results": [...]}` envelope.
-	 *
-	 * @var string
-	 */
-	public const FORMAT_JSON = 'json';
-
-	/**
-	 * Every format a preview reads.
-	 *
-	 * @var array<int, string>
-	 */
-	public const FORMATS = [
-		self::FORMAT_CSV,
-		self::FORMAT_EXCEL,
-		self::FORMAT_JSON,
-	];
+class SourceRowReader implements SourceRowReaderInterface {
 
 	/**
 	 * Read a file into rows.

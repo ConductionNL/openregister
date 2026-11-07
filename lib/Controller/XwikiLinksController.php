@@ -43,7 +43,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\XwikiLinkService;
+use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -62,13 +62,13 @@ class XwikiLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param XwikiLinkService $xwikiLinkService Backing service.
+	 * @param XwikiLinkServiceInterface $xwikiLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly XwikiLinkService $xwikiLinkService,
+		private readonly XwikiLinkServiceInterface $xwikiLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);

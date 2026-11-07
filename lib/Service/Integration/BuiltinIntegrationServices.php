@@ -82,8 +82,8 @@ final class BuiltinIntegrationServices {
 		],
 		\OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider::class => [
 			'taskService'    => \OCA\OpenRegister\Service\TaskService::class,
-			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'registerMapper' => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'l10n'           => \OCP\IL10N::class,
 		],
@@ -250,7 +250,7 @@ final class BuiltinIntegrationServices {
 			'userSession'    => \OCP\IUserSession::class,
 			'l10n'           => \OCP\IL10N::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 		],
 		// @spec openspec/specs/integration-polls/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\PollsProvider::class => [
@@ -381,7 +381,7 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class => [
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'validateObject' => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
@@ -390,7 +390,7 @@ final class BuiltinIntegrationServices {
 			'planner'        => \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
 			'runMapper'      => \OCA\OpenRegister\Db\SchemaRunMapper::class,
 			'runEntryMapper' => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
-			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapper::class,
+			'schemaMapper'   => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
 			'objectService'  => \OCA\OpenRegister\Service\ObjectService::class,
 			'logger'         => \Psr\Log\LoggerInterface::class,
 		],

@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
-class ObjectSlugBackfillService {
+class ObjectSlugBackfillService implements ObjectSlugBackfillServiceInterface {
 
 	/**
 	 * Rows per page when reading the table.
