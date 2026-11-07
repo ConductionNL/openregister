@@ -62,7 +62,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\PropertyDefaults;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileProperties;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectImage;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveCall;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
@@ -710,6 +712,37 @@ class SaveObject implements SaveObjectInterface {
 	}//end outdatedTranslations()
 
 	/**
+	 * The file properties of this save handler.
+	 *
+	 * @return ObjectFileProperties
+	 */
+	private function objectFiles(): ObjectFileProperties {
+		return new ObjectFileProperties(files: $this->filePropertyHandler, objects: $this->objectEntityMapper, logger: $this->logger);
+	}//end objectFiles()
+
+	/**
+	 * Store the file properties of a created object; the call's data gets the file ids.
+	 *
+	 * @param ObjectSaveCall $call        The save call.
+	 * @param ObjectEntity   $savedEntity The created object.
+	 *
+	 * @return ObjectEntity The object, updated when a file property was processed.
+	 */
+	private function storeCreatedFileProperties(ObjectSaveCall $call, ObjectEntity $savedEntity): ObjectEntity {
+		$write = new ObjectFileWrite();
+		$write->entity = $savedEntity;
+		$write->data = $call->data;
+		$write->register = $call->register;
+		$write->schema = $call->schema;
+
+		try {
+			return $this->objectFiles()->storeForCreate(write: $write);
+		} finally {
+			$call->data = $write->data;
+		}
+	}//end storeCreatedFileProperties()
+
+	/**
 	 * The relation scanner of this save handler.
 	 *
 	 * @return RelationScanner
@@ -885,99 +918,16 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void {
-		$config = $schema->getConfiguration();
+		$field = ($schema->getConfiguration()['objectImageField'] ?? null);
 		$objectData = $entity->getObject();
 
 		// Delegate simple metadata extraction (name, description, summary, slug) to handler.
 		$this->metaHydrationHandler->hydrateObjectMetadata(entity: $entity, schema: $schema);
 
-		// Image field mapping.
-		if (($config['objectImageField'] ?? null) !== null) {
-			// First check if the field points to a file object.
-			$imageValue = $this->metaHydrationHandler->getValueFromPath(
-				data: $objectData,
-				path: $config['objectImageField']
-			);
-
-			// Handle different value types:.
-			// 1. Array of file IDs: [123, 124].
-			// 2. Array of file objects: [{accessUrl: ...}, {accessUrl: ...}]
-			// 3. Single file ID: 123.
-			// 4. Single file object: {accessUrl: ...}
-			// 5. String URL.
-			if (is_array($imageValue) === true && empty($imageValue) === false) {
-				// Check if first element is a file ID or file object.
-				$firstElement = $imageValue[0] ?? null;
-
-				if (is_numeric($firstElement) === true) {
-					// Array of file IDs - load first file and get its download URL.
-					try {
-						// TODO: fileService->getFile(object: $entity, file: (int) $firstElement).
-						// When implemented, uncomment:
-						// If ($fileNode !== null) {
-						// $fileData = null;
-						// TODO: fileService->formatFile($fileNode);
-						// IMPORTANT: Object image requires public access.
-						// If file is not published, auto-publish it.
-						// If (empty($fileData['downloadUrl']) === true) {
-						// $this->logger->warning(
-						// 'File configured as objectImageField is not published. Auto-publishing file.',
-						// [
-						// 'app'      => 'openregister',
-						// 'fileId'   => $firstElement,
-						// 'objectId' => $entity->getId(),
-						// 'field'    => $config['objectImageField'],
-						// ]
-						// );
-						// Publish the file.
-						// Null;
-						// TODO: fileService->publishFile(object: $entity, file: $fileNode->getId());
-						// Re-fetch file data after publishing.
-						// $fileData = null;
-						// TODO: fileService->formatFile($fileNode).
-						// }
-						// .
-						// If (($fileData['downloadUrl'] ?? null) !== null) {
-						// $entity->setImage($fileData['downloadUrl']).
-						// }
-						// }//end if.
-					} catch (Exception $e) {
-						// File not found or error loading - skip.
-						$this->logger->error(
-							message: '[SaveObject] Failed to load file for objectImageField',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'app' => 'openregister',
-								'fileId' => $firstElement,
-								'error' => $e->getMessage(),
-							]
-						);
-					}//end try
-				} elseif (is_array($firstElement) === true && (($firstElement['downloadUrl'] ?? null) !== null)) {
-					// Array of file objects - use first file's downloadUrl.
-					$entity->setImage($firstElement['downloadUrl']);
-				} elseif (is_array($firstElement) === true && (($firstElement['accessUrl'] ?? null) !== null)) {
-					// Fallback to accessUrl if downloadUrl not available.
-					$entity->setImage($firstElement['accessUrl']);
-				}//end if
-			} elseif (is_numeric($imageValue) === true) {
-				// Single file ID - load file and get its download URL (not yet implemented).
-				$this->logger->debug(
-					message: '[SaveObject] File ID detected for objectImageField - file loading not yet implemented',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'app' => 'openregister',
-						'fileId' => $imageValue,
-					]
-				);
-			} elseif (is_string($imageValue) === true && trim($imageValue) !== '') {
-				// Regular string URL.
-				$entity->setImage(trim($imageValue));
-			}//end if
-		}//end if
-
+		if ($field !== null) {
+			$value = $this->metaHydrationHandler->getValueFromPath(data: $objectData, path: $field);
+			(new ObjectImage(logger: $this->logger))->apply(object: $entity, value: $value);
+		}
 	}//end hydrateObjectMetadata()
 
 	/**
@@ -2727,12 +2677,7 @@ class SaveObject implements SaveObjectInterface {
 		$mapperWriteAction = $this->unifiedObjectMapper->getLastWriteAction();
 
 		$this->cacheSavedName(savedEntity: $savedEntity);
-		$savedEntity = $this->processFilePropertiesWithRollback(
-			savedEntity: $savedEntity,
-			data: $call->data,
-			register: $call->register,
-			schema: $call->schema
-		);
+		$savedEntity = $this->storeCreatedFileProperties(call: $call, savedEntity: $savedEntity);
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
 		$this->auditCreation(call: $call, savedEntity: $savedEntity);
@@ -2878,167 +2823,6 @@ class SaveObject implements SaveObjectInterface {
 		$savedEntity->setLastLog($log->jsonSerialize());
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
 	}//end auditCreation()
-
-	/**
-	 * Process file properties with automatic rollback on failure.
-	 *
-	 * @param ObjectEntity $savedEntity Saved object entity
-	 * @param array $data Object data (modified by reference)
-	 * @param Register $register Register entity
-	 * @param Schema $schema Schema entity
-	 *
-	 * @return ObjectEntity Updated object with file IDs
-	 *
-	 * @throws Exception If file processing fails
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function processFilePropertiesWithRollback(
-		ObjectEntity $savedEntity,
-		array &$data,
-		Register $register,
-		Schema $schema,
-	): ObjectEntity {
-		$this->logger->debug(
-			message: '[SaveObject] processFilePropertiesWithRollback called',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'app' => 'openregister',
-				'uuid' => $savedEntity->getUuid(),
-				'dataKeys' => array_keys($data),
-			]
-		);
-
-		$write = new ObjectFileWrite();
-		$write->entity = $savedEntity;
-		$write->data = $data;
-		$write->register = $register;
-		$write->schema = $schema;
-
-		try {
-			if ($this->handleFilePropertiesOf(write: $write) === true) {
-				$this->storeProcessedFileIds(write: $write);
-			}
-
-			return $write->entity;
-		} catch (Exception $e) {
-			// ROLLBACK: Delete the object if file processing failed, then re-throw for the controller.
-			$this->logger->warning(
-				message: '[SaveObject] File processing failed, rolling back object creation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $write->entity->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-			$this->objectEntityMapper->delete($write->entity);
-
-			throw $e;
-		} finally {
-			$data = $write->data;
-		}//end try
-	}//end processFilePropertiesWithRollback()
-
-	/**
-	 * Store every file property of the data, replacing its content with file ids.
-	 *
-	 * @param ObjectFileWrite $write The file write; its data is rewritten.
-	 *
-	 * @return bool True when at least one file property was processed.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function handleFilePropertiesOf(ObjectFileWrite $write): bool {
-		$filePropsProcessed = false;
-		$snapshot = $write->data;
-		foreach ($snapshot as $propertyName => $value) {
-			if ($this->filePropertyHandler->isFileProperty(value: $value, schema: $write->schema, propertyName: $propertyName) === true) {
-				$this->filePropertyHandler->handleFileProperty(
-					objectEntity: $write->entity,
-					object: $write->data,
-					propertyName: $propertyName,
-					schema: $write->schema
-				);
-				$filePropsProcessed = true;
-			}
-		}
-
-		return $filePropsProcessed;
-	}//end handleFilePropertiesOf()
-
-	/**
-	 * Write the data with file ids back onto the saved object and update it.
-	 *
-	 * @param ObjectFileWrite $write The file write.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function storeProcessedFileIds(ObjectFileWrite $write): void {
-		$this->logger->warning(
-			message: '[SaveObject] File properties processed, updating object with file IDs',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'app' => 'openregister',
-				'uuid' => $write->entity->getUuid(),
-				'data' => json_encode($write->data),
-			]
-		);
-
-		$write->entity->setObject($write->data);
-		$this->logger->error(
-			message: '[SaveObject] DEBUG: After setObject - entity object is now',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'entityObject' => json_encode($write->entity->getObject())]
-		);
-		$this->logger->error(
-			message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $write->entity->getUuid()]
-		);
-
-		$this->clearImageMetadataIfFileProperty(savedEntity: $write->entity, schema: $write->schema);
-		$write->entity = $this->objectEntityMapper->update(entity: $write->entity, register: $write->register, schema: $write->schema);
-
-		$this->logger->error(
-			message: '[SaveObject] DEBUG: After objectEntityMapper->update() - result object',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'resultObject' => json_encode($write->entity->getObject())]
-		);
-	}//end storeProcessedFileIds()
-
-	/**
-	 * Clear image metadata if objectImageField points to a file property.
-	 *
-	 * @param ObjectEntity $savedEntity Saved object entity
-	 * @param Schema $schema Schema entity
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function clearImageMetadataIfFileProperty(
-		ObjectEntity $savedEntity,
-		Schema $schema,
-	): void {
-		$config = $schema->getConfiguration();
-		if (($config['objectImageField'] ?? null) === null) {
-			return;
-		}
-
-		$imageField = $config['objectImageField'];
-		$schemaProperties = $schema->getProperties() ?? [];
-
-		// Check if the image field is a file property.
-		if (($schemaProperties[$imageField] ?? null) !== null) {
-			$propertyConfig = $schemaProperties[$imageField];
-			if (($propertyConfig['type'] ?? '') === 'file') {
-				// Clear the image metadata so it will be extracted from the file object during rendering.
-				$savedEntity->setImage(null);
-			}
-		}
-	}//end clearImageMetadataIfFileProperty()
 
 	/**
 	 * Prepares an object for creation by applying all necessary transformations.
@@ -4288,7 +4072,7 @@ class SaveObject implements SaveObjectInterface {
 		$updatedEntity = $this->persistObjectUpdate(run: $run, existingObject: $existingObject);
 		$this->outdatedTranslations()->flag(run: $run, updated: $updatedEntity);
 		$this->recordObjectUpdate(run: $run, updatedEntity: $updatedEntity);
-		$updatedEntity = $this->storeUpdatedFileProperties(run: $run, updatedEntity: $updatedEntity);
+		$updatedEntity = $this->objectFiles()->storeForUpdate(run: $run, updated: $updatedEntity);
 
 		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
 		if ($silent === false) {
@@ -4397,59 +4181,6 @@ class SaveObject implements SaveObjectInterface {
 			$updatedEntity->setLastLog($log->jsonSerialize());
 		}
 	}//end recordObjectUpdate()
-
-	/**
-	 * Store the update's file properties and write their file ids back onto the persisted object.
-	 *
-	 * BUG-OBJ-8: only the properties the file handler rewrote are overlaid
-	 * onto the MERGED object that was just persisted (computed fields,
-	 * defaults, cascaded sub-objects, stored fields absent from this request).
-	 * Overlaying the raw partial data would drop every field absent from the
-	 * request.
-	 *
-	 * @param ObjectUpdateRun $run           The update call; its data gets the file ids.
-	 * @param ObjectEntity    $updatedEntity The updated entity.
-	 *
-	 * @return ObjectEntity The entity, saved again when a file property was processed.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function storeUpdatedFileProperties(ObjectUpdateRun $run, ObjectEntity $updatedEntity): ObjectEntity {
-		$processedFileProperties = [];
-		$snapshot = $run->data;
-		foreach ($snapshot as $propertyName => $value) {
-			$isFileProperty = $this->filePropertyHandler->isFileProperty(
-				value: $value,
-				schema: $run->schema,
-				propertyName: $propertyName
-			);
-			if ($isFileProperty === true) {
-				$this->filePropertyHandler->handleFileProperty(
-					objectEntity: $updatedEntity,
-					object: $run->data,
-					propertyName: $propertyName,
-					schema: $run->schema
-				);
-				$processedFileProperties[] = $propertyName;
-			}
-		}
-
-		if ($processedFileProperties === []) {
-			return $updatedEntity;
-		}
-
-		$mergedObject = $updatedEntity->getObject() ?? [];
-		foreach ($processedFileProperties as $fileProperty) {
-			if (array_key_exists($fileProperty, $run->data) === true) {
-				$mergedObject[$fileProperty] = $run->data[$fileProperty];
-			}
-		}
-
-		$updatedEntity->setObject($mergedObject);
-		$this->clearImageMetadataIfFileProperty(savedEntity: $updatedEntity, schema: $run->schema);
-
-		return $this->objectEntityMapper->update(entity: $updatedEntity, register: $run->register, schema: $run->schema);
-	}//end storeUpdatedFileProperties()
 
 	/**
 	 * Check if audit trails are enabled in the settings

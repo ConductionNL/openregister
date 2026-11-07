@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
@@ -3290,135 +3291,15 @@ class SaveObjects {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation resolution requires many type checks
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void {
-		// Create direct UUID to object reference mapping.
-		$objectsByUuid = [];
-		foreach ($preparedObjects as $index => &$object) {
-			$selfData = $object['@self'] ?? [];
-			$objectUuid = $selfData['id'] ?? null;
-			if ($objectUuid !== null) {
-				$objectsByUuid[$objectUuid] = &$object;
-			}
-		}
-
-		// Process inverse relations using cached analysis.
-		foreach ($preparedObjects as $index => &$object) {
-			$selfData = $object['@self'] ?? [];
-			$schemaId = $selfData['schema'] ?? null;
-			$objectUuid = $selfData['id'] ?? null;
-
-			if ($schemaId === false || $objectUuid === null || isset($schemaAnalysis[$schemaId]) === false) {
-				continue;
-			}
-
-			$analysis = $schemaAnalysis[$schemaId];
-
-			// PERFORMANCE OPTIMIZATION: Use pre-analyzed inverse properties.
-			foreach ($analysis['inverseProperties'] as $property => $propertyInfo) {
-				if (isset($object[$property]) === false) {
-					continue;
-				}
-
-				$this->processInverseRelation(
-					value: $object[$property],
-					propertyInfo: $propertyInfo,
-					objectUuid: $objectUuid,
-					objectsByUuid: $objectsByUuid
-				);
-			}
-		}//end foreach
-
+		$relations = new BulkInverseRelations(
+			schemaAnalysis: $schemaAnalysis,
+			isUuid: static fn (string $candidate): bool => Uuid::isValid($candidate)
+		);
+		$relations->apply(objects: $preparedObjects);
 	}//end handleBulkInverseRelationsWithAnalysis()
-
-	/**
-	 * Process a single inverse relation property and apply write-backs to target objects
-	 *
-	 * Handles both single object relations (string UUID) and array of object relations
-	 * (array of UUIDs), adding the source object UUID to each target's inversedBy property.
-	 *
-	 * @param mixed $value The property value (UUID string or array of UUIDs)
-	 * @param array $propertyInfo The inverse property configuration with inversedBy, isArray keys
-	 * @param string $objectUuid The UUID of the source object owning this relation
-	 * @param array $objectsByUuid Reference mapping of UUID to object for in-place updates
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function processInverseRelation(
-		mixed $value,
-		array $propertyInfo,
-		string $objectUuid,
-		array &$objectsByUuid,
-	): void {
-		$inversedBy = $propertyInfo['inversedBy'];
-
-		// Handle single object relations.
-		if ($propertyInfo['isArray'] === false && is_string($value) === true && Uuid::isValid($value) === true) {
-			$this->applyInverseRelationToTarget(
-				targetUuid: $value,
-				inversedBy: $inversedBy,
-				objectUuid: $objectUuid,
-				objectsByUuid: $objectsByUuid
-			);
-			return;
-		}
-
-		// Handle array of object relations.
-		if ($propertyInfo['isArray'] === true && is_array($value) === true) {
-			foreach ($value as $relatedUuid) {
-				if (is_string($relatedUuid) === true && Uuid::isValid($relatedUuid) === true) {
-					$this->applyInverseRelationToTarget(
-						targetUuid: $relatedUuid,
-						inversedBy: $inversedBy,
-						objectUuid: $objectUuid,
-						objectsByUuid: $objectsByUuid
-					);
-				}
-			}
-		}
-	}//end processInverseRelation()
-
-	/**
-	 * Apply an inverse relation to a target object by adding the source UUID
-	 *
-	 * Adds the source object's UUID to the target object's inversedBy property,
-	 * avoiding duplicates. Modifies the target object in-place via reference.
-	 *
-	 * @param string $targetUuid The UUID of the target object to update
-	 * @param string $inversedBy The property name on the target to populate
-	 * @param string $objectUuid The UUID of the source object to add
-	 * @param array $objectsByUuid Reference mapping of UUID to object for in-place updates
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function applyInverseRelationToTarget(
-		string $targetUuid,
-		string $inversedBy,
-		string $objectUuid,
-		array &$objectsByUuid,
-	): void {
-		if (isset($objectsByUuid[$targetUuid]) === false) {
-			return;
-		}
-
-		$targetObject = &$objectsByUuid[$targetUuid];
-		$existingValues = $targetObject[$inversedBy] ?? [];
-		if (is_array($existingValues) === false) {
-			$existingValues = [];
-		}
-
-		if (in_array($objectUuid, $existingValues) === false) {
-			$existingValues[] = $objectUuid;
-			$targetObject[$inversedBy] = $existingValues;
-		}
-	}//end applyInverseRelationToTarget()
 
 	/**
 	 * Handle pre-validation cascading for inversedBy properties
