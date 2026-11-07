@@ -101,6 +101,8 @@ final class ContractBindings {
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		TaskManagerInterface::class => TaskService::class,
+		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
+		TranslationStatusServiceInterface::class => TranslationStatusService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,

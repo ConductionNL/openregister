@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 
-class TranslationStatusService {
+class TranslationStatusService implements TranslationStatusServiceInterface {
 	/**
 	 * Constructor.
 	 *

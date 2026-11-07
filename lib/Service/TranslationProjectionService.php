@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
-class TranslationProjectionService {
+class TranslationProjectionService implements TranslationProjectionServiceInterface {
 	/**
 	 * Constructor.
 	 *
