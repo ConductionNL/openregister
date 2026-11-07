@@ -51,6 +51,7 @@ final class DbRegistrar {
 		RegisterMapperInterface::class => RegisterMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		WebhookMapperInterface::class => WebhookMapper::class,
 	];
 
 	/**

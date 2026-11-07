@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -65,9 +65,9 @@ class WebhookService {
 	/**
 	 * Webhook mapper
 	 *
-	 * @var WebhookMapper
+	 * @var WebhookMapperInterface
 	 */
-	private WebhookMapper $webhookMapper;
+	private WebhookMapperInterface $webhookMapper;
 
 	/**
 	 * HTTP client
@@ -146,7 +146,7 @@ class WebhookService {
 	/**
 	 * Constructor
 	 *
-	 * @param WebhookMapper $webhookMapper Webhook mapper
+	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
 	 * @param MappingService $mappingService Mapping service
@@ -158,7 +158,7 @@ class WebhookService {
 	 * @return void
 	 */
 	public function __construct(
-		WebhookMapper $webhookMapper,
+		WebhookMapperInterface $webhookMapper,
 		LoggerInterface $logger,
 		WebhookLogMapper $webhookLogMapper,
 		MappingService $mappingService,

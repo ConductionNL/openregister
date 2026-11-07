@@ -68,7 +68,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Webhook dispatching requires event and HTTP dependencies
  */
-class WebhookMapper extends QBMapper {
+class WebhookMapper extends QBMapper implements WebhookMapperInterface {
 
 	use ColumnFiltersTrait;
 	use MultiTenancyTrait;

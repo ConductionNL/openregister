@@ -23,6 +23,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -56,6 +58,7 @@ final class D1InterfaceBindingsTest extends TestCase {
 		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
 		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
+		WebhookMapper::class => [WebhookMapperInterface::class, DbRegistrar::class, 'Db'],
 	];
 
 	/**
