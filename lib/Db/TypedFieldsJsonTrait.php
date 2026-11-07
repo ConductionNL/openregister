@@ -26,7 +26,8 @@ namespace OCA\OpenRegister\Db;
  * Serialises the using entity through TypedFieldsJson: every typed field in
  * registration order, a date-time as ISO 8601, then the values the entity
  * serialises differently from how it stores them (jsonOverrides()), each in
- * its own field's place.
+ * its own field's place, and last the keys it serialises a field under
+ * (jsonRenames()), each in the same place.
  *
  * @spec exclude shared entity plumbing, not a capability of its own
  */
@@ -40,9 +41,10 @@ trait TypedFieldsJsonTrait {
 	 * @spec exclude shared entity plumbing, not a capability of its own
 	 */
 	public function jsonSerialize(): array {
-		$typed = (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
+		$typed = new TypedFieldsJson();
+		$json = array_merge($typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), $this->jsonOverrides());
 
-		return array_merge($typed, $this->jsonOverrides());
+		return $typed->renamed(json: $json, names: $this->jsonRenames());
 	}//end jsonSerialize()
 
 	/**
@@ -53,4 +55,13 @@ trait TypedFieldsJsonTrait {
 	protected function jsonOverrides(): array {
 		return [];
 	}//end jsonOverrides()
+
+	/**
+	 * Field name to the key it is serialised under, for the fields serialised under another name.
+	 *
+	 * @return array<string, string>
+	 */
+	protected function jsonRenames(): array {
+		return [];
+	}//end jsonRenames()
 }//end trait
