@@ -116,13 +116,13 @@ class MagicMapperFindInRegisterSchemaTableAccessControlTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
 				return match ($id) {
-					\OCA\OpenRegister\Service\DateTimeNormalizer::class => $this->createMock(
+					\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\DateTimeNormalizer::class
 					),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
 						\OCA\OpenRegister\Service\ConditionMatcher::class
 					),
-					\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class => $this->createMock(
+					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
 					default => null,

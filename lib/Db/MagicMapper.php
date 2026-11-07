@@ -101,8 +101,10 @@ use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
@@ -649,16 +651,52 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Build the table handler and the search handler with its related-row applier.
 	 *
+	 * The table handler is built BEFORE the search handler because the
+	 * related-row applier needs it, and the search handler needs the applier.
+	 * The applier is assembled by hand rather than resolved from the container,
+	 * for the same reason the cache handler above is not: the container would
+	 * walk MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
+	 * The applier also answers the property read question for the search
+	 * handler's nested-path filters: a filter that reaches through a reference
+	 * and one on a path inside an object property are the same oracle on a
+	 * field the caller may not read.
+	 *
+	 * The search handler gets the request's language state, so a translatable
+	 * property sorts by the value the response shows
+	 * (order-filters-and-notification-links), and the request's reveal state:
+	 * filtering or sorting on an explicit-reveal property is refused unless the
+	 * code is trusted (property-explicit-reveal).
+	 *
 	 * @return void
 	 */
 	private function initializeSearchHandler(): void {
-		// The table handler is built BEFORE the search handler because the
-		// related-row applier needs it, and the search handler needs the
-		// applier. It depends on nothing built later, so the move is safe; the
-		// facet handler still comes after the search handler it consumes.
-		// Built before the table handler, which asks it on every first use
-		// of a table, and before the search handler, which asks it which
-		// metadata columns a degraded table still lacks.
+		$this->initializeTableHandler();
+		$relatedRowApplier = $this->createRelatedRowApplier();
+		$this->searchHandler = new MagicSearchHandler(
+			db: $this->db,
+			logger: $this->logger,
+			rbacHandler: $this->rbacHandler,
+			organizationHandler: $this->organizationHandler,
+			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class),
+			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
+			relatedRows: $relatedRowApplier,
+			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
+			metadataColumns: $this->metadataColumnHealer,
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
+		);
+	}//end initializeSearchHandler()
+
+	/**
+	 * Build the table handler.
+	 *
+	 * It depends on nothing built later, so it can come before the search
+	 * handler; the facet handler still comes after the search handler it
+	 * consumes. The metadata-column healer is built before it, because the
+	 * table handler asks it on every first use of a table.
+	 *
+	 * @return void
+	 */
+	private function initializeTableHandler(): void {
 		$this->tableHandler = new MagicTableHandler(
 			db: $this->db,
 			appConfig: $this->appConfig,
@@ -666,33 +704,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			magicMapper: $this,
 			metadataColumns: $this->metadataColumnHealer
 		);
-
-		// Assembled by hand rather than resolved from the container, for the
-		// same reason the cache handler above is not: the container would walk
-		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
-		// The applier also answers the property read question for the search
-		// handler's nested-path filters: a filter that reaches through a
-		// reference and one on a path inside an object property are the same
-		// oracle on a field the caller may not read.
-		$relatedRowApplier = $this->createRelatedRowApplier();
-
-		$this->searchHandler = new MagicSearchHandler(
-			db: $this->db,
-			logger: $this->logger,
-			rbacHandler: $this->rbacHandler,
-			organizationHandler: $this->organizationHandler,
-			schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
-			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
-			relatedRows: $relatedRowApplier,
-			// The request's language state, so a translatable property sorts by
-			// the value the response shows (order-filters-and-notification-links).
-			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
-			metadataColumns: $this->metadataColumnHealer,
-			// The request's reveal state: filtering or sorting on an explicit-reveal
-			// property is refused unless the code is trusted (property-explicit-reveal).
-			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
-		);
-	}//end initializeSearchHandler()
+	}//end initializeTableHandler()
 
 	/**
 	 * Assemble the related-row applier from the RBAC and table handlers.
@@ -724,12 +736,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			db: $this->db,
 			logger: $this->logger,
 			eventDispatcher: $this->eventDispatcher,
-			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
 			config: $this->config
 		);
 
-		// CacheHandler and ICacheFactory are resolved lazily via container
-		// to avoid circular DI: MagicMapper → CacheHandler → RegisterMapper → MagicMapper.
+		$this->initializeFacetHandler();
+		$this->initializeStatisticsHandler();
+	}//end initializeAnalysisHandlers()
+
+	/**
+	 * Build the facet handler on the search handler it consumes.
+	 *
+	 * CacheHandler and ICacheFactory are resolved lazily via container to
+	 * avoid circular DI: MagicMapper → CacheHandler → RegisterMapper → MagicMapper.
+	 *
+	 * @return void
+	 */
+	private function initializeFacetHandler(): void {
 		$this->facetHandler = new MagicFacetHandler(
 			db: $this->db,
 			logger: $this->logger,
@@ -739,9 +762,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			container: $this->container,
 			config: $this->config
 		);
-
-		$this->initializeStatisticsHandler();
-	}//end initializeAnalysisHandlers()
+	}//end initializeFacetHandler()
 
 	/**
 	 * Build the statistics handler and give it the count callback.
@@ -754,11 +775,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			logger: $this->logger,
 			registerMapper: $this->registerMapper,
 			schemaMapper: $this->schemaMapper,
-			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
-			schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
+			dateTimeNormalizer: $this->container->get(DateTimeNormalizerInterface::class),
+			schemaTypeConverter: $this->container->get(SchemaTypeConverterInterface::class)
 		);
 
-		// Use setter injection for the count callback to avoid circular dependency.
+		$this->wireStatisticsCountCallback();
+	}//end initializeStatisticsHandler()
+
+	/**
+	 * Give the statistics handler its count callback.
+	 *
+	 * Setter injection, to avoid a circular dependency on this mapper.
+	 *
+	 * @return void
+	 */
+	private function wireStatisticsCountCallback(): void {
 		$this->statisticsHandler->setCountCallback(
 			function (array $query, Register $register, Schema $schema): int {
 				return $this->countObjectsInRegisterSchemaTable(
@@ -768,7 +799,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				);
 			}
 		);
-	}//end initializeStatisticsHandler()
+	}//end wireStatisticsCountCallback()
 
 	/**
 	 * The distributed cache the metadata-column healer shares across requests.

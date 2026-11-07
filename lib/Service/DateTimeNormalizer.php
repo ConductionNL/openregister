@@ -47,28 +47,10 @@ use Throwable;
  *   2. `string` trimmed and empty   → `null`
  *   3. `DateTimeInterface` instance → `DateTimeImmutable` of the same instant
  *   4. parse failure / unsupported type → `null` (with debug log)
+ *
+ * DATABASE_FORMAT and DATABASE_TIMEZONE are declared on the interface.
  */
-class DateTimeNormalizer {
-
-	/**
-	 * MySQL/MariaDB datetime format.
-	 *
-	 * @var string
-	 */
-	public const DATABASE_FORMAT = 'Y-m-d H:i:s';
-
-	/**
-	 * Timezone the offset-less database datetime columns are expressed in.
-	 *
-	 * A `date`/`date-time` schema property is backed by a DATETIME column
-	 * (`timestamp without time zone` on PostgreSQL), which stores a clock time
-	 * and no offset. Both directions of the round-trip therefore have to agree
-	 * on one timezone for that clock time, and that timezone is UTC — never the
-	 * server's `date.timezone`, which differs per deployment.
-	 *
-	 * @var string
-	 */
-	public const DATABASE_TIMEZONE = 'UTC';
+class DateTimeNormalizer implements DateTimeNormalizerInterface {
 
 	/**
 	 * Constructor.

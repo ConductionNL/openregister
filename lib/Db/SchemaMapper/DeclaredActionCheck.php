@@ -25,7 +25,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -38,11 +38,11 @@ final class DeclaredActionCheck {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionValidator|Closure|null $objectActions Verifies every declared action; a Closure returns it on first use.
+	 * @param ObjectActionValidatorInterface|Closure|null $objectActions Verifies every declared action; a Closure returns it on first use.
 	 * @param LoggerInterface                    $logger        Says which half of the check did not run.
 	 */
 	public function __construct(
-		private readonly ObjectActionValidator|Closure|null $objectActions,
+		private readonly ObjectActionValidatorInterface|Closure|null $objectActions,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -72,7 +72,7 @@ final class DeclaredActionCheck {
 			$validator = $validator();
 		}
 
-		if ($validator instanceof ObjectActionValidator) {
+		if ($validator instanceof ObjectActionValidatorInterface) {
 			$this->refuse(refusals: $validator->refusals(schema: $schema));
 			return;
 		}

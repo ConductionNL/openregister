@@ -98,8 +98,6 @@ final class D2InterfaceBindingsTest extends TestCase {
 		],
 		SchemaTypeConverter::class => [
 			'Command/RematerialiseCalculationsCommand.php' => 'constructs the converter as a parameter default (`new`)',
-			'Db/MagicMapper.php' => 'left while open PR #6108 changes the file',
-			'Db/MagicMapper/MagicSearchHandler.php' => 'left while open PR #6108 changes the file',
 		],
 	];
 

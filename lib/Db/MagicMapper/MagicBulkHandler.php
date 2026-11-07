@@ -44,7 +44,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\ObjectVersionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -113,14 +113,14 @@ class MagicBulkHandler {
 	 * @param IDBConnection $db Database connection for operations
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
-	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime input
+	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for user-supplied datetime input
 	 * @param IConfig $config Nextcloud config for reading the table prefix
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly IEventDispatcher $eventDispatcher,
-		private readonly DateTimeNormalizer $dateTimeNormalizer,
+		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
 		private readonly IConfig $config,
 	) {
 		// Try to get max_allowed_packet from database configuration.

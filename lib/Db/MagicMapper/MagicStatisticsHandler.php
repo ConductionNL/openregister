@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -123,7 +123,7 @@ class MagicStatisticsHandler {
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
 	 * @param RegisterMapperInterface $registerMapper Mapper for register lookups
 	 * @param SchemaMapperInterface $schemaMapper Mapper for schema lookups
-	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime values
+	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for user-supplied datetime values
 	 * @param SchemaTypeConverterInterface $schemaTypeConverter Schema-driven type converter for row values
 	 */
 	public function __construct(
@@ -131,7 +131,7 @@ class MagicStatisticsHandler {
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly DateTimeNormalizer $dateTimeNormalizer,
+		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
 		private readonly SchemaTypeConverterInterface $schemaTypeConverter,
 	) {
 		$this->columnRoles = new MagicMetadataColumn();
