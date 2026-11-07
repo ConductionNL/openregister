@@ -1,6 +1,6 @@
 <?php
 
-	/**
+/**
  * FilesController
  *
  * Controller for file operations in the OpenRegister application.
@@ -72,7 +72,7 @@ use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
 
-	/**
+/**
  * FilesController handles file operations for objects in registers
  *
  * Provides REST API endpoints for managing files associated with objects.
