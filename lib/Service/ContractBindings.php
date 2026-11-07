@@ -86,6 +86,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
@@ -377,6 +378,7 @@ final class ContractBindings {
 		FilterNodeInterface::class => FilterNode::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowLocatorInterface::class => FlowLocator::class,
+		FlowNodeCatalogueInterface::class => FlowNodeRegistry::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowNodeRegistryInterface::class => FlowNodeRegistry::class,
 		FlowRunMigrationServiceInterface::class => FlowRunMigrationService::class,

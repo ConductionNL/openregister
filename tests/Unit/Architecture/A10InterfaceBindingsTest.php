@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowNodeCatalogueInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -48,18 +50,22 @@ final class A10InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, class-string>
 	 */
 	private const CLASSES = [
+		FlowNodeRegistry::class => FlowNodeCatalogueInterface::class,
 		SlaCalculator::class => SlaCalculatorInterface::class,
 	];
 
 	/**
 	 * Lib files (under lib/) besides the class itself still allowed to name it, and why.
 	 *
-	 * ContractBindings binds the interface to the class. FlowTimerService is
-	 * changed by an open pull request, so its constructor is left for after it lands.
+	 * ContractBindings binds the interface to the class. RegisterFlowNodesEvent
+	 * is the public event other apps receive; its constructor stays as it is.
+	 * FlowTimerService is changed by an open pull request, so its constructor
+	 * is left for after it lands.
 	 *
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
+		FlowNodeRegistry::class => ['Service/ContractBindings.php', 'Service/Flow/RegisterFlowNodesEvent.php'],
 		SlaCalculator::class => ['Service/ContractBindings.php', 'Service/Flow/Timer/FlowTimerService.php'],
 	];
 
