@@ -177,23 +177,6 @@ class DeckLink extends Entity implements JsonSerializable {
 	 * @return array<string,mixed>
 	 */
 	public function jsonSerialize(): array {
-		$labels = [];
-		$assignees = [];
-
-		if ($this->labels !== null && $this->labels !== '') {
-			$decoded = json_decode($this->labels, true);
-			if (is_array($decoded) === true) {
-				$labels = $decoded;
-			}
-		}
-
-		if ($this->assignees !== null && $this->assignees !== '') {
-			$decoded = json_decode($this->assignees, true);
-			if (is_array($decoded) === true) {
-				$assignees = $decoded;
-			}
-		}
-
 		return [
 			'id' => $this->id,
 			'objectUuid' => $this->objectUuid,
@@ -204,10 +187,30 @@ class DeckLink extends Entity implements JsonSerializable {
 			'cardId' => $this->cardId,
 			'cardTitle' => $this->cardTitle,
 			'dueDate' => $this->dueDate?->format(DateTime::ATOM),
-			'labels' => $labels,
-			'assignees' => $assignees,
+			'labels' => $this->decodeList(json: $this->labels),
+			'assignees' => $this->decodeList(json: $this->assignees),
 			'linkedBy' => $this->linkedBy,
 			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 		];
 	}//end jsonSerialize()
+
+	/**
+	 * Decode a JSON column into an array, or an empty array when it is empty or not a JSON array/object.
+	 *
+	 * @param string|null $json The stored JSON.
+	 *
+	 * @return array<mixed> The decoded value.
+	 */
+	private function decodeList(?string $json): array {
+		if (in_array($json, [null, ''], true) === true) {
+			return [];
+		}
+
+		$decoded = json_decode($json, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
+	}//end decodeList()
 }//end class
