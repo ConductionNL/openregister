@@ -139,6 +139,7 @@ import { NcAppContent } from '@nextcloud/vue'
 import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import { deleteAction, editAction, viewAction } from '../../services/menuActions.js'
+import { localPagination } from '../localPagination.js'
 
 export default {
 	name: 'SourcesIndex',
@@ -149,15 +150,13 @@ export default {
 		DatabaseArrowRightOutline,
 	},
 
+	mixins: [localPagination],
+
 	data() {
 		return {
 			viewMode: 'cards',
 			selectedSources: [],
 			isRefreshing: false,
-			pagination: {
-				page: 1,
-				limit: 20,
-			},
 		}
 	},
 
@@ -295,29 +294,6 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
-		},
-
-		/**
-		 * Handle a page change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} page - new page number
-		 * @return {void}
-		 */
-		onPageChanged(page) {
-			this.pagination.page = page
-		},
-
-		/**
-		 * Handle a page-size change from the paginator.
-		 *
-		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
-		 * @param {number} pageSize - new page size
-		 * @return {void}
-		 */
-		onPageSizeChanged(pageSize) {
-			this.pagination.page = 1
-			this.pagination.limit = pageSize
 		},
 
 		/**

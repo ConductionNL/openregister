@@ -27,9 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifest;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -43,13 +43,13 @@ class ReportUnpublishedSchedules implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduleManifestLoader $manifests The on-disk manifests.
-	 * @param ScheduleFlowStore $flows The compiled flows.
+	 * @param ScheduleManifestLoaderInterface $manifests The on-disk manifests.
+	 * @param ScheduleFlowStoreInterface $flows The compiled flows.
 	 * @param LoggerInterface $logger Refusals.
 	 */
 	public function __construct(
-		private readonly ScheduleManifestLoader $manifests,
-		private readonly ScheduleFlowStore $flows,
+		private readonly ScheduleManifestLoaderInterface $manifests,
+		private readonly ScheduleFlowStoreInterface $flows,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
