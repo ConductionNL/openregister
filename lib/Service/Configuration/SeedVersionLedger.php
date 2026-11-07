@@ -145,23 +145,34 @@ class SeedVersionLedger {
 	 */
 	private function map(string $appId): array {
 		if (isset($this->maps[$appId]) === false) {
-			$decoded = json_decode($this->appConfig->getValueString('openregister', $this->key(appId: $appId), '', lazy: true), true);
-			if (is_array($decoded) === false) {
-				$decoded = [];
-			}
-
-			$map = [];
-			foreach ($decoded as $seed => $version) {
-				if (is_string($version) === true) {
-					$map[(string)$seed] = $version;
-				}
-			}
-
-			$this->maps[$appId] = $map;
+			$this->maps[$appId] = $this->read(appId: $appId);
 		}
 
 		return $this->maps[$appId];
 	}//end map()
+
+	/**
+	 * One app id's stored map; entries whose version is not text are left out.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return array<string, string> Seed identity to shipped version.
+	 */
+	private function read(string $appId): array {
+		$decoded = json_decode($this->appConfig->getValueString('openregister', $this->key(appId: $appId), '', lazy: true), true);
+		if (is_array($decoded) === false) {
+			return [];
+		}
+
+		$map = [];
+		foreach ($decoded as $seed => $version) {
+			if (is_string($version) === true) {
+				$map[(string)$seed] = $version;
+			}
+		}
+
+		return $map;
+	}//end read()
 
 	/**
 	 * The app-config key of an app id's map, hashed when the plain key would pass Nextcloud's limit.
