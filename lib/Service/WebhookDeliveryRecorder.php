@@ -30,7 +30,7 @@ use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,14 +51,14 @@ final class WebhookDeliveryRecorder {
 	private const MAX_RESPONSE_BODY_BYTES = 1048576;
 
 	/**
-	 * @param LoggerInterface  $logger           Logger
-	 * @param WebhookMapper    $webhookMapper    Webhook statistics
-	 * @param WebhookLogMapper $webhookLogMapper Log entries
-	 * @param Closure          $previewBody      (string $body, string $url): string, the log-safe preview of a response body
+	 * @param LoggerInterface        $logger           Logger
+	 * @param WebhookMapperInterface $webhookMapper    Webhook statistics
+	 * @param WebhookLogMapper       $webhookLogMapper Log entries
+	 * @param Closure                $previewBody      (string $body, string $url): string, the log-safe preview of a response body
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly WebhookMapper $webhookMapper,
+		private readonly WebhookMapperInterface $webhookMapper,
 		private readonly WebhookLogMapper $webhookLogMapper,
 		private readonly Closure $previewBody,
 	) {
