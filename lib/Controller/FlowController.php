@@ -57,7 +57,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -165,9 +165,9 @@ class FlowController extends Controller {
 	/**
 	 * Reads, publishes, drafts and deprecates versions.
 	 *
-	 * @var FlowVersionService
+	 * @var FlowVersionServiceInterface
 	 */
-	private readonly FlowVersionService $flowVersionService;
+	private readonly FlowVersionServiceInterface $flowVersionService;
 
 	/**
 	 * Constructor.
