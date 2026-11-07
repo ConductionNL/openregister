@@ -5099,7 +5099,7 @@ class ImportHandler {
 		if ($object->slug === null) {
 			$this->logger->error(
 				message: "[ImportHandler] Seed for '{$seed->schemaSlug}' missing slug and title",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'objectData' => $object->data]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectKeys' => array_keys($object->data)]
 			);
 			return;
 		}
