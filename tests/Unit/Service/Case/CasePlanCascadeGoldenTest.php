@@ -166,9 +166,9 @@ class CasePlanCascadeGoldenTest extends TestCase {
 		$catalog->method('aliasesFor')->willReturnCallback(static fn (string $dispatched): array => [$dispatched]);
 
 		return new CasePlanCascade(
-			new CasePlanStore($items, $this->createMock(CaseItemAuditMapper::class), $this->db(), $this->logger()),
-			$machine,
-			new CaseCascadeReaders(new CaseSentryEvaluator($catalog), $realiser, $anchor)
+			store: new CasePlanStore(items: $items, audits: $this->createMock(CaseItemAuditMapper::class), db: $this->db(), logger: $this->logger()),
+			machine: $machine,
+			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: $catalog), realiser: $realiser, anchor: $anchor)
 		);
 	}//end cascade()
 

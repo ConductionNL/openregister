@@ -165,7 +165,11 @@ class CasePlanCascadeTest extends TestCase {
 		return new CasePlanCascade(
 			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			machine: $machine,
-			readers: new CaseCascadeReaders(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()), realiser: $this->realiser, anchor: $this->anchor)
+			readers: new CaseCascadeReaders(
+				sentries: new CaseSentryEvaluator(catalog: new EventCatalogService()),
+				realiser: $this->realiser,
+				anchor: $this->anchor
+			)
 		);
 	}//end cascade()
 
