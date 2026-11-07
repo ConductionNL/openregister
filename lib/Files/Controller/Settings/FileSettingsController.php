@@ -316,7 +316,7 @@ class FileSettingsController extends Controller {
 	public function getFileExtractionStats(): JSONResponse {
 		try {
 			$fileMapper = $this->container->get(\OCA\OpenRegister\Files\Db\FileMapperInterface::class);
-			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkMapper::class);
+			$chunkMapper = $this->container->get(\OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface::class);
 			$extractionStats = $this->container->get(\OCA\OpenRegister\Files\Service\TextExtractionService::class)->getStats();
 
 			$processedFiles = $chunkMapper->countFileSourceSummaries();

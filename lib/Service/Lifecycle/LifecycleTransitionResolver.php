@@ -44,7 +44,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * trusted. The declaration only says which of several equally valid
  * transitions the caller meant; it must never make an undeclared move legal.
  */
-class LifecycleTransitionResolver {
+class LifecycleTransitionResolver implements LifecycleTransitionResolverInterface {
 
 	/**
 	 * Constructor.

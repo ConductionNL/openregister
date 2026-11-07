@@ -230,13 +230,28 @@ final class RelationAnnotationValidator {
 			return self::about(subject: $subject, refusals: [self::refusal(code: 'relation-annotation-malformed', message: $message)]);
 		}
 
-		$type     = ($declaration['type'] ?? null);
-		$refusals = array_merge(self::referenceRefusals(property: $property), self::typeRefusals(type: $type, vocabularyKeys: $vocabularyKeys));
-		$refusals = array_merge($refusals, self::labelMissingRefusals(declaration: $declaration));
+		$refusals = self::declarationRefusals(property: $property, declaration: $declaration, vocabularyKeys: $vocabularyKeys);
 
 		$own = self::about(subject: $subject, refusals: $refusals);
 		return array_merge($own, $this->validateDeclaration(declaration: $declaration, subject: $subject));
 	}//end validateProperty()
+
+	/**
+	 * The refusals of one property's declaration itself: no `$ref`, an unknown type, a missing label.
+	 *
+	 * @param mixed                $property       The property definition.
+	 * @param array<string, mixed> $declaration    The declaration.
+	 * @param array<int, string>   $vocabularyKeys The keys the schema declares.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals, messages without their subject.
+	 */
+	private static function declarationRefusals(mixed $property, array $declaration, array $vocabularyKeys): array {
+		return array_merge(
+			self::referenceRefusals(property: $property),
+			self::typeRefusals(type: ($declaration['type'] ?? null), vocabularyKeys: $vocabularyKeys),
+			self::labelMissingRefusals(declaration: $declaration)
+		);
+	}//end declarationRefusals()
 
 	/**
 	 * The refusal of a relation declared on a property that holds no `$ref`.
@@ -397,13 +412,30 @@ final class RelationAnnotationValidator {
 			return [self::unknownInheritance(role: $role)];
 		}
 
-		if (is_int($key) === false && (is_string($value) === false || trim($value) === '')) {
-			$message = sprintf('maps the inherited "%s" onto something that is not a property name.', $role);
-			return [self::refusal(code: 'relation-inherits-malformed', message: $message)];
+		if (is_int($key) === true) {
+			return [];
 		}
 
-		return [];
+		return self::mappingRefusals(role: $role, value: $value);
 	}//end inheritRefusals()
+
+
+	/**
+	 * The refusal of a map-form inheritance entry that maps onto no property name.
+	 *
+	 * @param string $role  The inherited name, already known to be in the closed set.
+	 * @param mixed  $value The property it is mapped onto.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusal, messages without their subject.
+	 */
+	private static function mappingRefusals(string $role, mixed $value): array {
+		if (is_string($value) === true && trim($value) !== '') {
+			return [];
+		}
+
+		$message = sprintf('maps the inherited "%s" onto something that is not a property name.', $role);
+		return [self::refusal(code: 'relation-inherits-malformed', message: $message)];
+	}//end mappingRefusals()
 
 	/**
 	 * The refusal of an inherited name outside the closed set.
@@ -484,6 +516,18 @@ final class RelationAnnotationValidator {
 			return false;
 		}
 
+		return self::isLanguageMap(value: $value);
+	}//end isLabel()
+
+
+	/**
+	 * Whether every entry of a non-empty map is a language tag naming a text.
+	 *
+	 * @param array<mixed> $value The map.
+	 *
+	 * @return boolean True when every key and every value is a string.
+	 */
+	private static function isLanguageMap(array $value): bool {
 		foreach ($value as $tag => $text) {
 			if (is_string($tag) === false || is_string($text) === false) {
 				return false;
@@ -491,7 +535,7 @@ final class RelationAnnotationValidator {
 		}
 
 		return true;
-	}//end isLabel()
+	}//end isLanguageMap()
 
 	/**
 	 * Read the relation annotation off a property, at either position.
@@ -539,11 +583,23 @@ final class RelationAnnotationValidator {
 			return false;
 		}
 
-		if (isset($property['$ref']) === true || isset($property['inversedBy']) === true) {
+		if (self::holdsReference(node: $property) === true) {
 			return true;
 		}
 
 		$items = self::objectAsArray(value: ($property['items'] ?? null));
-		return is_array($items) === true && (isset($items['$ref']) === true || isset($items['inversedBy']) === true);
+		return is_array($items) === true && self::holdsReference(node: $items) === true;
 	}//end isReferenceProperty()
+
+
+	/**
+	 * Whether one level of a property definition carries `$ref` or `inversedBy`.
+	 *
+	 * @param array<mixed> $node The property root or its `items`.
+	 *
+	 * @return boolean True when it does.
+	 */
+	private static function holdsReference(array $node): bool {
+		return isset($node['$ref']) === true || isset($node['inversedBy']) === true;
+	}//end holdsReference()
 }//end class

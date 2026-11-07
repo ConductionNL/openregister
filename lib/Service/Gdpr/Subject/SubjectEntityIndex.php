@@ -145,9 +145,11 @@ class SubjectEntityIndex {
 		try {
 			return $this->rowsOf(qb: $this->query(subject: $subject, type: $type, mode: $mode));
 		} catch (\Throwable $e) {
+			// No subject and no driver message: both can carry the data subject's
+			// identifier, and the app log is no place for personal data.
 			$this->logger->warning(
 				message: '[DSR] GdprEntity lookup failed',
-				context: ['subject' => $subject, 'type' => $type, 'error' => $e->getMessage()]
+				context: ['type' => $type, 'error' => $e::class]
 			);
 			return [];
 		}

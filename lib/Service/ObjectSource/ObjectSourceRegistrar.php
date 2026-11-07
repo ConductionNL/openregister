@@ -43,6 +43,16 @@ final class ObjectSourceRegistrar {
 	private const CONTAINER = '(container)';
 
 	/**
+	 * Contract => the service that implements it, for callers outside the Service component.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		TablesCatalogueInterface::class => TablesTableReader::class,
+		TablesSchemaReconcilerInterface::class => TablesSchemaSyncService::class,
+	];
+
+	/**
 	 * The services register() adds, in order: per service, its constructor
 	 * arguments by name and the container id each one is resolved from.
 	 *
@@ -177,6 +187,10 @@ final class ObjectSourceRegistrar {
 					return self::build(container: $container, class: $class);
 				}
 			);
+		}
+
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
 		}
 	}//end register()
 

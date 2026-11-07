@@ -40,31 +40,15 @@ use Symfony\Component\Yaml\Parser;
 class UploadHandler {
 
 	/**
-	 * HTTP Client for making external requests.
-	 *
-	 * @var Client The HTTP client instance.
-	 */
-	private readonly Client $client;
-
-	/**
-	 * Logger instance for logging operations.
-	 *
-	 * @var LoggerInterface The logger instance.
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for UploadHandler.
 	 *
-	 * @param Client $client The HTTP client.
+	 * @param Client          $client The HTTP client.
 	 * @param LoggerInterface $logger The logger interface.
 	 */
 	public function __construct(
-		Client $client,
-		LoggerInterface $logger,
+		private readonly Client $client,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->client = $client;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**

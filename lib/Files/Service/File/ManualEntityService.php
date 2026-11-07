@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Files\Service\File;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\DetectionMethod;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
@@ -94,9 +94,9 @@ class ManualEntityService {
 	/**
 	 * Chunk reader for the target file.
 	 *
-	 * @var ChunkMapper
+	 * @var ChunkSourceReaderInterface
 	 */
-	private readonly ChunkMapper $chunkMapper;
+	private readonly ChunkSourceReaderInterface $chunkMapper;
 
 	/**
 	 * Chunk-aware string-match utility.

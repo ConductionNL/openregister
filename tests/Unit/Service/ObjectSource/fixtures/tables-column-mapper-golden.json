@@ -1,0 +1,219 @@
+{
+    "columnMap": {
+        "1": "plain",
+        "2": "link",
+        "3": "amount",
+        "4": "count",
+        "5": "progress",
+        "6": "stars",
+        "7": "ratio",
+        "8": "when",
+        "9": "day",
+        "10": "clock",
+        "11": "done",
+        "12": "tags",
+        "13": "pick",
+        "14": "pick_none",
+        "15": "who",
+        "16": "link_to",
+        "17": "link_gone",
+        "18": "link_none",
+        "19": "odd",
+        "20": "plain_20",
+        "21": "column_21",
+        "22": "tech_name"
+    },
+    "schema": {
+        "properties": {
+            "plain": {
+                "type": "string"
+            },
+            "link": {
+                "type": "string",
+                "format": "uri"
+            },
+            "amount": {
+                "type": "number",
+                "minimum": 1.5,
+                "maximum": 10
+            },
+            "count": {
+                "type": "integer"
+            },
+            "progress": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+            },
+            "stars": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
+            },
+            "ratio": {
+                "type": "number"
+            },
+            "when": {
+                "type": "string",
+                "format": "date-time"
+            },
+            "day": {
+                "type": "string",
+                "format": "date"
+            },
+            "clock": {
+                "type": "string",
+                "format": "time"
+            },
+            "done": {
+                "type": "boolean"
+            },
+            "tags": {
+                "type": "array",
+                "items": {
+                    "enum": [
+                        "1",
+                        "b"
+                    ]
+                }
+            },
+            "pick": {
+                "type": "string",
+                "enum": [
+                    "x",
+                    "y"
+                ]
+            },
+            "pick_none": {
+                "type": "string"
+            },
+            "who": {
+                "type": "array",
+                "items": {
+                    "type": "object"
+                }
+            },
+            "link_to": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "link_gone": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "link_none": {
+                "type": "string",
+                "format": "uuid"
+            },
+            "odd": {
+                "type": "string"
+            },
+            "plain_20": {
+                "type": "string"
+            },
+            "column_21": {
+                "type": "string"
+            },
+            "tech_name": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "link"
+        ]
+    },
+    "rows": {
+        "0:1": {
+            "plain": "hello"
+        },
+        "1:2": {
+            "link": {
+                "url": "x"
+            }
+        },
+        "2:3": {
+            "amount": 2.5
+        },
+        "3:4": {
+            "count": 3
+        },
+        "4:5": {
+            "progress": 42
+        },
+        "5:6": {
+            "stars": 4
+        },
+        "6:7": {
+            "ratio": 100.0
+        },
+        "7:8": {
+            "when": "20260101"
+        },
+        "8:9": {
+            "day": null
+        },
+        "9:11": {
+            "done": false
+        },
+        "10:11": {
+            "done": true
+        },
+        "11:12": {
+            "tags": [
+                "solo"
+            ]
+        },
+        "12:13": {
+            "pick": "7"
+        },
+        "13:15": {
+            "who": [
+                "alice"
+            ]
+        },
+        "14:16": {
+            "link_to": "666a97c8-59d9-53b2-9119-baca1ec5edfc"
+        },
+        "15:17": {
+            "link_gone": 13
+        },
+        "16:18": {
+            "link_none": 0
+        },
+        "17:19": {
+            "odd": "3.25"
+        },
+        "18:21": {
+            "column_21": ""
+        },
+        "19:99": []
+    },
+    "noCells": [],
+    "logs": [
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] relation column 17 target table 78 has no seeded schema \u2014 falling back to raw rowId 13",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] relation column 18 target table 0 has no seeded schema \u2014 falling back to raw rowId 0",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] row 19 references unknown column 99 \u2014 skipped (drift)",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\"",
+        "warning: [ObjectSource:tables] column 20 slug \"plain\" collides with column 1; using \"plain_20\""
+    ]
+}

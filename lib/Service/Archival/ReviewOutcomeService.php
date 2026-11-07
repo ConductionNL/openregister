@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use RuntimeException;
 use Throwable;
@@ -77,26 +78,37 @@ class ReviewOutcomeService {
 	 *
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
-	public function apply(
-		string $answer,
-		string $entryUuid,
-		string $reason,
-		?string $newDate = null,
-		?string $reviewer = null,
-	): ?string {
-		if ($answer === DestructionReviewService::ANSWER_DESTROY) {
-			// Nothing to do to the record yet. It stays on the list, and the
-			// list's approval is what queues DestructionExecutionJob.
-			return null;
+	public function apply(string $answer, string $entryUuid, string $reason, ?string $newDate = null, ?string $reviewer = null): ?string {
+		$keptHere = [DestructionReviewService::ANSWER_DESTROY, DestructionReviewService::ANSWER_RETAIN];
+		if (in_array($answer, $keptHere, true) === false) {
+			return $this->transfer(entryUuid: $entryUuid, reason: $reason, reviewer: $reviewer);
 		}
 
+		$this->retainIfAsked(answer: $answer, entryUuid: $entryUuid, reason: $reason, newDate: $newDate);
+
+		return null;
+	}//end apply()
+
+	/**
+	 * Carry out a retention; a destroy does nothing to the record yet.
+	 *
+	 * A destroyed entry stays on the list, and the list's approval is what
+	 * queues DestructionExecutionJob.
+	 *
+	 * @param string      $answer    Destroy or retain.
+	 * @param string      $entryUuid The uuid of the record.
+	 * @param string      $reason    Why the reviewer kept it.
+	 * @param string|null $newDate   The new archiefactiedatum, for a retention.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the record cannot be read or written.
+	 */
+	private function retainIfAsked(string $answer, string $entryUuid, string $reason, ?string $newDate): void {
 		if ($answer === DestructionReviewService::ANSWER_RETAIN) {
 			$this->retain(entryUuid: $entryUuid, reason: $reason, newDate: (string)$newDate);
-			return null;
 		}
-
-		return $this->transfer(entryUuid: $entryUuid, reason: $reason, reviewer: $reviewer);
-	}//end apply()
+	}//end retainIfAsked()
 
 	/**
 	 * Move a record's archiefactiedatum, and say on the record why it moved.
@@ -110,19 +122,23 @@ class ReviewOutcomeService {
 	 * @throws RuntimeException When the record cannot be read or written.
 	 */
 	private function retain(string $entryUuid, string $reason, string $newDate): void {
-		try {
-			$object = $this->objectMapper->find($entryUuid, null, null, false, false, false);
-		} catch (Throwable $e) {
-			throw new RuntimeException(
-				sprintf('Cannot retain %s: the record could not be read (%s)', $entryUuid, $e->getMessage())
-			);
-		}
+		$object = $this->load(entryUuid: $entryUuid, verb: 'retain');
 
-		$retention = ($object->getRetention() ?? []);
-		if (is_array($retention) === false) {
-			$retention = [];
-		}
+		$object->setRetention($this->retainedRetention(retention: $this->retentionOf(object: $object), reason: $reason, newDate: $newDate));
 
+		$this->write(object: $object, entryUuid: $entryUuid, verb: 'retain', what: 'the new date');
+	}//end retain()
+
+	/**
+	 * A retention block with its archiefactiedatum moved by a reviewer, and the move recorded.
+	 *
+	 * @param array<string, mixed> $retention The record's retention block.
+	 * @param string               $reason    Why the reviewer kept it.
+	 * @param string               $newDate   The new archiefactiedatum.
+	 *
+	 * @return array<string, mixed> The retention block.
+	 */
+	private function retainedRetention(array $retention, string $reason, string $newDate): array {
 		// The date it had before a reviewer moved it, kept once. A second
 		// retention must not overwrite the date the selectielijst produced.
 		if (($retention['originalArchiefactiedatum'] ?? null) === null
@@ -138,26 +154,19 @@ class ReviewOutcomeService {
 			$history = [];
 		}
 
-		$history[] = [
-			'date' => (new DateTimeImmutable())->format('c'),
-			'reason' => $reason,
-			'newArchiefactiedatum' => $newDate,
-		];
+		$history[] = ['date' => (new DateTimeImmutable())->format('c'), 'reason' => $reason, 'newArchiefactiedatum' => $newDate];
 		$retention['retentionHistory'] = $history;
 
-		$object->setRetention($retention);
-
-		try {
-			$this->objectMapper->update($object);
-		} catch (Throwable $e) {
-			throw new RuntimeException(
-				sprintf('Cannot retain %s: the new date could not be written (%s)', $entryUuid, $e->getMessage())
-			);
-		}
-	}//end retain()
+		return $retention;
+	}//end retainedRetention()
 
 	/**
 	 * Hand a record to the e-Depot transfer path.
+	 *
+	 * 🔴 THE RECORD SAYS WHAT HAPPENED TO IT, not only the list. A transfer
+	 * recorded on the destruction list alone leaves the dossier itself
+	 * unable to answer "were you handed over, and by whom", which is the
+	 * question an auditor puts to the object and not to the worklist.
 	 *
 	 * @param string      $entryUuid The uuid of the record.
 	 * @param string      $reason    Why the reviewer handed it over.
@@ -168,14 +177,35 @@ class ReviewOutcomeService {
 	 * @throws RuntimeException When the record cannot be read or the list cannot be made.
 	 */
 	private function transfer(string $entryUuid, string $reason, ?string $reviewer): string {
-		try {
-			$object = $this->objectMapper->find($entryUuid, null, null, false, false, false);
-		} catch (Throwable $e) {
-			throw new RuntimeException(
-				sprintf('Cannot transfer %s: the record could not be read (%s)', $entryUuid, $e->getMessage())
-			);
-		}
+		$object = $this->load(entryUuid: $entryUuid, verb: 'transfer');
+		$uuid = $this->transferListFor(object: $object, entryUuid: $entryUuid);
 
+		$retention = $this->retentionOf(object: $object);
+		$retention['outcome'] = [
+			'kind' => 'transfer',
+			'at' => (new DateTimeImmutable())->format('c'),
+			'by' => $reviewer,
+			'reason' => $reason,
+			'transferListUuid' => $uuid,
+		];
+		$object->setRetention($retention);
+
+		$this->write(object: $object, entryUuid: $entryUuid, verb: 'transfer', what: 'the outcome');
+
+		return $uuid;
+	}//end transfer()
+
+	/**
+	 * Put the record on a new transfer list.
+	 *
+	 * @param ObjectEntity $object    The record.
+	 * @param string       $entryUuid The uuid of the record, for the message.
+	 *
+	 * @return string The uuid of the transfer list.
+	 *
+	 * @throws RuntimeException When the list cannot be made or has no uuid.
+	 */
+	private function transferListFor(ObjectEntity $object, string $entryUuid): string {
 		try {
 			$transferList = $this->transferListService->createTransferList(objects: [$object]);
 		} catch (Throwable $e) {
@@ -186,38 +216,67 @@ class ReviewOutcomeService {
 
 		$uuid = ($transferList['uuid'] ?? null);
 		if (is_string($uuid) === false || $uuid === '') {
+			throw new RuntimeException(sprintf('Cannot transfer %s: the transfer list came back without a uuid', $entryUuid));
+		}
+
+		return $uuid;
+	}//end transferListFor()
+
+	/**
+	 * The record a decision is about.
+	 *
+	 * @param string $entryUuid The uuid of the record.
+	 * @param string $verb      What was being done to it, for the message.
+	 *
+	 * @return ObjectEntity The record.
+	 *
+	 * @throws RuntimeException When the record cannot be read.
+	 */
+	private function load(string $entryUuid, string $verb): ObjectEntity {
+		try {
+			return $this->objectMapper->find($entryUuid, null, null, false, false, false);
+		} catch (Throwable $e) {
 			throw new RuntimeException(
-				sprintf('Cannot transfer %s: the transfer list came back without a uuid', $entryUuid)
+				sprintf('Cannot %s %s: the record could not be read (%s)', $verb, $entryUuid, $e->getMessage())
 			);
 		}
+	}//end load()
 
-		// 🔴 THE RECORD SAYS WHAT HAPPENED TO IT, not only the list. A transfer
-		// recorded on the destruction list alone leaves the dossier itself
-		// unable to answer "were you handed over, and by whom", which is the
-		// question an auditor puts to the object and not to the worklist.
-		$retention = ($object->getRetention() ?? []);
-		if (is_array($retention) === false) {
-			$retention = [];
-		}
-
-		$retention['outcome'] = [
-			'kind' => 'transfer',
-			'at' => (new DateTimeImmutable())->format('c'),
-			'by' => $reviewer,
-			'reason' => $reason,
-			'transferListUuid' => $uuid,
-		];
-
-		$object->setRetention($retention);
-
+	/**
+	 * Write the record back.
+	 *
+	 * @param ObjectEntity $object    The record.
+	 * @param string       $entryUuid The uuid of the record, for the message.
+	 * @param string       $verb      What was being done to it, for the message.
+	 * @param string       $what      What was being written, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the record cannot be written.
+	 */
+	private function write(ObjectEntity $object, string $entryUuid, string $verb, string $what): void {
 		try {
 			$this->objectMapper->update($object);
 		} catch (Throwable $e) {
 			throw new RuntimeException(
-				sprintf('Cannot transfer %s: the outcome could not be written (%s)', $entryUuid, $e->getMessage())
+				sprintf('Cannot %s %s: %s could not be written (%s)', $verb, $entryUuid, $what, $e->getMessage())
 			);
 		}
+	}//end write()
 
-		return $uuid;
-	}//end transfer()
+	/**
+	 * The record's retention block, as an array.
+	 *
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<string, mixed> The retention block, empty when there is none.
+	 */
+	private function retentionOf(ObjectEntity $object): array {
+		$retention = ($object->getRetention() ?? []);
+		if (is_array($retention) === false) {
+			return [];
+		}
+
+		return $retention;
+	}//end retentionOf()
 }//end class

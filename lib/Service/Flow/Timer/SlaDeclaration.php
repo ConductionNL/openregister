@@ -62,13 +62,13 @@ class SlaDeclaration {
 			$value = (int)$value;
 		}
 
-		if (is_int($value) === false || $value < SlaCalculator::MIN_VALUE || $value > SlaCalculator::MAX_VALUE) {
+		if (is_int($value) === false || $value < SlaCalculatorInterface::MIN_VALUE || $value > SlaCalculatorInterface::MAX_VALUE) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
 					"SLA value '%s' is refused: it must be an integer from %d to %d.",
 					var_export($sla['value'], true),
-					SlaCalculator::MIN_VALUE,
-					SlaCalculator::MAX_VALUE
+					SlaCalculatorInterface::MIN_VALUE,
+					SlaCalculatorInterface::MAX_VALUE
 				)
 			);
 		}
@@ -76,7 +76,7 @@ class SlaDeclaration {
 		return [
 			'value' => $value,
 			'unit' => $this->validateUnit(unit: $sla['unit']),
-			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? SlaCalculator::ROLL_NONE)),
+			'rollToWorkingDay' => $this->validateRoll(roll: ($sla['rollToWorkingDay'] ?? SlaCalculatorInterface::ROLL_NONE)),
 		];
 	}//end validateSla()
 
@@ -98,15 +98,15 @@ class SlaDeclaration {
 	 */
 	public function validateRoll(mixed $roll): string {
 		if ($roll === null || $roll === '') {
-			return SlaCalculator::ROLL_NONE;
+			return SlaCalculatorInterface::ROLL_NONE;
 		}
 
-		if (is_string($roll) === false || in_array($roll, SlaCalculator::ROLLS, true) === false) {
+		if (is_string($roll) === false || in_array($roll, SlaCalculatorInterface::ROLLS, true) === false) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
 					"rollToWorkingDay '%s' is refused: use one of %s.",
 					var_export($roll, true),
-					implode(', ', SlaCalculator::ROLLS)
+					implode(', ', SlaCalculatorInterface::ROLLS)
 				)
 			);
 		}
@@ -126,9 +126,9 @@ class SlaDeclaration {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function validateUnit(mixed $unit): string {
-		if (is_string($unit) === false || in_array($unit, SlaCalculator::UNITS, true) === false) {
+		if (is_string($unit) === false || in_array($unit, SlaCalculatorInterface::UNITS, true) === false) {
 			throw new FlowTimerValidationException(
-				message: sprintf("Unit '%s' is refused: use one of %s.", var_export($unit, true), implode(', ', SlaCalculator::UNITS))
+				message: sprintf("Unit '%s' is refused: use one of %s.", var_export($unit, true), implode(', ', SlaCalculatorInterface::UNITS))
 			);
 		}
 
