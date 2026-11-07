@@ -27,6 +27,17 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\BulkAction\ApplyRuleAction;
+use OCA\OpenRegister\BulkAction\ApplyRuleActionInterface;
+use OCA\OpenRegister\BulkAction\AssignAction;
+use OCA\OpenRegister\BulkAction\AssignActionInterface;
+use OCA\OpenRegister\BulkAction\BulkActionRegistrar;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
+use OCA\OpenRegister\BulkAction\RunActionAction;
+use OCA\OpenRegister\BulkAction\RunActionActionInterface;
+use OCA\OpenRegister\BulkAction\SetPropertiesAction;
+use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
 use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
@@ -70,6 +81,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		ApplyRuleAction::class => [
+			ApplyRuleActionInterface::class,
+			BulkActionRegistrar::class,
+			[],
+		],
+		AssignAction::class => [
+			AssignActionInterface::class,
+			BulkActionRegistrar::class,
+			[],
+		],
 		ContentProvider::class => [
 			ContentProviderInterface::class,
 			ContextChatRegistrar::class,
@@ -92,6 +113,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 				'lib/Service/Object/SaveObject.php',
 			],
 		],
+		RestorePriorValuesAction::class => [
+			RestorePriorValuesActionInterface::class,
+			BulkActionRegistrar::class,
+			[],
+		],
+		RunActionAction::class => [
+			RunActionActionInterface::class,
+			BulkActionRegistrar::class,
+			[],
+		],
 		ScheduleFlowStore::class => [
 			ScheduleFlowStoreInterface::class,
 			AppHostRegistrar::class,
@@ -100,6 +131,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		ScheduleManifestLoader::class => [
 			ScheduleManifestLoaderInterface::class,
 			AppHostRegistrar::class,
+			[],
+		],
+		SetPropertiesAction::class => [
+			SetPropertiesActionInterface::class,
+			BulkActionRegistrar::class,
 			[],
 		],
 		TimeseriesRequestValidator::class => [

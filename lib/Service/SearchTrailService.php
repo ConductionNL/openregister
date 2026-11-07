@@ -44,7 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search trail analytics and logging logic
  */
-class SearchTrailService {
+class SearchTrailService implements SearchTrailServiceInterface {
 
 	/**
 	 * Whether self-clearing (automatic cleanup) is enabled.
