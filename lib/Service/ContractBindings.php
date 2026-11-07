@@ -154,6 +154,7 @@ final class ContractBindings {
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,
+		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,

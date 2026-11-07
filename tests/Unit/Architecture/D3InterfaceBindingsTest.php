@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\BookmarkLinkService;
 use OCA\OpenRegister\Service\BookmarkLinkServiceInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
+use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\CollectiveLinkServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\CospendLinkServiceInterface;
@@ -64,6 +66,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 		AppRegisterImportRunner::class => [AppRegisterImportRunnerInterface::class, ContractBindings::class, 'Service'],
 		BookmarkLinkService::class => [BookmarkLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		CollectiveLinkService::class => [CollectiveLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],
 		EmailLinkService::class => [EmailLinkServiceInterface::class, ContractBindings::class, 'Service'],
