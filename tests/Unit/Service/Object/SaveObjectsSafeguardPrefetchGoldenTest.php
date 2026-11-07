@@ -213,7 +213,9 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 		);
 		$mapper->method('find')->willReturnCallback(
 			function (...$args) use ($rows): ObjectEntity {
-				$this->calls[] = 'find '.json_encode([$args[0], $args[1]?->getId(), $args[2]?->getId(), ($args[3] ?? null), ($args[4] ?? null), ($args[5] ?? null)]);
+				$this->calls[] = 'find '.json_encode(
+					[$args[0], $args[1]?->getId(), $args[2]?->getId(), ($args[3] ?? null), ($args[4] ?? null), ($args[5] ?? null)]
+				);
 				if (isset($rows[$args[0]]) === false || ($args[4] ?? true) === true) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
 				}
