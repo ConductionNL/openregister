@@ -42,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
  */
-class ObjectActionBulk {
+class ObjectActionBulk implements ObjectActionBulkInterface {
 
 	/**
 	 * Constructor.

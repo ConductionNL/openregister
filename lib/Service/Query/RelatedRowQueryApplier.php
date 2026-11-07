@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -53,7 +53,7 @@ class RelatedRowQueryApplier {
 	 * The parser, clause and lookups.
 	 *
 	 * @param SchemaMapperInterface      $schemaMapper The schema lookup.
-	 * @param MagicTableHandler $tableHandler Resolves a register and schema to their table.
+	 * @param MagicTableHandlerInterface $tableHandler Resolves a register and schema to their table.
 	 * @param IDBConnection     $db           The connection, read for its platform.
 	 * @param LoggerInterface   $logger       The logger.
 	 * @param RelatedRowAccess  $access       The access rules for the related rows (row predicate, property read
@@ -61,7 +61,7 @@ class RelatedRowQueryApplier {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicTableHandler $tableHandler,
+		private readonly MagicTableHandlerInterface $tableHandler,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly RelatedRowAccess $access,

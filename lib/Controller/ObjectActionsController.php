@@ -44,12 +44,12 @@ use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -94,23 +94,23 @@ class ObjectActionsController extends Controller {
 	/**
 	 * The schema's actions, for the selection surface rule.
 	 *
-	 * @var ObjectActionDefinitions
+	 * @var ObjectActionDefinitionsInterface
 	 */
-	private readonly ObjectActionDefinitions $definitions;
+	private readonly ObjectActionDefinitionsInterface $definitions;
 
 	/**
 	 * Lists the actions.
 	 *
-	 * @var ObjectActionList
+	 * @var ObjectActionListInterface
 	 */
-	private readonly ObjectActionList $list;
+	private readonly ObjectActionListInterface $list;
 
 	/**
 	 * Runs one action on one object.
 	 *
-	 * @var ObjectActionRunner
+	 * @var ObjectActionRunnerInterface
 	 */
-	private readonly ObjectActionRunner $runner;
+	private readonly ObjectActionRunnerInterface $runner;
 
 	/**
 	 * Reads the runs recorded on an object.
@@ -122,9 +122,9 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Hands a large selection to a bulk job.
 	 *
-	 * @var ObjectActionBulk
+	 * @var ObjectActionBulkInterface
 	 */
-	private readonly ObjectActionBulk $bulk;
+	private readonly ObjectActionBulkInterface $bulk;
 
 	/**
 	 * Records a declaration that cannot be read.
