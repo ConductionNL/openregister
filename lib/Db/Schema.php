@@ -2020,20 +2020,32 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			return null;
 		}
 
-		$validator = new ConfigurationValidator(properties: $this->properties);
-		try {
-			$validated = $validator->validate(configuration: $parsed);
-		} finally {
-			// Recorded even when the save fails, as they were when this ran inline.
-			array_push($this->droppedKeys, ...$validator->droppedKeys());
-		}
-
+		$validated = $this->validatedArray(configuration: $parsed);
 		if (empty($validated) === true) {
 			return null;
 		}
 
 		return $validated;
 	}//end validatedConfiguration()
+
+	/**
+	 * Validate a parsed configuration, recording the keys it drops.
+	 *
+	 * @param array $configuration The parsed configuration.
+	 *
+	 * @throws \InvalidArgumentException If a key that must fail the whole save is invalid
+	 *
+	 * @return array The keys that passed.
+	 */
+	private function validatedArray(array $configuration): array {
+		$validator = new ConfigurationValidator(properties: $this->properties);
+		try {
+			return $validator->validate(configuration: $configuration);
+		} finally {
+			// Recorded even when the save fails, as they were when this ran inline.
+			array_push($this->droppedKeys, ...$validator->droppedKeys());
+		}
+	}//end validatedArray()
 
 	/**
 	 * Parse configuration input into an array
