@@ -218,10 +218,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import formatBytes from '../../services/formatBytes.js'
-import {
-	downloadRegisterOas,
-	viewRegisterOas,
-} from '../../services/registerOas.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 
 export default {
 	name: 'RegisterSideBar',

@@ -513,10 +513,7 @@ import Table from 'vue-material-design-icons/Table.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
-import {
-	downloadRegisterOas,
-	viewRegisterOas,
-} from '../../services/registerOas.js'
+import { downloadRegisterOas, viewRegisterOas } from '../../services/registerOas.js'
 
 const JSON_HEADERS = {
 	'Content-Type': 'application/json',
