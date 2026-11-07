@@ -62,6 +62,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -116,6 +118,7 @@ final class ContractBindings {
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
+		FlowVersionServiceInterface::class => FlowVersionService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
 		FormIdempotencyStoreInterface::class => FormIdempotencyStore::class,

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
-use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 
 /**
  * Reads, writes and removes the flows compiled from one application's schedules.
@@ -51,13 +51,13 @@ class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	 * Constructor.
 	 *
 	 * @param FlowMapper $mapper The flow table.
-	 * @param FlowVersionService $versions Publishes a flow's head.
+	 * @param FlowVersionServiceInterface $versions Publishes a flow's head.
 	 * @param FlowService $flows Deletes a flow with its runs and versions.
 	 * @param FlowTriggerValidator $validator Validates the trigger under the publisher's session.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
-		private readonly FlowVersionService $versions,
+		private readonly FlowVersionServiceInterface $versions,
 		private readonly FlowService $flows,
 		private readonly FlowTriggerValidator $validator,
 	) {
