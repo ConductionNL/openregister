@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunRecorder {
+class RuleRunRecorder implements RuleRunRecorderInterface {
 
 	/**
 	 * The app the settings live under.

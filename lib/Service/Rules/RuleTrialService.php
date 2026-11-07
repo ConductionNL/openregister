@@ -57,7 +57,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-final class RuleTrialService {
+final class RuleTrialService implements RuleTrialServiceInterface {
 
 	/**
 	 * The refusal when the schema declares no such rule and none was supplied.
@@ -65,13 +65,6 @@ final class RuleTrialService {
 	 * @var string
 	 */
 	public const CODE_UNKNOWN_RULE = 'rule-unknown';
-
-	/**
-	 * The refusal when the named object cannot be read.
-	 *
-	 * @var string
-	 */
-	public const CODE_OBJECT_NOT_FOUND = 'rule-trial-object-not-found';
 
 	/**
 	 * The refusal when the rule's kind cannot be tried against one object.

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\EventDispatcher\Event;
@@ -94,7 +94,7 @@ class StateFieldRuleListener implements IEventListener {
 	 * @param SchemaMapperInterface            $schemaMapper    Resolves the object's schema.
 	 * @param StateFieldRuleResolverInterface  $resolver        Resolves the rules that apply to this object and user.
 	 * @param StateConditionEvaluatorInterface $stateConditions Evaluates a state's entry and exit conditions.
-	 * @param RuleRunRecorder                  $ruleRuns        Records a refusal for the rule run log.
+	 * @param RuleRunRecorderInterface                  $ruleRuns        Records a refusal for the rule run log.
 	 * @param LoggerInterface                  $logger          PSR logger for lookup failures.
 	 *
 	 * @return void
@@ -103,7 +103,7 @@ class StateFieldRuleListener implements IEventListener {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly StateFieldRuleResolverInterface $resolver,
 		private readonly StateConditionEvaluatorInterface $stateConditions,
-		private readonly RuleRunRecorder $ruleRuns,
+		private readonly RuleRunRecorderInterface $ruleRuns,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

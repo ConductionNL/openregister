@@ -34,11 +34,11 @@ use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleCeilingException;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
-use OCA\OpenRegister\Service\Rules\RuleReplayService;
-use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
@@ -77,9 +77,9 @@ class RulesController extends Controller {
 	/**
 	 * Derives the rule list.
 	 *
-	 * @var RuleInventoryService
+	 * @var RuleInventoryServiceInterface
 	 */
-	private readonly RuleInventoryService $inventory;
+	private readonly RuleInventoryServiceInterface $inventory;
 
 	/**
 	 * Reads the run log.
@@ -91,16 +91,16 @@ class RulesController extends Controller {
 	/**
 	 * Evaluates a rule without committing.
 	 *
-	 * @var RuleTrialService
+	 * @var RuleTrialServiceInterface
 	 */
-	private readonly RuleTrialService $trials;
+	private readonly RuleTrialServiceInterface $trials;
 
 	/**
 	 * Switches a rule off and on.
 	 *
-	 * @var RuleEnablementService
+	 * @var RuleEnablementServiceInterface
 	 */
-	private readonly RuleEnablementService $enablement;
+	private readonly RuleEnablementServiceInterface $enablement;
 
 	/**
 	 * The published kinds, verdicts and actions.
@@ -112,9 +112,9 @@ class RulesController extends Controller {
 	/**
 	 * Previews a replay over existing objects.
 	 *
-	 * @var RuleReplayService
+	 * @var RuleReplayServiceInterface
 	 */
-	private readonly RuleReplayService $replays;
+	private readonly RuleReplayServiceInterface $replays;
 
 	/**
 	 * Names the actor a replay runs as.
@@ -188,7 +188,7 @@ class RulesController extends Controller {
 			return $this->notFound(reference: $schema);
 		}
 
-		$window = (int)($this->request->getParam('idleDays') ?? RuleInventoryService::DEFAULT_IDLE_DAYS);
+		$window = (int)($this->request->getParam('idleDays') ?? RuleInventoryServiceInterface::DEFAULT_IDLE_DAYS);
 		$scope = $this->request->getParam('scope', []);
 		if (is_array($scope) === false) {
 			$scope = [];
@@ -529,7 +529,7 @@ class RulesController extends Controller {
 		}
 
 		$code = (string)($result['error']['code'] ?? '');
-		if ($code === RuleTrialService::CODE_OBJECT_NOT_FOUND || $code === RuleEnablementService::CODE_UNKNOWN_RULE) {
+		if ($code === RuleTrialServiceInterface::CODE_OBJECT_NOT_FOUND || $code === RuleEnablementServiceInterface::CODE_UNKNOWN_RULE) {
 			return 404;
 		}
 

@@ -52,7 +52,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-final class RuleReplayService {
+final class RuleReplayService implements RuleReplayServiceInterface {
 
 	/**
 	 * The refusal code for a rule the schema does not declare.
