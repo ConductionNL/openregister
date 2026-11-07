@@ -885,16 +885,7 @@ class FilesController extends Controller {
 	 */
 	private function objectInScope(ObjectLinkRoute $route): ObjectEntity {
 		try {
-			$object = WriteCause::asLookup(
-				fn () => $this->objectService->find(
-					id: $route->id,
-					register: $route->register,
-					schema: $route->schema,
-					_rbac: false,
-					_multitenancy: false,
-					_audit: false
-				)
-			);
+			$object = $this->objectWithoutChecks(route: $route);
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
 			throw new DoesNotExistException('Object not found');
 		}
@@ -905,6 +896,30 @@ class FilesController extends Controller {
 
 		return $object;
 	}//end objectInScope()
+
+	/**
+	 * Look an object up within its register and schema, without read, tenancy or audit.
+	 *
+	 * @param ObjectLinkRoute $route The object, as the route names it.
+	 *
+	 * @return mixed What the object service finds.
+	 *
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When two objects hold the identifier.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function objectWithoutChecks(ObjectLinkRoute $route): mixed {
+		return WriteCause::asLookup(
+			fn () => $this->objectService->find(
+				id: $route->id,
+				register: $route->register,
+				schema: $route->schema,
+				_rbac: false,
+				_multitenancy: false,
+				_audit: false
+			)
+		);
+	}//end objectWithoutChecks()
 
 	/**
 	 * Get a specific file associated with an object
