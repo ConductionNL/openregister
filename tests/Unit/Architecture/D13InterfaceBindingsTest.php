@@ -4,7 +4,7 @@
  * Lane D13: the classes below are reached from other components only through
  * an interface next to them.
  *
- * Six Db mappers that Service, Controller, BackgroundJob and Search code used to name directly.
+ * Db classes that Service, Controller, BackgroundJob and Search code used to name directly.
  *
  * Each class implements its interface, the component's registrar binds the
  * interface to the class, and no lib/ file outside the class's component
@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\EndpointMapper;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
 use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Db\SyncRecordMapper;
@@ -63,6 +65,7 @@ final class D13InterfaceBindingsTest extends TestCase {
 		EndpointLogMapper::class => [EndpointLogMapperInterface::class, DbRegistrar::class],
 		EndpointMapper::class => [EndpointMapperInterface::class, DbRegistrar::class],
 		FlowTriggerMapper::class => [FlowTriggerMapperInterface::class, DbRegistrar::class],
+		MagicTableHandler::class => [MagicTableHandlerInterface::class, DbRegistrar::class],
 		RuleRunSummaryMapper::class => [RuleRunSummaryMapperInterface::class, DbRegistrar::class],
 		SyncRecordMapper::class => [SyncRecordMapperInterface::class, DbRegistrar::class],
 		WebhookLogMapper::class => [WebhookLogMapperInterface::class, DbRegistrar::class],

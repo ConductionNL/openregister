@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 
 /**
  * The domain services of the flow node run API.
@@ -36,18 +36,18 @@ final class FlowNodeRunGraph {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param FlowService        $flows           Org-scoped flow lookup — the same non-oracle
+	 * @param FlowServiceInterface        $flows           Org-scoped flow lookup — the same non-oracle
 	 * @param FlowPublishedGraph $publishedGraphs Resolves the flow's PUBLISHED
-	 * @param FlowLocator        $subjects        Resolves the live flow document (for
-	 * @param FlowNodeRegistry   $nodes           Resolves a
+	 * @param FlowLocatorInterface        $subjects        Resolves the live flow document (for
+	 * @param FlowNodeRegistryInterface   $nodes           Resolves a
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md
 	 */
 	public function __construct(
-		public readonly FlowService $flows,
+		public readonly FlowServiceInterface $flows,
 		public readonly FlowPublishedGraph $publishedGraphs,
-		public readonly FlowLocator $subjects,
-		public readonly FlowNodeRegistry $nodes,
+		public readonly FlowLocatorInterface $subjects,
+		public readonly FlowNodeRegistryInterface $nodes,
 	) {
 	}//end __construct()
 }//end class

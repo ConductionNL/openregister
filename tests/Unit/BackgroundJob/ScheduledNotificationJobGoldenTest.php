@@ -8,7 +8,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use DateTime;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationDelivery;
 use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledNotificationJob;
+use OCA\OpenRegister\Notifications\BackgroundJob\ScheduledObjectSources;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeState;
 use OCA\OpenRegister\Notifications\Db\NotificationDedupeStateMapper;
@@ -116,14 +118,9 @@ class ScheduledNotificationJobGoldenTest extends TestCase
 
         $job = new ScheduledNotificationJob(
             $this->createMock(ITimeFactory::class),
-            $this->schemas($case),
-            $this->objects($case),
-            $this->dispatcher(),
-            $this->logger(),
-            $factory,
-            new ScheduledFilterEvaluator(),
-            $this->dedupe(),
-            $this->appConfig($case)
+            new ScheduledObjectSources($this->schemas($case), $this->objects($case), new ScheduledFilterEvaluator()),
+            new ScheduledNotificationDelivery($this->dispatcher(), $this->dedupe(), $this->appConfig($case), $this->logger()),
+            $factory
         );
         $run = new ReflectionMethod($job, 'run');
         $run->invoke($job, null);

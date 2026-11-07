@@ -68,15 +68,24 @@
     "@vue/test-utils": "$@vue/test-utils",
     "axios": ">=1.20.0",
     "babel-jest": "$babel-jest",
+    "cacache": {
+      "glob": "^14.0.2"
+    },
     "dompurify": "$dompurify",
     "follow-redirects": ">=1.16.1",
+    "js-beautify": {
+      "glob": "^14.0.2"
+    },
     "json5": "^2.2.3",
     "lodash": ">=4.18.1",
-    "minimatch": ">=3.1.5",
+    "minimatch": ">=11.0.1",
     "postcss": "^8.4.31",
     "rollup": ">=2.80.0",
     "stylelint": "$stylelint",
     "tar": ">=7.5.22",
+    "test-exclude@7": {
+      "glob": "^14.0.2"
+    },
     "vue": "$vue"
   },
   "dependencies": {

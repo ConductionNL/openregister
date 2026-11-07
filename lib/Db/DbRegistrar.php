@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -50,6 +52,7 @@ final class DbRegistrar {
 		FlowRunMapperInterface::class => FlowRunMapper::class,
 		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
+		MagicTableHandlerInterface::class => MagicTableHandler::class,
 		MappingMapperInterface::class => MappingMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,

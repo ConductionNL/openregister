@@ -47,6 +47,7 @@ use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -249,7 +250,7 @@ class SchemaFlowImportListener implements IEventListener {
 	 * Runs walk the PUBLISHED version, so an app upgrade that fixed a shipped
 	 * flow but only rewrote its head changed nothing that ran. The rules for
 	 * when an upgrade may publish live in
-	 * {@see \OCA\OpenRegister\Service\Flow\FlowVersionService::publishShippedUpdate()}.
+	 * {@see FlowVersionServiceInterface::publishShippedUpdate()}.
 	 *
 	 * Never raises, for the same reason as {@see self::publishVersionOne()}:
 	 * a flow must not abort a schema import. A refusal leaves the published
@@ -267,7 +268,7 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		try {
-			$version = $this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
+			$version = $this->container->get(FlowVersionServiceInterface::class)
 				->publishShippedUpdate(flow: $flow);
 			if ($version !== null) {
 				$this->logger->info(
@@ -316,7 +317,7 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		try {
-			$this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
+			$this->container->get(FlowVersionServiceInterface::class)
 				->publish(flow: $flow, publishedBy: null);
 		} catch (Throwable $e) {
 			$this->logger->warning(

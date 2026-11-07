@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
-class FlowLocator {
+class FlowLocator implements FlowLocatorInterface {
 
 	/**
 	 * Per-request memo of resolved flow documents, keyed by flow id.

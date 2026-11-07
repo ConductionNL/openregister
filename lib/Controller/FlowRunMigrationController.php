@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -55,7 +55,7 @@ class FlowRunMigrationController extends Controller {
 	 * @param FlowRunMapperInterface                $mapper      The run store.
 	 * @param IUserSession                 $userSession Who is asking.
 	 * @param FlowRunnableGuard            $guard       Whether the caller may run this flow at all.
-	 * @param FlowRunMigrationService|null $migrations  Moves runs onto another version. Nullable and
+	 * @param FlowRunMigrationServiceInterface|null $migrations  Moves runs onto another version. Nullable and
 	 *                                                  appended last; absent, the endpoints report the
 	 *                                                  surface unavailable rather than migrating
 	 *                                                  unvalidated.
@@ -66,7 +66,7 @@ class FlowRunMigrationController extends Controller {
 		private readonly FlowRunMapperInterface $mapper,
 		private readonly IUserSession $userSession,
 		private readonly FlowRunnableGuard $guard,
-		private readonly ?FlowRunMigrationService $migrations = null,
+		private readonly ?FlowRunMigrationServiceInterface $migrations = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
