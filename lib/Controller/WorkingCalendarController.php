@@ -114,55 +114,113 @@ class WorkingCalendarController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function preview(array $calendar = [], int $year = 0): JSONResponse {
-		$refusal = $this->requireAdmin();
+		$refusal = $this->requireAdmin() ?? $this->refuseYear(year: $year);
 		if ($refusal !== null) {
 			return $refusal;
-		}
-
-		if ($year < self::MIN_YEAR || $year > self::MAX_YEAR) {
-			return new JSONResponse(
-				data: [
-					'error' => sprintf('Preview year must be between %d and %d.', self::MIN_YEAR, self::MAX_YEAR),
-				],
-				statusCode: 422
-			);
 		}
 
 		try {
 			$definition = WorkingCalendar::fromArray(definition: $calendar);
 		} catch (FlowTimerValidationException $refused) {
-			return new JSONResponse(
-				data: [
-					'error' => $refused->getMessage(),
-					'errors' => ['code' => 'working-calendar-invalid', 'message' => $refused->getMessage()],
-				],
-				statusCode: 422
-			);
+			return $this->invalidDefinition(refused: $refused);
 		}
 
+		return new JSONResponse(data: $this->previewBody(definition: $definition, year: $year));
+	}//end preview()
+
+	/**
+	 * Refuse a year outside the bounds a preview will compute.
+	 *
+	 * @param int $year The requested year.
+	 *
+	 * @return JSONResponse|null A 422, or null when the year is in bounds.
+	 */
+	private function refuseYear(int $year): ?JSONResponse {
+		if ($year >= self::MIN_YEAR && $year <= self::MAX_YEAR) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => sprintf('Preview year must be between %d and %d.', self::MIN_YEAR, self::MAX_YEAR),
+			],
+			statusCode: 422
+		);
+	}//end refuseYear()
+
+	/**
+	 * The 422 for a definition the write path would also refuse.
+	 *
+	 * @param FlowTimerValidationException $refused The validation refusal.
+	 *
+	 * @return JSONResponse The 422.
+	 */
+	private function invalidDefinition(FlowTimerValidationException $refused): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $refused->getMessage(),
+				'errors' => ['code' => 'working-calendar-invalid', 'message' => $refused->getMessage()],
+			],
+			statusCode: 422
+		);
+	}//end invalidDefinition()
+
+	/**
+	 * The preview body for a validated definition.
+	 *
+	 * The opening and closing times are echoed back from what was VALIDATED,
+	 * like the weekdays, and for the same reason: a panel that previews the
+	 * holidays but prints the opening time straight from its own form cannot
+	 * tell the reader that a malformed one was defaulted.
+	 *
+	 * @param WorkingCalendar $definition The validated definition.
+	 * @param int $year The year to compute.
+	 *
+	 * @return array<string, mixed> The preview body.
+	 */
+	private function previewBody(WorkingCalendar $definition, int $year): array {
+		$dates = $this->dateRows(definition: $definition, year: $year);
+
+		return [
+			'slug' => $definition->getSlug(),
+			'year' => $year,
+			'workingWeekdays' => $definition->getWorkingWeekdays(),
+			'hoursPerWorkingDay' => $definition->getHoursPerWorkingDay(),
+			'dayStartsAt' => $this->clockTime(minute: $definition->getDayStartsAtMinute()),
+			'dayEndsAt' => $this->clockTime(minute: $definition->getDayEndsAtMinute()),
+			'timezone' => $definition->getTimezone(),
+			'dates' => $dates,
+			'total' => count($dates),
+		];
+	}//end previewBody()
+
+	/**
+	 * The non-working dates of a year as `{date, name}` rows.
+	 *
+	 * @param WorkingCalendar $definition The validated definition.
+	 * @param int $year The year to compute.
+	 *
+	 * @return list<array{date: string, name: string}> The rows.
+	 */
+	private function dateRows(WorkingCalendar $definition, int $year): array {
 		$dates = [];
 		foreach ($definition->nonWorkingDates(year: $year) as $date => $name) {
 			$dates[] = ['date' => $date, 'name' => $name];
 		}
 
-		return new JSONResponse(
-			data: [
-				'slug' => $definition->getSlug(),
-				'year' => $year,
-				'workingWeekdays' => $definition->getWorkingWeekdays(),
-				'hoursPerWorkingDay' => $definition->getHoursPerWorkingDay(),
-				// Echoed back from what was VALIDATED, like the weekdays above
-				// and for the same reason: a panel that previews the holidays
-				// but prints the opening time straight from its own form
-				// cannot tell the reader that a malformed one was defaulted.
-				'dayStartsAt' => sprintf('%02d:%02d', intdiv($definition->getDayStartsAtMinute(), 60), ($definition->getDayStartsAtMinute() % 60)),
-				'dayEndsAt' => sprintf('%02d:%02d', intdiv($definition->getDayEndsAtMinute(), 60), ($definition->getDayEndsAtMinute() % 60)),
-				'timezone' => $definition->getTimezone(),
-				'dates' => $dates,
-				'total' => count($dates),
-			]
-		);
-	}//end preview()
+		return $dates;
+	}//end dateRows()
+
+	/**
+	 * Format a minute of the day as `HH:MM`.
+	 *
+	 * @param int $minute Minutes since midnight.
+	 *
+	 * @return string The clock time.
+	 */
+	private function clockTime(int $minute): string {
+		return sprintf('%02d:%02d', intdiv($minute, 60), ($minute % 60));
+	}//end clockTime()
 
 	/**
 	 * Refuse a caller who is not an administrator.
