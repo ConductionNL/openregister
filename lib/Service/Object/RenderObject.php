@@ -40,12 +40,9 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver;
-use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
@@ -2816,10 +2813,11 @@ class RenderObject {
 		$this->applyWatcherMarkers(entity: $entity);
 		$this->applyReadStateMarkers(entity: $entity);
 		$this->applyUpdateRightMarker(entity: $entity, schema: $schema, extend: $extend);
-		$this->applyArchivalRetentionBlock(entity: $entity, schema: $schema);
-		$this->applyArchivalDecision(entity: $entity);
+		$annotations = new RecordAnnotations(logger: $this->logger);
+		$annotations->attachRetention(entity: $entity, schema: $schema);
+		$annotations->attachDecision(entity: $entity);
 		$this->applyRetentionClocks(entity: $entity);
-		$this->applyExternalLinks(entity: $entity, schema: $schema);
+		$annotations->attachExternalLinks(entity: $entity, schema: $schema);
 	}//end applyRenderMarkers()
 
 	/**
@@ -3172,171 +3170,6 @@ class RenderObject {
 			);
 		}//end try
 	}//end applyUpdateRightMarker()
-
-	/**
-	 * Attach the resolved `@self._retention` decision.
-	 *
-	 * The slot has been declared on the entity since add-archival-annotation-support
-	 * and, until this method existed, was filled by nothing outside a unit test —
-	 * so every client asking an object for its archival constraints got silence
-	 * while the facts sat unmerged in three sub-blocks of `retention`.
-	 *
-	 * Failures are logged and swallowed for the same reason the annotation block
-	 * above swallows them: a records-management edge case must never take out
-	 * object rendering.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/retention-management/spec.md
-	 */
-	private function applyArchivalDecision(ObjectEntity $entity): void {
-		try {
-			$resolver = new ArchivalDecisionResolver();
-			$decision = $resolver->resolve(entity: $entity);
-			if ($decision === null) {
-				return;
-			}
-
-			$entity->setArchivalRetention($decision);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival decision resolve failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalDecision()
-
-	/**
-	 * Attach the links out of this record, under `@self.externalLinks`.
-	 *
-	 * A link whose placeholders cannot all be filled is not offered, and a
-	 * schema declaring no links attaches nothing at all rather than an empty
-	 * list: a consumer that has to distinguish "no links declared" from "links
-	 * declared, none applicable" can, and one that does not is not handed a key
-	 * it must remember to ignore.
-	 *
-	 * Failure here is swallowed to a debug line for the same reason every other
-	 * tail-of-render block swallows: a link is an ornament on a record, and a
-	 * record the caseworker cannot read at all is a far worse outcome than a
-	 * record missing its shortcut to the BAG viewer.
-	 *
-	 * @param ObjectEntity $entity The rendered object.
-	 * @param Schema|null $schema Its schema, when one is resolvable.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
-	 */
-	private function applyExternalLinks(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
-			return;
-		}
-
-		$configuration = ($schema->getConfiguration() ?? []);
-		$declarations = ($configuration[ExternalLinkResolver::ANNOTATION] ?? null);
-		if (is_array($declarations) === false || $declarations === []) {
-			return;
-		}
-
-		try {
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$links = (new ExternalLinkResolver())->resolve(
-				declarations: $declarations,
-				object: $objectData
-			);
-
-			if ($links === []) {
-				return;
-			}
-
-			$objectData['@self'] = ($objectData['@self'] ?? []);
-			if (is_array($objectData['@self']) === false) {
-				$objectData['@self'] = [];
-			}
-
-			$objectData['@self']['externalLinks'] = $links;
-			$entity->setObject($objectData);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] external link resolution failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyExternalLinks()
-
-	/**
-	 * Compute + attach the annotation-driven `_retention.annotation` block.
-	 *
-	 * Stateless w.r.t. the row's persisted columns; pulls the annotation off
-	 * the schema's `configuration` and asks `RetentionEvaluator` to produce
-	 * the `{effectiveRetention, matchedRule, expiresAt}` triple for the
-	 * current row + `_created` timestamp.
-	 *
-	 * Failures are logged + swallowed: a malformed annotation must NEVER
-	 * break object rendering.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 * @param Schema|null $schema The resolved schema (may be null).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
-	 */
-	private function applyArchivalRetentionBlock(ObjectEntity $entity, ?Schema $schema): void {
-		if ($schema === null) {
-			return;
-		}
-
-		$configuration = ($schema->getConfiguration() ?? []);
-		$annotation = ($configuration['x-openregister-archival'] ?? null);
-		if (is_array($annotation) === false) {
-			return;
-		}
-
-		try {
-			$createdAt = $entity->getCreated();
-			if ($createdAt === null) {
-				return;
-			}
-
-			$objectData = $entity->getObject();
-			if (is_array($objectData) === false) {
-				$objectData = [];
-			}
-
-			$row = $objectData;
-			$evaluator = new RetentionEvaluator(logger: $this->logger);
-			$annotationBlock = $evaluator->evaluate(
-				annotation: $annotation,
-				row: $row,
-				createdAt: $createdAt
-			);
-
-			$existing = ($entity->getRetention() ?? []);
-			$existing['annotation'] = $annotationBlock;
-			$entity->setRetention($existing);
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf(
-					'[RenderObject] archival retention compute failed for %s: %s',
-					(string)$entity->getUuid(),
-					$e->getMessage()
-				)
-			);
-		}//end try
-	}//end applyArchivalRetentionBlock()
 
 	/**
 	 * Check whether the current request opts in to the `_translationMeta`

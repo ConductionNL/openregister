@@ -214,7 +214,7 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNothingTouched(): void {
-		$this->db->expects($this->never())->method('beginTransaction');
+		$this->db->expects($this->never())->method('commit');
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
 		$this->magicMapper->expects($this->never())->method('dropTable');
 		$this->schemaMapper->expects($this->never())->method('delete');
@@ -256,6 +256,26 @@ class SchemaTeardownKeptRowsTest extends TestCase {
 			)
 		);
 	}//end forcedEntries()
+
+	/**
+	 * A row frozen while the teardown opens its transaction still refuses: the check reads inside it.
+	 *
+	 * @return void
+	 */
+	public function testARowFrozenAsTheTransactionOpensRefusesTheTeardown(): void {
+		$this->givenTheRegisterExists();
+		$this->db->method('beginTransaction')->willReturnCallback(
+			function (): void {
+				$this->otherRow->setFrozen(self::FREEZE);
+			}
+		);
+		$this->db->expects($this->once())->method('rollBack');
+		$this->expectNothingTouched();
+
+		$this->expectException(ObjectStateWriteException::class);
+		$this->service->cascadeDeleteSchema(schema: $this->schema);
+
+	}//end testARowFrozenAsTheTransactionOpensRefusesTheTeardown()
 
 	/**
 	 * A frozen row stops the teardown before anything changes.

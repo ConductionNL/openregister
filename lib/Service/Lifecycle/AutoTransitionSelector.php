@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * - AN UNRECOGNISED `executionMode`. Compared against the flow engine's two
  *   constants exactly, never lowercased, so the lifecycle and the flow engine
  *   cannot drift into two spellings of the same two words.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class AutoTransitionSelector {
 
@@ -84,69 +86,119 @@ class AutoTransitionSelector {
 		array $previous,
 		string $schemaSlug,
 	): ?AutoTransitionCandidate {
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
+		$write   = ['objectData' => $objectData, 'previous' => $previous, 'schemaSlug' => $schemaSlug];
+		$context = self::contextFor(annotation: $annotation, write: $write);
+		if ($context === null) {
+			return null;
+		}
+
+		$candidate = $this->soleHolding(context: $context);
+		if ($candidate === null) {
+			return null;
+		}
+
+		return $this->eligible(candidate: $candidate, context: $context);
+	}//end select()
+
+	/**
+	 * What a selection reads, or null when the annotation names no field, declares no transitions
+	 * or the object has no current lifecycle value.
+	 *
+	 * @param array<string, mixed> $annotation The schema's x-openregister-lifecycle block.
+	 * @param array<string, mixed> $write      The object after and before the write, and the schema's slug.
+	 *
+	 * @phpstan-param array{objectData: array<string, mixed>, previous: array<string, mixed>, schemaSlug: string} $write
+	 *
+	 * @return AutoTransitionContext|null The context.
+	 */
+	private static function contextFor(array $annotation, array $write): ?AutoTransitionContext {
+		$field       = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
+		$transitions = self::transitionsOf(annotation: $annotation);
+		$current     = (string)($write['objectData'][$field] ?? '');
+		if ($field === '' || $transitions === [] || $current === '') {
+			return null;
+		}
+
+		return new AutoTransitionContext(field: $field, current: $current, transitions: $transitions, write: $write);
+	}//end contextFor()
+
+	/**
+	 * The annotation's transitions, or an empty list when it declares none or not as a map.
+	 *
+	 * @param array<string, mixed> $annotation The schema's x-openregister-lifecycle block.
+	 *
+	 * @return array<mixed> The transitions.
+	 */
+	private static function transitionsOf(array $annotation): array {
 		$transitions = ($annotation['transitions'] ?? []);
-		if ($field === '' || is_array($transitions) === false || $transitions === []) {
-			return null;
+		if (is_array($transitions) === false) {
+			return [];
 		}
 
-		$current = (string)($objectData[$field] ?? '');
-		if ($current === '') {
-			return null;
-		}
+		return $transitions;
+	}//end transitionsOf()
 
-		$holding = $this->holdingTransitions(
-			transitions: $transitions,
-			objectData: $objectData,
-			previous: $previous,
-			current: $current,
-			schemaSlug: $schemaSlug,
-			field: $field
-		);
-
-		if ($holding === []) {
-			return null;
-		}
-
+	/**
+	 * The one transition that holds, or null when none or more than one does.
+	 *
+	 * @param AutoTransitionContext $context The write being asked about.
+	 *
+	 * @return array{action: string, to: string, index: int, spec: array<string, mixed>}|null The candidate.
+	 */
+	private function soleHolding(AutoTransitionContext $context): ?array {
+		$holding = $this->holdingTransitions(context: $context);
 		if (count($holding) > 1) {
-			$this->logger->warning(
-				'[AutoTransitionSelector] More than one automatic transition holds from this state; '
-				. 'firing none. Declaration order is not a tie-breaker, because it is not preserved by '
-				. 'every database Nextcloud supports.',
-				[
-					'schema' => $schemaSlug,
-					'field' => $field,
-					'from' => $current,
-					'candidates' => array_column($holding, 'action'),
-				]
-			);
+			$this->logAmbiguity(holding: $holding, context: $context);
 			return null;
 		}
 
-		$candidate = $holding[0];
-		$mode = $this->modeOf(spec: $candidate['spec'], action: $candidate['action'], schemaSlug: $schemaSlug);
+		return ($holding[0] ?? null);
+	}//end soleHolding()
+
+	/**
+	 * Log that more than one automatic transition holds, so none fires.
+	 *
+	 * @param list<array{action: string, to: string, index: int, spec: array<string, mixed>}> $holding The holding transitions.
+	 * @param AutoTransitionContext                                                           $context The write being asked about.
+	 *
+	 * @return void
+	 */
+	private function logAmbiguity(array $holding, AutoTransitionContext $context): void {
+		$this->logger->warning(
+			'[AutoTransitionSelector] More than one automatic transition holds from this state; '
+			. 'firing none. Declaration order is not a tie-breaker, because it is not preserved by '
+			. 'every database Nextcloud supports.',
+			[
+				'schema' => $context->schemaSlug,
+				'field' => $context->field,
+				'from' => $context->current,
+				'candidates' => array_column($holding, 'action'),
+			]
+		);
+	}//end logAmbiguity()
+
+	/**
+	 * The candidate as a move, or null when its mode is unrecognised or an earlier transition shadows it.
+	 *
+	 * @param array{action: string, to: string, index: int, spec: array<string, mixed>} $candidate The selected move.
+	 * @param AutoTransitionContext                                                     $context   The write being asked about.
+	 *
+	 * @return AutoTransitionCandidate|null The move.
+	 */
+	private function eligible(array $candidate, AutoTransitionContext $context): ?AutoTransitionCandidate {
+		$mode = $this->modeOf(candidate: $candidate, context: $context);
 		if ($mode === null) {
 			return null;
 		}
 
-		if (
-			$this->shadowOf(
-				transitions: $transitions,
-				candidate: $candidate,
-				current: $current,
-				schemaSlug: $schemaSlug
-			) !== null
-		) {
+		$shadow = self::shadowOf(candidate: $candidate, context: $context);
+		if ($shadow !== null) {
+			$this->logShadow(candidate: $candidate + ['shadowedBy' => $shadow], context: $context);
 			return null;
 		}
 
-		return new AutoTransitionCandidate(
-			action: $candidate['action'],
-			from: $current,
-			to: $candidate['to'],
-			mode: $mode
-		);
-	}//end select()
+		return new AutoTransitionCandidate(action: $candidate['action'], from: $context->current, to: $candidate['to'], mode: $mode);
+	}//end eligible()
 
 	/**
 	 * Whether the schema's annotation declares any `autoWhen` at all.
@@ -161,12 +213,7 @@ class AutoTransitionSelector {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAutoWhen(array $annotation): bool {
-		$transitions = ($annotation['transitions'] ?? []);
-		if (is_array($transitions) === false) {
-			return false;
-		}
-
-		foreach ($transitions as $spec) {
+		foreach (self::transitionsOf(annotation: $annotation) as $spec) {
 			if (is_array($spec) === true && array_key_exists('autoWhen', $spec) === true) {
 				return true;
 			}
@@ -182,77 +229,114 @@ class AutoTransitionSelector {
 	 * rule is read: the move would change nothing and would be re-decided on
 	 * every write.
 	 *
-	 * @param array<string, mixed> $transitions The annotation's transition map.
-	 * @param array<string, mixed> $objectData The object as stored.
-	 * @param array<string, mixed> $previous The object before the triggering write.
-	 * @param string $current The object's current lifecycle value.
-	 * @param string $schemaSlug The schema's slug, for the log lines.
-	 * @param string $field The lifecycle field's name.
+	 * @param AutoTransitionContext $context The write being asked about.
 	 *
 	 * @return list<array{action: string, to: string, index: int, spec: array<string, mixed>}>
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function holdingTransitions(
-		array $transitions,
-		array $objectData,
-		array $previous,
-		string $current,
-		string $schemaSlug,
-		string $field,
-	): array {
+	private function holdingTransitions(AutoTransitionContext $context): array {
 		$holding = [];
-		$index = -1;
-
-		foreach ($transitions as $action => $spec) {
+		$index   = -1;
+		foreach ($context->transitions as $action => $spec) {
 			$index++;
-			if (is_array($spec) === false || array_key_exists('autoWhen', $spec) === false) {
-				continue;
+			$candidate = $this->holdingCandidate(move: ['action' => (string)$action, 'index' => $index, 'spec' => $spec], context: $context);
+			if ($candidate !== null) {
+				$holding[] = $candidate;
 			}
-
-			$to = (string)($spec['to'] ?? '');
-			if ($to === '' || $to === $current || $this->fromContains(spec: $spec, value: $current) === false) {
-				continue;
-			}
-
-			$holds = $this->evaluator->holds(
-				rule: $spec['autoWhen'],
-				newData: $objectData,
-				oldData: $previous,
-				action: (string)$action,
-				from: $current,
-				to: $to,
-				schemaSlug: $schemaSlug,
-				field: $field
-			);
-			if ($holds === false) {
-				continue;
-			}
-
-			$holding[] = [
-				'action' => (string)$action,
-				'to' => $to,
-				'index' => $index,
-				'spec' => $spec,
-			];
-		}//end foreach
+		}
 
 		return $holding;
 	}//end holdingTransitions()
 
 	/**
+	 * One declared transition as a candidate, when it is automatic, leaves the current state and its rule holds.
+	 *
+	 * @param array{action: string, index: int, spec: mixed} $move    The transition's name, position and spec.
+	 * @param AutoTransitionContext                          $context The write being asked about.
+	 *
+	 * @return array{action: string, to: string, index: int, spec: array<string, mixed>}|null The candidate.
+	 */
+	private function holdingCandidate(array $move, AutoTransitionContext $context): ?array {
+		$to = self::autoTarget(spec: $move['spec'], current: $context->current);
+		if ($to === null) {
+			return null;
+		}
+
+		$candidate = ['action' => $move['action'], 'to' => $to, 'index' => $move['index'], 'spec' => $move['spec']];
+		if ($this->ruleHolds(candidate: $candidate, context: $context) === false) {
+			return null;
+		}
+
+		return $candidate;
+	}//end holdingCandidate()
+
+	/**
+	 * The state an automatic transition leads to from the current value, or null when it is not one.
+	 *
+	 * @param mixed  $spec    The transition's spec.
+	 * @param string $current The object's current lifecycle value.
+	 *
+	 * @return string|null The target state.
+	 */
+	private static function autoTarget(mixed $spec, string $current): ?string {
+		if (is_array($spec) === false || array_key_exists('autoWhen', $spec) === false) {
+			return null;
+		}
+
+		return self::targetFrom(spec: $spec, current: $current);
+	}//end autoTarget()
+
+	/**
+	 * The state a transition leads to from the current value, or null when it changes nothing or cannot be taken.
+	 *
+	 * @param array<string, mixed> $spec    The transition's spec.
+	 * @param string               $current The object's current lifecycle value.
+	 *
+	 * @return string|null The target state.
+	 */
+	private static function targetFrom(array $spec, string $current): ?string {
+		$to = (string)($spec['to'] ?? '');
+		if ($to === '' || $to === $current || self::fromContains(spec: $spec, value: $current) === false) {
+			return null;
+		}
+
+		return $to;
+	}//end targetFrom()
+
+	/**
+	 * Whether a candidate's `autoWhen` holds, asked of the one place a lifecycle rule is evaluated.
+	 *
+	 * @param array{action: string, to: string, index: int, spec: array<string, mixed>} $candidate The candidate.
+	 * @param AutoTransitionContext                                                     $context   The write being asked about.
+	 *
+	 * @return bool True when the rule holds.
+	 */
+	private function ruleHolds(array $candidate, AutoTransitionContext $context): bool {
+		return $this->evaluator->holds(
+			rule: $candidate['spec']['autoWhen'],
+			newData: $context->objectData,
+			oldData: $context->previous,
+			action: $candidate['action'],
+			from: $context->current,
+			to: $candidate['to'],
+			schemaSlug: $context->schemaSlug,
+			field: $context->field
+		);
+	}//end ruleHolds()
+
+	/**
 	 * The candidate's execution mode, or null when it is not one of the two.
 	 *
-	 * @param array<string, mixed> $spec The candidate transition's spec.
-	 * @param string $action The candidate transition's name.
-	 * @param string $schemaSlug The schema's slug, for the log line.
+	 * @param array{action: string, to: string, index: int, spec: array<string, mixed>} $candidate The candidate.
+	 * @param AutoTransitionContext                                                     $context   The write being asked about.
 	 *
 	 * @return string|null `Flow::MODE_SYNC`, `Flow::MODE_ASYNC`, or null.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function modeOf(array $spec, string $action, string $schemaSlug): ?string {
-		$mode = ($spec['executionMode'] ?? Flow::MODE_SYNC);
+	private function modeOf(array $candidate, AutoTransitionContext $context): ?string {
+		$mode = ($candidate['spec']['executionMode'] ?? Flow::MODE_SYNC);
 		if (in_array($mode, [Flow::MODE_SYNC, Flow::MODE_ASYNC], true) === true) {
 			return (string)$mode;
 		}
@@ -260,7 +344,7 @@ class AutoTransitionSelector {
 		$this->logger->warning(
 			'[AutoTransitionSelector] Automatic transition declares an unrecognised executionMode; '
 			. 'not firing it. Use exactly "sync" or "async".',
-			['schema' => $schemaSlug, 'action' => $action, 'executionMode' => $spec['executionMode']]
+			['schema' => $context->schemaSlug, 'action' => $candidate['action'], 'executionMode' => $candidate['spec']['executionMode']]
 		);
 
 		return null;
@@ -269,53 +353,62 @@ class AutoTransitionSelector {
 	/**
 	 * The name of an earlier-declared transition shadowing the candidate.
 	 *
-	 * @param array<string, mixed> $transitions The annotation's transition map.
 	 * @param array{action: string, to: string, index: int, spec: array<string, mixed>} $candidate The selected move.
-	 * @param string $current The object's current lifecycle value.
-	 * @param string $schemaSlug The schema's slug, for the log line.
+	 * @param AutoTransitionContext                                                     $context   The write being asked about.
 	 *
 	 * @return string|null The shadowing transition's name, or null when there is none.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function shadowOf(
-		array $transitions,
-		array $candidate,
-		string $current,
-		string $schemaSlug,
-	): ?string {
+	private static function shadowOf(array $candidate, AutoTransitionContext $context): ?string {
 		$index = -1;
-		foreach ($transitions as $action => $spec) {
+		$pair  = ['from' => $context->current, 'to' => $candidate['to']];
+		foreach ($context->transitions as $action => $spec) {
 			$index++;
-			if ($index >= $candidate['index'] || is_array($spec) === false) {
-				continue;
+			if ($index < $candidate['index'] && self::sharesPair(spec: $spec, pair: $pair) === true) {
+				return (string)$action;
 			}
-
-			if (
-				(string)($spec['to'] ?? '') !== $candidate['to']
-				|| $this->fromContains(spec: $spec, value: $current) === false
-			) {
-				continue;
-			}
-
-			$this->logger->warning(
-				'[AutoTransitionSelector] An earlier-declared transition shares this move\'s from and to '
-				. 'pair, so the save path could enforce its gates and run its actions instead; '
-				. 'not firing automatically.',
-				[
-					'schema' => $schemaSlug,
-					'action' => $candidate['action'],
-					'shadowedBy' => (string)$action,
-					'from' => $current,
-					'to' => $candidate['to'],
-				]
-			);
-
-			return (string)$action;
-		}//end foreach
+		}
 
 		return null;
 	}//end shadowOf()
+
+	/**
+	 * Whether a transition can be taken from a state and leads to another.
+	 *
+	 * @param mixed                            $spec The transition's spec.
+	 * @param array{from: string, to: string} $pair The from and to states.
+	 *
+	 * @return bool True when it shares the pair.
+	 */
+	private static function sharesPair(mixed $spec, array $pair): bool {
+		return is_array($spec) === true
+			&& (string)($spec['to'] ?? '') === $pair['to']
+			&& self::fromContains(spec: $spec, value: $pair['from']) === true;
+	}//end sharesPair()
+
+	/**
+	 * Log that an earlier-declared transition shadows the candidate, so it does not fire.
+	 *
+	 * @param array{action: string, to: string, shadowedBy: string} $candidate The candidate and the transition shadowing it.
+	 * @param AutoTransitionContext                                 $context   The write being asked about.
+	 *
+	 * @return void
+	 */
+	private function logShadow(array $candidate, AutoTransitionContext $context): void {
+		$this->logger->warning(
+			'[AutoTransitionSelector] An earlier-declared transition shares this move\'s from and to '
+			. 'pair, so the save path could enforce its gates and run its actions instead; '
+			. 'not firing automatically.',
+			[
+				'schema' => $context->schemaSlug,
+				'action' => $candidate['action'],
+				'shadowedBy' => $candidate['shadowedBy'],
+				'from' => $context->current,
+				'to' => $candidate['to'],
+			]
+		);
+	}//end logShadow()
 
 	/**
 	 * Whether a transition's `from` covers a lifecycle value.
@@ -331,7 +424,7 @@ class AutoTransitionSelector {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function fromContains(array $spec, string $value): bool {
+	private static function fromContains(array $spec, string $value): bool {
 		$from = ($spec['from'] ?? []);
 		if (is_string($from) === true) {
 			$from = [$from];
