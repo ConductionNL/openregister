@@ -104,7 +104,13 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 		$object->setOwner('pjansen');
 
 		$calls = [
-			'grant group' => fn () => $sharing->grant(object: $object, type: 'group', shareWith: ' juristen ', permissions: 31, verbs: ['read', '', 'read', 'export']),
+			'grant group' => fn () => $sharing->grant(
+				object: $object,
+				type: 'group',
+				shareWith: ' juristen ',
+				permissions: 31,
+				verbs: ['read', '', 'read', 'export']
+			),
 			'grant user' => fn () => $sharing->grant(object: $object, type: 'user', shareWith: 'tvisser'),
 			'grant bad type' => fn () => $sharing->grant(object: $object, type: 'circle', shareWith: 'x'),
 			'grant no principal' => fn () => $sharing->grant(object: $object, type: 'group', shareWith: '  '),
@@ -210,7 +216,8 @@ final class ObjectSharingServiceGoldenTest extends TestCase {
 	private function recordingShare(): IShare {
 		$state = [];
 		$share = $this->createMock(IShare::class);
-		foreach (['setNode', 'setShareType', 'setSharedWith', 'setSharedBy', 'setPermissions', 'setExpirationDate', 'setPassword', 'setAttributes'] as $setter) {
+		$setters = ['setNode', 'setShareType', 'setSharedWith', 'setSharedBy', 'setPermissions', 'setExpirationDate', 'setPassword', 'setAttributes'];
+		foreach ($setters as $setter) {
 			$share->method($setter)->willReturnCallback(
 				function (mixed $value) use ($setter, $share, &$state): IShare {
 					$state[$setter] = $value;

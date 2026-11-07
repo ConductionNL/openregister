@@ -56,9 +56,9 @@ final class RoleActionsGoldenTest extends TestCase {
 			roleDefinitions: ['behandelaar' => ['read', 'update', null], 'lezer' => ['read'], 'kapot' => 'read']
 		);
 
-		$this->assertSame(['behandelaars' => ['read', 'update']], $this->verbsByPrincipal($stored));
-		$this->assertSame(['behandelaars' => ['read', 'update'], 'lezers' => ['read']], $this->verbsByPrincipal($flat));
-		$this->assertSame([], $this->verbsByPrincipal($resolver->holders(blocks: $blocks, roleDefinitions: 'roles')));
+		$this->assertSame(['behandelaars' => ['read', 'update']], $this->verbsByPrincipal(set: $stored));
+		$this->assertSame(['behandelaars' => ['read', 'update'], 'lezers' => ['read']], $this->verbsByPrincipal(set: $flat));
+		$this->assertSame([], $this->verbsByPrincipal(set: $resolver->holders(blocks: $blocks, roleDefinitions: 'roles')));
 	}
 
 	/**
