@@ -45,7 +45,7 @@ use Throwable;
 /**
  * The bounded, re-entrant sweep.
  */
-class FlowTimerSweep {
+class FlowTimerSweep implements FlowTimerSweepInterface {
 
 	/**
 	 * The actor a swept task timeout records itself as.
