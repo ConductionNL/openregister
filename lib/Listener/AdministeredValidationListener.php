@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\AdministeredValidationEnforcer;
@@ -64,33 +63,42 @@ class AdministeredValidationListener implements IEventListener {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$this->refuse(event: $event, newObject: $event->getObject(), oldObject: null);
+		if (($event instanceof ObjectCreatingEvent) === false && ($event instanceof ObjectUpdatingEvent) === false) {
 			return;
 		}
 
-		if ($event instanceof ObjectUpdatingEvent) {
-			$this->refuse(event: $event, newObject: $event->getNewObject(), oldObject: $event->getOldObject());
-		}
+		$this->refuse(event: $event, refusal: $this->refusalOf(event: $event));
 	}//end handle()
 
 	/**
-	 * Ask the enforcer, and stop the event when it refuses.
+	 * Ask the enforcer about the object as it would be saved and as stored
+	 * (null on a create).
 	 *
-	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event     The event.
-	 * @param ObjectEntity                            $newObject The object as it would be saved.
-	 * @param ObjectEntity|null                       $oldObject The object as stored, null on a create.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The event.
+	 *
+	 * @return array<string, mixed>|null The refusal, or null when the write may proceed.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
+	 */
+	private function refusalOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): ?array {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $this->enforcer->refusalFor(newObject: $event->getObject(), oldObject: null);
+		}
+
+		return $this->enforcer->refusalFor(newObject: $event->getNewObject(), oldObject: $event->getOldObject());
+	}//end refusalOf()
+
+	/**
+	 * Stop the event with the enforcer's refusal, when there is one.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event   The event.
+	 * @param array<string, mixed>|null               $refusal The enforcer's answer; null lets the write proceed.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
-	private function refuse(
-		ObjectCreatingEvent|ObjectUpdatingEvent $event,
-		ObjectEntity $newObject,
-		?ObjectEntity $oldObject,
-	): void {
-		$refusal = $this->enforcer->refusalFor(newObject: $newObject, oldObject: $oldObject);
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, ?array $refusal): void {
 		if ($refusal === null) {
 			return;
 		}
