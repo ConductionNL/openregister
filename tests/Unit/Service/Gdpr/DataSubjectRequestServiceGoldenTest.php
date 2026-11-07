@@ -213,15 +213,20 @@ class DataSubjectRequestServiceGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		return new DataSubjectRequestService(
-			$this->db,
-			$this->objectMapper,
-			$this->objectService,
-			$this->retentionService,
-			$this->dsarService,
-			new DataSubjectDeadline(),
-			$this->userSession,
-			$logger,
-			new ArchivalRetentionGuard($this->schemaMapper, $logger)
+			index: new SubjectEntityIndex(db: $this->db, logger: $logger),
+			loader: new SubjectObjectLoader(objectMapper: $this->objectMapper, logger: $logger),
+			writer: new SubjectObjectWriter(
+				objectService: $this->objectService,
+				dsarService: $this->dsarService,
+				userSession: $this->userSession,
+				logger: $logger
+			),
+			retentionGate: new SubjectRetentionGate(
+				retentionService: $this->retentionService,
+				archivalGuard: new ArchivalRetentionGuard($this->schemaMapper, $logger)
+			),
+			deadline: new DataSubjectDeadline(),
+			logger: $logger
 		);
 
 	}//end buildService()
