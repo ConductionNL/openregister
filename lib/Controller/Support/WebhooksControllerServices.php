@@ -32,13 +32,13 @@ final class WebhooksControllerServices {
 	 * Bundle the services.
 	 *
 	 * @param WebhooksMappers  $mappers  The mappers bundle.
-	 * @param WebhooksPlatform $platform The platform bundle.
+	 * @param TasksPlatform    $platform The platform bundle.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function __construct(
 		public readonly WebhooksMappers $mappers,
-		public readonly WebhooksPlatform $platform,
+		public readonly TasksPlatform $platform,
 	) {
 	}//end __construct()
 }//end class
