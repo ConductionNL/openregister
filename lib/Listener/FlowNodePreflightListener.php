@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -54,11 +54,11 @@ class FlowNodePreflightListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodePreflight $preflight Resolves step types against the registry.
+	 * @param FlowNodePreflightInterface $preflight Resolves step types against the registry.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly FlowNodePreflight $preflight,
+		private readonly FlowNodePreflightInterface $preflight,
 		private readonly LoggerInterface $logger,
 	) {
 

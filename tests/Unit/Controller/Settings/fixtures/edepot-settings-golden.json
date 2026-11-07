@@ -1,0 +1,594 @@
+{
+    "get blank secrets kept": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "transfer.getAvailableProfiles": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "apiKey": "",
+            "bearerToken": "0",
+            "password": null,
+            "host": "h",
+            "availableProfiles": {
+                "default": {
+                    "label": "Default"
+                },
+                "tmlo": {
+                    "label": "TMLO"
+                }
+            }
+        }
+    },
+    "get secrets masked": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "transfer.getAvailableProfiles": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "transport": "sftp",
+            "apiKey": "***",
+            "bearerToken": "***",
+            "password": "***",
+            "host": "h",
+            "availableProfiles": {
+                "default": {
+                    "label": "Default"
+                },
+                "tmlo": {
+                    "label": "TMLO"
+                }
+            }
+        }
+    },
+    "get throws": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "config unreadable"
+        }
+    },
+    "test config throws": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "error",
+                    "The e-Depot connection test failed: config unreadable"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "config unreadable"
+        }
+    },
+    "test default transport": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "rest_api.testConnection": [
+                    []
+                ]
+            },
+            {
+                "rest_api.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "configured",
+                    "The connection test passed over rest_api."
+                ]
+            },
+            {
+                "rest_api.getName": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "transport": "rest_api",
+            "message": "Connection successful"
+        }
+    },
+    "test openconnector throws": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "openconnector.testConnection": [
+                    {
+                        "transport": "openconnector"
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "error",
+                    "The e-Depot connection test failed: host unreachable"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "success": false,
+            "error": "host unreachable"
+        }
+    },
+    "test rest api passes": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "rest_api.testConnection": [
+                    {
+                        "transport": "rest_api"
+                    }
+                ]
+            },
+            {
+                "rest_api.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "configured",
+                    "The connection test passed over rest_api."
+                ]
+            },
+            {
+                "rest_api.getName": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "transport": "rest_api",
+            "message": "Connection successful"
+        }
+    },
+    "test sftp fails": {
+        "calls": [
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "sftp.testConnection": [
+                    {
+                        "transport": "sftp"
+                    }
+                ]
+            },
+            {
+                "sftp.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "error",
+                    "The connection test failed over sftp."
+                ]
+            },
+            {
+                "sftp.getName": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": false,
+            "transport": "sftp",
+            "message": "Connection failed"
+        }
+    },
+    "update default profile": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_endpoint_url",
+                    "https://e"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true
+        }
+    },
+    "update every field": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_endpoint_url",
+                    "https://e"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_auth_type",
+                    "api_key"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_bearer_token",
+                    "new"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_target_archive",
+                    "ta"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sip_profile",
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_transport",
+                    "sftp"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_host",
+                    "h"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_port",
+                    "22"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_username",
+                    "u"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_remote_path",
+                    "/in"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_host_key_fingerprint",
+                    "1"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_openconnector_source_id",
+                    "7"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_openconnector_base_url",
+                    "https://oc"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true
+        }
+    },
+    "update invalid profile": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "bad"
+                ]
+            },
+            {
+                "transfer.getAvailableProfiles": []
+            }
+        ],
+        "status": 400,
+        "data": {
+            "error": "Invalid SIP profile 'bad'. Available: default, tmlo"
+        }
+    },
+    "update numeric transport": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_transport",
+                    "5"
+                ]
+            }
+        ],
+        "threw": "TypeError"
+    },
+    "update test default transport": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "rest_api.testConnection": [
+                    {
+                        "transport": "rest_api",
+                        "endpointUrl": "https://e"
+                    }
+                ]
+            },
+            {
+                "rest_api.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "configured",
+                    "The connection test passed over rest_api."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "connectionTest": true
+        }
+    },
+    "update test flag as text": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true
+        }
+    },
+    "update test flag false": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true
+        }
+    },
+    "update test openconnector fails": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_transport",
+                    "openconnector"
+                ]
+            },
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "openconnector.testConnection": [
+                    {
+                        "transport": "rest_api",
+                        "endpointUrl": "https://e"
+                    }
+                ]
+            },
+            {
+                "openconnector.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "error",
+                    "The connection test failed over openconnector."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "connectionTest": false
+        }
+    },
+    "update test sftp": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_transport",
+                    "sftp"
+                ]
+            },
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "sftp.testConnection": [
+                    {
+                        "transport": "rest_api",
+                        "endpointUrl": "https://e"
+                    }
+                ]
+            },
+            {
+                "sftp.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "configured",
+                    "The connection test passed over sftp."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "connectionTest": true
+        }
+    },
+    "update test throws": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "rest_api.testConnection": [
+                    {
+                        "transport": "rest_api",
+                        "endpointUrl": "https://e"
+                    }
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "host unreachable"
+        }
+    },
+    "update test unknown transport": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_transport",
+                    "ftp"
+                ]
+            },
+            {
+                "transfer.getTransportConfig": []
+            },
+            {
+                "rest_api.testConnection": [
+                    {
+                        "transport": "rest_api",
+                        "endpointUrl": "https://e"
+                    }
+                ]
+            },
+            {
+                "rest_api.getName": []
+            },
+            {
+                "reporter.report": [
+                    "edepot",
+                    "configured",
+                    "The connection test passed over rest_api."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "connectionTest": true
+        }
+    },
+    "update write throws": {
+        "calls": [
+            {
+                "transfer.isValidProfile": [
+                    "default"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "edepot_sftp_host",
+                    "h"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "config read-only"
+        }
+    }
+}
