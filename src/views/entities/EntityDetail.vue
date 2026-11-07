@@ -258,6 +258,7 @@ import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 
 /**
@@ -439,17 +440,7 @@ export default {
 			}
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude detail-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>

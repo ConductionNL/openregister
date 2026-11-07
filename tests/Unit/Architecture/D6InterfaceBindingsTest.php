@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use PHPUnit\Framework\TestCase;
@@ -58,6 +60,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 		MapNode::class => [MapNodeInterface::class, ContractBindings::class],
 		MergeNode::class => [MergeNodeInterface::class, ContractBindings::class],
 		RouterNode::class => [RouterNodeInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 		WaitNode::class => [WaitNodeInterface::class, ContractBindings::class],
 	];
 

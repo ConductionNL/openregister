@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
-use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -43,15 +43,15 @@ class FormUploadPurgeJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory         $time    The clock.
-	 * @param FormUploadStore      $uploads The upload tokens.
-	 * @param FormIdempotencyStore $keys    The remembered submit answers.
-	 * @param LoggerInterface      $logger  Where the counts go.
+	 * @param ITimeFactory                  $time    The clock.
+	 * @param FormUploadStoreInterface      $uploads The upload tokens.
+	 * @param FormIdempotencyStoreInterface $keys    The remembered submit answers.
+	 * @param LoggerInterface               $logger  Where the counts go.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly FormUploadStore $uploads,
-		private readonly FormIdempotencyStore $keys,
+		private readonly FormUploadStoreInterface $uploads,
+		private readonly FormIdempotencyStoreInterface $keys,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
