@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\EntityRead;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use PHPUnit\Framework\TestCase;
@@ -40,6 +41,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
  * @uses \OCA\OpenRegister\Service\Object\InverseLookup
+ * @uses \OCA\OpenRegister\Service\Object\ExtendTargetReads
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationCache
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationPreload
  * @uses \OCA\OpenRegister\Service\Object\InverseRelationRender
@@ -125,6 +127,6 @@ class RenderObjectPropertyRuleMetadataTest extends TestCase {
 
 		$method = new ReflectionMethod(objectOrMethod: RenderObject::class, method: 'filterAuthorizedProperties');
 
-		return $method->invoke($renderer, $record, new Schema(), $data);
+		return $method->invoke($renderer, new EntityRead(entity: $record, schema: new Schema()), $data);
 	}//end filter()
 }//end class

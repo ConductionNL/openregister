@@ -909,34 +909,60 @@ class ImportService implements ObjectImporterInterface {
 
 		$slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
 
+		$createdSchemas = $this->importBundleSchemas(
+			importHandler: $importHandler,
+			schemas: ['data' => $schemasData, 'slugsAndIds' => $slugsAndIdsMap]
+		);
+
+		$register = $importHandler->importRegister(data: $registerData);
+
+		return [$register, ($schemaHint ?? self::onlyBundleSchema(createdSchemas: $createdSchemas))];
+	}//end autoCreateRegisterFromBundle()
+
+	/**
+	 * Create the schemas of a register bundle; an untitled schema takes its key as title.
+	 *
+	 * @param ConfigurationImportHandler $importHandler The configuration import handler.
+	 * @param array                      $schemas       `data`: the bundle's schemas, `slugsAndIds`: the known slugs.
+	 *
+	 * @return array<string, Schema> The created schemas, by slug.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importBundleSchemas(ConfigurationImportHandler $importHandler, array $schemas): array {
 		$createdSchemas = [];
-		foreach ($schemasData as $schemaKey => $schemaData) {
+		foreach ($schemas['data'] as $schemaKey => $schemaData) {
 			if (isset($schemaData['title']) === false && is_string($schemaKey) === true) {
 				$schemaData['title'] = $schemaKey;
 			}
 
-			$createdSchema = $importHandler->importSchema(
-				data: $schemaData,
-				slugsAndIdsMap: $slugsAndIdsMap
-			);
+			$createdSchema = $importHandler->importSchema(data: $schemaData, slugsAndIdsMap: $schemas['slugsAndIds']);
 			$createdSchemas[$createdSchema->getSlug()] = $createdSchema;
-		}//end foreach
-
-		$register = $importHandler->importRegister(data: $registerData);
-
-		$schema = $schemaHint;
-		if ($schema === null && count($createdSchemas) === 1) {
-			$schema = array_values($createdSchemas)[0];
 		}
 
-		if ($schema === null && count($createdSchemas) !== 1) {
-			$msg = 'Register bundle import requires exactly one schema when no schema is ';
-			$msg .= 'explicitly specified; found ' . count($createdSchemas) . ' in the bundle.';
-			throw new InvalidArgumentException($msg);
+		return $createdSchemas;
+	}//end importBundleSchemas()
+
+	/**
+	 * The one schema of a bundle, for an import that names none.
+	 *
+	 * @param array<string, Schema> $createdSchemas The bundle's schemas.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws InvalidArgumentException When the bundle has not exactly one schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function onlyBundleSchema(array $createdSchemas): Schema {
+		if (count($createdSchemas) === 1) {
+			return array_values($createdSchemas)[0];
 		}
 
-		return [$register, $schema];
-	}//end autoCreateRegisterFromBundle()
+		$msg = 'Register bundle import requires exactly one schema when no schema is ';
+		$msg .= 'explicitly specified; found ' . count($createdSchemas) . ' in the bundle.';
+		throw new InvalidArgumentException($msg);
+	}//end onlyBundleSchema()
 
 	/**
 	 * Process spreadsheet with multiple schemas using batch saving for better performance
@@ -1299,40 +1325,67 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function parseCsvRows(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, array $parse): array {
 		$parsed = ['objects' => [], 'errors' => []];
-		$pack = $parse['pack'];
 		for ($row = 2; $row <= $parse['highestRow']; $row++) {
-			if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true) {
+			if ($this->isMappedOut(pack: $parse['pack'], row: $row) === true) {
 				continue;
 			}
 
 			$rowData = $this->extractRowData(sheet: $sheet, columnMapping: $parse['columnMapping'], row: $row);
-			if (empty($rowData) === true) {
-				continue;
+			if (empty($rowData) === false) {
+				$this->parseCsvRow(parsed: $parsed, line: ['parse' => $parse, 'row' => $row, 'data' => $rowData]);
 			}
-
-			if ($pack !== null) {
-				$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
-				if (empty($mapped['errors']) === false) {
-					foreach ($mapped['errors'] as $mappingError) {
-						$parsed['errors'][] = (new MappingErrorRow())->format(error: $mappingError);
-					}
-
-					continue;
-				}
-
-				$rowData = $mapped['data'];
-			}
-
-			$parsed['objects'][] = $this->transformCsvRowToObject(
-				rowData: $rowData,
-				register: $parse['register'],
-				schema: $parse['schema'],
-				currentUser: $parse['currentUser']
-			);
-		}//end for
+		}
 
 		return $parsed;
 	}//end parseCsvRows()
+
+	/**
+	 * Whether a mapping pack skips a row.
+	 *
+	 * @param array|null $pack The mapping pack, if any.
+	 * @param int        $row  The row number.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function isMappedOut(?array $pack, int $row): bool {
+		return $pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true;
+	}//end isMappedOut()
+
+	/**
+	 * Add one row to the parse result: its mapping errors, or its object.
+	 *
+	 * @param array $parsed The parse result, changed in place.
+	 * @param array $line   `parse`: the parse settings, `row`: the row number, `data`: the row data.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function parseCsvRow(array &$parsed, array $line): void {
+		$rowData = $line['data'];
+		$parse = $line['parse'];
+		if ($parse['pack'] !== null) {
+			$mapped = $this->mappingEngine->mapRow(pack: $parse['pack'], sourceRow: $rowData, rowNumber: $line['row']);
+			if (empty($mapped['errors']) === false) {
+				foreach ($mapped['errors'] as $mappingError) {
+					$parsed['errors'][] = (new MappingErrorRow())->format(error: $mappingError);
+				}
+
+				return;
+			}
+
+			$rowData = $mapped['data'];
+		}
+
+		$parsed['objects'][] = $this->transformCsvRowToObject(
+			rowData: $rowData,
+			register: $parse['register'],
+			schema: $parse['schema'],
+			currentUser: $parse['currentUser']
+		);
+	}//end parseCsvRow()
 
 	/**
 	 * Save the parsed CSV objects in one bulk save and fill the summary from its result.
@@ -1472,20 +1525,52 @@ class ImportService implements ObjectImporterInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function withSaveOutcome(array $summary, array $saveResult): array {
-		$idOf = fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null;
-		$summary['created'] = array_map($idOf, $saveResult['saved'] ?? []);
-		$summary['updated'] = array_map($idOf, $saveResult['updated'] ?? []);
-		$summary['unchanged'] = array_map($idOf, $saveResult['unchanged'] ?? []);
+		$summary['created'] = $this->savedObjectIds(objects: ($saveResult['saved'] ?? []));
+		$summary['updated'] = $this->savedObjectIds(objects: ($saveResult['updated'] ?? []));
+		$summary['unchanged'] = $this->savedObjectIds(objects: ($saveResult['unchanged'] ?? []));
 
-		$unchangedCount = count($summary['unchanged']);
-		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
-		if ($totalProcessed > 0 && $unchangedCount > 0) {
-			$efficiency = round(($unchangedCount / $totalProcessed) * 100, 1);
-			$summary['deduplication_efficiency'] = $efficiency . '% operations avoided';
+		$efficiency = $this->deduplicationEfficiency(summary: $summary);
+		if ($efficiency !== null) {
+			$summary['deduplication_efficiency'] = $efficiency;
 		}
 
 		return $summary;
 	}//end withSaveOutcome()
+
+	/**
+	 * The ids of saved objects: @self.id, else uuid, else id, else null.
+	 *
+	 * @param array $objects The ObjectEntity->jsonSerialize() arrays of a bulk save result
+	 *
+	 * @return array The ids, keyed like the objects
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function savedObjectIds(array $objects): array {
+		return array_map(
+			static fn (array $obj) => $obj['@self']['id'] ?? $obj['uuid'] ?? $obj['id'] ?? null,
+			$objects
+		);
+	}//end savedObjectIds()
+
+	/**
+	 * The share of processed objects a bulk save left unchanged, when any were.
+	 *
+	 * @param array $summary The import summary with the created, updated and unchanged ids
+	 *
+	 * @return string|null The efficiency, e.g. "33.3% operations avoided", or null when nothing was unchanged
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function deduplicationEfficiency(array $summary): ?string {
+		$unchangedCount = count($summary['unchanged']);
+		if ($unchangedCount === 0) {
+			return null;
+		}
+
+		$totalProcessed = count($summary['created']) + count($summary['updated']) + $unchangedCount;
+		return round(($unchangedCount / $totalProcessed) * 100, 1) . '% operations avoided';
+	}//end deduplicationEfficiency()
 
 	/**
 	 * Timing and speed metrics for an import, like SaveObjects reports.
@@ -1640,14 +1725,28 @@ class ImportService implements ObjectImporterInterface {
 				$selfColumns[$selfPropertyName] = $this->valueCaster->castSelfProperty(propertyName: $selfPropertyName, value: $value);
 			}
 
-			$firstChar = ((string)$key)[0] ?? '';
-			if ($firstChar !== '_' && $firstChar !== '@') {
+			if (self::isDataColumn(key: $key) === true) {
 				$columns[$key] = $value;
 			}
 		}
 
 		return [$selfColumns, $columns];
 	}//end splitRowColumns()
+
+	/**
+	 * Whether a column holds object data: its name does not start with `_` or `@`.
+	 *
+	 * @param int|string $key The column name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function isDataColumn(int|string $key): bool {
+		$firstChar = ((string)$key)[0] ?? '';
+
+		return $firstChar !== '_' && $firstChar !== '@';
+	}//end isDataColumn()
 
 	/**
 	 * The columns with the values of schema properties converted to their type.
@@ -1741,7 +1840,27 @@ class ImportService implements ObjectImporterInterface {
 	): ?array {
 		[$selfData, $objectData] = $this->splitRowColumns(rowData: $rowData, isAdmin: $this->isUserAdmin(user: $currentUser));
 
-		// Build @self section with metadata if available.
+		return $this->castRowObject(
+			objectData: self::withSelfSection(
+				objectData: $objectData,
+				selfData: self::withRowIdentity(selfData: $selfData, row: [$register, $schema, $rowData])
+			),
+			schema: $schema
+		);
+	}//end transformExcelRowToObject()
+
+	/**
+	 * Row metadata with the register, the schema and, for updates, the row's id.
+	 *
+	 * @param array $selfData The row's @self columns.
+	 * @param array $row      The register, the schema and the row data.
+	 *
+	 * @return array The @self section.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withRowIdentity(array $selfData, array $row): array {
+		[$register, $schema, $rowData] = $row;
 		if ($register !== null) {
 			$selfData['register'] = $register->getId();
 		}
@@ -1755,16 +1874,44 @@ class ImportService implements ObjectImporterInterface {
 			$selfData['id'] = $rowData['id'];
 		}
 
+		return $selfData;
+	}//end withRowIdentity()
+
+	/**
+	 * An object with its @self section, when that has anything in it.
+	 *
+	 * @param array $objectData The object.
+	 * @param array $selfData   The @self section.
+	 *
+	 * @return array The object.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private static function withSelfSection(array $objectData, array $selfData): array {
 		if (empty($selfData) === false) {
 			$objectData['@self'] = $selfData;
 		}
 
+		return $objectData;
+	}//end withSelfSection()
+
+	/**
+	 * An object with its values cast to the schema's types, when there is a schema.
+	 *
+	 * @param array       $objectData The object.
+	 * @param Schema|null $schema     The schema.
+	 *
+	 * @return array The object.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function castRowObject(array $objectData, ?Schema $schema): array {
 		if ($schema === null) {
 			return $objectData;
 		}
 
 		return $this->valueCaster->castObject(objectData: $objectData, properties: $schema->getProperties());
-	}//end transformExcelRowToObject()
+	}//end castRowObject()
 
 	/**
 	 * Build column mapping from spreadsheet headers

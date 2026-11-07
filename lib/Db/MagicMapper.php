@@ -75,10 +75,12 @@ use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionArm;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
+use OCA\OpenRegister\Db\MagicMapper\MagicUnionScore;
 use OCA\OpenRegister\Db\MagicMapper\MultiSchemaSearch;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnAdder;
@@ -289,19 +291,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Rows the identifier lookup reads at most (key matches first, then id order).
 	 */
 	private const IDENTIFIER_MATCH_LIMIT = 50;
-
-	/**
-	 * Condition matching a UUID anywhere in _relations, array or object format (PostgreSQL).
-	 *
-	 * Uses @> containment instead of ?, which would clash with PDO placeholders.
-	 */
-	private const RELATIONS_CONTAIN_SQL_POSTGRES = "((jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text))"
-		. " OR (jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?)))";
-
-	/**
-	 * Condition matching a UUID anywhere in _relations, array or object format (MySQL/MariaDB).
-	 */
-	private const RELATIONS_CONTAIN_SQL_MYSQL = 'JSON_SEARCH(_relations, \'one\', ?) IS NOT NULL';
 
 	/**
 	 * Request-scoped memo for {@see checkTableExistsInDatabase()}.
@@ -1645,48 +1634,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function countUnionBatch(array $query, array $registerSchemaPairs): int {
 		$arms = [];
 		foreach ($registerSchemaPairs as $pair) {
-			$register = ($pair['register'] ?? null);
-			$schema = ($pair['schema'] ?? null);
-			if ($register === null || $schema === null
-				|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
-			) {
-				continue;
+			$arm = $this->unionCountArm(query: $query, pair: $pair);
+			if ($arm !== null) {
+				$arms[] = $this->unionCountSql(arm: $arm);
 			}
-
-			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-
-			// The columns the search arm would search, as buildUnionSelectPart()
-			// collects them for its metadata-only projection.
-			$existingColumns = [];
-			foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
-					$existingColumns[] = $ownColumn;
-				}
-			}
-
-			$armQuery = $query;
-			if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
-				&& array_key_exists('schema', $armQuery['@self']) === true
-			) {
-				$armQuery['@self']['schema'] = $schema->getId();
-			}
-
-			$where = $this->searchHandler->buildWhereConditionsSql(
-				query: $armQuery,
-				schema: $schema,
-				existingColumns: $existingColumns,
-				registerId: $register->getId(),
-				tableName: $tableName
-			);
-
-			$arm = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $tableName);
-			if (empty($where) === false) {
-				$arm .= ' WHERE '.implode(' AND ', $where);
-			}
-
-			$arms[] = $arm;
-		}//end foreach
+		}
 
 		if ($arms === []) {
 			return 0;
@@ -1700,6 +1652,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return (int) ($row['total'] ?? 0);
 	}//end countUnionBatch()
+
+	/**
+	 * The arm a count reads for one pair, or null without a pair or a table.
+	 *
+	 * A count never creates a table: a missing one holds no rows.
+	 *
+	 * @param array $query The search query.
+	 * @param array $pair  The register+schema pair.
+	 *
+	 * @return MagicUnionArm|null The arm, with its table's own columns.
+	 */
+	private function unionCountArm(array $query, array $pair): ?MagicUnionArm {
+		$register = ($pair['register'] ?? null);
+		$schema = ($pair['schema'] ?? null);
+		if ($register === null || $schema === null
+			|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
+		) {
+			return null;
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$arm = new MagicUnionArm(tableName: $tableName, query: $query, schema: $schema, register: $register);
+		$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
+
+		return $arm;
+	}//end unionCountArm()
+
+	/**
+	 * The `COUNT(*)` statement of one arm, on the same WHERE as its search arm.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return string The statement.
+	 */
+	private function unionCountSql(MagicUnionArm $arm): string {
+		$sql = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $arm->tableName);
+		$where = $this->unionArmWhereClauses(arm: $arm);
+		if (empty($where) === false) {
+			$sql .= ' WHERE '.implode(' AND ', $where);
+		}
+
+		return $sql;
+	}//end unionCountSql()
 
 	/**
 	 * Determine if we should use UNION ALL optimization.
@@ -2137,13 +2132,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private function unionPropertySelect(MagicUnionArm $arm): array {
 		$arm->existingColumns = [];
 		if ($arm->metadataOnly === true) {
-			foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
-				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
-				if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
-					$arm->existingColumns[] = $ownColumn;
-				}
-			}
-
+			$arm->existingColumns = $this->unionOwnColumns(arm: $arm);
 			return [];
 		}
 
@@ -2161,6 +2150,25 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $selectColumns;
 	}//end unionPropertySelect()
+
+	/**
+	 * The columns of the arm's own schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionOwnColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (array_keys($arm->schema->getProperties() ?? []) as $ownProperty) {
+			$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+			if ($this->columnExistsInTable(tableName: $arm->tableName, columnName: $ownColumn) === true) {
+				$columns[] = $ownColumn;
+			}
+		}
+
+		return $columns;
+	}//end unionOwnColumns()
 
 	/**
 	 * The `_search_score` column of a UNION arm.
@@ -2185,38 +2193,40 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		// The connection quote() adds the quotes itself.
-		$quotedTerm = $this->db->getQueryBuilder()->getConnection()->quote($searchTerm);
-		$likePattern = "'%" . trim($quotedTerm, "'") . "%'";
-		$hasTrgm = $this->hasPgTrgmExtension();
+		$score = new MagicUnionScore(
+			quotedTerm: $this->db->getQueryBuilder()->getConnection()->quote($searchTerm),
+			isPostgres: $arm->isPostgres,
+			hasTrgm: $this->hasPgTrgmExtension()
+		);
 
 		$scores = [];
-		foreach ($schemaProps as $propName => $propDef) {
-			$columnName = $this->sanitizeColumnName(name: $propName);
-			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === false
-				|| $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === false
-			) {
-				continue;
-			}
-
-			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres);
-			$score = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
-			if ($arm->isPostgres === true) {
-				$score = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-			}
-
-			if ($arm->isPostgres === true && $hasTrgm === true) {
-				$score = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
-			}
-
-			$scores[] = $score;
-		}//end foreach
-
-		if ($scores === []) {
-			return '0 AS _search_score';
+		foreach ($this->unionScorableColumns(arm: $arm) as $columnName) {
+			$scores[] = $score->ofColumn(column: $this->quoteIdentifier(name: $columnName, isPostgres: $arm->isPostgres));
 		}
 
-		return 'GREATEST(' . implode(', ', $scores) . ') AS _search_score';
+		return $score->greatest(scores: $scores);
 	}//end unionSearchScore()
+
+	/**
+	 * The string and text columns of the arm's schema that its table has.
+	 *
+	 * @param MagicUnionArm $arm The arm.
+	 *
+	 * @return array<int, string> The column names.
+	 */
+	private function unionScorableColumns(MagicUnionArm $arm): array {
+		$columns = [];
+		foreach (($arm->schema->getProperties() ?? []) as $propName => $propDef) {
+			$columnName = $this->sanitizeColumnName(name: $propName);
+			if (in_array($propDef['type'] ?? 'string', ['string', 'text'], true) === true
+				&& $this->columnExistsInTable(tableName: $arm->tableName, columnName: $columnName) === true
+			) {
+				$columns[] = $columnName;
+			}
+		}
+
+		return $columns;
+	}//end unionScorableColumns()
 
 	/**
 	 * The WHERE conditions of a UNION arm, from the shared filter builder that
@@ -2359,18 +2369,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * the tables one after the other gave the same question a different
 	 * order, and a different page 2, depending on the path that ran.
 	 *
+	 * A numeric `_limit` is bounded by MAX_PAGE_SIZE, as on the UNION path;
+	 * only `_limit=false` asks for every row.
+	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		// Each table answers the merged question's first `offset + limit` rows,
 		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
-		$pageQuery = $query;
+		$pageQuery = $this->boundedPageQuery(query: $query);
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
 		// Every table is asked for its rows in the UNION path's order, closed by
@@ -2412,6 +2426,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $allResults;
 	}//end searchAcrossMultipleTablesSequential()
+
+	/**
+	 * The query with a numeric `_limit` reduced to MAX_PAGE_SIZE.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return array The query; an unlimited one is returned as it came.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
+	 */
+	private function boundedPageQuery(array $query): array {
+		$limit = QueryLimit::normalise($query['_limit'] ?? null);
+		if ($limit !== null) {
+			$query['_limit'] = min($limit, self::MAX_PAGE_SIZE);
+		}
+
+		return $query;
+	}//end boundedPageQuery()
 
 	/**
 	 * The rows one register+schema pair contributes to a sequential search.
@@ -7129,48 +7161,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
+		$tables  = $this->getAllMagicMapperTables();
 		$results = [];
-
-		// Get all existing magic mapper tables.
-		$tables = $this->getAllMagicMapperTables();
-
-		$this->logger->debug(
-			message: '[MagicMapper] findByRelation searching across tables',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-				'tableCount' => count($tables),
-			]
-		);
-
 		foreach ($tables as $tableName) {
-			try {
-				$tableResults = $this->findByRelationInTable(uuid: $uuid, tableName: $tableName);
-				$results = array_merge($results, $tableResults);
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] Failed to search table for relation',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'uuid' => $uuid,
-						'error' => $e->getMessage(),
-					]
-				);
-				// Continue with other tables even if one fails.
-			}
+			$results = array_merge($results, $this->findByRelationInTable(uuid: $uuid, tableName: $tableName));
 		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelation completed',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $uuid,
-				'resultCount' => count($results),
-			]
+			context: ['uuid' => $uuid, 'tableCount' => count($tables), 'resultCount' => count($results)]
 		);
 
 		return $results;
@@ -7197,91 +7196,72 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
-		$results = [];
-		$tables = $this->getAllMagicMapperTables();
-
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
 		$startTime = microtime(true);
-
-		// Apply multi-tenancy filtering to inverse relationship lookups.
-		[$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
-
+		$tables    = $this->getAllMagicMapperTables();
+		$results   = [];
 		foreach ($tables as $tableName) {
-			try {
-				$fullTableName = $this->getFullTableName(tableName: $tableName);
-
-				// Search for the UUID as a VALUE within the _relations JSONB.
-				// The _relations column can be either:.
-				// - An object: {"propertyName": "uuid", ...} (new format).
-				// - An array: ["uuid1", "uuid2", ...] (legacy format).
-				// We need to find rows where the UUID appears in either format.
-				// MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
-				// This works for both arrays and objects.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE _deleted IS NULL
-                        AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
-                        {$orgFilter}
-                        LIMIT 100";
-				$sqlParams = array_merge([$uuid], $orgParams);
-
-				if ($isPostgres === true) {
-					// PostgreSQL: Handle both object and array formats.
-					// - For objects: use jsonb_each_text to search values.
-					// - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
-					// Note: We use @> with a JSON array literal instead of ? operator.
-					$sql = "SELECT * FROM {$fullTableName}
-                            WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
-                            AND (
-                                -- Array format: check if UUID is in the array using @> containment
-                                (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
-                                OR
-                                -- Object format: check if UUID is a value in the object
-                                (jsonb_typeof(_relations) = 'object' AND EXISTS (
-                                    SELECT 1 FROM jsonb_each_text(_relations) AS kv
-                                    WHERE kv.value = ?
-                                ))
-                            )
-                            {$orgFilter}
-                            LIMIT 100";
-					// Need to pass UUID twice for both checks.
-					$sqlParams = array_merge([$uuid, $uuid], $orgParams);
-				}//end if
-
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute($sqlParams);
-				$results = array_merge($results, $this->rowsToObjectEntities(rows: $stmt->fetchAll()));
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'error' => $e->getMessage(),
-					]
-				);
-				continue;
-			}//end try
-		}//end foreach
-
-		$executionTime = round((microtime(true) - $startTime) * 1000, 2);
+			$results = array_merge($results, $this->relationColumnMatches(uuid: $uuid, tableName: $tableName));
+		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelationUsingRelationsColumn completed',
 			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
 				'uuid' => $uuid,
 				'tableCount' => count($tables),
 				'resultCount' => count($results),
-				'executionTime' => $executionTime . 'ms',
+				'executionTime' => round((microtime(true) - $startTime) * 1000, 2) . 'ms',
 			]
 		);
 
 		return $results;
 	}//end findByRelationUsingRelationsColumn()
+
+	/**
+	 * The objects of one table that reference a uuid; a failing table holds none.
+	 *
+	 * @param string $uuid      The uuid to look for.
+	 * @param string $tableName The table.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 */
+	private function relationColumnMatches(string $uuid, string $tableName): array {
+		try {
+			return $this->relationObjects(uuid: $uuid, tableName: $tableName);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] findByRelationUsingRelationsColumn table query failed',
+				context: ['tableName' => $tableName, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end relationColumnMatches()
+
+	/**
+	 * The objects of one table that reference a uuid, within the caller's organisation filter.
+	 *
+	 * @param string $uuid      The uuid to look for.
+	 * @param string $tableName The table.
+	 *
+	 * @return ObjectEntity[] The objects.
+	 */
+	private function relationObjects(string $uuid, string $tableName): array {
+		$fullTableName  = $this->getFullTableName(tableName: $tableName);
+		[$sql, $params] = $this->relationSql()->referencing(fullTableName: $fullTableName, uuid: $uuid);
+
+		return $this->objectsOfStatement(sql: $sql, params: $params);
+	}//end relationObjects()
+
+	/**
+	 * The relation statements for this platform and the caller's organisation filter.
+	 *
+	 * @return MagicRelationSql The statements.
+	 */
+	private function relationSql(): MagicRelationSql {
+		return new MagicRelationSql(
+			isPostgres: $this->isPostgresPlatform(),
+			organisationFilter: $this->buildOrganisationFilterForRelation()
+		);
+	}//end relationSql()
 
 	/**
 	 * Find objects in a specific schema's magic table that have a given entity ID in a linked type column.
@@ -7296,52 +7276,23 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Array of ObjectEntity objects
 	 */
 	public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array {
-		$results = [];
 		$tableName = $this->getTableName(schema: $schema);
-
 		if ($tableName === null) {
 			return [];
 		}
 
 		$fullTableName = $this->getFullTableName(tableName: $tableName);
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
 		try {
-			// MySQL default: use JSON_SEARCH to find the ID as a value in the array.
-			$sql = "SELECT * FROM {$fullTableName}
-                    WHERE _deleted IS NULL
-                    AND {$columnName} IS NOT NULL
-                    AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
-                    LIMIT 100";
-			if ($isPostgres === true) {
-				// PostgreSQL: use JSONB containment operator.
-				// Note: ::jsonb cast is intentional for polymorphic column support, but defeats any GIN
-				// index on $columnName if it is already jsonb. Acceptable for now; if a GIN index is added
-				// in a future migration for this column, branch the query to omit the cast in the jsonb case.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted::text = 'null')
-                        AND {$columnName} IS NOT NULL
-                        AND {$columnName}::jsonb @> to_jsonb(?::text)
-                        LIMIT 100";
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$entityId]);
-			$results = $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+			$sql = $this->relationSql()->linkedTo(fullTableName: $fullTableName, columnName: $columnName);
+			return $this->objectsOfStatement(sql: $sql, params: [$entityId]);
 		} catch (Exception $e) {
 			$this->logger->debug(
 				'[MagicMapper] findByLinkedEntity query failed',
-				[
-					'table' => $fullTableName,
-					'column' => $columnName,
-					'entityId' => $entityId,
-					'error' => $e->getMessage(),
-				]
+				['table' => $fullTableName, 'column' => $columnName, 'entityId' => $entityId, 'error' => $e->getMessage()]
 			);
-		}//end try
-
-		return $results;
+			return [];
+		}
 	}//end findByLinkedEntity()
 
 	/**
@@ -7397,112 +7348,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		// Construct the magic table name directly: openregister_table_{registerId}_{schemaId}.
-		$tableName     = self::TABLE_PREFIX . $registerId . '_' . $schemaId;
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
-		$logContext    = ['tableName' => $fullTableName, 'schemaId' => $schemaId, 'registerId' => $registerId];
+		$tableName  = self::TABLE_PREFIX . $registerId . '_' . $schemaId;
+		$logContext = ['tableName' => $this->getFullTableName(tableName: $tableName), 'schemaId' => $schemaId, 'registerId' => $registerId];
 
 		if ($this->checkTableExistsInDatabase(tableName: $tableName) === false) {
-			$this->logger->debug(
-				message: '[MagicMapper] findByRelationBatchInSchema: table does not exist',
-				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext)
-			);
+			$this->logger->debug(message: '[MagicMapper] findByRelationBatchInSchema: table does not exist', context: $logContext);
 			return [];
 		}
 
-		$logContext['fieldName'] = $fieldName;
-		$logContext['uuidCount'] = count($uuids);
-		$startTime = microtime(true);
-
+		$fullTableName = $logContext['tableName'];
+		$logContext += ['fieldName' => $fieldName, 'uuidCount' => count($uuids)];
 		try {
-			[$where, $params] = $this->buildRelationBatchWhere(uuids: $uuids, extraFields: $additionalFieldNames);
-
-			$stmt = $this->db->prepare("SELECT * FROM {$fullTableName} WHERE {$where} LIMIT 1000");
-			$stmt->execute($params);
-			$results = $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+			[$where, $params] = $this->relationSql()->batchWhere(uuids: $uuids, extraFields: $additionalFieldNames);
+			$results = $this->objectsOfStatement(sql: "SELECT * FROM {$fullTableName} WHERE {$where} LIMIT 1000", params: $params);
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[MagicMapper] findByRelationBatchInSchema failed',
-				context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext, ['error' => $e->getMessage()])
+				context: array_merge($logContext, ['error' => $e->getMessage()])
 			);
 			return [];
 		}
 
-		$logContext['resultCount']   = count($results);
-		$logContext['executionTime'] = round((microtime(true) - $startTime) * 1000, 2) . 'ms';
 		$this->logger->debug(
 			message: '[MagicMapper] findByRelationBatchInSchema completed',
-			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $logContext)
+			context: array_merge($logContext, ['resultCount' => count($results)])
 		);
 
 		return $results;
 	}//end findByRelationBatchInSchema()
 
 	/**
-	 * Build the WHERE clause of a batch inverse-relation lookup.
+	 * The objects a statement selects.
 	 *
-	 * Matches rows whose _relations holds any of the UUIDs (array or object format),
-	 * or whose extra reference columns hold one, among the live rows the caller may
-	 * see through buildOrganisationFilterForRelation().
+	 * @param string $sql    The statement.
+	 * @param array  $params Its parameters.
 	 *
-	 * @param array $uuids       The UUIDs to look for.
-	 * @param array $extraFields Property names whose columns may hold a reference directly.
-	 *
-	 * @return array{0: string, 1: list<mixed>} The WHERE clause and its bound parameters.
+	 * @return ObjectEntity[] The objects.
 	 */
-	private function buildRelationBatchWhere(array $uuids, array $extraFields): array {
-		$isPostgres = $this->isPostgresPlatform();
-		$contains   = self::RELATIONS_CONTAIN_SQL_MYSQL;
-		$deleted    = '_deleted IS NULL';
-		if ($isPostgres === true) {
-			$contains = self::RELATIONS_CONTAIN_SQL_POSTGRES;
-			$deleted  = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-		}
+	private function objectsOfStatement(string $sql, array $params): array {
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
 
-		$conditions = [];
-		$params     = [];
-		foreach ($uuids as $uuid) {
-			$conditions[] = $contains;
-			array_push($params, ...array_fill(0, substr_count($contains, '?'), $uuid));
-		}
-
-		[$extraConditions, $extraParams] = $this->buildReferenceColumnConditions(uuids: $uuids, extraFields: $extraFields);
-		[$orgFilter, $orgParams]         = $this->buildOrganisationFilterForRelation();
-
-		$where = $deleted . ' AND (' . implode(' OR ', array_merge($conditions, $extraConditions)) . ')' . $orgFilter;
-		return [$where, array_merge($params, $extraParams, $orgParams)];
-	}//end buildRelationBatchWhere()
-
-	/**
-	 * Build conditions matching a UUID stored directly in reference columns.
-	 *
-	 * Matches both a plain UUID string and a {"value": "uuid"} JSON object.
-	 *
-	 * @param array $uuids       The UUIDs to look for.
-	 * @param array $extraFields Property names whose columns may hold a reference.
-	 *
-	 * @return array{0: list<string>, 1: list<string>} The conditions and their bound parameters.
-	 */
-	private function buildReferenceColumnConditions(array $uuids, array $extraFields): array {
-		$isPostgres = $this->isPostgresPlatform();
-		$conditions = [];
-		$params     = [];
-		foreach ($extraFields as $extraField) {
-			$columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $extraField));
-			$quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-			$textCol    = "CAST({$quotedCol} AS CHAR)";
-			if ($isPostgres === true) {
-				$textCol = "{$quotedCol}::text";
-			}
-
-			foreach ($uuids as $uuid) {
-				$conditions[] = "({$quotedCol} = ? OR {$textCol} LIKE ?)";
-				$params[]     = $uuid;
-				$params[]     = '%' . $uuid . '%';
-			}
-		}
-
-		return [$conditions, $params];
-	}//end buildReferenceColumnConditions()
+		return $this->rowsToObjectEntities(rows: $stmt->fetchAll());
+	}//end objectsOfStatement()
 
 	/**
 	 * Whether the connection runs on PostgreSQL.
@@ -7528,6 +7416,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			try {
 				$entity = $this->rowToObjectEntity(row: $row);
 			} catch (Exception $e) {
+				$this->logger->debug(message: '[MagicMapper] Failed to convert row to ObjectEntity', context: ['error' => $e->getMessage()]);
 				continue;
 			}
 
@@ -7580,99 +7469,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return ObjectEntity[] Array of matching objects
 	 */
 	private function findByRelationInTable(string $uuid, string $tableName): array {
-		// Get database platform to determine proper search approach.
-		$platform = $this->db->getDatabasePlatform();
-		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-
-		// Construct the full table name with prefix for use in SQL functions.
-		$fullTableName = $this->getFullTableName(tableName: $tableName);
-
 		try {
-			// Apply multi-tenancy filtering to inverse relationship lookups.
-			[$orgFilter, $orgParams] = $this->buildOrganisationFilterForRelation();
-
-			// BUG-DB-9: the previous MySQL/MariaDB branch used the invalid
-			// `CAST({$fullTableName} AS CHAR)` (you cannot CAST a table to a
-			// scalar), so every MariaDB/MySQL call threw and was swallowed at
-			// debug level, silently resolving inverse relations to nothing.
-			// Search the `_relations` JSON column for the UUID as a value, the
-			// same approach findByRelationUsingRelationsColumn() uses.
-			// MySQL/MariaDB: JSON_SEARCH finds the UUID as a value anywhere
-			// (works for both object and array relation shapes).
-			$sql = "SELECT * FROM {$fullTableName} WHERE _deleted IS NULL
-                    AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
-                    {$orgFilter}
-                    LIMIT 100";
-			$sqlParams = array_merge([$uuid], $orgParams);
-			if ($isPostgres === true) {
-				// PostgreSQL: handle both object and array relation shapes.
-				$sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
-                        AND (
-                            (jsonb_typeof(_relations) = 'array' AND _relations @> to_jsonb(?::text))
-                            OR
-                            (jsonb_typeof(_relations) = 'object' AND EXISTS (
-                                SELECT 1 FROM jsonb_each_text(_relations) AS kv
-                                WHERE kv.value = ?
-                            ))
-                        )
-                        {$orgFilter}
-                        LIMIT 100";
-				$sqlParams = array_merge([$uuid, $uuid], $orgParams);
-			}
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute($sqlParams);
-			$rows = $stmt->fetchAll();
-
-			$this->logger->debug(
-				message: '[MagicMapper] findByRelationInTable query executed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $fullTableName,
-					'uuid' => $uuid,
-					'resultCount' => count($rows),
-				]
-			);
+			return $this->relationObjects(uuid: $uuid, tableName: $tableName);
 		} catch (Exception $e) {
-			// BUG-DB-9: raise from debug to warning so a genuinely failing
-			// inverse-relation lookup is visible rather than silently empty.
 			$this->logger->warning(
 				message: '[MagicMapper] findByRelationInTable query failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'tableName' => $fullTableName,
-					'uuid' => $uuid,
-					'error' => $e->getMessage(),
-				]
+				context: ['tableName' => $this->getFullTableName(tableName: $tableName), 'uuid' => $uuid, 'error' => $e->getMessage()]
 			);
 			return [];
-		}//end try
-
-		// Convert rows to ObjectEntity instances.
-		$entities = [];
-		foreach ($rows as $row) {
-			try {
-				$entity = $this->rowToObjectEntity(row: $row);
-				if ($entity !== null) {
-					$entities[] = $entity;
-				}
-			} catch (Exception $e) {
-				$this->logger->debug(
-					message: '[MagicMapper] Failed to convert row to ObjectEntity',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'tableName' => $tableName,
-						'error' => $e->getMessage(),
-					]
-				);
-			}
 		}
-
-		return $entities;
 	}//end findByRelationInTable()
 
 	/**

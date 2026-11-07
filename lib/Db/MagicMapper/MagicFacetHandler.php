@@ -120,6 +120,37 @@ class MagicFacetHandler {
 	private const MAX_FACET_BUCKETS = 10000;
 
 	/**
+	 * Suffixes that turn a year or day bucket key into its from/to dates.
+	 */
+	private const DATE_KEY_SUFFIXES = [
+		'year' => ['-01-01', '-12-31'],
+		'day' => ['', ''],
+	];
+
+	/**
+	 * PostgreSQL TO_CHAR pattern of each date histogram interval.
+	 */
+	private const PG_DATE_FORMATS = [
+		'day' => 'YYYY-MM-DD',
+		'week' => 'IYYY-IW',
+		'month' => 'YYYY-MM',
+		'year' => 'YYYY',
+		'quarter' => 'YYYY-"Q"Q',
+	];
+
+	/**
+	 * MariaDB/MySQL DATE_FORMAT pattern of each date histogram interval but quarter.
+	 *
+	 * Week is ISO year + ISO week, matching PostgreSQL IYYY-IW.
+	 */
+	private const MYSQL_DATE_FORMATS = [
+		'day' => '%Y-%m-%d',
+		'week' => '%x-%v',
+		'year' => '%Y',
+		'month' => '%Y-%m',
+	];
+
+	/**
 	 * Metadata column prefix used in MagicMapper tables.
 	 */
 	private const METADATA_PREFIX = '_';
@@ -920,68 +951,98 @@ class MagicFacetHandler {
 	private function normalizeArrayFacetBuckets(array $rawBuckets): array {
 		// Map to accumulate counts: value => count.
 		$valueCounts = [];
-
 		foreach ($rawBuckets as $bucket) {
-			$key = $bucket['key'];
-			$count = $bucket['count'];
-
-			// Skip null/empty values.
-			if ($key === null || $key === '' || $key === 'null') {
-				continue;
+			foreach ($this->bucketKeyValues(key: $bucket['key']) as $value) {
+				$valueCounts[$value] = ($valueCounts[$value] ?? 0) + $bucket['count'];
 			}
+		}
 
-			// Check if this looks like a JSON array (starts with '[').
-			if (is_string($key) === true && str_starts_with(trim($key), '[') === true) {
-				// Try to decode as JSON array.
-				$decoded = json_decode($key, true);
+		return $this->countedBuckets(valueCounts: $valueCounts);
+	}//end normalizeArrayFacetBuckets()
 
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					// It's a valid JSON array - distribute count to each element.
-					foreach ($decoded as $element) {
-						// Skip null/empty elements.
-						if ($element === null || $element === '') {
-							continue;
-						}
+	/**
+	 * The facet values one raw bucket key counts for.
+	 *
+	 * Null and empty keys count for nothing, a JSON array counts for each of its
+	 * non-empty elements and any other key counts for its cleaned value.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array<int, string> The values the bucket's count goes to.
+	 */
+	private function bucketKeyValues(mixed $key): array {
+		if ($key === null || $key === '' || $key === 'null') {
+			return [];
+		}
 
-						$elementKey = (string)$element;
-						if (isset($valueCounts[$elementKey]) === false) {
-							$valueCounts[$elementKey] = 0;
-						}
+		$elements = $this->jsonArrayKey(key: $key);
+		if ($elements !== null) {
+			return $this->nonEmptyElements(elements: $elements);
+		}
 
-						$valueCounts[$elementKey] += $count;
-					}
+		// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
+		return [(string)$this->cleanJsonValue(value: $key)];
+	}//end bucketKeyValues()
 
-					continue;
-				}
-			}//end if
+	/**
+	 * The decoded elements of a bucket key that is a JSON array.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array|null The decoded array, or null when the key is no JSON array.
+	 */
+	private function jsonArrayKey(mixed $key): ?array {
+		if (is_string($key) === false || str_starts_with(trim($key), '[') === false) {
+			return null;
+		}
 
-			// Not an array - use value as-is.
-			// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
-			$cleanKey = $this->cleanJsonValue(value: $key);
-			$cleanKeyStr = (string)$cleanKey;
+		$decoded = json_decode($key, true);
+		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
+			return null;
+		}
 
-			if (isset($valueCounts[$cleanKeyStr]) === false) {
-				$valueCounts[$cleanKeyStr] = 0;
+		return $decoded;
+	}//end jsonArrayKey()
+
+	/**
+	 * The elements of a decoded JSON array that are neither null nor empty, as strings.
+	 *
+	 * @param array $elements The decoded elements.
+	 *
+	 * @return array<int, string> The non-empty elements.
+	 */
+	private function nonEmptyElements(array $elements): array {
+		$values = [];
+		foreach ($elements as $element) {
+			if ($element !== null && $element !== '') {
+				$values[] = (string)$element;
 			}
+		}
 
-			$valueCounts[$cleanKeyStr] += $count;
-		}//end foreach
+		return $values;
+	}//end nonEmptyElements()
 
-		// Convert back to bucket format, sorted by count descending.
-		$normalizedBuckets = [];
+	/**
+	 * Buckets for accumulated value counts, highest count first and capped.
+	 *
+	 * @param array<array-key, int> $valueCounts Counts by value.
+	 *
+	 * @return array<int, array{key: array-key, count: int}> The buckets.
+	 */
+	private function countedBuckets(array $valueCounts): array {
+		$buckets = [];
 		foreach ($valueCounts as $key => $count) {
-			$normalizedBuckets[] = [
+			$buckets[] = [
 				'key' => $key,
 				'count' => $count,
 			];
 		}
 
 		// Sort by count descending (highest first).
-		usort($normalizedBuckets, fn ($a, $b) => $b['count'] <=> $a['count']);
+		usort($buckets, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-		// Apply limit.
-		return array_slice($normalizedBuckets, 0, self::MAX_FACET_BUCKETS);
-	}//end normalizeArrayFacetBuckets()
+		return array_slice($buckets, 0, self::MAX_FACET_BUCKETS);
+	}//end countedBuckets()
 
 	/**
 	 * Get date histogram facet using UNION ALL across multiple tables.
@@ -1200,42 +1261,60 @@ class MagicFacetHandler {
 
 		foreach ($tableConfigs as $tc) {
 			$schema = $tc['schema'] ?? null;
-			if ($schema === null) {
-				continue;
+			if ($schema !== null) {
+				$schemaConfig = $this->expandFacetConfig(facetConfig: $facetConfigString, schema: $schema);
+				$mergedConfig = $this->mergeSchemaFacetConfig(merged: $mergedConfig, schemaConfig: $schemaConfig);
 			}
-
-			// Get facet config for this schema.
-			$schemaConfig = $this->expandFacetConfig(facetConfig: $facetConfigString, schema: $schema);
-
-			// Merge @self metadata facets (typically same across schemas).
-			if (isset($schemaConfig['@self']) === true && is_array($schemaConfig['@self']) === true) {
-				foreach ($schemaConfig['@self'] as $field => $config) {
-					if (isset($mergedConfig['@self'][$field]) === false) {
-						$mergedConfig['@self'][$field] = $config;
-					}
-				}
-			}
-
-			// Merge object field facets (may differ per schema).
-			foreach ($schemaConfig as $field => $config) {
-				if ($field === '@self') {
-					continue;
-				}
-
-				// Add field if not already present, or merge if title is missing.
-				if (isset($mergedConfig[$field]) === false) {
-					$mergedConfig[$field] = $config;
-				} elseif (isset($config['title']) === true
-					&& isset($mergedConfig[$field]['title']) === false
-				) {
-					// Use the title from a schema that has it.
-					$mergedConfig[$field]['title'] = $config['title'];
-				}
-			}
-		}//end foreach
+		}
 
 		return $mergedConfig;
 	}//end expandFacetConfigFromAllSchemas()
+
+	/**
+	 * Merge one schema's facet configuration into the configuration merged so far.
+	 *
+	 * Metadata (@self) facets and object field facets already present are kept;
+	 * an object field facet without a title takes the title of a later schema.
+	 *
+	 * @param array $merged       The configuration merged so far.
+	 * @param array $schemaConfig The facet configuration of one schema.
+	 *
+	 * @return array The merged configuration.
+	 */
+	private function mergeSchemaFacetConfig(array $merged, array $schemaConfig): array {
+		$selfConfig = $schemaConfig['@self'] ?? null;
+		if (is_array($selfConfig) === true) {
+			$merged['@self'] += $selfConfig;
+		}
+
+		unset($schemaConfig['@self']);
+		foreach ($schemaConfig as $field => $config) {
+			$merged[$field] = $this->mergeFieldFacet(existing: $merged[$field] ?? null, config: $config);
+		}
+
+		return $merged;
+	}//end mergeSchemaFacetConfig()
+
+	/**
+	 * Merge one schema's facet of an object field into the facet merged so far.
+	 *
+	 * @param array|null $existing The facet merged so far, null when there is none.
+	 * @param array      $config   The schema's facet of the field.
+	 *
+	 * @return array The merged facet.
+	 */
+	private function mergeFieldFacet(?array $existing, array $config): array {
+		if ($existing === null) {
+			return $config;
+		}
+
+		// Use the title from a schema that has it.
+		if (isset($config['title']) === true && isset($existing['title']) === false) {
+			$existing['title'] = $config['title'];
+		}
+
+		return $existing;
+	}//end mergeFieldFacet()
 
 	/**
 	 * Whether the caller may be offered a facet over this property.
@@ -1335,31 +1414,56 @@ class MagicFacetHandler {
 	 */
 	private function determineFacetTypeFromProperty(array $property): string {
 		// Check explicit type override from facetable config object.
-		$facetable = $property['facetable'] ?? false;
-		if (is_array($facetable) === true && isset($facetable['type']) === true) {
-			$configType = $facetable['type'];
-			if (in_array($configType, ['terms', 'date_histogram', 'date_range'], true) === true) {
-				return $configType;
-			}
+		$configType = $this->configuredFacetType(property: $property);
+		if ($configType !== null) {
+			return $configType;
 		}
 
-		$type = $property['type'] ?? 'string';
-		$format = $property['format'] ?? '';
-
 		// Date/datetime fields use date histogram.
-		if ($format === 'date' || $format === 'date-time' || $format === 'datetime') {
+		if (in_array($property['format'] ?? '', ['date', 'date-time', 'datetime'], true) === true) {
 			return 'date_histogram';
 		}
 
-		// Numeric fields could use range, but terms is more common for faceting.
-		// Only use range if specifically configured.
+		return $this->numericFacetType(property: $property);
+	}//end determineFacetTypeFromProperty()
+
+	/**
+	 * The facet type a property's facetable config object sets explicitly.
+	 *
+	 * @param array $property The property definition from the schema.
+	 *
+	 * @return string|null The configured type (terms, date_histogram, date_range), or null.
+	 */
+	private function configuredFacetType(array $property): ?string {
+		$facetable = $property['facetable'] ?? false;
+		if (is_array($facetable) === true
+			&& in_array($facetable['type'] ?? null, ['terms', 'date_histogram', 'date_range'], true) === true
+		) {
+			return $facetable['type'];
+		}
+
+		return null;
+	}//end configuredFacetType()
+
+	/**
+	 * The facet type of a property that sets none and is not a date.
+	 *
+	 * Numeric fields could use range, but terms is more common for faceting:
+	 * range is used only when specifically configured through facet_type.
+	 *
+	 * @param array $property The property definition from the schema.
+	 *
+	 * @return string The configured facet_type of a numeric property, else terms.
+	 */
+	private function numericFacetType(array $property): string {
+		$type = $property['type'] ?? 'string';
 		if (($type === 'integer' || $type === 'number') && isset($property['facet_type']) === true) {
 			return $property['facet_type'];
 		}
 
 		// Default to terms facet for categorical data.
 		return 'terms';
-	}//end determineFacetTypeFromProperty()
+	}//end numericFacetType()
 
 	/**
 	 * Get terms facet for a field in a magic mapper table.
@@ -1660,21 +1764,13 @@ class MagicFacetHandler {
 			return $value;
 		}
 
-		// Try to decode JSON strings.
+		// Invalid JSON decodes to null, which is neither scalar nor array.
 		$decoded = json_decode($value, true);
-		if (json_last_error() === JSON_ERROR_NONE) {
-			// If it decoded to a scalar, return that.
-			if (is_scalar($decoded) === true) {
-				return $decoded;
-			}
-
-			// If it's an array with one element, return that element.
-			if (is_array($decoded) === true && count($decoded) === 1) {
-				return reset($decoded);
-			}
-		}
-
-		return $value;
+		return match (true) {
+			is_scalar($decoded) === true => $decoded,
+			is_array($decoded) === true && count($decoded) === 1 => reset($decoded),
+			default => $value,
+		};
 	}//end cleanJsonValue()
 
 	/**
@@ -1779,66 +1875,88 @@ class MagicFacetHandler {
 	 * @return array{from: string, to: string}|null The bounds or null.
 	 */
 	private function getDateBoundsForBucket(string $dateKey, string $interval): ?array {
-		switch ($interval) {
-			case 'year':
-				return [
-					'from' => $dateKey . '-01-01',
-					'to' => $dateKey . '-12-31',
-				];
-			case 'quarter':
-				if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
-					$year = (int)$matches[1];
-					$quarter = (int)$matches[2];
-					$startMonth = (($quarter - 1) * 3) + 1;
-					$endMonth = $startMonth + 2;
-					$lastDay = cal_days_in_month(0, $endMonth, $year);
+		if (isset(self::DATE_KEY_SUFFIXES[$interval]) === true) {
+			[$fromSuffix, $toSuffix] = self::DATE_KEY_SUFFIXES[$interval];
+			return ['from' => $dateKey . $fromSuffix, 'to' => $dateKey . $toSuffix];
+		}
 
-					return [
-						'from' => sprintf('%04d-%02d-01', $year, $startMonth),
-						'to' => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
-					];
-				}
-				return null;
-			case 'month':
-				$timestamp = strtotime($dateKey . '-01');
-				if ($timestamp === false) {
-					return null;
-				}
-				return [
-					'from' => date('Y-m-01', $timestamp),
-					'to' => date('Y-m-t', $timestamp),
-				];
-			case 'week':
-				// ISO 8601 week buckets are keyed as `<iso-year>-<iso-week>`
-				// (e.g. `2025-12`). PHP's strtotime() parses that string as
-				// "December 2025", not "ISO week 12 of 2025"; we must use
-				// DateTime::setISODate() to get the correct Monday/Sunday
-				// bounds. Matches the implementation in MariaDbFacetHandler
-				// and MetaDataFacetHandler.
-				if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
-					return null;
-				}
-
-				$isoYear = (int)$matches[1];
-				$isoWeek = (int)$matches[2];
-				$date = new DateTime();
-				$date->setISODate($isoYear, $isoWeek, 1);
-				$from = $date->format('Y-m-d');
-				$date->setISODate($isoYear, $isoWeek, 7);
-				$to = $date->format('Y-m-d');
-				return [
-					'from' => $from,
-					'to' => $to,
-				];
-			case 'day':
-				return [
-					'from' => $dateKey,
-					'to' => $dateKey,
-				];
-			default:
-				return null;
-		}//end switch
+		return match ($interval) {
+			'quarter' => $this->quarterBounds(dateKey: $dateKey),
+			'month' => $this->monthBounds(dateKey: $dateKey),
+			'week' => $this->isoWeekBounds(dateKey: $dateKey),
+			default => null,
+		};
 	}//end getDateBoundsForBucket()
+
+	/**
+	 * From/to dates of a quarter bucket keyed `<year>-Q<quarter>`.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-Q2").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null for another key shape.
+	 */
+	private function quarterBounds(string $dateKey): ?array {
+		if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) !== 1) {
+			return null;
+		}
+
+		$year = (int)$matches[1];
+		$startMonth = (((int)$matches[2] - 1) * 3) + 1;
+		$endMonth = $startMonth + 2;
+		if (checkdate($endMonth, 1, $year) === false) {
+			throw new \ValueError('Invalid date');
+		}
+
+		return [
+			'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+			'to' => (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $endMonth)))->format('Y-m-t'),
+		];
+	}//end quarterBounds()
+
+	/**
+	 * From/to dates of a month bucket keyed `<year>-<month>`.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-02").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null when the key is no date.
+	 */
+	private function monthBounds(string $dateKey): ?array {
+		$timestamp = strtotime($dateKey . '-01');
+		if ($timestamp === false) {
+			return null;
+		}
+
+		return [
+			'from' => date('Y-m-01', $timestamp),
+			'to' => date('Y-m-t', $timestamp),
+		];
+	}//end monthBounds()
+
+	/**
+	 * Monday/Sunday dates of an ISO 8601 week bucket keyed `<iso-year>-<iso-week>`.
+	 *
+	 * PHP's strtotime() parses a key like `2025-12` as "December 2025", not
+	 * "ISO week 12 of 2025", so the bounds come from DateTime::setISODate().
+	 * Matches the implementation in MariaDbFacetHandler and MetaDataFacetHandler.
+	 *
+	 * @param string $dateKey The bucket key (e.g. "2025-12").
+	 *
+	 * @return array{from: string, to: string}|null The bounds, or null for another key shape.
+	 */
+	private function isoWeekBounds(string $dateKey): ?array {
+		if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
+			return null;
+		}
+
+		$date = new DateTime();
+		$date->setISODate((int)$matches[1], (int)$matches[2], 1);
+		$from = $date->format('Y-m-d');
+		$date->setISODate((int)$matches[1], (int)$matches[2], 7);
+		return [
+			'from' => $from,
+			'to' => $date->format('Y-m-d'),
+		];
+	}//end isoWeekBounds()
 
 	/**
 	 * Check if a column exists in the table.
@@ -2158,20 +2276,7 @@ class MagicFacetHandler {
 	 * @return string PostgreSQL TO_CHAR date format string.
 	 */
 	private function getDateFormatForInterval(string $interval): string {
-		switch ($interval) {
-			case 'day':
-				return 'YYYY-MM-DD';
-			case 'week':
-				return 'IYYY-IW';
-			case 'month':
-				return 'YYYY-MM';
-			case 'year':
-				return 'YYYY';
-			case 'quarter':
-				return 'YYYY-"Q"Q';
-			default:
-				return 'YYYY-MM';
-		}
+		return self::PG_DATE_FORMATS[$interval] ?? 'YYYY-MM';
 	}//end getDateFormatForInterval()
 
 	/**
@@ -2194,9 +2299,7 @@ class MagicFacetHandler {
 	 * @return string The full SQL expression that evaluates to the bucket key string.
 	 */
 	private function buildDateKeyExpr(string $field, string $interval): string {
-		$isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-
-		if ($isPostgres === true) {
+		if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
 			$pgFormat = $this->getDateFormatForInterval(interval: $interval);
 			return "TO_CHAR({$field}, '{$pgFormat}')";
 		}
@@ -2207,23 +2310,7 @@ class MagicFacetHandler {
 			return "CONCAT(YEAR({$field}), '-Q', QUARTER({$field}))";
 		}
 
-		switch ($interval) {
-			case 'day':
-				$myFormat = '%Y-%m-%d';
-				break;
-			case 'week':
-				// ISO year + ISO week — matches PostgreSQL IYYY-IW.
-				$myFormat = '%x-%v';
-				break;
-			case 'year':
-				$myFormat = '%Y';
-				break;
-			case 'month':
-			default:
-				$myFormat = '%Y-%m';
-				break;
-		}
-
+		$myFormat = self::MYSQL_DATE_FORMATS[$interval] ?? '%Y-%m';
 		return "DATE_FORMAT({$field}, '{$myFormat}')";
 	}//end buildDateKeyExpr()
 

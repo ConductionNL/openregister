@@ -114,6 +114,8 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		parent::setUp();
 
 		$this->db = $this->createMock(IDBConnection::class);
+
+		$this->db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
 		$this->magicMapper = $this->createMock(MagicMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);

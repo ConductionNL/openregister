@@ -33,25 +33,21 @@ use OCA\OpenRegister\Db\Schema;
 final class InverseRelationWrite {
 
 	/**
+	 * @param Register $register The register of the saved object.
+	 * @param Schema   $schema   The schema of the saved object.
+	 */
+	public function __construct(
+		public readonly Register $register,
+		public readonly Schema $schema,
+	) {
+	}//end __construct()
+
+	/**
 	 * The UUID of the saved object.
 	 *
 	 * @var string|null
 	 */
 	public ?string $savedUuid = null;
-
-	/**
-	 * The register the saved object belongs to.
-	 *
-	 * @var Register|null
-	 */
-	public ?Register $register = null;
-
-	/**
-	 * The schema the saved object belongs to.
-	 *
-	 * @var Schema|null
-	 */
-	public ?Schema $schema = null;
 
 	/**
 	 * The saved object's schema properties.

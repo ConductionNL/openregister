@@ -4056,7 +4056,7 @@ parameters:
 
 		-
 			message: "#^Iterating over an object of an unknown class ddn\\\\sapp\\\\oid\\.$#"
-			count: 2
+			count: 1
 			path: lib/Files/Service/File/Pdf/PdfStructureInspector.php
 
 		-

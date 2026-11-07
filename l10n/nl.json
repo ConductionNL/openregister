@@ -3544,7 +3544,8 @@
         "Ask a person or group": "Een persoon of groep iets vragen",
         "Ask a person, a group or an agent to do something, and wait for the answer. For a system that will call back, use \"Wait for an answer\" instead.": "Vraag een persoon, groep of agent iets te doen en wacht op het antwoord. Voor een systeem dat terugbelt gebruik je \"Wachten op een antwoord\".",
         "Wait": "Wachten",
-        "Pause the flow for a while, then carry on where it left off.": "Pauzeer de flow een tijd en ga daarna verder waar hij was."
+        "Pause the flow for a while, then carry on where it left off.": "Pauzeer de flow een tijd en ga daarna verder waar hij was.",
+        "Some objects could not be copied.": "Sommige objecten konden niet worden gekopieerd."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -34,6 +34,8 @@ function emptyStatistics() {
  * Store for managing audit trail logs
  * Provides functionality for retrieving, filtering, and managing audit trail entries
  */
+let pendingRefresh = null
+
 export const useAuditTrailStore = defineStore('auditTrail', {
 	state: () => ({
 		// Loading states
@@ -235,17 +237,23 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
-		 * Refresh audit trail list with current filters
+		 * Refresh audit trail list with current filters. The page and its
+		 * sidebar both ask for this while mounting, so the refreshes of one
+		 * tick share one request, which reads the filters as they end up.
 		 *
 		 * @return {Promise} The refresh promise
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
-		async refreshAuditTrailList() {
-			return this.fetchAuditTrails({
-				limit: this.auditTrailPagination.limit,
-				page: this.auditTrailPagination.page,
+		refreshAuditTrailList() {
+			pendingRefresh ??= Promise.resolve().then(() => {
+				pendingRefresh = null
+				return this.fetchAuditTrails({
+					limit: this.auditTrailPagination.limit,
+					page: this.auditTrailPagination.page,
+				})
 			})
+			return pendingRefresh
 		},
 
 		/**
