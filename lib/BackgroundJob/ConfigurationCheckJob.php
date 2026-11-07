@@ -24,7 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -54,7 +54,7 @@ class ConfigurationCheckJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory for job scheduling
 	 * @param ConfigurationMapper $configurationMapper Configuration mapper
 	 * @param ConfigurationServiceInterface $configurationService Configuration service
-	 * @param NotificationService $notificationService Notification service
+	 * @param NotificationServiceInterface $notificationService Notification service
 	 * @param IAppConfig $appConfig App configuration
 	 * @param LoggerInterface $logger Logger
 	 *
@@ -64,7 +64,7 @@ class ConfigurationCheckJob extends TimedJob {
 		ITimeFactory $time,
 		private readonly ConfigurationMapper $configurationMapper,
 		private readonly ConfigurationServiceInterface $configurationService,
-		private readonly NotificationService $notificationService,
+		private readonly NotificationServiceInterface $notificationService,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {

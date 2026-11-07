@@ -27,6 +27,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
+use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -58,6 +61,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		ContentProvider::class => [
+			ContentProviderInterface::class,
+			ContextChatRegistrar::class,
+			[],
+		],
 		PlaceholderResolver::class => [
 			PlaceholderResolverInterface::class,
 			SearchRegistrar::class,
