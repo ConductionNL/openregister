@@ -58,6 +58,8 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
@@ -86,6 +88,7 @@ final class ContractBindings {
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
