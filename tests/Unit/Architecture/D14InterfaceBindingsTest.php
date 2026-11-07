@@ -27,6 +27,11 @@ use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
+use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -51,6 +56,8 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ContextChatSubmissionListener::class => [ContextChatSubmissionListenerInterface::class, McpRegistrar::class],
+		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
+		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
 		ToolRegistry::class => [ToolRegistryInterface::class, McpRegistrar::class],
 	];
 
