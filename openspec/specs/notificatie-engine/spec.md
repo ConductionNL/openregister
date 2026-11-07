@@ -1312,6 +1312,12 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 - **THEN** the import stores the schema and logs a warning naming the rule and the action, as it does for every other notification fault
 - **AND** a later save of that schema by hand is refused with `notification-action-bad-href`
 
+#### Scenario: a save that keeps a stored unlinkable url action
+
+- **WHEN** a schema already stores such a `url` target and a save leaves its `x-openregister-notifications` block exactly as stored (for example an authorization change or the revocation of an account's grants)
+- **THEN** the save goes through and logs a warning naming the rule and the action
+- **AND** a save that changes the block is refused with `notification-action-bad-href` while the block still holds such a target
+
 ### Requirement: Notifier renders declared actions with the originApp icon
 
 `AnnotationNotifier` SHALL render the declared `actions[]` via `addAction()` (keeping the implicit "View" action as the default only when no actions are declared, for back-compat), labelling each in the recipient's locale (nl/en per ADR-007) and marking the `primary` one. It SHALL set the notification icon to the originApp hex composite (served by the hex-icon endpoint) instead of the static openregister image path.
