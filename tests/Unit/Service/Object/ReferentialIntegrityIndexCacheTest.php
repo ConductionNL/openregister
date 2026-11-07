@@ -29,6 +29,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -230,14 +233,10 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		}
 
 		return new ReferentialIntegrityService(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$this->dbReturning($versionRows),
-			$this->cacheFactory,
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(schemaMapper: $schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $this->cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->dbReturning($versionRows)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 	}//end service()
@@ -626,14 +625,10 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		});
 
 		$service = new ReferentialIntegrityService(
-			$this->createMock(SchemaMapper::class),
-			$registers,
-			$this->createMock(MagicMapper::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$db,
-			$this->cacheFactory,
-			$this->makeArchivalGuard()
+			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $registers, cacheFactory: $this->cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		(new \ReflectionProperty($service, 'schemaRegisterMap'))->setValue($service, []);
 		(new \ReflectionMethod($service, 'buildSchemaRegisterMap'))->invoke($service);

@@ -22,6 +22,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -153,14 +156,10 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		return new ReferentialIntegrityService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$objectMapper,
-			$auditMapper,
-			$logger,
-			$this->createMock(IDBConnection::class),
-			$cacheFactory,
-			new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))
+			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $auditMapper, archivalGuard: new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))),
+			logger: $logger
 		);
 	}//end service()
 }//end class

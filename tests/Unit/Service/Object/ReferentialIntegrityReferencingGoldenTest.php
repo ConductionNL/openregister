@@ -23,6 +23,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -211,14 +214,10 @@ class ReferentialIntegrityReferencingGoldenTest extends TestCase {
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 		$service = new ReferentialIntegrityService(
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			objectEntityMapper: $mapper,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			logger: $logger,
-			db: $db,
-			cacheFactory: $cacheFactory,
-			archivalGuard: $this->createMock(ArchivalRetentionGuard::class),
+			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			storage: new IntegrityStorage(objectEntityMapper: $mapper, db: $db),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->createMock(ArchivalRetentionGuard::class)),
+			logger: $logger
 		);
 
 		$schema = new Schema();

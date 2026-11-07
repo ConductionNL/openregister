@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Service\Object\IntegrityCascadeControls;
+use OCA\OpenRegister\Service\Object\IntegrityRelationIndex;
+use OCA\OpenRegister\Service\Object\IntegrityStorage;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -119,14 +122,10 @@ class ReferentialIntegrityArchivalCascadeTest extends TestCase {
 		);
 
 		$this->service = new ReferentialIntegrityService(
-			$schemaMapper,
-			$this->createMock(RegisterMapper::class),
-			$this->objectMapper,
-			$this->auditTrailMapper,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IDBConnection::class),
-			$this->nullCacheFactory(),
-			new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))
+			index: new IntegrityRelationIndex(schemaMapper: $schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $this->nullCacheFactory()),
+			storage: new IntegrityStorage(objectEntityMapper: $this->objectMapper, db: $this->createMock(IDBConnection::class)),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $this->auditTrailMapper, archivalGuard: new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class))),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 		$this->auditTrailMapper->method('buildAuditTrail')->willReturnCallback(

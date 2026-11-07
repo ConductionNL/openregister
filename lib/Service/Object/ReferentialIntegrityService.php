@@ -148,29 +148,80 @@ class ReferentialIntegrityService {
 	private ?array $schemaRegisterMap = null;
 
 	/**
+	 * Schema data mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register data mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Object entity data mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Audit trail mapper for integrity action logging.
+	 *
+	 * @var AuditTrailMapperInterface
+	 */
+	private readonly AuditTrailMapperInterface $auditTrailMapper;
+
+	/**
+	 * Logger for debugging.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Database connection for raw SQL queries.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Distributed cache for the relation index.
+	 *
+	 * @var ICacheFactory
+	 */
+	private readonly ICacheFactory $cacheFactory;
+
+	/**
+	 * Decides whether a cascade target is legally retained.
+	 *
+	 * @var ArchivalRetentionGuard
+	 */
+	private readonly ArchivalRetentionGuard $archivalGuard;
+
+	/**
 	 * Constructor for ReferentialIntegrityService.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema data mapper.
-	 * @param RegisterMapperInterface $registerMapper Register data mapper.
-	 * @param MagicMapperInterface $objectEntityMapper Object entity data mapper.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for integrity action logging.
-	 * @param LoggerInterface $logger Logger for debugging.
-	 * @param IDBConnection $db Database connection for raw SQL queries.
-	 * @param ICacheFactory $cacheFactory Distributed cache for the relation index.
-	 * @param ArchivalRetentionGuard $archivalGuard Decides whether a cascade target is legally retained.
+	 * @param IntegrityRelationIndex   $index    Builds and caches the relation index.
+	 * @param IntegrityStorage         $storage  Reads and writes the referencing objects.
+	 * @param IntegrityCascadeControls $controls Checks retention and records the integrity actions.
+	 * @param LoggerInterface          $logger   Logger for debugging.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly AuditTrailMapperInterface $auditTrailMapper,
-		private readonly LoggerInterface $logger,
-		private readonly IDBConnection $db,
-		private readonly ICacheFactory $cacheFactory,
-		private readonly ArchivalRetentionGuard $archivalGuard,
-	) {
+	public function __construct(IntegrityRelationIndex $index, IntegrityStorage $storage, IntegrityCascadeControls $controls, LoggerInterface $logger) {
+		$this->schemaMapper = $index->schemaMapper;
+		$this->registerMapper = $index->registerMapper;
+		$this->cacheFactory = $index->cacheFactory;
+		$this->objectEntityMapper = $storage->objectEntityMapper;
+		$this->db = $storage->db;
+		$this->auditTrailMapper = $controls->auditTrailMapper;
+		$this->archivalGuard = $controls->archivalGuard;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**
