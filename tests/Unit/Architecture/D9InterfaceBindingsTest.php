@@ -42,6 +42,8 @@ use OCA\OpenRegister\ContextChat\ContentProvider;
 use OCA\OpenRegister\ContextChat\ContentProviderInterface;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
@@ -107,6 +109,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
 			BulkActionRegistrar::class,
+			[],
+		],
+		RiskLevelService::class => [
+			RiskLevelServiceInterface::class,
+			FilesRegistrar::class,
 			[],
 		],
 		RunActionAction::class => [
