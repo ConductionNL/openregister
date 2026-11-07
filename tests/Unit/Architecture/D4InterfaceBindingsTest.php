@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\MapLinkServiceInterface;
+use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\OasServiceInterface;
 use OCA\OpenRegister\Service\OpenProjectLinkService;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -54,6 +56,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 		FlowLinkService::class => [FlowLinkServiceInterface::class, ContractBindings::class],
 		FormLinkService::class => [FormLinkServiceInterface::class, ContractBindings::class],
 		MapLinkService::class => [MapLinkServiceInterface::class, ContractBindings::class],
+		OasService::class => [OasServiceInterface::class, ContractBindings::class],
 		OpenProjectLinkService::class => [OpenProjectLinkServiceInterface::class, ContractBindings::class],
 	];
 
