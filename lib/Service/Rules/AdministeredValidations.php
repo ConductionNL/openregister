@@ -111,18 +111,11 @@ class AdministeredValidations {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function declarationsFrom(?array $annotation): array {
-		if ($annotation === null) {
-			return [];
-		}
-
 		$declarations = [];
-		foreach ($annotation as $name => $declaration) {
-			$name = (string)$name;
-			if ($name === '' || is_array($declaration) === false) {
-				continue;
+		foreach (($annotation ?? []) as $name => $declaration) {
+			if ((string)$name !== '' && is_array($declaration) === true) {
+				$declarations[(string)$name] = $declaration;
 			}
-
-			$declarations[$name] = $declaration;
 		}
 
 		return $declarations;
@@ -140,52 +133,82 @@ class AdministeredValidations {
 	 */
 	public function refusalFor(?array $annotation, array $declaredProperties = []): ?string {
 		foreach ($this->declarationsFrom(annotation: $annotation) as $name => $declaration) {
-			if (array_key_exists('condition', $declaration) === false) {
-				return sprintf('validation "%s" declares no condition', $name);
+			$reason = ($this->severityRefusal(declaration: $declaration) ?? $this->contentRefusal(declaration: $declaration))
+				?? $this->propertyRefusal(declaration: $declaration, declaredProperties: $declaredProperties);
+			if ($reason !== null) {
+				return sprintf('validation "%s" %s', $name, $reason);
 			}
-
-			$severity = (string)($declaration['severity'] ?? '');
-			if (in_array($severity, self::SEVERITIES, true) === false) {
-				return sprintf(
-					'validation "%s" declares severity "%s": use one of %s',
-					$name,
-					$severity,
-					implode(' or ', self::SEVERITIES)
-				);
-			}
-
-			if ($this->messagesOf(declaration: $declaration) === []) {
-				return sprintf(
-					'validation "%s" carries no message; a check whose sentence nobody wrote is not shipped, '
-					. 'because a generic one is how every validation ends up saying the same thing',
-					$name
-				);
-			}
-
-			$properties = ($declaration['properties'] ?? []);
-			if (is_array($properties) === false) {
-				return sprintf('validation "%s" must name its properties as a list', $name);
-			}
-
-			// Only checked when the schema's properties were supplied: an empty
-			// list here means "the caller did not tell me", which is a
-			// different thing from "the schema declares nothing", and refusing
-			// on it would refuse every validation on every schema.
-			if ($declaredProperties !== []) {
-				foreach ($properties as $property) {
-					if (in_array((string)$property, $declaredProperties, true) === false) {
-						return sprintf(
-							'validation "%s" points at "%s", which this schema does not declare',
-							$name,
-							(string)$property
-						);
-					}
-				}
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end refusalFor()
+
+	/**
+	 * Why a validation's condition or severity is refused, after its name.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function severityRefusal(array $declaration): ?string {
+		if (array_key_exists('condition', $declaration) === false) {
+			return 'declares no condition';
+		}
+
+		$severity = (string)($declaration['severity'] ?? '');
+		if (in_array($severity, self::SEVERITIES, true) === false) {
+			return sprintf('declares severity "%s": use one of %s', $severity, implode(' or ', self::SEVERITIES));
+		}
+
+		return null;
+	}//end severityRefusal()
+
+	/**
+	 * Why a validation's message or property list is refused, after its name.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function contentRefusal(array $declaration): ?string {
+		if ($this->messagesOf(declaration: $declaration) === []) {
+			return 'carries no message; a check whose sentence nobody wrote is not shipped, '
+				. 'because a generic one is how every validation ends up saying the same thing';
+		}
+
+		if (is_array(($declaration['properties'] ?? [])) === false) {
+			return 'must name its properties as a list';
+		}
+
+		return null;
+	}//end contentRefusal()
+
+	/**
+	 * Why a validation points at a property the schema does not declare, after its name.
+	 *
+	 * Only checked when the schema's properties were supplied: an empty list
+	 * here means "the caller did not tell me", which is a different thing from
+	 * "the schema declares nothing", and refusing on it would refuse every
+	 * validation on every schema.
+	 *
+	 * @param array<string, mixed> $declaration        The validation, its properties already a list.
+	 * @param array<int, string>   $declaredProperties The properties the schema declares.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function propertyRefusal(array $declaration, array $declaredProperties): ?string {
+		if ($declaredProperties === []) {
+			return null;
+		}
+
+		foreach (($declaration['properties'] ?? []) as $property) {
+			if (in_array((string)$property, $declaredProperties, true) === false) {
+				return sprintf('points at "%s", which this schema does not declare', (string)$property);
+			}
+		}
+
+		return null;
+	}//end propertyRefusal()
 
 	/**
 	 * Evaluate the declared validations against one document.
@@ -211,58 +234,96 @@ class AdministeredValidations {
 		array $library = [],
 		string $language = self::FALLBACK_LANGUAGE
 	): array {
-		$refusals = [];
-		$warnings = [];
-
+		$input   = new ValidationInput(document: $document, library: $library, language: $language);
+		$outcome = ['refusals' => [], 'warnings' => []];
 		foreach ($this->declarationsFrom(annotation: $annotation) as $name => $declaration) {
-			$severity = (string)($declaration['severity'] ?? self::REFUSE);
-
-			try {
-				$violated = $this->evaluator->holds(
-					node: ($declaration['condition'] ?? null),
-					document: $document,
-					library: $library
-				);
-			} catch (ConditionRefusedException $refused) {
-				// 🔴 Unevaluable is a REFUSAL of the save, whatever the
-				// declared severity. A check that could not be asked has not
-				// been passed, and a `warn` that quietly becomes "fine" is how
-				// a broken named condition switches off a mandatory control.
-				$refusals[] = [
-					'validation' => (string)$name,
-					'severity' => self::REFUSE,
-					'properties' => $this->propertiesOf(declaration: $declaration),
-					'message' => sprintf(
-						'This check could not be evaluated, so the save is refused: %s',
-						$refused->getWhy()
-					),
-					'unevaluable' => true,
-				];
-				continue;
-			}//end try
-
-			if ($violated === false) {
+			$entry = $this->entryFor(declaration: $declaration, input: $input);
+			if ($entry === null) {
 				continue;
 			}
 
-			$entry = [
-				'validation' => (string)$name,
-				'severity' => $severity,
-				'properties' => $this->propertiesOf(declaration: $declaration),
-				'message' => $this->messageIn(declaration: $declaration, language: $language),
-				'unevaluable' => false,
-			];
+			$outcome[$this->bucketOf(entry: $entry)][] = (['validation' => (string)$name] + $entry);
+		}
 
-			if ($severity === self::WARN) {
-				$warnings[] = $entry;
-				continue;
-			}
-
-			$refusals[] = $entry;
-		}//end foreach
-
-		return ['refusals' => $refusals, 'warnings' => $warnings];
+		return $outcome;
 	}//end evaluate()
+
+	/**
+	 * The outcome of one validation without its name, or null when it holds.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 * @param ValidationInput      $input       What the evaluation reads.
+	 *
+	 * @return array<string, mixed>|null The entry, or null when the check passed.
+	 */
+	private function entryFor(array $declaration, ValidationInput $input): ?array {
+		try {
+			$node     = ($declaration['condition'] ?? null);
+			$violated = $this->evaluator->holds(node: $node, document: $input->document, library: $input->library);
+		} catch (ConditionRefusedException $refused) {
+			return $this->unevaluableEntry(declaration: $declaration, refused: $refused);
+		}
+
+		if ($violated === false) {
+			return null;
+		}
+
+		return $this->violationEntry(declaration: $declaration, language: $input->language);
+	}//end entryFor()
+
+	/**
+	 * The entry for a validation whose condition holds: the check failed.
+	 *
+	 * @param array<string, mixed> $declaration The validation.
+	 * @param string               $language    The caller's language.
+	 *
+	 * @return array<string, mixed> The entry, without the validation's name.
+	 */
+	private function violationEntry(array $declaration, string $language): array {
+		return [
+			'severity' => (string)($declaration['severity'] ?? self::REFUSE),
+			'properties' => $this->propertiesOf(declaration: $declaration),
+			'message' => $this->messageIn(declaration: $declaration, language: $language),
+			'unevaluable' => false,
+		];
+	}//end violationEntry()
+
+	/**
+	 * Which list an entry lands in: only a violated `warn` lets the save through.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 *
+	 * @return string `warnings` or `refusals`.
+	 */
+	private function bucketOf(array $entry): string {
+		if ($entry['severity'] === self::WARN) {
+			return 'warnings';
+		}
+
+		return 'refusals';
+	}//end bucketOf()
+
+	/**
+	 * The refusal entry for a validation whose condition could not be evaluated.
+	 *
+	 * 🔴 Unevaluable is a REFUSAL of the save, whatever the declared severity.
+	 * A check that could not be asked has not been passed, and a `warn` that
+	 * quietly becomes "fine" is how a broken named condition switches off a
+	 * mandatory control.
+	 *
+	 * @param array<string, mixed>      $declaration The validation.
+	 * @param ConditionRefusedException $refused     Why it could not be evaluated.
+	 *
+	 * @return array<string, mixed> The entry, without the validation's name.
+	 */
+	private function unevaluableEntry(array $declaration, ConditionRefusedException $refused): array {
+		return [
+			'severity' => self::REFUSE,
+			'properties' => $this->propertiesOf(declaration: $declaration),
+			'message' => sprintf('This check could not be evaluated, so the save is refused: %s', $refused->getWhy()),
+			'unevaluable' => true,
+		];
+	}//end unevaluableEntry()
 
 	/**
 	 * The message in the caller's language, or the nearest one declared.
@@ -280,23 +341,14 @@ class AdministeredValidations {
 	 */
 	public function messageIn(array $declaration, string $language): string {
 		$messages = $this->messagesOf(declaration: $declaration);
-		if ($messages === []) {
-			return '';
-		}
-
-		if (array_key_exists($language, $messages) === true) {
-			return $messages[$language];
-		}
 
 		// A regional tag falls back to its base language: `en_GB` should read
 		// the English sentence rather than the Dutch one.
 		$base = strtolower((string)preg_replace('/[_-].*$/', '', $language));
-		if (array_key_exists($base, $messages) === true) {
-			return $messages[$base];
-		}
-
-		if (array_key_exists(self::FALLBACK_LANGUAGE, $messages) === true) {
-			return $messages[self::FALLBACK_LANGUAGE];
+		foreach ([$language, $base, self::FALLBACK_LANGUAGE] as $candidate) {
+			if (array_key_exists($candidate, $messages) === true) {
+				return $messages[$candidate];
+			}
 		}
 
 		return (string)reset($messages);
@@ -315,7 +367,6 @@ class AdministeredValidations {
 	 */
 	private function messagesOf(array $declaration): array {
 		$message = ($declaration['message'] ?? null);
-
 		if (is_string($message) === true && trim($message) !== '') {
 			return [self::FALLBACK_LANGUAGE => $message];
 		}
@@ -324,16 +375,7 @@ class AdministeredValidations {
 			return [];
 		}
 
-		$messages = [];
-		foreach ($message as $language => $text) {
-			if (is_string($text) === false || trim($text) === '') {
-				continue;
-			}
-
-			$messages[(string)$language] = $text;
-		}
-
-		return $messages;
+		return array_filter($message, static fn (mixed $text): bool => is_string($text) === true && trim($text) !== '');
 	}//end messagesOf()
 
 	/**
