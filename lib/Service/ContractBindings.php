@@ -116,6 +116,10 @@ use OCA\OpenRegister\Service\Operations\JobAlertService;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Service\Quality\QualityScorer;
+use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
+use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
+use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -230,6 +234,8 @@ final class ContractBindings {
 		PollLinkServiceInterface::class => PollLinkService::class,
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
+		QualityScorerInterface::class => QualityScorer::class,
+		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
