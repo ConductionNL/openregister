@@ -101,6 +101,12 @@ use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -194,6 +200,7 @@ final class ContractBindings {
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		\OCA\OpenRegister\Service\Object\FacetCacheVersionInterface::class => \OCA\OpenRegister\Service\Object\FacetCacheVersion::class,
+		FavouriteServiceInterface::class => FavouriteService::class,
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
@@ -271,6 +278,7 @@ final class ContractBindings {
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
 		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
+		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
@@ -279,6 +287,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
+		WatcherServiceInterface::class => WatcherService::class,
 		XwikiLinkServiceInterface::class => XwikiLinkService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,

@@ -62,6 +62,12 @@ use OCA\OpenRegister\Service\Import\ImportPreviewService;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -101,6 +107,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
+		FavouriteService::class => [FavouriteServiceInterface::class, ContractBindings::class],
 		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
 		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
@@ -119,6 +126,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 		SourceRowReader::class => [SourceRowReaderInterface::class, ContractBindings::class],
 		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
 		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
+		SubstantiveChangeEvaluator::class => [SubstantiveChangeEvaluatorInterface::class, ContractBindings::class],
+		WatcherService::class => [WatcherServiceInterface::class, ContractBindings::class],
 	];
 
 	/**
