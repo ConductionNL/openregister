@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftExpiryInterface;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -67,12 +67,12 @@ class DraftExpiryJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory    $time   The clock.
-	 * @param DraftExpiry     $expiry Removes the expired drafts.
+	 * @param DraftExpiryInterface     $expiry Removes the expired drafts.
 	 * @param LoggerInterface $logger Where the counts go.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly DraftExpiry $expiry,
+		private readonly DraftExpiryInterface $expiry,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
