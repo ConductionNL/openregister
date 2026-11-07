@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\CospendLinkServiceInterface;
 use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
+use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\DemoDataService;
 use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
@@ -79,6 +81,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 		ContactService::class => [ContactServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],
+		DeckLinkService::class => [DeckLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DemoDataService::class => [DemoDataServiceInterface::class, ContractBindings::class, 'Service'],
 		EmailLinkService::class => [EmailLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		EndpointService::class => [EndpointServiceInterface::class, ContractBindings::class, 'Service'],

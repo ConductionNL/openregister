@@ -34,7 +34,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckLinkServiceInterface;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
@@ -56,14 +56,14 @@ class DeckLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param DeckLinkService $deckLinkService Backing service.
+	 * @param DeckLinkServiceInterface $deckLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 * @param AppSettingsInterface $settingsService Settings service for sticky default.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly DeckLinkService $deckLinkService,
+		private readonly DeckLinkServiceInterface $deckLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly AppSettingsInterface $settingsService,
 	) {

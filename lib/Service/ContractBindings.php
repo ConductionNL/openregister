@@ -227,6 +227,7 @@ final class ContractBindings {
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		DeckCardServiceInterface::class => DeckCardService::class,
+		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		EndpointServiceInterface::class => EndpointService::class,
