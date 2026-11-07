@@ -36,8 +36,12 @@ use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
+use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
@@ -54,9 +58,85 @@ use Psr\Container\ContainerInterface;
  * Application::register() calls register() once; Application::boot() calls boot() once.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A registrar names every service it wires.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Factory closures list every constructor argument.
  */
 final class IntegrationRegistrar {
+
+	/**
+	 * Contract => the service that implements it.
+	 *
+	 * Callers that only read the registry type against its read-side contracts;
+	 * registration (addProvider, withProviders, setLeafLoader) stays on
+	 * IntegrationRegistry. The lookup and dispatch controllers type against the
+	 * provider contracts.
+	 *
+	 * @var array<class-string, class-string>
+	 */
+	public const BINDINGS = [
+		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
+		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
+		KvkLookupInterface::class => KvkProvider::class,
+		MessageDispatcherInterface::class => MessageDispatchProvider::class,
+		OpenCorporatesSearchInterface::class => OpenCorporatesProvider::class,
+		PageWidgetRegistryInterface::class => IntegrationRegistry::class,
+	];
+
+	/**
+	 * The built-in providers boot() adds to the registry, in this order.
+	 *
+	 * @var list<class-string>
+	 */
+	private const BUILTIN_PROVIDERS = [
+		FilesProvider::class,
+		NotesProvider::class,
+		TasksProvider::class,
+		TagsProvider::class,
+		AuditTrailProvider::class,
+		// Leaves: external (OpenConnector-backed).
+		// @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
+		XwikiProvider::class,
+		// @spec openspec/specs/integration-openproject/spec.md (canonical spec).
+		OpenProjectProvider::class,
+		// @spec openspec/specs/integration-registry/spec.md (canonical spec).
+		KvkProvider::class,
+		OpenCorporatesProvider::class,
+		// Leaves: NC-native, backend-shipped (wrap existing OR services).
+		// @spec openspec/specs/integration-calendar/spec.md (canonical spec).
+		CalendarProvider::class,
+		// @spec openspec/specs/integration-contacts/spec.md (canonical spec).
+		ContactsProvider::class,
+		// @spec openspec/specs/integration-deck/spec.md (canonical spec).
+		DeckProvider::class,
+		// @spec openspec/specs/integration-email/spec.md (canonical spec).
+		EmailProvider::class,
+		// Leaves: NC-app-backed greenfield (registry surface only;
+		// service + link table land in per-leaf follow-ups).
+		// @spec openspec/specs/integration-activity/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
+		// @spec openspec/specs/integration-analytics/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
+		// @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
+		BookmarksProvider::class,
+		// @spec openspec/specs/integration-collectives/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
+		// @spec openspec/specs/integration-cospend/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
+		// @spec openspec/specs/integration-flow/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
+		// @spec openspec/specs/integration-forms/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
+		// @spec openspec/specs/integration-maps/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
+		// @spec openspec/specs/integration-photos/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
+		// @spec openspec/specs/integration-polls/spec.md (canonical spec).
+		PollsProvider::class,
+		// @spec openspec/specs/integration-shares/spec.md (canonical spec).
+		SharesProvider::class,
+		// @spec openspec/specs/integration-talk/spec.md (canonical spec).
+		TalkProvider::class,
+		// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
+		\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
+	];
 
 	/**
 	 * Register the IntegrationRegistry + ExternalIntegrationRouter
@@ -67,6 +147,7 @@ final class IntegrationRegistrar {
 	 * `$this->container->get(IntegrationRegistry::class)->addProvider(...)`
 	 * from their own Application::register() hook — see
 	 * `openspec/changes/pluggable-integration-registry/proposal.md` (AD-1).
+	 * The read-side contracts in BINDINGS alias the same shared registry.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -75,126 +156,176 @@ final class IntegrationRegistrar {
 	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	public static function register(IRegistrationContext $context): void {
+		self::registerRegistryAndRouter(context: $context);
+		self::registerValidators(context: $context);
+		self::registerRepairStep(context: $context);
+		self::registerLeafRegistry(context: $context);
+		self::registerBuiltinIntegrationProviders(context: $context);
+		self::registerIntegrationsController(context: $context);
+		self::registerObjectIntegrationsController(context: $context);
+		foreach (self::BINDINGS as $contract => $service) {
+			$context->registerServiceAlias($contract, $service);
+		}
+	}//end register()
+
+	/**
+	 * Register the shared IntegrationRegistry and the ExternalIntegrationRouter.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerRegistryAndRouter(IRegistrationContext $context): void {
 		$context->registerService(
 			IntegrationRegistry::class,
-			function (ContainerInterface $container) {
-				return new IntegrationRegistry(
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
+			static fn (ContainerInterface $container) => new IntegrationRegistry(logger: $container->get('Psr\Log\LoggerInterface'))
 		);
-
 		$context->registerService(
 			ExternalIntegrationRouter::class,
-			function (ContainerInterface $container) {
-				return new ExternalIntegrationRouter(
-					appManager: $container->get('OCP\App\IAppManager'),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
+			static fn (ContainerInterface $container) => new ExternalIntegrationRouter(
+				appManager: $container->get('OCP\App\IAppManager'),
+				container: $container,
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
+	}//end registerRegistryAndRouter()
 
-		// PropertyReferenceTypeValidator — consumed by schema-property
-		// validation paths that opt in to the new referenceType marker
-		// (AD-18). Stays separate from the entity-level
-		// validateLinkedTypesValue path so existing schemas keep
-		// validating exactly as before.
+	/**
+	 * Register the two property-reference validators.
+	 *
+	 * PropertyReferenceTypeValidator is consumed by schema-property validation
+	 * paths that opt in to the referenceType marker (AD-18); it stays separate
+	 * from the entity-level validateLinkedTypesValue path so existing schemas
+	 * keep validating exactly as before. PropertySemanticReferenceValidator
+	 * validates the opt-in `referenceSemanticType` marker (ADR-048) as a
+	 * well-formed absolute IRI.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerValidators(IRegistrationContext $context): void {
 		$context->registerService(
 			PropertyReferenceTypeValidator::class,
-			function (ContainerInterface $container) {
-				return new PropertyReferenceTypeValidator(
-					registry: $container->get(IntegrationRegistry::class),
-				);
-			}
+			static fn (ContainerInterface $container) => new PropertyReferenceTypeValidator(
+				registry: $container->get(IntegrationRegistry::class),
+			)
 		);
-
-		// PropertySemanticReferenceValidator — validates the opt-in
-		// `referenceSemanticType` property marker (ADR-048, cross-app
-		// semantic references) as a well-formed absolute IRI. Standalone,
-		// mirroring PropertyReferenceTypeValidator; wire into schema-save
-		// when write-time enforcement is desired.
 		$context->registerService(
 			PropertySemanticReferenceValidator::class,
-			function (ContainerInterface $container) {
-				return new PropertySemanticReferenceValidator(
-					jsonLd: $container->get(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class),
-				);
-			}
+			static fn (ContainerInterface $container) => new PropertySemanticReferenceValidator(
+				jsonLd: $container->get(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class),
+			)
 		);
+	}//end registerValidators()
 
-		// Repair step LogDanglingLinkedTypes — runs on install +
-		// post-migration to surface schemas whose linkedTypes contain
-		// ids that the registry can no longer resolve. Strictly
-		// informational; never throws, never modifies data.
+	/**
+	 * Register the LogDanglingLinkedTypes repair step.
+	 *
+	 * It runs on install and post-migration to surface schemas whose
+	 * linkedTypes hold ids the registry can no longer resolve; it never
+	 * throws and never modifies data.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerRepairStep(IRegistrationContext $context): void {
 		$context->registerService(
 			LogDanglingLinkedTypes::class,
-			function (ContainerInterface $container) {
-				return new LogDanglingLinkedTypes(
-					registry: $container->get(IntegrationRegistry::class),
-					container: $container,
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
+			static fn (ContainerInterface $container) => new LogDanglingLinkedTypes(
+				registry: $container->get(IntegrationRegistry::class),
+				container: $container,
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
+	}//end registerRepairStep()
 
-		// LeafRegistry — the cross-app leaf catalogue (ADR-066). Collects the
-		// leaves sibling apps contribute through RegisterLeafProvidersEvent,
-		// lazily on first read, and lands their data providers on the shared
-		// IntegrationRegistry so existing per-object routing reaches them.
+	/**
+	 * Register the LeafRegistry, the cross-app leaf catalogue (ADR-066).
+	 *
+	 * It collects the leaves sibling apps contribute through
+	 * RegisterLeafProvidersEvent, lazily on first read, and lands their data
+	 * providers on the shared IntegrationRegistry so existing per-object
+	 * routing reaches them.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerLeafRegistry(IRegistrationContext $context): void {
 		$context->registerService(
 			LeafRegistry::class,
-			function (ContainerInterface $container) {
-				return new LeafRegistry(
-					eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
-					integrationRegistry: $container->get(IntegrationRegistry::class),
-					appManager: $container->get('OCP\App\IAppManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
+			static fn (ContainerInterface $container) => new LeafRegistry(
+				eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+				integrationRegistry: $container->get(IntegrationRegistry::class),
+				appManager: $container->get('OCP\App\IAppManager'),
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
+	}//end registerLeafRegistry()
 
-		self::registerBuiltinIntegrationProviders(context: $context);
-
-		// IntegrationsController — read-only API over the registry.
+	/**
+	 * Register the IntegrationsController, the read-only API over the registry.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerIntegrationsController(IRegistrationContext $context): void {
 		$context->registerService(
 			IntegrationsController::class,
-			function (ContainerInterface $container) {
-				return new IntegrationsController(
-					appName: 'openregister',
-					request: $container->get('OCP\IRequest'),
-					registry: $container->get(IntegrationRegistry::class),
-					userSession: $container->get('OCP\IUserSession'),
-					groupManager: $container->get('OCP\IGroupManager'),
-					logger: $container->get('Psr\Log\LoggerInterface')
-				);
-			}
+			static fn (ContainerInterface $container) => new IntegrationsController(
+				appName: 'openregister',
+				request: $container->get('OCP\IRequest'),
+				registry: $container->get(IntegrationRegistry::class),
+				userSession: $container->get('OCP\IUserSession'),
+				groupManager: $container->get('OCP\IGroupManager'),
+				logger: $container->get('Psr\Log\LoggerInterface')
+			)
 		);
+	}//end registerIntegrationsController()
 
-		// ObjectIntegrationsController — object-scoped sub-resource
-		// dispatch through the registry.
+	/**
+	 * Register the ObjectIntegrationsController, the object-scoped
+	 * sub-resource dispatch through the registry.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 */
+	private static function registerObjectIntegrationsController(IRegistrationContext $context): void {
 		$context->registerService(
 			ObjectIntegrationsController::class,
-			function (ContainerInterface $container) {
-				return new ObjectIntegrationsController(
-					appName: 'openregister',
-					request: $container->get('OCP\IRequest'),
-					services: new ObjectIntegrationsControllerServices(
-						domain: new ObjectIntegrationsDomain(
-							registry: $container->get(IntegrationRegistry::class),
-							objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
-							schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class)
-						),
-						access: new ObjectIntegrationsAccess(
-							visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
-							permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class)
-						),
-						logger: $container->get('Psr\Log\LoggerInterface')
-					)
-				);
-			}
+			static fn (ContainerInterface $container) => new ObjectIntegrationsController(
+				appName: 'openregister',
+				request: $container->get('OCP\IRequest'),
+				services: self::buildObjectIntegrationsServices(container: $container)
+			)
 		);
-	}//end register()
+	}//end registerObjectIntegrationsController()
+
+	/**
+	 * Build the service bundle of the ObjectIntegrationsController.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return ObjectIntegrationsControllerServices
+	 */
+	private static function buildObjectIntegrationsServices(ContainerInterface $container): ObjectIntegrationsControllerServices {
+		return new ObjectIntegrationsControllerServices(
+			domain: new ObjectIntegrationsDomain(
+				registry: $container->get(IntegrationRegistry::class),
+				objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
+				schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class)
+			),
+			access: new ObjectIntegrationsAccess(
+				visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
+				permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class)
+			),
+			logger: $container->get('Psr\Log\LoggerInterface')
+		);
+	}//end buildObjectIntegrationsServices()
 
 	/**
 	 * Register the integration providers and link services listed in
@@ -226,11 +357,10 @@ final class IntegrationRegistrar {
 	 * Resolve every BuiltinProviders/* class and register it with the
 	 * shared IntegrationRegistry.
 	 *
-	 * Kept separate from the DI registration in
-	 * `registerIntegrationRegistry()` because addProvider() needs the
-	 * registry instance — i.e. it has to run after the container has
-	 * fully bootstrapped. `boot()` is the canonical post-registration
-	 * hook for that.
+	 * Kept separate from the DI registration in register() because
+	 * addProvider() needs the registry instance — i.e. it has to run after
+	 * the container has fully bootstrapped. `boot()` is the canonical
+	 * post-registration hook for that.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -249,93 +379,58 @@ final class IntegrationRegistrar {
 			return;
 		}
 
-		$providerClasses = [
-			FilesProvider::class,
-			NotesProvider::class,
-			TasksProvider::class,
-			TagsProvider::class,
-			AuditTrailProvider::class,
-			// Leaves: external (OpenConnector-backed).
-			// @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
-			XwikiProvider::class,
-			// @spec openspec/specs/integration-openproject/spec.md (canonical spec).
-			OpenProjectProvider::class,
-			// @spec openspec/specs/integration-registry/spec.md (canonical spec).
-			KvkProvider::class,
-			OpenCorporatesProvider::class,
-			// Leaves: NC-native, backend-shipped (wrap existing OR services).
-			// @spec openspec/specs/integration-calendar/spec.md (canonical spec).
-			CalendarProvider::class,
-			// @spec openspec/specs/integration-contacts/spec.md (canonical spec).
-			ContactsProvider::class,
-			// @spec openspec/specs/integration-deck/spec.md (canonical spec).
-			DeckProvider::class,
-			// @spec openspec/specs/integration-email/spec.md (canonical spec).
-			EmailProvider::class,
-			// Leaves: NC-app-backed greenfield (registry surface only;
-			// service + link table land in per-leaf follow-ups).
-			// @spec openspec/specs/integration-activity/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-			// @spec openspec/specs/integration-analytics/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-			// @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
-			BookmarksProvider::class,
-			// @spec openspec/specs/integration-collectives/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
-			// @spec openspec/specs/integration-cospend/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-			// @spec openspec/specs/integration-flow/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-			// @spec openspec/specs/integration-forms/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
-			// @spec openspec/specs/integration-maps/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-			// @spec openspec/specs/integration-photos/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-			// @spec openspec/specs/integration-polls/spec.md (canonical spec).
-			PollsProvider::class,
-			// @spec openspec/specs/integration-shares/spec.md (canonical spec).
-			SharesProvider::class,
-			// @spec openspec/specs/integration-talk/spec.md (canonical spec).
-			TalkProvider::class,
-			// @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
-			\OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
-		];
-
-		// Resolve a logger up-front so a mis-wired factory closure or an
-		// absent wrapped service is visible in the logs instead of a
-		// silently-missing tab. Guarded so a logger-less build still boots.
-		try {
-			$logger = $server->get(\Psr\Log\LoggerInterface::class);
-		} catch (\Throwable $e) {
-			$logger = null;
+		$logger = self::bootLogger(server: $server);
+		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
+			self::addBuiltinProvider(server: $server, registry: $integrationRegistry, providerClass: $providerClass, logger: $logger);
 		}
-
-		foreach ($providerClasses as $providerClass) {
-			try {
-				$provider = $server->get($providerClass);
-				$integrationRegistry->addProvider($provider);
-			} catch (\Throwable $e) {
-				// Provider construction can fail if a wrapped service
-				// is missing on this NC build, or — as the live-NC E2E
-				// surfaced — if the DI factory closure was not updated
-				// for a Tier-2 constructor arg. Don't take the whole app
-				// down for one absent provider; the failing tab simply
-				// won't render. But log loudly so a mis-wired factory is
-				// diagnosable rather than silently swallowed.
-				if ($logger !== null) {
-					$logger->warning(
-						'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
-						[
-							'provider' => $providerClass,
-							'message' => $e->getMessage(),
-							'exception' => $e,
-						]
-					);
-				}
-			}//end try
-		}//end foreach
 	}//end boot()
+
+	/**
+	 * Resolve a logger up-front so a mis-wired factory closure or an absent
+	 * wrapped service is visible in the logs instead of a silently-missing tab.
+	 * Guarded so a logger-less build still boots.
+	 *
+	 * @param mixed $server Server container.
+	 *
+	 * @return \Psr\Log\LoggerInterface|null
+	 */
+	private static function bootLogger($server): ?\Psr\Log\LoggerInterface {
+		try {
+			return $server->get(\Psr\Log\LoggerInterface::class);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end bootLogger()
+
+	/**
+	 * Resolve one built-in provider and add it to the registry.
+	 *
+	 * Provider construction can fail if a wrapped service is missing on this
+	 * NC build, or if the DI factory closure was not updated for a Tier-2
+	 * constructor arg. One absent provider does not take the app down — its
+	 * tab simply won't render — but it is logged so the cause is diagnosable.
+	 *
+	 * @param mixed                         $server        Server container.
+	 * @param IntegrationRegistry           $registry      The shared registry.
+	 * @param string                        $providerClass The provider class to resolve.
+	 * @param \Psr\Log\LoggerInterface|null $logger        The logger, when one resolved.
+	 *
+	 * @return void
+	 */
+	private static function addBuiltinProvider($server, IntegrationRegistry $registry, string $providerClass, ?\Psr\Log\LoggerInterface $logger): void {
+		try {
+			$registry->addProvider($server->get($providerClass));
+		} catch (\Throwable $e) {
+			$logger?->warning(
+				'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
+				[
+					'provider' => $providerClass,
+					'message' => $e->getMessage(),
+					'exception' => $e,
+				]
+			);
+		}
+	}//end addBuiltinProvider()
 
 	/**
 	 * Install the lazy leaf loader on the shared IntegrationRegistry.

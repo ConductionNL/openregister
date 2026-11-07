@@ -187,7 +187,7 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 	public function testSweep(): void {
 		$summary = $this->build($this->cases())->runSweep();
 
-		$this->assertSame(['dryRun', 'evaluated', 'purged', 'skippedHeld', 'withheld', 'withinWindow', 'withheldCount'], array_keys($summary));
+		$this->assertSame(['dryRun', 'evaluated', 'purged', 'failed', 'skippedHeld', 'withheld', 'withinWindow', 'withheldCount'], array_keys($summary));
 		$this->assertFalse($summary['dryRun']);
 		$this->assertSame(10, $summary['evaluated']);
 		$this->assertSame(3, $summary['withinWindow']);
@@ -195,7 +195,8 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 		$this->assertSame(['kept'], array_column($summary['withheld'], 'uuid'));
 		$this->assertSame([ArchivalRetentionGuard::GROUND_ARCHIVAL], array_column($summary['withheld'], 'ground'));
 		$this->assertSame(1, $summary['withheldCount']);
-		$this->assertSame(['expired', 'nosubject', 'scrubfail', 'undeletable'], $summary['purged']);
+		$this->assertSame(['expired', 'nosubject', 'scrubfail'], $summary['purged']);
+		$this->assertSame(['undeletable'], $summary['failed']);
 
 		$pseudo = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE;
 		$this->assertSame(
@@ -249,7 +250,7 @@ class RetentionSweepServiceGoldenTest extends TestCase {
 	 */
 	public function testEmpty(): void {
 		$this->assertSame(
-			['dryRun' => false, 'evaluated' => 0, 'purged' => [], 'skippedHeld' => [], 'withheld' => [], 'withinWindow' => 0, 'withheldCount' => 0],
+			['dryRun' => false, 'evaluated' => 0, 'purged' => [], 'failed' => [], 'skippedHeld' => [], 'withheld' => [], 'withinWindow' => 0, 'withheldCount' => 0],
 			$this->build([])->runSweep()
 		);
 

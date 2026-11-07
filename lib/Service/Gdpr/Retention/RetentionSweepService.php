@@ -90,7 +90,11 @@ class RetentionSweepService {
 	 *
 	 * @param bool $dryRun When true, report candidates without deleting/scrubbing.
 	 *
+	 * A case whose dossier delete fails is named in `failed`, never in
+	 * `purged`: the summary is the record of what was destroyed.
+	 *
 	 * @return array{dryRun: bool, evaluated: int, purged: array<int, string>,
+	 *               failed: array<int, string>,
 	 *               skippedHeld: array<int, string>, withinWindow: int,
 	 *               withheld: array<int, array<string, mixed>>, withheldCount: int}
 	 *
@@ -124,6 +128,7 @@ class RetentionSweepService {
 			'dryRun' => $dryRun,
 			'evaluated' => 0,
 			'purged' => [],
+			'failed' => [],
 			'skippedHeld' => [],
 			// RETENTION WINS OVER ERASURE: cases the Archiefwet keeps are named
 			// here with their ground, not silently swept.
@@ -155,7 +160,7 @@ class RetentionSweepService {
 	}//end sweepCase()
 
 	/**
-	 * An expired case: skipped or withheld when refused, else purged (reported only on a dry run).
+	 * An expired case: skipped or withheld when refused, failed when the delete fails, else purged.
 	 *
 	 * @param ObjectEntity         $case    The expired case entity.
 	 * @param array<string, mixed> $data    The case payload.
@@ -171,12 +176,27 @@ class RetentionSweepService {
 			return;
 		}
 
-		if ($dryRun === false) {
-			$this->purge(case: $case, data: $data);
+		$summary[$this->outcomeOf(case: $case, data: $data, dryRun: $dryRun)][] = (string)$case->getUuid();
+	}//end sweepExpired()
+
+	/**
+	 * The bucket an unrefused expired case lands in: `purged`, or `failed` when its delete fails.
+	 *
+	 * A dry run destroys nothing and reports the case as `purged`.
+	 *
+	 * @param ObjectEntity         $case   The expired case entity.
+	 * @param array<string, mixed> $data   The case payload.
+	 * @param bool                 $dryRun When true, nothing is scrubbed or deleted.
+	 *
+	 * @return string The summary bucket.
+	 */
+	private function outcomeOf(ObjectEntity $case, array $data, bool $dryRun): string {
+		if ($dryRun === true || $this->purge(case: $case, data: $data) === true) {
+			return 'purged';
 		}
 
-		$summary['purged'][] = (string)$case->getUuid();
-	}//end sweepExpired()
+		return 'failed';
+	}//end outcomeOf()
 
 	/**
 	 * Why an expired case must be left intact, as [bucket, entry], or null.
@@ -265,9 +285,9 @@ class RetentionSweepService {
 	 * @param ObjectEntity $case The case entity.
 	 * @param array<string, mixed> $data The case payload.
 	 *
-	 * @return void
+	 * @return bool True only when the dossier delete succeeded.
 	 */
-	private function purge(ObjectEntity $case, array $data): void {
+	private function purge(ObjectEntity $case, array $data): bool {
 		$uuid = (string)$case->getUuid();
 		$subjectId = (string)($data['subjectId'] ?? '');
 
@@ -277,7 +297,7 @@ class RetentionSweepService {
 			$this->scrubEvidence(uuid: $uuid, subjectId: $subjectId);
 		}
 
-		$this->deleteDossier(uuid: $uuid);
+		return $this->deleteDossier(uuid: $uuid);
 	}//end purge()
 
 	/**
@@ -306,18 +326,41 @@ class RetentionSweepService {
 	 *
 	 * @param string $uuid The case uuid.
 	 *
-	 * @return void
+	 * @return bool True only when the dossier delete succeeded.
 	 */
-	private function deleteDossier(string $uuid): void {
+	private function deleteDossier(string $uuid): bool {
+		$deleted = $this->tryDelete(uuid: $uuid);
+		if ($deleted === null) {
+			return false;
+		}
+
+		if ($deleted === false) {
+			$this->logger->error(message: sprintf('[RetentionSweep] dossier delete failed for case "%s"', $uuid));
+			return false;
+		}
+
+		$this->logger->info(
+			message: sprintf('[RetentionSweep] case "%s" past window — dossier hard-deleted, evidence scrubbed', $uuid)
+		);
+
+		return true;
+	}//end deleteDossier()
+
+	/**
+	 * Run the audited sweep delete; a thrown failure is logged and reported as null.
+	 *
+	 * @param string $uuid The case uuid.
+	 *
+	 * @return bool|null The delete's own result, or null when it threw.
+	 */
+	private function tryDelete(string $uuid): bool|null {
 		try {
-			$this->accessor->deleteForSweep(caseUuid: $uuid);
-			$this->logger->info(
-				message: sprintf('[RetentionSweep] case "%s" past window — dossier hard-deleted, evidence scrubbed', $uuid)
-			);
+			return $this->accessor->deleteForSweep(caseUuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: sprintf('[RetentionSweep] dossier delete failed for case "%s": %s', $uuid, $e->getMessage())
 			);
+			return null;
 		}
-	}//end deleteDossier()
+	}//end tryDelete()
 }//end class

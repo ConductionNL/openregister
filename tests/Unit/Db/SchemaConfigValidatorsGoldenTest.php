@@ -28,8 +28,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\ConfigurationValueRules;
+use OCA\OpenRegister\Db\Schema\LinkedTypesRule;
+use OCA\OpenRegister\Db\Schema\VocabularyEntries;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 use ReflectionProperty;
 use Throwable;
 
@@ -94,9 +96,15 @@ class SchemaConfigValidatorsGoldenTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function directOutcome(string $method, mixed $value): array {
-		$schema = new Schema();
+		$rules = [
+			'validateLinkRolesValue'          => new VocabularyEntries(),
+			'validatePartyKindsValue'         => new VocabularyEntries(),
+			'validateLinkedTypesValue'        => new LinkedTypesRule(),
+			'validateMailObjectTemplateValue' => new ConfigurationValueRules(),
+			'validateCalendarProviderConfig'  => new ConfigurationValueRules(),
+		];
 		try {
-			return ['returned' => (new ReflectionMethod(Schema::class, $method))->invoke($schema, $value)];
+			return ['returned' => $rules[$method]->$method($value)];
 		} catch (Throwable $e) {
 			return ['threw' => get_class($e).': '.$e->getMessage()];
 		}

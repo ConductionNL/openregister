@@ -13,45 +13,18 @@
 
 			<div class="cache-type-selection">
 				<h4>Cache Type:</h4>
-				<div class="radio-group">
+				<div
+					v-for="(group, index) in cacheTypeGroups"
+					:key="index"
+					class="radio-group">
 					<NcCheckboxRadioSwitch
+						v-for="option in group"
+						:key="option.value"
 						v-model="localCacheType"
 						name="cache_type"
-						value="all"
+						:value="option.value"
 						type="radio">
-						Clear All Cache (Recommended)
-					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch
-						v-model="localCacheType"
-						name="cache_type"
-						value="object"
-						type="radio">
-						Object Cache Only
-					</NcCheckboxRadioSwitch>
-				</div>
-				<div class="radio-group">
-					<NcCheckboxRadioSwitch
-						v-model="localCacheType"
-						name="cache_type"
-						value="schema"
-						type="radio">
-						Schema Cache Only
-					</NcCheckboxRadioSwitch>
-					<NcCheckboxRadioSwitch
-						v-model="localCacheType"
-						name="cache_type"
-						value="facet"
-						type="radio">
-						Facet Cache Only
-					</NcCheckboxRadioSwitch>
-				</div>
-				<div class="radio-group">
-					<NcCheckboxRadioSwitch
-						v-model="localCacheType"
-						name="cache_type"
-						value="distributed"
-						type="radio">
-						Distributed Cache Only
+						{{ option.label }}
 					</NcCheckboxRadioSwitch>
 				</div>
 			</div>
@@ -84,6 +57,21 @@ import {
 } from '@nextcloud/vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
+
+/**
+ * The cache types to choose from, in rows of radios.
+ */
+const CACHE_TYPE_GROUPS = [
+	[
+		{ value: 'all', label: 'Clear All Cache (Recommended)' },
+		{ value: 'object', label: 'Object Cache Only' },
+	],
+	[
+		{ value: 'schema', label: 'Schema Cache Only' },
+		{ value: 'facet', label: 'Facet Cache Only' },
+	],
+	[{ value: 'distributed', label: 'Distributed Cache Only' }],
+]
 
 export default {
 	name: 'ClearCacheModal',
@@ -120,6 +108,18 @@ export default {
 		return {
 			localCacheType: this.cacheType,
 		}
+	},
+
+	computed: {
+		/**
+		 * The cache types to choose from, for display.
+		 *
+		 * @spec exclude UI display helper — static radio layout.
+		 * @return {Array<Array<object>>}
+		 */
+		cacheTypeGroups() {
+			return CACHE_TYPE_GROUPS
+		},
 	},
 
 	watch: {

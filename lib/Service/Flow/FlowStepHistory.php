@@ -167,24 +167,7 @@ class FlowStepHistory {
 			$step->setDurationMs(($entry['durationMs'] ?? null));
 			$step->setCreated(new DateTime());
 			$step->setFinished(new DateTime());
-
-			// `error` and `reason` are distinct outcomes that both belong in
-			// the error column: a thrown step and a deliberately stopped one
-			// are each something a person needs to read back.
-			$step->setError(($entry['error'] ?? ($entry['reason'] ?? null)));
-
-			// What the node produced, minus the items themselves — a step row
-			// is an index into the run, not a second copy of its data.
-			$step->setOutput(
-				array_filter(
-					[
-						'itemsIn' => ($entry['itemsIn'] ?? null),
-						'itemsOut' => ($entry['itemsOut'] ?? null),
-						'checkId' => ($entry['checkId'] ?? null),
-					],
-					static fn ($v): bool => $v !== null
-				)
-			);
+			FlowStepOutcome::stamp(step: $step, entry: $entry);
 
 			try {
 				$this->steps->insert($step);

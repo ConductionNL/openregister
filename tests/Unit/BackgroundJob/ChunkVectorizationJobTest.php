@@ -24,6 +24,7 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerI
 use OCA\OpenRegister\Files\BackgroundJob\ChunkVectorizationJob;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandler;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddings;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -69,7 +70,7 @@ class ChunkVectorizationJobTest extends TestCase {
 		$this->registerService(IAppConfig::class, function () {
 			return $this->appConfig;
 		});
-		$this->registerService(ChunkMapper::class, function () {
+		$this->registerService(ChunkStoreInterface::class, function () {
 			return $this->chunkMapper;
 		});
 		$this->registerService(EmbeddingGeneratorInterface::class, function () {
