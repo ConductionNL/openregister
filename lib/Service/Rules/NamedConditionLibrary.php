@@ -105,29 +105,38 @@ class NamedConditionLibrary {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
 	public function libraryFrom(?array $annotation): array {
-		if ($annotation === null) {
-			return [];
-		}
-
 		$library = [];
-		foreach ($annotation as $name => $declaration) {
-			$name = (string)$name;
-			if ($name === '' || is_array($declaration) === false) {
+		foreach (($annotation ?? []) as $name => $declaration) {
+			if ((string)$name === '') {
 				continue;
 			}
 
-			if (array_key_exists('expression', $declaration) === false) {
-				continue;
+			$entry = $this->entryFrom(declaration: $declaration);
+			if ($entry !== null) {
+				$library[(string)$name] = $entry;
 			}
-
-			$library[$name] = [
-				'expression' => $declaration['expression'],
-				'description' => (string)($declaration['description'] ?? ''),
-			];
 		}
 
 		return $library;
 	}//end libraryFrom()
+
+	/**
+	 * One library entry from a declaration, or null when it declares nothing.
+	 *
+	 * @param mixed $declaration The declaration under one name.
+	 *
+	 * @return array{expression: mixed, description: string}|null The entry.
+	 */
+	private function entryFrom(mixed $declaration): ?array {
+		if (is_array($declaration) === false || array_key_exists('expression', $declaration) === false) {
+			return null;
+		}
+
+		return [
+			'expression' => $declaration['expression'],
+			'description' => (string)($declaration['description'] ?? ''),
+		];
+	}//end entryFrom()
 
 	/**
 	 * Every named condition a node references, directly.
@@ -147,17 +156,29 @@ class NamedConditionLibrary {
 			return [(string)$node[self::REF]];
 		}
 
+		return $this->referencesUnderBranches(node: $node);
+	}//end referencesIn()
+
+	/**
+	 * The names referenced under every branch key of a node.
+	 *
+	 * Anything that is not a branch key, or whose value is not an array, is an
+	 * operand and is not followed.
+	 *
+	 * @param array<string|int, mixed> $node The condition node.
+	 *
+	 * @return array<int, string> The names, in order of appearance.
+	 */
+	private function referencesUnderBranches(array $node): array {
 		$names = [];
 		foreach ($node as $key => $value) {
-			if (in_array((string)$key, self::BRANCHES, true) === false || is_array($value) === false) {
-				continue;
+			if (in_array((string)$key, self::BRANCHES, true) === true && is_array($value) === true) {
+				$names = array_merge($names, $this->referencesUnder(value: $value));
 			}
-
-			$names = array_merge($names, $this->referencesUnder(value: $value));
 		}
 
 		return $names;
-	}//end referencesIn()
+	}//end referencesUnderBranches()
 
 	/**
 	 * The names referenced under ONE branch key.
@@ -173,7 +194,7 @@ class NamedConditionLibrary {
 	 */
 	private function referencesUnder(array $value): array {
 		$children = [$value];
-		if ($this->isList(value: $value) === true) {
+		if (array_is_list($value) === true) {
 			$children = $value;
 		}
 
@@ -200,38 +221,77 @@ class NamedConditionLibrary {
 	public function refusalFor(?array $annotation, array $usingNodes = []): ?string {
 		$library = $this->libraryFrom(annotation: $annotation);
 
-		foreach ($library as $name => $declaration) {
-			foreach ($this->referencesIn(node: $declaration['expression']) as $referenced) {
-				if (array_key_exists($referenced, $library) === false) {
-					return sprintf('named condition "%s" references "%s", which is not declared', $name, $referenced);
-				}
-			}
+		return $this->undeclaredRefusal(library: $library, usingNodes: $usingNodes)
+			?? $this->compositionRefusal(library: $library);
+	}//end refusalFor()
+
+	/**
+	 * Why a reference names an undeclared condition: the library's own first, then the users'.
+	 *
+	 * @param array<string, array{expression: mixed, description: string}> $library    The library.
+	 * @param array<string, mixed>                                         $usingNodes Condition nodes by owner.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function undeclaredRefusal(array $library, array $usingNodes): ?string {
+		$expressions = array_map(static fn (array $declaration): mixed => $declaration['expression'], $library);
+		$miss        = $this->firstUndeclared(nodes: $expressions, library: $library);
+		if ($miss !== null) {
+			return sprintf('named condition "%s" references "%s", which is not declared', $miss[0], $miss[1]);
 		}
 
-		foreach ($usingNodes as $owner => $node) {
+		$miss = $this->firstUndeclared(nodes: $usingNodes, library: $library);
+		if ($miss !== null) {
+			return sprintf('"%s" references named condition "%s", which is not declared', $miss[0], $miss[1]);
+		}
+
+		return null;
+	}//end undeclaredRefusal()
+
+	/**
+	 * The first reference, in any of the nodes, to a name the library does not declare.
+	 *
+	 * @param array<string|int, mixed>                                     $nodes   Condition nodes by owner.
+	 * @param array<string, array{expression: mixed, description: string}> $library The library.
+	 *
+	 * @return array{0: string, 1: string}|null The owner and the undeclared name, or null.
+	 */
+	private function firstUndeclared(array $nodes, array $library): ?array {
+		foreach ($nodes as $owner => $node) {
 			foreach ($this->referencesIn(node: $node) as $referenced) {
 				if (array_key_exists($referenced, $library) === false) {
-					return sprintf('"%s" references named condition "%s", which is not declared', (string)$owner, $referenced);
+					return [(string)$owner, $referenced];
 				}
 			}
 		}
 
-		$cycle = $this->cycleIn(library: $library);
+		return null;
+	}//end firstUndeclared()
+
+	/**
+	 * Why the library's composition is refused: a cycle first, then the depth ceiling.
+	 *
+	 * @param array<string, array{expression: mixed, description: string}> $library The library.
+	 *
+	 * @return string|null The reason, or null.
+	 */
+	private function compositionRefusal(array $library): ?string {
+		$graph = new NamedConditionGraph(
+			edges: array_map(fn (array $declaration): array => $this->referencesIn(node: $declaration['expression']), $library)
+		);
+
+		$cycle = $graph->firstCycle();
 		if ($cycle !== null) {
 			return sprintf('named conditions form a cycle: %s', implode(' → ', $cycle));
 		}
 
-		$deep = $this->tooDeepIn(library: $library);
+		$deep = $graph->firstTooDeep();
 		if ($deep !== null) {
-			return sprintf(
-				'named condition "%s" composes deeper than the administered depth of %d',
-				$deep,
-				self::MAX_DEPTH
-			);
+			return sprintf('named condition "%s" composes deeper than the administered depth of %d', $deep, self::MAX_DEPTH);
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end compositionRefusal()
 
 	/**
 	 * Which rules use each named condition (task 1.4).
@@ -250,10 +310,7 @@ class NamedConditionLibrary {
 		$usage = [];
 		foreach ($usingNodes as $owner => $node) {
 			foreach ($this->referencesIn(node: $node) as $name) {
-				if (isset($usage[$name]) === false) {
-					$usage[$name] = [];
-				}
-
+				$usage[$name] = ($usage[$name] ?? []);
 				if (in_array((string)$owner, $usage[$name], true) === false) {
 					$usage[$name][] = (string)$owner;
 				}
@@ -261,107 +318,6 @@ class NamedConditionLibrary {
 		}
 
 		ksort($usage);
-
 		return $usage;
 	}//end usage()
-
-	/**
-	 * The first cycle in the library, as the path that closes it.
-	 *
-	 * @param array<string, array{expression: mixed, description: string}> $library The library.
-	 *
-	 * @return array<int, string>|null The cycle path, or null.
-	 */
-	private function cycleIn(array $library): ?array {
-		foreach (array_keys($library) as $name) {
-			$path = $this->walk(library: $library, name: (string)$name, seen: []);
-			if ($path !== null) {
-				return $path;
-			}
-		}
-
-		return null;
-	}//end cycleIn()
-
-	/**
-	 * Walk one name's references, returning the path that closes a cycle.
-	 *
-	 * @param array<string, array{expression: mixed, description: string}> $library The library.
-	 * @param string                                                       $name    The name being walked.
-	 * @param array<int, string>                                           $seen    The path so far.
-	 *
-	 * @return array<int, string>|null The cycle, or null.
-	 */
-	private function walk(array $library, string $name, array $seen): ?array {
-		if (in_array($name, $seen, true) === true) {
-			$seen[] = $name;
-			return $seen;
-		}
-
-		if (array_key_exists($name, $library) === false) {
-			return null;
-		}
-
-		$seen[] = $name;
-		foreach ($this->referencesIn(node: $library[$name]['expression']) as $referenced) {
-			$cycle = $this->walk(library: $library, name: $referenced, seen: $seen);
-			if ($cycle !== null) {
-				return $cycle;
-			}
-		}
-
-		return null;
-	}//end walk()
-
-	/**
-	 * The first name whose composition is deeper than the ceiling.
-	 *
-	 * Only called after the cycle check, so the descent terminates.
-	 *
-	 * @param array<string, array{expression: mixed, description: string}> $library The library.
-	 *
-	 * @return string|null The name, or null.
-	 */
-	private function tooDeepIn(array $library): ?string {
-		foreach (array_keys($library) as $name) {
-			if ($this->depthOf(library: $library, name: (string)$name, depth: 0) > self::MAX_DEPTH) {
-				return (string)$name;
-			}
-		}
-
-		return null;
-	}//end tooDeepIn()
-
-	/**
-	 * How deep one name composes.
-	 *
-	 * @param array<string, array{expression: mixed, description: string}> $library The library.
-	 * @param string                                                       $name    The name.
-	 * @param int                                                          $depth   The depth so far.
-	 *
-	 * @return int The depth.
-	 */
-	private function depthOf(array $library, string $name, int $depth): int {
-		if (array_key_exists($name, $library) === false || $depth > self::MAX_DEPTH) {
-			return $depth;
-		}
-
-		$deepest = $depth;
-		foreach ($this->referencesIn(node: $library[$name]['expression']) as $referenced) {
-			$deepest = max($deepest, $this->depthOf(library: $library, name: $referenced, depth: ($depth + 1)));
-		}
-
-		return $deepest;
-	}//end depthOf()
-
-	/**
-	 * Whether an array is a list rather than a map.
-	 *
-	 * @param array<mixed> $value The array.
-	 *
-	 * @return bool True when it is a list.
-	 */
-	private function isList(array $value): bool {
-		return array_is_list($value);
-	}//end isList()
 }//end class
