@@ -3028,8 +3028,8 @@ class ImportHandler {
 
 		// A seed whose schema slug resolved to ANOTHER app's schema,
 		// one its register does not list, is a stale seed, not a
-		// write target ({@see self::seedSchemaIsForeign()}).
-		if ($this->seedSchemaIsForeign(register: $seed->register, schema: $seed->schema, appId: $appId) === true) {
+		// write target ({@see ForeignSeedSchema}).
+		if ($this->seedSchemaCheck(appId: $appId)->isForeign(register: $seed->register, schema: $seed->schema) === true) {
 			$result['skipped']['objects']++;
 			return;
 		}
@@ -3511,23 +3511,43 @@ class ImportHandler {
 			return $data;
 		}
 
-		foreach ($objects as $position => $targetData) {
-			if (is_array($targetData) === false || $index->isReferenced(self: $targetData['@self'] ?? null) === false) {
-				continue;
-			}
-
+		foreach ($this->referencedSeeds(objects: $objects, index: $index) as $position => $targetData) {
 			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
-			if ($uuid === null) {
-				continue;
+			if ($uuid !== null) {
+				$objects[$position]['@self']['id'] = $uuid;
+				$index->record(self: $objects[$position]['@self']);
 			}
-
-			$objects[$position]['@self']['id'] = $uuid;
-			$index->record(self: $objects[$position]['@self']);
 		}
 
 		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
+
+	/**
+	 * The seed objects another seed refers to, under their list positions.
+	 *
+	 * @param array              $objects The seed objects.
+	 * @param SeedReferenceIndex $index   The references collected from them.
+	 *
+	 * @return array The referenced objects.
+	 */
+	private function referencedSeeds(array $objects, SeedReferenceIndex $index): array {
+		return array_filter(
+			$objects,
+			static fn (mixed $seed): bool => is_array($seed) === true && $index->isReferenced(self: $seed['@self'] ?? null) === true
+		);
+	}//end referencedSeeds()
+
+	/**
+	 * The check that keeps a seed out of another app's schema.
+	 *
+	 * @param string|null $appId The importing app.
+	 *
+	 * @return ForeignSeedSchema The check.
+	 */
+	private function seedSchemaCheck(?string $appId): ForeignSeedSchema {
+		return new ForeignSeedSchema(logger: $this->logger, appId: $appId);
+	}//end seedSchemaCheck()
 
 	/**
 	 * The UUID a referenced seed target is stored under.
@@ -3554,21 +3574,29 @@ class ImportHandler {
 			return null;
 		}
 
-		$uuid = $this->findExistingSeedUuid(
-			register: $registerObject,
-			schema: $schemaObject,
-			slug: $targetData['@self']['slug']
-		);
-		if (empty($uuid) === true) {
-			$uuid = $targetData['@self']['id'] ?? null;
+		$uuid = $this->findExistingSeedUuid(register: $registerObject, schema: $schemaObject, slug: $targetData['@self']['slug']);
+		if (empty($uuid) === false) {
+			return $uuid;
 		}
 
-		if (empty($uuid) === true) {
-			$uuid = \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
-		}
-
-		return $uuid;
+		return $this->declaredOrFreshSeedUuid(targetData: $targetData);
 	}//end seedReferenceTargetUuid()
+
+	/**
+	 * The id a seed declares, or a fresh one.
+	 *
+	 * @param array $targetData The seed object.
+	 *
+	 * @return mixed The UUID.
+	 */
+	private function declaredOrFreshSeedUuid(array $targetData): mixed {
+		$uuid = $targetData['@self']['id'] ?? null;
+		if (empty($uuid) === false) {
+			return $uuid;
+		}
+
+		return \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
+	}//end declaredOrFreshSeedUuid()
 
 	/**
 	 * Resolve a seed object's `@self` register + schema slugs to their entities,
@@ -3625,77 +3653,13 @@ class ImportHandler {
 
 		if ($registerObject !== null
 			&& $schemaObject !== null
-			&& $this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true
+			&& $this->seedSchemaCheck(appId: $appId)->isForeign(register: $registerObject, schema: $schemaObject) === true
 		) {
 			$schemaObject = null;
 		}
 
 		return [$registerObject, $schemaObject];
 	}//end resolveImportRegisterSchema()
-
-	/**
-	 * Whether a seed's schema belongs to another app and not to the seed's register.
-	 *
-	 * A seed names its schema by slug, and the import resolves a slug it did
-	 * not import itself with a GLOBAL lookup. Two apps can ship a schema under
-	 * the same slug: stackiq and opencatalogi both used `organization`. When
-	 * opencatalogi dropped its own and kept a stale `organization` seed in its
-	 * `publication` register, the global lookup found stackiq's schema and the
-	 * seed was written into a `publication` x stackiq-`organization` table,
-	 * failing NOT NULL on stackiq's required fields. Whichever app installed
-	 * second broke.
-	 *
-	 * Foreign means all three: the register lists schemas and this one is not
-	 * among them, the schema names an owning application, and that owner is
-	 * neither the importing app nor the register's own app. Each condition
-	 * keeps a legitimate seed working: a register with no schema list yet
-	 * carries no evidence; an app's own schema may not be linked yet on a first
-	 * install that imports its register fragments in several passes; and an app
-	 * seeding into another app's register uses a schema that register lists.
-	 *
-	 * @param Register $register The register the seed names.
-	 * @param Schema $schema The schema its slug resolved to.
-	 * @param string|null $appId The importing app, or null for an import without one.
-	 *
-	 * @return bool True when the seed must be skipped.
-	 *
-	 * @spec openspec/changes/seed-schema-must-belong-to-its-register/specs/data-import-export/spec.md#requirement-a-seed-is-never-written-into-another-apps-schema-its-register-does-not-list
-	 */
-	private function seedSchemaIsForeign(Register $register, Schema $schema, ?string $appId): bool {
-		$linked = array_map('strval', $register->getSchemas());
-		if ($linked === []) {
-			return false;
-		}
-
-		if (in_array((string)$schema->getId(), $linked, true) === true
-			|| in_array((string)$schema->getSlug(), $linked, true) === true
-		) {
-			return false;
-		}
-
-		$owner = (string)($schema->getApplication() ?? '');
-		if ($owner === ''
-			|| $owner === (string)($appId ?? '')
-			|| $owner === (string)($register->getApplication() ?? '')
-		) {
-			return false;
-		}
-
-		$this->logger->warning(
-			message: '[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'appId' => $appId,
-				'registerSlug' => $register->getSlug(),
-				'schemaSlug' => $schema->getSlug(),
-				'schemaId' => $schema->getId(),
-				'schemaApplication' => $owner,
-			]
-		);
-
-		return true;
-	}//end seedSchemaIsForeign()
 
 	/**
 	 * Look up the UUID of an already-imported object with the given
@@ -4923,7 +4887,7 @@ class ImportHandler {
 		}
 
 		if ($seed->targetRegister instanceof Register
-			&& $this->seedSchemaIsForeign(register: $seed->targetRegister, schema: $seed->schema, appId: $seed->appId) === true
+			&& $this->seedSchemaCheck(appId: $seed->appId)->isForeign(register: $seed->targetRegister, schema: $seed->schema) === true
 		) {
 			$seed->result['skipped']['seedObjects'] += count((array)$seed->objects);
 			return;
