@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
+use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
@@ -119,16 +121,26 @@ class ObjectRelationMapper extends QBMapper {
 		$parameter = $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY);
 		$qb->select('*')
 			->from($this->getTableName())
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->in('source_uuid', $parameter),
-					$qb->expr()->in('target_uuid', $parameter)
-				)
-			)
+			->where($this->eitherEndIn(qb: $qb, uuids: $parameter))
 			->orderBy('id', 'ASC');
 
 		return $this->findEntities(query: $qb);
 	}//end findTouching()
+
+	/**
+	 * A predicate matching rows whose source OR target is in a uuid list.
+	 *
+	 * @param IQueryBuilder $qb    The builder the predicate is for.
+	 * @param IParameter    $uuids The bound uuid list.
+	 *
+	 * @return ICompositeExpression The predicate.
+	 */
+	private function eitherEndIn(IQueryBuilder $qb, IParameter $uuids): ICompositeExpression {
+		return $qb->expr()->orX(
+			$qb->expr()->in('source_uuid', $uuids),
+			$qb->expr()->in('target_uuid', $uuids)
+		);
+	}//end eitherEndIn()
 
 	/**
 	 * One row by its uuid.
@@ -189,15 +201,28 @@ class ObjectRelationMapper extends QBMapper {
 			$relation->setUuid(Uuid::v4()->toRfc4122());
 		}
 
+		$this->stampNewRow(relation: $relation);
+
+		return $this->insert(entity: $relation);
+	}//end createFromArray()
+
+	/**
+	 * Stamp a new row's timestamps from one clock reading.
+	 *
+	 * A given `created` is kept; `updated` is always the clock.
+	 *
+	 * @param ObjectRelation $relation The row.
+	 *
+	 * @return void
+	 */
+	private function stampNewRow(ObjectRelation $relation): void {
 		$now = new DateTime();
 		if ($relation->getCreated() === null) {
 			$relation->setCreated($now);
 		}
 
 		$relation->setUpdated($now);
-
-		return $this->insert(entity: $relation);
-	}//end createFromArray()
+	}//end stampNewRow()
 
 	/**
 	 * Persist a row, refreshing the updated timestamp.
