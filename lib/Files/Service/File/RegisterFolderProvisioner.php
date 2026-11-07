@@ -39,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
  */
-class RegisterFolderProvisioner {
+class RegisterFolderProvisioner implements RegisterFolderProvisionerInterface {
 
 	/**
 	 * Constructor.

@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**
@@ -38,16 +38,16 @@ final class ObjectActionsCatalogue {
 	 *
 	 * @param ObjectOperationsInterface           $objects     Loads the subject.
 	 * @param MacroActionResolver     $macros      Loads a schema; the `next` hint after a selection.
-	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
-	 * @param ObjectActionList        $list        Lists the actions.
+	 * @param ObjectActionDefinitionsInterface $definitions The schema's actions, for the selection surface rule.
+	 * @param ObjectActionListInterface        $list        Lists the actions.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objects,
 		public readonly MacroActionResolver $macros,
-		public readonly ObjectActionDefinitions $definitions,
-		public readonly ObjectActionList $list,
+		public readonly ObjectActionDefinitionsInterface $definitions,
+		public readonly ObjectActionListInterface $list,
 	) {
 	}//end __construct()
 }//end class
