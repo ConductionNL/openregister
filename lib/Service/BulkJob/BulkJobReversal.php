@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\BulkJob;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\BulkAction\RestorePriorValuesAction;
+use OCA\OpenRegister\BulkAction\RestorePriorValuesActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
@@ -97,8 +97,8 @@ class BulkJobReversal {
 		}
 
 		$reversal = $this->service->create(
-			actionId: RestorePriorValuesAction::ID,
-			parameters: [RestorePriorValuesAction::PARAM_JOB => (int)$original->getId()],
+			actionId: RestorePriorValuesActionInterface::ID,
+			parameters: [RestorePriorValuesActionInterface::PARAM_JOB => (int)$original->getId()],
 			selection: ['ids' => $uuids],
 			justification: $justification,
 			actorUid: $actorUid,
