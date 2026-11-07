@@ -44,7 +44,7 @@ use OCP\ITempManager;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
  */
-class FormUploadStore {
+class FormUploadStore implements FormUploadStoreInterface {
 
 	use AppDataFolder;
 

@@ -37,7 +37,7 @@ use Throwable;
  *
  * @spec openspec/specs/apphost-scheduling/spec.md
  */
-class ScheduleManifestLoader {
+class ScheduleManifestLoader implements ScheduleManifestLoaderInterface {
 	/**
 	 * Constructor.
 	 *
