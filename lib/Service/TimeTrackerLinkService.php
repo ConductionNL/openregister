@@ -76,7 +76,7 @@ use Throwable;
  * resolveMapper/requireUid/normaliseEntryType/idComponents/fetchEntryInfo/hydrateLink/insertClient/normaliseRow/isStale/refreshEntry;
  * each is required for a distinct flow in the integration surface.
  */
-class TimeTrackerLinkService {
+class TimeTrackerLinkService implements TimeTrackerLinkServiceInterface {
 	private const REQUIRED_APP = 'timemanager';
 
 	private const CLIENT_MAPPER = 'OCA\\TimeManager\\Db\\ClientMapper';
