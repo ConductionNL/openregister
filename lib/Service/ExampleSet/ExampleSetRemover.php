@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
-class ExampleSetRemover {
+class ExampleSetRemover implements ExampleSetRemoverInterface {
 	/**
 	 * Constructor.
 	 *

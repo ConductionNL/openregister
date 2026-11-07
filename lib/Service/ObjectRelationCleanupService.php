@@ -47,7 +47,7 @@ use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
  *
  * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
  */
-class ObjectRelationCleanupService {
+class ObjectRelationCleanupService implements ObjectRelationCleanupServiceInterface {
 	/**
 	 * Wire the entity services this cleanup spans.
 	 *

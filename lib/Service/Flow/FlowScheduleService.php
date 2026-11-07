@@ -55,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class FlowScheduleService {
+class FlowScheduleService implements FlowScheduleServiceInterface {
 
 	/**
 	 * The app id its config lives under.
