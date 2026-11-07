@@ -150,17 +150,24 @@ final class ConfigurationServiceRegistrar {
 			function (ContainerInterface $container) {
 				return new ConfigurationService(
 					configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-					appManager: $container->get('OCP\App\IAppManager'),
-					container: $container,
-					appConfig: $container->get('OCP\IAppConfig'),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					githubHandler: $container->get(GitHubHandler::class),
-					gitlabHandler: $container->get(GitLabHandler::class),
-					cacheHandler: $container->get(ConfigurationCacheHandler::class),
-					previewHandler: $container->get(PreviewHandler::class),
-					exportHandler: $container->get(ConfigurationExportHandler::class),
+					platform: new ConfigurationServicePlatform(
+						appManager: $container->get('OCP\App\IAppManager'),
+						container: $container,
+						appConfig: $container->get('OCP\IAppConfig'),
+						logger: $container->get('Psr\Log\LoggerInterface')
+					),
+					gitHosts: new ConfigurationGitHosts(
+						githubHandler: $container->get(GitHubHandler::class),
+						gitlabHandler: $container->get(GitLabHandler::class)
+					),
 					// NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
-					uploadHandler: $container->get(ConfigurationUploadHandler::class));
+					transfer: new ConfigurationTransferHandlers(
+						cacheHandler: $container->get(ConfigurationCacheHandler::class),
+						previewHandler: $container->get(PreviewHandler::class),
+						exportHandler: $container->get(ConfigurationExportHandler::class),
+						uploadHandler: $container->get(ConfigurationUploadHandler::class)
+					)
+				);
 			}
 		);
 

@@ -57,6 +57,62 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	private const MAX_TABLES_TO_SCAN = 50;
 
 	/**
+	 * Magic mapper for object operations.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $magicMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Organisation mapper.
+	 *
+	 * @var OrganisationMapperInterface
+	 */
+	private readonly OrganisationMapperInterface $organisationMapper;
+
+	/**
+	 * Integration registry, the authoritative type-id source.
+	 *
+	 * @var IntegrationRegistry
+	 */
+	private readonly IntegrationRegistry $integrationRegistry;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * RBAC handler for write-permission checks (SEC-CTRL-4).
+	 *
+	 * @var PermissionHandler
+	 */
+	private readonly PermissionHandler $permissionHandler;
+
+	/**
+	 * Deep-link registry service for cross-app deep links.
+	 *
+	 * @var DeepLinkRegistryService
+	 */
+	private readonly DeepLinkRegistryService $deepLinkRegistry;
+
+	/**
 	 * Constructor for LinkedEntityService.
 	 *
 	 * Per `cleanup-linked-entity-type-map`, the legacy linked-type to
@@ -66,26 +122,23 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	 * a known linked-type is the type id itself — historically the
 	 * removed map was a verbatim identity for every entry.
 	 *
-	 * @param MagicMapperInterface $magicMapper Magic mapper for object operations
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param RegisterMapperInterface $registerMapper Register mapper
-	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper
-	 * @param IntegrationRegistry $integrationRegistry Integration registry (authoritative
-	 *                                                 type-id source, post `cleanup-linked-entity-type-map`)
-	 * @param LoggerInterface $logger Logger
-	 * @param PermissionHandler $permissionHandler RBAC handler for write-permission checks (SEC-CTRL-4)
-	 * @param DeepLinkRegistryService $deepLinkRegistry Deep-link registry service for cross-app deep links
+	 * @param LinkedEntityMappers      $mappers      The object, schema, register and organisation mappers
+	 * @param LinkedEntityIntegrations $integrations The integration and deep-link registries and the permission handler
+	 * @param LoggerInterface          $logger       Logger
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $magicMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly OrganisationMapperInterface $organisationMapper,
-		private readonly IntegrationRegistry $integrationRegistry,
-		private readonly LoggerInterface $logger,
-		private readonly PermissionHandler $permissionHandler,
-		private readonly DeepLinkRegistryService $deepLinkRegistry,
+		LinkedEntityMappers $mappers,
+		LinkedEntityIntegrations $integrations,
+		LoggerInterface $logger,
 	) {
+		$this->magicMapper = $mappers->magicMapper;
+		$this->schemaMapper = $mappers->schemaMapper;
+		$this->registerMapper = $mappers->registerMapper;
+		$this->organisationMapper = $mappers->organisationMapper;
+		$this->integrationRegistry = $integrations->integrationRegistry;
+		$this->logger = $logger;
+		$this->permissionHandler = $integrations->permissionHandler;
+		$this->deepLinkRegistry = $integrations->deepLinkRegistry;
 	}//end __construct()
 
 	/**
