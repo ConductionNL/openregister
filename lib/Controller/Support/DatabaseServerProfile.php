@@ -31,8 +31,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/production-observability/spec.md
  */
-final class DatabaseServerProfile
-{
+final class DatabaseServerProfile {
 
 	/**
 	 * What is reported for a platform nothing is known about.
@@ -96,7 +95,7 @@ final class DatabaseServerProfile
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection   $db     The database connection.
+	 * @param IDBConnection $db The database connection.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
@@ -176,20 +175,41 @@ final class DatabaseServerProfile
 		$profile = array_replace(self::UNKNOWN, self::MYSQL);
 		try {
 			$version = $this->serverVersion();
-
-			$profile['type'] = 'MySQL';
-			if (stripos($version, 'MariaDB') !== false) {
-				$profile['type'] = 'MariaDB';
-			}
-
-			preg_match('/\d+\.\d+\.\d+/', $version, $matches);
-			$profile['version'] = $matches[0] ?? $version;
+			$profile['type'] = $this->mysqlFlavour(version: $version);
+			$profile['version'] = $this->semanticVersion(version: $version);
 		} catch (Exception $e) {
 			// Reported as MySQL/MariaDB of unknown version.
 		}
 
 		return $profile;
 	}//end mysql()
+
+	/**
+	 * Which of MySQL and MariaDB a server version string names.
+	 *
+	 * @param mixed $version The server version string, as the driver answers it.
+	 *
+	 * @return string 'MariaDB' or 'MySQL'.
+	 */
+	private function mysqlFlavour(mixed $version): string {
+		if (stripos($version, 'MariaDB') !== false) {
+			return 'MariaDB';
+		}
+
+		return 'MySQL';
+	}//end mysqlFlavour()
+
+	/**
+	 * The x.y.z part of a server version string, or the whole string when it has none.
+	 *
+	 * @param mixed $version The server version string, as the driver answers it.
+	 *
+	 * @return string The version.
+	 */
+	private function semanticVersion(mixed $version): string {
+		preg_match('/\d+\.\d+\.\d+/', $version, $matches);
+		return $matches[0] ?? $version;
+	}//end semanticVersion()
 
 	/**
 	 * The profile of a PostgreSQL server, with its installed extensions and pgvector status.

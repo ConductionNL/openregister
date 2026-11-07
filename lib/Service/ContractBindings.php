@@ -52,6 +52,10 @@ use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -60,12 +64,16 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -86,8 +94,14 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
@@ -114,6 +128,8 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		BulkJobReversalInterface::class => BulkJobReversal::class,
+		BulkJobServiceInterface::class => BulkJobService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
@@ -122,6 +138,7 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
@@ -146,13 +163,19 @@ final class ContractBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		ObjectReadNodeInterface::class => ObjectReadNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		ObjectStreamingSaveInterface::class => ObjectService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		SourceRecordResolverInterface::class => SourceRecordResolver::class,
+		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
+		TaskSequenceServiceInterface::class => TaskSequenceService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
