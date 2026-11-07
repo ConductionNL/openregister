@@ -35,7 +35,7 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use RuntimeException;
@@ -52,7 +52,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $taskService Tasks service.
+	 * @param ObjectCalendarTasksInterface $taskService Tasks service.
 	 * @param RegisterMapperInterface $registerMapper Register lookup (slug/uuid/id → entity).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (slug/uuid/id → entity).
 	 * @param ObjectOperationsInterface $objectService Object lookup (for the LINK label title).
@@ -61,7 +61,7 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private TaskService $taskService,
+		private ObjectCalendarTasksInterface $taskService,
 		private RegisterMapperInterface $registerMapper,
 		private SchemaMapperInterface $schemaMapper,
 		private ObjectOperationsInterface $objectService,
