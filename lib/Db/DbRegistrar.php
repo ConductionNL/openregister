@@ -43,14 +43,20 @@ final class DbRegistrar {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ApplicationMapperInterface::class => ApplicationMapper::class,
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
+		BulkJobMapperInterface::class => BulkJobMapper::class,
+		BulkJobMemberMapperInterface::class => BulkJobMemberMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
+		JobRunMapperInterface::class => JobRunMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
 		MappingMapperInterface::class => MappingMapper::class,
+		ObjectRelationMapperInterface::class => ObjectRelationMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
+		SourceMapperInterface::class => SourceMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
 		WebhookMapperInterface::class => WebhookMapper::class,
 	];

@@ -33,9 +33,9 @@ use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\BulkJobMemberMapper;
+use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OutcomeFilter;
@@ -112,8 +112,8 @@ class BulkJobService implements BulkJobServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapper $jobMapper Job persistence.
-	 * @param BulkJobMemberMapper $memberMapper Member persistence.
+	 * @param BulkJobMapperInterface $jobMapper Job persistence.
+	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkJobExecutor $executor The one executor.
@@ -129,8 +129,8 @@ class BulkJobService implements BulkJobServiceInterface {
 	 * remove them.
 	 */
 	public function __construct(
-		private readonly BulkJobMapper $jobMapper,
-		private readonly BulkJobMemberMapper $memberMapper,
+		private readonly BulkJobMapperInterface $jobMapper,
+		private readonly BulkJobMemberMapperInterface $memberMapper,
 		private readonly BulkActionRegistry $registry,
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkJobExecutor $executor,

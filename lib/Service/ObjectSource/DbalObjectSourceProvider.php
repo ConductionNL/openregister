@@ -43,7 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
@@ -94,14 +94,14 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param SourceMapper $sourceMapper Loads the backing database source.
+	 * @param SourceMapperInterface $sourceMapper Loads the backing database source.
 	 * @param DbalConnectionFactory $connectionFactory Opens the read-only DBAL connection.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SourceMapper $sourceMapper,
+		private readonly SourceMapperInterface $sourceMapper,
 		private readonly DbalConnectionFactory $connectionFactory,
 		private readonly LoggerInterface $logger,
 	) {
@@ -778,7 +778,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * database connection) that a schema's own `x-openregister-object-source`
 	 * declares, and the schema's read RBAC is already enforced by
 	 * `ObjectService::paginateObjectSource()` before this provider ever runs.
-	 * Resolving the Source row itself via `SourceMapper::findForSystem()`
+	 * Resolving the Source row itself via `SourceMapperInterface::findForSystem()`
 	 * deliberately skips the caller's active-organisation filter — scoping the
 	 * Source row by the reader's org adds no isolation (the caller never sees
 	 * the Source, only the objects it serves for a schema they were already

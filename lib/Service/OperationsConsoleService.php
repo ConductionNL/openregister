@@ -52,7 +52,7 @@ use DateTime;
 use OCA\OpenRegister\BackgroundJob\BulkJobRunner;
 use OCA\OpenRegister\BackgroundJob\RecordsItsRuns;
 use OCA\OpenRegister\Db\BulkJob;
-use OCA\OpenRegister\Db\BulkJobMapper;
+use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
@@ -136,7 +136,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkJobMapper                $bulkJobs      The bulk job records.
+	 * @param BulkJobMapperInterface                $bulkJobs      The bulk job records.
 	 * @param IJobList                     $jobList       Nextcloud's registered background jobs.
 	 * @param NotificationHistoryMapperInterface    $dispatches    The notification dispatch history.
 	 * @param QueuedNotificationMapperInterface     $queue         The notifications waiting to go out.
@@ -148,7 +148,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * once. See the class-level note.
 	 */
 	public function __construct(
-		private readonly BulkJobMapper $bulkJobs,
+		private readonly BulkJobMapperInterface $bulkJobs,
 		private readonly IJobList $jobList,
 		private readonly NotificationHistoryMapperInterface $dispatches,
 		private readonly QueuedNotificationMapperInterface $queue,

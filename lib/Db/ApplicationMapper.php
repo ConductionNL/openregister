@@ -68,7 +68,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ApplicationMapper extends QBMapper {
+class ApplicationMapper extends QBMapper implements ApplicationMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

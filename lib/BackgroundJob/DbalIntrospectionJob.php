@@ -29,7 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -53,7 +53,7 @@ class DbalIntrospectionJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory                          $time                 Time factory for scheduling.
-	 * @param SourceMapper                          $sourceMapper         Loads database sources.
+	 * @param SourceMapperInterface                          $sourceMapper         Loads database sources.
 	 * @param DatabaseIntrospectionServiceInterface $introspectionService Re-introspects a source and applies diffs.
 	 * @param LoggerInterface                       $logger               Secret-free diagnostics.
 	 *
@@ -61,7 +61,7 @@ class DbalIntrospectionJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapper $sourceMapper,
+		private readonly SourceMapperInterface $sourceMapper,
 		private readonly DatabaseIntrospectionServiceInterface $introspectionService,
 		private readonly LoggerInterface $logger,
 	) {

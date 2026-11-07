@@ -29,7 +29,7 @@ use OCA\OpenRegister\BackgroundJob\CacheClearAndWarmJob;
 use OCA\OpenRegister\BackgroundJob\ConsistencyCheckJob;
 use OCA\OpenRegister\Search\BackgroundJob\SearchIndexRebuildJob;
 use OCA\OpenRegister\Db\JobRun;
-use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Db\JobRunMapperInterface;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
@@ -68,7 +68,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param JobRunMapper       $runs      The run log.
+	 * @param JobRunMapperInterface       $runs      The run log.
 	 * @param JobScheduleService $schedules The administered schedules.
 	 * @param JobAlertService    $alerts    The failure threshold.
 	 * @param IJobList           $jobList   Nextcloud's registered jobs.
@@ -76,7 +76,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * @param JobRunRecorder     $recorder  Records the run-now, with its cause.
 	 */
 	public function __construct(
-		private readonly JobRunMapper $runs,
+		private readonly JobRunMapperInterface $runs,
 		private readonly JobScheduleService $schedules,
 		private readonly JobAlertService $alerts,
 		private readonly IJobList $jobList,
@@ -102,7 +102,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		?string $jobClass = null,
 		?string $outcome = null,
 		?int $windowHours = null,
-		int $limit = JobRunMapper::DEFAULT_LIMIT,
+		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
 		int $offset = 0,
 	): array {
 		$since = null;

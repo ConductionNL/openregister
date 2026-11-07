@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Sync\SyncScheduleService;
@@ -53,7 +53,7 @@ class SyncDataJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory                    $time            Time factory for scheduling
-	 * @param SourceMapper                    $sourceMapper    Source persistence
+	 * @param SourceMapperInterface                    $sourceMapper    Source persistence
 	 * @param SyncScheduleService             $scheduleService Due-source selection
 	 * @param SourceFetcherRegistry           $fetcherRegistry Resolves transport per source type
 	 * @param HarvestPipelineServiceInterface $pipeline        Pipeline orchestrator
@@ -61,7 +61,7 @@ class SyncDataJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapper $sourceMapper,
+		private readonly SourceMapperInterface $sourceMapper,
 		private readonly SyncScheduleService $scheduleService,
 		private readonly SourceFetcherRegistry $fetcherRegistry,
 		private readonly HarvestPipelineServiceInterface $pipeline,
