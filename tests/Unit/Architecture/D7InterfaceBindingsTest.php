@@ -27,6 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
@@ -74,6 +78,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
+		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
+		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
 		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
