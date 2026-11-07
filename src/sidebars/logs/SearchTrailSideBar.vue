@@ -646,13 +646,7 @@ export default {
 	 */
 	mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-		}
+		this.refreshEmptyScopeLists()
 
 		// Load initial search trail data
 		this.loadSearchTrailData()
@@ -663,9 +657,7 @@ export default {
 		this.loadActivityData()
 
 		// Listen for filtered count updates
-		eventBus.on('search-trail-filtered-count', (count) => {
-			this.filteredCount = count
-		})
+		this.listenFilteredCount('search-trail-filtered-count')
 
 		// Watch store changes and update count
 		this.updateFilteredCount()
@@ -726,15 +718,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Clear filters (alias for clearAllFilters for template compatibility)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		clearFilters() {
-			this.clearAllFilters()
-		},
 
 		/**
 		 * Handle search term filter change with debouncing
@@ -805,18 +788,6 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		/**
-		 * Debounced version of applyFilters for text input
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
-		 * @return {void}
-		 */
-		debouncedApplyFilters() {
-			clearTimeout(this.filterTimeout)
-			this.filterTimeout = setTimeout(() => {
-				this.applyFilters()
-			}, 500)
-		},
 
 		/**
 		 * Update filtered count from store
