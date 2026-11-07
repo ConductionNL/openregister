@@ -57,6 +57,8 @@ class ExampleSetConfigShape {
 	 *
 	 * @throws ExampleSetException When the entry names another app, lacks a key, has no value to write, or a type it
 	 *                             cannot write or whose value does not fit.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-app-config-entry-may-name-its-type
 	 */
 	public function appConfig(int|string $index, mixed $entry): array {
 		$entry = (array) $entry;

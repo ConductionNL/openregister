@@ -61,6 +61,8 @@ class ExampleSetFragmentFile {
 	 * @return array<string, mixed>|null The fragment with every part's lists appended.
 	 *
 	 * @throws ExampleSetException When the fragment or a part does not parse, or a part sets a value that is not a list.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function fragment(string $set): ?array {
 		if (is_file($this->folder.'/'.$set.'.json') === false) {

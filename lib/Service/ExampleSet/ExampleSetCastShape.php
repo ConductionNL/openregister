@@ -69,6 +69,8 @@ class ExampleSetCastShape {
 	 *               groups: array<string, array<string, mixed>>, entries: array<string, array<string, mixed>>}
 	 *
 	 * @throws ExampleSetException When a key is missing or used twice.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function cast(array $cast): array {
 		foreach (['people', 'organisations', 'groups'] as $part) {

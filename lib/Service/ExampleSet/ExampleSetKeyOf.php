@@ -37,6 +37,8 @@ trait ExampleSetKeyOf {
 	 * @param mixed $entry The declared entry.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	protected function keyOf(mixed $entry): string {
 		if (is_array($entry) === false || is_scalar($entry['key'] ?? null) === false) {

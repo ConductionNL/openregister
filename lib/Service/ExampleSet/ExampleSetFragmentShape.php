@@ -106,6 +106,8 @@ class ExampleSetFragmentShape {
 	 *                              `appConfig`, `userPreferences`, every keyed-row list, and `archival`.
 	 *
 	 * @throws ExampleSetException When an entry lacks a part it needs, or a key is used twice.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
 	 */
 	public function shape(array $fragment): array {
 		$shaped = $this->entryLists(fragment: $fragment);
