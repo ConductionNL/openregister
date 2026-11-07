@@ -28,10 +28,7 @@ namespace OCA\OpenRegister\Search\Service\Vectorization;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\EmbeddingGeneratorHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSearchHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStatsHandler;
-use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
+use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorEmbeddingHandlers;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -55,19 +52,13 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @param IDBConnection $db Database connection
 	 * @param SettingsServiceInterface $settingsService Settings service
-	 * @param EmbeddingGeneratorHandler $generatorHandler Embedding generator handler
-	 * @param VectorStorageHandlerInterface $storageHandler Vector storage handler
-	 * @param VectorSearchHandler $searchHandler Vector search handler
-	 * @param VectorStatsHandler $statsHandler Vector statistics handler
+	 * @param VectorEmbeddingHandlers $handlers The generation, storage, search and statistics handlers
 	 * @param LoggerInterface $logger PSR-3 logger
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly SettingsServiceInterface $settingsService,
-		private readonly EmbeddingGeneratorHandler $generatorHandler,
-		private readonly VectorStorageHandlerInterface $storageHandler,
-		private readonly VectorSearchHandler $searchHandler,
-		private readonly VectorStatsHandler $statsHandler,
+		private readonly VectorEmbeddingHandlers $handlers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -105,7 +96,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		);
 
 		try {
-			$generator = $this->generatorHandler->getGenerator($config);
+			$generator = $this->handlers->generator->getGenerator($config);
 			$embedding = $generator->embedText($text);
 			$dimensions = count($embedding);
 
@@ -193,7 +184,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 			}
 
 			// Create embedding generator and generate.
-			$generator = $this->generatorHandler->getGenerator($normalizedConfig);
+			$generator = $this->handlers->generator->getGenerator($normalizedConfig);
 			$embedding = $generator->embedText($text);
 
 			$this->logger->debug(
@@ -327,7 +318,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		);
 
 		try {
-			$generator = $this->generatorHandler->getGenerator($config);
+			$generator = $this->handlers->generator->getGenerator($config);
 
 			// Generate embeddings individually for each text.
 			$results = [];
@@ -420,7 +411,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		?string $chunkText = null,
 		array $metadata = [],
 	): int {
-		return $this->storageHandler->storeVector(
+		return $this->handlers->storage->storeVector(
 			entityType: $entityType,
 			entityId: $entityId,
 			embedding: $embedding,
@@ -461,7 +452,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
 		$queryEmbedding = $queryEmbeddingData['embedding'];
 
-		return $this->searchHandler->semanticSearch(
+		return $this->handlers->search->semanticSearch(
 			queryEmbedding: $queryEmbedding,
 			limit: $limit,
 			filters: $filters
@@ -497,7 +488,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
 		$queryEmbedding = $queryEmbeddingData['embedding'];
 
-		return $this->searchHandler->hybridSearch(
+		return $this->handlers->search->hybridSearch(
 			queryEmbedding: $queryEmbedding,
 			keywordResults: $keywordResults,
 			limit: $limit,
@@ -520,7 +511,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function getVectorStats(): array {
-		return $this->statsHandler->getStats();
+		return $this->handlers->stats->getStats();
 	}//end getVectorStats()
 
 	// =============================================================================
@@ -742,7 +733,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 		return [
 			'provider' => $configuredProvider,
 			'model' => $model,
-			'dimensions' => $this->generatorHandler->getDefaultDimensions($model),
+			'dimensions' => $this->handlers->generator->getDefaultDimensions($model),
 			'api_key' => $apiKey,
 			'base_url' => $baseUrl,
 		];
