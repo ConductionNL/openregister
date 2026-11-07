@@ -21,18 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
@@ -67,6 +55,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -162,7 +152,9 @@ final class ContractBindings {
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
+		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
+		EmailLinkServiceInterface::class => EmailLinkService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
@@ -227,18 +219,11 @@ final class ContractBindings {
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
-		SchemaMapperInterface::class => SchemaMapper::class,
-		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
 		TaskServiceInterface::class => TaskService::class,
 		FlowRunServiceInterface::class => FlowRunService::class,
-		OrganisationMapperInterface::class => OrganisationMapper::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		RetentionServiceInterface::class => RetentionService::class,
-		FlowRunMapperInterface::class => FlowRunMapper::class,
-		EntityRelationMapperInterface::class => EntityRelationMapper::class,
-		RegisterMapperInterface::class => RegisterMapper::class,
-		\OCA\OpenRegister\Db\MagicMapperInterface::class => \OCA\OpenRegister\Db\MagicMapper::class,
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,

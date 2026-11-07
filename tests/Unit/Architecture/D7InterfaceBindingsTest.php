@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
@@ -92,6 +94,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
 		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
 		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
+		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
