@@ -880,8 +880,6 @@ class FilesController extends Controller {
 	 * @throws DoesNotExistException When no object, or more than one, holds the identifier there.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function objectInScope(ObjectLinkRoute $route): ObjectEntity {
 		try {
