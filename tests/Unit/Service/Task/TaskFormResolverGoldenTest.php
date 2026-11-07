@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverServices;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -142,7 +143,11 @@ class TaskFormResolverGoldenTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(static fn (string $text, array $params = []): string => 'T[' . $text . '|' . json_encode($params) . ']');
 
-		return new TaskFormResolver($runs, $flows, $published, $links, $this->reader(), $l10n);
+		return new TaskFormResolver(
+			services: new TaskFormResolverServices(runs: $runs, flows: $flows, published: $published, formLinks: $links),
+			reader: $this->reader(),
+			l10n: $l10n
+		);
 	}//end resolver()
 
 	/**

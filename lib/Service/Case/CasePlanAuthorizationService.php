@@ -41,8 +41,8 @@ namespace OCA\OpenRegister\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
+use OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups;
 use OCP\IGroupManager;
-use Throwable;
 
 /**
  * The case layer's authorization decisions.
@@ -50,6 +50,13 @@ use Throwable;
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
  */
 class CasePlanAuthorizationService {
+
+	/**
+	 * The group backend, read fail-closed.
+	 *
+	 * @var FailClosedGroups
+	 */
+	private readonly FailClosedGroups $groups;
 
 	/**
 	 * Constructor.
@@ -62,8 +69,9 @@ class CasePlanAuthorizationService {
 	 *                                         DENIES.
 	 */
 	public function __construct(
-		private readonly ?IGroupManager $groupManager = null,
+		?IGroupManager $groupManager = null,
 	) {
+		$this->groups = new FailClosedGroups(groupManager: $groupManager);
 
 	}//end __construct()
 
@@ -98,15 +106,11 @@ class CasePlanAuthorizationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function isAdministrator(?string $uid): bool {
-		if ($uid === null || trim($uid) === '' || $this->groupManager === null) {
+		if ($uid === null || trim($uid) === '') {
 			return false;
 		}
 
-		try {
-			return $this->groupManager->isAdmin($uid);
-		} catch (Throwable) {
-			return false;
-		}
+		return $this->groups->isAdmin(uid: $uid);
 	}//end isAdministrator()
 
 	/**
@@ -168,21 +172,58 @@ class CasePlanAuthorizationService {
 	 */
 	public function effectiveRules(?CaseItem $item, CasePlanTree $tree): mixed {
 		if ($item !== null) {
-			$own = $item->getAuthorizationRules();
-			if (is_array($own) === true && $own !== []) {
-				return $own;
-			}
-
-			foreach ($tree->ancestors(item: $item) as $ancestor) {
-				$rules = $ancestor->getAuthorizationRules();
-				if (is_array($rules) === true && $rules !== []) {
-					return $rules;
-				}
+			$declared = $this->declaredRules(item: $item, tree: $tree);
+			if ($declared !== null) {
+				return $declared;
 			}
 		}
 
 		return ($tree->settings()['authorization'] ?? null);
 	}//end effectiveRules()
+
+	/**
+	 * The item's own rules, else its nearest ancestor's; null when none of them declares any.
+	 *
+	 * @param CaseItem     $item The item.
+	 * @param CasePlanTree $tree The plan.
+	 *
+	 * @return array<int|string, mixed>|null The rule list, or null.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function declaredRules(CaseItem $item, CasePlanTree $tree): ?array {
+		$own = $this->rulesOf(row: $item);
+		if ($own !== null) {
+			return $own;
+		}
+
+		foreach ($tree->ancestors(item: $item) as $ancestor) {
+			$rules = $this->rulesOf(row: $ancestor);
+			if ($rules !== null) {
+				return $rules;
+			}
+		}
+
+		return null;
+	}//end declaredRules()
+
+	/**
+	 * A row's rules when it declares a non-empty list; null otherwise.
+	 *
+	 * @param CaseItem $row The row.
+	 *
+	 * @return array<int|string, mixed>|null The rule list, or null.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function rulesOf(CaseItem $row): ?array {
+		$rules = $row->getAuthorizationRules();
+		if (is_array($rules) === true && $rules !== []) {
+			return $rules;
+		}
+
+		return null;
+	}//end rulesOf()
 
 	/**
 	 * The caller must satisfy at least one rule; anything indeterminate denies.
@@ -198,13 +239,7 @@ class CasePlanAuthorizationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function assertHolds(string $verb, mixed $rules, string $uid): void {
-		if (is_array($rules) === false || $rules === []) {
-			throw new CaseAccessDeniedException(
-				message: sprintf("Verb '%s' denied: no authorization is declared for this item or its plan, so only an administrator may perform it.", $verb)
-			);
-		}
-
-		foreach ($rules as $rule) {
+		foreach ($this->declaredOrRefused(verb: $verb, rules: $rules) as $rule) {
 			if ($this->ruleAdmits(verb: $verb, rule: $rule, uid: $uid) === true) {
 				return;
 			}
@@ -214,6 +249,32 @@ class CasePlanAuthorizationService {
 			message: sprintf("Verb '%s' denied: the caller holds none of the item's authorizations.", $verb)
 		);
 	}//end assertHolds()
+
+	/**
+	 * The rule list, when one is declared; without one, only an administrator
+	 * may act, so everyone reaching here is refused.
+	 *
+	 * @param string $verb  The verb, for the message.
+	 * @param mixed  $rules The rule list.
+	 *
+	 * @return array<int|string, mixed> The non-empty rule list.
+	 *
+	 * @throws CaseAccessDeniedException When no rule list is declared.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 */
+	private function declaredOrRefused(string $verb, mixed $rules): array {
+		if (is_array($rules) === false || $rules === []) {
+			throw new CaseAccessDeniedException(
+				message: sprintf(
+					"Verb '%s' denied: no authorization is declared for this item or its plan, so only an administrator may perform it.",
+					$verb
+				)
+			);
+		}
+
+		return $rules;
+	}//end declaredOrRefused()
 
 	/**
 	 * Whether one rule admits the caller. A role that does not resolve is
@@ -243,33 +304,11 @@ class CasePlanAuthorizationService {
 			$role = substr($rule, 5);
 			$this->assertRoleResolvable(verb: $verb, role: $role);
 
-			return $this->isInGroup(uid: $uid, groupId: $role);
+			return $this->groups->isInGroup(uid: $uid, groupId: $role);
 		}
 
-		return $this->isInGroup(uid: $uid, groupId: $rule);
+		return $this->groups->isInGroup(uid: $uid, groupId: $rule);
 	}//end ruleAdmits()
-
-	/**
-	 * Membership through the group backend, denying when it is absent.
-	 *
-	 * @param string $uid The acting identity.
-	 * @param string $groupId The group to test.
-	 *
-	 * @return boolean True only when the backend affirms membership.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
-	 */
-	private function isInGroup(string $uid, string $groupId): bool {
-		if ($this->groupManager === null || $groupId === '') {
-			return false;
-		}
-
-		try {
-			return $this->groupManager->isInGroup($uid, $groupId);
-		} catch (Throwable) {
-			return false;
-		}
-	}//end isInGroup()
 
 	/**
 	 * A role must resolve to the group of the same name.
@@ -284,23 +323,9 @@ class CasePlanAuthorizationService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function assertRoleResolvable(string $verb, string $role): void {
-		if ($this->groupManager === null) {
-			throw new CaseAccessDeniedException(
-				message: sprintf("Verb '%s' denied: role '%s' cannot be resolved because no group backend is available.", $verb, $role)
-			);
-		}
-
-		$exists = false;
-		try {
-			$exists = $this->groupManager->groupExists($role);
-		} catch (Throwable) {
-			$exists = false;
-		}
-
-		if ($exists === false) {
-			throw new CaseAccessDeniedException(
-				message: sprintf("Verb '%s' denied: role '%s' does not resolve to any group.", $verb, $role)
-			);
+		$problem = $this->groups->roleProblem(role: $role);
+		if ($problem !== null) {
+			throw new CaseAccessDeniedException(message: sprintf("Verb '%s' denied: %s", $verb, $problem));
 		}
 	}//end assertRoleResolvable()
 }//end class

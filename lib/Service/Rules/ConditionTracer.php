@@ -100,7 +100,7 @@ final class ConditionTracer implements ConditionTracerInterface {
 	 */
 	public function trace(mixed $condition, array $document, string $verdict, ?string $message = null): RuleTrace {
 		$deciding = null;
-		if ($verdict !== RuleVocabulary::VERDICT_FIRED && is_array($condition) === true && $condition !== []) {
+		if ($this->wantsOperand(condition: $condition, verdict: $verdict) === true) {
 			$deciding = $this->tryDecidingOperand(node: $condition, document: $document);
 		}
 
@@ -111,6 +111,21 @@ final class ConditionTracer implements ConditionTracerInterface {
 		$rendered = RuleTrace::renderValue(value: $deciding['value']);
 		return new RuleTrace(verdict: $verdict, operand: $deciding['operand'], operandValue: $rendered, message: $message);
 	}//end trace()
+
+	/**
+	 * Whether a verdict on a condition is explained by a deciding operand.
+	 *
+	 * A `fired` verdict was decided by nothing against the rule, and a rule with
+	 * no condition had no operand to decide it.
+	 *
+	 * @param mixed $condition The condition as the author declared it.
+	 * @param string $verdict The verdict the owning engine reached.
+	 *
+	 * @return bool True when the walk is worth making.
+	 */
+	private function wantsOperand(mixed $condition, string $verdict): bool {
+		return $verdict !== RuleVocabulary::VERDICT_FIRED && is_array($condition) === true && $condition !== [];
+	}//end wantsOperand()
 
 	/**
 	 * The deciding operand, or null when the walk itself fails.
@@ -368,17 +383,28 @@ final class ConditionTracer implements ConditionTracerInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function pathOf(mixed $reference): ?string {
-		$path = $reference;
-		if (is_array($path) === true && $path !== []) {
-			$path = $path[array_key_first($path)];
-		}
-
+		$path = $this->firstOf(reference: $reference);
 		if (is_string($path) === false || $path === '') {
 			return null;
 		}
 
 		return $path;
 	}//end pathOf()
+
+	/**
+	 * A reference's argument, or its first element when it is a non-empty list.
+	 *
+	 * @param mixed $reference The reference operand's argument.
+	 *
+	 * @return mixed The candidate path.
+	 */
+	private function firstOf(mixed $reference): mixed {
+		if (is_array($reference) === true && $reference !== []) {
+			return $reference[array_key_first($reference)];
+		}
+
+		return $reference;
+	}//end firstOf()
 
 	/**
 	 * Read a dotted path out of the evaluation document.
@@ -391,16 +417,29 @@ final class ConditionTracer implements ConditionTracerInterface {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function read(string $path, array $document): mixed {
-		$cursor = $document;
+		$value = $document;
 		foreach (explode('.', $path) as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				return null;
-			}
-
-			$cursor = $cursor[$segment];
+			// Once a segment is absent the value is null, and every step below null stays null.
+			$value = $this->step(value: $value, segment: $segment);
 		}
 
-		return $cursor;
+		return $value;
 	}//end read()
+
+	/**
+	 * One segment down a dotted path.
+	 *
+	 * @param mixed $value The value reached so far.
+	 * @param string $segment The next segment.
+	 *
+	 * @return mixed The value under the segment, or null when there is none.
+	 */
+	private function step(mixed $value, string $segment): mixed {
+		if (is_array($value) === true && array_key_exists($segment, $value) === true) {
+			return $value[$segment];
+		}
+
+		return null;
+	}//end step()
 
 }//end class

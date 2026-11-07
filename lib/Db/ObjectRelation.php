@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\ObjectRelation\ObjectRelationFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -96,6 +97,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class ObjectRelation extends Entity implements JsonSerializable {
 	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 	/**
 	 * The row names another object in this register.
 	 *
@@ -299,62 +301,8 @@ class ObjectRelation extends Entity implements JsonSerializable {
 	 * Constructor — registers field types for hydration.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'sourceUuid', type: 'string');
-		$this->addType(fieldName: 'sourceRegister', type: 'integer');
-		$this->addType(fieldName: 'sourceSchema', type: 'integer');
-		$this->addType(fieldName: 'targetUuid', type: 'string');
-		$this->addType(fieldName: 'targetRegister', type: 'integer');
-		$this->addType(fieldName: 'targetSchema', type: 'integer');
-		$this->addType(fieldName: 'targetUrl', type: 'string');
-		$this->addType(fieldName: 'targetTitle', type: 'string');
-		$this->addType(fieldName: 'kind', type: 'string');
-		$this->addType(fieldName: 'relationType', type: 'string');
-		$this->addType(fieldName: 'label', type: 'string');
-		$this->addType(fieldName: 'inverseLabel', type: 'string');
-		$this->addType(fieldName: 'symmetric', type: 'boolean');
-		$this->addType(fieldName: 'origin', type: 'string');
-		$this->addType(fieldName: 'sourceEntry', type: 'string');
-		$this->addType(fieldName: 'inherited', type: 'json');
-		$this->addType(fieldName: 'anchor', type: 'string');
-		$this->addType(fieldName: 'createdBy', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (ObjectRelationFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised relation row.
-	 *
-	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'sourceUuid' => $this->sourceUuid,
-			'sourceRegister' => $this->sourceRegister,
-			'sourceSchema' => $this->sourceSchema,
-			'targetUuid' => $this->targetUuid,
-			'targetRegister' => $this->targetRegister,
-			'targetSchema' => $this->targetSchema,
-			'targetUrl' => $this->targetUrl,
-			'targetTitle' => $this->targetTitle,
-			'kind' => $this->kind,
-			'relationType' => $this->relationType,
-			'label' => $this->label,
-			'inverseLabel' => $this->inverseLabel,
-			'symmetric' => $this->symmetric,
-			'origin' => $this->origin,
-			'sourceEntry' => $this->sourceEntry,
-			'inherited' => $this->inherited,
-			'anchor' => $this->anchor,
-			'createdBy' => $this->createdBy,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
-
-	}//end jsonSerialize()
 }//end class

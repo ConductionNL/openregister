@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 
 /**
  * IntegrationsToolProvider
@@ -63,10 +63,10 @@ class IntegrationsToolProvider extends AbstractBuiltInToolProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param IntegrationRegistry $registry Integration registry.
+	 * @param IntegrationCatalogueInterface $registry Integration registry.
 	 */
 	public function __construct(
-		private readonly IntegrationRegistry $registry,
+		private readonly IntegrationCatalogueInterface $registry,
 	) {
 	}//end __construct()
 

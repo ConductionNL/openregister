@@ -49,7 +49,7 @@ final class BulkJobsControllerFactory {
 					reversal: $reversal,
 					registry: $registry,
 				),
-				platform: new \OCA\OpenRegister\Controller\Support\BulkJobsPlatform(
+				platform: new \OCA\OpenRegister\Controller\Support\AuditTrailPlatform(
 					userSession: $userSession,
 					groupManager: $groupManager,
 				),
