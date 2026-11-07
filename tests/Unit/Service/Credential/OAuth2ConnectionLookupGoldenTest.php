@@ -90,6 +90,48 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		);
 	}
 
+	public function testDisableAndDiscardWriteCustodyFirstAndPastAccessControl(): void {
+		$calls = [];
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('delete')->willReturnCallback(function (string $uuid, string $scope) use (&$calls): void {
+			$calls[] = ['custody', $uuid, $scope];
+		});
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('saveObject')->willReturnCallback(
+			function (array|ObjectEntity $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use (&$calls): ObjectEntity {
+				$calls[] = ['save', $object, $register, $schema, $uuid, $_rbac, $_multitenancy];
+				return new ObjectEntity();
+			}
+		);
+		$objects->method('deleteObject')->willReturnCallback(
+			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true) use (&$calls): bool {
+				$calls[] = ['delete', $uuid, $register, $schema, $_rbac, $_multitenancy];
+				return true;
+			}
+		);
+
+		$repository = new OAuth2ConnectionRepository(
+			objectService: $objects,
+			credentialStore: $store,
+			organisationService: $this->createMock(OrganisationServiceInterface::class)
+		);
+		$repository->disable(credentialId: 'cred-1', data: ['scope' => 'organisation', 'status' => 'active', 'name' => 'n'], lastError: 'revoke_failed');
+		$repository->disable(credentialId: 'cred-2', data: [], lastError: '');
+		$repository->discard(credentialId: 'cred-3', scope: 'personal');
+
+		$this->assertSame(
+			[
+				['custody', 'cred-1', 'organisation'],
+				['save', ['scope' => 'organisation', 'status' => 'disabled', 'name' => 'n', 'lastError' => 'revoke_failed', 'expiresAt' => null], 'credential-broker', 'brokeredcredential', 'cred-1', false, false],
+				['custody', 'cred-2', 'personal'],
+				['save', ['status' => 'disabled', 'lastError' => '', 'expiresAt' => null], 'credential-broker', 'brokeredcredential', 'cred-2', false, false],
+				['custody', 'cred-3', 'personal'],
+				['delete', 'cred-3', 'credential-broker', 'brokeredcredential', false, false],
+			],
+			$calls
+		);
+	}
+
 	public function testAReconnectReusesThePinnedClient(): void {
 		$claims = $this->instanceClient(stored: ['clientId' => ' CID ', 'clientCredentialRef' => ' REF '], registers: false)
 			->ensure(provider: $this->mastodon(), claims: ['cid' => ' cred-1 ', 'h' => 'https://m.example'], redirectUri: 'R');

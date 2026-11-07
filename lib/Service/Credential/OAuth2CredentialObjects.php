@@ -9,9 +9,14 @@
  * ambient lookup cause. Having it once means a later change to how credentials are
  * read cannot reach one caller and miss another.
  *
+ * The two writes the connection repository makes (disable and discard) go through
+ * here for the same reason: register, schema and the access-control switches are
+ * spelled once.
+ *
  * It decides nothing. Whether an absent credential is a refusal, a fresh connect
  * or "nothing to reuse" stays with each caller, and so does whether a failed
- * lookup is swallowed.
+ * lookup is swallowed; the authorization decision for a write was taken by the
+ * caller before it got here.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -79,4 +84,48 @@ final readonly class OAuth2CredentialObjects {
 
 		return $entity;
 	}//end find()
+
+	/**
+	 * Write a credential object's property bag.
+	 *
+	 * @param string $credentialId The credential UUID.
+	 * @param array<string, mixed> $object The full property bag to store.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the write fails.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
+	 */
+	public function save(string $credentialId, array $object): void {
+		$this->objectService->saveObject(
+			object: $object,
+			register: CredentialBrokerService::REGISTER,
+			schema: CredentialBrokerService::SCHEMA,
+			uuid: $credentialId,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end save()
+
+	/**
+	 * Delete a credential object.
+	 *
+	 * @param string $credentialId The credential UUID.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the delete fails.
+	 *
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	public function delete(string $credentialId): void {
+		$this->objectService->deleteObject(
+			uuid: $credentialId,
+			register: CredentialBrokerService::REGISTER,
+			schema: CredentialBrokerService::SCHEMA,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end delete()
 }//end class

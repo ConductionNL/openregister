@@ -78,7 +78,7 @@ class OAuth2ConnectionRepository {
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {
-			$entity = (new OAuth2CredentialObjects(objectService: $this->objectService))->find(credentialId: $credentialId);
+			$entity = $this->objects()->find(credentialId: $credentialId);
 		} catch (Throwable $failure) {
 			return null;
 		}
@@ -180,14 +180,8 @@ class OAuth2ConnectionRepository {
 		$scope = (string)($data['scope'] ?? 'personal');
 		$this->credentialStore->delete($credentialId, $scope);
 
-		$this->objectService->saveObject(
-			object: array_merge($data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]),
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			uuid: $credentialId,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$disabled = array_merge($data, ['status' => 'disabled', 'lastError' => $lastError, 'expiresAt' => null]);
+		$this->objects()->save(credentialId: $credentialId, object: $disabled);
 	}//end disable()
 
 	/**
@@ -209,12 +203,17 @@ class OAuth2ConnectionRepository {
 	public function discard(string $credentialId, string $scope): void {
 		$this->credentialStore->delete($credentialId, $scope);
 
-		$this->objectService->deleteObject(
-			uuid: $credentialId,
-			register: CredentialBrokerService::REGISTER,
-			schema: CredentialBrokerService::SCHEMA,
-			_rbac: false,
-			_multitenancy: false
-		);
+		$this->objects()->delete(credentialId: $credentialId);
 	}//end discard()
+
+	/**
+	 * The credential-object lookup and writes, over this repository's object service.
+	 *
+	 * @return OAuth2CredentialObjects The credential objects.
+	 *
+	 * @spec exclude private accessor with no behaviour of its own
+	 */
+	private function objects(): OAuth2CredentialObjects {
+		return new OAuth2CredentialObjects(objectService: $this->objectService);
+	}//end objects()
 }//end class

@@ -78,6 +78,28 @@ class OAuth2ConnectionWriter {
 			return null;
 		}
 
+		$data = $this->storedData(credentialId: $credentialId);
+		if ((string)($data['provider'] ?? '') !== $flow->string(key: 'p')) {
+			throw new RuntimeException(message: 'a re-authorisation may not change a credential\'s provider');
+		}
+
+		$this->assertSameHost(data: $data, instanceBaseUrl: $instanceBaseUrl);
+
+		return $data;
+	}//end reauthorisationTarget()
+
+	/**
+	 * The stored data of the credential a re-authorisation names.
+	 *
+	 * @param string $credentialId The credential UUID.
+	 *
+	 * @return array<string, mixed> The property bag, without `@self`.
+	 *
+	 * @throws RuntimeException When the credential no longer exists.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
+	 */
+	private function storedData(string $credentialId): array {
 		$entity = (new OAuth2CredentialObjects(objectService: $this->objectService))->find(credentialId: $credentialId);
 		if ($entity === null) {
 			throw new RuntimeException(message: 'the credential being re-authorised no longer exists');
@@ -86,17 +108,27 @@ class OAuth2ConnectionWriter {
 		$data = $entity->jsonSerialize();
 		unset($data['@self']);
 
-		if ((string)($data['provider'] ?? '') !== $flow->string(key: 'p')) {
-			throw new RuntimeException(message: 'a re-authorisation may not change a credential\'s provider');
-		}
+		return $data;
+	}//end storedData()
 
+	/**
+	 * Refuse a re-authorisation that would move a credential's pinned host.
+	 *
+	 * @param array<string, mixed> $data The stored property bag.
+	 * @param string|null $instanceBaseUrl The host named in the claims.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When a pinned host would change.
+	 *
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 */
+	private function assertSameHost(array $data, ?string $instanceBaseUrl): void {
 		$pinned = trim((string)($data['instanceBaseUrl'] ?? ''));
 		if ($pinned !== '' && $pinned !== $instanceBaseUrl) {
 			throw new RuntimeException(message: 'a re-authorisation may not change a credential\'s pinned host');
 		}
-
-		return $data;
-	}//end reauthorisationTarget()
+	}//end assertSameHost()
 
 	/**
 	 * Store a redeemed token set: in place for a repair, as a new credential otherwise.
@@ -166,15 +198,10 @@ class OAuth2ConnectionWriter {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	private function metadata(OAuth2FlowClaims $flow, OAuth2TokenSet $tokenSet): array {
-		$metadata = [
-			'kind' => OAuth2ConnectService::KIND,
-			'status' => 'active',
-			'scopes' => $tokenSet->getScopes(),
-			'account' => $tokenSet->getAccount(),
-			'expiresAt' => $tokenSet->getExpiresAt()?->format(DATE_ATOM),
-			'clientId' => $flow->string(key: 'cl'),
-			'clientCredentialRef' => $flow->string(key: 'cr'),
-		];
+		$metadata = ['kind' => OAuth2ConnectService::KIND, 'status' => 'active', 'scopes' => $tokenSet->getScopes(), 'account' => $tokenSet->getAccount()];
+		$metadata['expiresAt'] = $tokenSet->getExpiresAt()?->format(DATE_ATOM);
+		$metadata['clientId'] = $flow->string(key: 'cl');
+		$metadata['clientCredentialRef'] = $flow->string(key: 'cr');
 
 		$instanceBaseUrl = $flow->pinnedHost();
 		if ($instanceBaseUrl !== null) {

@@ -96,12 +96,8 @@ class OAuth2CodeExchange {
 		$secret = $client['clientSecret'];
 		$basic = ($secret !== null && $config->usesBasicClientAuth() === true);
 
-		$form = [
-			'grant_type' => 'authorization_code',
-			'code' => $grant['code'],
-			'redirect_uri' => $grant['redirect_uri'],
-			'client_id' => $client['clientId'],
-		];
+		$form = ['grant_type' => 'authorization_code', 'code' => $grant['code'], 'redirect_uri' => $grant['redirect_uri']];
+		$form['client_id'] = $client['clientId'];
 		if ($config->usesPkce() === true) {
 			$form['code_verifier'] = $grant['code_verifier'];
 		}
@@ -111,7 +107,6 @@ class OAuth2CodeExchange {
 		}
 
 		$options = ['body' => $form, 'headers' => ['Accept' => 'application/json'], 'timeout' => 20];
-
 		return $this->withBasicAuth(options: $options, client: $client, basic: $basic);
 	}//end options()
 

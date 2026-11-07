@@ -73,13 +73,10 @@ class OAuth2UpstreamRevoker {
 
 		try {
 			$body = $this->body(credential: $credential, credentialId: $credentialId, scope: $scope);
-			$this->clientService->newClient()->post(
-				$config->endpoint(key: 'revokeEndpoint', instanceBaseUrl: (string)($credential['instanceBaseUrl'] ?? '')),
-				['body' => $body, 'timeout' => 20]
-			);
+			$endpoint = $config->endpoint(key: 'revokeEndpoint', instanceBaseUrl: (string)($credential['instanceBaseUrl'] ?? ''));
+			$this->clientService->newClient()->post($endpoint, ['body' => $body, 'timeout' => 20]);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[OAuth2ConnectService] upstream revoke failed for ' . $credentialId . ': ' . $failure->getMessage());
-
 			return 'revoke_failed';
 		}
 
