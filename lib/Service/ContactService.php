@@ -51,7 +51,7 @@ use Sabre\VObject\Reader;
  * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory; Sabre
  * provides no injectable alternative in the library.
  */
-class ContactService {
+class ContactService implements ContactServiceInterface {
 
 	/**
 	 * Contact link mapper.

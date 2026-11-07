@@ -32,10 +32,10 @@ use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
-use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\Security\OutboundAddressGuard;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -65,9 +65,9 @@ class WebhookService {
 	/**
 	 * Webhook mapper
 	 *
-	 * @var WebhookMapper
+	 * @var WebhookMapperInterface
 	 */
-	private WebhookMapper $webhookMapper;
+	private WebhookMapperInterface $webhookMapper;
 
 	/**
 	 * HTTP client
@@ -128,9 +128,9 @@ class WebhookService {
 	/**
 	 * Mapping mapper for loading mapping entities
 	 *
-	 * @var MappingMapper
+	 * @var MappingMapperInterface
 	 */
-	private MappingMapper $mappingMapper;
+	private MappingMapperInterface $mappingMapper;
 
 	/**
 	 * Cache of the "has interception webhooks" flag per event type.
@@ -146,11 +146,11 @@ class WebhookService {
 	/**
 	 * Constructor
 	 *
-	 * @param WebhookMapper $webhookMapper Webhook mapper
+	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
 	 * @param LoggerInterface $logger Logger
 	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
 	 * @param MappingService $mappingService Mapping service
-	 * @param MappingMapper $mappingMapper Mapping mapper
+	 * @param MappingMapperInterface $mappingMapper Mapping mapper
 	 * @param IJobList $jobList Background job list for async delivery
 	 * @param CloudEventFormatterInterface|null $cloudEventFormatter CloudEvent formatter (optional)
 	 * @param WebhookInterceptionCacheInterface|null $interceptionCache Interception-flag cache (optional)
@@ -158,11 +158,11 @@ class WebhookService {
 	 * @return void
 	 */
 	public function __construct(
-		WebhookMapper $webhookMapper,
+		WebhookMapperInterface $webhookMapper,
 		LoggerInterface $logger,
 		WebhookLogMapper $webhookLogMapper,
 		MappingService $mappingService,
-		MappingMapper $mappingMapper,
+		MappingMapperInterface $mappingMapper,
 		IJobList $jobList,
 		?CloudEventFormatterInterface $cloudEventFormatter = null,
 		?WebhookInterceptionCacheInterface $interceptionCache = null,
