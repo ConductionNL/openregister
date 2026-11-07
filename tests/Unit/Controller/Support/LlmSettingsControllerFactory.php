@@ -47,11 +47,9 @@ final class LlmSettingsControllerFactory {
 					settingsService: $settingsService,
 					vectorizationService: $vectorizationService,
 					connectionReporter: $connectionReporter,
-					db: $db,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\LlmSettingsPlatform(
 					container: $container,
-					logger: $logger,
 				),
 			),
 		];
