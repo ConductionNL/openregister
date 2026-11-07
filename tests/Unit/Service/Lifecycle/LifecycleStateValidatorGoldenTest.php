@@ -35,6 +35,8 @@ use PHPUnit\Framework\TestCase;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Service\Lifecycle\LifecycleStateValidator
+ * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionValidator
+ * @covers \OCA\OpenRegister\Service\Lifecycle\StateConditionSite
  * @uses   \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleScope
  */
 class LifecycleStateValidatorGoldenTest extends TestCase {
