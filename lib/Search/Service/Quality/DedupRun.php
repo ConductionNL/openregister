@@ -22,64 +22,126 @@ namespace OCA\OpenRegister\Search\Service\Quality;
 use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
- * The register/schema pair, the caller's overrides, the effective rules once
- * resolved, and the objects compared with their payloads keyed by uuid.
+ * The register/schema pair and the caller's overrides, the effective rules
+ * once resolved, and the objects compared with their payloads keyed by uuid.
  */
 final class DedupRun {
+	/**
+	 * The effective rules; empty until resolved.
+	 *
+	 * @var DedupConfig
+	 */
+	private DedupConfig $config;
+
+	/**
+	 * The objects compared.
+	 *
+	 * @var array<int, ObjectEntity>
+	 */
+	private array $objects = [];
+
 	/**
 	 * Object payloads keyed by uuid.
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
-	public readonly array $payloads;
+	private array $payloads = [];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param mixed                            $register     Register id, uuid or slug.
-	 * @param mixed                            $schema       Schema id, uuid or slug.
-	 * @param array<int, mixed>|null           $matchRules   Caller-supplied rules, or null for the annotation's.
-	 * @param float|null                       $threshold    Caller-supplied cut-off, or null for the annotation's.
-	 * @param array<int, array<string, mixed>> $rules        Effective, well-formed match rules.
-	 * @param array<int, string>               $blockingKeys Field names (plain or dotted) to block on.
-	 * @param float                            $cutOff       Score a pair must reach.
-	 * @param array<int, ObjectEntity>         $objects      The objects compared.
+	 * @param mixed                  $register   Register id, uuid or slug.
+	 * @param mixed                  $schema     Schema id, uuid or slug.
+	 * @param array<int, mixed>|null $matchRules Caller-supplied rules, or null for the annotation's.
+	 * @param float|null             $threshold  Caller-supplied cut-off, or null for the annotation's.
 	 */
 	public function __construct(
 		public readonly mixed $register,
 		public readonly mixed $schema,
 		public readonly ?array $matchRules=null,
 		public readonly ?float $threshold=null,
-		public readonly array $rules=[],
-		public readonly array $blockingKeys=[],
-		public readonly float $cutOff=0.0,
-		public readonly array $objects=[],
 	) {
-		$payloads = [];
-		foreach ($objects as $object) {
-			$payloads[(string) $object->getUuid()] = ($object->getObject() ?? []);
-		}
-
-		$this->payloads = $payloads;
+		$this->config = new DedupConfig(rules: [], blockingKeys: [], cutOff: 0.0);
 	}//end __construct()
 
 	/**
-	 * The same run over other objects.
+	 * The same run with its effective rules.
+	 *
+	 * @param DedupConfig $config The effective rules, blocking keys and cut-off.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md
+	 */
+	public function withConfig(DedupConfig $config): self {
+		$copy = clone $this;
+		$copy->config = $config;
+
+		return $copy;
+	}//end withConfig()
+
+	/**
+	 * The same run over other objects, with their payloads keyed by uuid.
 	 *
 	 * @param array<int, ObjectEntity> $objects The objects compared.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md
 	 */
 	public function withObjects(array $objects): self {
-		return new self(
-			register: $this->register,
-			schema: $this->schema,
-			matchRules: $this->matchRules,
-			threshold: $this->threshold,
-			rules: $this->rules,
-			blockingKeys: $this->blockingKeys,
-			cutOff: $this->cutOff,
-			objects: $objects
-		);
+		$copy = clone $this;
+		$copy->objects = $objects;
+		$copy->payloads = [];
+		foreach ($objects as $object) {
+			$copy->payloads[(string) $object->getUuid()] = ($object->getObject() ?? []);
+		}
+
+		return $copy;
 	}//end withObjects()
+
+	/**
+	 * The effective, well-formed match rules.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function getRules(): array {
+		return $this->config->rules;
+	}//end getRules()
+
+	/**
+	 * The field names (plain or dotted) to block on.
+	 *
+	 * @return array<int, string>
+	 */
+	public function getBlockingKeys(): array {
+		return $this->config->blockingKeys;
+	}//end getBlockingKeys()
+
+	/**
+	 * The score a pair must reach.
+	 *
+	 * @return float
+	 */
+	public function getCutOff(): float {
+		return $this->config->cutOff;
+	}//end getCutOff()
+
+	/**
+	 * The objects compared.
+	 *
+	 * @return array<int, ObjectEntity>
+	 */
+	public function getObjects(): array {
+		return $this->objects;
+	}//end getObjects()
+
+	/**
+	 * The object payloads keyed by uuid.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public function getPayloads(): array {
+		return $this->payloads;
+	}//end getPayloads()
 }//end class

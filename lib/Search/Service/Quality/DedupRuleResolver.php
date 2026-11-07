@@ -52,6 +52,8 @@ class DedupRuleResolver {
 	 * @param DedupRun $request The register/schema and the caller's overrides.
 	 *
 	 * @return DedupRun|null The run with its rules, or null when no usable rules exist.
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md
 	 */
 	public function resolve(DedupRun $request): ?DedupRun {
 		$annotation = $this->annotation(register: $request->register, schema: $request->schema);
@@ -60,13 +62,12 @@ class DedupRuleResolver {
 			return null;
 		}
 
-		return new DedupRun(
-			register: $request->register, schema: $request->schema,
-			matchRules: $request->matchRules,
-			threshold: $request->threshold,
-			rules: $rules,
-			blockingKeys: $this->blockingKeys(annotation: $annotation),
-			cutOff: $this->cutOff(threshold: $request->threshold, annotation: $annotation)
+		return $request->withConfig(
+			config: new DedupConfig(
+				rules: $rules,
+				blockingKeys: $this->blockingKeys(annotation: $annotation),
+				cutOff: $this->cutOff(threshold: $request->threshold, annotation: $annotation)
+			)
 		);
 	}//end resolve()
 
@@ -111,6 +112,8 @@ class DedupRuleResolver {
 	 * @param mixed $rules Candidate rule list.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md
 	 */
 	public function sanitise(mixed $rules): array {
 		if (is_array($rules) === false) {

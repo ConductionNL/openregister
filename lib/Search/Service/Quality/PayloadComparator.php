@@ -71,17 +71,29 @@ class PayloadComparator {
 			return null;
 		}
 
-		$cursor = $data;
-		foreach (explode('.', $path) as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				return null;
-			}
+		// Once a segment misses, the cursor is null and every later step stays null.
+		return array_reduce(
+			explode('.', $path),
+			fn (mixed $cursor, string $segment): mixed => $this->child(container: $cursor, key: $segment),
+			$data
+		);
+	}//end valueAt()
 
-			$cursor = $cursor[$segment];
+	/**
+	 * One path step: the value under a key, or null when the container is not an array or lacks the key.
+	 *
+	 * @param mixed  $container The current value.
+	 * @param string $key       The path segment.
+	 *
+	 * @return mixed
+	 */
+	private function child(mixed $container, string $key): mixed {
+		if (is_array($container) === false || array_key_exists($key, $container) === false) {
+			return null;
 		}
 
-		return $cursor;
-	}//end valueAt()
+		return $container[$key];
+	}//end child()
 
 	/**
 	 * Build a composite blocking token across the declared keys.

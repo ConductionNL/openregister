@@ -141,7 +141,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		}
 
 		$run = $run->withObjects(objects: $this->loadCandidates(run: $run));
-		if (count($run->objects) < 2) {
+		if (count($run->getObjects()) < 2) {
 			return [];
 		}
 
@@ -196,8 +196,8 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return [];
 		}
 
-		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->blockingKeys);
-		if ($token === '' && count($run->blockingKeys) > 0) {
+		$token = $this->comparator->blockingToken(data: $candidate, keys: $run->getBlockingKeys());
+		if ($token === '' && count($run->getBlockingKeys()) > 0) {
 			return [];
 		}
 
@@ -217,15 +217,15 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	private function inBucket(string $token, DedupRun $run): array {
 		if ($token === '') {
-			return $run->objects;
+			return $run->getObjects();
 		}
 
 		return array_values(
 			array_filter(
-				$run->objects,
+				$run->getObjects(),
 				fn (ObjectEntity $object): bool => $this->comparator->blockingToken(
 					data: ($object->getObject() ?? []),
-					keys: $run->blockingKeys
+					keys: $run->getBlockingKeys()
 				) === $token
 			)
 		);
@@ -241,9 +241,9 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	private function candidateMatches(array $candidate, DedupRun $run): array {
 		$matches = [];
-		foreach ($run->objects as $object) {
-			$result = $this->comparator->score(payloads: [$candidate, ($object->getObject() ?? [])], rules: $run->rules);
-			if ($result['score'] >= $run->cutOff) {
+		foreach ($run->getObjects() as $object) {
+			$result = $this->comparator->score(payloads: [$candidate, ($object->getObject() ?? [])], rules: $run->getRules());
+			if ($result['score'] >= $run->getCutOff()) {
 				$matches[] = (['uuid' => (string) $object->getUuid()] + $result);
 			}
 		}
@@ -282,7 +282,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return DedupRuleResolver::DEFAULT_THRESHOLD;
 		}
 
-		return $run->cutOff;
+		return $run->getCutOff();
 	}//end effectiveThreshold()
 
 	/**
@@ -358,7 +358,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 			return [];
 		}
 
-		return $run->rules;
+		return $run->getRules();
 	}//end effectiveRules()
 
 	/**
@@ -428,9 +428,9 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	private function currentFingerprint(array $pair, DedupRun $run): string {
 		return $this->pairFingerprint(
-			dataA: ($run->payloads[$pair['objectA']] ?? []),
-			dataB: ($run->payloads[$pair['objectB']] ?? []),
-			rules: $run->rules
+			dataA: ($run->getPayloads()[$pair['objectA']] ?? []),
+			dataB: ($run->getPayloads()[$pair['objectB']] ?? []),
+			rules: $run->getRules()
 		);
 	}//end currentFingerprint()
 
@@ -497,7 +497,7 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 	 */
 	private function scorePartitions(DedupRun $run): array {
 		$pairs = [];
-		foreach ($this->partition(objects: $run->objects, blockingKeys: $run->blockingKeys) as $bucket) {
+		foreach ($this->partition(objects: $run->getObjects(), blockingKeys: $run->getBlockingKeys()) as $bucket) {
 			array_push($pairs, ...$this->scoreBucket(bucket: $bucket, run: $run));
 		}
 
@@ -518,8 +518,8 @@ class DuplicateDetectionService implements DuplicateDetectionServiceInterface {
 		$pairs = [];
 		for ($i = 0; $i < $count; $i++) {
 			for ($j = ($i + 1); $j < $count; $j++) {
-				$result = $this->scorePair(pair: [$bucket[$i], $bucket[$j]], rules: $run->rules);
-				if ($result['score'] >= $run->cutOff) {
+				$result = $this->scorePair(pair: [$bucket[$i], $bucket[$j]], rules: $run->getRules());
+				if ($result['score'] >= $run->getCutOff()) {
 					$pairs[] = $result;
 				}
 			}
