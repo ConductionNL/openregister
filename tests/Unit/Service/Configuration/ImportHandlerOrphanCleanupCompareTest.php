@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -46,6 +47,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\ImportDuplicates
  * @uses \OCA\OpenRegister\Service\Configuration\ShippedSchemaBaseline
  * @uses \OCA\OpenRegister\Service\Configuration\AppConfigurationRecord
+ * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaComparison
  */
 class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 
@@ -145,8 +147,6 @@ class ImportHandlerOrphanCleanupCompareTest extends TestCase {
 	}
 
 	public function testTheFlagIsAComparedConfigurationKey(): void {
-		$compared = new ReflectionMethod(ImportHandler::class, 'isComparedConfigurationKey');
-
-		$this->assertTrue($compared->invoke(null, 'orphanCleanup'));
+		$this->assertTrue((new ImportedSchemaComparison())->differs(data: ['orphanCleanup' => ['allow' => true]], existing: new Schema()));
 	}
 }//end class
