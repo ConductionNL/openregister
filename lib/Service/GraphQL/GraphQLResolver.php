@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -91,7 +91,7 @@ class GraphQLResolver {
 	 * @param LoggerInterface $logger Logger
 	 * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
 	 * @param AggregationRunner $aggregationRunner Ad-hoc aggregation dispatcher.
-	 * @param TimeseriesRequestValidator $timeseriesValidator Validator for `groupBy` arg.
+	 * @param TimeseriesRequestValidatorInterface $timeseriesValidator Validator for `groupBy` arg.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 */
@@ -105,7 +105,7 @@ class GraphQLResolver {
 		private readonly LoggerInterface $logger,
 		private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
 		private readonly AggregationRunner $aggregationRunner,
-		private readonly TimeseriesRequestValidator $timeseriesValidator,
+		private readonly TimeseriesRequestValidatorInterface $timeseriesValidator,
 	) {
 	}//end __construct()
 

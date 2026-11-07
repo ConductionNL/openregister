@@ -25,8 +25,12 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
+use OCA\OpenRegister\Service\MigrationService;
+use OCA\OpenRegister\Service\MigrationServiceInterface;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OasServiceInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -48,7 +52,9 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
+		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
 		OasService::class => [OasServiceInterface::class, ContractBindings::class],
+		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
 	];
 
 	/**
