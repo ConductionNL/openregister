@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden characterization test for AnnotationNotificationDispatcher::matches().
+ * Golden characterization test for NotificationTriggerMatcher::matches().
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Notification
@@ -19,9 +19,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher;
 use PHPUnit\Framework\TestCase;
-use ReflectionMethod;
 
 /**
  * Runs matches() over every combination of a trigger corpus, a list of active
@@ -30,8 +29,8 @@ use ReflectionMethod;
  * per event (the empty event is keyed `(empty)`), one character per context: T (true), F (false) or E (error).
  * Set `OR_GOLDEN_WRITE=1` to regenerate the fixture.
  *
- * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
- * @uses \OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher
+ * @covers \OCA\OpenRegister\Notifications\Service\Notification\ThresholdOperators
  */
 final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 
@@ -90,6 +89,16 @@ final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 			'calc-both' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 0.85], 'previously' => ['gte' => 0.85]],
 			'calc-eq-ne' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['ne' => 0.5], 'previously' => ['eq' => 0.9]],
 			'calc-condition-string' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => 'lt', 'previously' => 3],
+			'calc-lt-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 0.5]],
+			'calc-lte-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lte' => 0.5]],
+			'calc-gt-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gt' => 0.5]],
+			'calc-gte-boundary' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gte' => 0.5]],
+			'calc-eq-numeric-text' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['eq' => '0.50']],
+			'calc-ne-numeric-text' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['ne' => '0.50']],
+			'calc-eq-word' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['eq' => 'high']],
+			'calc-gt-word' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['gt' => 'x']],
+			'calc-lt-word-value' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['lt' => 2]],
+			'calc-unknown-operator' => ['type' => 'calculatedChange', 'field' => 'score', 'condition' => ['between' => 1]],
 			'mixed-everything' => ['type' => 'created', 'action' => 'close', 'condition' => ['field' => 'status'], 'field' => 'score', 'filter' => ['field' => 'channel', 'value' => 'mail']],
 		];
 	}//end triggers()
@@ -120,20 +129,15 @@ final class AnnotationNotificationDispatcherMatchesGoldenTest extends TestCase {
 	 * Every trigger answers each event and context as recorded.
 	 *
 	 * @return void
-	 *
-	 * @covers ::matches
 	 */
 	public function testMatchesAgreesWithGolden(): void {
-		$method = new ReflectionMethod(AnnotationNotificationDispatcher::class, 'matches');
-		$dispatcher = (new \ReflectionClass(AnnotationNotificationDispatcher::class))->newInstanceWithoutConstructor();
-
 		$actual = [];
 		foreach (self::triggers() as $name => $triggerSpec) {
 			foreach (self::EVENTS as $event) {
 				$answers = '';
 				foreach (self::contexts() as $context) {
 					try {
-						$answers .= ($method->invoke($dispatcher, $triggerSpec, $event, $context) === true) ? 'T' : 'F';
+						$answers .= ((new NotificationTriggerMatcher(trigger: $event, context: $context))->matches(triggerSpec: $triggerSpec) === true) ? 'T' : 'F';
 					} catch (\Throwable $e) {
 						$answers .= 'E';
 					}
