@@ -53,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory with
  *   no injectable alternative in the Sabre VObject library.
  */
-class CalendarLinkService {
+class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * Constructor.
 	 *

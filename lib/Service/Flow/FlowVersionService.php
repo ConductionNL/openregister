@@ -66,7 +66,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-definition-versioning/spec.md
  */
-class FlowVersionService {
+class FlowVersionService implements FlowVersionServiceInterface {
 	/**
 	 * Constructor.
 	 *
