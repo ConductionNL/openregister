@@ -676,163 +676,26 @@ import {
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Uses')">
-								<div
-									v-if="objectStore.uses.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="use in objectStore.uses
-													.results"
-												:key="use['@self'].id"
-												class="table-row">
-												<td>{{ use['@self'].id }}</td>
-												<td>{{ use['@self'].uri }}</td>
-												<td>{{ use['@self'].schema }}</td>
-												<td>{{ use['@self'].register }}</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	use,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No uses found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.uses.results"
+									emptyText="No uses found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Used by')">
-								<div
-									v-if="objectStore.used.results.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="usedBy in objectStore.used
-													.results"
-												:key="usedBy['@self'].id"
-												class="table-row">
-												<td>{{ usedBy['@self'].id }}</td>
-												<td>{{ usedBy['@self'].uri }}</td>
-												<td>{{ usedBy['@self'].schema }}</td>
-												<td>
-													{{ usedBy['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	usedBy,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No objects are using this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.used.results"
+									emptyText="No objects are using this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
 								:title="t('openregister', 'Contracts')">
-								<div
-									v-if="objectStore.contracts.length > 0"
-									class="search-list-table">
-									<table class="table">
-										<thead>
-											<tr class="table-row">
-												<th scope="col">ID</th>
-												<th scope="col">URI</th>
-												<th scope="col">Schema</th>
-												<th scope="col">Register</th>
-												<th scope="col">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											<tr
-												v-for="contract in objectStore.contracts"
-												:key="contract['@self'].id"
-												class="table-row">
-												<td>{{ contract['@self'].id }}</td>
-												<td>{{ contract['@self'].uri }}</td>
-												<td>
-													{{ contract['@self'].schema }}
-												</td>
-												<td>
-													{{ contract['@self'].register }}
-												</td>
-												<td>
-													<NcButton
-														@click="
-															() => {
-																objectStore.setObjectItem(
-																	contract,
-																)
-																navigationStore.setModal(
-																	'viewObject',
-																)
-															}
-														">
-														<template #icon>
-															<Eye :size="20" />
-														</template>
-														View Object
-													</NcButton>
-												</td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-								<NcNoteCard v-else type="info">
-									<p>No contracts found for this object</p>
-								</NcNoteCard>
+								<RelatedObjectsTable
+									:objects="objectStore.contracts"
+									emptyText="No contracts found for this object"
+									@view="viewRelatedObject" />
 							</AppTab>
 							<AppTab
 								v-if="!isNewObject"
@@ -1294,7 +1157,6 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
@@ -1308,6 +1170,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
 import EventsTab from '../../components/object-relations/EventsTab.vue'
+import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
@@ -1605,7 +1468,6 @@ export default {
 		Cancel,
 		FileOutline,
 		OpenInNew,
-		Eye,
 		Delete,
 		Upload,
 		LockOutline,
@@ -1625,6 +1487,7 @@ export default {
 		EventsTab,
 		ContactsTab,
 		DeckTab,
+		RelatedObjectsTable,
 		RelationsTab,
 	},
 
@@ -2050,6 +1913,18 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Open a related object (a use, a user or a contract) in this modal.
+		 *
+		 * @param {object} object The related object
+		 * @return {void}
+		 * @spec exclude navigation from a related-object row, UI plumbing
+		 */
+		viewRelatedObject(object) {
+			objectStore.setObjectItem(object)
+			navigationStore.setModal('viewObject')
+		},
+
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
 		 * Handles both string IDs and embedded register/schema objects.
