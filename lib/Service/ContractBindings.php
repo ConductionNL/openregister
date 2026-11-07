@@ -54,6 +54,12 @@ use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -87,6 +93,7 @@ final class ContractBindings {
 		AppSettingsInterface::class => SettingsService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
+		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
@@ -100,6 +107,8 @@ final class ContractBindings {
 		ObjectOperationsInterface::class => ObjectService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SchemaShareableConfigScannerInterface::class => SchemaShareableConfigScanner::class,
+		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		TaskManagerInterface::class => TaskService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
