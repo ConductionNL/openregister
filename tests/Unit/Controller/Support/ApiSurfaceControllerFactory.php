@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ApiSurfaceController;
 
 /**
- * Builds ApiSurfaceController from its services as separate arguments.
+ * Builds ApiSurfaceController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ApiSurfaceControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class ApiSurfaceControllerFactory {
 		return [
 			$appName,
 			$request,
-			$capabilities,
-			$catalogue,
-			$contracts,
-			$session,
+			new \OCA\OpenRegister\Controller\Support\ApiSurfaceControllerServices(
+				capabilities: $capabilities,
+				catalogue: $catalogue,
+				contracts: $contracts,
+				session: $session,
+			),
 		];
 	}//end args()
 

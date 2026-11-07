@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\EndpointsController;
 
 /**
- * Builds EndpointsController from its services as separate arguments.
+ * Builds EndpointsController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class EndpointsControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class EndpointsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$endpointMapper,
-			$endpointLogMapper,
-			$endpointService,
-			$session,
+			new \OCA\OpenRegister\Controller\Support\EndpointsControllerServices(
+				endpointMapper: $endpointMapper,
+				endpointLogMapper: $endpointLogMapper,
+				endpointService: $endpointService,
+				session: $session,
+			),
 		];
 	}//end args()
 

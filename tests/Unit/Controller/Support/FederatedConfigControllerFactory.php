@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\FederatedConfigController;
 
 /**
- * Builds FederatedConfigController from its services as separate arguments.
+ * Builds FederatedConfigController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class FederatedConfigControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class FederatedConfigControllerFactory {
 		return [
 			$appName,
 			$request,
-			$service,
-			$access,
-			$session,
-			$config,
+			new \OCA\OpenRegister\Controller\Support\FederatedConfigControllerServices(
+				service: $service,
+				access: $access,
+				session: $session,
+				config: $config,
+			),
 		];
 	}//end args()
 

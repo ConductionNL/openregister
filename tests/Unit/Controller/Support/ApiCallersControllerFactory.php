@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ApiCallersController;
 
 /**
- * Builds ApiCallersController from its services as separate arguments.
+ * Builds ApiCallersController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ApiCallersControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class ApiCallersControllerFactory {
 		return [
 			$appName,
 			$request,
-			$records,
-			$catalogue,
-			$appConfig,
-			$session,
+			new \OCA\OpenRegister\Controller\Support\ApiCallersControllerServices(
+				records: $records,
+				catalogue: $catalogue,
+				appConfig: $appConfig,
+				session: $session,
+			),
 		];
 	}//end args()
 

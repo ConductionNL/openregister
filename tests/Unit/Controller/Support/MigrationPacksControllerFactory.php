@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\MigrationPacksController;
 
 /**
- * Builds MigrationPacksController from its services as separate arguments.
+ * Builds MigrationPacksController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class MigrationPacksControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class MigrationPacksControllerFactory {
 		return [
 			$appName,
 			$request,
-			$service,
-			$session,
-			$requestReader,
-			$errors,
+			new \OCA\OpenRegister\Controller\Support\MigrationPacksControllerServices(
+				service: $service,
+				session: $session,
+				requestReader: $requestReader,
+				errors: $errors,
+			),
 		];
 	}//end args()
 
