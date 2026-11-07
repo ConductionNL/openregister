@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * Set UPDATE_GOLDEN=1 to rewrite it.
  *
  * @covers \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
+ * @uses   \OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
