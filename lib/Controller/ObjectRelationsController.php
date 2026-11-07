@@ -270,8 +270,8 @@ class ObjectRelationsController extends Controller {
 			title: $this->params->stringParam(name: 'title'),
 			relationType: $this->params->stringParam(name: 'type'),
 			label: $this->params->stringParam(name: 'label'),
-			register: $this->params->asInt(value: $object->getRegister()),
-			schema: $this->params->asInt(value: $object->getSchema())
+			register: $this->params->idOf(reference: $object->getRegister()),
+			schema: $this->params->idOf(reference: $object->getSchema())
 		);
 	}//end externalLink()
 
@@ -344,10 +344,10 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function proseScope(ObjectEntity $source, ObjectEntity $far): array {
 		return [
-			'sourceRegister' => $this->params->asInt(value: $source->getRegister()),
-			'sourceSchema' => $this->params->asInt(value: $source->getSchema()),
-			'targetRegister' => $this->params->asInt(value: $far->getRegister()),
-			'targetSchema' => $this->params->asInt(value: $far->getSchema()),
+			'sourceRegister' => $this->params->idOf(reference: $source->getRegister()),
+			'sourceSchema' => $this->params->idOf(reference: $source->getSchema()),
+			'targetRegister' => $this->params->idOf(reference: $far->getRegister()),
+			'targetSchema' => $this->params->idOf(reference: $far->getSchema()),
 		];
 	}//end proseScope()
 
@@ -567,7 +567,7 @@ class ObjectRelationsController extends Controller {
 		}
 
 		return $this->relations->declarationFor(
-			schemaId: $this->params->asInt(value: $source->getSchema()),
+			schemaId: $this->params->idOf(reference: $source->getSchema()),
 			property: $property,
 			language: $this->params->language()
 		);

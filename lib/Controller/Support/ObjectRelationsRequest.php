@@ -151,19 +151,19 @@ final class ObjectRelationsRequest {
 	}//end listParam()
 
 	/**
-	 * Read a register or schema reference as an int, when it is one.
+	 * An object's register or schema reference as an id, when it is a numeric one.
 	 *
-	 * @param mixed $value The reference.
+	 * @param string|null $reference The reference as the object holds it.
 	 *
-	 * @return int|null The id.
+	 * @return int|null The id, or null for none or a slug.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
-	public function asInt(mixed $value): ?int {
-		if (is_numeric($value) === false) {
+	public function idOf(?string $reference): ?int {
+		if ($reference === null || is_numeric($reference) === false) {
 			return null;
 		}
 
-		return (int)$value;
-	}//end asInt()
+		return (int)$reference;
+	}//end idOf()
 }//end class

@@ -35,15 +35,13 @@ final class ObjectActionsSelection {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $register The register as the caller named it.
-	 * @param string               $schema   The schema as the caller named it.
-	 * @param string               $action   The action key.
-	 * @param list<string>         $ids      The selected objects, without repeats.
-	 * @param array<string, mixed> $inputs   The inputs.
+	 * @param array{register: string, schema: string} $route  The register and schema as the caller named them.
+	 * @param string                                  $action The action key.
+	 * @param list<string>                            $ids    The selected objects, without repeats.
+	 * @param array<string, mixed>                    $inputs The inputs.
 	 */
 	public function __construct(
-		public readonly string $register,
-		public readonly string $schema,
+		public readonly array $route,
 		public readonly string $action,
 		public readonly array $ids,
 		public readonly array $inputs,
@@ -64,8 +62,8 @@ final class ObjectActionsSelection {
 	public function startOn(ObjectActionBulkInterface $bulk, Schema $schema): BulkJob {
 		return $bulk->start(
 			schema: $schema,
-			register: $this->register,
-			schemaRef: $this->schema,
+			register: $this->route['register'],
+			schemaRef: $this->route['schema'],
 			action: $this->action,
 			ids: $this->ids,
 			inputs: $this->inputs

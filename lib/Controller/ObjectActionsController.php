@@ -274,7 +274,7 @@ class ObjectActionsController extends Controller {
 			return $this->noSuchObject();
 		}
 
-		$result = $this->runOn(subject: $subject, action: $action, inputs: $inputs, register: $register, schema: $schema);
+		$result = $this->runOn(subject: $subject, action: $action, inputs: $inputs, route: ['register' => $register, 'schema' => $schema]);
 
 		return new JSONResponse($result['body'], $result['status']);
 	}//end invoke()
@@ -309,7 +309,8 @@ class ObjectActionsController extends Controller {
 		}
 
 		$ids = array_values(array_unique(array_map('strval', $ids)));
-		$selection = new ObjectActionsSelection(register: $register, schema: $schema, action: $action, ids: $ids, inputs: $inputs);
+		$route = ['register' => $register, 'schema' => $schema];
+		$selection = new ObjectActionsSelection(route: $route, action: $action, ids: $ids, inputs: $inputs);
 
 		return $this->runSelection(schema: $offered['schema'], definition: $offered['definition'], selection: $selection);
 	}//end invokeOnSelection()
@@ -440,13 +441,7 @@ class ObjectActionsController extends Controller {
 			return ['id' => $id, 'status' => 'failed', 'reason' => 'No such object'];
 		}
 
-		$one = $this->runOn(
-			subject: $subject,
-			action: $selection->action,
-			inputs: $selection->inputs,
-			register: $selection->register,
-			schema: $selection->schema
-		);
+		$one = $this->runOn(subject: $subject, action: $selection->action, inputs: $selection->inputs, route: $selection->route);
 
 		return self::selectedRow(id: $id, one: $one);
 	}//end runOnSelected()
@@ -475,21 +470,20 @@ class ObjectActionsController extends Controller {
 	/**
 	 * Run an action on one resolved object, with the subject as the caller named it.
 	 *
-	 * @param array{object: ObjectEntity, schema: Schema} $subject  The object and its schema.
-	 * @param string                                       $action   The action key.
-	 * @param array<string, mixed>                         $inputs   The inputs.
-	 * @param string                                       $register The register as the caller named it.
-	 * @param string                                       $schema   The schema as the caller named it.
+	 * @param array{object: ObjectEntity, schema: Schema} $subject The object and its schema.
+	 * @param string                                       $action  The action key.
+	 * @param array<string, mixed>                         $inputs  The inputs.
+	 * @param array{register: string, schema: string}      $route   The register and schema as the caller named them.
 	 *
 	 * @return array<string, mixed> The run's status and body.
 	 */
-	private function runOn(array $subject, string $action, array $inputs, string $register, string $schema): array {
+	private function runOn(array $subject, string $action, array $inputs, array $route): array {
 		return $this->runner->run(
 			object: $subject['object'],
 			schema: $subject['schema'],
 			key: $action,
 			given: $inputs,
-			subject: ['uuid' => (string)$subject['object']->getUuid(), 'register' => $register, 'schema' => $schema]
+			subject: ['uuid' => (string)$subject['object']->getUuid(), 'register' => $route['register'], 'schema' => $route['schema']]
 		);
 	}//end runOn()
 
