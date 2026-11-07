@@ -99,6 +99,13 @@ class ObjectTreeService {
 	public const TRUNCATED_UNREADABLE = 'unreadable';
 
 	/**
+	 * Decides where the walk stops.
+	 *
+	 * @var ObjectTreeBounds
+	 */
+	private readonly ObjectTreeBounds $bounds;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param HierarchyDescender     $descender   Reads one level of children from a magic table.
@@ -116,6 +123,7 @@ class ObjectTreeService {
 		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->bounds = new ObjectTreeBounds();
 	}//end __construct()
 
 	/**
@@ -285,26 +293,10 @@ class ObjectTreeService {
 
 		return $context + [
 			'property' => $declaration['property'],
-			'depth' => self::effectiveDepth(asked: $depth, declared: $declaration['maxDepth']),
+			'depth' => $this->bounds->effectiveDepth(asked: $depth, declared: $declaration['maxDepth']),
 			'maxDepth' => $declaration['maxDepth'],
 		];
 	}//end treeWalk()
-
-	/**
-	 * The depth a walk goes to: the declared bound, or the one asked for within it and at least 1.
-	 *
-	 * @param int|null $asked    The depth asked for.
-	 * @param int      $declared The declared bound.
-	 *
-	 * @return int The depth.
-	 */
-	private static function effectiveDepth(int|null $asked, int $declared): int {
-		if ($asked === null) {
-			return $declared;
-		}
-
-		return min(max(1, $asked), $declared);
-	}//end effectiveDepth()
 
 	/**
 	 * The answer with the ancestors and descendants its direction asks for, and whether a walk was cut short.
@@ -424,7 +416,7 @@ class ObjectTreeService {
 		// What the cap still lets in, the root counted: the read below is
 		// bounded by it, so a level far wider than the cap is never fetched.
 		$read = $this->readableBelow(walk: $walk, state: $state);
-		$stop = self::levelStop(read: $read);
+		$stop = $this->bounds->levelStop(read: $read);
 		if ($stop !== null) {
 			return $stop + ['state' => $state];
 		}
@@ -453,29 +445,6 @@ class ObjectTreeService {
 			]
 		);
 	}//end readableBelow()
-
-	/**
-	 * Whether a level's read ends the walk, and why; null when the walk goes on.
-	 *
-	 * @param array{children: array<string, string>, overflow: bool}|null $read The level's read.
-	 *
-	 * @return array{done: bool, truncatedBy: string|null}|null The stop.
-	 */
-	private static function levelStop(array|null $read): array|null {
-		if ($read === null) {
-			return ['done' => true, 'truncatedBy' => self::TRUNCATED_UNREADABLE];
-		}
-
-		if ($read['overflow'] === true) {
-			return ['done' => true, 'truncatedBy' => self::TRUNCATED_CAP];
-		}
-
-		if ($read['children'] === []) {
-			return ['done' => true, 'truncatedBy' => null];
-		}
-
-		return null;
-	}//end levelStop()
 
 	/**
 	 * The state with one level of children added as nodes and made the new frontier.
@@ -554,7 +523,7 @@ class ObjectTreeService {
 			return null;
 		}
 
-		$bounded  = self::withinBudget(rows: $rows, seen: $read['seen'], budget: $budget);
+		$bounded  = $this->bounds->withinBudget(rows: $rows, seen: $read['seen'], budget: $budget);
 		$readable = $this->readableOnly(walk: $read['walk'], uuids: $bounded['children']);
 		if ($readable === null) {
 			return null;
@@ -588,27 +557,6 @@ class ObjectTreeService {
 			return null;
 		}
 	}//end childRows()
-
-	/**
-	 * The unseen rows of a bounded read, cut to the budget, and whether the read overflowed it.
-	 *
-	 * @param array<string, string> $rows   Child uuid => parent uuid, as read.
-	 * @param array<string, mixed>  $seen   The uuids already in the answer.
-	 * @param int                   $budget The children the cap still admits.
-	 *
-	 * @return array{children: array<string, string>, overflow: bool} The children.
-	 */
-	private static function withinBudget(array $rows, array $seen, int $budget): array {
-		// Counted before the seen ones are dropped: a row that is a cycle
-		// still used up a place of the bounded read, so it may hide a wider level.
-		$overflow = (count($rows) > $budget);
-		$children = array_diff_key($rows, $seen);
-		if ($overflow === true) {
-			$children = array_slice($children, 0, $budget, true);
-		}
-
-		return ['children' => $children, 'overflow' => $overflow];
-	}//end withinBudget()
 
 	/**
 	 * The ancestors of the root, nearest first.
@@ -655,7 +603,7 @@ class ObjectTreeService {
 		for ($level = 1; $level <= ($walk['depth'] + 1); $level++) {
 			$step = $this->parentStep(object: $current, seen: $seen, walk: $walk);
 			if ($step['object'] === null || $level > $walk['depth']) {
-				return self::climbEnd(chain: $chain, step: $step);
+				return $this->bounds->climbEnd(chain: $chain, step: $step);
 			}
 
 			$current = $step['object'];
@@ -665,22 +613,6 @@ class ObjectTreeService {
 
 		return ['chain' => $chain, 'truncatedBy' => null, 'topParent' => null];
 	}//end ancestorChain()
-
-	/**
-	 * How a climb ends: at a parent that cannot be shown, or at one past the depth bound.
-	 *
-	 * @param array<string, ObjectEntity>                               $chain The ancestors so far.
-	 * @param array{object: ObjectEntity|null, truncatedBy: string|null} $step  The step that ended it.
-	 *
-	 * @return array{chain: array<string, ObjectEntity>, truncatedBy: string|null, topParent: string|null} The climb.
-	 */
-	private static function climbEnd(array $chain, array $step): array {
-		if ($step['object'] === null) {
-			return ['chain' => $chain, 'truncatedBy' => $step['truncatedBy'], 'topParent' => null];
-		}
-
-		return ['chain' => $chain, 'truncatedBy' => self::TRUNCATED_DEPTH, 'topParent' => (string)$step['object']->getUuid()];
-	}//end climbEnd()
 
 	/**
 	 * The parent of one object when it exists, is new to the walk and is readable.
@@ -696,7 +628,7 @@ class ObjectTreeService {
 	 * @return array{object: ObjectEntity|null, truncatedBy: string|null} The parent, or why there is none to show.
 	 */
 	private function parentStep(ObjectEntity $object, array $seen, array $walk): array {
-		$parentUuid = self::reference(value: ($object->getObject()[$walk['property']] ?? null));
+		$parentUuid = $this->bounds->reference(value: ($object->getObject()[$walk['property']] ?? null));
 		if ($parentUuid === null || isset($seen[$parentUuid]) === true) {
 			return ['object' => null, 'truncatedBy' => null];
 		}
@@ -809,22 +741,4 @@ class ObjectTreeService {
 		];
 	}//end node()
 
-	/**
-	 * The uuid a parent property holds, or null.
-	 *
-	 * @param mixed $value The stored value: a uuid, or a reference object carrying one.
-	 *
-	 * @return string|null The uuid.
-	 */
-	private static function reference(mixed $value): ?string {
-		if (is_array($value) === true) {
-			$value = ($value['uuid'] ?? ($value['id'] ?? ($value['value'] ?? null)));
-		}
-
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		return trim($value);
-	}//end reference()
 }//end class
