@@ -54,7 +54,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Push\PushEvents;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\ObjectReadersInterface;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -126,7 +126,7 @@ class NotifyPushListener implements IEventListener {
 	 * @param IAppManager $appManager Nextcloud app manager (notify_push install check).
 	 * @param LoggerInterface $logger PSR-3 logger.
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
-	 * @param PermissionHandlerInterface $permissionHandler RBAC handler for reader-list resolution.
+	 * @param ObjectReadersInterface $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
 	 * @param RegisterMapperInterface $registerMapper Mapper for resolving register slugs.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schema slugs.
@@ -137,7 +137,7 @@ class NotifyPushListener implements IEventListener {
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly PermissionHandlerInterface $permissionHandler,
+		private readonly ObjectReadersInterface $permissionHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,

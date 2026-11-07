@@ -63,7 +63,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -129,7 +129,7 @@ class ObjectOwnershipService {
 	 * @param IGroupManager $groupManager The caller's groups, and whether an owning group exists.
 	 * @param GrantManageGuard $grantManage Who may name a record's owning group: the owner, an administrator,
 	 *                                      or a holder of the special right `grant_manage`.
-	 * @param PermissionHandlerInterface $permissions The rules, for "may this caller edit this record".
+	 * @param PermissionCheckInterface $permissions The rules, for "may this caller edit this record".
 	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
 	 * @param AuditTrailMapperInterface $auditTrailMapper The hash-sealed trail.
@@ -148,7 +148,7 @@ class ObjectOwnershipService {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly GrantManageGuard $grantManage,
-		private readonly PermissionHandlerInterface $permissions,
+		private readonly PermissionCheckInterface $permissions,
 		private readonly ObjectOwnerWriter $ownerWriter,
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
