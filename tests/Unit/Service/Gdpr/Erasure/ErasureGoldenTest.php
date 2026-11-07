@@ -42,9 +42,15 @@ use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use OCA\OpenRegister\Service\Deletion\DestructionScopeService;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\Erasure\CoSubjectProbe;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureBucket;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyer;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureDestroyGuard;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureProtectionResolver;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureSchemaResolver;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureScopeCounter;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
@@ -285,15 +291,14 @@ final class ErasureGoldenTest extends TestCase {
 			]
 		);
 
+		$parties = new SubjectPartyCounter();
+
 		return new ErasurePreviewService(
 			$subjects,
-			$guard,
-			$retention,
-			$scopeService,
-			$schemaMapper,
-			new SubjectPartyCounter(),
-			$db,
-			new NullLogger()
+			new ErasureProtectionResolver($guard, $retention, new NullLogger()),
+			new CoSubjectProbe($db, $parties, new NullLogger()),
+			new ErasureScopeCounter($scopeService, new ErasureSchemaResolver($schemaMapper), new NullLogger()),
+			$parties
 		);
 	}//end previewService()
 
@@ -586,18 +591,16 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 
-		return new ErasureRunner(
-			$previewService,
-			$store,
-			$subjects,
-			$objectMapper,
-			$schemaMapper,
-			$destroyRight,
-			$clock,
+		$destroyer = new ErasureDestroyer(
+			new ErasureSchemaResolver($schemaMapper),
+			new ErasureDestroyGuard($destroyRight, $clock),
 			$scopeService,
 			$recorder,
+			$objectMapper,
 			new NullLogger()
 		);
+
+		return new ErasureRunner($previewService, $store, $subjects, $destroyer);
 	}//end runner()
 
 	public function testRunActsOnEveryItemAndRefusesBeforeDestroying(): void {
