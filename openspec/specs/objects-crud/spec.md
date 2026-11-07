@@ -27,6 +27,15 @@ the clamp exists for exactly that caller.
 - **WHEN** a client requests a list with `_limit=false`
 - **THEN** no `LIMIT` is applied and every matching row is returned
 
+#### Scenario: Every multi-schema path has the same bound
+
+- **WHEN** a multi-schema search with `_limit` above the maximum runs on the
+  sequential path (one table, or a query the UNION cannot express)
+- **THEN** at most `MAX_PAGE_SIZE` rows are loaded per table and returned, as on
+  the UNION path
+- **AND** the response reports `MAX_PAGE_SIZE` as its `limit`, so a client paging
+  by that number reaches every row
+
 ### Requirement: `_limit` supports an explicit unlimited value
 
 `_limit` SHALL accept `false`, `null`, `0`, `all`, `unlimited` and `none` (any

@@ -1105,6 +1105,32 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * An oversized limit reports the bound, so paging by the reported limit misses no row.
+	 */
+	public function testIndexCrossTableSearchReportsTheBoundedLimit(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn([]);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(2500);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn(['_limit' => '5000', '_offset' => 1000]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertSame(expected: [1000, 3, 2], actual: [$data['limit'], $data['pages'], $data['page']]);
+	}
+
+	/**
 	 * The total is every match across the tables, not the size of the page.
 	 */
 	public function testIndexCrossTableSearchTotalIsTheFullCount(): void {
