@@ -27,12 +27,20 @@ use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
+use OCA\OpenRegister\Service\Object\FacetCacheVersion;
+use OCA\OpenRegister\Service\Object\FacetCacheVersionInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -57,10 +65,14 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
+		FacetCacheVersion::class => [FacetCacheVersionInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
+		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, ContractBindings::BINDINGS, 'Service'],
 		QueryHandler::class => [QueryHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		RenderObject::class => [RenderObjectInterface::class, ContractBindings::BINDINGS, 'Service'],
+		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::BINDINGS, 'Service'],
+		TranslationHandler::class => [TranslationHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
 	/**
@@ -80,6 +92,11 @@ final class D2InterfaceBindingsTest extends TestCase {
 		RenderObject::class => [
 			'Controller/DeletedController.php' => 'deletion-audit-trail surface: out of scope for lane D2',
 			'Controller/Support/DeletedAccess.php' => 'deletion-audit-trail surface, bundles the deleted-object authorizer: out of scope for lane D2',
+		],
+		SchemaTypeConverter::class => [
+			'Command/RematerialiseCalculationsCommand.php' => 'constructs the converter as a parameter default (`new`)',
+			'Db/MagicMapper.php' => 'left while open PR #6108 changes the file',
+			'Db/MagicMapper/MagicSearchHandler.php' => 'left while open PR #6108 changes the file',
 		],
 	];
 
