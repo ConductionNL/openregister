@@ -39,8 +39,8 @@ use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
-use OCA\OpenRegister\Service\BulkJob\BulkJobService;
+use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
+use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -78,16 +78,16 @@ class BulkJobsController extends Controller {
 	/**
 	 * The lifecycle service.
 	 *
-	 * @var BulkJobService
+	 * @var BulkJobServiceInterface
 	 */
-	private readonly BulkJobService $service;
+	private readonly BulkJobServiceInterface $service;
 
 	/**
 	 * The inverse of a reversible job.
 	 *
-	 * @var BulkJobReversal
+	 * @var BulkJobReversalInterface
 	 */
-	private readonly BulkJobReversal $reversal;
+	private readonly BulkJobReversalInterface $reversal;
 
 	/**
 	 * Job persistence.

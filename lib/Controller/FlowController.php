@@ -52,7 +52,7 @@ use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
-use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
@@ -144,9 +144,9 @@ class FlowController extends Controller {
 	/**
 	 * Resolves a document's step types.
 	 *
-	 * @var FlowNodePreflight
+	 * @var FlowNodePreflightInterface
 	 */
-	private readonly FlowNodePreflight $preflight;
+	private readonly FlowNodePreflightInterface $preflight;
 
 	/**
 	 * Reads, writes and runs flow definitions.

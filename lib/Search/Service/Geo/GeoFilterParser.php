@@ -42,7 +42,7 @@ use InvalidArgumentException;
  *   static-factory pattern; PHPMD's StaticAccess warning is a false
  *   positive for that pattern.
  */
-class GeoFilterParser {
+class GeoFilterParser implements GeoFilterParserInterface {
 	/**
 	 * Parse spatial filters out of a query-parameter array.
 	 *
