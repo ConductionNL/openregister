@@ -53,11 +53,7 @@ interface ChunkIndexOverviewInterface extends ChunkSourceReaderInterface {
 	 * @return array List of file source summaries
 	 */
 	public function getFileSourceSummaries(
-		?int $limit=null,
-		?int $offset=null,
-		?string $search=null,
-		string $sort='extractedAt',
-		string $order='DESC',
+		?int $limit=null, ?int $offset=null, ?string $search=null, string $sort='extractedAt', string $order='DESC'
 	): array;
 
 	/**

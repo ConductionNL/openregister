@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
-use Exception;
 use OCP\Files\File;
 use OCP\Files\Node;
 use OCP\IUser;
@@ -35,7 +34,7 @@ interface FileOwnershipHandlerInterface {
 	/**
 	 * Gets or creates the OpenRegister user for file operations.
 	 *
-	 * @throws Exception If OpenRegister user cannot be created.
+	 * @throws \Exception If OpenRegister user cannot be created.
 	 *
 	 * @return IUser The OpenRegister user.
 	 *
@@ -59,7 +58,7 @@ interface FileOwnershipHandlerInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If ownership transfer fails.
+	 * @throws \Exception If ownership transfer fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -73,7 +72,7 @@ interface FileOwnershipHandlerInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception If ownership transfer fails.
+	 * @throws \Exception If ownership transfer fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
