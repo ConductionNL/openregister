@@ -21,9 +21,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -64,19 +65,21 @@ class ReadFileHandler {
 	/**
 	 * Constructor for ReadFileHandler.
 	 *
-	 * @param IRootFolder              $rootFolder        Root folder for file operations.
-	 * @param FolderManagementHandler  $folderMgmtHandler Folder management handler.
-	 * @param FileValidationHandler    $fileValidHandler  File validation handler.
-	 * @param MagicMapperInterface     $objectMapper      Object mapper for magic table operations.
-	 * @param LoggerInterface          $logger            Logger for logging operations.
-	 * @param FileMapperInterface|null $fileMapper        Optional OR-side metadata mapper for category-based
-	 *                                                    filtering. Null-safe so legacy fixtures keep working.
+	 * @param IRootFolder                $rootFolder           Root folder for file operations.
+	 * @param FolderManagementHandler    $folderMgmtHandler    Folder management handler.
+	 * @param FileValidationHandler      $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandler       $fileOwnershipHandler File ownership handler.
+	 * @param MagicObjectFinderInterface $objectMapper         Object mapper for magic table operations.
+	 * @param LoggerInterface            $logger               Logger for logging operations.
+	 * @param FileMapperInterface|null   $fileMapper           Optional OR-side metadata mapper for category-based
+	 *                                                         filtering. Null-safe so legacy fixtures keep working.
 	 */
 	public function __construct(
 		private readonly IRootFolder $rootFolder,
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly MagicObjectFinderInterface $objectMapper,
 		private readonly LoggerInterface $logger,
 		private readonly ?FileMapperInterface $fileMapper = null,
 	) {

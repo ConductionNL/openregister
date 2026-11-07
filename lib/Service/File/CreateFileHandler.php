@@ -31,7 +31,7 @@ use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 
 /**
  * Handles file creation operations with Single Responsibility.
@@ -81,16 +81,16 @@ class CreateFileHandler {
 	/**
 	 * Constructor for CreateFileHandler.
 	 *
-	 * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
-	 * @param FileValidationHandler   $fileValidHandler     File validation handler.
-	 * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
-	 * @param MagicMapperInterface    $objectEntityMapper   Object entity mapper.
-	 * @param LoggerInterface         $logger               Logger for logging operations.
+	 * @param FolderManagementHandler       $folderMgmtHandler    Folder management handler.
+	 * @param FileValidationHandler         $fileValidHandler     File validation handler.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler File ownership handler.
+	 * @param MagicMapperInterface          $objectEntityMapper   Object entity mapper.
+	 * @param LoggerInterface               $logger               Logger for logging operations.
 	 */
 	public function __construct(
 		private readonly FolderManagementHandler $folderMgmtHandler,
 		private readonly FileValidationHandler $fileValidHandler,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 		private readonly MagicMapperInterface $objectEntityMapper,
 		private readonly LoggerInterface $logger,
 	) {

@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -80,7 +80,7 @@ class LogCleanUpTask extends TimedJob {
 	 * @param ITimeFactory           $time              The time factory for time operations
 	 * @param AuditTrailMapperInterface       $auditTrailMapper  The audit trail mapper for database operations
 	 * @param SearchTrailMapper      $searchTrailMapper The search trail mapper for database operations
-	 * @param ObjectRetentionHandler $retentionHandler  The retention settings handler
+	 * @param RetentionSettingsReaderInterface $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 * @param StateHistoryMapper|null $stateHistory     The derived state-history projection, pruned with the trail
 	 * @param MetricsRetentionInterface|null $metrics          The operational metrics, cut to their retention
@@ -93,7 +93,7 @@ class LogCleanUpTask extends TimedJob {
 		ITimeFactory $time,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly SearchTrailMapper $searchTrailMapper,
-		private readonly ObjectRetentionHandler $retentionHandler,
+		private readonly RetentionSettingsReaderInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 		// LAST AND NULLABLE so every existing construction of this job keeps
 		// working; the container always supplies it.

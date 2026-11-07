@@ -42,7 +42,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The node catalogue.
+	 * @param FlowNodeRegistryInterface $registry The node catalogue.
 	 * @param FlowRunGuard|null $guard Keeps the run visibly alive between steps
 	 *                                 and enforces its deadline. Null for
 	 *                                 callers with no run to guard — the flow
@@ -58,7 +58,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *                                   construction sites supply one.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 		private readonly ?FlowRunGuard $guard = null,
 		private readonly ?FlowRunAsScope $scope = null,
 	) {

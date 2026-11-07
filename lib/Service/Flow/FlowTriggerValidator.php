@@ -348,7 +348,7 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 	 */
 	private function registry(): ?object {
 		try {
-			return $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodeRegistry');
+			return $this->container->get('OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface');
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FlowTriggerValidator] Could not resolve the node registry: ' . $e->getMessage(),

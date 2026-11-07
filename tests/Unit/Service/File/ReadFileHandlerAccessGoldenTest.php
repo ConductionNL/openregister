@@ -23,9 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -59,7 +60,7 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 	/** @var FileValidationHandler&MockObject */
 	private $validation;
 
-	/** @var MagicMapperInterface&MockObject */
+	/** @var MagicObjectFinderInterface&MockObject */
 	private $objects;
 
 	/** @var FileMapperInterface&MockObject */
@@ -73,7 +74,7 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->folders = $this->createMock(FolderManagementHandler::class);
 		$this->validation = $this->createMock(FileValidationHandler::class);
-		$this->objects = $this->createMock(MagicMapperInterface::class);
+		$this->objects = $this->createMock(MagicObjectFinderInterface::class);
 		$this->fileMapper = $this->createMock(FileMapperInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
 		$this->fileService->method('extractFileNameFromPath')->willReturnCallback(
@@ -90,12 +91,13 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 	 */
 	private function handler(bool $withFileMapper = true): ReadFileHandler {
 		$byType = [
-			IRootFolder::class             => $this->rootFolder,
-			FolderManagementHandler::class => $this->folders,
-			FileValidationHandler::class   => $this->validation,
-			MagicMapperInterface::class    => $this->objects,
-			LoggerInterface::class         => $this->createMock(LoggerInterface::class),
-			FileMapperInterface::class     => null,
+			IRootFolder::class                => $this->rootFolder,
+			FolderManagementHandler::class    => $this->folders,
+			FileValidationHandler::class      => $this->validation,
+			FileOwnershipHandler::class       => $this->createMock(FileOwnershipHandler::class),
+			MagicObjectFinderInterface::class => $this->objects,
+			LoggerInterface::class            => $this->createMock(LoggerInterface::class),
+			FileMapperInterface::class        => null,
 		];
 		if ($withFileMapper === true) {
 			$byType[FileMapperInterface::class] = $this->fileMapper;

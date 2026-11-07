@@ -39,13 +39,7 @@ interface FlowRunMigrationServiceInterface {
 	 *
 	 * @return array<string, mixed> The migration answer.
 	 */
-	public function migrate(
-		string $runUuid,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-	): array;
+	public function migrate(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array;
 
 	/**
 	 * Move every run of one version onto another, bounded.
@@ -61,13 +55,8 @@ interface FlowRunMigrationServiceInterface {
 	 * @return array{migrated: int, skipped: int, results: array<int, array<string, mixed>>}
 	 */
 	public function migrateRunsOfVersion(
-		string $flowId,
-		int $sourceVersion,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-		int $limit = 100,
+		string $flowId, int $sourceVersion, int $targetVersion, string $reason,
+		string $actor, array $mapping = [], int $limit = 100,
 	): array;
 
 	/**
@@ -81,11 +70,5 @@ interface FlowRunMigrationServiceInterface {
 	 *
 	 * @return array<string, mixed> The dry-run answer.
 	 */
-	public function preview(
-		string $runUuid,
-		int $targetVersion,
-		string $reason,
-		string $actor,
-		array $mapping = [],
-	): array;
+	public function preview(string $runUuid, int $targetVersion, string $reason, string $actor, array $mapping = []): array;
 }//end interface

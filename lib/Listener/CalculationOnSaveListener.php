@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
+use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilderInterface;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
@@ -70,7 +70,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
 	 * @param RegisterMapperInterface $registerMapper Register lookup mapper (for sequence scope id).
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator.
-	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
+	 * @param CalculationPayloadBuilderInterface $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param SequenceServiceInterface $sequences Atomic running-number reservation service.
 	 * @param RuleRunRecorderInterface $ruleRuns Records each calculation's verdict for the rule inventory.
 	 * @param LoggerInterface $logger PSR logger for warnings.
@@ -86,7 +86,7 @@ class CalculationOnSaveListener implements IEventListener {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly CalculationEvaluatorInterface $evaluator,
-		private readonly CalculationPayloadBuilder $payloadBuilder,
+		private readonly CalculationPayloadBuilderInterface $payloadBuilder,
 		private readonly SequenceServiceInterface $sequences,
 		private readonly RuleRunRecorderInterface $ruleRuns,
 		private readonly LoggerInterface $logger,

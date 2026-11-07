@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -74,14 +74,14 @@ class DestructionListRepository {
 	 * @param MagicMapperInterface            $objectMapper    Destruction lists are register objects.
 	 * @param RegisterMapperInterface         $registerMapper  Resolves the configured register.
 	 * @param SchemaMapperInterface           $schemaMapper    Resolves the configured schema.
-	 * @param ObjectRetentionHandler $settingsHandler Says which register and schema they live in.
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Says which register and schema they live in.
 	 * @param LoggerInterface        $logger          Logger for a lookup that fails.
 	 */
 	public function __construct(
 		private readonly MagicMapperInterface $objectMapper,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -118,38 +118,53 @@ class DestructionListRepository {
 	 */
 	public function findLists(?array $statuses = null): array {
 		try {
-			$settings = $this->settingsHandler->getArchivalSettingsOnly();
-			$registerId = ($settings['destructionListRegister'] ?? null);
-			$schemaId = ($settings['destructionListSchema'] ?? null);
-
-			if ($registerId === null || $schemaId === null) {
+			$scope = $this->configuredScope();
+			if ($scope === null) {
 				return [];
 			}
 
-			$register = $this->registerMapper->find((int)$registerId);
-			$schema = $this->schemaMapper->find((int)$schemaId);
-
-			// `status`, NOT `object->status`. MagicSearchHandler compares a
-			// filter key against the schema's OWN property names and turns
-			// anything it does not recognise into `1 = 0` rather than an error,
-			// so the wrong spelling here reads as "no lists" on every install.
-			$filters = [];
-			if ($statuses !== null && $statuses !== []) {
-				$filters['status'] = $statuses;
-			}
-
-			return $this->objectMapper->findAll(
-				filters: $filters,
-				register: $register,
-				schema: $schema
-			);
+			return $this->objectMapper->findAll(filters: $this->statusFilter(statuses: $statuses), register: $scope['register'], schema: $scope['schema']);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage()
-			);
+			$this->logger->warning('[DestructionListRepository] Could not read destruction lists: ' . $e->getMessage());
 			return [];
-		}//end try
+		}
 	}//end findLists()
+
+	/**
+	 * The register and schema destruction lists live in, or null when none are configured.
+	 *
+	 * @return array{register: \OCA\OpenRegister\Db\Register, schema: \OCA\OpenRegister\Db\Schema}|null The configured register and schema.
+	 */
+	private function configuredScope(): ?array {
+		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$registerId = ($settings['destructionListRegister'] ?? null);
+		$schemaId = ($settings['destructionListSchema'] ?? null);
+		if ($registerId === null || $schemaId === null) {
+			return null;
+		}
+
+		return ['register' => $this->registerMapper->find((int)$registerId), 'schema' => $this->schemaMapper->find((int)$schemaId)];
+	}//end configuredScope()
+
+	/**
+	 * The search filter that keeps these statuses.
+	 *
+	 * `status`, NOT `object->status`. MagicSearchHandler compares a filter key
+	 * against the schema's OWN property names and turns anything it does not
+	 * recognise into `1 = 0` rather than an error, so the wrong spelling here
+	 * reads as "no lists" on every install.
+	 *
+	 * @param string[]|null $statuses Statuses to keep, or null for every list.
+	 *
+	 * @return array<string, string[]> The filter.
+	 */
+	private function statusFilter(?array $statuses): array {
+		if ($statuses === null || $statuses === []) {
+			return [];
+		}
+
+		return ['status' => $statuses];
+	}//end statusFilter()
 
 	/**
 	 * One destruction list, by uuid.
@@ -189,42 +204,71 @@ class DestructionListRepository {
 	public function findCertificates(?string $listUuid = null): array {
 		$results = [];
 		$missing = [];
-		foreach ($this->findLists(statuses: [self::EXECUTED_STATUS]) as $list) {
-			if ($listUuid !== null && $list->getUuid() !== $listUuid) {
-				continue;
-			}
-
-			$listData = ($list->getObject() ?? []);
-			$certUuid = ($listData['certificateUuid'] ?? null);
-			$certificate = null;
-			if (is_string($certUuid) === true && $certUuid !== '') {
-				$certificate = $this->find(uuid: $certUuid);
-			}
-
+		foreach ($this->executedLists(listUuid: $listUuid) as $list) {
+			$certificate = $this->certificateOf(list: $list);
 			if ($certificate === null) {
 				$missing[] = (string)$list->getUuid();
 				continue;
 			}
 
-			$data = ($certificate->getObject() ?? []);
 			// The list's own uuid, not the certificate's copy: the job builds the
 			// certificate from list data that does not always carry it.
-			$results[] = array_merge(
-				$data,
-				['uuid' => $certificate->getUuid(), 'destructionListUuid' => $list->getUuid()]
-			);
-		}//end foreach
+			$results[] = array_merge(($certificate->getObject() ?? []), ['uuid' => $certificate->getUuid(), 'destructionListUuid' => $list->getUuid()]);
+		}
 
+		return ['results' => $this->newestFirst(certificates: $results), 'missing' => $missing];
+	}//end findCertificates()
+
+	/**
+	 * The executed lists, or only the one asked for.
+	 *
+	 * @param string|null $listUuid Only this list, or null for all.
+	 *
+	 * @return ObjectEntity[] The executed lists.
+	 */
+	private function executedLists(?string $listUuid): array {
+		$lists = $this->findLists(statuses: [self::EXECUTED_STATUS]);
+		if ($listUuid === null) {
+			return $lists;
+		}
+
+		return array_filter($lists, static fn (ObjectEntity $list): bool => $list->getUuid() === $listUuid);
+	}//end executedLists()
+
+	/**
+	 * The certificate stored for an executed list, or null when there is none.
+	 *
+	 * @param ObjectEntity $list The executed list.
+	 *
+	 * @return ObjectEntity|null The certificate.
+	 */
+	private function certificateOf(ObjectEntity $list): ?ObjectEntity {
+		$certUuid = (($list->getObject() ?? [])['certificateUuid'] ?? null);
+		if (is_string($certUuid) === false || $certUuid === '') {
+			return null;
+		}
+
+		return $this->find(uuid: $certUuid);
+	}//end certificateOf()
+
+	/**
+	 * Certificates sorted by destruction date, newest first.
+	 *
+	 * @param array<int, array<string, mixed>> $certificates The certificates.
+	 *
+	 * @return array<int, array<string, mixed>> The sorted certificates.
+	 */
+	private function newestFirst(array $certificates): array {
 		usort(
-			$results,
+			$certificates,
 			static fn (array $left, array $right): int => strcmp(
 				(string)($right['destructionDate'] ?? ''),
 				(string)($left['destructionDate'] ?? '')
 			)
 		);
 
-		return ['results' => $results, 'missing' => $missing];
-	}//end findCertificates()
+		return $certificates;
+	}//end newestFirst()
 
 	/**
 	 * Write a destruction list's own data back.

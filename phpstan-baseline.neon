@@ -3996,21 +3996,6 @@ parameters:
 			path: lib/Service/File/FileFormattingHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$fileSharingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$taggingHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileFormattingHandler\\:\\:\\$urlGenerator is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/File/FileFormattingHandler.php
-
-		-
 			message: "#^Result of && is always false\\.$#"
 			count: 1
 			path: lib/Service/File/FileFormattingHandler.php
@@ -4054,6 +4039,11 @@ parameters:
 			message: "#^PHPDoc tag @return with type void is incompatible with native type array\\.$#"
 			count: 1
 			path: lib/Files/Service/File/Pdf/PdfTextReplacer.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/ReadFileHandler.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\ReadFileHandler\\:\\:getFile\\(\\) should return OCP\\\\Files\\\\File\\|null but returns OCP\\\\Files\\\\Node\\|null\\.$#"

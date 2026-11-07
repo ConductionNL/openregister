@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\UserTaskListInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -73,14 +73,14 @@ class CalDavVtodoObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param TaskService $taskService The CalDAV VTODO read/list service.
+	 * @param UserTaskListInterface $taskService The CalDAV VTODO read/list service.
 	 * @param IAppManager $appManager App availability checks.
 	 * @param LoggerInterface $logger Logger for read failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly TaskService $taskService,
+		private readonly UserTaskListInterface $taskService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
