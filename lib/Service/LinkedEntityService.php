@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationIdIndexInterface;
 use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
 use Psr\Log\LoggerInterface;
 
@@ -87,9 +87,9 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * Integration registry, the authoritative type-id source.
 	 *
-	 * @var IntegrationRegistry
+	 * @var IntegrationIdIndexInterface
 	 */
-	private readonly IntegrationRegistry $integrationRegistry;
+	private readonly IntegrationIdIndexInterface $integrationRegistry;
 
 	/**
 	 * Logger.

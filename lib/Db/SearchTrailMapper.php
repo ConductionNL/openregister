@@ -813,8 +813,10 @@ class SearchTrailMapper extends QBMapper {
 
 			if ($value === 'IS NOT NULL') {
 				$qb->andWhere($qb->expr()->isNotNull($field));
+				continue;
 			} elseif ($value === 'IS NULL') {
 				$qb->andWhere($qb->expr()->isNull($field));
+				continue;
 			} elseif (is_array($value) === true) {
 				// Handle array values like ['IS NULL', ''].
 				$conditions = [];

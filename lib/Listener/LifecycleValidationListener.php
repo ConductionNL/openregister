@@ -31,7 +31,7 @@ use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistryInterface;
 use OCA\OpenRegister\Service\Object\TransitionAuthorizationInterface;
 use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
@@ -77,7 +77,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
 	 * @param LifecycleEditReader                  $edits              Reads the edit and the transition it amounts to.
-	 * @param LifecycleGuardRegistry               $guardRegistry      Registry resolving guard ids to instances.
+	 * @param LifecycleGuardRegistryInterface               $guardRegistry      Registry resolving guard ids to instances.
 	 * @param IUserSession                         $userSession        Current user session.
 	 * @param TransitionAuthorizationInterface     $permissionHandler  RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LifecycleConditionEvaluatorInterface $conditionEvaluator Decides whether a transition `condition` lets it through.
@@ -90,7 +90,7 @@ class LifecycleValidationListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly LifecycleEditReader $edits,
-		private readonly LifecycleGuardRegistry $guardRegistry,
+		private readonly LifecycleGuardRegistryInterface $guardRegistry,
 		private readonly IUserSession $userSession,
 		private readonly TransitionAuthorizationInterface $permissionHandler,
 		private readonly LifecycleConditionEvaluatorInterface $conditionEvaluator,

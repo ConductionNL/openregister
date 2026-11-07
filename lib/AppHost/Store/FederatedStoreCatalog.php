@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\AppHost\Store;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
+use OCA\OpenRegister\Service\Config\IShareableConfigType;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -112,46 +113,111 @@ class FederatedStoreCatalog {
 		$cards = [];
 
 		foreach ($descriptor->types as $typeId) {
-			$type = $this->registry->get(id: $typeId);
-			if ($type === null) {
-				// A declared type nothing owns is a manifest error, not a
-				// runtime failure: name it in the log and carry on, so one
-				// stale id does not blank the whole store.
-				$this->logger->warning(
-					message: sprintf(
-						'[AppHost\\Store] %s declares shareable type %s, which no app owns',
-						$descriptor->appId,
-						$typeId
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
+			$type = $this->searchableType(descriptor: $descriptor, typeId: $typeId, kind: $kind);
+			if ($type !== null) {
+				$cards = [...$cards, ...$this->matchingCards(typeId: $typeId, type: $type, query: $query)];
 			}
-
-			if ($kind !== null && trim($kind) !== '' && trim($kind) !== $typeId) {
-				continue;
-			}
-
-			try {
-				$found = $this->federated->discover(topic: $type->getTopic());
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $typeId, $e->getMessage()),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
-			}
-
-			foreach ($found as $entry) {
-				$card = $this->toCard(typeId: $typeId, displayName: $type->getDisplayName(), entry: $entry);
-				if ($this->matches(card: $card, query: $query) === true) {
-					$cards[] = $card;
-				}
-			}
-		}//end foreach
+		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
 	}//end search()
+
+	/**
+	 * The type a search reads for a declared type id: its owned type, unless
+	 * the kind filter leaves it out.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string          $typeId     The declared type id.
+	 * @param string|null     $kind       Optional type-id filter.
+	 *
+	 * @return IShareableConfigType|null The type, or null when it is not searched.
+	 */
+	private function searchableType(StoreDescriptor $descriptor, string $typeId, ?string $kind): ?IShareableConfigType {
+		$type = $this->ownedType(descriptor: $descriptor, typeId: $typeId);
+		if ($type === null || $this->kindExcludes(kind: $kind, typeId: $typeId) === true) {
+			return null;
+		}
+
+		return $type;
+	}//end searchableType()
+
+	/**
+	 * The registered type behind a declared type id, or null with a warning.
+	 *
+	 * A declared type nothing owns is a manifest error, not a runtime
+	 * failure: name it in the log and carry on, so one stale id does not
+	 * blank the whole store.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param string          $typeId     The declared type id.
+	 *
+	 * @return IShareableConfigType|null The type, or null when no app owns it.
+	 */
+	private function ownedType(StoreDescriptor $descriptor, string $typeId): ?IShareableConfigType {
+		$type = $this->registry->get(id: $typeId);
+		if ($type === null) {
+			$this->logger->warning(
+				message: sprintf('[AppHost\\Store] %s declares shareable type %s, which no app owns', $descriptor->appId, $typeId),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $type;
+	}//end ownedType()
+
+	/**
+	 * Whether a kind filter leaves this type out.
+	 *
+	 * @param string|null $kind   The optional type-id filter.
+	 * @param string      $typeId The type id.
+	 *
+	 * @return bool True when the filter is set and names another type.
+	 */
+	private function kindExcludes(?string $kind, string $typeId): bool {
+		return $kind !== null && trim($kind) !== '' && trim($kind) !== $typeId;
+	}//end kindExcludes()
+
+	/**
+	 * The cards of one type that match the free-text query.
+	 *
+	 * @param string                       $typeId The type id.
+	 * @param IShareableConfigType $type   The type.
+	 * @param string|null                  $query  Optional free-text filter.
+	 *
+	 * @return array<int, array<string, mixed>> The matching cards.
+	 */
+	private function matchingCards(string $typeId, IShareableConfigType $type, ?string $query): array {
+		$cards = [];
+		foreach ($this->discoverType(typeId: $typeId, type: $type) as $entry) {
+			$card = $this->toCard(typeId: $typeId, displayName: $type->getDisplayName(), entry: $entry);
+			if ($this->matches(card: $card, query: $query) === true) {
+				$cards[] = $card;
+			}
+		}
+
+		return $cards;
+	}//end matchingCards()
+
+	/**
+	 * The repositories discovered for a type; a failed discovery is logged
+	 * and yields none, so one unreachable topic does not blank the store.
+	 *
+	 * @param string                       $typeId The type id.
+	 * @param IShareableConfigType $type   The type.
+	 *
+	 * @return array<int, array<string, mixed>> The discovered entries.
+	 */
+	private function discoverType(string $typeId, IShareableConfigType $type): array {
+		try {
+			return $this->federated->discover(topic: $type->getTopic());
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $typeId, $e->getMessage()),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+	}//end discoverType()
 
 	/**
 	 * Resolve a card slug back to the bundle it names.
@@ -171,38 +237,58 @@ class FederatedStoreCatalog {
 				continue;
 			}
 
-			try {
-				$found = $this->federated->discover(topic: $type->getTopic());
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					message: sprintf('[AppHost\\Store] discovery failed for %s: %s', $typeId, $e->getMessage()),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-				continue;
+			$entry = $this->entryFor(typeId: $typeId, type: $type, slug: $slug);
+			if ($entry !== null) {
+				return $this->resolvedBundle(typeId: $typeId, entry: $entry);
 			}
-
-			foreach ($found as $entry) {
-				$repo = (string)($entry['repo'] ?? '');
-				if ($repo === '' || self::slugFor(typeId: $typeId, repo: $repo) !== $slug) {
-					continue;
-				}
-
-				$bundle = $this->fetch(repo: $repo);
-				if ($bundle === null) {
-					return null;
-				}
-
-				return [
-					'typeId' => $typeId,
-					'repo' => $repo,
-					'source' => (string)($entry['url'] ?? $repo),
-					'bundle' => $bundle,
-				];
-			}
-		}//end foreach
+		}
 
 		return null;
 	}//end resolve()
+
+	/**
+	 * The first discovered entry of a type whose slug is the given one.
+	 *
+	 * @param string                       $typeId The type id.
+	 * @param IShareableConfigType $type   The type.
+	 * @param string                       $slug   The card slug.
+	 *
+	 * @return array<string, mixed>|null The entry, or null when none matches.
+	 */
+	private function entryFor(string $typeId, IShareableConfigType $type, string $slug): ?array {
+		foreach ($this->discoverType(typeId: $typeId, type: $type) as $entry) {
+			$repo = (string)($entry['repo'] ?? '');
+			if ($repo !== '' && self::slugFor(typeId: $typeId, repo: $repo) === $slug) {
+				return $entry;
+			}
+		}
+
+		return null;
+	}//end entryFor()
+
+	/**
+	 * Fetch the bundle of a matched entry.
+	 *
+	 * @param string               $typeId The type id.
+	 * @param array<string, mixed> $entry  The matched entry.
+	 *
+	 * @return array{typeId: string, repo: string, source: string, bundle: array<string, mixed>}|null
+	 *         The resolved bundle, or null when the repository holds none.
+	 */
+	private function resolvedBundle(string $typeId, array $entry): ?array {
+		$repo   = (string)$entry['repo'];
+		$bundle = $this->fetch(repo: $repo);
+		if ($bundle === null) {
+			return null;
+		}
+
+		return [
+			'typeId' => $typeId,
+			'repo' => $repo,
+			'source' => (string)($entry['url'] ?? $repo),
+			'bundle' => $bundle,
+		];
+	}//end resolvedBundle()
 
 	/**
 	 * Install a resolved bundle through the type that owns it.

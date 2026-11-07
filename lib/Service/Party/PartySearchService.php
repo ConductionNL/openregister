@@ -54,13 +54,13 @@ class PartySearchService {
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects The object layer party records live in.
-	 * @param PartyService $parties The party schemas.
+	 * @param PartySchemaCatalogueInterface $parties The party schemas.
 	 * @param AuditTrailMapperInterface $audit The audit trail, for a refused attempt.
 	 * @param IAppConfig $config The administered cap.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly PartyService $parties,
+		private readonly PartySchemaCatalogueInterface $parties,
 		private readonly AuditTrailMapperInterface $audit,
 		private readonly IAppConfig $config,
 	) {

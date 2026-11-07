@@ -82,9 +82,6 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @return array
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to
 	 *              ObjectService::findAll; no standalone contract.
 	 */
@@ -98,34 +95,39 @@ class ObjectServiceMapperAdapter {
 		?array $extend = null,
 		?string $search = null,
 	): array {
-		if ($filters !== null) {
-			$config['filters'] = $filters;
+		$overrides = ['filters' => $filters, 'ids' => $ids, 'limit' => $limit, 'offset' => $offset];
+		$overrides += ['sort' => $sort, 'extend' => $extend, 'search' => $search];
+		$config = $this->withBoundScope(config: $this->withOverrides(config: $config, overrides: $overrides));
+
+		return $this->objectService->findAll(config: $config);
+	}//end findAll()
+
+	/**
+	 * Overlay each non-null argument on the config, in argument order.
+	 *
+	 * @param array $config The caller's config.
+	 * @param array<string, mixed> $overrides The shorthand arguments by config key.
+	 *
+	 * @return array The config with every given argument applied.
+	 */
+	private function withOverrides(array $config, array $overrides): array {
+		foreach ($overrides as $key => $value) {
+			if ($value !== null) {
+				$config[$key] = $value;
+			}
 		}
 
-		if ($ids !== null) {
-			$config['ids'] = $ids;
-		}
+		return $config;
+	}//end withOverrides()
 
-		if ($limit !== null) {
-			$config['limit'] = $limit;
-		}
-
-		if ($offset !== null) {
-			$config['offset'] = $offset;
-		}
-
-		if ($sort !== null) {
-			$config['sort'] = $sort;
-		}
-
-		if ($extend !== null) {
-			$config['extend'] = $extend;
-		}
-
-		if ($search !== null) {
-			$config['search'] = $search;
-		}
-
+	/**
+	 * Fill the config's register/schema filters from the bound scope, unless the caller set them.
+	 *
+	 * @param array $config The config.
+	 *
+	 * @return array The config with filters always present.
+	 */
+	private function withBoundScope(array $config): array {
 		$config['filters'] ??= [];
 
 		if ($this->register !== null && isset($config['filters']['register']) === false) {
@@ -136,8 +138,8 @@ class ObjectServiceMapperAdapter {
 			$config['filters']['schema'] = $this->schema;
 		}
 
-		return $this->objectService->findAll(config: $config);
-	}//end findAll()
+		return $config;
+	}//end withBoundScope()
 
 	/**
 	 * Create a new object from a plain data array.
@@ -183,8 +185,6 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
 	 *              contract beyond ObjectService's save path.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function updateFromArray(
 		int|string $id,
@@ -193,18 +193,7 @@ class ObjectServiceMapperAdapter {
 		bool $patch = false,
 	): ObjectEntity {
 		if ($patch === true) {
-			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
-				id: (string)$id,
-				register: $this->register,
-				schema: $this->schema
-			));
-			if ($existing === null) {
-				throw new ValidationException(
-					message: sprintf('Object "%s" not found or not accessible', $id)
-				);
-			}
-
-			$object = array_merge($existing->getObject(), $object);
+			$object = array_merge($this->existingObject(id: $id)->getObject(), $object);
 		}
 
 		return $this->objectService->saveObject(
@@ -213,6 +202,32 @@ class ObjectServiceMapperAdapter {
 			schema: $this->schema
 		);
 	}//end updateFromArray()
+
+	/**
+	 * The object a PATCH merges onto, read in the bound scope as an audit lookup.
+	 *
+	 * @param int|string $id Object ID or UUID.
+	 *
+	 * @return ObjectEntity The existing object.
+	 *
+	 * @throws ValidationException When the scoped read finds nothing; nothing is written then.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function existingObject(int|string $id): ObjectEntity {
+		$existing = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: (string)$id,
+			register: $this->register,
+			schema: $this->schema
+		));
+		if ($existing === null) {
+			throw new ValidationException(
+				message: sprintf('Object "%s" not found or not accessible', $id)
+			);
+		}
+
+		return $existing;
+	}//end existingObject()
 
 	/**
 	 * Persist an already-hydrated ObjectEntity.

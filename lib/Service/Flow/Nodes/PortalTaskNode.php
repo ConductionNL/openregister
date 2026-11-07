@@ -103,6 +103,7 @@ use RuntimeException;
  * the two halves it exists to connect.
  */
 class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+	use FormFieldsTrait;
 
 	/**
 	 * The configuration boundary: validation and templating.
@@ -202,21 +203,9 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	public function configKeys(): array {
 		return [
-			'title',
-			'description',
-			'partyRole',
-			'uploadRequired',
-			'uploadMaxFiles',
-			'uploadAcceptedTypes',
-			'uploadMaxSizeMb',
-			'outcomeKey',
-			'reasonField',
-			'dueAt',
-			'expiresAt',
-			'onTimeout',
-			'onReject',
-			'heartbeatMinutes',
-			'advance',
+			'title', 'description', 'partyRole',
+			'uploadRequired', 'uploadMaxFiles', 'uploadAcceptedTypes', 'uploadMaxSizeMb',
+			'outcomeKey', 'reasonField', 'dueAt', 'expiresAt', 'onTimeout', 'onReject', 'heartbeatMinutes', 'advance',
 		];
 	}//end configKeys()
 
@@ -233,7 +222,9 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 			$this->whatFields(),
 			$this->whoFields(),
 			$this->uploadFields(),
+			$this->uploadLimitFields(),
 			$this->whenFields(),
+			$this->timeoutFields(),
 			$this->continuationFields()
 		);
 	}//end configForm()
@@ -506,19 +497,12 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	private function whatFields(): array {
 		return [
-			[
-				'key' => 'title',
-				'label' => $this->l10n->t('What is being asked'),
-				'type' => 'text',
-				'help' => $this->l10n->t('The task title, shown in the portal. Fields of the item can be used, like {{ name }}.'),
-				'required' => true,
-			],
-			[
-				'key' => 'description',
-				'label' => $this->l10n->t('Details'),
-				'type' => 'textarea',
-				'help' => $this->l10n->t('What the party needs to know to do it. Templates work here too.'),
-			],
+			$this->requiredField(key: 'title', label: $this->l10n->t('What is being asked'), type: 'text', help: $this->l10n->t(
+				'The task title, shown in the portal. Fields of the item can be used, like {{ name }}.'
+			)),
+			$this->field(key: 'description', label: $this->l10n->t('Details'), type: 'textarea', help: $this->l10n->t(
+				'What the party needs to know to do it. Templates work here too.'
+			)),
 		];
 	}//end whatFields()
 
@@ -529,15 +513,10 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	private function whoFields(): array {
 		return [
-			[
-				'key' => 'partyRole',
-				'label' => $this->l10n->t('Party role on the case'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, '
-					. 'and a case that names nobody for the role fails the step.'
-				),
-			],
+			$this->field(key: 'partyRole', label: $this->l10n->t('Party role on the case'), type: 'text', help: $this->l10n->t(
+				'Which party on the case is asked, by role. Defaults to "initiator". The party is matched once, when the task is created, '
+				. 'and a case that names nobody for the role fails the step.'
+			)),
 		];
 	}//end whoFields()
 
@@ -548,34 +527,32 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	private function uploadFields(): array {
 		return [
-			[
-				'key' => 'uploadRequired',
-				'label' => $this->l10n->t('Upload required'),
-				'type' => 'boolean',
-				'help' => $this->l10n->t('When on, the party must hand in at least one file. Every file lands on the case object.'),
-			],
-			[
-				'key' => 'uploadMaxFiles',
-				'label' => $this->l10n->t('Maximum number of files'),
-				'type' => 'number',
-				'help' => $this->l10n->t('How many files one answer may carry. Defaults to 1.'),
-			],
-			[
-				'key' => 'uploadAcceptedTypes',
-				'label' => $this->l10n->t('Accepted file types'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'
-				),
-			],
-			[
-				'key' => 'uploadMaxSizeMb',
-				'label' => $this->l10n->t('Maximum file size (MB)'),
-				'type' => 'number',
-				'help' => $this->l10n->t('Per file. Leave empty for the instance default.'),
-			],
+			$this->field(key: 'uploadRequired', label: $this->l10n->t('Upload required'), type: 'boolean', help: $this->l10n->t(
+				'When on, the party must hand in at least one file. Every file lands on the case object.'
+			)),
+			$this->field(key: 'uploadMaxFiles', label: $this->l10n->t('Maximum number of files'), type: 'number', help: $this->l10n->t(
+				'How many files one answer may carry. Defaults to 1.'
+			)),
 		];
 	}//end uploadFields()
+
+	/**
+	 * Which file types and sizes an answer may carry.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function uploadLimitFields(): array {
+		return [
+			$this->field(key: 'uploadAcceptedTypes', label: $this->l10n->t('Accepted file types'), type: 'text', help: $this->l10n->t(
+				'Media types or extensions, comma separated, like "application/pdf, image/*, docx". Leave empty to accept any type.'
+			)),
+			$this->field(key: 'uploadMaxSizeMb', label: $this->l10n->t('Maximum file size (MB)'), type: 'number', help: $this->l10n->t(
+				'Per file. Leave empty for the instance default.'
+			)),
+		];
+	}//end uploadLimitFields()
 
 	/**
 	 * When.
@@ -584,45 +561,36 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	private function whenFields(): array {
 		return [
-			[
-				'key' => 'dueAt',
-				'label' => $this->l10n->t('Due'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". '
-					. 'Reminders are business timer rungs on this date.'
-				),
-			],
-			[
-				'key' => 'expiresAt',
-				'label' => $this->l10n->t('Expires'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
-				),
-			],
-			[
-				'key' => 'onTimeout',
-				'label' => $this->l10n->t('On timeout'),
-				'type' => 'text',
-				'help' => $this->l10n->t('What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'),
-			],
-			[
-				'key' => 'onReject',
-				'label' => $this->l10n->t('On rejection'),
-				'type' => 'text',
-				'help' => $this->l10n->t('Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'),
-			],
-			[
-				'key' => 'heartbeatMinutes',
-				'label' => $this->l10n->t('Re-check every (minutes)'),
-				'type' => 'number',
-				'help' => $this->l10n->t(
-					'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
-				),
-			],
+			$this->field(key: 'dueAt', label: $this->l10n->t('Due'), type: 'text', help: $this->l10n->t(
+				'When the party should have answered: a date, a field like {{ deadline }}, or a relative time like "+14 days". '
+				. 'Reminders are business timer rungs on this date.'
+			)),
+			$this->field(key: 'expiresAt', label: $this->l10n->t('Expires'), type: 'text', help: $this->l10n->t(
+				'When the ask stops being answerable. Same shapes as "Due". Expiry is enforced by the business timers, not by this step.'
+			)),
 		];
 	}//end whenFields()
+
+	/**
+	 * What a deadline or a rejection does, and how often the run re-checks.
+	 *
+	 * @return array<int, array<string, mixed>> The field descriptions.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 */
+	private function timeoutFields(): array {
+		return [
+			$this->field(key: 'onTimeout', label: $this->l10n->t('On timeout'), type: 'text', help: $this->l10n->t(
+				'What happens when the ask expires: skip, error or dead_letter. Empty means the deadline enforces nothing.'
+			)),
+			$this->field(key: 'onReject', label: $this->l10n->t('On rejection'), type: 'text', help: $this->l10n->t(
+				'Only dead_letter changes the record; skip and error are read by whatever resumes the flow.'
+			)),
+			$this->field(key: 'heartbeatMinutes', label: $this->l10n->t('Re-check every (minutes)'), type: 'number', help: $this->l10n->t(
+				'Safety net for a wake that never arrives. Lower is not faster: a completed task wakes the run immediately either way.'
+			)),
+		];
+	}//end timeoutFields()
 
 	/**
 	 * How the flow continues once answered, and how it asks again.
@@ -631,32 +599,17 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 	 */
 	private function continuationFields(): array {
 		return [
-			[
-				'key' => 'outcomeKey',
-				'label' => $this->l10n->t('Field to store the answer in'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'The answer, the uploaded files and the matched party are written onto every item under this field. Defaults to "portalTask".'
-				),
-			],
-			[
-				'key' => 'reasonField',
-				'label' => $this->l10n->t('Field carrying the reason to ask again'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". '
-					. 'Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
-				),
-			],
-			[
-				'key' => 'advance',
-				'label' => $this->l10n->t('Continue after the answer'),
-				'type' => 'text',
-				'help' => $this->l10n->t(
-					'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
-					. 'a number runs that many steps, "all" runs to the next pause or the end.'
-				),
-			],
+			$this->field(key: 'outcomeKey', label: $this->l10n->t('Field to store the answer in'), type: 'text', help: $this->l10n->t(
+				'The answer, the uploaded files and the matched party are written onto every item under this field. Defaults to "portalTask".'
+			)),
+			$this->field(key: 'reasonField', label: $this->l10n->t('Field carrying the reason to ask again'), type: 'text', help: $this->l10n->t(
+				'When the flow routes back into this step, the party is asked again with the reason read from this item field, like "review.comment". '
+				. 'Without a reason the step fails rather than asking twice unexplained. Defaults to "reason".'
+			)),
+			$this->field(key: 'advance', label: $this->l10n->t('Continue after the answer'), type: 'text', help: $this->l10n->t(
+				'How far the run continues inside the request that completes the task: 0 leaves it to the background worker (default), '
+				. 'a number runs that many steps, "all" runs to the next pause or the end.'
+			)),
 		];
 	}//end continuationFields()
 

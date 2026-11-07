@@ -48,7 +48,7 @@ use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCA\OpenRegister\Service\Integration\PaginatedResult;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -68,9 +68,9 @@ class ObjectIntegrationsController extends Controller {
 	/**
 	 * Integration registry.
 	 *
-	 * @var IntegrationRegistry
+	 * @var IntegrationCatalogueInterface
 	 */
-	private IntegrationRegistry $registry;
+	private IntegrationCatalogueInterface $registry;
 
 	/**
 	 * Logger.

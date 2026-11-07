@@ -106,6 +106,7 @@ import {
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import StatisticsTotalsTable from './StatisticsTotalsTable.vue'
 import { scopePickers } from '../../services/scopePickers.js'
+import { dashboardScope } from '../dashboardScope.js'
 import { scopeListLoader } from '../scopeListLoader.js'
 
 export default {
@@ -119,7 +120,7 @@ export default {
 		StatisticsTotalsTable,
 	},
 
-	mixins: [scopePickers, scopeListLoader],
+	mixins: [scopePickers, scopeListLoader, dashboardScope],
 
 	data() {
 		return {
@@ -160,19 +161,6 @@ export default {
 			)
 		},
 
-		/**
-		 * Get filtered registers (excluding system and orphaned)
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array}
-		 */
-		filteredRegisters() {
-			return dashboardStore.registers.filter(
-				(register) =>
-					register.title !== 'System Totals'
-					&& register.title !== 'Orphaned Items',
-			)
-		},
 
 		/**
 		 * The register and schema counts that open the system totals table.
@@ -189,17 +177,6 @@ export default {
 			]
 		},
 
-		/**
-		 * Get total number of schemas in filtered registers
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {number}
-		 */
-		totalSchemas() {
-			return this.filteredRegisters.reduce((total, register) => {
-				return total + (register.schemas?.length || 0)
-			}, 0)
-		},
 	},
 
 	watch: {
@@ -247,33 +224,7 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Apply a new register selection and reset the dependent schema state.
-		 *
-		 * @param {object|null} option - The selected register (or null to clear)
-		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-2
-		 */
-		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
-		},
 
-		/**
-		 * Apply a schema selection: set the schema, initialise its properties, and
-		 * refresh the object list for the new filter context.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
-		 * @param {object|null} option - The selected schema (or null to clear)
-		 * @return {Promise<void>}
-		 */
-		async handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
-			if (option) {
-				objectStore.initializeProperties(option)
-				objectStore.refreshObjectList()
-			}
-		},
 
 		/**
 		 * Re-run the object search for the current register/schema with the search term.

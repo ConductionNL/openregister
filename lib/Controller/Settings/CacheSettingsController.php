@@ -147,14 +147,9 @@ class CacheSettingsController extends Controller {
 			$interval = (int)$this->appConfig->getValueString(app: 'openregister', key: 'cache_warmup_interval', default: '3600');
 			$lastRun = $this->appConfig->getValueString(app: 'openregister', key: 'cache_warmup_last_run', default: '');
 
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'interval' => $interval,
-					'last_run' => $this->lastRunOrNull(lastRun: $lastRun),
-					'enabled' => $interval > 0,
-				]
-			);
+			$lastRun = $this->lastRunOrNull(lastRun: $lastRun);
+
+			return new JSONResponse(data: ['success' => true, 'interval' => $interval, 'last_run' => $lastRun, 'enabled' => $interval > 0]);
 		} catch (Exception $e) {
 			return $this->failure(e: $e, statusCode: 500);
 		}

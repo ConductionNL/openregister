@@ -150,17 +150,7 @@ class ApiVersionRefusedException extends Exception {
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function toResponse(): JSONResponse {
-		$body = [
-			'error' => $this->getMessage(),
-			'requestedVersion' => $this->requestedId,
-			'servedVersions' => $this->acceptable,
-		];
-
-		if ($this->successor !== null) {
-			$body['successorVersion'] = $this->successor;
-		}
-
-		$response = new JSONResponse(data: $body, statusCode: $this->statusCode);
+		$response = new JSONResponse(data: $this->body(), statusCode: $this->statusCode);
 		if ($this->successor !== null) {
 			$response->addHeader(
 				'Link',
@@ -171,4 +161,24 @@ class ApiVersionRefusedException extends Exception {
 		return $response;
 
 	}//end toResponse()
+
+	/**
+	 * The refusal's body: the message, the version asked for, the versions served and any successor.
+	 *
+	 * @return array<string, mixed> The body.
+	 */
+	private function body(): array {
+		$body = [
+			'error' => $this->getMessage(),
+			'requestedVersion' => $this->requestedId,
+			'servedVersions' => $this->acceptable,
+		];
+
+		if ($this->successor !== null) {
+			$body['successorVersion'] = $this->successor;
+		}
+
+		return $body;
+
+	}//end body()
 }//end class

@@ -63,6 +63,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class ConfigurationDraftSet extends Entity implements JsonSerializable {
 	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Still being edited. Values may be added, replaced and removed.
@@ -202,26 +203,4 @@ class ConfigurationDraftSet extends Entity implements JsonSerializable {
 		return ($this->state === self::STATE_APPROVED && $this->approvedBy !== null);
 
 	}//end isApproved()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised set.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'name' => $this->name,
-			'description' => $this->description,
-			'state' => $this->state,
-			'createdBy' => $this->createdBy,
-			'approvedBy' => $this->approvedBy,
-			'approvedAt' => $this->approvedAt?->format(DateTime::ATOM),
-			'deploymentUuid' => $this->deploymentUuid,
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
-
-	}//end jsonSerialize()
 }//end class

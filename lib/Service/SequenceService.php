@@ -132,12 +132,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the fallback increment cannot read the row.
 	 */
 	private function seedScope(int $registerId, int $schemaId, string $scopeKey, int $nextValue = 2): int {
-		$entity = new Sequence();
-		$entity->setRegisterId($registerId);
-		$entity->setSchemaId($schemaId);
-		$entity->setScopeKey($scopeKey);
-		// Storing n+1 means value n has just been reserved.
-		$entity->setNextValue($nextValue);
+		$entity = $this->newScopeRow(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey, nextValue: $nextValue);
 
 		try {
 			$this->mapper->insert($entity);
@@ -158,6 +153,27 @@ class SequenceService implements SequenceServiceInterface {
 			return ($next - 1);
 		}//end try
 	}//end seedScope()
+
+	/**
+	 * A new counter row for a scope.
+	 *
+	 * @param int    $registerId The register id.
+	 * @param int    $schemaId   The schema id.
+	 * @param string $scopeKey   The scope key.
+	 * @param int    $nextValue  The next value to store.
+	 *
+	 * @return Sequence
+	 */
+	private function newScopeRow(int $registerId, int $schemaId, string $scopeKey, int $nextValue): Sequence {
+		$entity = new Sequence();
+		$entity->setRegisterId($registerId);
+		$entity->setSchemaId($schemaId);
+		$entity->setScopeKey($scopeKey);
+		// Storing n+1 means value n has just been reserved.
+		$entity->setNextValue($nextValue);
+
+		return $entity;
+	}//end newScopeRow()
 
 	/**
 	 * Push a counter past a number that is already printed on a record.
@@ -211,11 +227,11 @@ class SequenceService implements SequenceServiceInterface {
 		}
 
 		try {
-			$this->seedScope(
-				registerId: $registerId,
-				schemaId: $schemaId,
-				scopeKey: $scopeKey,
-				nextValue: $target
+			// Insert directly rather than through seedScope(): seedScope() answers a
+			// lost insert race by spending a number, which would leave the counter
+			// below the imported one.
+			$this->mapper->insert(
+				$this->newScopeRow(registerId: $registerId, schemaId: $schemaId, scopeKey: $scopeKey, nextValue: $target)
 			);
 		} catch (Throwable $e) {
 			// Lost the seed race. The row exists now, so raise it instead.
