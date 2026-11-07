@@ -42,32 +42,6 @@ class ExampleSetEngineKinds {
 	public const BEFORE_CHANGES = ['flows', 'accessLinks', 'grants'];
 
 	/**
-	 * Each part, in the order its rows are checked, written, proved and deleted, with the word for one row. The parts
-	 * after the tasks may quote one (`{{task:key.uuid}}`), so the tasks come first.
-	 */
-	private const NOUNS = [
-		'tasks'             => 'task',
-		'views'             => 'view',
-		'watchers'          => 'watcher',
-		'parties'           => 'party',
-		'notes'             => 'note',
-		'readStates'        => 'read state',
-		'flows'             => 'flow',
-		'exportRuns'        => 'export',
-		'archival'          => 'archival setting',
-		'deckCards'         => 'deck card',
-		'appointments'      => 'appointment',
-		'casePlans'         => 'case plan',
-		'collectivesPages'  => 'collectives page',
-		'talkConversations' => 'talk conversation',
-		'auditEntries'      => 'audit entry',
-		'timelineEntries'   => 'timeline entry',
-		'emailLinks'        => 'email link',
-		'accessLinks'       => 'access link',
-		'grants'            => 'grant',
-	];
-
-	/**
 	 * Constructor; a writer a bundle leaves out refuses its rows.
 	 *
 	 * @param ExampleSetWorkRowKinds    $work    Writes the tasks, notes, read states and follows.
@@ -357,7 +331,8 @@ class ExampleSetEngineKinds {
 	}//end deleteRow()
 
 	/**
-	 * Each kind by its part: the writer (null when absent) and the word for one row.
+	 * Each kind by its part, in the order its rows are checked, written, proved and deleted: the writer (null when
+	 * absent) and the word for one row. The parts after the tasks may quote one (`{{task:key.uuid}}`).
 	 *
 	 * @return array<string, array{0: ExampleSetEngineRows|null, 1: string}>
 	 */
@@ -365,8 +340,12 @@ class ExampleSetEngineKinds {
 		$writers = ($this->work->writers() + $this->own->writers() + $this->links->writers() + $this->apps->writers()
 			+ $this->history->writers());
 		$kinds   = [];
-		foreach (self::NOUNS as $part => $noun) {
+		foreach (ExampleSetFragmentShape::KEYED_ROWS as $part => $noun) {
 			$kinds[$part] = [$writers[$part], $noun];
+			// The archival setting is a part too, written right after the exports, but not a list of keyed rows.
+			if ($part === 'exportRuns') {
+				$kinds['archival'] = [$writers['archival'], 'archival setting'];
+			}
 		}
 
 		return $kinds;
