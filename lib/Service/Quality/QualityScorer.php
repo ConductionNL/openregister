@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-1
  */
-class QualityScorer {
+class QualityScorer implements QualityScorerInterface {
 	/**
 	 * Default weight applied when a rule omits an explicit weight.
 	 *
