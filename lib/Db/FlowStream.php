@@ -234,19 +234,24 @@ class FlowStream extends Entity implements JsonSerializable {
 		$segments = array_map(static fn (string $path): array => explode('.', $path), $paths);
 		$common = [];
 		$depth = min(array_map('count', $segments));
-		for ($i = 0; $i < $depth; $i++) {
-			$segment = $segments[0][$i];
-			foreach ($segments as $candidate) {
-				if ($candidate[$i] !== $segment) {
-					return self::pathOrRoot(segments: $common);
-				}
-			}
-
-			$common[] = $segment;
+		for ($i = 0; $i < $depth && self::segmentShared(segments: $segments, index: $i) === true; $i++) {
+			$common[] = $segments[0][$i];
 		}
 
 		return self::pathOrRoot(segments: $common);
 	}//end commonPrefix()
+
+	/**
+	 * Whether every path has the same segment at the given depth.
+	 *
+	 * @param array<int, array<int, string>> $segments Each path split into its segments.
+	 * @param int $index The 0-based depth to compare.
+	 *
+	 * @return bool True when all paths agree at that depth.
+	 */
+	private static function segmentShared(array $segments, int $index): bool {
+		return count(array_unique(array_column($segments, $index))) === 1;
+	}//end segmentShared()
 
 	/**
 	 * Join path segments, or the root path when there are none.
