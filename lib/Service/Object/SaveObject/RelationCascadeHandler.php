@@ -101,25 +101,53 @@ class RelationCascadeHandler {
 		}
 
 		$cleanReference = $this->removeQueryParameters(reference: $reference);
-		if ($this->isDirectId(reference: $cleanReference) === true) {
-			try {
-				return (string)$this->schemaMapper->find(...(['id' => $cleanReference] + $scope))->getId();
-			} catch (DoesNotExistException $e) {
-				// Continue with the slug lookup.
-			}
+		$byId = fn (string $id) => $this->schemaMapper->find(...(['id' => $id] + $scope));
+
+		return $this->directIdMatch(reference: $cleanReference, find: $byId)
+			?? $this->slugLookup(reference: $cleanReference, findAll: fn () => $this->schemaMapper->findAll(...$scope), kind: 'schema');
+	}//end resolveSchemaReference()
+
+	/**
+	 * The id of the entity a direct-id reference names, or null when it is no direct id or names nothing.
+	 *
+	 * @param string   $reference The reference without query parameters.
+	 * @param callable $find      Finds the entity by id; throws DoesNotExistException when there is none.
+	 *
+	 * @return string|null
+	 */
+	private function directIdMatch(string $reference, callable $find): ?string {
+		if ($this->isDirectId(reference: $reference) === false) {
+			return null;
 		}
 
 		try {
-			return $this->slugMatch(entities: $this->schemaMapper->findAll(...$scope), slug: $this->lastSegment(reference: $cleanReference));
+			return (string)$find($reference)->getId();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end directIdMatch()
+
+	/**
+	 * The id of the entity whose slug is the reference's last segment; a failing lookup is logged and yields null.
+	 *
+	 * @param string   $reference The reference without query parameters.
+	 * @param callable $findAll   Lists the candidate entities.
+	 * @param string   $kind      What is looked up ("schema" or "register"), for the log line.
+	 *
+	 * @return null|numeric-string
+	 */
+	private function slugLookup(string $reference, callable $findAll, string $kind): ?string {
+		try {
+			return $this->slugMatch(entities: $findAll(), slug: $this->lastSegment(reference: $reference));
 		} catch (\Exception $e) {
 			$this->logger->error(
-				message: '[RelationCascadeHandler] Error finding schema by slug: ' . $e->getMessage(),
+				message: '[RelationCascadeHandler] Error finding ' . $kind . ' by slug: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
 
 		return null;
-	}//end resolveSchemaReference()
+	}//end slugLookup()
 
 	/**
 	 * Removes query parameters from a reference string.
@@ -131,11 +159,7 @@ class RelationCascadeHandler {
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function removeQueryParameters(string $reference): string {
-		if (str_contains($reference, '?') === true) {
-			return substr($reference, 0, strpos($reference, '?'));
-		}
-
-		return $reference;
+		return explode('?', $reference, 2)[0];
 	}//end removeQueryParameters()
 
 	/**
@@ -206,24 +230,10 @@ class RelationCascadeHandler {
 		}
 
 		$cleanReference = $this->removeQueryParameters(reference: $reference);
-		if ($this->isDirectId(reference: $cleanReference) === true) {
-			try {
-				return (string)$this->registerMapper->find(id: $cleanReference)->getId();
-			} catch (DoesNotExistException $e) {
-				// Continue with the slug lookup.
-			}
-		}
+		$byId = fn (string $id) => $this->registerMapper->find(id: $id);
 
-		try {
-			return $this->slugMatch(entities: $this->registerMapper->findAll(), slug: $this->lastSegment(reference: $cleanReference));
-		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[RelationCascadeHandler] Error finding register by slug: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}
-
-		return null;
+		return $this->directIdMatch(reference: $cleanReference, find: $byId)
+			?? $this->slugLookup(reference: $cleanReference, findAll: fn () => $this->registerMapper->findAll(), kind: 'register');
 	}//end resolveRegisterReference()
 
 	/**
@@ -238,57 +248,119 @@ class RelationCascadeHandler {
 	 *
 	 * @return array Array of relation paths that need resolution.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning with multiple reference types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for different relation patterns
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
 		$relations = [];
-
 		foreach ($data as $key => $value) {
-			$currentPath = $key;
-			if ($prefix !== '') {
-				$currentPath = "{$prefix}.{$key}";
-			}
-
-			// Skip if this is a special metadata field.
-			if ($key === '_self' || $key === '_schema' || $key === '_register') {
+			if ($this->isMetadataKey(key: $key) === true) {
 				continue;
 			}
 
-			// If schema is provided, check if this property has a $ref.
-			$hasRef = false;
-			if ($schema !== null) {
-				$properties = $schema->getProperties();
-				$propertyPath = explode('.', $currentPath);
-				$propertyDef = $this->getPropertyDefinition(properties: $properties, propertyPath: $propertyPath);
-
-				if (isset($propertyDef['$ref']) === true) {
-					$hasRef = true;
-				}
-			}
-
-			if (is_array($value) === true) {
-				// If it's an array of references.
-				if ($this->isArrayOfReferences(array: $value) === true) {
-					$relations[] = $currentPath;
-					continue;
-				}
-
-				// Recursively scan nested objects.
-				$nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
-				$relations = array_merge($relations, $nestedRelations);
-			} elseif (is_string($value) === true && $this->isReference(value: $value) === true) {
-				// Single reference value.
-				if ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true) {
-					$relations[] = $currentPath;
-				}
-			}
-		}//end foreach
+			$path = $this->childPath(prefix: $prefix, key: $key);
+			$relations = array_merge($relations, $this->relationsAt(path: $path, value: $value, schema: $schema));
+		}
 
 		return $relations;
 	}//end scanForRelations()
+
+	/**
+	 * Whether a key is a special metadata field, which is never a relation.
+	 *
+	 * @param int|string $key The key.
+	 *
+	 * @return bool
+	 */
+	private function isMetadataKey(int|string $key): bool {
+		return in_array($key, ['_self', '_schema', '_register'], true);
+	}//end isMetadataKey()
+
+	/**
+	 * The path of a key under a prefix; a top-level key is its own path, so an integer key stays an integer.
+	 *
+	 * @param string     $prefix The current property path prefix.
+	 * @param int|string $key    The key.
+	 *
+	 * @return int|string
+	 */
+	private function childPath(string $prefix, int|string $key): int|string {
+		if ($prefix === '') {
+			return $key;
+		}
+
+		return "{$prefix}.{$key}";
+	}//end childPath()
+
+	/**
+	 * The relation paths one value contributes: itself, or those found inside it.
+	 *
+	 * @param int|string  $path   The value's path.
+	 * @param mixed       $value  The value.
+	 * @param null|Schema $schema The schema to read `$ref` declarations from.
+	 *
+	 * @return array
+	 */
+	private function relationsAt(int|string $path, mixed $value, ?Schema $schema): array {
+		$hasRef = $this->declaresRef(schema: $schema, path: $path);
+		if (is_array($value) === true) {
+			return $this->arrayRelations(path: $path, value: $value, schema: $schema);
+		}
+
+		if ($this->isSingleRelation(value: $value, hasRef: $hasRef) === true) {
+			return [$path];
+		}
+
+		return [];
+	}//end relationsAt()
+
+	/**
+	 * Whether the schema declares a `$ref` on the property at a path; false without a schema.
+	 *
+	 * @param null|Schema $schema The schema, or null.
+	 * @param int|string  $path   The property path.
+	 *
+	 * @return bool
+	 */
+	private function declaresRef(?Schema $schema, int|string $path): bool {
+		if ($schema === null) {
+			return false;
+		}
+
+		$propertyDef = $this->getPropertyDefinition(properties: $schema->getProperties(), propertyPath: explode('.', $path));
+
+		return isset($propertyDef['$ref']) === true;
+	}//end declaresRef()
+
+	/**
+	 * An array holding a reference is one relation; any other array is scanned for nested ones.
+	 *
+	 * @param int|string  $path   The array's path.
+	 * @param array       $value  The array.
+	 * @param null|Schema $schema The schema to scan against.
+	 *
+	 * @return array
+	 */
+	private function arrayRelations(int|string $path, array $value, ?Schema $schema): array {
+		if ($this->isArrayOfReferences(array: $value) === true) {
+			return [$path];
+		}
+
+		return $this->scanForRelations(data: $value, prefix: $path, schema: $schema);
+	}//end arrayRelations()
+
+	/**
+	 * Whether a scalar is a relation: a reference that either has a `$ref` or looks like an object reference.
+	 *
+	 * @param mixed $value  The value.
+	 * @param bool  $hasRef Whether the schema declares a `$ref` for it.
+	 *
+	 * @return bool
+	 */
+	private function isSingleRelation(mixed $value, bool $hasRef): bool {
+		return is_string($value) === true
+			&& $this->isReference(value: $value) === true
+			&& ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true);
+	}//end isSingleRelation()
 
 	/**
 	 * Gets a property definition from properties array by path.
@@ -388,20 +460,30 @@ class RelationCascadeHandler {
 			return true;
 		}
 
-		// Check for URL patterns.
-		if (str_contains($value, '/objects/') === true
-			|| str_contains($value, '/api/') === true
-		) {
-			return true;
-		}
-
-		// Check for numeric ID.
-		if (is_numeric($value) === true && (int)$value > 0) {
-			return true;
-		}
-
-		return false;
+		return $this->isUrlReference(value: $value) === true || $this->isPositiveNumericId(value: $value) === true;
 	}//end isReference()
+
+	/**
+	 * Whether a value is a URL containing /objects/ or /api/.
+	 *
+	 * @param string $value The value to check.
+	 *
+	 * @return bool
+	 */
+	private function isUrlReference(string $value): bool {
+		return str_contains($value, '/objects/') === true || str_contains($value, '/api/') === true;
+	}//end isUrlReference()
+
+	/**
+	 * Whether a value is a numeric id above zero.
+	 *
+	 * @param string $value The value to check.
+	 *
+	 * @return bool
+	 */
+	private function isPositiveNumericId(string $value): bool {
+		return is_numeric($value) === true && (int)$value > 0;
+	}//end isPositiveNumericId()
 
 	/**
 	 * Updates object relations by resolving references to actual object UUIDs.
@@ -445,55 +527,69 @@ class RelationCascadeHandler {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Navigating nested arrays and handling
-	 *                                               multiple reference types requires complex logic
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function resolveRelationPath(array &$objectData, string $relationPath): void {
 		$parts = explode('.', $relationPath);
-		$partsCount = count($parts);
+		$lastKey = array_pop($parts);
 		$current = &$objectData;
 
 		// Navigate to the parent of the target property.
-		for ($i = 0; $i < $partsCount - 1; $i++) {
-			if (isset($current[$parts[$i]]) === false) {
+		foreach ($parts as $part) {
+			if (isset($current[$part]) === false) {
 				return;
 			}
 
-			$current = &$current[$parts[$i]];
+			$current = &$current[$part];
 		}
 
-		$lastKey = $parts[count($parts) - 1];
-
-		if (isset($current[$lastKey]) === false) {
-			return;
-		}
-
-		$value = $current[$lastKey];
-
-		// Resolve the reference.
-		if (is_array($value) === true) {
-			// Array of references.
-			$resolved = [];
-			foreach ($value as $ref) {
-				if (is_string($ref) === true) {
-					$uuid = $this->extractUuidFromReference(reference: $ref);
-					if ($uuid !== null) {
-						$resolved[] = $uuid;
-					}
-				}
-			}
-
-			$current[$lastKey] = $resolved;
-		} elseif (is_string($value) === true) {
-			// Single reference.
-			$uuid = $this->extractUuidFromReference(reference: $value);
-			if ($uuid !== null) {
-				$current[$lastKey] = $uuid;
-			}
+		if (isset($current[$lastKey]) === true) {
+			$current[$lastKey] = $this->resolvedValue(value: $current[$lastKey]);
 		}
 	}//end resolveRelationPath()
+
+	/**
+	 * A value with its references resolved to UUIDs: a list keeps only what resolves, a string what resolves or
+	 * itself, anything else itself.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return mixed
+	 */
+	private function resolvedValue(mixed $value): mixed {
+		if (is_array($value) === true) {
+			return $this->resolvedList(references: $value);
+		}
+
+		if (is_string($value) === true) {
+			return $this->extractUuidFromReference(reference: $value) ?? $value;
+		}
+
+		return $value;
+	}//end resolvedValue()
+
+	/**
+	 * The UUIDs the string items of a list resolve to, in order; items that do not resolve are dropped.
+	 *
+	 * @param array $references The list items.
+	 *
+	 * @return list<string>
+	 */
+	private function resolvedList(array $references): array {
+		$resolved = [];
+		foreach ($references as $ref) {
+			if (is_string($ref) === false) {
+				continue;
+			}
+
+			$uuid = $this->extractUuidFromReference(reference: $ref);
+			if ($uuid !== null) {
+				$resolved[] = $uuid;
+			}
+		}
+
+		return $resolved;
+	}//end resolvedList()
 
 	/**
 	 * Extracts UUID from a reference string.
@@ -502,39 +598,55 @@ class RelationCascadeHandler {
 	 *
 	 * @return string|null The extracted UUID or null.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is standard Symfony UID pattern
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	private function extractUuidFromReference(string $reference): ?string {
-		// Already a UUID.
 		if (Uuid::isValid($reference) === true) {
 			return $reference;
 		}
 
-		// Try to find object by ID.
 		if (is_numeric($reference) === true) {
-			try {
-				$object = $this->objectEntityMapper->find((int)$reference);
-				return $object->getUuid();
-			} catch (DoesNotExistException $e) {
-				return null;
-			}
+			return $this->uuidOfObjectId(id: (int)$reference);
 		}
 
-		// Extract from URL.
-		if (str_contains($reference, '/objects/') === true) {
-			$parts = explode('/objects/', $reference);
-			if (count($parts) === 2) {
-				$uuid = trim($parts[1], '/');
-				if (Uuid::isValid($uuid) === true) {
-					return $uuid;
-				}
-			}
+		return $this->uuidFromObjectUrl(reference: $reference);
+	}//end extractUuidFromReference()
+
+	/**
+	 * The UUID of the object with a numeric id, or null when there is none.
+	 *
+	 * @param int $id The object id.
+	 *
+	 * @return string|null
+	 */
+	private function uuidOfObjectId(int $id): ?string {
+		try {
+			return $this->objectEntityMapper->find($id)->getUuid();
+		} catch (DoesNotExistException $e) {
+			return null;
+		}
+	}//end uuidOfObjectId()
+
+	/**
+	 * The UUID after the single `/objects/` of a URL, or null when there is none or it is no valid UUID.
+	 *
+	 * @param string $reference The reference string.
+	 *
+	 * @return string|null
+	 */
+	private function uuidFromObjectUrl(string $reference): ?string {
+		$parts = explode('/objects/', $reference);
+		if (count($parts) !== 2) {
+			return null;
+		}
+
+		$uuid = trim($parts[1], '/');
+		if (Uuid::isValid($uuid) === true) {
+			return $uuid;
 		}
 
 		return null;
-	}//end extractUuidFromReference()
+	}//end uuidFromObjectUrl()
 
 	/**
 	 * Cascades object creation for inversedBy properties.
@@ -548,51 +660,42 @@ class RelationCascadeHandler {
 	 *
 	 * @return array The updated data with created object UUIDs.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic for different property types
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array {
-		$properties = $schema->getProperties();
-
-		foreach ($properties as $propertyName => $property) {
-			if (isset($property['inversedBy']) === false || isset($data[$propertyName]) === false) {
+		foreach ($schema->getProperties() as $propertyName => $property) {
+			// Only a non-empty value of an inversedBy property cascades.
+			if (isset($property['inversedBy']) === false || empty($data[$propertyName]) === true) {
 				continue;
 			}
 
-			// Check if property data is an array of objects or a single object.
-			$propData = $data[$propertyName];
-
-			if (empty($propData) === true) {
-				continue;
-			}
-
-			// Handle array of objects.
-			if (isset($property['type']) === true && $property['type'] === 'array') {
-				$data[$propertyName] = $this->cascadeMultipleObjects(
-					objectEntity: $objectEntity,
-					property: $property,
-					propData: $propData
-				);
-
-				continue;
-			}
-
-			// Handle single object.
-			if (is_array($propData) === true && $this->isArrayOfScalars(array: $propData) === false) {
-				$uuid = $this->cascadeSingleObject(
-					_objectEntity: $objectEntity,
-					_definition: $property,
-					_object: $propData
-				);
-				if ($uuid !== null) {
-					$data[$propertyName] = $uuid;
-				}
-			}
-		}//end foreach
+			$data[$propertyName] = $this->cascadedValue(objectEntity: $objectEntity, property: $property, propData: $data[$propertyName]);
+		}
 
 		return $data;
 	}//end cascadeObjects()
+
+	/**
+	 * The value an inversedBy property holds after cascading: the created UUIDs of an array property, the created
+	 * UUID of a single nested object, or the value itself.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object entity.
+	 * @param array        $property     The property definition.
+	 * @param mixed        $propData     The property's non-empty value.
+	 *
+	 * @return mixed
+	 */
+	private function cascadedValue(ObjectEntity $objectEntity, array $property, mixed $propData): mixed {
+		if (isset($property['type']) === true && $property['type'] === 'array') {
+			return $this->cascadeMultipleObjects(objectEntity: $objectEntity, property: $property, propData: $propData);
+		}
+
+		if ($this->isNestedObject(value: $propData) === false) {
+			return $propData;
+		}
+
+		return $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $propData) ?? $propData;
+	}//end cascadedValue()
 
 	/**
 	 * Checks if array contains only scalar values.
@@ -624,28 +727,52 @@ class RelationCascadeHandler {
 	 *
 	 * @psalm-return list<string>
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array {
 		$createdUuids = [];
-
 		foreach ($propData as $object) {
-			if (is_array($object) === true && $this->isArrayOfScalars(array: $object) === false) {
-				$uuid = $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
-				if ($uuid !== null) {
-					$createdUuids[] = $uuid;
-				}
-			} elseif (is_string($object) === true && Uuid::isValid($object) === true) {
-				// Already a UUID reference.
-				$createdUuids[] = $object;
+			$uuid = $this->cascadedItem(objectEntity: $objectEntity, property: $property, object: $object);
+			if ($uuid !== null) {
+				$createdUuids[] = $uuid;
 			}
 		}
 
 		return $createdUuids;
 	}//end cascadeMultipleObjects()
+
+	/**
+	 * The UUID one list item stands for: the object created from a nested object, an item that already is a
+	 * UUID, or null.
+	 *
+	 * @param ObjectEntity $objectEntity The parent object entity.
+	 * @param array        $property     The property definition.
+	 * @param mixed        $object       The list item.
+	 *
+	 * @return string|null
+	 */
+	private function cascadedItem(ObjectEntity $objectEntity, array $property, mixed $object): ?string {
+		if ($this->isNestedObject(value: $object) === true) {
+			return $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
+		}
+
+		if (is_string($object) === true && Uuid::isValid($object) === true) {
+			return $object;
+		}
+
+		return null;
+	}//end cascadedItem()
+
+	/**
+	 * Whether a value is a nested object: an array holding at least one array or object.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private function isNestedObject(mixed $value): bool {
+		return is_array($value) === true && $this->isArrayOfScalars(array: $value) === false;
+	}//end isNestedObject()
 
 	/**
 	 * Cascades creation of a single related object.

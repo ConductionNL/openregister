@@ -155,16 +155,19 @@ class RelationCascadeScanGoldenTest extends TestCase {
 
 		$parent = new ObjectEntity();
 
+		$arraySchema = $this->schema(properties: ['l' => ['type' => 'array', 'inversedBy' => 'p']]);
+
 		return [
 			'cascade' => $this->attempt(fn () => $handler->cascadeObjects($parent, $schema, $data)),
-			'arrayString' => $this->attempt(fn () => $handler->cascadeObjects($parent, $this->schema(properties: ['l' => ['type' => 'array', 'inversedBy' => 'p']]), ['l' => 'text'])),
+			'arrayString' => $this->attempt(fn () => $handler->cascadeObjects($parent, $arraySchema, ['l' => 'text'])),
 			'multiple' => $handler->cascadeMultipleObjects($parent, ['inversedBy' => 'p'], [self::UUID, ['a' => 1], ['a', 'b'], 'x', null, self::UUID2]),
 		];
 	}//end cascades()
 
 	private function references(RelationCascadeHandler $handler): array {
 		$out = [];
-		foreach ([self::UUID, 'id-' . self::UUID, str_replace('-', '', self::UUID), 'a/objects/b', 'a/api/b', '12', '0', '-3', '1.5', '1e3', 'x', ''] as $value) {
+		$values = [self::UUID, 'id-' . self::UUID, str_replace('-', '', self::UUID), 'a/objects/b', 'a/api/b', '12', '0', '-3', '1.5', '1e3', 'x', ''];
+		foreach ($values as $value) {
 			$out[$value] = $handler->isReference($value);
 		}
 
