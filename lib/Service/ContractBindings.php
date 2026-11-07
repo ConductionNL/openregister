@@ -263,6 +263,7 @@ final class ContractBindings {
 		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
+		\OCA\OpenRegister\Service\Object\RenderObjectInterface::class => \OCA\OpenRegister\Service\Object\RenderObject::class,
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		PartyRoleServiceInterface::class => PartyRoleService::class,
 		PartyServiceInterface::class => PartyService::class,
