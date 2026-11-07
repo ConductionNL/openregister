@@ -44,7 +44,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
-use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -98,7 +98,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerScheduleNode $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNode $userTask The built-in "Ask a person" node.
-	 * @param PortalTaskNode $portalTask The built-in "Ask a party outside the organisation" node.
+	 * @param PortalTaskNodeInterface $portalTask The built-in "Ask a party outside the organisation" node.
 	 * @param DecisionTableNode $decisionTable The built-in "Evaluate a decision table" node.
 	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
 	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
@@ -132,7 +132,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerScheduleNode $triggerSchedule,
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNode $userTask,
-		private readonly PortalTaskNode $portalTask,
+		private readonly PortalTaskNodeInterface $portalTask,
 		private readonly DecisionTableNode $decisionTable,
 		private readonly CaseOpenNode $caseOpen,
 		private readonly CaseAdvanceNode $caseAdvance,
