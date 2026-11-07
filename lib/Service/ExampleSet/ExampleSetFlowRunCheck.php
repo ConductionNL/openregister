@@ -46,6 +46,8 @@ class ExampleSetFlowRunCheck {
 	 * @param mixed                $nodes The flow's declared steps.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-flow-may-carry-finished-runs
 	 */
 	public function refusal(array $run, mixed $nodes): string {
 		$refusal = $this->kindRefusal(run: $run, nodes: $nodes);
