@@ -89,7 +89,7 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ObjectReadNode implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.

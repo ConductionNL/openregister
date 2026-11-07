@@ -54,7 +54,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The lifecycle is the seam
  * between the action catalogue, the selection, the queue and the job record.
  */
-class BulkJobService {
+class BulkJobService implements BulkJobServiceInterface {
 
 	/**
 	 * The app id every config key is stored under.
