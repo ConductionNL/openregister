@@ -52,14 +52,6 @@ interface DeckLinkServiceInterface {
 	 *
 	 * @throws Exception On missing user, missing card (404), duplicate (409).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential guard
-	 *     clauses (no user, duplicate, Deck unavailable, find failure,
-	 *     null card) followed by best-effort entity extraction.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Defensive try/catch
-	 *     blocks around every getter on Deck's Card entity (which uses
-	 *     OCP\AppFramework\Db\Entity::__call magic) — required to
-	 *     tolerate missing fields without burying the call site.
-	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function linkCard(LinkTarget $target, int $cardId): DeckLink;
