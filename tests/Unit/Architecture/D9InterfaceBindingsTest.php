@@ -58,6 +58,8 @@ use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -105,6 +107,13 @@ final class D9InterfaceBindingsTest extends TestCase {
 			GeoFilterParserInterface::class,
 			SearchRegistrar::class,
 			[],
+		],
+		PlaceholderResolver::class => [
+			PlaceholderResolverInterface::class,
+			SearchRegistrar::class,
+			[
+				'lib/Service/Object/SaveObject.php',
+			],
 		],
 		RestorePriorValuesAction::class => [
 			RestorePriorValuesActionInterface::class,
