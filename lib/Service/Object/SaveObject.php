@@ -70,6 +70,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSaveFlags;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectUpdateRun;
 use OCA\OpenRegister\Service\Object\SaveObject\OutdatedTranslations;
+use OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceEvents;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceFilterGuard;
@@ -181,24 +183,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SaveObject implements SaveObjectInterface {
 	private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
-
-	/**
-	 * App identifier used for `IAppConfig` lookups.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'openregister';
-
-	/**
-	 * App-config key controlling whether admins bypass reference
-	 * existence validation. When the stored value parses to `true`
-	 * (default), members of the `admin` group skip the check; when
-	 * `false`, admins are validated like any other user. Operators
-	 * can flip the flag at runtime via `occ config:app:set`.
-	 *
-	 * @var string
-	 */
-	private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
 
 	/**
 	 * Stamps `@self.version` on create and bumps it on update.
@@ -3564,7 +3548,7 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function validateReferences(Schema $schema, ReferencePropertyRun $run): void {
-		if ($this->shouldBypassValidationForAdmin() === false) {
+		if ($this->referenceAdminBypass()->applies() === false) {
 			$this->referenceValidator()->validate(schema: $schema, run: $run);
 		}
 	}//end validateReferences()
@@ -3827,41 +3811,16 @@ class SaveObject implements SaveObjectInterface {
 	}//end recordReferenceCacheUse()
 
 	/**
-	 * Decide whether the current user should bypass reference validation.
+	 * Whether the current user skips reference validation.
 	 *
-	 * Returns true when the current session user is in the `admin`
-	 * group AND the `reference_validation_admin_bypass` app-config flag
-	 * resolves to `true` (the default). The dependencies are optional
-	 * to keep older test fixtures working — when either is missing the
-	 * method returns false so validation runs as before.
-	 *
-	 * @return bool True when admin bypass applies.
+	 * @return ReferenceAdminBypass The bypass decision.
 	 */
-	private function shouldBypassValidationForAdmin(): bool {
-		if ($this->groupManager === null || $this->appConfig === null) {
-			return false;
-		}
-
-		$bypassEnabled = filter_var(
-			$this->appConfig->getValueString(
-				app: self::APP_ID,
-				key: self::CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS,
-				default: 'true'
-			),
-			FILTER_VALIDATE_BOOLEAN
+	private function referenceAdminBypass(): ReferenceAdminBypass {
+		return new ReferenceAdminBypass(
+			adminGate: new AdminGate(userSession: $this->userSession, groupManager: $this->groupManager),
+			appConfig: $this->appConfig
 		);
-
-		if ($bypassEnabled === false) {
-			return false;
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
-	}//end shouldBypassValidationForAdmin()
+	}//end referenceAdminBypass()
 
 	/**
 	 * Prepares object data by applying all necessary transformations.
