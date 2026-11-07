@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\TestCase;
 

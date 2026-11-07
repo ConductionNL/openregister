@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use Psr\Log\LoggerInterface;
 
 /**
