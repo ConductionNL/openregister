@@ -38,7 +38,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/specs/json-ld-output/spec.md
  */
-class JsonLdContextService {
+class JsonLdContextService implements JsonLdContextServiceInterface {
 
 	/**
 	 * The OpenRegister metadata namespace IRI. Used for the `or:` prefix that
