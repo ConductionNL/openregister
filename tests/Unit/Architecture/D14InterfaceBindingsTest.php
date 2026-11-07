@@ -29,6 +29,11 @@ use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\Mcp\McpRegistrar;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilderInterface;
@@ -57,15 +62,21 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		ContextChatSubmissionListener::class => [ContextChatSubmissionListenerInterface::class, McpRegistrar::class],
 		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
 		NoteService::class => [NoteServiceInterface::class, FilesRegistrar::class],
 		RegisterFolderProvisioner::class => [RegisterFolderProvisionerInterface::class, FilesRegistrar::class],
 		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
 		ShareUrlBuilder::class => [ShareUrlBuilderInterface::class, FilesRegistrar::class],
+		ToolRegistry::class => [ToolRegistryInterface::class, McpRegistrar::class],
 	];
 
 	/**
 	 * Outside files still allowed to name the class, and why.
+	 *
+	 * ListenerRegistrar registers ContextChatSubmissionListener as the listener of the
+	 * object created, updated and deleted events. Moving those three lines would change
+	 * the order listeners run in, so the registration is kept as it is.
 	 *
 	 * ConfigurationServiceRegistrar and ImportHandler are being changed by an open
 	 * configuration export/import PR; their setter wiring is left for after it lands.
@@ -75,6 +86,7 @@ final class D14InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, list<string>>
 	 */
 	private const KEPT_CALLERS = [
+		ContextChatSubmissionListener::class => ['Listener/ListenerRegistrar.php'],
 		RegisterFolderProvisioner::class => ['Service/Configuration/ConfigurationServiceRegistrar.php', 'Service/Configuration/ImportHandler.php'],
 		NoteService::class => ['AppInfo/Application.php', 'Service/Configuration/ConfigurationServiceRegistrar.php'],
 	];

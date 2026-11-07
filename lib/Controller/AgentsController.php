@@ -32,7 +32,7 @@ use OCA\OpenRegister\Controller\Support\AgentsControllerServices;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
-use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -86,9 +86,9 @@ class AgentsController extends Controller {
 	 *
 	 * Provides access to all registered tools from all apps for agent configuration.
 	 *
-	 * @var ToolRegistry Tool registry instance
+	 * @var ToolRegistryInterface Tool registry instance
 	 */
-	private readonly ToolRegistry $toolRegistry;
+	private readonly ToolRegistryInterface $toolRegistry;
 
 	/**
 	 * Logger for debugging and error tracking

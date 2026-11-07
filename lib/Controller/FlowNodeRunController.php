@@ -56,11 +56,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
-use OCA\OpenRegister\Service\Flow\FlowLocator;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
@@ -107,9 +107,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Org-scoped flow lookup — the same non-oracle
 	 *
-	 * @var FlowService
+	 * @var FlowServiceInterface
 	 */
-	private readonly FlowService $flows;
+	private readonly FlowServiceInterface $flows;
 
 	/**
 	 * Resolves the flow's PUBLISHED
@@ -121,16 +121,16 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * Resolves the live flow document (for
 	 *
-	 * @var FlowLocator
+	 * @var FlowLocatorInterface
 	 */
-	private readonly FlowLocator $subjects;
+	private readonly FlowLocatorInterface $subjects;
 
 	/**
 	 * Resolves a
 	 *
-	 * @var FlowNodeRegistry
+	 * @var FlowNodeRegistryInterface
 	 */
-	private readonly FlowNodeRegistry $nodes;
+	private readonly FlowNodeRegistryInterface $nodes;
 
 	/**
 	 * Queues and executes the one node.

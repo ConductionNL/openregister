@@ -45,7 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
-use OCA\OpenRegister\Service\BulkActionRegistry;
+use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -56,10 +56,10 @@ class BulkActionRegistrationEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkActionRegistry $registry The registry to register actions with.
+	 * @param BulkActionRegistryInterface $registry The registry to register actions with.
 	 */
 	public function __construct(
-		private readonly BulkActionRegistry $registry,
+		private readonly BulkActionRegistryInterface $registry,
 	) {
 		parent::__construct();
 	}//end __construct()

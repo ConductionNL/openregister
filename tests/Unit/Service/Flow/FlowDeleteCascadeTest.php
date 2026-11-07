@@ -49,6 +49,10 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
+use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
+use OCA\OpenRegister\Service\Flow\FlowRunDispatch;
+use OCA\OpenRegister\Service\Flow\FlowServicePlatform;
 
 /**
  * Cascade behaviour of FlowService::delete().
@@ -163,16 +167,24 @@ final class FlowDeleteCascadeTest extends TestCase {
 		);
 
 		return new FlowService(
-			$mapper,
-			$this->createMock(FlowTriggerIndex::class),
-			$this->createMock(FlowRunService::class),
-			$this->createMock(FlowRunAdvancer::class),
-			$runs,
-			$steps,
-			$state,
-			$this->createMock(IUserSession::class),
-			$this->createMock(LoggerInterface::class),
-			$container
+			new FlowDefinitionStore(
+				$mapper,
+				$this->createMock(FlowTriggerIndex::class)
+			),
+			new FlowRunDispatch(
+				$this->createMock(FlowRunService::class),
+				$this->createMock(FlowRunAdvancer::class)
+			),
+			new FlowDeletionSweep(
+				$runs,
+				$steps,
+				$state
+			),
+			new FlowServicePlatform(
+				$this->createMock(IUserSession::class),
+				$this->createMock(LoggerInterface::class),
+				$container
+			)
 		);
 
 	}//end serviceWith()
