@@ -112,6 +112,10 @@ use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
@@ -191,6 +195,7 @@ final class ContractBindings {
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
+		JobAlertServiceInterface::class => JobAlertService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
@@ -219,6 +224,7 @@ final class ContractBindings {
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
+		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		PersonLinkServiceInterface::class => PersonLinkService::class,
 		PhotoLinkServiceInterface::class => PhotoLinkService::class,
 		PollLinkServiceInterface::class => PollLinkService::class,
