@@ -43,7 +43,7 @@ use Throwable;
 /**
  * Publishes the supported property-type conversions and previews one.
  */
-class PropertyConversionService {
+class PropertyConversionService implements PropertyConversionServiceInterface {
 
 	/**
 	 * How many non-convertible values a preview names.
