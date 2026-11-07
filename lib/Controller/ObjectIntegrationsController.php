@@ -569,6 +569,10 @@ class ObjectIntegrationsController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function respondInternalError(\Throwable $exception, string $integrationId): JSONResponse {
+		if ($exception->getCode() === Http::STATUS_NOT_FOUND) {
+			return new JSONResponse(['message' => $exception->getMessage()], Http::STATUS_NOT_FOUND);
+		}
+
 		$this->logger->error(
 			sprintf('[ObjectIntegrationsController] dispatch failed for %s', $integrationId),
 			['exception' => $exception]

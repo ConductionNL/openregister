@@ -23,6 +23,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Controller\Support\EmptyValueStripper
  * @covers \OCA\OpenRegister\Controller\Support\RenderedObjectUuids
+ * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class ObjectsControllerResponseValuesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-response-values-golden.json';

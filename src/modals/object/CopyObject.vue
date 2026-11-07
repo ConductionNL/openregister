@@ -15,7 +15,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				|| 'Object')
 		"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<div v-if="success === null">
 			<p>
 				Create a copy of
@@ -103,6 +103,9 @@ export default {
 	},
 
 	computed: {
+		// A <script setup> binding is not on `this`, and a watch path reads `this`.
+		navigationStore: () => navigationStore,
+
 		/**
 		 * @spec exclude computed display helper for default copy name
 		 */

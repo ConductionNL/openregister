@@ -25,41 +25,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Exception;
-use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAppConfig;
-use OCP\IDBConnection;
-use OCP\IGroupManager;
-use OCP\IUserSession;
+use OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
-use ReflectionMethod;
 
 /**
  * Save-time check of objectNameField and objectDescriptionField paths.
  */
 class SchemaMapperConfigurationPathTest extends TestCase {
-
-	private SchemaMapper $mapper;
-
-	/**
-	 * @return void
-	 */
-	protected function setUp(): void {
-		$this->mapper = new SchemaMapper(
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
-		);
-	}//end setUp()
 
 	/**
 	 * Run the private check against a schema with these properties and configuration.
@@ -78,8 +51,7 @@ class SchemaMapperConfigurationPathTest extends TestCase {
 		);
 		$schema->setConfiguration($configuration);
 
-		$method = new ReflectionMethod(SchemaMapper::class, 'validateConfigurationFields');
-		$method->invoke($this->mapper, $schema);
+		(new ConfigurationFields(schema: $schema))->validate();
 	}//end validate()
 
 	/**

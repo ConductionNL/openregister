@@ -299,8 +299,8 @@
         "value": -30
     },
     "diffDays bad": {
-        "type": "int",
-        "value": 1009
+        "type": "null",
+        "value": null
     },
     "diffDays bad second": {
         "type": "null",
@@ -363,12 +363,12 @@
         "message": "dateDiff unit \"ages\" is invalid. Supported: years, months, weeks, days, hours, minutes, seconds."
     },
     "dateDiff bad from": {
-        "type": "int",
-        "value": -1040
+        "type": "null",
+        "value": null
     },
     "dateDiff bad to": {
-        "type": "int",
-        "value": 1040
+        "type": "null",
+        "value": null
     },
     "dateDiff now": {
         "type": "int",
@@ -603,8 +603,8 @@
         "value": 2024
     },
     "year bad": {
-        "type": "int",
-        "value": 2026
+        "type": "null",
+        "value": null
     },
     "year none": {
         "type": "null",
@@ -619,12 +619,12 @@
         "value": -14
     },
     "monthsElapsed bad": {
-        "type": "int",
-        "value": 46
+        "type": "null",
+        "value": null
     },
     "monthsElapsed bad second": {
-        "type": "int",
-        "value": -46
+        "type": "null",
+        "value": null
     },
     "monthsElapsed short": {
         "thrown": "OCA\\OpenRegister\\Service\\Calculation\\EvaluationException",

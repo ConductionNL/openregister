@@ -97,7 +97,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			$this->db,
 			$this->schemaMapper,
 			$this->registerMapper,
-			$this->createMock(IConfig::class),
+			$this->systemDefaults(),
 			$this->createMock(IEventDispatcher::class),
 			$this->userSession,
 			$this->groupManager,
@@ -578,7 +578,7 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			$this->db,
 			$this->schemaMapper,
 			$this->registerMapper,
-			$this->createMock(IConfig::class),
+			$this->systemDefaults(),
 			$this->createMock(IEventDispatcher::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
@@ -589,4 +589,16 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 			$container,
 		];
 	}//end constructorArgs()
+
+	/**
+	 * System config that answers every key with its default.
+	 *
+	 * @return IConfig
+	 */
+	private function systemDefaults(): IConfig {
+		$config = $this->createMock(IConfig::class);
+		$config->method('getSystemValue')->willReturnCallback(static fn (string $key, mixed $default = ''): mixed => $default);
+
+		return $config;
+	}//end systemDefaults()
 }//end class

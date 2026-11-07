@@ -32,7 +32,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\ConfigurationController
  * @covers \OCA\OpenRegister\Controller\SourcesController
  * @covers \OCA\OpenRegister\Controller\OrganisationController
- * @covers \OCA\OpenRegister\Controller\FileTextController
+ * @covers \OCA\OpenRegister\Files\Controller\FileTextController
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class ControllerAdminCheckGoldenTest extends TestCase {
@@ -52,9 +52,17 @@ class ControllerAdminCheckGoldenTest extends TestCase {
 	 */
 	public static function cases(): array {
 		$cases = [];
-		foreach (['Endpoints', 'Registers', 'Configuration', 'Sources', 'Organisation', 'FileText'] as $name) {
+		$controllers = [
+			'Endpoints'     => 'OCA\\OpenRegister\\Controller\\EndpointsController',
+			'Registers'     => 'OCA\\OpenRegister\\Controller\\RegistersController',
+			'Configuration' => 'OCA\\OpenRegister\\Controller\\ConfigurationController',
+			'Sources'       => 'OCA\\OpenRegister\\Controller\\SourcesController',
+			'Organisation'  => 'OCA\\OpenRegister\\Controller\\OrganisationController',
+			'FileText'      => 'OCA\\OpenRegister\\Files\\Controller\\FileTextController',
+		];
+		foreach ($controllers as $name => $class) {
 			foreach (['admin' => 'alice', 'non-admin' => 'bob', 'no user' => null] as $who => $uid) {
-				$cases[$name . ': ' . $who] = ['OCA\\OpenRegister\\Controller\\' . $name . 'Controller', $uid];
+				$cases[$name . ': ' . $who] = [$class, $uid];
 			}
 		}
 

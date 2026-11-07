@@ -21,8 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSidebarController;
-use OCA\OpenRegister\Service\FileSidebarService;
+use OCA\OpenRegister\Files\Controller\FileSidebarController;
+use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;

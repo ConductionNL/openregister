@@ -98,42 +98,88 @@ class TextBlockService {
 	 * @throws TimelineValidationException When the slug or the body is missing.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
 	 */
 	public function declareBlock(array $data): TextBlock {
+		$slug = $this->requiredSlug(data: $data);
+		$this->requireBody(data: $data);
+
+		$block = $this->blocks->findBySlug(slug: $slug);
+		if ($block === null) {
+			return $this->blocks->insert($this->fill(block: $this->blank(slug: $slug), data: $data));
+		}
+
+		return $this->blocks->update($this->fill(block: $block, data: $data));
+	}//end declareBlock()
+
+	/**
+	 * The normalised slug of a declaration.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return string The slug.
+	 *
+	 * @throws TimelineValidationException When the slug is missing.
+	 */
+	private function requiredSlug(array $data): string {
 		$slug = strtolower(trim((string)($data['slug'] ?? '')));
 		if ($slug === '') {
 			throw new TimelineValidationException(['slug' => 'A text block needs a slug']);
 		}
 
-		$body = (string)($data['body'] ?? '');
-		if (trim($body) === '') {
+		return $slug;
+	}//end requiredSlug()
+
+	/**
+	 * Refuse a declaration without a body.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws TimelineValidationException When the body is missing.
+	 */
+	private function requireBody(array $data): void {
+		if (trim((string)($data['body'] ?? '')) === '') {
 			throw new TimelineValidationException(['body' => 'A text block needs a body']);
 		}
+	}//end requireBody()
 
-		$block = $this->blocks->findBySlug(slug: $slug);
-		$isNew = ($block === null);
-		if ($isNew === true) {
-			$block = new TextBlock();
-			$block->setUuid((string)Uuid::v4());
-			$block->setSlug($slug);
-			$block->setCreated(new DateTime());
-		}
+	/**
+	 * A block nobody has administered yet, with its stable id minted.
+	 *
+	 * @param string $slug The block name.
+	 *
+	 * @return TextBlock The new block.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the standard utility pattern in this app
+	 */
+	private function blank(string $slug): TextBlock {
+		$block = new TextBlock();
+		$block->setUuid((string)Uuid::v4());
+		$block->setSlug($slug);
+		$block->setCreated(new DateTime());
 
+		return $block;
+	}//end blank()
+
+	/**
+	 * Write a payload onto a block, new or existing.
+	 *
+	 * @param TextBlock           $block The block.
+	 * @param array<string,mixed> $data  The payload.
+	 *
+	 * @return TextBlock The filled block, not yet written.
+	 */
+	private function fill(TextBlock $block, array $data): TextBlock {
 		$block->setTitle($this->stringOrNull(data: $data, key: 'title'));
-		$block->setBody($body);
+		$block->setBody((string)$data['body']);
 		$block->setRegister($this->stringOrNull(data: $data, key: 'register'));
 		$block->setSchema($this->stringOrNull(data: $data, key: 'schema'));
 		$block->setGroupId($this->stringOrNull(data: $data, key: 'groupId'));
 		$block->setUpdated(new DateTime());
 
-		if ($isNew === true) {
-			return $this->blocks->insert($block);
-		}
-
-		return $this->blocks->update($block);
-	}//end declareBlock()
+		return $block;
+	}//end fill()
 
 	/**
 	 * Withdraw a block.
@@ -189,19 +235,7 @@ class TextBlockService {
 	public function substitute(string $text, array $variables): string {
 		$result = preg_replace_callback(
 			self::PLACEHOLDER,
-			static function (array $match) use ($variables): string {
-				$name = $match[1];
-				if (array_key_exists($name, $variables) === false) {
-					return $match[0];
-				}
-
-				$value = $variables[$name];
-				if (is_scalar($value) === false) {
-					return $match[0];
-				}
-
-				return (string)$value;
-			},
+			fn (array $placeholder): string => $this->valueFor(placeholder: $placeholder, variables: $variables),
 			$text
 		);
 
@@ -211,6 +245,23 @@ class TextBlockService {
 
 		return $result;
 	}//end substitute()
+
+	/**
+	 * The value of one placeholder, or the placeholder itself when nothing scalar supplies it.
+	 *
+	 * @param array<int,string>   $placeholder The regex match: the whole placeholder, then its name.
+	 * @param array<string,mixed> $variables   The values.
+	 *
+	 * @return string The text to put in its place.
+	 */
+	private function valueFor(array $placeholder, array $variables): string {
+		$value = ($variables[$placeholder[1]] ?? null);
+		if (is_scalar($value) === false) {
+			return $placeholder[0];
+		}
+
+		return (string)$value;
+	}//end valueFor()
 
 	/**
 	 * The caller's groups.

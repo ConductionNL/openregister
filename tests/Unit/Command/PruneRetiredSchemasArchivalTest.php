@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -278,7 +279,7 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->deletionService
 			->expects($this->once())
 			->method('cascadeDeleteSchema')
-			->with($this->equalTo($schema), $this->isTrue())
+			->with($this->equalTo($schema), $this->equalTo(new SchemaTeardownOverride(archivalSchema: true)))
 			->willReturn(['deletedCount' => 2, 'deletedUuids' => ['a', 'b'], 'tableDropped' => true]);
 
 		$tester = $this->runPrune(['--force' => true, '--force-archival' => true]);
@@ -288,6 +289,89 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->assertStringContainsString('Pruned=1', $display);
 
 	}//end testForceArchivalPrunesAndNamesTheRecords()
+
+	/**
+	 * Kept rows stop the prune before a register loses the schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testKeptRowsSkipTheSchemaAndLeaveItsRegisterLinked(): void {
+		$this->stubOneRetiredSchema(archival: false);
+		$this->deletionService->method('countKeptRows')->willReturn(1);
+
+		$this->deletionService->expects($this->never())->method('cascadeDeleteSchema');
+		$this->registerMapper->expects($this->never())->method('update');
+
+		$display = $this->runPrune(['--force' => true])->getDisplay();
+
+		$this->assertStringContainsString('holds 1 frozen, archived, locked or unreadable row(s)', $display);
+		$this->assertStringContainsString('--force-kept-rows', $display);
+		$this->assertStringContainsString('skipped=1', $display);
+
+	}//end testKeptRowsSkipTheSchemaAndLeaveItsRegisterLinked()
+
+	/**
+	 * The archival flag says nothing about frozen or locked rows.
+	 *
+	 * @return void
+	 */
+	public function testForceArchivalDoesNotLiftKeptRows(): void {
+		$this->stubOneRetiredSchema(archival: true);
+		$this->deletionService->method('countKeptRows')->willReturn(1);
+
+		$this->deletionService->expects($this->never())->method('cascadeDeleteSchema');
+
+		$display = $this->runPrune(['--force' => true, '--force-archival' => true])->getDisplay();
+
+		$this->assertStringContainsString('skipped=1', $display);
+
+	}//end testForceArchivalDoesNotLiftKeptRows()
+
+	/**
+	 * `--force-kept-rows` reaches the service and the output names the rows.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	public function testForceKeptRowsPrunesAndNamesTheRows(): void {
+		$schema = $this->stubOneRetiredSchema(archival: false);
+		$this->deletionService->method('countKeptRows')->willReturn(1);
+
+		$this->deletionService
+			->expects($this->once())
+			->method('cascadeDeleteSchema')
+			->with($this->equalTo($schema), $this->equalTo(new SchemaTeardownOverride(keptRows: true)))
+			->willReturn(['deletedCount' => 2, 'deletedUuids' => ['a', 'b'], 'tableDropped' => true]);
+
+		$display = $this->runPrune(['--force' => true, '--force-kept-rows' => true])->getDisplay();
+
+		$this->assertStringContainsString('(1 KEPT ROWS)', $display);
+		$this->assertStringContainsString('Pruned=1', $display);
+
+	}//end testForceKeptRowsPrunesAndNamesTheRows()
+
+	/**
+	 * A dry run with the flag reports the rows and touches nothing.
+	 *
+	 * @return void
+	 */
+	public function testADryRunNamesTheKeptRowsAndDeletesNothing(): void {
+		$this->stubOneRetiredSchema(archival: false);
+		$this->deletionService->method('countKeptRows')->willReturn(1);
+
+		$this->deletionService->expects($this->never())->method('cascadeDeleteSchema');
+
+		$display = $this->runPrune(
+			['--apply' => false, '--force' => true, '--force-kept-rows' => true]
+		)->getDisplay();
+
+		$this->assertStringContainsString('WOULD DELETE (objects=2)', $display);
+		$this->assertStringContainsString('(1 KEPT ROWS)', $display);
+
+	}//end testADryRunNamesTheKeptRowsAndDeletesNothing()
 
 	/**
 	 * An ordinary retired schema is unaffected: the override is never passed.
@@ -300,7 +384,7 @@ class PruneRetiredSchemasArchivalTest extends TestCase {
 		$this->deletionService
 			->expects($this->once())
 			->method('cascadeDeleteSchema')
-			->with($this->equalTo($schema), $this->isFalse())
+			->with($this->equalTo($schema), $this->equalTo(new SchemaTeardownOverride()))
 			->willReturn(['deletedCount' => 2, 'deletedUuids' => ['a', 'b'], 'tableDropped' => true]);
 
 		$tester = $this->runPrune(['--force' => true]);

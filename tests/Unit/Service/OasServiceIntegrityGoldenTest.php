@@ -28,6 +28,9 @@ use ReflectionProperty;
  * tags, non-standard methods and status codes, and relative server URLs.
  *
  * @covers \OCA\OpenRegister\Service\OasService
+ * @uses \OCA\OpenRegister\Service\Oas\OasNames
+ * @uses \OCA\OpenRegister\Service\Oas\OasPropertySanitizer
+ * @uses \OCA\OpenRegister\Service\Oas\OasReferenceRepair
  * @uses   \OCA\OpenRegister\Service\Oas\OasValidationReport
  * @uses   \OCA\OpenRegister\Service\Oas\OasRbacAnnotator
  * @uses   \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization

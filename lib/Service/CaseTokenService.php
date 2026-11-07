@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
@@ -309,20 +310,23 @@ class CaseTokenService {
 	 * false rather than throwing. Accepts either the opaque token string
 	 * or the numeric row id (the provider addresses tokens by id).
 	 *
-	 * @param string $tokenOrId The opaque token, or its numeric row id.
+	 * @param string $objectUuid The object the token must be minted against.
+	 * @param string $tokenOrId  The opaque token, or its numeric row id.
 	 *
-	 * @return bool True when a token was revoked, false when none matched.
+	 * @return bool True when a token was revoked, false when it already was.
+	 *
+	 * @throws Exception With code 404 when no token of this object matches.
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function revoke(string $tokenOrId): bool {
+	public function revoke(string $objectUuid, string $tokenOrId): bool {
 		$row = $this->mapper->findByToken($tokenOrId);
 		if ($row === null && ctype_digit($tokenOrId) === true) {
 			$row = $this->mapper->findById((int)$tokenOrId);
 		}
 
-		if ($row === null) {
-			return false;
+		if ($row === null || $row->getObjectUuid() !== $objectUuid) {
+			throw new Exception('Token not found', 404);
 		}
 
 		if ($row->getRevokedAt() !== null) {

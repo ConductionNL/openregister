@@ -27,27 +27,34 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 final class TableStructureSync {
 
 	/**
-	 * Snake_case column names the schema requires, keyed by name.
+	 * The quoted full table name for SQL.
+	 *
+	 * @var string
+	 */
+	public readonly string $tableNameQuoted;
+
+	/**
+	 * The physical names of the columns the schema requires, as keys.
 	 *
 	 * @var array<string, bool>
 	 */
-	public array $snakeCaseColumns = [];
+	public readonly array $requiredNames;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $tableName       The logical table name.
-	 * @param string $tableNameQuoted The quoted full table name for SQL.
-	 * @param array  $currentColumns  Current column definitions from the database.
-	 * @param array  $requiredColumns Required column definitions from the schema.
-	 * @param bool   $isPostgres      Whether the platform is PostgreSQL.
+	 * @param string           $tableName     The logical table name.
+	 * @param string           $fullTableName The table name with the configured prefix.
+	 * @param MagicColumnDrift $columns       The live and required columns.
+	 * @param bool             $isPostgres    Whether the platform is PostgreSQL.
 	 */
 	public function __construct(
 		public readonly string $tableName,
-		public readonly string $tableNameQuoted,
-		public readonly array $currentColumns,
-		public readonly array $requiredColumns,
+		public readonly string $fullTableName,
+		public readonly MagicColumnDrift $columns,
 		public readonly bool $isPostgres,
 	) {
+		$this->tableNameQuoted = (new MagicColumnSql(isPostgres: $isPostgres))->quote(name: $fullTableName);
+		$this->requiredNames = $columns->requiredNames();
 	}//end __construct()
 }//end class

@@ -27,10 +27,10 @@ namespace OCA\OpenRegister\Notifications\Controller;
 use Exception;
 use OCA\OpenRegister\Notifications\Controller\Support\NotesControllerServices;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteProjection;
+use OCA\OpenRegister\Notifications\Service\Timeline\NoteRewrite;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,9 +50,9 @@ class NotesController extends Controller {
 	/**
 	 * Note service for comment operations.
 	 *
-	 * @var NoteService
+	 * @var NoteServiceInterface
 	 */
-	private readonly NoteService $noteService;
+	private readonly NoteServiceInterface $noteService;
 
 	/**
 	 * Object service for object validation.
@@ -60,13 +60,6 @@ class NotesController extends Controller {
 	 * @var ObjectOperationsInterface
 	 */
 	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Visibility guard, filter and audit
-	 *
-	 * @var TimelineVisibilityService
-	 */
-	private readonly TimelineVisibilityService $visibility;
 
 	/**
 	 * The controller's injected services.
@@ -81,7 +74,6 @@ class NotesController extends Controller {
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
 	 * @param NotesControllerServices $services The notes controller services.
-	 * @param TimelineEntryService $entries Reads and forgets the record behind a note
 	 *
 	 * @return void
 	 */
@@ -89,12 +81,9 @@ class NotesController extends Controller {
 		string $appName,
 		IRequest $request,
 		NotesControllerServices $services,
-		private readonly TimelineEntryService $entries,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->services = $services;
-		$this->visibility = $services->visibility;
-
 		$this->noteService = $services->noteService;
 		$this->objectService = $services->objectService;
 	}//end __construct()
@@ -140,8 +129,8 @@ class NotesController extends Controller {
 				$requested = $params['visibility'];
 			}
 
-			$mayManage = $this->visibility->mayManage(object: $object);
-			$filter = $this->visibility->effectiveFilter(object: $object, requested: $requested);
+			$mayManage = $this->services->visibility->mayManage(object: $object);
+			$filter = $this->services->visibility->effectiveFilter(object: $object, requested: $requested);
 
 			$notes = $this->noteService->getNotesForObject(
 				objectUuid: $object->getUuid(),
@@ -226,9 +215,7 @@ class NotesController extends Controller {
 			// worse than none. The projection never throws.
 			$entry = $this->services->timeline->projectNote(
 				object: $object,
-				note: $note,
-				register: $register,
-				schema: $schema
+				note: new NoteProjection(note: $note, register: $register, schema: $schema)
 			);
 			if ($entry !== null) {
 				$note['entryId'] = $entry->getUuid();
@@ -272,6 +259,8 @@ class NotesController extends Controller {
 				);
 			}
 
+			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
+
 			$write = $this->resolveNoteWrite(
 				object: $object,
 				data: $this->request->getParams(),
@@ -285,7 +274,7 @@ class NotesController extends Controller {
 				noteId: (int)$noteId,
 				message: $write['message'],
 				visibility: $write['visibility'],
-				mayManage: $this->visibility->mayManageObject(object: $object)
+				mayManage: $this->services->visibility->mayManageObject(object: $object)
 			);
 
 			if ($write['message'] !== null) {
@@ -304,13 +293,11 @@ class NotesController extends Controller {
 			// is worse than no index, because it looks like a hit.
 			$this->services->timeline->rewrite(
 				object: $object,
-				commentId: (int)$noteId,
-				message: $write['message'],
-				visibility: $write['visibility']
+				rewrite: new NoteRewrite(commentId: (int)$noteId, message: $write['message'], visibility: $write['visibility'])
 			);
 
 			if ($write['previous'] !== null) {
-				$this->visibility->auditVisibilityChange(
+				$this->services->visibility->auditVisibilityChange(
 					object: $object,
 					noteId: (int)$noteId,
 					from: $write['previous'],
@@ -331,7 +318,12 @@ class NotesController extends Controller {
 				statusCode: $e->getHttpStatus()
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}//end try
 	}//end update()
 
@@ -399,6 +391,7 @@ class NotesController extends Controller {
 			}
 
 			try {
+				$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
 				$note = $this->noteService->getNote(noteId: (int)$noteId);
 			} catch (Exception $e) {
 				// A note that is not there is a 404, not the 400 a generic
@@ -410,8 +403,8 @@ class NotesController extends Controller {
 			// The same filter the note list applies, asked of one note: a
 			// reader who may not see an internal note may not read the texts
 			// it replaced either.
-			$filter = $this->visibility->effectiveFilter(object: $object, requested: null);
-			if (count($this->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
+			$filter = $this->services->visibility->effectiveFilter(object: $object, requested: null);
+			if (count($this->services->visibility->filterRows(rows: [$note], filter: $filter)) === 0) {
 				return new JSONResponse(data: ['error' => 'Note not found'], statusCode: 404);
 			}
 
@@ -460,10 +453,12 @@ class NotesController extends Controller {
 				);
 			}
 
+			$this->noteService->requireNoteOf(objectUuid: (string)$object->getUuid(), noteId: (int)$noteId);
+
 			// Read the record BEFORE the note goes, so its references can be
 			// forgotten by id: after the delete there is nothing left to look
 			// the entry up by.
-			$entry = $this->entries->entryForNote(commentId: (int)$noteId);
+			$entry = $this->services->timeline->entryForNote(commentId: (int)$noteId);
 
 			$this->noteService->deleteNote((int)$noteId);
 
@@ -476,7 +471,12 @@ class NotesController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+			$status = 400;
+			if ($e->getCode() === 404) {
+				$status = 404;
+			}
+
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status);
 		}
 	}//end destroy()
 
@@ -565,14 +565,14 @@ class NotesController extends Controller {
 			$value = $requested;
 		}
 
-		if ($this->visibility->isKnownValue(value: $value) === false) {
+		if ($this->services->visibility->isKnownValue(value: $value) === false) {
 			return new JSONResponse(
 				data: ['error' => 'Visibility must be either internal or public'],
 				statusCode: 400
 			);
 		}
 
-		if ($this->visibility->mayManage(object: $object) === false) {
+		if ($this->services->visibility->mayManage(object: $object) === false) {
 			return new JSONResponse(
 				data: ['error' => 'You do not have permission to set the visibility of this note'],
 				statusCode: 403

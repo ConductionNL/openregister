@@ -6,8 +6,8 @@ namespace Unit\Service\File;
 
 use DateTime;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Lock\ILock;
 use OCP\Files\Lock\ILockManager;
