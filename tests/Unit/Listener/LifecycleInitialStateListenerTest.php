@@ -35,6 +35,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Listener\LifecycleInitialStateListener
+ * @uses \OCA\OpenRegister\Listener\LifecycleCreate
+ * @uses \OCA\OpenRegister\Listener\LifecycleDeclaration
+ * @uses \OCA\OpenRegister\Listener\LifecycleEditReader
+ * @uses \OCA\OpenRegister\Listener\LifecycleInitialReference
  */
 class LifecycleInitialStateListenerTest extends TestCase {
 
@@ -59,7 +63,7 @@ class LifecycleInitialStateListenerTest extends TestCase {
 		$this->references = $this->createMock(ReferenceResolver::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->listener = new LifecycleInitialStateListener(
-			$this->schemaMapper,
+			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, new \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver(new \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext()), $this->logger),
 			$this->references,
 			$this->logger
 		);

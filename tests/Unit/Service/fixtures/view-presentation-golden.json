@@ -1,0 +1,429 @@
+{
+    "calendar empty end field": {
+        "result": {
+            "viewType": "calendar",
+            "dateField": "start",
+            "endDateField": null,
+            "rangeStart": "2026-03-01",
+            "rangeEnd": "2026-03-31",
+            "objects": [],
+            "total": 0
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "search": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "start": {
+                        "gte": "2026-03-01",
+                        "lte": "2026-03-31"
+                    }
+                }
+            }
+        ]
+    },
+    "calendar end field not string": {
+        "result": {
+            "viewType": "calendar",
+            "dateField": "start",
+            "endDateField": null,
+            "rangeStart": "2026-03-01",
+            "rangeEnd": "2026-03-31",
+            "objects": [
+                {
+                    "id": 9
+                }
+            ],
+            "total": 1
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": 4
+            },
+            {
+                "search": {
+                    "start": {
+                        "gte": "2026-03-01",
+                        "lte": "2026-03-31"
+                    }
+                }
+            }
+        ]
+    },
+    "calendar missing dateField": {
+        "result": {
+            "error": "Calendar view is missing calendar.dateField"
+        },
+        "log": []
+    },
+    "calendar missing schema": {
+        "result": {
+            "error": "Calendar view requires a register and schema in its query"
+        },
+        "log": []
+    },
+    "calendar no filters no sort": {
+        "result": {
+            "viewType": "calendar",
+            "dateField": "start",
+            "endDateField": "end",
+            "rangeStart": "2026-03-01",
+            "rangeEnd": "2026-03-31",
+            "objects": [
+                {
+                    "id": 1
+                }
+            ],
+            "total": 1
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": 4
+            },
+            {
+                "search": {
+                    "start": {
+                        "gte": "2026-03-01",
+                        "lte": "2026-03-31"
+                    }
+                }
+            },
+            {
+                "search": {
+                    "start": {
+                        "lte": "2026-03-31"
+                    },
+                    "end": {
+                        "gte": "2026-03-01"
+                    }
+                }
+            }
+        ]
+    },
+    "calendar no presentation": {
+        "result": {
+            "error": "View is not a calendar view (viewType is \"table\")"
+        },
+        "log": []
+    },
+    "calendar not a calendar": {
+        "result": {
+            "error": "View is not a calendar view (viewType is \"map\")"
+        },
+        "log": []
+    },
+    "calendar with spanning merge": {
+        "result": {
+            "viewType": "calendar",
+            "dateField": "start",
+            "endDateField": "end",
+            "rangeStart": "2026-03-01",
+            "rangeEnd": "2026-03-31",
+            "objects": [
+                "entity:u-1:2",
+                "entity::5",
+                "entity::",
+                "object:stdClass",
+                {
+                    "id": 7
+                },
+                {
+                    "uuid": "u-8",
+                    "id": 8
+                }
+            ],
+            "total": 6
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "search": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "start": {
+                        "gte": "2026-03-01",
+                        "lte": "2026-03-31"
+                    }
+                }
+            },
+            {
+                "search": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "start": {
+                        "lte": "2026-03-31"
+                    },
+                    "end": {
+                        "gte": "2026-03-01"
+                    }
+                }
+            }
+        ]
+    },
+    "calendar without end field": {
+        "result": {
+            "viewType": "calendar",
+            "dateField": "start",
+            "endDateField": null,
+            "rangeStart": "2026-03-01",
+            "rangeEnd": "2026-03-31",
+            "objects": [
+                {
+                    "id": 1,
+                    "t": "a"
+                },
+                {
+                    "uuid": "u-2"
+                },
+                {
+                    "t": "no id"
+                }
+            ],
+            "total": 3
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "search": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "start": {
+                        "gte": "2026-03-01",
+                        "lte": "2026-03-31"
+                    }
+                }
+            }
+        ]
+    },
+    "kanban facet buckets": {
+        "result": {
+            "viewType": "kanban",
+            "groupByField": "status",
+            "columns": [
+                {
+                    "value": "todo",
+                    "cards": [
+                        {
+                            "id": 1
+                        },
+                        {
+                            "id": 2
+                        }
+                    ],
+                    "total": 2,
+                    "limit": 5,
+                    "offset": 2
+                },
+                {
+                    "value": 0,
+                    "cards": [],
+                    "total": 0,
+                    "limit": 5,
+                    "offset": 2
+                }
+            ]
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "facets": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_facets": {
+                        "status": {
+                            "type": "terms"
+                        }
+                    }
+                }
+            },
+            {
+                "search": {
+                    "status": "todo",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_limit": 5,
+                    "_offset": 2
+                }
+            },
+            {
+                "search": {
+                    "status": 0,
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_limit": 5,
+                    "_offset": 2
+                }
+            }
+        ]
+    },
+    "kanban facet data buckets": {
+        "result": {
+            "viewType": "kanban",
+            "groupByField": "status",
+            "columns": [
+                {
+                    "value": "open",
+                    "cards": [
+                        {
+                            "id": 1
+                        }
+                    ],
+                    "total": 4,
+                    "limit": 5,
+                    "offset": 2
+                },
+                {
+                    "value": "closed",
+                    "cards": [],
+                    "total": 0,
+                    "limit": 5,
+                    "offset": 2
+                }
+            ]
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "facets": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_facets": {
+                        "status": {
+                            "type": "terms"
+                        }
+                    }
+                }
+            },
+            {
+                "search": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_limit": 5,
+                    "_offset": 2
+                }
+            },
+            {
+                "search": {
+                    "status": "closed",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_limit": 5,
+                    "_offset": 2
+                }
+            }
+        ]
+    },
+    "kanban facet none": {
+        "result": {
+            "viewType": "kanban",
+            "groupByField": "status",
+            "columns": []
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "facets": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_facets": {
+                        "status": {
+                            "type": "terms"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "kanban facet throws": {
+        "result": {
+            "viewType": "kanban",
+            "groupByField": "status",
+            "columns": []
+        },
+        "log": [
+            {
+                "setRegister": 3
+            },
+            {
+                "setSchema": "meetings"
+            },
+            {
+                "facets": {
+                    "status": "open",
+                    "_order": {
+                        "start": "asc"
+                    },
+                    "_facets": {
+                        "status": {
+                            "type": "terms"
+                        }
+                    }
+                }
+            },
+            {
+                "error": [
+                    "[ViewPresentationService] Failed to discover distinct kanban column values: facets down",
+                    {
+                        "groupByField": "status"
+                    }
+                ]
+            }
+        ]
+    }
+}

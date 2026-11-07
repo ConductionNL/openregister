@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -1145,31 +1146,31 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeNull(): void {
-		$this->assertSame('null', $this->invokePrivate('getValueType', [null]));
+		$this->assertSame('null', (new ValidationErrorMessages())->valueType(null));
 	}
 
 	public function testGetValueTypeBoolean(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [true]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(true));
 	}
 
 	public function testGetValueTypeInteger(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [42]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(42));
 	}
 
 	public function testGetValueTypeNumber(): void {
-		$this->assertSame('number', $this->invokePrivate('getValueType', [3.14]));
+		$this->assertSame('number', (new ValidationErrorMessages())->valueType(3.14));
 	}
 
 	public function testGetValueTypeString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['hello']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType('hello'));
 	}
 
 	public function testGetValueTypeArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [['a', 'b']]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType(['a', 'b']));
 	}
 
 	public function testGetValueTypeObject(): void {
-		$this->assertSame('object', $this->invokePrivate('getValueType', [new stdClass()]));
+		$this->assertSame('object', (new ValidationErrorMessages())->valueType(new stdClass()));
 	}
 
 	// =========================================================================
@@ -2300,19 +2301,19 @@ class ValidateObjectTest extends TestCase {
 	// -------------------------------------------------------------------------
 
 	public function testGetValueTypeForFalse(): void {
-		$this->assertSame('boolean', $this->invokePrivate('getValueType', [false]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(false));
 	}
 
 	public function testGetValueTypeForZero(): void {
-		$this->assertSame('integer', $this->invokePrivate('getValueType', [0]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(0));
 	}
 
 	public function testGetValueTypeForEmptyString(): void {
-		$this->assertSame('string', $this->invokePrivate('getValueType', ['']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType(''));
 	}
 
 	public function testGetValueTypeForEmptyArray(): void {
-		$this->assertSame('array', $this->invokePrivate('getValueType', [[]]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType([]));
 	}
 
 	// -------------------------------------------------------------------------
@@ -2852,7 +2853,7 @@ class ValidateObjectTest extends TestCase {
 	public function testGetValueTypeForResource(): void {
 		// Create a temporary resource to test the 'unknown' return path.
 		$resource = fopen('php://memory', 'r');
-		$result = $this->invokePrivate('getValueType', [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -3106,13 +3107,9 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForOpenResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
-		// getValueType has no is_resource() check, so resources fall through to 'unknown'.
+		// Resources fall through to 'unknown'.
 		$resource = fopen('php://memory', 'r');
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 		fclose($resource);
 
 		$this->assertSame('unknown', $result);
@@ -3123,15 +3120,11 @@ class ValidateObjectTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeReturnsUnknownForClosedResource(): void {
-		$ref = new ReflectionClass(ValidateObject::class);
-		$method = $ref->getMethod('getValueType');
-		$method->setAccessible(true);
-
 		$resource = fopen('php://memory', 'r');
 		fclose($resource);
 
 		// Closed resources have type 'resource (closed)' in PHP 8+
-		$result = $method->invokeArgs($this->handler, [$resource]);
+		$result = (new ValidationErrorMessages())->valueType($resource);
 
 		// Should return 'unknown' for closed resources.
 		$this->assertSame('unknown', $result);
