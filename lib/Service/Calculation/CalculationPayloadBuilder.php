@@ -87,42 +87,50 @@ class CalculationPayloadBuilder {
 	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
 	 */
 	public function build(ObjectEntity $object, Schema $schema): array {
-		$data = ($object->getObject() ?? []);
+		$data = (new CalculationPayload())->withSelf(data: ($object->getObject() ?? []), entity: $object);
+		$data = $this->withReferences(data: $data, object: $object, schema: $schema);
 
-		$created = $object->getCreated();
-		$updated = $object->getUpdated();
-		$createdFormatted = null;
-		if ($created !== null) {
-			$createdFormatted = $created->format(\DateTimeInterface::ATOM);
-		}
+		return $this->withAggregates(data: $data, object: $object, schema: $schema);
+	}//end build()
 
-		$updatedFormatted = null;
-		if ($updated !== null) {
-			$updatedFormatted = $updated->format(\DateTimeInterface::ATOM);
-		}
-
-		$data['@self'] = [
-			'id' => $object->getUuid(),
-			'uuid' => $object->getUuid(),
-			'register' => $object->getRegister(),
-			'schema' => $object->getSchema(),
-			'owner' => $object->getOwner(),
-			'created' => $createdFormatted,
-			'updated' => $updatedFormatted,
-		];
-
+	/**
+	 * Add the pre-resolved declared cross-object references (`@ref`) and the
+	 * names of those that could not be resolved.
+	 *
+	 * @param array<string, mixed> $data The payload with `@self`.
+	 * @param ObjectEntity $object The object whose data is enriched.
+	 * @param Schema $schema The object's schema.
+	 *
+	 * @return array<string, mixed> The payload, unchanged when the schema declares no references.
+	 */
+	private function withReferences(array $data, ObjectEntity $object, Schema $schema): array {
 		$references = $this->configBlock(schema: $schema, key: 'x-openregister-references');
-		if ($references !== null) {
-			$outcome = $this->references->resolveAllWithOutcome(
-				payload: $data,
-				references: $references,
-				register: $object->getRegister(),
-				organisation: $object->getOrganisation()
-			);
-			$data['@ref'] = $outcome['refs'];
-			$data[self::UNRESOLVED_KEY] = $outcome['unresolved'];
+		if ($references === null) {
+			return $data;
 		}
 
+		$outcome = $this->references->resolveAllWithOutcome(
+			payload: $data,
+			references: $references,
+			register: $object->getRegister(),
+			organisation: $object->getOrganisation()
+		);
+		$data['@ref'] = $outcome['refs'];
+		$data[self::UNRESOLVED_KEY] = $outcome['unresolved'];
+
+		return $data;
+	}//end withReferences()
+
+	/**
+	 * Add the pre-resolved aggregate references (`@aggregate`).
+	 *
+	 * @param array<string, mixed> $data The payload with `@self` and `@ref`.
+	 * @param ObjectEntity $object The object whose data is enriched.
+	 * @param Schema $schema The object's schema.
+	 *
+	 * @return array<string, mixed> The payload, unchanged when the schema declares no aggregates.
+	 */
+	private function withAggregates(array $data, ObjectEntity $object, Schema $schema): array {
 		$aggregateRefs = $this->configBlock(schema: $schema, key: 'x-openregister-aggregate-refs');
 		if ($aggregateRefs !== null) {
 			$data['@aggregate'] = $this->aggregates->resolveAll(
@@ -133,7 +141,7 @@ class CalculationPayloadBuilder {
 		}
 
 		return $data;
-	}//end build()
+	}//end withAggregates()
 
 	/**
 	 * Strip the synthetic evaluation-only keys from a payload.
@@ -185,16 +193,7 @@ class CalculationPayloadBuilder {
 	 */
 	private function referenceNamesIn(mixed $expression): array {
 		if (is_string($expression) === true) {
-			if (str_starts_with($expression, '@ref.') === false) {
-				return [];
-			}
-
-			$name = explode('.', $expression)[1];
-			if ($name === '') {
-				return [];
-			}
-
-			return [$name];
+			return $this->referenceNameOf(token: $expression);
 		}
 
 		if (is_array($expression) === false) {
@@ -208,6 +207,26 @@ class CalculationPayloadBuilder {
 
 		return $names;
 	}//end referenceNamesIn()
+
+	/**
+	 * The reference a `@ref.<name>` string token reads, if it is one.
+	 *
+	 * @param string $token A string leaf of the expression.
+	 *
+	 * @return list<string> The reference name, or empty.
+	 */
+	private function referenceNameOf(string $token): array {
+		if (str_starts_with($token, '@ref.') === false) {
+			return [];
+		}
+
+		$name = explode('.', $token)[1];
+		if ($name === '') {
+			return [];
+		}
+
+		return [$name];
+	}//end referenceNameOf()
 
 	/**
 	 * Read a non-empty array block off the schema configuration.
