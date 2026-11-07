@@ -13,6 +13,7 @@ use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TalkLinkService;
+use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -282,7 +283,7 @@ class RelationsControllerTest extends TestCase {
 			->method('getLinkedRooms')
 			->with('abc-123')
 			->willReturn([['token' => 'room-1', 'name' => 'Case room']]);
-		$this->registerService(TalkLinkService::class, fn () => $talk);
+		$this->registerService(TalkLinkServiceInterface::class, fn () => $talk);
 
 		$response = $this->controller->index('1', '2', 'abc-123');
 		$data = $response->getData();
@@ -302,7 +303,7 @@ class RelationsControllerTest extends TestCase {
 		$talk = $this->createMock(TalkLinkService::class);
 		$talk->method('isTalkAvailable')->willReturn(false);
 		$talk->expects($this->never())->method('getLinkedRooms');
-		$this->registerService(TalkLinkService::class, fn () => $talk);
+		$this->registerService(TalkLinkServiceInterface::class, fn () => $talk);
 
 		$data = $this->controller->index('1', '2', 'abc-123')->getData();
 

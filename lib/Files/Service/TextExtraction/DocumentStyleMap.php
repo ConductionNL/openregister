@@ -152,21 +152,46 @@ class DocumentStyleMap {
 		}
 
 		foreach ($this->styleChain(styleId: $styleId) as $style) {
-			if ($style['name'] === 'title') {
-				return ['kind' => 'title', 'level' => 1, 'numId' => '', 'ordered' => false];
-			}
-
-			if (preg_match('/^heading\s*([1-9])$/', $style['name'], $match) === 1) {
-				return ['kind' => 'heading', 'level' => (int)$match[1], 'numId' => '', 'ordered' => false];
-			}
-
-			if ($style['outline'] !== null) {
-				return $this->headingFromOutline(outline: $style['outline']);
+			if ($this->decidesHeading(style: $style) === true) {
+				return $this->headingFromStyle(style: $style);
 			}
 		}
 
 		return null;
 	}//end styleHeading()
+
+	/**
+	 * Whether a style in the chain settles the question: it is named title or
+	 * heading N, or it carries an outline level (9, body text, included).
+	 *
+	 * @param StyleEntry $style The style.
+	 *
+	 * @return bool
+	 */
+	private function decidesHeading(array $style): bool {
+		return $style['name'] === 'title'
+			|| preg_match('/^heading\s*([1-9])$/', $style['name']) === 1
+			|| $style['outline'] !== null;
+	}//end decidesHeading()
+
+	/**
+	 * The title or heading a deciding style gives, or null for an outline level of body text.
+	 *
+	 * @param StyleEntry $style A style for which decidesHeading() holds.
+	 *
+	 * @return ParagraphKind|null
+	 */
+	private function headingFromStyle(array $style): ?array {
+		if ($style['name'] === 'title') {
+			return ['kind' => 'title', 'level' => 1, 'numId' => '', 'ordered' => false];
+		}
+
+		if (preg_match('/^heading\s*([1-9])$/', $style['name'], $match) === 1) {
+			return ['kind' => 'heading', 'level' => (int)$match[1], 'numId' => '', 'ordered' => false];
+		}
+
+		return $this->headingFromOutline(outline: (int)$style['outline']);
+	}//end headingFromStyle()
 
 	/**
 	 * The heading a style id implies when the styles part does not define it (a hand-made package).
