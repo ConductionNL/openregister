@@ -84,6 +84,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -94,6 +96,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
@@ -106,12 +110,20 @@ use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
@@ -231,6 +243,7 @@ final class ContractBindings {
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
+		LoopNodeInterface::class => LoopNode::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		RouterNodeInterface::class => RouterNode::class,
@@ -257,6 +270,7 @@ final class ContractBindings {
 		DeckLinkServiceInterface::class => DeckLinkService::class,
 		DemoDataServiceInterface::class => DemoDataService::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
+		EndNodeInterface::class => EndNode::class,
 		EndpointServiceInterface::class => EndpointService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
@@ -346,6 +360,9 @@ final class ContractBindings {
 		SchemaShareableConfigScannerInterface::class => SchemaShareableConfigScanner::class,
 		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
+		SendEmailNodeInterface::class => SendEmailNode::class,
+		SendNotificationNodeInterface::class => SendNotificationNode::class,
+		SendTalkMessageNodeInterface::class => SendTalkMessageNode::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
@@ -364,6 +381,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class => TranslationStatusService::class,
+		TriggerManualNodeInterface::class => TriggerManualNode::class,
 		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
 		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,

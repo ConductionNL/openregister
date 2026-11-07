@@ -40,7 +40,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class EndNode implements IFlowNode, IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class EndNode implements IFlowNode, EndNodeInterface, IFlowNodeConfigKeys, IFlowEndNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *

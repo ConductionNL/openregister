@@ -33,26 +33,26 @@ use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
+use OCA\OpenRegister\Service\Flow\Nodes\EndNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
-use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
-use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
-use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
@@ -79,11 +79,11 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param WaitNodeInterface $wait The built-in "Wait" node.
 	 * @param AwaitSignalNodeInterface $awaitSignal The built-in "Wait for an answer" node.
 	 * @param SwitchNode $switch The built-in "Switch" node.
-	 * @param EndNode $end The built-in "End" node.
+	 * @param EndNodeInterface $end The built-in "End" node.
 	 * @param MergeNodeInterface $merge The built-in "Merge" node.
 	 * @param LockObjectNode $lockObject The built-in "Lock an object" node.
 	 * @param UnlockObjectNode $unlockObject The built-in "Unlock an object" node.
-	 * @param LoopNode $loop The built-in "Loop over items" node.
+	 * @param LoopNodeInterface $loop The built-in "Loop over items" node.
 	 * @param SubFlowNodeInterface $subFlow The built-in "Run a flow" node.
 	 * @param RouterNodeInterface $router The built-in "Route items" node.
 	 * @param ObjectWriteNodeInterface $objectWrite The built-in "Write an object" node.
@@ -91,12 +91,12 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param FlowStateNodeInterface $flowState The built-in "Flow state" node.
 	 * @param MapNodeInterface $map The built-in "Map" node.
 	 * @param IterateNodeInterface $iterate The built-in "Repeat until done" node.
-	 * @param SendNotificationNode $sendNotification The built-in "Send a notification" node.
-	 * @param SendEmailNode $sendEmail The built-in "Send an email" node.
-	 * @param SendTalkMessageNode $sendTalkMessage The built-in "Send a Talk message" node.
+	 * @param SendNotificationNodeInterface $sendNotification The built-in "Send a notification" node.
+	 * @param SendEmailNodeInterface $sendEmail The built-in "Send an email" node.
+	 * @param SendTalkMessageNodeInterface $sendTalkMessage The built-in "Send a Talk message" node.
 	 * @param TriggerObjectNodeInterface $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNodeInterface $triggerSchedule The "On a schedule" entry point.
-	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
+	 * @param TriggerManualNodeInterface $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNodeInterface $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNodeInterface $portalTask The built-in "Ask a party outside the organisation" node.
 	 * @param DecisionTableNodeInterface $decisionTable The built-in "Evaluate a decision table" node.
@@ -113,11 +113,11 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly WaitNodeInterface $wait,
 		private readonly AwaitSignalNodeInterface $awaitSignal,
 		private readonly SwitchNode $switch,
-		private readonly EndNode $end,
+		private readonly EndNodeInterface $end,
 		private readonly MergeNodeInterface $merge,
 		private readonly LockObjectNode $lockObject,
 		private readonly UnlockObjectNode $unlockObject,
-		private readonly LoopNode $loop,
+		private readonly LoopNodeInterface $loop,
 		private readonly SubFlowNodeInterface $subFlow,
 		private readonly RouterNodeInterface $router,
 		private readonly ObjectWriteNodeInterface $objectWrite,
@@ -125,12 +125,12 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly FlowStateNodeInterface $flowState,
 		private readonly MapNodeInterface $map,
 		private readonly IterateNodeInterface $iterate,
-		private readonly SendNotificationNode $sendNotification,
-		private readonly SendEmailNode $sendEmail,
-		private readonly SendTalkMessageNode $sendTalkMessage,
+		private readonly SendNotificationNodeInterface $sendNotification,
+		private readonly SendEmailNodeInterface $sendEmail,
+		private readonly SendTalkMessageNodeInterface $sendTalkMessage,
 		private readonly TriggerObjectNodeInterface $triggerObject,
 		private readonly TriggerScheduleNodeInterface $triggerSchedule,
-		private readonly TriggerManualNode $triggerManual,
+		private readonly TriggerManualNodeInterface $triggerManual,
 		private readonly UserTaskNodeInterface $userTask,
 		private readonly PortalTaskNodeInterface $portalTask,
 		private readonly DecisionTableNodeInterface $decisionTable,
