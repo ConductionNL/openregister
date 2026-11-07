@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use DateTime;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
+use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\Sync\SyncScheduleService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -52,19 +52,19 @@ class SyncDataJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for scheduling
-	 * @param SourceMapper $sourceMapper Source persistence
-	 * @param SyncScheduleService $scheduleService Due-source selection
-	 * @param SourceFetcherRegistry $fetcherRegistry Resolves transport per source type
-	 * @param HarvestPipelineService $pipeline Pipeline orchestrator
-	 * @param LoggerInterface $logger Logger
+	 * @param ITimeFactory                    $time            Time factory for scheduling
+	 * @param SourceMapper                    $sourceMapper    Source persistence
+	 * @param SyncScheduleService             $scheduleService Due-source selection
+	 * @param SourceFetcherRegistry           $fetcherRegistry Resolves transport per source type
+	 * @param HarvestPipelineServiceInterface $pipeline        Pipeline orchestrator
+	 * @param LoggerInterface                 $logger          Logger
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly SourceMapper $sourceMapper,
 		private readonly SyncScheduleService $scheduleService,
 		private readonly SourceFetcherRegistry $fetcherRegistry,
-		private readonly HarvestPipelineService $pipeline,
+		private readonly HarvestPipelineServiceInterface $pipeline,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
