@@ -85,54 +85,116 @@ class RegistryUpdatesController extends Controller {
 	public function update(string $registry): JSONResponse {
 		try {
 			$data = $this->request->getParams();
-			$identity = (string)($data['identity'] ?? '');
-			$properties = $data['properties'] ?? [];
-			$eventReference = (string)($data['eventReference'] ?? '');
-
-			if ($identity === '') {
-				throw new InvalidArgumentException(message: 'identity is required.');
-			}
-			if (is_array($properties) === false) {
-				throw new InvalidArgumentException(message: 'properties must be an object.');
-			}
-
 			$result = $this->subscriptions->applyInboundUpdate(
 				registry: $registry,
-				identityValue: $identity,
-				properties: $properties,
-				eventReference: $eventReference,
+				identityValue: $this->requiredIdentity(data: $data),
+				properties: $this->requiredProperties(data: $data),
+				eventReference: (string)($data['eventReference'] ?? ''),
 			);
+			$this->assertNotAllRejected(result: $result);
 
-			if (count($result['applied']) === 0 && count($result['rejected']) > 0) {
-				$rejectedProperties = [];
-				foreach ($result['rejected'] as $rejection) {
-					$rejectedProperties = array_merge($rejectedProperties, $rejection['properties']);
-				}
-
-				throw new ValidationException(
-					message: 'Property not owned by the registry: ' . implode(', ', array_unique($rejectedProperties))
-				);
-			}
-
-			if ($result['matched'] === 0) {
-				$this->logger?->warning(
-					'[OpenRegister.RegistryUpdatesController] No subscription found for registry ' . $registry
-				);
-
-				return new JSONResponse(
-					data: ['message' => 'No object is subscribed to this registry/identity.'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$this->logger?->info(
-				'[OpenRegister.RegistryUpdatesController] Applied inbound update for registry ' . $registry
-				. ' to ' . count($result['applied']) . ' object(s).'
-			);
-
-			return new JSONResponse(data: $result);
+			return $this->respondToResult(registry: $registry, result: $result);
 		} catch (Throwable $e) {
 			return $this->handleApiException(e: $e, context: 'registry-inbound-update');
 		}
 	}//end update()
+
+	/**
+	 * The pushed identity value, which must not be empty.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return string The identity value.
+	 *
+	 * @throws InvalidArgumentException When the identity is missing.
+	 */
+	private function requiredIdentity(array $data): string {
+		$identity = (string)($data['identity'] ?? '');
+		if ($identity === '') {
+			throw new InvalidArgumentException(message: 'identity is required.');
+		}
+
+		return $identity;
+	}//end requiredIdentity()
+
+	/**
+	 * The pushed properties, which must be an object.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return array<string, mixed> The properties.
+	 *
+	 * @throws InvalidArgumentException When the properties are not an object.
+	 */
+	private function requiredProperties(array $data): array {
+		$properties = $data['properties'] ?? [];
+		if (is_array($properties) === false) {
+			throw new InvalidArgumentException(message: 'properties must be an object.');
+		}
+
+		return $properties;
+	}//end requiredProperties()
+
+	/**
+	 * Refuse an update of which every matched object rejected every property.
+	 *
+	 * @param array<string, mixed> $result The service result.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When nothing was applied and something was rejected.
+	 */
+	private function assertNotAllRejected(array $result): void {
+		if (count($result['applied']) > 0 || count($result['rejected']) === 0) {
+			return;
+		}
+
+		$rejectedProperties = [];
+		foreach ($result['rejected'] as $rejection) {
+			$rejectedProperties = array_merge($rejectedProperties, $rejection['properties']);
+		}
+
+		throw new ValidationException(
+			message: 'Property not owned by the registry: ' . implode(', ', array_unique($rejectedProperties))
+		);
+	}//end assertNotAllRejected()
+
+	/**
+	 * The 404 for an unsubscribed identity, or the result itself.
+	 *
+	 * @param string $registry The registry id.
+	 * @param array<string, mixed> $result The service result.
+	 *
+	 * @return JSONResponse The response.
+	 */
+	private function respondToResult(string $registry, array $result): JSONResponse {
+		if ($result['matched'] === 0) {
+			return $this->notSubscribed(registry: $registry);
+		}
+
+		$this->logger?->info(
+			'[OpenRegister.RegistryUpdatesController] Applied inbound update for registry ' . $registry
+			. ' to ' . count($result['applied']) . ' object(s).'
+		);
+
+		return new JSONResponse(data: $result);
+	}//end respondToResult()
+
+	/**
+	 * The 404 for an identity no object is subscribed to.
+	 *
+	 * @param string $registry The registry id.
+	 *
+	 * @return JSONResponse The 404 response.
+	 */
+	private function notSubscribed(string $registry): JSONResponse {
+		$this->logger?->warning(
+			'[OpenRegister.RegistryUpdatesController] No subscription found for registry ' . $registry
+		);
+
+		return new JSONResponse(
+			data: ['message' => 'No object is subscribed to this registry/identity.'],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end notSubscribed()
 }//end class
