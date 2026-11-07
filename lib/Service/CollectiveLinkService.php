@@ -78,7 +78,7 @@ use Throwable;
  *     unlink, list, picker, cache refresh, graceful degradation).
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class CollectiveLinkService {
+class CollectiveLinkService implements CollectiveLinkServiceInterface {
 	private const REQUIRED_APP = 'collectives';
 
 	private const COLLECTIVE_SERVICE = 'OCA\\Collectives\\Service\\CollectiveService';

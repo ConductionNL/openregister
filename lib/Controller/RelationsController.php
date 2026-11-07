@@ -104,7 +104,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedBookmarks',
 		],
 		'collectives' => [
-			'class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CollectiveLinkServiceInterface::class,
 			'available' => 'isCollectivesAvailable',
 			'method' => 'getLinkedPages',
 		],
