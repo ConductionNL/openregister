@@ -184,19 +184,7 @@ class ChatCompatMiddleware extends Middleware {
 	 * @return string|null The rewritten `/apps/hermiq/...` path, or null when any guard fails.
 	 */
 	private function resolveHermiqPath($controller, $methodName): ?string {
-		if ($this->isChatFamilyController(controller: $controller) === false) {
-			return null;
-		}
-
-		if (in_array($methodName, self::PAGE_SHELL_METHODS, true) === true) {
-			return null;
-		}
-
-		if ($this->proxyHandler->isProxyConfigured() === false) {
-			return null;
-		}
-
-		if ($this->proxyHandler->isHermiqInstalled() === false) {
+		if ($this->isProxyEligible(controller: $controller, methodName: $methodName) === false) {
 			return null;
 		}
 
@@ -207,6 +195,22 @@ class ChatCompatMiddleware extends Middleware {
 
 		return $this->proxyHandler->rewritePathForHermiq(orPathInfo: $pathInfo);
 	}//end resolveHermiqPath()
+
+	/**
+	 * Whether a chat-family call that is not a page shell may be proxied:
+	 * the proxy is configured and hermiq is installed.
+	 *
+	 * @param mixed $controller The controller instance.
+	 * @param string $methodName The method name being called.
+	 *
+	 * @return bool True when every guard passes.
+	 */
+	private function isProxyEligible($controller, $methodName): bool {
+		return $this->isChatFamilyController(controller: $controller) === true
+			&& in_array($methodName, self::PAGE_SHELL_METHODS, true) === false
+			&& $this->proxyHandler->isProxyConfigured() === true
+			&& $this->proxyHandler->isHermiqInstalled() === true;
+	}//end isProxyEligible()
 
 	/**
 	 * Perform the actual proxy call — a reachability-gated redirect for the
