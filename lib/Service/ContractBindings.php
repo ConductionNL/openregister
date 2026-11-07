@@ -70,6 +70,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
@@ -132,6 +134,7 @@ final class ContractBindings {
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
+		DecisionTableNodeInterface::class => DecisionTableNode::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
@@ -166,9 +169,11 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface::class => \OCA\OpenRegister\Service\Object\ObjectSlugBackfillService::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
+		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class,
+		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
@@ -176,6 +181,7 @@ final class ContractBindings {
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,

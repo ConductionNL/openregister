@@ -33,6 +33,8 @@ use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -65,6 +67,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, ContractBindings::BINDINGS, 'Service'],
+		QueryHandler::class => [QueryHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::BINDINGS, 'Service'],
 		TranslationHandler::class => [TranslationHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
