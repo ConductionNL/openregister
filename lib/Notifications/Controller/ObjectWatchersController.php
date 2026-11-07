@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -60,18 +60,18 @@ class ObjectWatchersController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
+	 * @param string                    $appName       App name.
+	 * @param IRequest                  $request       Request.
 	 * @param ObjectOperationsInterface $objectService Resolves an object through the RBAC boundary.
-	 * @param WatcherService $watchers The subscription primitive.
-	 * @param IUserManager $userManager Verifies a named uid before it is subscribed.
-	 * @param LoggerInterface $logger Logger.
+	 * @param WatcherServiceInterface   $watchers      The subscription primitive.
+	 * @param IUserManager              $userManager   Verifies a named uid before it is subscribed.
+	 * @param LoggerInterface           $logger        Logger.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly WatcherService $watchers,
+		private readonly WatcherServiceInterface $watchers,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {

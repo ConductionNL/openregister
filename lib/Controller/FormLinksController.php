@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
-use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -57,9 +57,9 @@ class FormLinksController extends Controller {
 	/**
 	 * Form-link service.
 	 *
-	 * @var FormLinkService
+	 * @var FormLinkServiceInterface
 	 */
-	private readonly FormLinkService $formLinkService;
+	private readonly FormLinkServiceInterface $formLinkService;
 
 	/**
 	 * Object service — used to resolve register/schema/id into an
@@ -88,7 +88,7 @@ class FormLinksController extends Controller {
 	 *
 	 * @param string $appName App name.
 	 * @param IRequest $request HTTP request.
-	 * @param FormLinkService $formLinkService Form-link service.
+	 * @param FormLinkServiceInterface $formLinkService Form-link service.
 	 * @param ObjectOperationsInterface $objectService Object service.
 	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger.
@@ -98,7 +98,7 @@ class FormLinksController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		FormLinkService $formLinkService,
+		FormLinkServiceInterface $formLinkService,
 		ObjectOperationsInterface $objectService,
 		IL10N $l10n,
 		LoggerInterface $logger,

@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class RelationGraphService {
+class RelationGraphService implements RelationGraphServiceInterface {
 	/**
 	 * The app whose settings hold the administered maximum.
 	 *

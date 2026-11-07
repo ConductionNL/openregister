@@ -21,6 +21,7 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -84,7 +85,7 @@ class NotificationRecipientResolverWatchersTest extends TestCase {
 		$container = $this->createMock(originalClassName: IServerContainer::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === WatcherService::class) {
+				if ($id === WatcherServiceInterface::class) {
 					return $this->watchers;
 				}
 

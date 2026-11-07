@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\WebhookService;
@@ -320,7 +321,7 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		// The REAL RenderObject — the whole point of this test. Mocking it here is what
 		// let #460 hide behind a green suite.
 		$renderObject = $this->realRenderObject();
-		$this->registerService(RenderObject::class, fn () => $renderObject);
+		$this->registerService(RenderObjectInterface::class, fn () => $renderObject);
 
 		$controller = ObjectsControllerFactory::create(
 			'openregister',

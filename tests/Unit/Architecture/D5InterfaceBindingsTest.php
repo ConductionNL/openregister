@@ -66,6 +66,14 @@ final class D5InterfaceBindingsTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\TranslationProjectionService' => [
+			'OCA\OpenRegister\Service\TranslationProjectionServiceInterface',
+			ContractBindings::class,
+		],
+		'OCA\OpenRegister\Service\TranslationStatusService' => [
+			'OCA\OpenRegister\Service\TranslationStatusServiceInterface',
+			ContractBindings::class,
+		],
 		'OCA\OpenRegister\Service\XwikiLinkService' => ['OCA\OpenRegister\Service\XwikiLinkServiceInterface', ContractBindings::class],
 	];
 

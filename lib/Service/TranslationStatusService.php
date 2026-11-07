@@ -29,20 +29,20 @@ namespace OCA\OpenRegister\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
 
-class TranslationStatusService {
+class TranslationStatusService implements TranslationStatusServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationMapper $translationMapper The translation mapper.
+	 * @param TranslationMapperInterface $translationMapper The translation mapper.
 	 * @param TranslationHandler $translationHandler The translation handler.
 	 * @param IUserSession $userSession The user session.
 	 */
 	public function __construct(
-		private readonly TranslationMapper $translationMapper,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly TranslationHandler $translationHandler,
 		private readonly IUserSession $userSession,
 	) {
