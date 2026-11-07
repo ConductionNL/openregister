@@ -52,7 +52,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
-class FormLinkService {
+class FormLinkService implements FormLinkServiceInterface {
 
 	/**
 	 * NC Forms app id.

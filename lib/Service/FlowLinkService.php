@@ -69,7 +69,7 @@ use Throwable;
  *     logger. Each dependency is required for one of the Tier-2 flows
  *     (link, unlink, list, picker, admin gating, graceful degradation).
  */
-class FlowLinkService {
+class FlowLinkService implements FlowLinkServiceInterface {
 	private const REQUIRED_APP = 'workflowengine';
 
 	/**
