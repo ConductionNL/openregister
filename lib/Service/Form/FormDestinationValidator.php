@@ -54,7 +54,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
  */
-class FormDestinationValidator {
+class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 	public const REQUIRED_UNMAPPED = 'required-unmapped';
 	public const PROPERTY_UNKNOWN = 'property-unknown';
