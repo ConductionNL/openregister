@@ -1,0 +1,369 @@
+{
+    "find no user": {
+        "result": null,
+        "observed": []
+    },
+    "find user folder throws": {
+        "result": null,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not resolve user folder: no home"
+            ]
+        ]
+    },
+    "find non-numeric id": {
+        "result": null,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ]
+        ]
+    },
+    "find getById throws": {
+        "result": null,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "getById",
+                7
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not read file: lookup down"
+            ]
+        ]
+    },
+    "find folder then file": {
+        "result": [
+            "3",
+            "8",
+            "80",
+            {
+                "id": "3",
+                "name": "odd.txt",
+                "path": "/alice/files/odd.txt",
+                "mimetype": "text/plain",
+                "size": 30,
+                "mtime": 1700000003
+            }
+        ],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "getById",
+                3
+            ]
+        ]
+    },
+    "find only folders": {
+        "result": null,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "getById",
+                3
+            ]
+        ]
+    },
+    "find nothing": {
+        "result": null,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "getById",
+                3
+            ]
+        ]
+    },
+    "findAll no user": {
+        "result": [],
+        "observed": []
+    },
+    "findAll user folder throws": {
+        "result": [],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not resolve user folder: no home"
+            ]
+        ]
+    },
+    "findAll tree": {
+        "result": [
+            [
+                "1",
+                "8",
+                "80",
+                {
+                    "id": "1",
+                    "name": "a.txt",
+                    "path": "/a.txt",
+                    "mimetype": "text/plain",
+                    "size": 10,
+                    "mtime": 1700000001
+                }
+            ],
+            [
+                "4",
+                "8",
+                "80",
+                {
+                    "id": "4",
+                    "name": "c.txt",
+                    "path": "/c.txt",
+                    "mimetype": "text/plain",
+                    "size": 40,
+                    "mtime": 1700000004
+                }
+            ],
+            [
+                "2",
+                "8",
+                "80",
+                {
+                    "id": "2",
+                    "name": "b.txt",
+                    "path": "/b.txt",
+                    "mimetype": "text/plain",
+                    "size": 20,
+                    "mtime": 1700000002
+                }
+            ],
+            [
+                "3",
+                "8",
+                "80",
+                {
+                    "id": "3",
+                    "name": "odd.txt",
+                    "path": "/alice/files/odd.txt",
+                    "mimetype": "text/plain",
+                    "size": 30,
+                    "mtime": 1700000003
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "list",
+                "home"
+            ],
+            [
+                "list",
+                "empty"
+            ],
+            [
+                "list",
+                "broken"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not list folder: no listing"
+            ],
+            [
+                "list",
+                "docs"
+            ],
+            [
+                "list",
+                "deep"
+            ]
+        ]
+    },
+    "findAll paged": {
+        "result": [
+            [
+                "4",
+                "8",
+                "80",
+                {
+                    "id": "4",
+                    "name": "c.txt",
+                    "path": "/c.txt",
+                    "mimetype": "text/plain",
+                    "size": 40,
+                    "mtime": 1700000004
+                }
+            ],
+            [
+                "2",
+                "8",
+                "80",
+                {
+                    "id": "2",
+                    "name": "b.txt",
+                    "path": "/b.txt",
+                    "mimetype": "text/plain",
+                    "size": 20,
+                    "mtime": 1700000002
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "list",
+                "home"
+            ],
+            [
+                "list",
+                "empty"
+            ],
+            [
+                "list",
+                "broken"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not list folder: no listing"
+            ],
+            [
+                "list",
+                "docs"
+            ],
+            [
+                "list",
+                "deep"
+            ]
+        ]
+    },
+    "findAll cap reached": {
+        "result": [
+            [
+                "5",
+                "8",
+                "80",
+                {
+                    "id": "5",
+                    "name": "top.txt",
+                    "path": "/top.txt",
+                    "mimetype": "text/plain",
+                    "size": 50,
+                    "mtime": 1700000005
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "list",
+                "home"
+            ]
+        ]
+    },
+    "findAll cap not reached": {
+        "result": [
+            [
+                "5",
+                "8",
+                "80",
+                {
+                    "id": "5",
+                    "name": "top.txt",
+                    "path": "/top.txt",
+                    "mimetype": "text/plain",
+                    "size": 50,
+                    "mtime": 1700000005
+                }
+            ],
+            [
+                "9",
+                "8",
+                "80",
+                {
+                    "id": "9",
+                    "name": "late.txt",
+                    "path": "/late.txt",
+                    "mimetype": "text/plain",
+                    "size": 90,
+                    "mtime": 1700000009
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "list",
+                "home"
+            ],
+            [
+                "list",
+                "late"
+            ]
+        ]
+    },
+    "count": {
+        "result": 3,
+        "observed": [
+            [
+                "getUserFolder",
+                "alice"
+            ],
+            [
+                "list",
+                "home"
+            ],
+            [
+                "list",
+                "empty"
+            ],
+            [
+                "list",
+                "broken"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:files-source] could not list folder: no listing"
+            ],
+            [
+                "list",
+                "docs"
+            ],
+            [
+                "list",
+                "deep"
+            ]
+        ]
+    }
+}
