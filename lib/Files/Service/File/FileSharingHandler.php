@@ -58,14 +58,14 @@ class FileSharingHandler {
 	 * @param IUserManager $userManager User manager for user operations.
 	 * @param ShareUrlBuilder $shareUrls Builds share links for the host the visitor used.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param FileOwnershipHandler $fileOwnershipHandler Ownership handler for user operations.
+	 * @param FileOwnershipHandlerInterface $fileOwnershipHandler Ownership handler for user operations.
 	 */
 	public function __construct(
 		private readonly IManager $shareManager,
 		private readonly IUserManager $userManager,
 		private readonly ShareUrlBuilder $shareUrls,
 		private readonly LoggerInterface $logger,
-		private readonly FileOwnershipHandler $fileOwnershipHandler,
+		private readonly FileOwnershipHandlerInterface $fileOwnershipHandler,
 	) {
 	}//end __construct()
 
