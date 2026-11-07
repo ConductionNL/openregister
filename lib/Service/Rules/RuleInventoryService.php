@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use DateTime;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Flow\FlowPublishedGraph;
@@ -68,8 +68,8 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapper $triggers The derived flow trigger index.
-	 * @param RuleRunSummaryMapper $summaries Last run and last error per rule.
+	 * @param FlowTriggerMapperInterface $triggers The derived flow trigger index.
+	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
 	 * @param PropertyCalculations $propertyCalculations Lifts a property's own calculation into the one map.
 	 * @param RuleVocabulary $vocabulary The published kinds, verdicts and actions.
 	 * @param FlowPublishedGraph|null $published Reads a flow's published graph, where its trigger node's scope lives.
@@ -77,8 +77,8 @@ final class RuleInventoryService implements RuleInventoryServiceInterface {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly FlowTriggerMapper $triggers,
-		private readonly RuleRunSummaryMapper $summaries,
+		private readonly FlowTriggerMapperInterface $triggers,
+		private readonly RuleRunSummaryMapperInterface $summaries,
 		private readonly PropertyCalculations $propertyCalculations,
 		private readonly RuleVocabulary $vocabulary,
 		private readonly ?FlowPublishedGraph $published = null,

@@ -32,8 +32,8 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
-use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
-use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -49,12 +49,12 @@ class CaseItemTimerListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param CasePlanItemTimers $timers What a deadline means for an item.
-	 * @param CasePlanService $plans The one transition path.
+	 * @param CasePlanItemTimersInterface $timers What a deadline means for an item.
+	 * @param CasePlanServiceInterface $plans The one transition path.
 	 */
 	public function __construct(
-		private readonly CasePlanItemTimers $timers,
-		private readonly CasePlanService $plans,
+		private readonly CasePlanItemTimersInterface $timers,
+		private readonly CasePlanServiceInterface $plans,
 	) {
 
 	}//end __construct()

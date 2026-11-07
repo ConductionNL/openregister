@@ -56,6 +56,18 @@ use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
 use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
+use OCA\OpenRegister\Service\Case\CasePlanService;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
@@ -276,6 +288,11 @@ final class ContractBindings {
 		BulkTranslationServiceInterface::class => BulkTranslationService::class,
 		CalculationTrialServiceInterface::class => CalculationTrialService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,
+		CaseAdvanceNodeInterface::class => CaseAdvanceNode::class,
+		CaseOpenNodeInterface::class => CaseOpenNode::class,
+		CasePlanItemTimersInterface::class => CasePlanItemTimers::class,
+		CasePlanServiceInterface::class => CasePlanService::class,
+		CasePlanTimerRearmInterface::class => CasePlanTimerRearm::class,
 		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
@@ -417,6 +434,7 @@ final class ContractBindings {
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
 		XwikiLinkServiceInterface::class => XwikiLinkService::class,
+		ZaaktypeCaseSkeletonMapperInterface::class => ZaaktypeCaseSkeletonMapper::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,

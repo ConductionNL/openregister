@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use DateTime;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -93,7 +93,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 * Constructor.
 	 *
 	 * @param RuleRunMapper $runs The detail log.
-	 * @param RuleRunSummaryMapper $summaries Last run and last error per rule.
+	 * @param RuleRunSummaryMapperInterface $summaries Last run and last error per rule.
 	 * @param IUserSession $userSession Names the actor whose write was evaluated.
 	 * @param IAppConfig $config Reads whether the detail log is on.
 	 * @param LoggerInterface $logger Reports a log write that failed.
@@ -102,7 +102,7 @@ class RuleRunRecorder implements RuleRunRecorderInterface {
 	 */
 	public function __construct(
 		private readonly RuleRunMapper $runs,
-		private readonly RuleRunSummaryMapper $summaries,
+		private readonly RuleRunSummaryMapperInterface $summaries,
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $config,
 		private readonly LoggerInterface $logger,

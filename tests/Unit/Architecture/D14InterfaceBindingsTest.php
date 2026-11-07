@@ -29,6 +29,11 @@ use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Listener\ListenerRegistrar;
+use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
+use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;
@@ -66,9 +71,11 @@ final class D14InterfaceBindingsTest extends TestCase {
 		GeoFeatureCollectionBuilder::class => [GeoFeatureCollectionBuilderInterface::class, SearchRegistrar::class],
 		NoteService::class => [NoteServiceInterface::class, FilesRegistrar::class],
 		RegisterFolderProvisioner::class => [RegisterFolderProvisionerInterface::class, FilesRegistrar::class],
+		SchemaFlowImportListener::class => [SchemaFlowImportListenerInterface::class, ListenerRegistrar::class],
 		SearchIndexMaintenance::class => [SearchIndexMaintenanceInterface::class, SearchRegistrar::class],
 		ShareUrlBuilder::class => [ShareUrlBuilderInterface::class, FilesRegistrar::class],
 		ToolRegistry::class => [ToolRegistryInterface::class, McpRegistrar::class],
+		UniqueConstraintListener::class => [UniqueConstraintListenerInterface::class, ListenerRegistrar::class],
 	];
 
 	/**
