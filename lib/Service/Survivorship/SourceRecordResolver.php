@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
  */
-class SourceRecordResolver {
+class SourceRecordResolver implements SourceRecordResolverInterface {
 
 	/**
 	 * Cross-request cache of source-schema reference (slug/uuid) => numeric
