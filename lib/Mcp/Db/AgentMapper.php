@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Mcp\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentDeletedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
@@ -56,13 +57,12 @@ use OCA\OpenRegister\Db\QueryPage;
  * @method Agent delete(Entity $entity)
  * @method Agent find(int|string $id)
  * @method Agent findEntity(IQueryBuilder $query)
- * @method Agent[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Agent> findEntities(IQueryBuilder $query)
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class AgentMapper extends QBMapper {
+class AgentMapper extends QBMapper implements AgentMapperInterface {
 	use MultiTenancyTrait;
 
 	/**
@@ -275,7 +275,7 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @return bool True if user can access
 	 */
-	public function canUserAccessAgent(Agent $agent, string $userId): bool {
+	public function canUserAccessAgent(Entity $agent, string $userId): bool {
 		// Non-private agents are accessible to all users in the organisation.
 		if ($agent->getIsPrivate() === false || $agent->getIsPrivate() === null) {
 			return true;
@@ -305,7 +305,7 @@ class AgentMapper extends QBMapper {
 	 *
 	 * @return bool True if user can modify
 	 */
-	public function canUserModifyAgent(Agent $agent, string $userId): bool {
+	public function canUserModifyAgent(Entity $agent, string $userId): bool {
 		return $agent->getOwner() === $userId;
 	}//end canUserModifyAgent()
 
