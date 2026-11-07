@@ -49,7 +49,7 @@ use Throwable;
 /**
  * Request-scoped reader for concept schemes.
  */
-class ConceptRepository {
+class ConceptRepository implements ConceptRepositoryInterface {
 
 	/**
 	 * Upper bound on concepts read for one scheme.

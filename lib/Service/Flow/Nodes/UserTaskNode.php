@@ -94,7 +94,7 @@ use RuntimeException;
  * stateless helper over a value; a factory to call it would add a dependency
  * to say the same thing.
  */
-class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
 	/**
 	 * The configuration boundary: validation and templating.
