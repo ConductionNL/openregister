@@ -56,7 +56,7 @@ class SftpTransport implements TransportInterface {
 	 * Send a SIP package via SFTP.
 	 *
 	 * @param string $sipFilePath The local path to the SIP ZIP archive.
-	 * @param array<string,mixed> $config SFTP configuration: host, port, username, password/keyPath, remotePath.
+	 * @param array<string,mixed> $config SFTP configuration: host, port, username, password/keyPath, remotePath, hostKeyFingerprint.
 	 *
 	 * @return TransportResult The result of the transport.
 	 *
@@ -190,12 +190,50 @@ class SftpTransport implements TransportInterface {
 	private function createSftpConnection(array $config): SFTP {
 		$sftp = new SFTP($config['host'], (int)($config['port'] ?? 22));
 
+		$this->assertHostKey(sftp: $sftp, config: $config);
+
 		if ($sftp->login($config['username'], $this->loginCredential(config: $config)) === false) {
 			throw new RuntimeException('SFTP authentication failed');
 		}
 
 		return $sftp;
 	}//end createSftpConnection()
+
+	/**
+	 * Refuse a server whose host key differs from `hostKeyFingerprint`, before any
+	 * credential is sent. Without a configured fingerprint the server is not verified.
+	 *
+	 * @param SFTP $sftp The connection.
+	 * @param array<string,mixed> $config SFTP configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the host key differs.
+	 */
+	private function assertHostKey(SFTP $sftp, array $config): void {
+		$pinned = (string)($config['hostKeyFingerprint'] ?? '');
+		if ($pinned === '') {
+			$this->logger->warning(message: '[SftpTransport] No hostKeyFingerprint configured, server identity not verified');
+			return;
+		}
+
+		if (hash_equals($pinned, $this->fingerprint(hostKey: $sftp->getServerPublicHostKey())) === false) {
+			throw new RuntimeException('SFTP host key does not match hostKeyFingerprint');
+		}
+	}//end assertHostKey()
+
+	/**
+	 * The OpenSSH SHA256 fingerprint of a host key, as `ssh-keygen -lf` prints it.
+	 *
+	 * @param mixed $hostKey The key as `<type> <base64>`, or false when unavailable.
+	 *
+	 * @return string The fingerprint.
+	 */
+	private function fingerprint(mixed $hostKey): string {
+		$blob = base64_decode(explode(' ', (string)$hostKey)[1] ?? '');
+
+		return 'SHA256:' . rtrim(base64_encode(hash('sha256', $blob, true)), '=');
+	}//end fingerprint()
 
 	/**
 	 * The loaded key when a key path is configured, else the password.

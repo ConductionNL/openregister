@@ -48,8 +48,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisioner;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
@@ -418,11 +418,11 @@ class ImportHandler {
 	/**
 	 * Inject the NoteService used by seed-related-items to attach comments.
 	 *
-	 * @param NoteService|null $noteService Optional note service.
+	 * @param NoteServiceInterface|null $noteService Optional note service.
 	 *
 	 * @return void
 	 */
-	public function setNoteService(?NoteService $noteService): void {
+	public function setNoteService(?NoteServiceInterface $noteService): void {
 		$this->relatedItems->useNoteService($noteService);
 	}//end setNoteService()
 
@@ -4406,39 +4406,63 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function applyConfigurationSource(Configuration $configuration, mixed $xOpenregister): void {
-		if (($xOpenregister['sourceType'] ?? null) !== null) {
-			$configuration->setSourceType($xOpenregister['sourceType']);
-		}
+		$source = $this->pickConfigurationKeys(
+			block: $xOpenregister,
+			keys: ['sourceType' => 'sourceType', 'sourceUrl' => 'sourceUrl']
+		) + $this->githubConfigurationSource(xOpenregister: $xOpenregister);
 
-		if (($xOpenregister['sourceUrl'] ?? null) !== null) {
-			$configuration->setSourceUrl($xOpenregister['sourceUrl']);
-		}
-
-		$github = [
-			'repo'   => ($xOpenregister['githubRepo'] ?? null),
-			'branch' => ($xOpenregister['githubBranch'] ?? null),
-			'path'   => ($xOpenregister['githubPath'] ?? null),
-		];
-		if (($xOpenregister['github'] ?? null) !== null && is_array($xOpenregister['github']) === true) {
-			$github = [
-				'repo'   => ($xOpenregister['github']['repo'] ?? null),
-				'branch' => ($xOpenregister['github']['branch'] ?? null),
-				'path'   => ($xOpenregister['github']['path'] ?? null),
-			];
-		}
-
-		if ($github['repo'] !== null) {
-			$configuration->setGithubRepo($github['repo']);
-		}
-
-		if ($github['branch'] !== null) {
-			$configuration->setGithubBranch($github['branch']);
-		}
-
-		if ($github['path'] !== null) {
-			$configuration->setGithubPath($github['path']);
+		foreach ($source as $field => $value) {
+			if ($value !== null) {
+				$configuration->{'set' . ucfirst($field)}($value);
+			}
 		}
 	}//end applyConfigurationSource()
+
+	/**
+	 * The GitHub repo, branch and path an `x-openregister` extension names.
+	 *
+	 * Read from the nested `github` object, or from the flat `githubRepo` /
+	 * `githubBranch` / `githubPath` keys when there is none.
+	 *
+	 * @param mixed $xOpenregister The `x-openregister` extension block.
+	 *
+	 * @return array{githubRepo: mixed, githubBranch: mixed, githubPath: mixed}
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function githubConfigurationSource(mixed $xOpenregister): array {
+		$github = ($xOpenregister['github'] ?? null);
+		if (is_array($github) === true) {
+			return $this->pickConfigurationKeys(
+				block: $github,
+				keys: ['githubRepo' => 'repo', 'githubBranch' => 'branch', 'githubPath' => 'path']
+			);
+		}
+
+		return $this->pickConfigurationKeys(
+			block: $xOpenregister,
+			keys: ['githubRepo' => 'githubRepo', 'githubBranch' => 'githubBranch', 'githubPath' => 'githubPath']
+		);
+	}//end githubConfigurationSource()
+
+	/**
+	 * The values of an extension block under the given keys, null when absent.
+	 *
+	 * @param mixed                 $block The extension block.
+	 * @param array<string, string> $keys  The block key to read, by configuration field.
+	 *
+	 * @return array<string, mixed> The values, by configuration field.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function pickConfigurationKeys(mixed $block, array $keys): array {
+		$values = [];
+		foreach ($keys as $field => $key) {
+			$values[$field] = ($block[$key] ?? null);
+		}
+
+		return $values;
+	}//end pickConfigurationKeys()
 
 	/**
 	 * Record what an app import brought in on its Configuration: the ids of
@@ -5703,7 +5727,7 @@ class ImportHandler {
 		if ($object->slug === null) {
 			$this->logger->error(
 				message: "[ImportHandler] Seed for '{$seed->schemaSlug}' missing slug and title",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'objectData' => $object->data]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectKeys' => array_keys($object->data)]
 			);
 			return;
 		}

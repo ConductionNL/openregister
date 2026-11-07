@@ -13,7 +13,7 @@ import {
 		v-if="navigationStore.modal === 'viewSource'"
 		:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
 		size="large"
-		:canClose="false">
+		noClose>
 		<div class="formContainer viewSourceDialog">
 			<!-- Source Details -->
 			<div class="sourceDetailsGrid">

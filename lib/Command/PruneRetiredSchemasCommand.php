@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\SchemaDeletionService;
+use OCA\OpenRegister\Service\SchemaTeardownOverride;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -126,6 +127,14 @@ class PruneRetiredSchemasCommand extends Command {
 				. 'an operator pruning a retired schema that happens to hold a few leftover rows has '
 				. 'said nothing about retained records, and this flag is where they say it. Requires '
 				. '--force and --apply.'
+			)
+			->addOption(
+				'force-kept-rows',
+				null,
+				InputOption::VALUE_NONE,
+				'Also delete a schema holding frozen, archived or locked rows, or rows of a register '
+				. 'that no longer exists. Deliberately separate from --force, and written to the audit '
+				. 'trail as a forced removal. Requires --force and --apply.'
 			);
 	}//end configure()
 
@@ -148,7 +157,10 @@ class PruneRetiredSchemasCommand extends Command {
 		$slugs = (array)$input->getOption('slug');
 		$apply = (bool)$input->getOption('apply');
 		$force = (bool)$input->getOption('force');
-		$forceArchival = (bool)$input->getOption('force-archival');
+		$override = new SchemaTeardownOverride(
+			archivalSchema: (bool)$input->getOption('force-archival'),
+			keptRows: (bool)$input->getOption('force-kept-rows')
+		);
 		$dryRun = ($apply === false);
 
 		if ($appId === '') {
@@ -239,55 +251,34 @@ class PruneRetiredSchemasCommand extends Command {
 				continue;
 			}
 
-			// The archival refusal is answered here as well as in the service, so the
-			// operator is told which flag lifts it instead of reading a raw exception
-			// out of the FAILED branch below. The condition comes from the production
-			// predicate the other four delete doors read, not from a second reading of
-			// the annotation.
-			$isArchival = $schema->hasArchivalAnnotation();
-			if ($isArchival === true && $forceArchival === false) {
+			$refusal = $this->refusalOf(schema: $schema, override: $override);
+			if ($refusal !== null) {
 				$skipped++;
-				$output->writeln(
-					'  <comment>SKIP: declares x-openregister-archival, so its objects are '
-					. 'legally retained records. Re-run with --force-archival to destroy them.</comment>'
-				);
+				$output->writeln($refusal);
 				continue;
 			}
 
-			$archivalNote = '';
-			if ($isArchival === true) {
-				$archivalNote = ' <comment>(ARCHIVAL RECORDS)</comment>';
-			}
+			$forcedNote = $this->forcedNote(schema: $schema);
 
 			if ($dryRun === true) {
 				$output->writeln(
-					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $archivalNote)
+					sprintf('  <comment>WOULD DELETE (objects=%d)</comment>%s', $objectCount, $forcedNote)
 				);
 				continue;
-			}
-
-			// Unlink first. cascadeDeleteSchema() removes the row, and a register
-			// left pointing at a missing id makes every later slug resolution in
-			// that register scan a dangling reference.
-			foreach ($linkedRegisters as $register) {
-				$remaining = self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId);
-				$register->setSchemas($remaining);
-				$this->registerMapper->update($register);
-				$output->writeln(
-					sprintf('  <info>unlinked from register id=%d (%s)</info>', (int)$register->getId(), (string)$register->getSlug())
-				);
 			}
 
 			try {
 				$result = $this->deletionService->cascadeDeleteSchema(
 					schema: $schema,
-					archivalOverride: $forceArchival
+					override: $override
 				);
 			} catch (\Throwable $e) {
 				$skipped++;
 				$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
 				continue;
 			}
+
+			$this->unlinkFromRegisters(schemaId: $schemaId, output: $output);
 
 			$pruned++;
 			$tableDropped = 'no';
@@ -300,7 +291,7 @@ class PruneRetiredSchemasCommand extends Command {
 					'  <info>DELETED (objects removed=%d, table dropped=%s)</info>%s',
 					(int)$result['deletedCount'],
 					$tableDropped,
-					$archivalNote
+					$forcedNote
 				)
 			);
 
@@ -340,6 +331,65 @@ class PruneRetiredSchemasCommand extends Command {
 	}//end execute()
 
 	/**
+	 * Why this schema is skipped, told here as well as in the service.
+	 *
+	 * The operator reads which flag lifts the refusal instead of a raw exception.
+	 * The archival condition comes from the production predicate the other delete
+	 * doors read, not from a second reading of the annotation.
+	 *
+	 * @param Schema                 $schema   The schema to prune.
+	 * @param SchemaTeardownOverride $override What the operator lifted.
+	 *
+	 * @return string|null The line to print, or null when the schema may go.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	private function refusalOf(Schema $schema, SchemaTeardownOverride $override): ?string {
+		if ($schema->hasArchivalAnnotation() === true && $override->archivalSchema === false) {
+			return '  <comment>SKIP: declares x-openregister-archival, so its objects are '
+				. 'legally retained records. Re-run with --force-archival to destroy them.</comment>';
+		}
+
+		if ($override->keptRows === true) {
+			return null;
+		}
+
+		$keptRows = $this->deletionService->countKeptRows(schema: $schema);
+		if ($keptRows === 0) {
+			return null;
+		}
+
+		return sprintf(
+			'  <comment>SKIP: holds %d frozen, archived, locked or unreadable row(s). '
+			. 'Re-run with --force-kept-rows to destroy them.</comment>',
+			$keptRows
+		);
+	}//end refusalOf()
+
+	/**
+	 * The note that marks protected records in the command's output.
+	 *
+	 * @param Schema $schema The schema being pruned.
+	 *
+	 * @return string The note, empty when nothing protected goes.
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-a-schema-teardown-refuses-kept-rows-unless-forced-on-the-command-line
+	 */
+	private function forcedNote(Schema $schema): string {
+		$note = '';
+		if ($schema->hasArchivalAnnotation() === true) {
+			$note = ' <comment>(ARCHIVAL RECORDS)</comment>';
+		}
+
+		$keptRows = $this->deletionService->countKeptRows(schema: $schema);
+		if ($keptRows > 0) {
+			$note .= sprintf(' <comment>(%d KEPT ROWS)</comment>', $keptRows);
+		}
+
+		return $note;
+	}//end forcedNote()
+
+	/**
 	 * Drop one schema id from a register's stored schema list.
 	 *
 	 * The stored list holds ids as ints or as strings depending on which import
@@ -376,6 +426,37 @@ class PruneRetiredSchemasCommand extends Command {
 		);
 	}//end unlinkSchemaId()
 
+
+	/**
+	 * Take a removed schema out of every register that lists it.
+	 *
+	 * Runs after the teardown, so a refused teardown leaves the registers as they were.
+	 * The registers are read here, not before the teardown, so a slow teardown cannot
+	 * write back a stale list. A failed update is reported per register: the schema is
+	 * gone by then, and a rerun would no longer find it.
+	 *
+	 * @param int             $schemaId The removed schema's id.
+	 * @param OutputInterface $output   Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function unlinkFromRegisters(int $schemaId, OutputInterface $output): void {
+		foreach ($this->registersReferencing(schemaId: $schemaId) as $register) {
+			$label = sprintf('register id=%d (%s)', (int)$register->getId(), (string)$register->getSlug());
+			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
+
+			try {
+				$this->registerMapper->update($register);
+				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
+			} catch (\Throwable $e) {
+				$output->writeln(
+					sprintf('  <error>NOT UNLINKED: %s still lists removed schema %d: %s</error>', $label, $schemaId, $e->getMessage())
+				);
+			}
+		}
+	}//end unlinkFromRegisters()
 
 	/**
 	 * Every register whose schema list references this schema id.

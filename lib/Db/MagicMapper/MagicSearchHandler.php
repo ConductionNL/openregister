@@ -65,6 +65,7 @@ use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\NullFilter;
+use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -397,15 +398,7 @@ class MagicSearchHandler {
 		$limit = QueryLimit::normalise($query['_limit'] ?? null);
 		$offset = $query['_offset'] ?? null;
 		$page = $query['_page'] ?? null;
-		$order = $query['_order'] ?? [];
-		// The _order parameter may arrive as a JSON string from URL query params.
-		if (is_string($order) === true) {
-			$decoded = json_decode($order, true);
-			$order = [];
-			if (is_array($decoded) === true) {
-				$order = $decoded;
-			}
-		}
+		$order = (new OrderParameter(order: $query['_order'] ?? []))->fields();
 
 		$count = $query['_count'] ?? false;
 		$search = $query['_search'] ?? null;
@@ -897,11 +890,7 @@ class MagicSearchHandler {
 			);
 		}
 
-		// Apply relations contains filter if provided.
-		$relationsContains = $query['_relations_contains'] ?? null;
-		if ($relationsContains !== null && empty($relationsContains) === false) {
-			$this->applyRelationsContainsFilter(qb: $qb, uuid: $relationsContains);
-		}
+		$this->applyRelationsContains(qb: $qb, query: $query);
 
 		// Apply dotted relation-field filters: `_relations.<field>` => <id>.
 		$this->applyRelationFieldFilters(qb: $qb, query: $query);
@@ -3715,6 +3704,24 @@ class MagicSearchHandler {
 	}//end applyIdFilters()
 
 	/**
+	 * Keep the objects that reference every `_relations_contains` value.
+	 *
+	 * @param IQueryBuilder $qb    Query builder to modify
+	 * @param array         $query The search query
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function applyRelationsContains(IQueryBuilder $qb, array $query): void {
+		foreach ((array)($query['_relations_contains'] ?? []) as $uuid) {
+			if (empty($uuid) === false) {
+				$this->applyRelationsContainsFilter(qb: $qb, uuid: $uuid);
+			}
+		}
+	}//end applyRelationsContains()
+
+	/**
 	 * Apply relations contains filter to find objects referencing a specific UUID.
 	 *
 	 * Relations can be stored as either an array (`["uuid1", "uuid2", ...]`, the
@@ -4060,6 +4067,7 @@ class MagicSearchHandler {
 		$properties = $sort->schema->getProperties();
 
 		foreach ($sort->order as $field => $direction) {
+			$field = (string) $field;
 			$direction = strtoupper($direction);
 			if (in_array($direction, ['ASC', 'DESC']) === false) {
 				$direction = 'ASC';
@@ -4481,7 +4489,7 @@ class MagicSearchHandler {
 					'line' => __LINE__,
 					'error' => $e->getMessage(),
 					'tableName' => $tableName,
-					'row' => $row,
+					'columns' => array_keys($row),
 				]
 			);
 
