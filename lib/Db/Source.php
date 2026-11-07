@@ -87,7 +87,6 @@ class Source extends Entity implements JsonSerializable {
 	use JsonFieldsTrait;
 	use OrganisationFieldTrait;
 	use ManagedByConfigurationTrait;
-	use HydrateEmptyJsonAsNullTrait;
 
 	/**
 	 * Unique identifier for the source
@@ -260,6 +259,41 @@ class Source extends Entity implements JsonSerializable {
 			$this->addType(fieldName: $fieldName, type: $type);
 		}
 	}//end __construct()
+
+	/**
+	 * Hydrate the entity with data from an array
+	 *
+	 * Sets entity properties based on input array values
+	 *
+	 * @param array $object The data array to hydrate from
+	 *
+	 * @return static Returns $this for method chaining
+	 *
+	 * @spec exclude entity plumbing, not a capability of its own
+	 */
+	public function hydrate(array $object): static {
+		$jsonFields = $this->getJsonFields();
+
+		if (isset($object['metadata']) === false) {
+			$object['metadata'] = [];
+		}
+
+		foreach ($object as $key => $value) {
+			if (in_array($key, $jsonFields) === true && $value === []) {
+				$value = null;
+			}
+
+			$method = 'set' . ucfirst($key);
+
+			try {
+				$this->$method($value);
+			} catch (\Exception $exception) {
+				// Silently ignore invalid properties.
+			}
+		}
+
+		return $this;
+	}//end hydrate()
 
 	/**
 	 * Convert entity to JSON serializable array; see SourceJson.

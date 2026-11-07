@@ -18,8 +18,6 @@
  * @link https://OpenRegister.app
  */
 
-declare(strict_types=1);
-
 namespace OCA\OpenRegister\Db\Register;
 
 use OCA\OpenRegister\Db\Register;
@@ -30,6 +28,9 @@ use OCA\OpenRegister\Db\Register;
  * The setter call resolves `Organisation` to setOrganisation() too, and every
  * check on a register body reads the exact key, so only exact names are stored.
  * An empty array for a json field is stored as null; a setter that throws is skipped.
+ *
+ * No strict_types: moved out of Register, which declares none, so every value
+ * keeps the coercion it had there.
  *
  * @spec exclude register plumbing moved out of the entity, not a capability of its own
  */

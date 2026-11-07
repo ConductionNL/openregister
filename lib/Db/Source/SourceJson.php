@@ -18,14 +18,15 @@
  * @link https://OpenRegister.app
  */
 
-declare(strict_types=1);
-
 namespace OCA\OpenRegister\Db\Source;
 
 /**
  * The JSON form of a source, built from its field values.
  *
  * The encrypted credential blob is never exposed; only whether one is configured.
+ *
+ * No strict_types: moved out of Source, which declares none, so every value
+ * keeps the coercion it had there.
  *
  * @spec exclude source plumbing moved out of the entity, not a capability of its own
  */

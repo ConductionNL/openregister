@@ -18,12 +18,13 @@
  * @link https://OpenRegister.app
  */
 
-declare(strict_types=1);
-
 namespace OCA\OpenRegister\Db\Register;
 
 /**
  * The languages of a register; none configured means only Dutch.
+ *
+ * No strict_types: moved out of Register, which declares none, so every value
+ * keeps the coercion it had there.
  *
  * @spec exclude register plumbing moved out of the entity, not a capability of its own
  */

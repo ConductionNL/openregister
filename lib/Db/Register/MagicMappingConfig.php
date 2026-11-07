@@ -18,8 +18,6 @@
  * @link https://OpenRegister.app
  */
 
-declare(strict_types=1);
-
 namespace OCA\OpenRegister\Db\Register;
 
 /**
@@ -30,6 +28,9 @@ namespace OCA\OpenRegister\Db\Register;
  * - Legacy format: { "enableMagicMapping": true, "magicMappingSchemas": ["<slug>", "<id>"] }
  *
  * Edits write the new format and return the whole configuration.
+ *
+ * No strict_types: moved out of Register, which declares none, so every value
+ * keeps the coercion it had there.
  *
  * @spec exclude register plumbing moved out of the entity, not a capability of its own
  */
