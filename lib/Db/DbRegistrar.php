@@ -44,14 +44,20 @@ final class DbRegistrar {
 	 */
 	public const BINDINGS = [
 		AuditTrailMapperInterface::class => AuditTrailMapper::class,
+		EndpointLogMapperInterface::class => EndpointLogMapper::class,
+		EndpointMapperInterface::class => EndpointMapper::class,
 		EntityRelationMapperInterface::class => EntityRelationMapper::class,
 		FlowRunMapperInterface::class => FlowRunMapper::class,
+		FlowTriggerMapperInterface::class => FlowTriggerMapper::class,
 		MagicMapperInterface::class => MagicMapper::class,
 		MappingMapperInterface::class => MappingMapper::class,
 		OrganisationMapperInterface::class => OrganisationMapper::class,
 		RegisterMapperInterface::class => RegisterMapper::class,
+		RuleRunSummaryMapperInterface::class => RuleRunSummaryMapper::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
+		SyncRecordMapperInterface::class => SyncRecordMapper::class,
 		TranslationMapperInterface::class => TranslationMapper::class,
+		WebhookLogMapperInterface::class => WebhookLogMapper::class,
 		WebhookMapperInterface::class => WebhookMapper::class,
 	];
 

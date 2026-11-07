@@ -57,7 +57,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
-use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\IJobList;
@@ -142,7 +142,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @param QueuedNotificationMapperInterface     $queue         The notifications waiting to go out.
 	 * @param NotificationTemplateRegistry $templates     The shipped notification texts.
 	 * @param RuleRunMapper                $ruleRuns      The rules engine's run log.
-	 * @param RuleRunSummaryMapper         $ruleSummaries One row per rule, with its last error.
+	 * @param RuleRunSummaryMapperInterface         $ruleSummaries One row per rule, with its last error.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Seven records, joined
 	 * once. See the class-level note.
@@ -154,7 +154,7 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 		private readonly QueuedNotificationMapperInterface $queue,
 		private readonly NotificationTemplateRegistry $templates,
 		private readonly RuleRunMapper $ruleRuns,
-		private readonly RuleRunSummaryMapper $ruleSummaries,
+		private readonly RuleRunSummaryMapperInterface $ruleSummaries,
 	) {
 	}//end __construct()
 

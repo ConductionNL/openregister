@@ -43,7 +43,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
-use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -56,14 +56,14 @@ class FlowTriggerIndex {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTriggerMapper $mapper The indexed trigger set.
+	 * @param FlowTriggerMapperInterface $mapper The indexed trigger set.
 	 * @param FlowTriggerDerivation $derivation Nodes to triggers.
 	 * @param FlowTriggerSlugs $slugs Normalises a derived triple to the slugs matching runs on.
 	 * @param LoggerInterface $logger Diagnostics.
 	 * @param FlowPublishedGraph|null $published Resolves the published graph.
 	 */
 	public function __construct(
-		private readonly FlowTriggerMapper $mapper,
+		private readonly FlowTriggerMapperInterface $mapper,
 		private readonly FlowTriggerDerivation $derivation,
 		private readonly FlowTriggerSlugs $slugs,
 		private readonly LoggerInterface $logger,

@@ -29,7 +29,7 @@ use DateTime;
 use GuzzleHttp\Exception\RequestException;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use Psr\Log\LoggerInterface;
 
@@ -53,13 +53,13 @@ final class WebhookDeliveryRecorder {
 	/**
 	 * @param LoggerInterface        $logger           Logger
 	 * @param WebhookMapperInterface $webhookMapper    Webhook statistics
-	 * @param WebhookLogMapper       $webhookLogMapper Log entries
+	 * @param WebhookLogMapperInterface       $webhookLogMapper Log entries
 	 * @param Closure                $previewBody      (string $body, string $url): string, the log-safe preview of a response body
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
 		private readonly WebhookMapperInterface $webhookMapper,
-		private readonly WebhookLogMapper $webhookLogMapper,
+		private readonly WebhookLogMapperInterface $webhookLogMapper,
 		private readonly Closure $previewBody,
 	) {
 	}//end __construct()
