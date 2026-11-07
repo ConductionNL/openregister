@@ -2004,38 +2004,61 @@ class SaveObjects {
 		Register|string|int $register,
 		Schema|string|int $schema,
 	): array {
-		$registerId = $register;
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-		}
-
-		if ($register instanceof Register) {
-			self::$registerCache[$registerId] = $register;
-		}
-
-		if ($register instanceof Register === false) {
-			$register = $this->loadRegisterWithCache(registerId: $registerId);
-		}
-
-		$schemaId = $schema;
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-		}
-
-		if ($schema instanceof Schema) {
-			$schemaObj = $schema;
-			self::$schemaCache[$schemaId] = $schemaObj;
-		}
-
-		if ($schema instanceof Schema === false) {
-			$schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
-		}
-
-		$schemaCache = [$schemaId => $schemaObj];
+		$registerId = self::contextId(entity: $register);
+		$schemaId = self::contextId(entity: $schema);
+		$register = $this->contextRegister(register: $register);
+		$schemaObj = $this->contextSchema(schema: $schema);
 		$schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache(schema: $schemaObj)];
 
-		return [$registerId, $register, $schemaId, $schemaObj, $schemaCache, $schemaAnalysis];
+		return [$registerId, $register, $schemaId, $schemaObj, [$schemaId => $schemaObj], $schemaAnalysis];
 	}//end loadAndValidateSchemaContext()
+
+	/**
+	 * The id a caller's register or schema argument stands for: the entity's id, or the argument itself.
+	 *
+	 * @param Register|Schema|string|int $entity The argument.
+	 *
+	 * @return string|int
+	 */
+	private static function contextId(Register|Schema|string|int $entity): string|int {
+		if ($entity instanceof Register || $entity instanceof Schema) {
+			return $entity->getId();
+		}
+
+		return $entity;
+	}//end contextId()
+
+	/**
+	 * The caller's register: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Register|string|int $register The argument.
+	 *
+	 * @return Register
+	 */
+	private function contextRegister(Register|string|int $register): Register {
+		if ($register instanceof Register) {
+			self::$registerCache[$register->getId()] = $register;
+			return $register;
+		}
+
+		return $this->loadRegisterWithCache(registerId: $register);
+	}//end contextRegister()
+
+	/**
+	 * The caller's schema: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Schema|string|int $schema The argument.
+	 *
+	 * @return Schema
+	 */
+	private function contextSchema(Schema|string|int $schema): Schema {
+		if ($schema instanceof Schema) {
+			self::$schemaCache[$schema->getId()] = $schema;
+			return $schema;
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $schema);
+	}//end contextSchema()
 
 	/**
 	 * Prepare a single object for single-schema bulk save
