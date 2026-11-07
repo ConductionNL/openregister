@@ -64,7 +64,7 @@ use Psr\Log\LoggerInterface;
  * not designed for subclassing in production: there is meant to be exactly one
  * implementation of {@see holds()}, which is the whole point of the class.
  */
-class LifecycleConditionEvaluator {
+class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterface {
 
 	/**
 	 * The code every condition refusal carries, malformed or merely unmet.
