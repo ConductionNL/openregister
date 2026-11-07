@@ -72,12 +72,10 @@ class UnreadCountCalculator {
 	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function countsFor(ObjectEntity $object, ?ObjectReadState $state): array {
-		$subSeen = ($state?->getSubSeen() ?? []);
-
 		$counts = [];
 		foreach ($this->evaluator->subResources(object: $object) as $name => $descriptor) {
-			$since = $this->seenMoment(name: $name, subSeen: $subSeen, state: $state);
-			$counts[$name] = $this->countSince(object: $object, descriptor: $descriptor, since: $since);
+			$window        = new SubResourceWindow(descriptor: $descriptor, since: $this->seenMoment(name: $name, state: $state));
+			$counts[$name] = $this->countSince(object: $object, window: $window);
 		}
 
 		return $counts;
@@ -91,20 +89,19 @@ class UnreadCountCalculator {
 	 * messages tab existed does not badge every historical message.
 	 *
 	 * @param string $name The sub-resource name.
-	 * @param array<string, string> $subSeen The stored per-sub-resource moments.
-	 * @param ObjectReadState|null $state The read state row, when there is one.
+	 * @param ObjectReadState|null $state The read state row, when there is one; its stored per-sub-resource moments
+	 *                                    come first.
 	 *
 	 * @return DateTime|null The moment, or null when the object was never seen.
 	 */
-	private function seenMoment(string $name, array $subSeen, ?ObjectReadState $state): ?DateTime {
-		$stamp = ($subSeen[$name] ?? null);
+	private function seenMoment(string $name, ?ObjectReadState $state): ?DateTime {
+		$stamp = (($state?->getSubSeen() ?? [])[$name] ?? null);
 		if (is_string($stamp) === true && $stamp !== '') {
 			try {
 				return new DateTime($stamp);
 			} catch (\Throwable $e) {
-				// A stored stamp that will not parse is treated as never seen,
-				// which badges rather than hides. The alternative is a silently
-				// empty badge on a row nobody can explain.
+				// A stamp that will not parse is never seen: it badges rather than hides, where the
+				// alternative is a silently empty badge on a row nobody can explain.
 				return null;
 			}
 		}
@@ -116,42 +113,63 @@ class UnreadCountCalculator {
 	/**
 	 * How many entries of one sub-resource arrived after a moment.
 	 *
-	 * @param ObjectEntity $object The object.
-	 * @param array<string, string> $descriptor The sub-resource descriptor.
-	 * @param DateTime|null $since The seen moment, or null when never seen.
+	 * @param ObjectEntity      $object The object.
+	 * @param SubResourceWindow $window The sub-resource and its seen moment.
 	 *
 	 * @return integer The unread count.
 	 */
-	private function countSince(ObjectEntity $object, array $descriptor, ?DateTime $since): int {
-		if (($descriptor['kind'] ?? '') === SubstantiveChangeEvaluator::FILES) {
-			return $this->countFilesSince(object: $object, since: $since);
+	private function countSince(ObjectEntity $object, SubResourceWindow $window): int {
+		if (($window->descriptor['kind'] ?? '') === SubstantiveChangeEvaluator::FILES) {
+			return $this->countFilesSince(object: $object, since: $window->since);
 		}
 
+		return $this->countEntriesSince(entries: $this->entriesOf(object: $object, window: $window), window: $window);
+
+	}//end countSince()
+
+	/**
+	 * The entries of a property sub-resource, [] when the body or the property is no array.
+	 *
+	 * @param ObjectEntity      $object The object.
+	 * @param SubResourceWindow $window The sub-resource and its seen moment.
+	 *
+	 * @return array<mixed> The entries.
+	 */
+	private function entriesOf(ObjectEntity $object, SubResourceWindow $window): array {
 		$body = $object->getObject();
 		if (is_array($body) === false) {
-			return 0;
+			return [];
 		}
 
-		$entries = ($body[$descriptor['property'] ?? ''] ?? null);
+		$entries = ($body[$window->descriptor['property'] ?? ''] ?? null);
 		if (is_array($entries) === false) {
-			return 0;
+			return [];
 		}
 
-		$field = (string)($descriptor['dateField'] ?? '');
+		return $entries;
+
+	}//end entriesOf()
+
+	/**
+	 * How many entries of a property sub-resource carry a moment after the seen one.
+	 *
+	 * @param array<mixed>      $entries The sub-resource's entries.
+	 * @param SubResourceWindow $window  The sub-resource and its seen moment.
+	 *
+	 * @return integer The unread count.
+	 */
+	private function countEntriesSince(array $entries, SubResourceWindow $window): int {
+		$field = (string)($window->descriptor['dateField'] ?? '');
 		$count = 0;
 		foreach ($entries as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			if ($this->isAfter(value: ($entry[$field] ?? null), since: $since) === true) {
+			if (is_array($entry) === true && $this->isAfter(value: ($entry[$field] ?? null), since: $window->since) === true) {
 				$count++;
 			}
 		}
 
 		return $count;
 
-	}//end countSince()
+	}//end countEntriesSince()
 
 	/**
 	 * How many of the object's files changed after a moment.

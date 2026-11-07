@@ -106,6 +106,7 @@ import {
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import StatisticsTotalsTable from './StatisticsTotalsTable.vue'
 import { scopePickers } from '../../services/scopePickers.js'
+import { scopeListLoader } from '../scopeListLoader.js'
 
 export default {
 	name: 'DashboardSideBar',
@@ -118,7 +119,7 @@ export default {
 		StatisticsTotalsTable,
 	},
 
-	mixins: [scopePickers],
+	mixins: [scopePickers, scopeListLoader],
 
 	data() {
 		return {
@@ -135,19 +136,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Flatten the object metadata map into column descriptors for display.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} Metadata column descriptors
-		 */
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
-
 		/**
 		 * Get system totals from dashboardStore
 		 *
@@ -236,19 +224,7 @@ export default {
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchema
-			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
-			 */
-			handler(newSchema) {
-				if (newSchema) {
-					objectStore.initializeProperties(newSchema)
-				} else {
-					objectStore.properties = {}
-					objectStore.initializeColumnFilters()
-				}
-			},
-
+			handler: 'syncSchemaProperties',
 			deep: true,
 		},
 	},
@@ -262,21 +238,7 @@ export default {
 		this.schemaLoading = true
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore
-				.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore
-				.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		this.loadScopeLists()
 
 		// Load objects if register and schema are already selected
 		if (registerStore.registerItem && schemaStore.schemaItem) {
