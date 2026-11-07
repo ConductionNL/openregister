@@ -690,11 +690,11 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function applyViewsToQuery(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
-		return $this->viewScope->apply(
-			query: $query,
-			viewIds: $viewIds,
-			_viewScopeRequired: $_viewScopeRequired
-		);
+		if ($_viewScopeRequired === true) {
+			return $this->viewScope->applyRequired(query: $query, viewIds: $viewIds);
+		}
+
+		return $this->viewScope->apply(query: $query, viewIds: $viewIds);
 	}//end applyViewsToQuery()
 
 	/**

@@ -47,14 +47,23 @@ class ViewScopeApplier {
 	 * this class advertises, and the accident is one register-resolution change
 	 * away from becoming a real unbounded read.
 	 *
-	 * These MUST stay in step with the filters {@see self::apply()} knows how to
-	 * merge into `@self`.
+	 * These MUST stay in step with {@see self::SELF_KEYS}.
 	 *
 	 * @var array<int, string>
 	 */
 	private const BOUNDING_FILTERS = [
 		'registers',
 		'schemas',
+	];
+
+	/**
+	 * Where each stored filter goes under `@self`.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SELF_KEYS = [
+		'registers' => 'register',
+		'schemas' => 'schema',
 	];
 
 	/**
@@ -75,7 +84,7 @@ class ViewScopeApplier {
 	 * Converts view definitions into query parameters by merging view->query into the base query.
 	 * Supports multiple views - their filters are combined (OR logic for same field, AND for different fields).
 	 *
-	 * ## `$_viewScopeRequired` - when the view IS the bound
+	 * ## When the view IS the bound
 	 *
 	 * For an ordinary authenticated search a view is a convenience: the caller
 	 * is already scoped by RBAC and by its organisation, so a view that cannot
@@ -87,7 +96,7 @@ class ViewScopeApplier {
 	 * access link naming one view - the view filter is the ONLY bound left on
 	 * the query. Skipping it there does not narrow less, it removes the bound
 	 * entirely and answers with arbitrary objects from any organisation. Such a
-	 * caller passes `$_viewScopeRequired: true`, and then every way of failing to
+	 * caller uses {@see self::applyRequired()}, and then every way of failing to
 	 * apply the view throws instead of continuing: an unresolvable view, and a
 	 * view whose query bounds nothing at all. The caller turns that into "this
 	 * link no longer resolves", which is the correct answer.
@@ -99,59 +108,69 @@ class ViewScopeApplier {
 	 *
 	 * @param array<string, mixed> $query Base query parameters.
 	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
-	 * @param bool $_viewScopeRequired Whether the view filter is load-bearing for this
-	 *                                 caller, making any failure to apply it fatal.
 	 *
 	 * @return array<string, mixed> Query with view filters applied
 	 *
-	 * @throws Exception When `$_viewScopeRequired` is true and a view cannot be applied.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  The flag is the fail-closed contract, not a mode switch
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(array $query, array $viewIds, bool $_viewScopeRequired = false): array {
+	public function apply(array $query, array $viewIds): array {
 		if (empty($viewIds) === true) {
-			if ($_viewScopeRequired === true) {
-				// A caller whose only bound is the view must not be handed an
-				// unbounded query because the view list arrived empty.
-				throw new Exception('Refusing a view-scoped search without a view to scope it by.');
-			}
-
 			return $query;
 		}
 
-		$this->logger->debug(
-			message: '[ViewScopeApplier] Applying views to query',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'viewIds' => $viewIds,
-				'originalQuery' => array_keys($query),
-			]
-		);
+		$run = new ViewScopeRun(viewIds: $viewIds, required: false);
+		$this->logApplying(query: $query, run: $run);
 
-		foreach ($viewIds as $viewId) {
+		return $this->applyEach(query: $query, run: $run);
+	}//end apply()
+
+	/**
+	 * Apply view filters to a query whose only bound is the view.
+	 *
+	 * See {@see self::apply()} for when a caller is in this position.
+	 *
+	 * @param array<string, mixed> $query Base query parameters.
+	 * @param array<int|string> $viewIds View IDs to apply (can be int or string IDs).
+	 *
+	 * @return array<string, mixed> Query with view filters applied
+	 *
+	 * @throws Exception When a view cannot be applied.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function applyRequired(array $query, array $viewIds): array {
+		if (empty($viewIds) === true) {
+			// A caller whose only bound is the view must not be handed an
+			// unbounded query because the view list arrived empty.
+			throw new Exception('Refusing a view-scoped search without a view to scope it by.');
+		}
+
+		$run = new ViewScopeRun(viewIds: $viewIds, required: true);
+		$this->logApplying(query: $query, run: $run);
+
+		return $this->applyEach(query: $query, run: $run);
+	}//end applyRequired()
+
+	/**
+	 * Merge every view of a run into the query.
+	 *
+	 * @param array<string, mixed> $query Base query parameters.
+	 * @param ViewScopeRun $run The views and whether they are the only bound.
+	 *
+	 * @return array<string, mixed> Query with view filters applied.
+	 *
+	 * @throws Exception When the views are required and one cannot be applied.
+	 */
+	private function applyEach(array $query, ViewScopeRun $run): array {
+		foreach ($run->viewIds as $viewId) {
 			try {
-				$query = $this->applyOne(
-					query: $query,
-					viewId: $viewId,
-					_viewScopeRequired: $_viewScopeRequired
-				);
+				$viewQuery = $this->storedQuery(viewId: $viewId, run: $run);
+				$query = $this->merged(query: $query, viewQuery: $viewQuery);
+				$this->logApplied(viewId: $viewId, viewQuery: $viewQuery);
 			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[ViewScopeApplier] Failed to apply view',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'viewId' => $viewId,
-						'error' => $e->getMessage(),
-					]
-				);
+				$this->logFailed(viewId: $viewId, failure: $e);
 
-				if ($_viewScopeRequired === true) {
+				if ($run->required === true) {
 					// Fail closed: for this caller the view was the whole bound,
 					// so swallowing the failure would answer with everything.
 					throw $e;
@@ -160,32 +179,29 @@ class ViewScopeApplier {
 		}//end foreach
 
 		return $query;
-	}//end apply()
+	}//end applyEach()
 
 	/**
-	 * Merge one view's stored query into the search query.
+	 * The stored query of one view.
 	 *
-	 * @param array<string, mixed> $query Base query parameters.
-	 * @param int|string $viewId The view to resolve and merge.
-	 * @param bool $_viewScopeRequired Whether failing to apply the view is fatal.
+	 * @param int|string $viewId The view to resolve.
+	 * @param ViewScopeRun $run The run it belongs to.
 	 *
-	 * @return array<string, mixed> Query with this view's filters applied.
+	 * @return array<string, mixed>|null The view's stored query.
 	 *
 	 * @throws Exception When the view cannot be resolved, or bounds nothing while required.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fail-closed contract, not a mode switch
-	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function applyOne(array $query, int|string $viewId, bool $_viewScopeRequired): array {
+	private function storedQuery(int|string $viewId, ViewScopeRun $run): ?array {
 		$view = $this->viewMapper->find(
 			$viewId,
-			_rbac: ($_viewScopeRequired === false),
-			_multitenancy: ($_viewScopeRequired === false)
+			_rbac: ($run->required === false),
+			_multitenancy: ($run->required === false)
 		);
 		$viewQuery = $view->getQuery();
 
-		if ($_viewScopeRequired === true && $this->bounds(viewQuery: $viewQuery) === false) {
+		if ($run->required === true && $this->bounds(viewQuery: $viewQuery) === false) {
 			// A view that sets no register and no schema is not a bound. Applying
 			// it would leave the query exactly as wide as it arrived.
 			throw new Exception(
@@ -193,47 +209,86 @@ class ViewScopeApplier {
 			);
 		}
 
-		// Apply registers filter using @self metadata (format MagicMapper understands).
-		if (empty($viewQuery['registers']) === false) {
-			$query['@self']['register'] = $this->mergeIds(
-				existing: ($query['@self']['register'] ?? null),
-				additional: $viewQuery['registers']
-			);
+		return $viewQuery;
+	}//end storedQuery()
+
+	/**
+	 * Merge one view's stored query into the search query.
+	 *
+	 * @param array<string, mixed> $query Base query parameters.
+	 * @param array<string, mixed>|null $viewQuery The view's stored query.
+	 *
+	 * @return array<string, mixed> Query with this view's filters applied.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function merged(array $query, ?array $viewQuery): array {
+		// Registers and schemas go under @self, the format MagicMapper understands.
+		foreach (self::SELF_KEYS as $filter => $selfKey) {
+			if (empty($viewQuery[$filter]) === false) {
+				$query['@self'][$selfKey] = $this->mergeIds(
+					existing: ($query['@self'][$selfKey] ?? null),
+					additional: $viewQuery[$filter]
+				);
+			}
 		}
 
-		// Apply schemas filter using @self metadata (format MagicMapper understands).
-		if (empty($viewQuery['schemas']) === false) {
-			$query['@self']['schema'] = $this->mergeIds(
-				existing: ($query['@self']['schema'] ?? null),
-				additional: $viewQuery['schemas']
-			);
-		}
-
-		// Apply search terms.
 		if (empty($viewQuery['searchTerms']) === false) {
-			$searchTerms = $viewQuery['searchTerms'];
-			if (is_array($viewQuery['searchTerms']) === true) {
-				$searchTerms = implode(' ', $viewQuery['searchTerms']);
-			}
+			$query['_search'] = $this->mergedSearch(existing: ($query['_search'] ?? ''), terms: $viewQuery['searchTerms']);
+		}
 
-			// Merge with existing search if present.
-			//
-			// This previously assigned $query['_search'] FIRST and then
-			// appended $searchTerms to it, so the isset() guard could only
-			// ever see the value just written. Two things went wrong: the
-			// caller's own `_search` was discarded (the merge this comment
-			// describes never happened), and the view's terms were appended
-			// to themselves, producing "foo foo". Mirrors the `schemas`
-			// merge above: read what is there, then combine.
-			$existingSearch = ($query['_search'] ?? '');
-			$searchPrefix = '';
-			if (is_string($existingSearch) === true && $existingSearch !== '') {
-				$searchPrefix = $existingSearch . ' ';
-			}
+		return $query;
+	}//end merged()
 
-			$query['_search'] = $searchPrefix . $searchTerms;
-		}//end if
+	/**
+	 * Add a view's search terms to what the caller searched for.
+	 *
+	 * @param mixed $existing The query's `_search`.
+	 * @param mixed $terms The view's terms, as its author stored them.
+	 *
+	 * @return string The combined search.
+	 */
+	private function mergedSearch(mixed $existing, mixed $terms): string {
+		if (is_array($terms) === true) {
+			$terms = implode(' ', $terms);
+		}
 
+		if (is_string($existing) === true && $existing !== '') {
+			return $existing . ' ' . $terms;
+		}
+
+		return (string)$terms;
+	}//end mergedSearch()
+
+	/**
+	 * Say which views are about to be applied.
+	 *
+	 * @param array<string, mixed> $query Base query parameters.
+	 * @param ViewScopeRun $run The run.
+	 *
+	 * @return void
+	 */
+	private function logApplying(array $query, ViewScopeRun $run): void {
+		$this->logger->debug(
+			message: '[ViewScopeApplier] Applying views to query',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'viewIds' => $run->viewIds,
+				'originalQuery' => array_keys($query),
+			]
+		);
+	}//end logApplying()
+
+	/**
+	 * Say what one view held.
+	 *
+	 * @param int|string $viewId The view.
+	 * @param array<string, mixed>|null $viewQuery Its stored query.
+	 *
+	 * @return void
+	 */
+	private function logApplied(int|string $viewId, ?array $viewQuery): void {
 		$this->logger->debug(
 			message: '[ViewScopeApplier] Applied view to query',
 			context: [
@@ -245,9 +300,27 @@ class ViewScopeApplier {
 				'hasSearchTerms' => empty($viewQuery['searchTerms']) === false,
 			]
 		);
+	}//end logApplied()
 
-		return $query;
-	}//end applyOne()
+	/**
+	 * Say that one view could not be applied.
+	 *
+	 * @param int|string $viewId The view.
+	 * @param Exception $failure What went wrong.
+	 *
+	 * @return void
+	 */
+	private function logFailed(int|string $viewId, Exception $failure): void {
+		$this->logger->warning(
+			message: '[ViewScopeApplier] Failed to apply view',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'viewId' => $viewId,
+				'error' => $failure->getMessage(),
+			]
+		);
+	}//end logFailed()
 
 	/**
 	 * Combine an already-present id bound with the one a view carries.
