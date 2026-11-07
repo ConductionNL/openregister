@@ -116,6 +116,7 @@ final class ContractBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,

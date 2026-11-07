@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OasServiceInterface;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -46,6 +48,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		OasService::class => [OasServiceInterface::class, ContractBindings::class],
+		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
 	];
 
 	/**
