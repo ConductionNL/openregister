@@ -47,7 +47,11 @@ use OCA\OpenRegister\Event\HandoffExecutedEvent;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Handoff\HandoffLedger;
 use OCA\OpenRegister\Service\Handoff\HandoffMappingEvaluator;
+use OCA\OpenRegister\Service\Handoff\HandoffObjectAccess;
+use OCA\OpenRegister\Service\Handoff\HandoffProviders;
+use OCA\OpenRegister\Service\Handoff\HandoffRequesters;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -132,20 +136,28 @@ class HandoffServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 
 		$this->service = new HandoffService(
-			objectService: $this->objectService,
-			semanticTypeResolver: $resolver,
-			schemaMapper: $this->schemaMapper,
-			objectMapper: $this->objectMapper,
-			auditTrailMapper: $this->auditTrailMapper,
-			permissionHandler: $this->permissionHandler,
-			mappingEvaluator: new HandoffMappingEvaluator(),
-			queueMapper: $this->queueMapper,
-			db: $this->db,
-			eventDispatcher: $this->eventDispatcher,
-			userSession: $this->userSession,
-			userManager: $this->userManager,
-			notificationManager: $this->notificationManager,
-			logger: $this->createMock(LoggerInterface::class),
+			objects: new HandoffObjectAccess(
+				objectService: $this->objectService,
+				schemaMapper: $this->schemaMapper,
+				objectMapper: $this->objectMapper,
+				permissionHandler: $this->permissionHandler,
+			),
+			providers: new HandoffProviders(
+				semanticTypeResolver: $resolver,
+				mappingEvaluator: new HandoffMappingEvaluator(),
+			),
+			ledger: new HandoffLedger(
+				auditTrailMapper: $this->auditTrailMapper,
+				queueMapper: $this->queueMapper,
+				db: $this->db,
+				logger: $this->createMock(LoggerInterface::class),
+			),
+			requesters: new HandoffRequesters(
+				userSession: $this->userSession,
+				userManager: $this->userManager,
+				notificationManager: $this->notificationManager,
+				eventDispatcher: $this->eventDispatcher,
+			),
 		);
 
 	}//end setUp()
