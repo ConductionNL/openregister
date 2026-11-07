@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Exception\NoteEditForbiddenException;
 use OCA\OpenRegister\Exception\NoteLockedException;
 
@@ -91,7 +91,7 @@ interface NoteServiceInterface {
 	 * {@see updateNote()}: the controller holds the object, this service holds
 	 * the history, and the audit entry needs both.
 	 *
-	 * @param ObjectEntity $object The object the note hangs on
+	 * @param ObjectEntityInterface $object The object the note hangs on
 	 * @param int $noteId The note that was rewritten
 	 * @param int $versions The number of versions the note now has
 	 *
@@ -99,7 +99,7 @@ interface NoteServiceInterface {
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool;
+	public function auditEdit(ObjectEntityInterface $object, int $noteId, int $versions): bool;
 
 	/**
 	 * Create a new note on an OpenRegister object.
