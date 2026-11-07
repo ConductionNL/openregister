@@ -557,6 +557,7 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { scopeListLoader } from '../scopeListLoader.js'
 
 /**
  * The state every instance of this component starts from.
@@ -622,6 +623,8 @@ export default {
 		DeleteView,
 		SelectOption,
 	},
+
+	mixins: [scopeListLoader],
 
 	data() {
 		return {
@@ -813,19 +816,6 @@ export default {
 		},
 
 		/**
-		 * Flatten the object metadata map into column descriptors for display.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
-		 * @return {Array} Metadata column descriptors
-		 */
-		metadataColumns() {
-			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
-				id,
-				...meta,
-			}))
-		},
-
-		/**
 		 * Get properties for all selected schemas
 		 *
 		 * Returns an array of objects containing schema info and properties
@@ -879,19 +869,7 @@ export default {
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
-			/**
-			 * @param {object|null} newSchema
-			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
-			 */
-			handler(newSchema) {
-				if (newSchema) {
-					objectStore.initializeProperties(newSchema)
-				} else {
-					objectStore.properties = {}
-					objectStore.initializeColumnFilters()
-				}
-			},
-
+			handler: 'syncSchemaProperties',
 			deep: true,
 		},
 
@@ -956,21 +934,7 @@ export default {
 		})
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore
-				.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
-
-		if (!schemaStore.schemaList.length) {
-			schemaStore
-				.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		this.loadScopeLists()
 
 		// Load default view if available
 		const defaultView = viewsStore.getDefaultView
