@@ -1,0 +1,10 @@
+{
+    "chunkMapper": "chunkMapper",
+    "db": "db",
+    "entityRelationMapper": "entityRelationMapper",
+    "gdprEntityMapper": "gdprEntityMapper",
+    "logger": "logger",
+    "registerMapper": "registerMapper",
+    "riskLevelService": "riskLevelService",
+    "schemaMapper": "schemaMapper"
+}
