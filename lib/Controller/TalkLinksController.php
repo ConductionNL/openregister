@@ -28,7 +28,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\TalkLinkService;
+use OCA\OpenRegister\Service\TalkLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -47,13 +47,13 @@ class TalkLinksController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param TalkLinkService $talkLinkService Backing service.
+	 * @param TalkLinkServiceInterface $talkLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly TalkLinkService $talkLinkService,
+		private readonly TalkLinkServiceInterface $talkLinkService,
 		private readonly ObjectOperationsInterface $objectService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
@@ -219,7 +219,7 @@ class TalkLinksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
-	 * @no-admin-idor-exempt Session-scoped list: TalkLinkService::getAvailableRoomsForUser returns only rooms
+	 * @no-admin-idor-exempt Session-scoped list: TalkLinkServiceInterface::getAvailableRoomsForUser returns only rooms
 	 *   the current user participates in; no unguarded id.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
