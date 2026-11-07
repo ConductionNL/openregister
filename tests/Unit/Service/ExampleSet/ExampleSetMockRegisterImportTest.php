@@ -92,6 +92,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
