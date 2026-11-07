@@ -246,7 +246,7 @@ class MigrationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function assertMayLeave(ObjectEntity $stored): void {
-		$kept = $this->mover->keptReason(object: $stored, actor: '');
+		$kept = $this->mover->keptReason(object: $stored);
 		if ($kept !== null) {
 			throw new InvalidArgumentException($kept);
 		}
