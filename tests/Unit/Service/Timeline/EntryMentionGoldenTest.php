@@ -29,7 +29,7 @@ use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryMentionService;
 use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -108,7 +108,7 @@ class EntryMentionGoldenTest extends TestCase {
 			}
 		);
 
-		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool {
 				$this->calls[] = 'read? ' . $userId . ' ' . $action . ' ' . json_encode([$objectOwner, $_rbac, $object?->getUuid()]);
@@ -173,7 +173,7 @@ class EntryMentionGoldenTest extends TestCase {
 			IUserManager::class => $users,
 			IUserSession::class => $session,
 			SchemaMapperInterface::class => $schemas,
-			PermissionHandler::class => $permissions,
+			PermissionHandlerInterface::class => $permissions,
 			INotificationManager::class => $notifications,
 			LoggerInterface::class => $logger,
 			DeepLinkRegistryServiceInterface::class => $deepLinks,

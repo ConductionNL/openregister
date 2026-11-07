@@ -159,7 +159,7 @@ class BulkController extends Controller {
 	 * a schema with no `manage` authorization rule can only be managed by
 	 * administrators. When manage rules are present, membership of one of the
 	 * listed groups grants permission (admins always pass). Deliberately NOT
-	 * `PermissionHandler::hasPermission()`, which is default-OPEN for object
+	 * `PermissionHandlerInterface::hasPermission()`, which is default-OPEN for object
 	 * data RBAC and therefore unsuitable for gating schema-definition writes.
 	 *
 	 * @param Schema $schema The schema to check manage permission for.

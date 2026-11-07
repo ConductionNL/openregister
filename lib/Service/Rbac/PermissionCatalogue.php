@@ -92,7 +92,7 @@ class PermissionCatalogue {
 	 *
 	 * `destroy` is here because `delete-window-and-recorded-destruction` made it
 	 * a second, narrower right than `delete`: deleting puts an object in the
-	 * trash, where it can come back, and destroying ends it. `PermissionHandler`
+	 * trash, where it can come back, and destroying ends it. `PermissionHandlerInterface`
 	 * has carried it in its canonical set since that change landed, and
 	 * `DestroyRightService` resolves it on every destruction, so a catalogue
 	 * without it refused a block naming a verb this instance already enforces

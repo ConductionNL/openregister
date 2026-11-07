@@ -237,7 +237,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 		};
 		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 		$schemas->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
-		$rights = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$rights = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$rights->method('hasPermission')->willReturn(true);
 		$container = $this->container(
 			[
@@ -251,7 +251,7 @@ class LinkServiceCreateGoldenTest extends TestCase {
 				'OCA\\OpenRegister\\Service\\FileService' => $handler,
 				'OCA\\OpenRegister\\Db\\MagicMapper' => $objects,
 				'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
-				'OCA\\OpenRegister\\Service\\Object\\PermissionHandler' => $rights,
+				'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface' => $rights,
 			]
 		);
 		$l10n = $this->createMock(IL10N::class);

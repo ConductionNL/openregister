@@ -31,7 +31,7 @@ use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -85,9 +85,9 @@ class EmailsController extends Controller {
 	/**
 	 * Answers the object update right.
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private readonly PermissionHandler $permissions;
+	private readonly PermissionHandlerInterface $permissions;
 
 	/**
 	 * Resolves reply headers onto objects, when available.

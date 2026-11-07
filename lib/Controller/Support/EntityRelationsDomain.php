@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * The domain services of the entity relations API.
@@ -35,14 +35,14 @@ final class EntityRelationsDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param PermissionHandler       $permissionHandler  RBAC verdict for object-bound relations.
+	 * @param PermissionHandlerInterface       $permissionHandler  RBAC verdict for object-bound relations.
 	 * @param RelationDecisionService $relationDecisions  Takes the decision as its own object, under the ownership rule.
 	 * @param DecisionVisibility      $decisionVisibility Masks a decision the caller may not see (REQ-ROD-002).
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
 	public function __construct(
-		public readonly PermissionHandler $permissionHandler,
+		public readonly PermissionHandlerInterface $permissionHandler,
 		public readonly RelationDecisionService $relationDecisions,
 		public readonly DecisionVisibility $decisionVisibility,
 	) {

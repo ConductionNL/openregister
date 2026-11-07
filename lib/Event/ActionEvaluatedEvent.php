@@ -17,7 +17,7 @@
  * decision, in either direction. To CONTRIBUTE a verdict for a declared action,
  * use {@see CustomScopeEvaluatingEvent} instead.
  *
- * ⚠️ It marks a DECISION, not an attempt. PermissionHandler memoises verdicts
+ * ⚠️ It marks a DECISION, not an attempt. PermissionHandlerInterface memoises verdicts
  * per request, so repeated identical checks within one request produce one
  * event, not one per call. A listener counting attempts will under-count; a
  * listener recording decisions is exact.

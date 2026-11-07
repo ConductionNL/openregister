@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
 use OCP\IUserManager;
@@ -443,7 +443,7 @@ class NotificationRecipientResolver implements NotificationRecipientResolverInte
 				return [];
 			}
 
-			$readable = $this->serverContainer->get(PermissionHandler::class)
+			$readable = $this->serverContainer->get(PermissionHandlerInterface::class)
 				->getReadableByUsers(object: $object);
 			if ($readable === []) {
 				return $uids;

@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec exclude Value object of the ObjectService save checks; access behaviour owned by PermissionHandler.
+ * @spec exclude Value object of the ObjectService save checks; access behaviour owned by PermissionHandlerInterface.
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ final class SaveAccessRequest
      * @param ObjectEntity $incoming     The incoming data, for create rules that carry a match.
      * @param bool         $multitenancy Whether to apply multitenancy filtering.
      *
-     * @spec exclude Value object of the ObjectService save checks; access behaviour owned by PermissionHandler.
+     * @spec exclude Value object of the ObjectService save checks; access behaviour owned by PermissionHandlerInterface.
      */
     public function __construct(
         public readonly ?string $uuid,

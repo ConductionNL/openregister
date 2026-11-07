@@ -49,7 +49,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\ShareLinkService;
@@ -315,7 +315,7 @@ class ShareLinkServiceTest extends TestCase {
 
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn(new Schema());
-		$permissions = $this->createMock(PermissionHandler::class);
+		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
 			function (Schema $schema, string $action) use ($mayUpdate): bool {
 				$this->assertSame('update', $action);
@@ -328,7 +328,7 @@ class ShareLinkServiceTest extends TestCase {
 			'OCA\\OpenRegister\\Service\\FileService' => $files,
 			'OCA\\OpenRegister\\Db\\MagicMapper' => $mapper,
 			'OCA\\OpenRegister\\Db\\SchemaMapper' => $schemas,
-			'OCA\\OpenRegister\\Service\\Object\\PermissionHandler' => $permissions,
+			'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface' => $permissions,
 			'OCA\\OpenRegister\\Service\\Rbac\\GrantChangeAuditor' => $this->auditor,
 		];
 	}//end managedShareServices()

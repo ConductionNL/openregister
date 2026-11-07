@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Db\Schema;
  * Answers whether a schema's authorization block lets a group perform an action.
  *
  * The body of Schema::hasPermission(), which is deprecated and has no
- * production callers: the canonical evaluators are PermissionHandler (PHP
+ * production callers: the canonical evaluators are PermissionHandlerInterface (PHP
  * side) and MagicRbacHandler (SQL side). Admin and owner bypass first, then an
  * empty block allows everything, then an unlisted action is denied.
  *
@@ -56,7 +56,7 @@ final class SchemaGrantEvaluator {
 		// (non-empty block), an action that is not explicitly listed is denied —
 		// including the `public` pseudo-group. The empty-block open-default above
 		// and the admin/owner bypasses still apply. Kept consistent with the
-		// active enforcement paths (PermissionHandler / MagicRbacHandler) even
+		// active enforcement paths (PermissionHandlerInterface / MagicRbacHandler) even
 		// though this entity-level helper currently has no lib/ enforcement callers.
 		if (empty($authorization[$query->action]) === true) {
 			return false;

@@ -8589,7 +8589,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Seeding is not a user action, and there is no user intent for a listener
 	 * to react to. SystemOperationContext already marks exactly that condition
 	 * and is already trusted for RBAC decisions in RenderObject and
-	 * PermissionHandler; nothing had yet used it for events.
+	 * PermissionHandlerInterface; nothing had yet used it for events.
 	 *
 	 * Gating the DISPATCH rather than each listener is deliberate: it is one
 	 * change here instead of eight across apps we do not all own, and it cannot

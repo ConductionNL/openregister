@@ -32,7 +32,7 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluatorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
@@ -79,7 +79,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @param LifecycleEditReader                  $edits              Reads the edit and the transition it amounts to.
 	 * @param LifecycleGuardRegistry               $guardRegistry      Registry resolving guard ids to instances.
 	 * @param IUserSession                         $userSession        Current user session.
-	 * @param PermissionHandler                    $permissionHandler  RBAC handler used to evaluate declarative per-transition authorization.
+	 * @param PermissionHandlerInterface                    $permissionHandler  RBAC handler used to evaluate declarative per-transition authorization.
 	 * @param LifecycleConditionEvaluatorInterface $conditionEvaluator Decides whether a transition `condition` lets it through.
 	 * @param ConditionTracerInterface                      $conditionTracer    Names the operand that decided a condition.
 	 * @param RuleRunRecorderInterface                      $ruleRuns           Records each condition's verdict for the rule inventory.
@@ -92,7 +92,7 @@ class LifecycleValidationListener implements IEventListener {
 		private readonly LifecycleEditReader $edits,
 		private readonly LifecycleGuardRegistry $guardRegistry,
 		private readonly IUserSession $userSession,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly LifecycleConditionEvaluatorInterface $conditionEvaluator,
 		private readonly ConditionTracerInterface $conditionTracer,
 		private readonly RuleRunRecorderInterface $ruleRuns,

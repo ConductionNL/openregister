@@ -40,7 +40,7 @@ use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\EmailMessageRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
@@ -64,14 +64,14 @@ class EmailLinksController extends Controller {
 	 * @param IRequest $request HTTP request.
 	 * @param EmailLinkServiceInterface $emailLinkService Backing service.
 	 * @param ObjectOperationsInterface $objectService OR object resolver.
-	 * @param PermissionHandler $permissions Answers the object update right
+	 * @param PermissionHandlerInterface $permissions Answers the object update right
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly EmailLinkServiceInterface $emailLinkService,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissions,
+		private readonly PermissionHandlerInterface $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Exception\InvalidTransitionInputException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -90,7 +90,7 @@ class TransitionEngine {
 	 * @param SchemaMapperInterface $schemaMapper Mapper to resolve the entity's schema.
 	 * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
 	 * @param IUserSession $userSession Current user session, for actor attribution.
-	 * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
 	 * @param RegisterMapperInterface $registerMapper Mapper used to resolve the register slug.
 	 * @param IAppConfig $appConfig App config, for the slug-contract opt-in.
 	 * @param LoggerInterface $logger Logger for post-commit listener failures.
@@ -112,7 +112,7 @@ class TransitionEngine {
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly IEventDispatcher $eventDispatcher,
 		private readonly IUserSession $userSession,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,

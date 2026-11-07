@@ -386,7 +386,7 @@ class ProvenanceResolver {
 	 * Flatten role definitions into a name to actions map.
 	 *
 	 * `extends` is NOT followed here. The hierarchy is resolved in
-	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler::expandRoles()},
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::expandRoles()},
 	 * and a second walk of it here could disagree with the first, which would
 	 * make the provenance name a role that did not actually decide. Callers that
 	 * need inherited actions pass the already-resolved definitions.

@@ -30,7 +30,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\PartyControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
@@ -91,9 +91,9 @@ class PartyController extends Controller {
 	/**
 	 * The object-level permission check a party write asks.
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private readonly PermissionHandler $permissions;
+	private readonly PermissionHandlerInterface $permissions;
 
 	/**
 	 * Constructor.

@@ -2815,7 +2815,7 @@ class SchemasController extends Controller {
 	 * Default-SECURE: a schema with no `manage` authorization rule can only be
 	 * managed by administrators. When manage rules are present, membership of
 	 * one of the listed groups grants permission (admins always pass). This is
-	 * deliberately NOT PermissionHandler::hasPermission(), which is default-OPEN
+	 * deliberately NOT PermissionHandlerInterface::hasPermission(), which is default-OPEN
 	 * for object data RBAC and therefore unsuitable for gating schema-definition
 	 * writes. Reading schema metadata is unaffected and stays open.
 	 *

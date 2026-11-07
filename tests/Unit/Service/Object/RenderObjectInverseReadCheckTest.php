@@ -22,7 +22,7 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -75,13 +75,13 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 	/** @var MagicMapper&MockObject */
 	private MagicMapper $mapper;
 
-	/** @var PermissionHandler&MockObject */
-	private PermissionHandler $permissions;
+	/** @var PermissionHandlerInterface&MockObject */
+	private PermissionHandlerInterface $permissions;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->mapper = $this->createMock(MagicMapper::class);
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
 		$this->permissions->method('hasPermission')->willReturnCallback(
 			static function (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool {
 				return $rbac === false || ($action === 'read' && $object?->getUuid() !== self::CLOSED);
@@ -157,7 +157,7 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $this->permissions;
 				}
 
@@ -290,7 +290,7 @@ class RenderObjectInverseReadCheckTest extends TestCase {
 	}
 
 	public function testAFailedCheckLeavesTheObjectOut(): void {
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
 		$this->permissions->method('hasPermission')->willThrowException(new RuntimeException('no session'));
 		$this->mapper->method('findByRelationBatchInSchema')->willReturn($this->children());
 

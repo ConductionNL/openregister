@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * The object lookup and update right of the object email API.
@@ -33,11 +33,11 @@ final readonly class EmailsObjectAccess {
 	 * Bundle the services.
 	 *
 	 * @param ObjectOperationsInterface $objectService Object service for object validation.
-	 * @param PermissionHandler $permissions Answers the object update right.
+	 * @param PermissionHandlerInterface $permissions Answers the object update right.
 	 */
 	public function __construct(
 		public ObjectOperationsInterface $objectService,
-		public PermissionHandler $permissions,
+		public PermissionHandlerInterface $permissions,
 	) {
 	}//end __construct()
 }//end class

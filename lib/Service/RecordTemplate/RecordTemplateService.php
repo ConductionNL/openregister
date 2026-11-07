@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\RecordTemplate;
 use OCA\OpenRegister\Db\RecordTemplateMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
@@ -82,7 +82,7 @@ class RecordTemplateService {
 	 *
 	 * @param RecordTemplateMapper $mapper      The template store.
 	 * @param SchemaMapperInterface         $schemas     Reads the template's schema.
-	 * @param PermissionHandler    $permissions Answers whether a caller may create in a schema.
+	 * @param PermissionHandlerInterface    $permissions Answers whether a caller may create in a schema.
 	 * @param ViewerReachResolver  $viewers     Validates shares against existing groups.
 	 * @param LoggerInterface      $logger      Logger.
 	 *
@@ -91,7 +91,7 @@ class RecordTemplateService {
 	public function __construct(
 		private readonly RecordTemplateMapper $mapper,
 		private readonly SchemaMapperInterface $schemas,
-		private readonly PermissionHandler $permissions,
+		private readonly PermissionHandlerInterface $permissions,
 		private readonly ViewerReachResolver $viewers,
 		private readonly LoggerInterface $logger,
 	) {

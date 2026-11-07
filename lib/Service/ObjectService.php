@@ -65,7 +65,7 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionGraph\ReadableDeletionAnalysis;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
@@ -316,7 +316,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
      * @param DeleteObject                   $deleteHandler        Handler for object deletion.
      * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PermissionHandler              $permissionHandler    Handler for permission checks.
+     * @param PermissionHandlerInterface              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
      * @param SaveObjectInterface                     $saveHandler          Handler for individual object saving.
      * @param SaveObjects                    $saveObjectsHandler   Handler for bulk object saving operations.
@@ -363,7 +363,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
-        private readonly PermissionHandler $permissionHandler,
+        private readonly PermissionHandlerInterface $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObjectInterface $saveHandler,
         private readonly SaveObjects $saveObjectsHandler,
@@ -633,7 +633,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * A THIRD thing decides access without living on the session: the grant
      * an API token carries ({@see TokenGrantSource}, bound by
-     * AuthorizationService before it sets a user). PermissionHandler consults
+     * AuthorizationService before it sets a user). PermissionHandlerInterface consults
      * it ahead of even the admin and owner bypasses, so a request that
      * authenticated with a scoped token would be judged as nobody INTERSECTED
      * WITH THAT TOKEN'S GRANT — narrower than the public answer, and narrower
@@ -5646,11 +5646,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * actions a reader may take on the record they just read, and the rules
      * behind them. The verdict itself stays inside this service.
      *
-     * @return PermissionHandler The permission handler.
+     * @return PermissionHandlerInterface The permission handler.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
-    public function getPermissionHandler(): PermissionHandler
+    public function getPermissionHandler(): PermissionHandlerInterface
     {
         return $this->permissionHandler;
     }//end getPermissionHandler()

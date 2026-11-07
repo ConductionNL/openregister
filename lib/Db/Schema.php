@@ -1104,7 +1104,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return bool True if the group has permission for the action
 	 *
 	 * @deprecated This is a pre-unification duplicate of the RBAC matcher. The
-	 *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasPermission()}
+	 *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::hasPermission()}
 	 *             (PHP-side) and {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}
 	 *             (SQL-side), both of which delegate conditional match evaluation
 	 *             to {@see \OCA\OpenRegister\Service\ConditionMatcher}. This method

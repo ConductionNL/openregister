@@ -6498,7 +6498,7 @@ class ObjectsControllerTest extends TestCase {
 			$schemas['s'],
 			'alice'
 		)->willReturn(['moved' => $moved]);
-		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
 			function (...$args) use ($schemas, $object): bool {
 				$this->assertSame(
@@ -6527,7 +6527,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
 		$mover->expects($this->never())->method('move');
-		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturn(false);
 		$this->moveServices(mover: $mover, permissions: $permissions);
 
@@ -6544,7 +6544,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	private function moveServices(object $mover, object $permissions): void {
 		$this->container->method('get')->willReturnCallback(
-			static fn (string $id) => ($id === \OCA\OpenRegister\Service\Object\PermissionHandler::class) ? $permissions : $mover
+			static fn (string $id) => ($id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class) ? $permissions : $mover
 		);
 	}
 

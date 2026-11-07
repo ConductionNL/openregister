@@ -29,7 +29,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,7 +76,7 @@ class CalendarEventsController extends Controller {
 	 * @param ObjectCalendarEventsInterface $calendarEventService Calendar event service (legacy)
 	 * @param CalendarLinkServiceInterface $calendarLinkService Calendar link service (Tier-2)
 	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param PermissionHandler $permissions Answers the object update right
+	 * @param PermissionHandlerInterface $permissions Answers the object update right
 	 *
 	 * @return void
 	 */
@@ -86,7 +86,7 @@ class CalendarEventsController extends Controller {
 		ObjectCalendarEventsInterface $calendarEventService,
 		CalendarLinkServiceInterface $calendarLinkService,
 		ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissions,
+		private readonly PermissionHandlerInterface $permissions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 

@@ -3,7 +3,7 @@
 /**
  * The grant as one more layer in the one evaluator (D-2).
  *
- * `PermissionHandler::resolveAuthorization()` is the step every path takes: the
+ * `PermissionHandlerInterface::resolveAuthorization()` is the step every path takes: the
  * object read, the relation check and both list emitters resolve through it,
  * and `MagicRbacHandler` delegates to it. Adding the grant there is what makes
  * the PHP verdict and the SQL verdict identical BY CONSTRUCTION rather than by

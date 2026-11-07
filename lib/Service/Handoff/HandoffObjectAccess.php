@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\Handoff;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * Reads and writes the source and target objects of a handoff, under the caller's RBAC.
@@ -40,13 +40,13 @@ final readonly class HandoffObjectAccess {
 	 * @param ObjectOperationsInterface $objectService RBAC-enforcing object read/write path.
 	 * @param SchemaMapperInterface $schemaMapper Source-schema loading.
 	 * @param MagicMapperInterface $objectMapper Raw entity access for provenance relation writes.
-	 * @param PermissionHandler $permissionHandler RBAC pre-checks (typed 403 before any write).
+	 * @param PermissionHandlerInterface $permissionHandler RBAC pre-checks (typed 403 before any write).
 	 */
 	public function __construct(
 		public ObjectOperationsInterface $objectService,
 		public SchemaMapperInterface $schemaMapper,
 		public MagicMapperInterface $objectMapper,
-		public PermissionHandler $permissionHandler,
+		public PermissionHandlerInterface $permissionHandler,
 	) {
 	}//end __construct()
 }//end class

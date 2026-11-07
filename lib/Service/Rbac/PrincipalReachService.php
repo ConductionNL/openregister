@@ -6,7 +6,7 @@
  *
  * D-5 IS THE WHOLE DESIGN. "Welke toegang had deze persoon" is the reverse of
  * the query the permission cascade already compiles, and
- * {@see \OCA\OpenRegister\Service\Object\PermissionHandler} is the one place
+ * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface} is the one place
  * that answers it: `permittedActionsFor()` says which verbs a principal holds
  * on a schema and `provenanceFor()` says which rule granted each one. Reading
  * those gives one answer that stays true as the rules change. Walking the
@@ -40,7 +40,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -67,7 +67,7 @@ class PrincipalReachService {
 	/**
 	 * Wire the authorities the listing reads.
 	 *
-	 * @param PermissionHandler     $permissions  The canonical RBAC verdict and its provenance.
+	 * @param PermissionHandlerInterface     $permissions  The canonical RBAC verdict and its provenance.
 	 * @param SchemaMapperInterface          $schemaMapper The schemas the cascade is asked about.
 	 * @param DerivedGrantStore     $derived      Grants derived from sign-in claims.
 	 * @param DelegationGrantMapper $delegations  Delegations held by this principal.
@@ -78,7 +78,7 @@ class PrincipalReachService {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissions,
+		private readonly PermissionHandlerInterface $permissions,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly DerivedGrantStore $derived,
 		private readonly DelegationGrantMapper $delegations,

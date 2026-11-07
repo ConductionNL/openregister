@@ -9,7 +9,7 @@
  * downstream analytics WITHOUT participating in the decision.
  *
  * NOT dispatched when no listener votes on the evaluating event — in
- * that case PermissionHandler falls through to the standard rule chain
+ * that case PermissionHandlerInterface falls through to the standard rule chain
  * and the resulting verdict is captured by the existing static-rule
  * audit/log paths, not this event.
  *

@@ -58,7 +58,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\ContextChat\ContentItem;
 use OCP\ContextChat\IContentManager;
 use OCP\EventDispatcher\Event;
@@ -110,7 +110,7 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	 *
 	 * @param ContainerInterface $container Container, for the lazy IContentManager resolve.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param PermissionHandler $permissionHandler RBAC evaluator, used for the publication predicate + audience.
+	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator, used for the publication predicate + audience.
 	 * @param IUserManager $userManager User manager, for the broadcast-audience fallback.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -121,7 +121,7 @@ class ContextChatSubmissionListener implements IEventListener, ContextChatSubmis
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {

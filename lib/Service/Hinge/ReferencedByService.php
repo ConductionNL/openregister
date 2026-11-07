@@ -91,7 +91,7 @@ class ReferencedByService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `_rbac` is the established
 	 *   access-flag convention across the object layer (MagicSearchHandler,
-	 *   PermissionHandler, ObjectService all take it); splitting this one method
+	 *   PermissionHandlerInterface, ObjectService all take it); splitting this one method
 	 *   in two would make it the exception rather than the rule.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
