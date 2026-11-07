@@ -4,7 +4,7 @@
  * Lane D13: the classes below are reached from other components only through
  * an interface next to them.
  *
- * Classes that other components used to name directly: two Service/Object draft classes and a Db/MagicMapper handler.
+ * Classes that other components used to name directly: two Service/Object draft classes and several Db classes.
  *
  * Each class implements its interface, the component's registrar binds the
  * interface to the class, and no lib/ file outside the class's component
@@ -25,8 +25,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointMapper;
+use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Db\FlowTriggerMapper;
+use OCA\OpenRegister\Db\FlowTriggerMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
+use OCA\OpenRegister\Db\RuleRunSummaryMapper;
+use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
+use OCA\OpenRegister\Db\SyncRecordMapper;
+use OCA\OpenRegister\Db\SyncRecordMapperInterface;
+use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
@@ -57,7 +69,13 @@ final class D13InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		DraftActivation::class => [DraftActivationInterface::class, ContractBindings::class],
 		DraftExpiry::class => [DraftExpiryInterface::class, ContractBindings::class],
+		EndpointLogMapper::class => [EndpointLogMapperInterface::class, DbRegistrar::class],
+		EndpointMapper::class => [EndpointMapperInterface::class, DbRegistrar::class],
+		FlowTriggerMapper::class => [FlowTriggerMapperInterface::class, DbRegistrar::class],
 		MagicTableHandler::class => [MagicTableHandlerInterface::class, DbRegistrar::class],
+		RuleRunSummaryMapper::class => [RuleRunSummaryMapperInterface::class, DbRegistrar::class],
+		SyncRecordMapper::class => [SyncRecordMapperInterface::class, DbRegistrar::class],
+		WebhookLogMapper::class => [WebhookLogMapperInterface::class, DbRegistrar::class],
 	];
 
 	/**

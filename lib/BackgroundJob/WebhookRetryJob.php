@@ -27,7 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Db\WebhookLogMapper;
+use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -64,9 +64,9 @@ class WebhookRetryJob extends TimedJob {
 	/**
 	 * Webhook log mapper
 	 *
-	 * @var WebhookLogMapper
+	 * @var WebhookLogMapperInterface
 	 */
-	private WebhookLogMapper $webhookLogMapper;
+	private WebhookLogMapperInterface $webhookLogMapper;
 
 	/**
 	 * Webhook service
@@ -87,7 +87,7 @@ class WebhookRetryJob extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory
 	 * @param WebhookMapperInterface $webhookMapper Webhook mapper
-	 * @param WebhookLogMapper $webhookLogMapper Webhook log mapper
+	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper
 	 * @param WebhookService $webhookService Webhook service
 	 * @param LoggerInterface $logger Logger
 	 *
@@ -96,7 +96,7 @@ class WebhookRetryJob extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		WebhookMapperInterface $webhookMapper,
-		WebhookLogMapper $webhookLogMapper,
+		WebhookLogMapperInterface $webhookLogMapper,
 		WebhookService $webhookService,
 		LoggerInterface $logger,
 	) {

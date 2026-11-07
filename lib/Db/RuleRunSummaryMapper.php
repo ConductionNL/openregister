@@ -43,7 +43,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/flow-engine/spec.md
  */
-class RuleRunSummaryMapper extends QBMapper {
+class RuleRunSummaryMapper extends QBMapper implements RuleRunSummaryMapperInterface {
 
 	/**
 	 * How long a repeat of the same verdict may go unwritten.
