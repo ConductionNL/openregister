@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunRecorder {
+class JobRunRecorder implements JobRunRecorderInterface {
 
 	/**
 	 * How much of a failure message the row keeps.

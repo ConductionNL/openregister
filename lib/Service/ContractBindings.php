@@ -168,10 +168,22 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\JobRunRecorder;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
+use OCA\OpenRegister\Service\Operations\JobScheduleService;
+use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
 use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Service\Operations\SupportBundleService;
+use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -231,6 +243,7 @@ final class ContractBindings {
 		FlowStateNodeInterface::class => FlowStateNode::class,
 		IterateNodeInterface::class => IterateNode::class,
 		LinkObjectNodeInterface::class => LinkObjectNode::class,
+		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		MapNodeInterface::class => MapNode::class,
 		MergeNodeInterface::class => MergeNode::class,
 		RouterNodeInterface::class => RouterNode::class,
@@ -247,6 +260,8 @@ final class ContractBindings {
 		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
+		ConsistencyCheckServiceInterface::class => ConsistencyCheckService::class,
+		ConsistencyRepairServiceInterface::class => ConsistencyRepairService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
@@ -285,6 +300,8 @@ final class ContractBindings {
 		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		IterateNodeInterface::class => IterateNode::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
+		JobRunRecorderInterface::class => JobRunRecorder::class,
+		JobScheduleServiceInterface::class => JobScheduleService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
@@ -354,6 +371,7 @@ final class ContractBindings {
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
 		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
 		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
+		SupportBundleServiceInterface::class => SupportBundleService::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,

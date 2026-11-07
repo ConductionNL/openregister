@@ -44,7 +44,7 @@ use OCP\IDBConnection;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class ConsistencyRepairService {
+class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 
 	/**
 	 * The act, as the run log names it.

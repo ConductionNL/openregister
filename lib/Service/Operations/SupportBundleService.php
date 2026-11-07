@@ -46,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
  */
-class SupportBundleService {
+class SupportBundleService implements SupportBundleServiceInterface {
 
 	/**
 	 * The app the bundle is about.

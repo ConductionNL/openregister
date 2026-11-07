@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
-use OCA\OpenRegister\Service\Operations\SupportBundleService;
+use OCA\OpenRegister\Service\Operations\MaintenanceModeServiceInterface;
+use OCA\OpenRegister\Service\Operations\SupportBundleServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -48,15 +48,15 @@ class OperationsMaintenanceController extends Controller {
 	 *
 	 * @param string                 $appName     Application name.
 	 * @param IRequest               $request     HTTP request.
-	 * @param MaintenanceModeService $maintenance Maintenance mode.
-	 * @param SupportBundleService   $bundle      The support bundle and the instance facts.
+	 * @param MaintenanceModeServiceInterface $maintenance Maintenance mode.
+	 * @param SupportBundleServiceInterface   $bundle      The support bundle and the instance facts.
 	 * @param IUserSession           $userSession Names the administrator acting.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MaintenanceModeService $maintenance,
-		private readonly SupportBundleService $bundle,
+		private readonly MaintenanceModeServiceInterface $maintenance,
+		private readonly SupportBundleServiceInterface $bundle,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
