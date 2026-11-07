@@ -21,6 +21,8 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -69,12 +71,9 @@ class ValidateObjectTest extends TestCase {
 			->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 	}
 
@@ -2513,12 +2512,9 @@ class ValidateObjectTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost');
 
 		$handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$refSchema = $this->createSchema([]);
@@ -2545,12 +2541,9 @@ class ValidateObjectTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost');
 
 		$handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$uri = Uri::create('http://localhost/index.php/apps/openregister/api/files/schema/42');
@@ -3000,12 +2993,9 @@ class ValidateObjectTest extends TestCase {
 
 		// Recreate handler with updated urlGenerator.
 		$this->handler = new ValidateObject(
-			$this->config,
-			$this->objectMapper,
-			$this->schemaMapper,
-			$this->urlGenerator,
-			$this->logger,
-			$this->createMock(\OCP\IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->config, schemaMapper: $this->schemaMapper, urlGenerator: $this->urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->objectMapper, userManager: $this->createMock(\OCP\IUserManager::class)),
+			logger: $this->logger
 		);
 
 		$uri = Uri::create('http://localhost/index.php/apps/openregister/api/schemas/1');

@@ -63,6 +63,33 @@ class SendMessagingNodesTest extends TestCase {
 	}//end setUp()
 
 	/**
+	 * The constructor parameter types of a class, followed through the
+	 * OpenRegister bundles it takes down to the leaf types.
+	 *
+	 * @param string $class The class to read.
+	 *
+	 * @return list<string> The leaf parameter types.
+	 */
+	private function constructorTypes(string $class): array {
+		$types = [];
+		foreach ((new ReflectionClass($class))->getConstructor()?->getParameters() ?? [] as $param) {
+			$type = $param->getType();
+			if (($type instanceof ReflectionNamedType) === false) {
+				continue;
+			}
+
+			if (str_starts_with($type->getName(), 'OCA\\OpenRegister\\Listener\\FlowNodes\\') === true) {
+				array_push($types, ...$this->constructorTypes($type->getName()));
+				continue;
+			}
+
+			$types[] = $type->getName();
+		}
+
+		return $types;
+	}//end constructorTypes()
+
+	/**
 	 * All three nodes, keyed by their type id.
 	 *
 	 * @return array<string, object> The nodes.
@@ -173,17 +200,10 @@ class SendMessagingNodesTest extends TestCase {
 			))
 		);
 
-		// The registration listener constructor carries all three node types (by
-		// their interfaces),
-		// which is the wiring `handle()` registers.
-		$ctor = (new ReflectionClass(FlowNodeRegistrationListener::class))->getConstructor();
-		$paramTypes = [];
-		foreach ($ctor->getParameters() as $param) {
-			$type = $param->getType();
-			if ($type instanceof ReflectionNamedType) {
-				$paramTypes[] = $type->getName();
-			}
-		}
+		// The registration listener's constructor, through the node bundles it
+		// takes, carries all three node types (by their interfaces), which is the
+		// wiring `handle()` registers.
+		$paramTypes = $this->constructorTypes(FlowNodeRegistrationListener::class);
 
 		$this->assertContains(SendNotificationNodeInterface::class, $paramTypes);
 		$this->assertContains(SendEmailNodeInterface::class, $paramTypes);

@@ -26,8 +26,12 @@ use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ConversationMapperInterface;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -41,7 +45,9 @@ final class McpRegistrar
     public const BINDINGS = [
         AgentMapperInterface::class        => AgentMapper::class,
         ChatServiceInterface::class        => ChatService::class,
+        ContextChatSubmissionListenerInterface::class => ContextChatSubmissionListener::class,
         ConversationMapperInterface::class => ConversationMapper::class,
+        ToolRegistryInterface::class => ToolRegistry::class,
     ];
 
     /**

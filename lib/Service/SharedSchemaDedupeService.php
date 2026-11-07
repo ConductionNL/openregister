@@ -35,6 +35,8 @@ use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\SharedSchema\RegisterConfigurationLocator;
 use OCA\OpenRegister\Service\SharedSchema\SchemaAttribution;
 use OCA\OpenRegister\Service\SharedSchema\SchemaTableMigrator;
+use OCA\OpenRegister\Service\SharedSchema\SharedSchemaOwnership;
+use OCA\OpenRegister\Service\SharedSchema\SharedSchemaStore;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -63,29 +65,83 @@ use Throwable;
 class SharedSchemaDedupeService implements SharedSchemaDedupeServiceInterface {
 
 	/**
+	 * Database connection, for the split transaction.
+	 *
+	 * @var IDBConnection
+	 */
+	private readonly IDBConnection $db;
+
+	/**
+	 * Register lookups and persistence.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookups and the clone fallback.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * The configuration-driven schema create path.
+	 *
+	 * @var ImportHandler
+	 */
+	private readonly ImportHandler $importHandler;
+
+	/**
+	 * Reads a register's own app configuration.
+	 *
+	 * @var RegisterConfigurationLocator
+	 */
+	private readonly RegisterConfigurationLocator $locator;
+
+	/**
+	 * The pure detection and ownership rules.
+	 *
+	 * @var SchemaAttribution
+	 */
+	private readonly SchemaAttribution $attribution;
+
+	/**
+	 * Moves the object rows across the split.
+	 *
+	 * @var SchemaTableMigrator
+	 */
+	private readonly SchemaTableMigrator $migrator;
+
+	/**
+	 * Audit trail for every mutation.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection                $db             Database connection, for the split transaction.
-	 * @param RegisterMapperInterface               $registerMapper Register lookups and persistence.
-	 * @param SchemaMapperInterface                 $schemaMapper   Schema lookups and the clone fallback.
-	 * @param ImportHandler                $importHandler  The configuration-driven schema create path.
-	 * @param RegisterConfigurationLocator $locator        Reads a register's own app configuration.
-	 * @param SchemaAttribution            $attribution    The pure detection and ownership rules.
-	 * @param SchemaTableMigrator          $migrator       Moves the object rows across the split.
-	 * @param LoggerInterface              $logger         Audit trail for every mutation.
+	 * @param SharedSchemaStore     $store     The database connection, the register and schema mappers and the table migrator
+	 * @param SharedSchemaOwnership $ownership The import handler, the configuration locator and the attribution rules
+	 * @param LoggerInterface       $logger    Audit trail for every mutation.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly ImportHandler $importHandler,
-		private readonly RegisterConfigurationLocator $locator,
-		private readonly SchemaAttribution $attribution,
-		private readonly SchemaTableMigrator $migrator,
-		private readonly LoggerInterface $logger,
+		SharedSchemaStore $store,
+		SharedSchemaOwnership $ownership,
+		LoggerInterface $logger,
 	) {
+		$this->db = $store->db;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->importHandler = $ownership->importHandler;
+		$this->locator = $ownership->locator;
+		$this->attribution = $ownership->attribution;
+		$this->migrator = $store->migrator;
+		$this->logger = $logger;
 	}//end __construct()
 
 	/**

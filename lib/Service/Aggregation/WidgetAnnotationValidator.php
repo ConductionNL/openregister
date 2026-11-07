@@ -89,125 +89,218 @@ final class WidgetAnnotationValidator {
 
 		$widgets = $schema['x-openregister-widgets'];
 		if (is_array($widgets) === false || count($widgets) === 0) {
-			return [
-				[
-					'code' => 'widgets-empty',
-					'message' => 'x-openregister-widgets must declare at least one widget.',
-				],
-			];
+			return [$this->finding(code: 'widgets-empty', message: 'x-openregister-widgets must declare at least one widget.')];
 		}
 
-		$errors = [];
-		foreach ($widgets as $index => $widget) {
-			$label = sprintf('widgets[%s]', (string)$index);
-			if (is_array($widget) === false) {
-				$errors[] = [
-					'code' => 'widget-malformed',
-					'message' => sprintf('%s must be an object.', $label),
-				];
-				continue;
-			}
-
-			$errors = array_merge($errors, $this->validateOne(label: $label, widget: $widget));
-		}
-
-		return $errors;
+		return $this->validateList(widgets: $widgets);
 	}//end validate()
 
 	/**
-	 * Validate a single widget descriptor.
+	 * Validate every entry of a non-empty widget list.
 	 *
-	 * @param string $label Human-readable index label.
-	 * @param array<string, mixed> $widget Widget descriptor.
+	 * @param array<int|string, mixed> $widgets The widget list.
 	 *
 	 * @return array<int, array{code: string, message: string}>
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	private function validateOne(string $label, array $widget): array {
+	private function validateList(array $widgets): array {
 		$errors = [];
-
-		$type = (string)($widget['type'] ?? '');
-		if (in_array(needle: $type, haystack: self::VALID_TYPES, strict: true) === false) {
-			$errors[] = [
-				'code' => 'widget-bad-type',
-				'message' => sprintf(
-					'%s type "%s" is not in [%s].',
-					$label,
-					$type,
-					implode(', ', self::VALID_TYPES)
-				),
-			];
-		}
-
-		$title = (string)($widget['title'] ?? '');
-		if ($title === '') {
-			$errors[] = [
-				'code' => 'widget-title-missing',
-				'message' => sprintf('%s requires a non-empty title.', $label),
-			];
-		}
-
-		$dataSource = ($widget['dataSource'] ?? null);
-		if (is_array($dataSource) === false) {
-			$errors[] = [
-				'code' => 'widget-datasource-missing',
-				'message' => sprintf('%s requires a dataSource object.', $label),
-			];
-			return $errors;
-		}
-
-		$mode = (string)($dataSource['mode'] ?? '');
-		if (in_array(needle: $mode, haystack: self::VALID_MODES, strict: true) === false) {
-			$errors[] = [
-				'code' => 'widget-datasource-bad-mode',
-				'message' => sprintf(
-					'%s dataSource.mode "%s" is not in [%s].',
-					$label,
-					$mode,
-					implode(', ', self::VALID_MODES)
-				),
-			];
-			return $errors;
-		}
-
-		if ($mode === 'aggregation') {
-			foreach (['register', 'schema', 'aggregation'] as $key) {
-				$value = (string)($dataSource[$key] ?? '');
-				if ($value === '') {
-					$errors[] = [
-						'code' => 'widget-datasource-aggregation-incomplete',
-						'message' => sprintf(
-							'%s dataSource.%s is required when mode is "aggregation".',
-							$label,
-							$key
-						),
-					];
-				}
-			}
-		}
-
-		if ($mode === 'graphql') {
-			$query = (string)($dataSource['graphqlQuery'] ?? '');
-			if ($query === '') {
-				$errors[] = [
-					'code' => 'widget-datasource-graphql-incomplete',
-					'message' => sprintf(
-						'%s dataSource.graphqlQuery is required when mode is "graphql".',
-						$label
-					),
-				];
-			}
-		}
-
-		if (isset($widget['options']) === true && is_array($widget['options']) === false) {
-			$errors[] = [
-				'code' => 'widget-options-malformed',
-				'message' => sprintf('%s options must be an object when present.', $label),
-			];
+		foreach ($widgets as $index => $widget) {
+			$errors = array_merge($errors, $this->validateEntry(label: sprintf('widgets[%s]', (string)$index), widget: $widget));
 		}
 
 		return $errors;
-	}//end validateOne()
+	}//end validateList()
+
+	/**
+	 * Validate one entry of the widget list.
+	 *
+	 * @param string $label  Human-readable index label.
+	 * @param mixed  $widget The entry.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateEntry(string $label, mixed $widget): array {
+		if (is_array($widget) === false) {
+			return [$this->finding(code: 'widget-malformed', message: sprintf('%s must be an object.', $label))];
+		}
+
+		return array_merge(
+			$this->validateType(label: $label, widget: $widget),
+			$this->validateTitle(label: $label, widget: $widget),
+			$this->validateSourceAndOptions(label: $label, widget: $widget)
+		);
+	}//end validateEntry()
+
+	/**
+	 * Validate the widget `type`.
+	 *
+	 * @param string               $label  Human-readable index label.
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateType(string $label, array $widget): array {
+		$type = (string)($widget['type'] ?? '');
+		if (in_array(needle: $type, haystack: self::VALID_TYPES, strict: true) === true) {
+			return [];
+		}
+
+		$message = sprintf('%s type "%s" is not in [%s].', $label, $type, implode(', ', self::VALID_TYPES));
+		return [$this->finding(code: 'widget-bad-type', message: $message)];
+	}//end validateType()
+
+	/**
+	 * Validate the widget `title`.
+	 *
+	 * @param string               $label  Human-readable index label.
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateTitle(string $label, array $widget): array {
+		if ((string)($widget['title'] ?? '') !== '') {
+			return [];
+		}
+
+		return [$this->finding(code: 'widget-title-missing', message: sprintf('%s requires a non-empty title.', $label))];
+	}//end validateTitle()
+
+	/**
+	 * Validate the `dataSource` and then the `options`.
+	 *
+	 * A missing dataSource or an unknown mode stops here: the mode-specific
+	 * fields and the options are not checked.
+	 *
+	 * @param string               $label  Human-readable index label.
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateSourceAndOptions(string $label, array $widget): array {
+		$dataSource = ($widget['dataSource'] ?? null);
+		$stop = $this->validateSourceShape(label: $label, dataSource: $dataSource);
+		if ($stop !== []) {
+			return $stop;
+		}
+
+		return array_merge(
+			$this->validateModeFields(label: $label, dataSource: $dataSource),
+			$this->validateOptions(label: $label, widget: $widget)
+		);
+	}//end validateSourceAndOptions()
+
+	/**
+	 * The dataSource must be an object with a known mode.
+	 *
+	 * @param string $label      Human-readable index label.
+	 * @param mixed  $dataSource The dataSource value.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateSourceShape(string $label, mixed $dataSource): array {
+		if (is_array($dataSource) === false) {
+			return [$this->finding(code: 'widget-datasource-missing', message: sprintf('%s requires a dataSource object.', $label))];
+		}
+
+		return $this->validateMode(label: $label, dataSource: $dataSource);
+	}//end validateSourceShape()
+
+	/**
+	 * Validate the dataSource `mode`.
+	 *
+	 * @param string               $label      Human-readable index label.
+	 * @param array<string, mixed> $dataSource The dataSource object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateMode(string $label, array $dataSource): array {
+		$mode = (string)($dataSource['mode'] ?? '');
+		if (in_array(needle: $mode, haystack: self::VALID_MODES, strict: true) === true) {
+			return [];
+		}
+
+		$message = sprintf('%s dataSource.mode "%s" is not in [%s].', $label, $mode, implode(', ', self::VALID_MODES));
+		return [$this->finding(code: 'widget-datasource-bad-mode', message: $message)];
+	}//end validateMode()
+
+	/**
+	 * Validate the fields the dataSource's (valid) mode requires.
+	 *
+	 * @param string               $label      Human-readable index label.
+	 * @param array<string, mixed> $dataSource The dataSource object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateModeFields(string $label, array $dataSource): array {
+		return match ((string)$dataSource['mode']) {
+			'aggregation' => $this->validateAggregationSource(label: $label, dataSource: $dataSource),
+			'graphql' => $this->validateGraphqlSource(label: $label, dataSource: $dataSource),
+			default => [],
+		};
+	}//end validateModeFields()
+
+	/**
+	 * An aggregation source names its register, schema and aggregation.
+	 *
+	 * @param string               $label      Human-readable index label.
+	 * @param array<string, mixed> $dataSource The dataSource object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateAggregationSource(string $label, array $dataSource): array {
+		$errors = [];
+		foreach (['register', 'schema', 'aggregation'] as $key) {
+			if ((string)($dataSource[$key] ?? '') === '') {
+				$message = sprintf('%s dataSource.%s is required when mode is "aggregation".', $label, $key);
+				$errors[] = $this->finding(code: 'widget-datasource-aggregation-incomplete', message: $message);
+			}
+		}
+
+		return $errors;
+	}//end validateAggregationSource()
+
+	/**
+	 * A graphql source carries its query.
+	 *
+	 * @param string               $label      Human-readable index label.
+	 * @param array<string, mixed> $dataSource The dataSource object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateGraphqlSource(string $label, array $dataSource): array {
+		if ((string)($dataSource['graphqlQuery'] ?? '') !== '') {
+			return [];
+		}
+
+		$message = sprintf('%s dataSource.graphqlQuery is required when mode is "graphql".', $label);
+		return [$this->finding(code: 'widget-datasource-graphql-incomplete', message: $message)];
+	}//end validateGraphqlSource()
+
+	/**
+	 * The optional `options` must be an object when present.
+	 *
+	 * @param string               $label  Human-readable index label.
+	 * @param array<string, mixed> $widget Widget descriptor.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function validateOptions(string $label, array $widget): array {
+		if (isset($widget['options']) === true && is_array($widget['options']) === false) {
+			return [$this->finding(code: 'widget-options-malformed', message: sprintf('%s options must be an object when present.', $label))];
+		}
+
+		return [];
+	}//end validateOptions()
+
+	/**
+	 * One finding.
+	 *
+	 * @param string $code    Stable machine code.
+	 * @param string $message Human-readable message.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function finding(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end finding()
 }//end class
