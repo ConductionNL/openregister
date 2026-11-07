@@ -44,6 +44,7 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  */
 final class SearchReferenceResolverGoldenTest extends TestCase {
 	/**
