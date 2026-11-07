@@ -47,6 +47,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Exception\FlowTimerValidationException
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  * @uses \OCA\OpenRegister\Service\Flow\Timer\CalendarSpan
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaAddition
  */
