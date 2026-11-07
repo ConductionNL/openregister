@@ -99,38 +99,60 @@ class AdministeredValidationRunLog {
 	 */
 	private function record(ObjectEntity $object, Schema $schema, array $entry, string $verdict): void {
 		$slug = (string)($schema->getSlug() ?? '');
-		$name = (string)($entry['validation'] ?? '');
-		if ($slug === '' || $name === '') {
+		if ($slug === '' || (string)($entry['validation'] ?? '') === '') {
 			return;
 		}
 
+		try {
+			$this->write(object: $object, slug: $slug, entry: $entry, verdict: $verdict);
+		} catch (Throwable $e) {
+			// The run log is a courtesy on a decision already taken. Losing the
+			// row must never turn a refusal into a 500.
+			$this->logger->warning(sprintf('Administered validation run could not be recorded: %s', $e->getMessage()));
+		}
+	}//end record()
+
+	/**
+	 * Write one validation outcome to the rule run log.
+	 *
+	 * @param ObjectEntity         $object  The object.
+	 * @param string               $slug    Its schema's slug.
+	 * @param array<string, mixed> $entry   The outcome, naming its validation.
+	 * @param string               $verdict The verdict to record.
+	 *
+	 * @return void
+	 */
+	private function write(ObjectEntity $object, string $slug, array $entry, string $verdict): void {
+		$this->ruleRuns->record(
+			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION, schemaSlug: $slug, key: (string)$entry['validation']),
+			schemaSlug: $slug,
+			trace: $this->traceOf(entry: $entry, verdict: $verdict),
+			objectUuid: ($object->getUuid() ?? null),
+			registerSlug: ($object->getRegister() ?? null)
+		);
+	}//end write()
+
+	/**
+	 * The trace one outcome is logged with.
+	 *
+	 * An outcome that could not be evaluated is logged as an error whatever
+	 * verdict the caller named, because nothing was decided.
+	 *
+	 * @param array<string, mixed> $entry   The outcome.
+	 * @param string               $verdict The verdict the caller names.
+	 *
+	 * @return RuleTrace The trace.
+	 */
+	private function traceOf(array $entry, string $verdict): RuleTrace {
 		$entryVerdict = $verdict;
 		if (($entry['unevaluable'] ?? false) === true) {
 			$entryVerdict = RuleVocabulary::VERDICT_ERROR;
 		}
 
-		try {
-			$this->ruleRuns->record(
-				ruleId: RuleDescriptor::idFor(
-					kind: RuleVocabulary::KIND_ADMINISTERED_VALIDATION,
-					schemaSlug: $slug,
-					key: $name
-				),
-				schemaSlug: $slug,
-				trace: new RuleTrace(
-					verdict: $entryVerdict,
-					operand: implode(', ', ($entry['properties'] ?? [])),
-					message: (string)($entry['message'] ?? '')
-				),
-				objectUuid: ($object->getUuid() ?? null),
-				registerSlug: ($object->getRegister() ?? null)
-			);
-		} catch (Throwable $e) {
-			// The run log is a courtesy on a decision already taken. Losing the
-			// row must never turn a refusal into a 500.
-			$this->logger->warning(
-				sprintf('Administered validation run could not be recorded: %s', $e->getMessage())
-			);
-		}
-	}//end record()
+		return new RuleTrace(
+			verdict: $entryVerdict,
+			operand: implode(', ', ($entry['properties'] ?? [])),
+			message: (string)($entry['message'] ?? '')
+		);
+	}//end traceOf()
 }//end class

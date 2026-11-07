@@ -280,7 +280,7 @@ class RulesValueGoldenTest extends TestCase {
 			'b' => [ExpressionDefaultResolver::ANNOTATION => ['ok' => 2]],
 			'c' => ['type' => 'string'],
 			'd' => 'scalar',
-			5 => [ExpressionDefaultResolver::ANNOTATION => ['ok' => 3]],
+			'e' => [ExpressionDefaultResolver::ANNOTATION => ['ok' => 3]],
 		];
 		$actual['declaresAny'] = [
 			$resolver->declaresAny($properties),
@@ -288,10 +288,12 @@ class RulesValueGoldenTest extends TestCase {
 			$resolver->declaresAny([]),
 			$resolver->declaresAny(['a' => [ExpressionDefaultResolver::ANNOTATION => null]]),
 		];
+		$supplied = ['a' => 'given', 'b' => '', 'e' => null];
+		$allSupplied = ['a' => 1, 'b' => 0, 'e' => false];
 		$actual['apply'] = [
 			'nothing supplied' => $resolver->apply($applyProperties, ['z' => 1]),
-			'supplied' => $resolver->apply($applyProperties, ['a' => 'given', 'b' => '', 5 => null]),
-			'all supplied' => $resolver->apply($applyProperties, ['a' => 1, 'b' => 0, 5 => false]),
+			'supplied' => $resolver->apply($applyProperties, $supplied),
+			'all supplied' => $resolver->apply($applyProperties, $allSupplied),
 			'none declared' => $resolver->apply(['c' => ['type' => 'x']], ['q' => 1]),
 		];
 		foreach (['throw', 'nothing'] as $failure) {

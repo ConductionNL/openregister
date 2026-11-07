@@ -102,17 +102,33 @@ final class DependentValueTable {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function tableOf(mixed $declaration): ?array {
-		if (is_array($declaration) === false || is_array(($declaration['allowed'] ?? null)) === false) {
-			return null;
-		}
-
-		$controlledBy = ($declaration['controlledBy'] ?? null);
-		if (is_string($controlledBy) === false || $controlledBy === '') {
+		$controlledBy = $this->controlledByOf(declaration: $declaration);
+		if ($controlledBy === null || is_array(($declaration['allowed'] ?? null)) === false) {
 			return null;
 		}
 
 		return ['controlledBy' => $controlledBy, 'allowed' => $this->pairsOf(allowed: $declaration['allowed'])];
 	}//end tableOf()
+
+	/**
+	 * The property a declaration names as controlling, when it names one.
+	 *
+	 * @param mixed $declaration The raw annotation value.
+	 *
+	 * @return string|null The controlling property, or null when the declaration names none.
+	 */
+	private function controlledByOf(mixed $declaration): ?string {
+		$controlledBy = null;
+		if (is_array($declaration) === true) {
+			$controlledBy = ($declaration['controlledBy'] ?? null);
+		}
+
+		if (is_string($controlledBy) === true && $controlledBy !== '') {
+			return $controlledBy;
+		}
+
+		return null;
+	}//end controlledByOf()
 
 	/**
 	 * The pairs of a table, with every listed value as a string.

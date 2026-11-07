@@ -165,16 +165,27 @@ final class FlowRuleDescriptors {
 	 * @return array{property: string, value: string}|null The scope, or null.
 	 */
 	private function nodeScope(mixed $node, string $schemaSlug): ?array {
-		if (is_array($node) === false || ($node['type'] ?? null) !== FlowTriggerDerivation::OBJECT_TRIGGER) {
-			return null;
-		}
-
-		$config = (array)($node['config'] ?? []);
+		$config = $this->triggerConfig(node: $node);
 		$schema = (string)($config['schema'] ?? '');
-		if ($schema !== $schemaSlug && $schema !== '') {
+		if ($config === null || ($schema !== $schemaSlug && $schema !== '')) {
 			return null;
 		}
 
 		return $this->scopes->fromDeclaration(declaration: $config);
 	}//end nodeScope()
+
+	/**
+	 * The configuration of an object trigger node, or null for any other node.
+	 *
+	 * @param mixed $node The graph node.
+	 *
+	 * @return array<string, mixed>|null The node's configuration.
+	 */
+	private function triggerConfig(mixed $node): ?array {
+		if (is_array($node) === false || ($node['type'] ?? null) !== FlowTriggerDerivation::OBJECT_TRIGGER) {
+			return null;
+		}
+
+		return (array)($node['config'] ?? []);
+	}//end triggerConfig()
 }//end class

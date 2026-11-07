@@ -833,7 +833,7 @@
                         "z": 1
                     }
                 },
-                "0": {
+                "e": {
                     "derived": {
                         "ok": 3
                     },
@@ -851,25 +851,24 @@
                     "from": {
                         "a": "given",
                         "b": "",
-                        "5": null
+                        "e": null
                     }
                 },
-                "0": null,
-                "1": {
+                "e": {
                     "derived": {
                         "ok": 3
                     },
                     "from": {
                         "a": "given",
                         "b": "",
-                        "5": null
+                        "e": null
                     }
                 }
             },
             "all supplied": {
                 "a": 1,
                 "b": 0,
-                "5": false
+                "e": false
             },
             "none declared": {
                 "q": 1

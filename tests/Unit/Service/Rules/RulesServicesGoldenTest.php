@@ -64,6 +64,9 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
+use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
+use OCA\OpenRegister\Service\Rules\Support\RuleTrialLookups;
 use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IUser;
@@ -231,11 +234,8 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		return new RuleTrialService(
 			inventory: $this->inventory(),
-			evaluator: $evaluator,
-			tracer: new ConditionTracer(dialect: $dialect),
-			registerMapper: $registers,
-			objectMapper: $objects,
-			dialect: $dialect
+			engine: new RuleTrialEngine(evaluator: $evaluator, tracer: new ConditionTracer(dialect: $dialect), dialect: $dialect),
+			lookups: new RuleTrialLookups(registerMapper: $registers, objectMapper: $objects)
 		);
 	}//end trialService()
 
@@ -507,10 +507,12 @@ class RulesServicesGoldenTest extends TestCase {
 		);
 		return new AdministeredValidationEnforcer(
 			schemaMapper: $schemas,
-			validations: new AdministeredValidations(evaluator: new NamedConditionEvaluator(dialect: $dialect, library: $library)),
-			conditions: $library,
+			checks: new AdministeredValidationChecks(
+				validations: new AdministeredValidations(evaluator: new NamedConditionEvaluator(dialect: $dialect, library: $library)),
+				conditions: $library,
+				l10n: $l10n
+			),
 			runLog: new AdministeredValidationRunLog(ruleRuns: $recorder, logger: $logger),
-			l10n: $l10n,
 			logger: $logger
 		);
 	}//end enforcer()
