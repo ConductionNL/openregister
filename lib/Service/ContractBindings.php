@@ -89,6 +89,10 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -171,6 +175,7 @@ final class ContractBindings {
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		ImportPreviewServiceInterface::class => ImportPreviewService::class,
 		JsonLdContextServiceInterface::class => JsonLdContextService::class,
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
@@ -212,6 +217,7 @@ final class ContractBindings {
 		SequenceServiceInterface::class => SequenceService::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
+		SourceRowReaderInterface::class => SourceRowReader::class,
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
 		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
