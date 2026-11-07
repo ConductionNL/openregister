@@ -24,6 +24,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +56,11 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		ExplodeNode::class => [ExplodeNodeInterface::class, ContractBindings::class],
+		FilterNode::class => [FilterNodeInterface::class, ContractBindings::class],
+		TransitionNode::class => [TransitionNodeInterface::class, ContractBindings::class],
+		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ContractBindings::class],
+		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
