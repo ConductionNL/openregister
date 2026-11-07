@@ -27,7 +27,7 @@ use Throwable;
 /**
  * Golden record of migrateObjects() over every branch: the four register and schema loads in
  * order, the batch load, the per-object ownership check against the requested source, the
- * property mapping and its counts, the object as it is handed to the update, the not-found
+ * property mapping and its counts, the full read of each object, its write at the target and removal from the source, the not-found
  * entries and the report. Stored object data that names a register, schema or owner is forged
  * and must not decide where an object is moved. Set OR_GOLDEN_RECORD=1 to rewrite the fixture.
  *
@@ -37,11 +37,16 @@ use Throwable;
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\Object\MigrationRun
  * @uses   \OCA\OpenRegister\Service\Object\MigrationSide
+ * @uses   \OCA\OpenRegister\Service\Object\MoveAddress
+ * @uses   \OCA\OpenRegister\Service\Object\MoveObject
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectMove
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
+
+	use BuildsMigrationHandler;
 
 	private const FIXTURE = __DIR__ . '/fixtures/migration-handler-migrate-objects-golden.json';
 
@@ -64,7 +69,6 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 		$wrongRegister = ['uuid' => 'u-reg', 'id' => 13, 'name' => 'R', 'register' => '7', 'schema' => '2', 'object' => ['a' => 1]];
 		$wrongSchema = ['uuid' => 'u-sch', 'id' => 14, 'name' => 'S', 'register' => '1', 'schema' => '8', 'object' => ['a' => 1]];
 		$updateFails = ['uuid' => 'u-fail', 'id' => 15, 'name' => 'F', 'register' => '1', 'schema' => '2', 'object' => ['a' => 1, 'b' => 2]];
-		$renamed = ['uuid' => 'u-new', 'id' => 16, 'name' => 'N', 'register' => '1', 'schema' => '2', 'object' => [], 'savedAs' => 'u-other'];
 		$entities = ['register:1' => 1, 'schema:2' => 2, 'register:target' => 30, 'schema:target' => 40, 'register:3' => 3, 'schema:4' => 4, 'register:src-slug' => 1, 'schema:sch-slug' => 2];
 		$mapping = ['title' => 'title', 'kept' => 'keep', 'gone' => 'absent', 'register' => 'register'];
 		$base = ['entities' => $entities, 'mapping' => $mapping, 'route' => ['1', '2', 'target', 'target']];
@@ -72,7 +76,6 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 		$scenarios = [
 			'mixed outcomes'            => $base + ['ids' => ['u-ok', 'u-reg', 'u-sch', 'u-fail', 'missing', 12, '12'], 'found' => [$ok, $wrongRegister, $wrongSchema, $updateFails, $nameless], 'updateFails' => ['u-fail']],
 			'all migrated'              => $base + ['ids' => ['u-ok', 'u-nameless'], 'found' => [$ok, $nameless]],
-			'saved under another uuid'  => $base + ['ids' => ['u-new'], 'found' => [$renamed]],
 			'nothing found'             => $base + ['ids' => ['a', 'b', 'a'], 'found' => []],
 			'no ids'                    => $base + ['ids' => [], 'found' => []],
 			'all fail'                  => $base + ['ids' => ['u-reg'], 'found' => [$wrongRegister]],
@@ -168,21 +171,31 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 				return array_map(fn (array $data): ObjectEntity => $this->entity(data: $data), $this->world['found']);
 			}
 		);
+		$mapper->method('findInRegisterSchemaTable')->willReturnCallback(
+			function (string $identifier, Register $register, Schema $schema, bool $_rbac, bool $_multitenancy): ObjectEntity {
+				$this->calls[] = ['findInRegisterSchemaTable', $identifier, $register->getId(), $schema->getId(), $_rbac, $_multitenancy];
+				foreach ($this->world['found'] as $data) {
+					if ($data['uuid'] === $identifier) {
+						return $this->entity(data: $data);
+					}
+				}
+
+				throw new Exception('not in the source table');
+			}
+		);
 		$mapper->method('update')->willReturnCallback(
-			function (ObjectEntity $object, ...$rest): ObjectEntity {
-				$this->calls[] = ['update', $object->getUuid(), $object->getRegister(), $object->getSchema(), $object->getObject(), count($rest)];
+			function (ObjectEntity $object, Register $register, Schema $schema, ObjectEntity $old): ObjectEntity {
+				$this->calls[] = ['update', $object->getUuid(), $object->getRegister(), $object->getSchema(), $object->getObject(), $register->getId(), $schema->getId(), $old->getRegister()];
 				if (in_array($object->getUuid(), ($this->world['updateFails'] ?? []), true) === true) {
 					throw new Exception('update failed');
 				}
 
-				foreach ($this->world['found'] as $data) {
-					if ($data['uuid'] === $object->getUuid() && isset($data['savedAs']) === true) {
-						$saved = new ObjectEntity();
-						$saved->setUuid($data['savedAs']);
-						return $saved;
-					}
-				}
-
+				return $object;
+			}
+		);
+		$mapper->method('deleteObjectEntity')->willReturnCallback(
+			function (ObjectEntity $object, Register $register, Schema $schema, bool $hardDelete, bool $dispatchEvents): ObjectEntity {
+				$this->calls[] = ['deleteObjectEntity', $object->getUuid(), $register->getId(), $schema->getId(), $hardDelete, $dispatchEvents];
 				return $object;
 			}
 		);
@@ -217,12 +230,7 @@ class MigrationHandlerMigrateObjectsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MigrationHandler(
-			objectMapper: $mapper,
-			utilityHandler: $utility,
-			dataManipHandler: $manipulation,
-			logger: $logger
-		);
+		return $this->migrationHandler(mapper: $mapper, utility: $utility, dataManip: $manipulation, logger: $logger);
 	}//end handler()
 
 	/**

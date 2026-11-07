@@ -131,7 +131,10 @@ class ObjectHistoryForReaders {
 			return null;
 		}
 
+		// The route's register and schema are the object's address now, not the history's:
+		// entries from before a move carry the address they were written at.
 		$filters = $this->readerColumns(columns: ($params['filters'] ?? []));
+		unset($filters['register'], $filters['schema']);
 		$filters['object_uuid'] = $object->getUuid();
 
 		$sort = $this->readerColumns(columns: ($params['sort'] ?? []));

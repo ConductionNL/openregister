@@ -247,47 +247,65 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
 		$source = trim($source);
 		if (in_array($source, self::ALLOWED_SOURCES, true) === false) {
-			$this->logger->warning(
-				'MessageDispatchProvider::dispatch rejected an unknown source slug.'
-			);
-			return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING);
+			return $this->rejectUnknownSource();
 		}
 
 		$this->targetSource = $source;
-
-		$requestHeaders = $headers;
-		if (isset($requestHeaders['Accept']) === false) {
-			$requestHeaders['Accept'] = 'application/json';
-		}
-
 		try {
-			$response = $this->router->call(
-				provider: $this,
-				method: 'POST',
-				path: ltrim($path, '/'),
-				options: [
-					'body' => $body,
-					'headers' => $requestHeaders,
-				]
-			);
+			return $this->send(path: $path, options: ['body' => $body, 'headers' => $this->withJsonAccept(headers: $headers)]);
+		} finally {
+			// Reset to the advertised default so a later contract caller
+			// (health/probe) never inherits a stale per-call source.
+			$this->targetSource = self::SOURCE_ID;
+		}
+	}//end dispatch()
+
+	/**
+	 * Refuse a source slug outside {@see ALLOWED_SOURCES} before the router
+	 * is touched.
+	 *
+	 * @return array<string,mixed> The degraded envelope.
+	 */
+	private function rejectUnknownSource(): array {
+		$this->logger->warning('MessageDispatchProvider::dispatch rejected an unknown source slug.');
+		return $this->degraded(cause: ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING);
+	}//end rejectUnknownSource()
+
+	/**
+	 * POST through the router to the current {@see $targetSource} and wrap
+	 * the outcome in the sent or degraded envelope (AD-23).
+	 *
+	 * @param string               $path    Path relative to the source base URL.
+	 * @param array<string, mixed> $options The router options (body + headers).
+	 *
+	 * @return array<string,mixed> The sent or degraded envelope.
+	 */
+	private function send(string $path, array $options): array {
+		try {
+			$response = $this->router->call(provider: $this, method: 'POST', path: ltrim($path, '/'), options: $options);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
 		} catch (Throwable $e) {
 			// Never log the body — a message body may carry PII.
 			$this->logger->warning('MessageDispatchProvider::dispatch failed (transport).');
 			return $this->degraded(cause: ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN);
-		} finally {
-			// Reset to the advertised default so a later contract caller
-			// (health/probe) never inherits a stale per-call source.
-			$this->targetSource = self::SOURCE_ID;
-		}//end try
+		}
 
-		return [
-			'status' => 'sent',
-			'source' => $source,
-			'response' => $response,
-		];
-	}//end dispatch()
+		return ['status' => 'sent', 'source' => $this->targetSource, 'response' => $response];
+	}//end send()
+
+	/**
+	 * The caller's headers with `Accept: application/json` added when the
+	 * caller set none.
+	 *
+	 * @param array<string,string> $headers The caller's extra headers.
+	 *
+	 * @return array<string,string>
+	 */
+	private function withJsonAccept(array $headers): array {
+		$headers['Accept'] ??= 'application/json';
+		return $headers;
+	}//end withJsonAccept()
 
 	/**
 	 * Build the degraded envelope so the dispatch shape stays stable across

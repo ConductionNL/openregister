@@ -177,6 +177,40 @@
             }
         ]
     },
+    "a null in a schema list": {
+        "query": {
+            "@self": {
+                "schema": [
+                    7,
+                    9
+                ]
+            },
+            "filter": {
+                "status": "open"
+            }
+        },
+        "calls": [
+            {
+                "schemaMapper.find": 7
+            },
+            {
+                "schemaMapper.find": 9
+            }
+        ]
+    },
+    "metadata beside special params": {
+        "query": {
+            "@self": {
+                "register": 1,
+                "owner": null,
+                "organisation": "o"
+            },
+            "_order": "x",
+            "_x": 1,
+            "plain": 2
+        },
+        "calls": []
+    },
     "bracket filter, no schema": {
         "query": {
             "@self": [],

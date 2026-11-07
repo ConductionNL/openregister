@@ -18,6 +18,8 @@ use ReflectionClass;
  * The organisation a count runs under.
  *
  * @covers \OCA\OpenRegister\Service\Object\QueryHandler
+ * @uses \OCA\OpenRegister\Service\Object\SearchPaging
+ * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
  */
 class QueryHandlerCountScopeTest extends TestCase {
 	public function testACountUnderMultitenancyPassesTheActiveOrganisation(): void {

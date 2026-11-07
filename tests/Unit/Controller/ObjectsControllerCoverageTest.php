@@ -1105,6 +1105,32 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * An oversized limit reports the bound, so paging by the reported limit misses no row.
+	 */
+	public function testIndexCrossTableSearchReportsTheBoundedLimit(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn([]);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(2500);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn(['_limit' => '5000', '_offset' => 1000]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertSame(expected: [1000, 3, 2], actual: [$data['limit'], $data['pages'], $data['page']]);
+	}
+
+	/**
 	 * The total is every match across the tables, not the size of the page.
 	 */
 	public function testIndexCrossTableSearchTotalIsTheFullCount(): void {
@@ -1822,6 +1848,91 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->assertSame(5, $data['total']);
 		$this->assertSame(1, $data['page']);
 		$this->assertSame(1, $data['pages']);
+	}
+
+	/**
+	 * The query a cross-table search of the given parameters hands the mapper, and its response.
+	 *
+	 * @param array<string, mixed> $query The query buildSearchQuery() returns.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The mapper's query and the response data.
+	 */
+	private function crossTablePage(array $query): array {
+		$this->registerMapper->method('find')->willReturn($this->createMagicMappedRegister(1, 'reg', ['2', '3']));
+		$this->schemaMapper->method('find')->willReturn($this->createSchemaMock(2, 'sch1'));
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$seen = [];
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturnCallback(
+			static function (array $query) use (&$seen): array {
+				$seen = $query;
+				return [];
+			}
+		);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(95);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, fn () => $magicMapper);
+		$this->objectService->method('buildSearchQuery')->willReturn($query);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		return [$seen, $data];
+	}
+
+	/**
+	 * `_page` asks for that page: the mapper pages on an offset, and the response says which page it is.
+	 */
+	public function testCrossTablePageBecomesTheOffset(): void {
+		[$query, $data] = $this->crossTablePage(['_limit' => 10, '_page' => 3]);
+
+		$this->assertSame(20, $query['_offset']);
+		$this->assertSame(3, $data['page']);
+		$this->assertSame(10, $data['pages']);
+	}
+
+	/**
+	 * Without a `_limit` the page counts in the default page size.
+	 */
+	public function testCrossTablePageUsesTheDefaultPageSize(): void {
+		[$query] = $this->crossTablePage(['_page' => '2']);
+
+		$this->assertSame(20, $query['_offset']);
+	}
+
+	/**
+	 * The page counts in the page size the search can return, not in an oversized `_limit`.
+	 */
+	public function testCrossTablePageCountsInTheBoundedPageSize(): void {
+		[$query] = $this->crossTablePage(['_limit' => 5000, '_page' => 2]);
+
+		$this->assertSame(1000, $query['_offset']);
+	}
+
+	/**
+	 * An explicit `_offset` wins over `_page`, as on the single-schema list.
+	 */
+	public function testCrossTableOffsetWinsOverPage(): void {
+		[$query] = $this->crossTablePage(['_limit' => 10, '_page' => 3, '_offset' => 5]);
+
+		$this->assertSame(5, $query['_offset']);
+	}
+
+	/**
+	 * A page below one is the first page.
+	 */
+	public function testCrossTablePageBelowOneIsTheFirstPage(): void {
+		[$query] = $this->crossTablePage(['_limit' => 10, '_page' => -4]);
+
+		$this->assertSame(0, $query['_offset']);
+	}
+
+	/**
+	 * A search without a page size has no pages to skip.
+	 */
+	public function testCrossTablePageWithoutAPageSizeSkipsNothing(): void {
+		[$query] = $this->crossTablePage(['_limit' => false, '_page' => 3]);
+
+		$this->assertArrayNotHasKey('_offset', $query);
 	}
 
 	// =========================================================================

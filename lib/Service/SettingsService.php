@@ -1092,11 +1092,11 @@ class SettingsService implements SettingsServiceInterface, AppSettingsInterface 
 		$platform = $this->db->getDatabasePlatform();
 		$tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
                    WHERE table_schema = DATABASE()
-                   AND table_name LIKE 'oc_openregister_table_%'";
+                   AND table_name LIKE '*PREFIX*openregister_table_%'";
 		if (stripos($platform::class, 'PostgreSQL') !== false) {
 			$tablesQuery = "SELECT tablename FROM pg_tables
                    WHERE schemaname = 'public'
-                   AND tablename LIKE 'oc_openregister_table_%'";
+                   AND tablename LIKE '*PREFIX*openregister_table_%'";
 		}
 
 		return $this->db->executeQuery($tablesQuery)->fetchAll(\PDO::FETCH_COLUMN);

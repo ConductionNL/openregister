@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Service\ObjectSource\TablesReadScope;
 use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\Attributes\PreserveGlobalState;
@@ -85,11 +86,11 @@ class TablesTableReaderTest extends TestCase {
 
 		$this->assertSame([], $reader->listTables(userId: 'alice'));
 		$this->assertSame([], $reader->listColumns(tableId: 5, userId: 'alice'));
-		$this->assertSame([], $reader->findRowsByTable(tableId: 5, userId: 'alice'));
-		$this->assertSame([], $reader->findRowsByView(viewId: 9, userId: 'alice'));
+		$this->assertSame([], $reader->findRows(scope: new TablesReadScope(5, 'alice')));
+		$this->assertSame([], $reader->findRows(scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9)));
 		$this->assertSame([], $reader->collectTableDescriptors(userIds: ['alice']));
-		$this->assertNull($reader->findRow(rowId: 1, tableId: 5, userId: 'alice'));
-		$this->assertSame(0, $reader->countRows(id: 5, userId: 'alice'));
+		$this->assertNull($reader->findRow(rowId: 1, scope: new TablesReadScope(5, 'alice')));
+		$this->assertSame(0, $reader->countRows(scope: new TablesReadScope(5, 'alice')));
 	}//end testReadsFailClosed()
 
 	/**
@@ -171,7 +172,7 @@ class TablesTableReaderTest extends TestCase {
 	public function testFindRowRefusesAUserWhoMayNotReadTheTable(): void {
 		$reader = $this->readerOverFakeTables(rowTables: [42 => 5], readable: ['admin' => [5], 'bob' => []]);
 
-		$this->assertNull($reader->findRow(rowId: 42, tableId: 5, userId: 'bob'));
+		$this->assertNull($reader->findRow(rowId: 42, scope: new TablesReadScope(5, 'bob')));
 		$this->assertSame([], \OCA\Tables\Service\RowService::$found, 'the row must not even be read for bob');
 	}//end testFindRowRefusesAUserWhoMayNotReadTheTable()
 
@@ -185,7 +186,7 @@ class TablesTableReaderTest extends TestCase {
 	public function testFindRowRefusesARowOfAnotherTable(): void {
 		$reader = $this->readerOverFakeTables(rowTables: [42 => 6], readable: ['alice' => [5, 6]]);
 
-		$this->assertNull($reader->findRow(rowId: 42, tableId: 5, userId: 'alice'));
+		$this->assertNull($reader->findRow(rowId: 42, scope: new TablesReadScope(5, 'alice')));
 	}//end testFindRowRefusesARowOfAnotherTable()
 
 	/**
@@ -198,10 +199,24 @@ class TablesTableReaderTest extends TestCase {
 	public function testFindRowReturnsAReadableRowOfTheBoundTable(): void {
 		$reader = $this->readerOverFakeTables(rowTables: [42 => 5], readable: ['alice' => [5]]);
 
-		$row = $reader->findRow(rowId: 42, tableId: 5, userId: 'alice');
+		$row = $reader->findRow(rowId: 42, scope: new TablesReadScope(5, 'alice'));
 
 		$this->assertNotNull($row);
 		$this->assertSame(42, $row['id']);
 		$this->assertSame([['columnId' => 1, 'value' => 'Swing']], $row['cells']);
 	}//end testFindRowReturnsAReadableRowOfTheBoundTable()
+
+	/**
+	 * On a View-bound scope the read right is asked of the table, not of an id equal to the View's.
+	 *
+	 * @return void
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState(false)]
+	public function testFindRowOnAViewAsksTheTable(): void {
+		$reader = $this->readerOverFakeTables(rowTables: [42 => 5], readable: ['alice' => [5], 'bob' => [9]]);
+
+		$this->assertNotNull($reader->findRow(rowId: 42, scope: (new TablesReadScope(5, 'alice'))->withView(viewId: 9)));
+		$this->assertNull($reader->findRow(rowId: 42, scope: (new TablesReadScope(5, 'bob'))->withView(viewId: 9)));
+	}//end testFindRowOnAViewAsksTheTable()
 }//end class

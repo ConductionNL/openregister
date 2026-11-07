@@ -162,14 +162,14 @@ class FileWriteGuardTest extends TestCase {
 			}
 
 			$body = implode('', array_slice($lines, ($method->getStartLine() - 1), ($method->getEndLine() - $method->getStartLine() + 1)));
-			$changes = preg_match_all('/ensureObjectAccess\((?![^)]*change: false)[^)]*\)/', $body);
+			$changes = preg_match_all('/ensureObjectAccess\(check: (?!.*forReading\(\)).*$/m', $body);
 			if ($changes === 0) {
 				continue;
 			}
 
 			$writeActions[] = $method->getName();
-			$this->assertStringContainsString(
-				'catch (ObjectStateWriteException $e)',
+			$this->assertMatchesRegularExpression(
+				'/catch \(ObjectStateWriteException \$e\)|\$this->(objectActionFailed|actionFailed)\(/',
 				$body,
 				'FilesController::' . $method->getName() . '() changes files but does not answer a frozen object with 409'
 			);
@@ -179,10 +179,17 @@ class FileWriteGuardTest extends TestCase {
 			$this->assertContains($action, $writeActions, 'FilesController::' . $action . '() must go through the guard');
 		}
 
-		// The guard itself sits on the change path of ensureObjectAccess().
-		$ensure = $class->getMethod('ensureObjectAccess');
-		$ensureBody = implode('', array_slice($lines, ($ensure->getStartLine() - 1), ($ensure->getEndLine() - $ensure->getStartLine() + 1)));
-		$this->assertSame(2, substr_count($ensureBody, 'fileWriteGuard?->assertWritable('));
+		// A failed action answers a frozen object through the shared failure answers.
+		$refusal = $class->getMethod('refusalAnswer');
+		$refusalBody = implode('', array_slice($lines, ($refusal->getStartLine() - 1), ($refusal->getEndLine() - $refusal->getStartLine() + 1)));
+		$this->assertStringContainsString('$this->stateRefused(', $refusalBody);
+
+		// The guard itself sits on both change paths behind ensureObjectAccess().
+		foreach (['objectUnderRule', 'objectUnderReadCheck'] as $path) {
+			$ensure = $class->getMethod($path);
+			$ensureBody = implode('', array_slice($lines, ($ensure->getStartLine() - 1), ($ensure->getEndLine() - $ensure->getStartLine() + 1)));
+			$this->assertSame(1, substr_count($ensureBody, 'fileWriteGuard?->assertWritable('));
+		}
 	}//end testEveryFilesControllerWriteActionCallsTheGuard()
 
 	/**

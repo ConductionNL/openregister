@@ -156,7 +156,7 @@ class MoveObjectMoveGoldenTest extends TestCase {
 	 */
 	private function objects(): MagicMapper {
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('updateObjectEntity')->willReturnCallback(
+		$objects->method('update')->willReturnCallback(
 			function (ObjectEntity $entity, Register $register, Schema $schema, ?ObjectEntity $oldEntity = null): ObjectEntity {
 				$this->calls[] = ['update' => $entity->getUuid(), 'entity' => [$entity->getRegister(), $entity->getSchema()], 'register' => $register->getId(), 'schema' => $schema->getId(), 'old' => $oldEntity?->getUuid()];
 				if (($this->setup['writeFails'] ?? false) === true) {

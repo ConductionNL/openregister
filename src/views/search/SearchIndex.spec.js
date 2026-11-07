@@ -454,4 +454,52 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 			expect(mockObjectStore.searchCollection[1].reference).toBe('Z-7')
 		})
 	})
+
+	describe('mass copy', () => {
+		/**
+		 * Run the handler over two rows.
+		 *
+		 * @param {Function} saveObject The store's save
+		 * @return {Promise<object>} The result the dialog was given
+		 */
+		async function copy(saveObject) {
+			const setMassCopyResult = jest.fn()
+			mockObjectStore.saveObject = saveObject
+			mockObjectStore.errors = {}
+			mockObjectStore.refetchSearchCollection = jest.fn()
+			await SearchIndex.methods.handleMassCopy.call(
+				{
+					computedObjectType: 'type',
+					normalizedObjects: [
+						{ id: 'a', title: 'One' },
+						{ id: 'b', title: 'Two' },
+					],
+					$refs: { indexPage: { setMassCopyResult } },
+				},
+				{ ids: ['a'], getName: (row) => `Copy of ${row.title}` },
+			)
+			return setMassCopyResult.mock.calls[0][0]
+		}
+
+		it('saves the copy, gives the dialog its result and reloads the list', async () => {
+			const saveObject = jest.fn(async () => ({ id: 'new' }))
+
+			const result = await copy(saveObject)
+
+			expect(saveObject).toHaveBeenCalledWith('type', { title: 'Copy of One' })
+			expect(result).toEqual({
+				success: true,
+				successfulIds: ['a'],
+				failedIds: [],
+			})
+			expect(mockObjectStore.refetchSearchCollection).toHaveBeenCalledTimes(1)
+		})
+
+		it('tells the dialog what failed', async () => {
+			const result = await copy(jest.fn(async () => null))
+
+			expect(result.failedIds).toEqual(['a'])
+			expect(result.error).toBe('Some objects could not be copied.')
+		})
+	})
 })

@@ -64,6 +64,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskDates
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTaskClaim
  * @uses \OCA\OpenRegister\Service\Task\TaskState
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetAppointmentsTest extends ExampleSetTestCase {
 	/**

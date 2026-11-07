@@ -42,6 +42,10 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Service\Object\SearchRenderRequest
  * @uses   \OCA\OpenRegister\Service\Object\SearchResultShaper
+ * @uses \OCA\OpenRegister\Service\Object\SearchPaging
+ * @uses \OCA\OpenRegister\Service\Object\SearchResponseReports
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceKey
+ * @uses \OCA\OpenRegister\Service\Object\SearchReferenceText
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

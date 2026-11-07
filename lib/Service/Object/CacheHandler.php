@@ -231,13 +231,6 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private array $inMemoryQueryCache = [];
 
 	/**
-	 * User session for cache key generation
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
 	 * Container for lazy loading dependencies to break circular dependency
 	 *
 	 * @var IAppContainer|null
@@ -275,7 +268,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		private readonly OrganisationMapperInterface $organisationMapper,
 		private readonly LoggerInterface $logger,
 		?ICacheFactory $cacheFactory = null,
-		?IUserSession $userSession = null,
+		private readonly ?IUserSession $userSession = null,
 		?IAppContainer $container = null,
 		private readonly ?RegisterMapperInterface $registerMapper = null,
 		private readonly ?SchemaMapperInterface $schemaMapper = null,
@@ -300,18 +293,6 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			}
 		}
 
-		$this->userSession = $userSession ?? new class {
-			/**
-			 * Get user.
-			 *
-			 * @return null
-			 *
-			 * @spec openspec/specs/object-lifecycle/spec.md
-			 */
-			public function getUser() {
-				return null;
-			}//end getUser()
-		};
 		$this->container = $container;
 	}//end __construct()
 
@@ -552,7 +533,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return false;
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->userSession?->getUser();
 		if ($user === null) {
 			return false;
 		}
@@ -586,7 +567,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function resolveActiveOrganisationUuid(): ?string {
-		$user = $this->userSession->getUser();
+		$user = $this->userSession?->getUser();
 		if ($user === null) {
 			return $this->organisationMapper->getDefaultOrganisationFromConfig();
 		}
@@ -748,7 +729,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// Ask the read path per table, remembering each answer per caller (user
 		// plus active organisation): a facet resolves one value per call, and the
 		// same question must not cost the same query twice. A failure is "none".
-		$caller = (string)$this->userSession->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
+		$caller = (string)$this->userSession?->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
 		$memo = ($this->readabilityMemo[$caller] ?? []);
 		foreach ($uuidsBySource as $source => $uuids) {
 			$unknown = array_values(array_filter($uuids, fn (string $uuid): bool => isset($memo[$uuid]) === false));
@@ -2336,7 +2317,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 				}
 
 				$tableResults = $this->queryTableForNames(
-					tableName: 'oc_openregister_table_' . $register->getId() . '_' . $schemaId,
+					tableName: '*PREFIX*openregister_table_' . $register->getId() . '_' . $schemaId,
 					uuids: array_values($remainingUuids),
 					source: self::objectNameSource(register: $register->getId(), schema: $schemaId)
 				);
@@ -2372,7 +2353,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Query a single magic table for names by UUIDs.
 	 *
-	 * @param string $tableName The table name (with oc_ prefix).
+	 * @param string $tableName The table name, with the prefix or its `*PREFIX*` placeholder.
 	 * @param array $uuids Array of UUIDs to look up.
 	 * @param string|null $source The table's name source, "<registerId>:<schemaId>".
 	 *

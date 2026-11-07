@@ -51,16 +51,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateInterval;
-use DateTimeImmutable;
-use DateTimeZone;
-
 /**
  * Fills placeholders in declared values.
  *
  * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One resolver per placeholder kind.
  */
 class ExampleSetValues {
 	/**
@@ -81,6 +75,43 @@ class ExampleSetValues {
 	private const WHOLE = '/^\{\{([^{}]+)\}\}$/';
 
 	/**
+	 * The placeholder kinds that name a path in a map of entries (`kind:key.path`), by the context key of that map.
+	 */
+	private const PATH_KINDS = [
+		'cast'       => 'cast',
+		'view'       => 'views',
+		'task'       => 'tasks',
+		'flow'       => 'flows',
+		'accessLink' => 'accessLinks',
+		'account'    => 'accounts',
+	];
+
+	/**
+	 * The placeholder kinds that name one value by its name (`kind:name`), by the context key of their map.
+	 */
+	private const NAMED_KINDS = [
+		'lookup'       => 'lookups',
+		'organisation' => 'organisations',
+		'instance'     => 'instance',
+		'register'     => 'registers',
+		'schema'       => 'schemas',
+	];
+
+	/**
+	 * Constructor.
+	 *
+	 * @param ExampleSetFragmentRows $rows   The rows a fragment's engine parts are quoted from.
+	 * @param ExampleSetMoment       $moment Days and moments counted from the install day.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly ExampleSetFragmentRows $rows=new ExampleSetFragmentRows(),
+		private readonly ExampleSetMoment $moment=new ExampleSetMoment(),
+	) {
+	}//end __construct()
+
+	/**
 	 * Fill a declared value at any depth.
 	 *
 	 * @param mixed                $value   The declared value.
@@ -96,13 +127,24 @@ class ExampleSetValues {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function fill(mixed $value, array $context, array &$gaps): mixed {
-		if (is_array($value) === true) {
-			$filled = [];
-			foreach ($value as $key => $item) {
-				$filled[$key] = $this->fill(value: $item, context: $context, gaps: $gaps);
-			}
+		$run    = new ExampleSetFillRun(context: $context);
+		$filled = $this->filled(value: $value, run: $run);
+		array_push($gaps, ...$run->gaps);
 
-			return $filled;
+		return $filled;
+	}//end fill()
+
+	/**
+	 * Fill a declared value at any depth within one fill.
+	 *
+	 * @param mixed             $value The declared value.
+	 * @param ExampleSetFillRun $run   The fill's context, collecting its gaps.
+	 *
+	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in the run's gaps.
+	 */
+	private function filled(mixed $value, ExampleSetFillRun $run): mixed {
+		if (is_array($value) === true) {
+			return array_map(fn (mixed $item): mixed => $this->filled(value: $item, run: $run), $value);
 		}
 
 		if (is_string($value) === false || str_contains($value, '{{') === false) {
@@ -110,23 +152,29 @@ class ExampleSetValues {
 		}
 
 		if (preg_match(self::WHOLE, $value, $whole) === 1) {
-			$found = $this->valueOf(placeholder: trim($whole[1]), context: $context);
-			if ($found === null) {
-				$gaps[] = $value;
-				return $value;
-			}
-
-			return $found;
+			return $this->wholeValue(placeholder: ['written' => $value, 'inner' => trim($whole[1])], run: $run);
 		}
 
-		return preg_replace_callback(
-			self::ANY,
-			function (array $match) use ($context, &$gaps): string {
-				return $this->asText(placeholder: $match[0], found: $this->valueOf(placeholder: trim($match[1]), context: $context), gaps: $gaps);
-			},
-			$value
-		);
-	}//end fill()
+		return preg_replace_callback(self::ANY, fn (array $match): string => $this->asText(match: $match, run: $run), $value);
+	}//end filled()
+
+	/**
+	 * What a string that is exactly one placeholder stands for, typed; the string as written when it cannot be filled.
+	 *
+	 * @param array{written: string, inner: string} $placeholder The string as written, and the text between the braces.
+	 * @param ExampleSetFillRun                     $run         The fill's context, collecting its gaps.
+	 *
+	 * @return mixed
+	 */
+	private function wholeValue(array $placeholder, ExampleSetFillRun $run): mixed {
+		$found = $this->valueOf(placeholder: $placeholder['inner'], context: $run->context);
+		if ($found === null) {
+			$run->gaps[] = $placeholder['written'];
+			return $placeholder['written'];
+		}
+
+		return $found;
+	}//end wholeValue()
 
 	/**
 	 * The owner a declared object names, filled: an account the set's cast declares, or none when it names none.
@@ -186,21 +234,7 @@ class ExampleSetValues {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
 	 */
 	public function viewsOf(array $fragment, ?array $record): array {
-		$views = [];
-		foreach (($fragment['views'] ?? []) as $view) {
-			$key = (string) $view['key'];
-			if ($record === null) {
-				$views[$key] = ['uuid' => 'example-set-stand-in:view:'.$key];
-				continue;
-			}
-
-			$written = ($record['views'][$fragment['app'].'/'.$key] ?? null);
-			if (is_array($written) === true) {
-				$views[$key] = $written;
-			}
-		}
-
-		return $views;
+		return $this->rows->viewsOf(fragment: $fragment, record: $record);
 	}//end viewsOf()
 
 	/**
@@ -215,7 +249,7 @@ class ExampleSetValues {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function tasksOf(array $fragment, ?array $record): array {
-		return $this->writtenRowsOf(fragment: $fragment, part: 'tasks', noun: 'task', record: $record);
+		return $this->rows->tasksOf(fragment: $fragment, record: $record);
 	}//end tasksOf()
 
 	/**
@@ -232,72 +266,36 @@ class ExampleSetValues {
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-task-may-name-the-run-it-waits-in-and-carry-its-claim
 	 */
 	public function flowsOf(array $fragment, ?array $record): array {
-		$flows = $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
-		if ($record !== null) {
-			return $flows;
-		}
-
-		foreach (($fragment['flows'] ?? []) as $flow) {
-			foreach ((array) ($flow['data']['runs'] ?? []) as $run) {
-				$run = (array) $run;
-				if (is_string($run['key'] ?? null) === false) {
-					continue;
-				}
-
-				$standIn = 'example-set-stand-in:run:'.$flow['key'].'.'.$run['key'];
-				$flows[(string) $flow['key']]['runs'][$run['key']] = $standIn;
-				if (($run['status'] ?? null) === 'suspended') {
-					$flows[(string) $flow['key']]['waitsOn'][$standIn] = (string) ($run['node'] ?? '');
-				}
-			}
-		}
-
-		return $flows;
+		return $this->rows->flowsOf(fragment: $fragment, record: $record);
 	}//end flowsOf()
 
-	/**
-	 * The rows of one engine part a fragment declares, by key: as the record holds them, or stand-ins for the check.
-	 *
-	 * @param array<string, mixed>      $fragment The fragment.
-	 * @param string                    $part     The fragment part, such as `tasks`.
-	 * @param string                    $noun     The word for one row in a stand-in uuid.
-	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
-	 *
-	 * @return array<string, array<string, mixed>>
-	 */
-	private function writtenRowsOf(array $fragment, string $part, string $noun, ?array $record): array {
-		$rows = [];
-		foreach (($fragment[$part] ?? []) as $row) {
-			$key = (string) $row['key'];
-			if ($record === null) {
-				$rows[$key] = ['uuid' => 'example-set-stand-in:'.$noun.':'.$key];
-				continue;
-			}
-
-			$written = ($record[$part][$fragment['app'].'/'.$key] ?? null);
-			if (is_array($written) === true) {
-				$rows[$key] = $written;
-			}
-		}
-
-		return $rows;
-	}//end writtenRowsOf()
 
 	/**
-	 * A found value as text inside a longer string; a value that is no scalar is a gap.
+	 * One placeholder inside a longer string, as text; a value that is no scalar, or none, is a gap.
 	 *
-	 * @param string             $placeholder The placeholder as written.
-	 * @param mixed              $found       What it stands for.
-	 * @param array<int, string> $gaps        Collects the placeholder when it cannot be text.
+	 * @param array<int, string> $match The placeholder as written, and the text between its braces.
+	 * @param ExampleSetFillRun  $run   The fill's context, collecting its gaps.
 	 *
 	 * @return string
 	 */
-	private function asText(string $placeholder, mixed $found, array &$gaps): string {
+	private function asText(array $match, ExampleSetFillRun $run): string {
+		$found = $this->valueOf(placeholder: trim($match[1]), context: $run->context);
 		if (is_scalar($found) === false) {
-			$gaps[] = $placeholder;
-			return $placeholder;
+			$run->gaps[] = $match[0];
+			return $match[0];
 		}
 
+		return $this->scalarText(found: $found);
+	}//end asText()
+
+	/**
+	 * A scalar as text: a boolean as `true` or `false`.
+	 *
+	 * @param bool|int|float|string $found The value.
+	 *
+	 * @return string
+	 */
+	private function scalarText(bool|int|float|string $found): string {
 		if ($found === true) {
 			return 'true';
 		}
@@ -307,7 +305,7 @@ class ExampleSetValues {
 		}
 
 		return (string) $found;
-	}//end asText()
+	}//end scalarText()
 
 	/**
 	 * What one placeholder stands for, or null when it cannot be filled.
@@ -320,44 +318,65 @@ class ExampleSetValues {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	private function valueOf(string $placeholder, array $context): mixed {
-		[$kind, $rest] = array_pad(explode(':', $placeholder, 2), 2, '');
-		$rest          = trim($rest);
+		$parts = $this->partsOf(placeholder: $placeholder);
+		if (isset(self::PATH_KINDS[$parts['kind']]) === true) {
+			return $this->pathIn(entries: $this->entries(context: $context, key: self::PATH_KINDS[$parts['kind']]), reference: $parts['rest']);
+		}
 
-		return match ($kind) {
-			'cast'   => $this->pathIn(entries: (array) ($context['cast'] ?? []), reference: $rest),
-			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
-			'file'   => $this->fileId(files: (array) ($context['files'] ?? []), reference: $rest),
-			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
-			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
-			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $this->flowReference(rest: $rest)),
-			'accessLink' => $this->pathIn(entries: (array) ($context['accessLinks'] ?? []), reference: $rest),
-			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
-			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
-			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
-			'instance' => $this->present(value: ($context['instance'][$rest] ?? null)),
-			'register' => $this->present(value: ($context['registers'][$rest] ?? null)),
-			'schema' => $this->present(value: ($context['schemas'][$rest] ?? null)),
-			'date', 'datetime' => $this->moment(kind: $kind, rest: $rest, today: ($context['today'] ?? null)),
-			default  => null,
-		};
+		if (isset(self::NAMED_KINDS[$parts['kind']]) === true) {
+			return $this->present(value: ($context[self::NAMED_KINDS[$parts['kind']]][$parts['rest']] ?? null));
+		}
+
+		return $this->otherValue(parts: $parts, context: $context);
 	}//end valueOf()
 
 	/**
-	 * A flow reference, with `self` read as `self.uuid`.
+	 * A placeholder's kind and the reference after it, with a flow's `self` read as `self.uuid`.
 	 *
-	 * @param string $rest The reference after `flow:`.
+	 * @param string $placeholder The text between the braces.
 	 *
-	 * @return string
+	 * @return array{kind: string, rest: string}
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragments-flow-may-quote-its-own-uuid
 	 */
-	private function flowReference(string $rest): string {
-		if ($rest === 'self') {
-			return 'self.uuid';
+	private function partsOf(string $placeholder): array {
+		[$kind, $rest] = array_pad(explode(':', $placeholder, 2), 2, '');
+		$rest          = trim($rest);
+		if ($kind === 'flow' && $rest === 'self') {
+			$rest = 'self.uuid';
 		}
 
-		return $rest;
-	}//end flowReference()
+		return ['kind' => $kind, 'rest' => $rest];
+	}//end partsOf()
+
+	/**
+	 * What a placeholder of a kind that is neither a path nor a name stands for: an object field, a file id or a day.
+	 *
+	 * @param array{kind: string, rest: string} $parts   The placeholder's kind and reference.
+	 * @param array<string, mixed>              $context See fill().
+	 *
+	 * @return mixed Null for an unknown kind.
+	 */
+	private function otherValue(array $parts, array $context): mixed {
+		return match ($parts['kind']) {
+			'object' => $this->objectField(objects: $this->entries(context: $context, key: 'objects'), reference: $parts['rest']),
+			'file'   => $this->fileId(files: $this->entries(context: $context, key: 'files'), reference: $parts['rest']),
+			'date', 'datetime' => $this->moment->dayOrMoment(parts: $parts, today: ($context['today'] ?? null)),
+			default  => null,
+		};
+	}//end otherValue()
+
+	/**
+	 * One map of entries of the context, empty when it has none.
+	 *
+	 * @param array<string, mixed> $context See fill().
+	 * @param string               $key     The context key.
+	 *
+	 * @return array<mixed>
+	 */
+	private function entries(array $context, string $key): array {
+		return (array) ($context[$key] ?? []);
+	}//end entries()
 
 	/**
 	 * The id of one file an object declared earlier in the fragment carries.
@@ -371,7 +390,7 @@ class ExampleSetValues {
 	 */
 	private function fileId(array $files, string $reference): ?int {
 		[$key, $index] = array_pad(explode('.', $reference, 2), 2, '');
-		if ($index === '' || ctype_digit($index) === false) {
+		if (ctype_digit($index) === false) {
 			return null;
 		}
 
@@ -419,7 +438,18 @@ class ExampleSetValues {
 			return null;
 		}
 
-		$here = $entries;
+		return $this->present(value: $this->dig(here: $entries, parts: $parts));
+	}//end pathIn()
+
+	/**
+	 * The value at a path of keys, or null when a key on the way is missing.
+	 *
+	 * @param mixed              $here  Where the path starts.
+	 * @param array<int, string> $parts The keys, outermost first.
+	 *
+	 * @return mixed
+	 */
+	private function dig(mixed $here, array $parts): mixed {
 		foreach ($parts as $part) {
 			if (is_array($here) === false || array_key_exists($part, $here) === false) {
 				return null;
@@ -428,8 +458,9 @@ class ExampleSetValues {
 			$here = $here[$part];
 		}
 
-		return $this->present(value: $here);
-	}//end pathIn()
+		return $here;
+	}//end dig()
+
 
 	/**
 	 * A found value, or null when it is nothing.
@@ -446,51 +477,4 @@ class ExampleSetValues {
 		return $value;
 	}//end present()
 
-	/**
-	 * The first given weekday on or after a day.
-	 *
-	 * @param DateTimeImmutable $day     The day.
-	 * @param string            $weekday `mon` to `sun`.
-	 *
-	 * @return DateTimeImmutable
-	 */
-	private function onOrAfter(DateTimeImmutable $day, string $weekday): DateTimeImmutable {
-		$wanted = (int) array_search($weekday, ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], true) + 1;
-		$days   = ((($wanted - (int) $day->format('N')) + 7) % 7);
-
-		return $day->add(new DateInterval('P'.$days.'D'));
-	}//end onOrAfter()
-
-	/**
-	 * A day, or a moment on a day, counted from the install day.
-	 *
-	 * @param string $kind  `date` or `datetime`.
-	 * @param string $rest  The number of days, and for a moment the time as HH:MM.
-	 * @param mixed  $today The install day.
-	 *
-	 * @return string|null `2026-10-05`, or for a moment its UTC instant, `2026-10-05T07:12:00+00:00` for 09:12 in
-	 *                     Amsterdam; null when malformed. A database datetime column keeps the wall time and drops
-	 *                     the offset, and Nextcloud reads it back as UTC, so a moment in any other offset would move.
-	 */
-	private function moment(string $kind, string $rest, mixed $today): ?string {
-		$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))?$/';
-		if ($kind === 'datetime') {
-			$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))? ([01]\d|2[0-3]):([0-5]\d)$/';
-		}
-
-		if (($today instanceof DateTimeImmutable) === false || preg_match($pattern, $rest, $parts) !== 1) {
-			return null;
-		}
-
-		$day = $today->modify(sprintf('%+d days', (int) $parts[1]));
-		if (($parts[2] ?? '') !== '') {
-			$day = $this->onOrAfter(day: $day, weekday: $parts[2]);
-		}
-
-		if ($kind === 'date') {
-			return $day->format('Y-m-d');
-		}
-
-		return $day->setTime((int) $parts[3], (int) $parts[4])->setTimezone(new DateTimeZone('UTC'))->format('c');
-	}//end moment()
 }//end class
