@@ -31,7 +31,9 @@ jest.mock('../../store/store.js', () => ({
 	viewsStore: {},
 }))
 
-const { objectStore, registerStore, schemaStore } = jest.requireMock('../../store/store.js')
+const { objectStore, registerStore, schemaStore } = jest.requireMock(
+	'../../store/store.js',
+)
 
 /**
  * A sidebar instance on a route, as far as the route handling reads it.
@@ -69,14 +71,20 @@ describe('SearchSideBar deep link', () => {
 
 	it('watches stores the instance really has', () => {
 		const state = SearchSideBar.data()
-		for (const path of ['registerStore.registerList', 'schemaStore.schemaList']) {
+		for (const path of [
+			'registerStore.registerList',
+			'schemaStore.schemaList',
+		]) {
 			expect(SearchSideBar.watch[path]).toBeDefined()
 			expect(state[path.split('.')[0]]).toBeDefined()
 		}
 	})
 
 	it('searches once both lists have arrived, in either order', () => {
-		for (const [first, second] of [['registerStore.registerList', 'schemaStore.schemaList'], ['schemaStore.schemaList', 'registerStore.registerList']]) {
+		for (const [first, second] of [
+			['registerStore.registerList', 'schemaStore.schemaList'],
+			['schemaStore.schemaList', 'registerStore.registerList'],
+		]) {
 			registerStore.registerList = []
 			schemaStore.schemaList = []
 			const instance = sidebar()
@@ -84,8 +92,12 @@ describe('SearchSideBar deep link', () => {
 			expect(instance.performSearchWithFacets).not.toHaveBeenCalled()
 
 			const lists = {
-				'registerStore.registerList': () => { registerStore.registerList = [{ id: 1 }] },
-				'schemaStore.schemaList': () => { schemaStore.schemaList = [{ id: 2 }] },
+				'registerStore.registerList': () => {
+					registerStore.registerList = [{ id: 1 }]
+				},
+				'schemaStore.schemaList': () => {
+					schemaStore.schemaList = [{ id: 2 }]
+				},
 			}
 			lists[first]()
 			fire(instance, first)
