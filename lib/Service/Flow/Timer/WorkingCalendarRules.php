@@ -34,21 +34,6 @@ use OCA\OpenRegister\Exception\FlowTimerValidationException;
 final class WorkingCalendarRules {
 
 	/**
-	 * Weekday names accepted by an observed-shift rule, ISO numbered.
-	 *
-	 * @var array<string, int>
-	 */
-	private const WEEKDAYS = [
-		'monday' => 1,
-		'tuesday' => 2,
-		'wednesday' => 3,
-		'thursday' => 4,
-		'friday' => 5,
-		'saturday' => 6,
-		'sunday' => 7,
-	];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $slug The calendar, named in every refusal.
@@ -199,7 +184,7 @@ final class WorkingCalendarRules {
 	}//end validShift()
 
 	/**
-	 * A shift's weekday as declared: a name is looked up, anything else passes through.
+	 * A shift's weekday as declared: a name is looked up in {@see ServiceHours::WEEKDAYS}, anything else passes through.
 	 *
 	 * @param mixed $weekday The declared weekday.
 	 *
@@ -207,7 +192,7 @@ final class WorkingCalendarRules {
 	 */
 	private static function shiftWeekday(mixed $weekday): mixed {
 		if (is_string($weekday) === true) {
-			return (self::WEEKDAYS[strtolower($weekday)] ?? null);
+			return (ServiceHours::WEEKDAYS[strtolower($weekday)] ?? null);
 		}
 
 		return $weekday;
