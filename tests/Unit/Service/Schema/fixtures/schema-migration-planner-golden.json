@@ -1,0 +1,794 @@
+{
+    "validatePlan": {
+        "empty": [
+            "Migration plan must contain at least one transform."
+        ],
+        "not an array": [
+            "Transform #0 is missing an \"op\" key."
+        ],
+        "no op": [
+            "Transform #0 is missing an \"op\" key."
+        ],
+        "null op": [
+            "Transform #0 is missing an \"op\" key."
+        ],
+        "unknown op": [
+            "Transform #0 has unknown op \"merge\".",
+            "Transform #1 has unknown op \"5\"."
+        ],
+        "keyed steps": [
+            "Transform #0 has unknown op \"merge\".",
+            "Transform #0 is missing an \"op\" key."
+        ],
+        "rename": [
+            "rename transform #0 requires \"from\" and \"to\".",
+            "rename transform #1 requires \"from\" and \"to\".",
+            "rename transform #2 requires \"from\" and \"to\"."
+        ],
+        "setDefault": [
+            "setDefault transform #0 requires \"field\" and \"value\".",
+            "setDefault transform #1 requires \"field\" and \"value\"."
+        ],
+        "cast": [
+            "cast transform #0 requires \"field\" and \"to\".",
+            "cast transform #1 requires \"field\" and \"to\".",
+            "cast transform #2 has unsupported target type \"float\"."
+        ],
+        "drop": [
+            "drop transform #0 requires \"field\".",
+            "drop transform #1 requires \"field\"."
+        ],
+        "compute": [
+            "compute transform #0 requires \"field\" and \"template\".",
+            "compute transform #1 requires \"field\" and \"template\"."
+        ],
+        "all problems at once": [
+            "rename transform #0 requires \"from\" and \"to\".",
+            "Transform #1 is missing an \"op\" key.",
+            "Transform #2 has unknown op \"nope\".",
+            "drop transform #3 requires \"field\"."
+        ]
+    },
+    "apply": {
+        "empty plan": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": []
+        },
+        "rename present": {
+            "data": {
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00",
+                "naam": "Jan"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename name -> naam"
+            ]
+        },
+        "rename missing": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename nope -> x"
+            ]
+        },
+        "rename onto existing": {
+            "data": {
+                "age": "Jan",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename name -> age"
+            ]
+        },
+        "rename null value": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00",
+                "leeg": null
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename empty -> leeg"
+            ]
+        },
+        "setDefault missing": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00",
+                "city": "Utrecht"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "setDefault city"
+            ]
+        },
+        "setDefault null": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": 0,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "setDefault empty"
+            ]
+        },
+        "setDefault present": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "setDefault name"
+            ]
+        },
+        "drop present": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "drop tags"
+            ]
+        },
+        "drop missing": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "drop nope"
+            ]
+        },
+        "compute": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00",
+                "label": "Jan (42)    {{ bad-key }}"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "compute label"
+            ]
+        },
+        "compute active true": {
+            "data": {
+                "flag": true,
+                "off": false,
+                "n": 1.5,
+                "x": "1||1.5"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "compute x"
+            ]
+        },
+        "chain": {
+            "data": {
+                "name": "Jan",
+                "active": true,
+                "empty": "x",
+                "born": "05/03/2024 10:00:00 +02:00",
+                "leeftijd": 42,
+                "label": "Jan-42"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename age -> leeftijd",
+                "cast leeftijd -> integer",
+                "cast active -> boolean",
+                "drop tags",
+                "compute label",
+                "setDefault empty"
+            ]
+        },
+        "failure keeps the original": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast non-scalar value to string.",
+            "applied": [
+                "rename name -> naam"
+            ]
+        },
+        "unknown op after a step": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unknown transform op \"merge\".",
+            "applied": [
+                "drop tags"
+            ]
+        },
+        "step without op": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unknown transform op \"\".",
+            "applied": []
+        },
+        "non array step": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unknown transform op \"\".",
+            "applied": []
+        },
+        "boolean true op": {
+            "data": {
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00",
+                "x": "Jan"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "rename name -> x"
+            ]
+        },
+        "boolean false op": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unknown transform op \"\".",
+            "applied": []
+        },
+        "integer zero op": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unknown transform op \"0\".",
+            "applied": []
+        },
+        "cast missing field": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast nope -> integer"
+            ]
+        },
+        "cast null field": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast empty -> integer"
+            ]
+        },
+        "cast unsupported type": {
+            "data": {
+                "v": "1"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Unsupported cast target type \"float\".",
+            "applied": []
+        },
+        "string from int": {
+            "data": {
+                "v": "5"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> string"
+            ]
+        },
+        "string from float": {
+            "data": {
+                "v": "1.5"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> string"
+            ]
+        },
+        "string from bool": {
+            "data": {
+                "v": ""
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> string"
+            ]
+        },
+        "string from array": {
+            "data": {
+                "v": [
+                    "a"
+                ]
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast non-scalar value to string.",
+            "applied": []
+        },
+        "integer from numeric string": {
+            "data": {
+                "v": 12
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> integer"
+            ]
+        },
+        "integer from float string": {
+            "data": {
+                "v": 12
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> integer"
+            ]
+        },
+        "integer from bool": {
+            "data": {
+                "v": 1
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> integer"
+            ]
+        },
+        "integer from word": {
+            "data": {
+                "v": "twelve"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"twelve\" to integer.",
+            "applied": []
+        },
+        "integer from array": {
+            "data": {
+                "v": [
+                    "a"
+                ]
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"array\" to integer.",
+            "applied": []
+        },
+        "number from string": {
+            "data": {
+                "v": 1000.0
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> number"
+            ]
+        },
+        "number from int": {
+            "data": {
+                "v": 7.0
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> number"
+            ]
+        },
+        "number from bool": {
+            "data": {
+                "v": 0.0
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> number"
+            ]
+        },
+        "number from word": {
+            "data": {
+                "v": "x"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"x\" to number.",
+            "applied": []
+        },
+        "boolean from bool": {
+            "data": {
+                "v": false
+            },
+            "changed": false,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from one": {
+            "data": {
+                "v": true
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from zero": {
+            "data": {
+                "v": false
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from two": {
+            "data": {
+                "v": 2
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"2\" to boolean.",
+            "applied": []
+        },
+        "boolean from float one": {
+            "data": {
+                "v": 1.0
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"1\" to boolean.",
+            "applied": []
+        },
+        "boolean from word on": {
+            "data": {
+                "v": true
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from word no": {
+            "data": {
+                "v": false
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from string one": {
+            "data": {
+                "v": true
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from string zero": {
+            "data": {
+                "v": false
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> boolean"
+            ]
+        },
+        "boolean from word maybe": {
+            "data": {
+                "v": "maybe"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"maybe\" to boolean.",
+            "applied": []
+        },
+        "boolean from array": {
+            "data": {
+                "v": []
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast \"array\" to boolean.",
+            "applied": []
+        },
+        "date with offset": {
+            "data": {
+                "v": "2024-03-05T08:00:00+00:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> date"
+            ]
+        },
+        "date from timestamp string": {
+            "data": {
+                "v": "2023-11-14T22:13:20+00:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> date"
+            ]
+        },
+        "date unparseable": {
+            "data": {
+                "v": "not a date"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Value \"not a date\" is not a parseable date.",
+            "applied": []
+        },
+        "date from array": {
+            "data": {
+                "v": [
+                    "x"
+                ]
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast non-string value to date.",
+            "applied": []
+        },
+        "date from bool": {
+            "data": {
+                "v": true
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Cannot cast non-string value to date.",
+            "applied": []
+        },
+        "date with format": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "2024-03-05T10:00:00+02:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast born -> date"
+            ]
+        },
+        "date with wrong format": {
+            "data": {
+                "name": "Jan",
+                "age": "42",
+                "active": "Yes",
+                "empty": null,
+                "tags": [
+                    "a"
+                ],
+                "born": "05/03/2024 10:00:00 +02:00"
+            },
+            "changed": false,
+            "failed": true,
+            "failure": "Value \"05/03/2024 10:00:00 +02:00\" does not match date format \"Y-m-d\".",
+            "applied": []
+        },
+        "date with empty format": {
+            "data": {
+                "v": "2024-03-05T08:00:00+00:00"
+            },
+            "changed": true,
+            "failed": false,
+            "failure": null,
+            "applied": [
+                "cast v -> date"
+            ]
+        }
+    }
+}

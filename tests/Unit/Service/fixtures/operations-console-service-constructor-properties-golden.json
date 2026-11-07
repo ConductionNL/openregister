@@ -1,0 +1,9 @@
+{
+    "bulkJobs": "bulkJobs",
+    "dispatches": "dispatches",
+    "jobList": "jobList",
+    "queue": "queue",
+    "ruleRuns": "ruleRuns",
+    "ruleSummaries": "ruleSummaries",
+    "templates": "templates"
+}

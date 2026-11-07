@@ -22,6 +22,9 @@ namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -176,12 +179,18 @@ final class IntegrationRegistrar {
 				return new ObjectIntegrationsController(
 					appName: 'openregister',
 					request: $container->get('OCP\IRequest'),
-					registry: $container->get(IntegrationRegistry::class),
-					logger: $container->get('Psr\Log\LoggerInterface'),
-					objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
-					schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class),
-					visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
-					permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandler::class)
+					services: new ObjectIntegrationsControllerServices(
+						domain: new ObjectIntegrationsDomain(
+							registry: $container->get(IntegrationRegistry::class),
+							objectService: $container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class),
+							schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapperInterface::class)
+						),
+						access: new ObjectIntegrationsAccess(
+							visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
+							permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandler::class)
+						),
+						logger: $container->get('Psr\Log\LoggerInterface')
+					)
 				);
 			}
 		);
