@@ -83,6 +83,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
