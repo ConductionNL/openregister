@@ -21,11 +21,13 @@ namespace OCA\OpenRegister\Service\Object;
 use Closure;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -82,6 +84,7 @@ class RelationHandler {
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param RegisterMapperInterface $registerMapper Mapper for registers.
 	 * @param RelationTypeResolver|null $relationTypes Resolves what a relation is called from each side.
+	 * @param PurposeGuard|null $purposeGuard The doelbinding guard the referrer tables are read under.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
@@ -93,6 +96,7 @@ class RelationHandler {
 		private readonly LoggerInterface $logger,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly ?RelationTypeResolver $relationTypes = null,
+		private readonly ?PurposeGuard $purposeGuard = null,
 	) {
 	}//end __construct()
 
@@ -731,7 +735,7 @@ class RelationHandler {
 	 */
 	private function readReferrers(array $table, ReferrerPage $page): void {
 		$pair = $this->tables()->pair(registerId: $table['registerId'], schemaId: $table['schemaId']);
-		if ($pair === null) {
+		if ($pair === null || $this->purposeAdmits(pair: $pair) === false) {
 			return;
 		}
 
@@ -746,6 +750,26 @@ class RelationHandler {
 
 		$page->countRead(count: count($referrers));
 	}//end readReferrers()
+
+	/**
+	 * Whether the doelbinding guard admits a read of the table.
+	 *
+	 * The same rule the cross-table `_relations_contains` search applies: a
+	 * table that asks for a purpose the request does not carry is left out.
+	 *
+	 * @param array{register: Register, schema: Schema} $pair The table's register and schema.
+	 *
+	 * @return bool True when no guard is wired or the guard admits the read.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeAdmits(array $pair): bool {
+		if ($this->purposeGuard === null) {
+			return true;
+		}
+
+		return (new PurposeBoundTables(guard: $this->purposeGuard))->readable(pairs: [$pair]) !== [];
+	}//end purposeAdmits()
 
 	/**
 	 * The next slice of one table's objects whose relations name the page's target, newest first.
