@@ -24,7 +24,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionFactory;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
@@ -117,9 +117,9 @@ class SourcesController extends Controller {
 	/**
 	 * Introspects a database source into a virtual register
 	 *
-	 * @var DatabaseIntrospectionService
+	 * @var DatabaseIntrospectionServiceInterface
 	 */
-	private readonly DatabaseIntrospectionService $introspectionService;
+	private readonly DatabaseIntrospectionServiceInterface $introspectionService;
 
 	/**
 	 * The app logger
