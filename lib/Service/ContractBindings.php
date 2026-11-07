@@ -97,6 +97,10 @@ use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -169,6 +173,8 @@ final class ContractBindings {
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		JsonLdContextServiceInterface::class => JsonLdContextService::class,
+		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
