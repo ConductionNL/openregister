@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
-use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
@@ -66,7 +66,7 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	 *
 	 * @param ObjectOperationsInterface $objectService The object write path.
 	 * @param SchemaMapperInterface $schemaMapper Resolves the schema the rule is declared on.
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
+	 * @param RuleInventoryServiceInterface $inventory Finds the rule as declared.
 	 * @param CalculationEvaluatorInterface $evaluator The JSON-AST evaluator.
 	 * @param LoggerInterface $logger Logger.
 	 *
@@ -75,7 +75,7 @@ class ApplyRuleAction implements ApplyRuleActionInterface {
 	public function __construct(
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RuleInventoryService $inventory,
+		private readonly RuleInventoryServiceInterface $inventory,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly LoggerInterface $logger,
 	) {

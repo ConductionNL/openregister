@@ -226,6 +226,18 @@ use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
+use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Schema\PropertyConversionService;
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
@@ -319,6 +331,7 @@ final class ContractBindings {
 		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
+		ConditionTracerInterface::class => ConditionTracer::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
@@ -420,6 +433,11 @@ final class ContractBindings {
 		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
 		ReferenceResolverInterface::class => ReferenceResolver::class,
 		RouterNodeInterface::class => RouterNode::class,
+		RuleEnablementServiceInterface::class => RuleEnablementService::class,
+		RuleInventoryServiceInterface::class => RuleInventoryService::class,
+		RuleReplayServiceInterface::class => RuleReplayService::class,
+		RuleRunRecorderInterface::class => RuleRunRecorder::class,
+		RuleTrialServiceInterface::class => RuleTrialService::class,
 		WaitNodeInterface::class => WaitNode::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,

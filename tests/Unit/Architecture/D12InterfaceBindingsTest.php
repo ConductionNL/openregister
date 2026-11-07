@@ -68,6 +68,18 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\Rules\ConditionTracer;
+use OCA\OpenRegister\Service\Rules\ConditionTracerInterface;
+use OCA\OpenRegister\Service\Rules\RuleEnablementService;
+use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleInventoryService;
+use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleReplayService;
+use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
+use OCA\OpenRegister\Service\Rules\RuleTrialService;
+use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
@@ -118,6 +130,7 @@ final class D12InterfaceBindingsTest extends TestCase {
 		CasePlanItemTimers::class => [CasePlanItemTimersInterface::class, ContractBindings::class],
 		CasePlanService::class => [CasePlanServiceInterface::class, ContractBindings::class],
 		CasePlanTimerRearm::class => [CasePlanTimerRearmInterface::class, ContractBindings::class],
+		ConditionTracer::class => [ConditionTracerInterface::class, ContractBindings::class],
 		EndNode::class => [EndNodeInterface::class, ContractBindings::class],
 		ExtendingFormDeclaration::class => [ExtendingFormDeclarationInterface::class, ContractBindings::class],
 		FacetResultCacheClearer::class => [FacetResultCacheClearerInterface::class, ContractBindings::class],
@@ -133,6 +146,11 @@ final class D12InterfaceBindingsTest extends TestCase {
 		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
 		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
 		PropertyVocabulary::class => [PropertyVocabularyInterface::class, ContractBindings::class],
+		RuleEnablementService::class => [RuleEnablementServiceInterface::class, ContractBindings::class],
+		RuleInventoryService::class => [RuleInventoryServiceInterface::class, ContractBindings::class],
+		RuleReplayService::class => [RuleReplayServiceInterface::class, ContractBindings::class],
+		RuleRunRecorder::class => [RuleRunRecorderInterface::class, ContractBindings::class],
+		RuleTrialService::class => [RuleTrialServiceInterface::class, ContractBindings::class],
 		SchemaCacheHandler::class => [SchemaCacheHandlerInterface::class, ContractBindings::class],
 		SemanticRoleHandler::class => [SemanticRoleHandlerInterface::class, ContractBindings::class],
 		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
