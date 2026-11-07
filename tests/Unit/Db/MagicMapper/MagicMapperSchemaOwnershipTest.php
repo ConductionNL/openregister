@@ -26,7 +26,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -63,9 +65,9 @@ class MagicMapperSchemaOwnershipTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			static function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
 				return match ($id) {
-					DateTimeNormalizer::class => $dateTimeNormalizer,
+					DateTimeNormalizerInterface::class => $dateTimeNormalizer,
 					ConditionMatcher::class => $conditionMatcher,
-					SchemaTypeConverter::class => $schemaTypeConverter,
+					SchemaTypeConverterInterface::class => $schemaTypeConverter,
 					default => null,
 				};
 			}

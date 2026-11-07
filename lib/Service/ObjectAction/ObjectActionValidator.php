@@ -43,7 +43,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
  */
-class ObjectActionValidator {
+class ObjectActionValidator implements ObjectActionValidatorInterface {
 
 	/**
 	 * Constructor.
