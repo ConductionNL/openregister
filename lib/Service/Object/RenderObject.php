@@ -414,7 +414,7 @@ class RenderObject {
 			return $this->objectsCache[$id];
 		}
 
-		if ($this->extendReads()->refused(id: $id) !== null) {
+		if ($this->extendReads()->refused(id: $id) === true) {
 			return null;
 		}
 
@@ -422,7 +422,7 @@ class RenderObject {
 		// Its own cache answers without a read check, so the answer is checked here.
 		$object = $this->objectCacheService->getObject($id);
 		if ($object !== null && $this->readableExtendTargets(objects: [$object]) === []) {
-			$this->extendReads()->refuse(id: $id, object: $object);
+			$this->extendReads()->refuse(id: $id);
 			return null;
 		}
 
@@ -2396,7 +2396,7 @@ class RenderObject {
 	}//end readableExtendTargets()
 
 	/**
-	 * Keep preloaded objects: the readable ones in the objects cache, the others apart.
+	 * Keep the readable preloaded objects in the objects cache and note the others as refused.
 	 *
 	 * @param ObjectEntity[] $objects The objects the preload found.
 	 *
@@ -2413,32 +2413,10 @@ class RenderObject {
 
 		foreach ($objects as $object) {
 			if (in_array($object, $readable, true) === false) {
-				$this->extendReads()->refuse(id: (string)$object->getUuid(), object: $object);
+				$this->extendReads()->refuse(id: (string)$object->getUuid());
 			}
 		}
 	}//end cacheExtendTargets()
-
-	/**
-	 * The object behind a reference: readable, or reached through a link that declares an exposure.
-	 *
-	 * A declared exposure carries a reader to a record they cannot open; the
-	 * run projects it to the declared properties.
-	 *
-	 * @param ExtendDotRun $run The extend pass, on one key.
-	 * @param mixed        $id  The reference.
-	 *
-	 * @return ObjectEntity|null The object, or null to keep the reference.
-	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
-	 */
-	private function extendTarget(ExtendDotRun $run, mixed $id): ?ObjectEntity {
-		$object = $this->getObject(id: $id);
-		if ($object === null && $run->descriptor !== null) {
-			return $this->extendReads()->refused(id: $id);
-		}
-
-		return $object;
-	}//end extendTarget()
 
 	/**
 	 * The inverse results the caller may read.
@@ -3683,7 +3661,7 @@ class RenderObject {
 			return null;
 		}
 
-		$object = $this->extendTarget(run: $run, id: $identifier);
+		$object = $this->getObject(id: $identifier);
 		if ($object === null) {
 			$this->logger->debug(
 				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
@@ -3758,7 +3736,7 @@ class RenderObject {
 			$value = end($pathExploded);
 		}
 
-		$object = $this->extendTarget(run: $run, id: $value);
+		$object = $this->getObject(id: $value);
 		if ($object === null) {
 			$this->logger->debug(
 				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
@@ -3825,25 +3803,22 @@ class RenderObject {
 	 * Narrow one extended far record to what its link declares it exposes.
 	 *
 	 * 🔑 THERE IS NO SECOND PERMISSION EVALUATOR HERE, and that is the design
-	 * (D-4). The readable set is whatever survived `renderEntity()`, which has
+	 * (D-4). The record reached this point through the read check of the extend,
+	 * and the readable set is whatever survived `renderEntity()`, which has
 	 * already run the far schema's own property rules through
 	 * `PropertyRbacHandler`. This takes that answer as its argument and
-	 * intersects the declared set with it, so a link can carry a reader to a
-	 * record they could not otherwise open and can never show them a field
-	 * their own rules withhold.
+	 * intersects the declared set with it, so a link never shows more than the
+	 * reader may read on the far record.
 	 *
-	 * 🔴 `@self` AND `id` ARE NOT PROPERTIES AND ARE NEVER WITHHELD. They are
-	 * the render envelope: marking `id` withheld would break every client that
-	 * follows the link it was handed, and it would say "you may not see this
-	 * record's identity" about a record the link exists to point at. The
-	 * exposure decides which FIELDS travel, not whether the link is there.
+	 * `id` is the render envelope and is never withheld. `@self` keeps what
+	 * {@see LinkExposure::envelope()} leaves of it.
 	 *
 	 * @param array<string, mixed>      $rendered   The far record as renderEntity answered it.
 	 * @param array<string, mixed>|null $descriptor The relation descriptor, or null when the link declares none.
 	 *
 	 * @return array<string, mixed> The projection.
 	 *
-	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
 	 */
 	private function applyLinkExposure(array $rendered, ?array $descriptor): array {
 		if ($descriptor === null) {
@@ -3858,7 +3833,7 @@ class RenderObject {
 		$body = [];
 		foreach ($rendered as $property => $value) {
 			$property = (string)$property;
-			if ($property === '@self' || $property === 'id' || str_starts_with($property, '@') === true) {
+			if ($property === 'id' || str_starts_with($property, '@') === true) {
 				$envelope[$property] = $value;
 				continue;
 			}
@@ -3871,6 +3846,10 @@ class RenderObject {
 			relationType: $descriptor,
 			readable: array_map('strval', array_keys($body))
 		);
+
+		if (is_array($envelope['@self'] ?? null) === true) {
+			$envelope['@self'] = $this->linkExposure->envelope(self: $envelope['@self'], shown: $projected);
+		}
 
 		return array_merge($projected, $envelope);
 	}//end applyLinkExposure()

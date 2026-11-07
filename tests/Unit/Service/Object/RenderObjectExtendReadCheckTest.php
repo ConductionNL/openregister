@@ -339,7 +339,7 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$this->assertTrue(self::extended($data['one']));
 	}
 
-	public function testALinkThatDeclaresAnExposureShowsOnlyThatToAReaderWithoutAccess(): void {
+	public function testALinkThatDeclaresAnExposureShowsNothingToAReaderWithoutTheReadRight(): void {
 		$this->cache = $this->createMock(CacheHandler::class);
 		$this->cache->method('preloadObjects')->willReturnCallback(
 			fn (): array => [$this->target(self::CLOSED, ['status' => 'open', 'note' => 'private'])]
@@ -348,10 +348,73 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 
 		$data = $renderer->renderEntity(entity: $this->parent(self::CLOSED, [self::CLOSED]), _extend: ['one', 'many'])->getObject();
 
-		$this->assertSame('open', $data['one']['status']);
-		$this->assertSame(LinkExposure::WITHHELD, $data['one']['note']);
+		$this->assertSame(self::CLOSED, $data['one']);
 		$this->assertSame(self::CLOSED, $data['many'][0]);
 		$this->assertArrayNotHasKey(self::CLOSED, $renderer->getObjectsCache());
+	}
+
+	public function testAPageThroughALinkThatDeclaresAnExposureShowsNothingToAReaderWithoutTheReadRight(): void {
+		$renderer = $this->renderer(['name']);
+
+		$page = $renderer->renderEntities(entities: [$this->parent(self::CLOSED, [])], _extend: ['one']);
+
+		$this->assertSame(self::CLOSED, $page[0]->getObject()['one']);
+	}
+
+	public function testAnotherOrganisationsObjectThroughALinkThatDeclaresAnExposureStaysAnIdentifier(): void {
+		$renderer = $this->renderer(['name']);
+
+		$data = $renderer->renderEntity(entity: $this->parent(self::FOREIGN, []), _extend: ['one'])->getObject();
+
+		$this->assertSame(self::FOREIGN, $data['one']);
+	}
+
+	public function testALinkThatDeclaresAnExposureNarrowsWhatAReaderWithTheReadRightSees(): void {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->named('private name')]);
+		$renderer = $this->renderer(['status']);
+
+		$far = $renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: ['one'])->getObject()['one'];
+
+		$this->assertSame('open', $far['status']);
+		$this->assertSame(LinkExposure::WITHHELD, $far['naam']);
+		$this->assertSame(self::OPEN, $far['@self']['id']);
+		$this->assertArrayNotHasKey('name', $far['@self']);
+		$this->assertStringNotContainsString('private name', (string)json_encode($far));
+	}
+
+	public function testAReaderWithTheReadRightFindsTheFullTargetInSelfObjects(): void {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->named('private name')]);
+		$renderer = $this->renderer(['status']);
+
+		$renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: ['one']);
+
+		$this->assertSame('private name', $renderer->getObjectsCache()[self::OPEN]['naam']);
+	}
+
+	public function testAnExposedNameStaysInTheEnvelope(): void {
+		$this->cache = $this->createMock(CacheHandler::class);
+		$this->cache->method('preloadObjects')->willReturnCallback(fn (): array => [$this->named('public name')]);
+		$renderer = $this->renderer(['naam']);
+
+		$far = $renderer->renderEntity(entity: $this->parent(self::OPEN, []), _extend: ['one'])->getObject()['one'];
+
+		$this->assertSame('public name', $far['@self']['name']);
+	}
+
+	/**
+	 * A readable target whose `@self.name` is filled from its `naam` property.
+	 *
+	 * @param string $name The name.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function named(string $name): ObjectEntity {
+		$object = $this->target(self::OPEN, ['status' => 'open', 'naam' => $name]);
+		$object->setName($name);
+
+		return $object;
 	}
 
 	/**
