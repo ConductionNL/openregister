@@ -57,23 +57,37 @@ use Psr\Log\LoggerInterface;
 class GetObject
 {
     /**
+     * Object entity data mapper.
+     *
+     * @var MagicObjectFinderInterface
+     */
+    private readonly MagicObjectFinderInterface $objectMapper;
+
+    /**
+     * Registry of object-source providers (virtual schemas).
+     *
+     * @var ObjectSourceRegistry
+     */
+    private readonly ObjectSourceRegistry $objectSourceRegistry;
+
+    /**
      * Constructor for GetObject handler.
      *
-     * @param MagicObjectFinderInterface          $objectMapper         Object entity data mapper.
-     * @param AuditTrailMapperInterface     $auditTrailMapper     Audit trail mapper for logs.
-     * @param ReadHistoryService   $readHistory          The one read registration (audit trail and AVG log).
-     * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
-     * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
+     * @param ObjectReadSources         $sources          The object mapper and the object-source registry.
+     * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logs.
+     * @param ReadHistoryService        $readHistory      The one read registration (audit trail and AVG log).
+     * @param LoggerInterface           $logger           Logger for object-source delegation warnings.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
-        private readonly MagicObjectFinderInterface $objectMapper,
+        ObjectReadSources $sources,
         private readonly AuditTrailMapperInterface $auditTrailMapper,
         private readonly ReadHistoryService $readHistory,
-        private readonly ObjectSourceRegistry $objectSourceRegistry,
         private readonly LoggerInterface $logger
     ) {
+        $this->objectMapper         = $sources->objectMapper;
+        $this->objectSourceRegistry = $sources->objectSourceRegistry;
     }//end __construct()
 
     /**

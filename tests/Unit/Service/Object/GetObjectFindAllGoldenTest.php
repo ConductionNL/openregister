@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectReadSources;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use PHPUnit\Framework\TestCase;
@@ -112,10 +113,9 @@ class GetObjectFindAllGoldenTest extends TestCase {
 		);
 
 		return new GetObject(
-			objectMapper: $mapper,
+			sources: new ObjectReadSources(objectMapper: $mapper, objectSourceRegistry: $registry),
 			auditTrailMapper: $this->createMock(AuditTrailMapperInterface::class),
 			readHistory: $this->createMock(ReadHistoryService::class),
-			objectSourceRegistry: $registry,
 			logger: new NullLogger()
 		);
 	}//end getObject()

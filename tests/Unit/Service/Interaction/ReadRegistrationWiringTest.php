@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectReadSources;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -69,10 +70,9 @@ class ReadRegistrationWiringTest extends TestCase {
 			);
 
 		$getObject = new GetObject(
-			$mapper,
+			new ObjectReadSources(objectMapper: $mapper, objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)),
 			$this->createMock(AuditTrailMapper::class),
 			$history,
-			$this->createMock(ObjectSourceRegistry::class),
 			$this->createMock(LoggerInterface::class)
 		);
 
