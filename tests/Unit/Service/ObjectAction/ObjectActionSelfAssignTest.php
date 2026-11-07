@@ -229,7 +229,7 @@ class ObjectActionSelfAssignTest extends TestCase {
 			}
 		);
 
-		$handler = new PermissionHandler(
+		$handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,

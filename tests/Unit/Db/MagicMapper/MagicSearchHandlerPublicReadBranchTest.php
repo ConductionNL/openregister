@@ -180,7 +180,7 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 
-		$permissionHandler = new PermissionHandler(
+		$permissionHandler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$userManager,
 			$this->groupManager,

@@ -179,7 +179,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			new MemberOfResolver($schemas, $registers, $container, $evaluator, new NullLogger())
 		);
 
-		$permissions = new PermissionHandler(
+		$permissions = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$session,
 			$users,
 			$groups,

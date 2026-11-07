@@ -151,7 +151,7 @@ class PermissionHandlerDenyOverGrantChainTest extends TestCase {
 
 		$logger = new NullLogger();
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,

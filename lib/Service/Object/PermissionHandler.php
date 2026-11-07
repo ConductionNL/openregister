@@ -43,6 +43,10 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
+use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -311,57 +315,185 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const CONFIG_ENFORCE_DEFAULT_CLOSED = 'enforce_default_closed';
 
 	/**
+	 * User session for getting current user.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * User manager for getting user objects.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Group manager for checking user groups.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Mapper for object entity operations.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectEntityMapper;
+
+	/**
+	 * Shared PHP-side match evaluator (ADR-011).
+	 *
+	 * @var ConditionMatcher
+	 */
+	private readonly ConditionMatcher $conditionMatcher;
+
+	/**
+	 * App config for the inheritFromPublic tenant default and the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger for permission auditing.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Container for lazy loading services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Optional dispatcher for custom-scope events.
+	 *
+	 * @var \OCP\EventDispatcher\IEventDispatcher|null
+	 */
+	private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher;
+
+	/**
+	 * Shared object-scope resolver; null means a fresh one.
+	 *
+	 * @var ObjectScopeResolver|null
+	 */
+	private readonly ?ObjectScopeResolver $objectScopeResolver;
+
+	/**
+	 * Shared per-object grant resolver; null means a fresh one.
+	 *
+	 * @var ObjectGrantResolver|null
+	 */
+	private readonly ?ObjectGrantResolver $objectGrantResolver;
+
+	/**
+	 * Shared deny-grammar reader; null means a fresh one.
+	 *
+	 * @var DenyResolver|null
+	 */
+	private readonly ?DenyResolver $denyResolver;
+
+	/**
+	 * The staging switch; null means one over the app config.
+	 *
+	 * @var DenyEnforcementMode|null
+	 */
+	private readonly ?DenyEnforcementMode $denyEnforcementMode;
+
+	/**
+	 * The grantable set.
+	 *
+	 * @var PermissionCatalogue|null
+	 */
+	private readonly ?PermissionCatalogue $permissionCatalogue;
+
+	/**
+	 * Reads an entry's end and the area it is confined to.
+	 *
+	 * @var GrantConstraints|null
+	 */
+	private readonly ?GrantConstraints $grantConstraints;
+
+	/**
+	 * Access derived from identity claims; null means none.
+	 *
+	 * @var DerivedGrantStore|null
+	 */
+	private readonly ?DerivedGrantStore $derivedGrantStore;
+
+	/**
+	 * Reads a derived grant in one area.
+	 *
+	 * @var DerivedGrantResolver|null
+	 */
+	private readonly ?DerivedGrantResolver $derivedGrantResolver;
+
+	/**
+	 * Reads the grant the request's API token carries.
+	 *
+	 * @var TokenGrantSource|null
+	 */
+	private readonly ?TokenGrantSource $tokenGrantSource;
+
+	/**
+	 * Narrows the block to that token's grant.
+	 *
+	 * @var TokenGrantNarrower|null
+	 */
+	private readonly ?TokenGrantNarrower $tokenGrantNarrower;
+
+	/**
 	 * PermissionHandler constructor.
 	 *
-	 * @param IUserSession $userSession User session for getting current user.
-	 * @param IUserManager $userManager User manager for getting user objects.
-	 * @param IGroupManager $groupManager Group manager for checking user groups.
-	 * @param SchemaMapperInterface $schemaMapper Mapper for schema operations.
-	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entity operations.
-	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011).
-	 * @param IAppConfig $appConfig App config for the inheritFromPublic tenant default and
-	 *                              the `enforce_default_closed` opt-in flag (Wave-12 Fix
-	 *                              2).
-	 * @param LoggerInterface $logger Logger for permission auditing.
-	 * @param ContainerInterface $container Container for lazy loading services.
-	 * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher Optional dispatcher for custom-scope events.
-	 * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is
-	 *                                                      not a fatal at existing construction sites.
-	 * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the
-	 *                                                      same reason.
-	 * @param DenyResolver|null $denyResolver Shared deny-grammar reader; nullable for the same reason.
-	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
-	 * @param PermissionCatalogue|null $permissionCatalogue The grantable set; nullable for the same reason.
-	 * @param GrantConstraints|null $grantConstraints Reads an entry's end and the area it is confined to; nullable for the same reason.
-	 * @param DerivedGrantStore|null $derivedGrantStore Access derived from identity claims; nullable, and absent means none.
-	 * @param DerivedGrantResolver|null $derivedGrantResolver Reads a derived grant in one area; nullable for the same reason.
-	 * @param TokenGrantSource|null $tokenGrantSource Reads the grant the request's API token carries; nullable for the same reason.
-	 * @param TokenGrantNarrower|null $tokenGrantNarrower Narrows the block to that token's grant; nullable for the same reason.
+	 * The collaborators arrive in four bundles, autowired by the DI container.
+	 * Every one that was nullable before still is, inside its bundle, so an
+	 * unresolvable optional collaborator still lands as null here.
+	 *
+	 * @param PermissionCallerServices $caller Session, users, groups and app config.
+	 * @param PermissionDataServices   $data   Mappers, container and logger.
+	 * @param PermissionRuleServices   $rules  Match evaluator, dispatcher and scope resolvers.
+	 * @param PermissionGrantServices  $grants Deny and derived-grant collaborators.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IUserManager $userManager,
-		private readonly IGroupManager $groupManager,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectEntityMapper,
-		private readonly ConditionMatcher $conditionMatcher,
-		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
-		private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher = null,
-		private readonly ?ObjectScopeResolver $objectScopeResolver = null,
-		private readonly ?ObjectGrantResolver $objectGrantResolver = null,
-		private readonly ?DenyResolver $denyResolver = null,
-		private readonly ?DenyEnforcementMode $denyEnforcementMode = null,
-		private readonly ?PermissionCatalogue $permissionCatalogue = null,
-		private readonly ?GrantConstraints $grantConstraints = null,
-		private readonly ?DerivedGrantStore $derivedGrantStore = null,
-		private readonly ?DerivedGrantResolver $derivedGrantResolver = null,
-		private readonly ?TokenGrantSource $tokenGrantSource = null,
-		private readonly ?TokenGrantNarrower $tokenGrantNarrower = null,
+		PermissionCallerServices $caller,
+		PermissionDataServices $data,
+		PermissionRuleServices $rules,
+		PermissionGrantServices $grants,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->userManager = $caller->userManager;
+		$this->groupManager = $caller->groupManager;
+		$this->schemaMapper = $data->schemaMapper;
+		$this->objectEntityMapper = $data->objectEntityMapper;
+		$this->conditionMatcher = $rules->conditionMatcher;
+		$this->appConfig = $caller->appConfig;
+		$this->logger = $data->logger;
+		$this->container = $data->container;
+		$this->eventDispatcher = $rules->eventDispatcher;
+		$this->objectScopeResolver = $rules->objectScopeResolver;
+		$this->objectGrantResolver = $rules->objectGrantResolver;
+		$this->denyResolver = $grants->deny->denyResolver;
+		$this->denyEnforcementMode = $grants->deny->denyEnforcementMode;
+		$this->permissionCatalogue = $grants->deny->permissionCatalogue;
+		$this->grantConstraints = $grants->deny->grantConstraints;
+		$this->derivedGrantStore = $grants->derived->derivedGrantStore;
+		$this->derivedGrantResolver = $grants->derived->derivedGrantResolver;
+		$this->tokenGrantSource = $grants->derived->tokenGrantSource;
+		$this->tokenGrantNarrower = $grants->derived->tokenGrantNarrower;
 	}//end __construct()
 
 	/**

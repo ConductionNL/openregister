@@ -115,7 +115,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 			}
 		);
 
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $session,
 			userManager: $users,
 			groupManager: $groupManager,
