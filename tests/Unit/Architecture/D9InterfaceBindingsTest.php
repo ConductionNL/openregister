@@ -30,6 +30,9 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\UploadService;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
+use OCA\OpenRegister\Notifications\NotificationsRegistrar;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
@@ -81,6 +84,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		UploadService::class => [
 			UploadServiceInterface::class,
 			FilesRegistrar::class,
+			[],
+		],
+		WebhookInterceptionCache::class => [
+			WebhookInterceptionCacheInterface::class,
+			NotificationsRegistrar::class,
 			[],
 		],
 	];
