@@ -31,7 +31,7 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
- * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
  */
 class ServiceHoursGoldenTest extends TestCase {
 
