@@ -82,6 +82,10 @@ use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
@@ -96,6 +100,12 @@ use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
@@ -200,6 +210,7 @@ final class ContractBindings {
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
+		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
@@ -221,9 +232,11 @@ final class ContractBindings {
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		ExplodeNodeInterface::class => ExplodeNode::class,
 		\OCA\OpenRegister\Service\Object\FacetCacheVersionInterface::class => \OCA\OpenRegister\Service\Object\FacetCacheVersion::class,
 		FavouriteServiceInterface::class => FavouriteService::class,
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
+		FilterNodeInterface::class => FilterNode::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
@@ -315,7 +328,12 @@ final class ContractBindings {
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
 		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
+		TransitionNodeInterface::class => TransitionNode::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
+		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
+		TranslationStatusServiceInterface::class => TranslationStatusService::class,
+		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
+		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		WatcherServiceInterface::class => WatcherService::class,
