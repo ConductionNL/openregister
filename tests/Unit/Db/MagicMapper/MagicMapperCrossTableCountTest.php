@@ -58,6 +58,20 @@ class MagicMapperCrossTableCountTest extends TestCase {
 	private array $prepared = [];
 
 	/**
+	 * Slugs of the schemas whose table does not exist.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $missingTables = [];
+
+	/**
+	 * The `existingColumns` each WHERE was built with.
+	 *
+	 * @var array<int, array<int, string>>
+	 */
+	private array $whereColumns = [];
+
+	/**
 	 * A mapper whose database answers one count, with table lookups stubbed.
 	 *
 	 * @param string $total The SUM the database answers.
@@ -108,7 +122,9 @@ class MagicMapperCrossTableCountTest extends TestCase {
 			->onlyMethods(['countObjectsInRegisterSchemaTable', 'existsTableForRegisterSchema', 'getTableNameForRegisterSchema'])
 			->getMock();
 
-		$mapper->method('existsTableForRegisterSchema')->willReturn(true);
+		$mapper->method('existsTableForRegisterSchema')->willReturnCallback(
+			fn (Register $register, Schema $schema): bool => (in_array($schema->getSlug(), $this->missingTables, true) === false)
+		);
 		$mapper->method('getTableNameForRegisterSchema')->willReturnCallback(
 			static fn (Register $register, Schema $schema): string => 'openregister_table_'.$register->getId().'_'.$schema->getId()
 		);
@@ -117,7 +133,12 @@ class MagicMapperCrossTableCountTest extends TestCase {
 		);
 
 		$search = $this->createMock(MagicSearchHandler::class);
-		$search->method('buildWhereConditionsSql')->willReturn(['_deleted IS NULL', "status = 'open'"]);
+		$search->method('buildWhereConditionsSql')->willReturnCallback(
+			function (array $query, Schema $schema, array $existingColumns): array {
+				$this->whereColumns[] = $existingColumns;
+				return ['_deleted IS NULL', "status = 'open'"];
+			}
+		);
 		$property = new \ReflectionProperty(MagicMapper::class, 'searchHandler');
 		$property->setValue($mapper, $search);
 
@@ -142,6 +163,51 @@ class MagicMapperCrossTableCountTest extends TestCase {
 
 		return $pairs;
 	}//end pairs()
+
+	/**
+	 * A table that does not exist is left out of the count, not created.
+	 *
+	 * @return void
+	 */
+	public function testAMissingTableIsLeftOutOfTheCount(): void {
+		$this->missingTables = ['taak'];
+
+		$this->mapper(total: '3')->countAcrossMultipleTables(query: [], registerSchemaPairs: $this->pairs());
+
+		$this->assertCount(1, $this->prepared);
+		$this->assertStringContainsString('openregister_table_7_1', $this->prepared[0]);
+		$this->assertStringNotContainsString('openregister_table_7_2', $this->prepared[0]);
+	}//end testAMissingTableIsLeftOutOfTheCount()
+
+	/**
+	 * The WHERE of a count sees the schema's columns its table has, as the search arm does.
+	 *
+	 * @return void
+	 */
+	public function testACountsWhereSeesTheTablesOwnColumns(): void {
+		$mapper = $this->mapper();
+		$prefix = (new \ReflectionMethod(MagicMapper::class, 'getTablePrefix'))->invoke($mapper);
+		$cache  = new \ReflectionProperty(MagicMapper::class, 'columnExistsCache');
+		$types  = new \ReflectionProperty(MagicMapper::class, 'columnTypeCache');
+		$known  = [$cache->getValue(), $types->getValue()];
+		$table  = [$prefix.'openregister_table_7_1' => ['title' => true], $prefix.'openregister_table_7_2' => ['title' => true]];
+		$cache->setValue(null, $table);
+		$types->setValue(null, $table);
+
+		$pairs = $this->pairs();
+		foreach ($pairs as $pair) {
+			$pair['schema']->setProperties(['title' => ['type' => 'string'], 'ghost' => ['type' => 'string']]);
+		}
+
+		try {
+			$mapper->countAcrossMultipleTables(query: [], registerSchemaPairs: $pairs);
+		} finally {
+			$cache->setValue(null, $known[0]);
+			$types->setValue(null, $known[1]);
+		}
+
+		$this->assertSame([['title'], ['title']], $this->whereColumns);
+	}//end testACountsWhereSeesTheTablesOwnColumns()
 
 	/**
 	 * The UNION path counts every table in one statement with the search's WHERE.

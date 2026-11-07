@@ -1,0 +1,530 @@
+{
+    "sweep with annotation and blocking": {
+        "result": [
+            {
+                "objectA": "a2",
+                "objectB": "a3",
+                "score": 0.642,
+                "matchedOn": [
+                    "email"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep with caller rules and threshold": {
+        "result": [
+            {
+                "objectA": "a2",
+                "objectB": "a3",
+                "score": 0.8056,
+                "matchedOn": [
+                    "email"
+                ]
+            },
+            {
+                "objectA": "a2",
+                "objectB": "a4",
+                "score": 0.3333,
+                "matchedOn": [
+                    "name"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep, caller rules, no annotation": {
+        "result": [
+            {
+                "objectA": "a1",
+                "objectB": "a2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            },
+            {
+                "objectA": "b1",
+                "objectB": "b2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep with no usable rules": {
+        "result": [],
+        "log": []
+    },
+    "sweep with non-array rules": {
+        "result": [],
+        "log": []
+    },
+    "sweep on unresolvable register": {
+        "result": [
+            {
+                "objectA": "a1",
+                "objectB": "a2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            },
+            {
+                "objectA": "b1",
+                "objectB": "b2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 99,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "99",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep when the read fails": {
+        "result": [],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "Duplicate detection candidate load failed: read down"
+                ]
+            }
+        ]
+    },
+    "sweep with one object": {
+        "result": [],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            }
+        ]
+    },
+    "sweep with dismissals": {
+        "result": [
+            {
+                "objectA": "b1",
+                "objectB": "b2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep with no matching dismissal": {
+        "result": [
+            {
+                "objectA": "a1",
+                "objectB": "a2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            },
+            {
+                "objectA": "b1",
+                "objectB": "b2",
+                "score": 1,
+                "matchedOn": [
+                    "name",
+                    "email"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "sweep with string blocking keys and bad threshold": {
+        "result": [
+            {
+                "objectA": "b1",
+                "objectB": "b2",
+                "score": 1,
+                "matchedOn": [
+                    "email",
+                    "name",
+                    "address.city"
+                ]
+            },
+            {
+                "objectA": "a1",
+                "objectB": "a2",
+                "score": 0.9383,
+                "matchedOn": [
+                    "email",
+                    "name"
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "activeFor": [
+                    "1",
+                    "1"
+                ]
+            }
+        ]
+    },
+    "check candidate with blocking": {
+        "result": [
+            {
+                "uuid": "a2",
+                "score": 0.6049,
+                "matchedOn": [
+                    "name"
+                ],
+                "matchedRules": [
+                    {
+                        "field": "name",
+                        "method": "normalized",
+                        "similarity": 1
+                    }
+                ]
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            }
+        ]
+    },
+    "check candidate with empty blocking field": {
+        "result": [],
+        "log": []
+    },
+    "check candidate without blocking keys": {
+        "result": [
+            {
+                "uuid": "a1",
+                "score": 0.9259,
+                "matchedOn": [
+                    "email"
+                ],
+                "matchedRules": [
+                    {
+                        "field": "email",
+                        "method": "normalized",
+                        "similarity": 1
+                    }
+                ]
+            },
+            {
+                "uuid": "a2",
+                "score": 0.9259,
+                "matchedOn": [
+                    "email"
+                ],
+                "matchedRules": [
+                    {
+                        "field": "email",
+                        "method": "normalized",
+                        "similarity": 1
+                    }
+                ]
+            },
+            {
+                "uuid": "a3",
+                "score": 0.8056,
+                "matchedOn": [
+                    "email"
+                ],
+                "matchedRules": [
+                    {
+                        "field": "email",
+                        "method": "normalized",
+                        "similarity": 1
+                    }
+                ]
+            },
+            {
+                "uuid": "n1",
+                "score": 0.6667,
+                "matchedOn": [
+                    "email"
+                ],
+                "matchedRules": [
+                    {
+                        "field": "email",
+                        "method": "normalized",
+                        "similarity": 1
+                    }
+                ]
+            },
+            {
+                "uuid": "a4",
+                "score": 0.2593,
+                "matchedOn": [],
+                "matchedRules": []
+            }
+        ],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            }
+        ]
+    },
+    "check candidate with no rules": {
+        "result": [],
+        "log": []
+    },
+    "check candidate when the read fails": {
+        "result": [],
+        "log": [
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 1
+                    },
+                    "limit": 1000
+                }
+            },
+            {
+                "log": [
+                    "warning",
+                    "Duplicate detection candidate load failed: read down"
+                ]
+            }
+        ]
+    },
+    "effective threshold from annotation": {
+        "result": 0.5,
+        "log": []
+    },
+    "effective threshold override": {
+        "result": 0.7,
+        "log": []
+    },
+    "effective threshold without rules": {
+        "result": 0.85,
+        "log": []
+    },
+    "effective rules": {
+        "result": [
+            {
+                "field": "email",
+                "method": "exact",
+                "weight": 0.6
+            },
+            {
+                "field": "name",
+                "method": "normalized",
+                "weight": "0.2"
+            },
+            {
+                "field": "address.city",
+                "method": "levenshtein"
+            },
+            {
+                "field": "kvk",
+                "method": "exact",
+                "weight": 0
+            }
+        ],
+        "log": []
+    },
+    "effective rules unresolvable": {
+        "result": [],
+        "log": []
+    },
+    "dedup annotation": {
+        "result": {
+            "matchRules": [
+                {
+                    "field": "email",
+                    "method": "exact",
+                    "weight": 0.6
+                },
+                {
+                    "field": "name",
+                    "method": "normalized",
+                    "weight": "0.2"
+                },
+                {
+                    "field": "address.city",
+                    "method": "levenshtein"
+                },
+                {
+                    "field": "kvk",
+                    "method": "exact",
+                    "weight": 0
+                },
+                {
+                    "field": "nickname",
+                    "method": ""
+                },
+                "not a rule",
+                {
+                    "method": "exact"
+                }
+            ],
+            "blockingKeys": [
+                "address.zip",
+                "",
+                5
+            ],
+            "threshold": "0.5",
+            "onCreate": "warn"
+        },
+        "log": []
+    },
+    "dedup annotation not an array": {
+        "result": [],
+        "log": []
+    },
+    "pair fingerprint": {
+        "result": [
+            "89678cf8963ecc9d24f0791904f736c072f561cd8a554eddb9e1a47da98ece59",
+            "89678cf8963ecc9d24f0791904f736c072f561cd8a554eddb9e1a47da98ece59"
+        ],
+        "log": []
+    },
+    "pair fingerprint without rules": {
+        "result": [
+            "",
+            ""
+        ],
+        "log": []
+    }
+}

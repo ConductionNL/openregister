@@ -86,6 +86,7 @@ use ReflectionMethod;
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Service\Object\SaveAccessRequest
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver

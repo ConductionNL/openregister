@@ -49,6 +49,7 @@ use ReflectionMethod;
  * `MagicFacetHandler::callerMayFacet()`.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */

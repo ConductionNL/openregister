@@ -159,6 +159,13 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 	private $onCreating = null;
 
 	/**
+	 * Whether the row is gone once the write was applied as an update.
+	 *
+	 * @var bool
+	 */
+	private bool $goneAfterWrite = false;
+
+	/**
 	 * Run once inside the next ObjectUpdatingEvent, before it is recorded.
 	 *
 	 * @var callable|null
@@ -265,6 +272,10 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 
 				if ($this->taken === false) {
 					$write->insertedId = 41;
+				}
+
+				if ($this->goneAfterWrite === true) {
+					$this->taken = false;
 				}
 
 				return self::UUID;
@@ -662,4 +673,91 @@ class MagicMapperInsertRaceGuardTest extends TestCase {
 		$this->assertSame([true, false], $this->writes);
 	}//end testALiveRowOnlyWriteEndsWithItsUpdate()
 
+	/**
+	 * An insert fills in what the object does not carry yet: register, schema and uuid.
+	 *
+	 * @return void
+	 */
+	public function testAnInsertFillsInRegisterSchemaAndUuid(): void {
+		[$register, $schema] = $this->target();
+		$entity = new ObjectEntity();
+		$entity->setObject(['status' => 'open']);
+
+		$inserted = $this->mapper(taken: false)->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+
+		$this->assertSame('3', $inserted->getRegister());
+		$this->assertSame('7', $inserted->getSchema());
+		$this->assertNotEmpty($inserted->getUuid());
+		$this->assertSame($inserted->getUuid(), $this->writtenData[0]['@self']['id']);
+	}//end testAnInsertFillsInRegisterSchemaAndUuid()
+
+	/**
+	 * What the object already carries stays.
+	 *
+	 * @return void
+	 */
+	public function testAnInsertKeepsTheRegisterSchemaAndUuidItCarries(): void {
+		[$register, $schema] = $this->target();
+		$entity = $this->entity('open');
+		$entity->setRegister('30');
+		$entity->setSchema('70');
+
+		$inserted = $this->mapper(taken: false)->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+
+		$this->assertSame(['30', '70', self::UUID], [$inserted->getRegister(), $inserted->getSchema(), $inserted->getUuid()]);
+	}//end testAnInsertKeepsTheRegisterSchemaAndUuidItCarries()
+
+	/**
+	 * A won insert takes the id the database generated.
+	 *
+	 * @return void
+	 */
+	public function testAWonInsertTakesTheGeneratedId(): void {
+		[$register, $schema] = $this->target();
+
+		$inserted = $this->mapper(taken: false)->insertObjectEntity(entity: $this->entity('open'), register: $register, schema: $schema);
+
+		$this->assertSame(41, $inserted->getId());
+	}//end testAWonInsertTakesTheGeneratedId()
+
+	/**
+	 * A lost insert reads the id of the row it became.
+	 *
+	 * @return void
+	 */
+	public function testALostInsertReadsTheStoredId(): void {
+		[$register, $schema] = $this->target();
+
+		$inserted = $this->mapper(taken: true)->insertObjectEntity(entity: $this->entity('open'), register: $register, schema: $schema);
+
+		$this->assertSame(5, $inserted->getId());
+	}//end testALostInsertReadsTheStoredId()
+
+	/**
+	 * A write that is not in the table afterwards is never reported as a success.
+	 *
+	 * @return void
+	 */
+	public function testAWriteThatIsGoneAfterwardsIsRefused(): void {
+		[$register, $schema] = $this->target();
+		$mapper = $this->mapper(taken: true);
+		$this->goneAfterWrite = true;
+
+		$this->expectExceptionMessage('is not there afterwards');
+
+		$mapper->insertObjectEntity(entity: $this->entity('open'), register: $register, schema: $schema);
+	}//end testAWriteThatIsGoneAfterwardsIsRefused()
+
+	/**
+	 * Without events the creating hooks stay silent.
+	 *
+	 * @return void
+	 */
+	public function testAnInsertWithoutEventsRunsNoHooks(): void {
+		[$register, $schema] = $this->target();
+
+		$this->mapper(taken: false)->insertObjectEntity(entity: $this->entity('open'), register: $register, schema: $schema, dispatchEvents: false);
+
+		$this->assertSame([], $this->eventClasses());
+	}//end testAnInsertWithoutEventsRunsNoHooks()
 }//end class
