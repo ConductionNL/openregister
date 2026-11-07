@@ -182,13 +182,28 @@ class MoveObject {
 		Schema $targetSchema,
 		string $actor,
 	): array {
-		$move = new ObjectMove(
-			object: $object,
-			source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
-			target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
-			actor: $actor
+		return $this->perform(
+			move: new ObjectMove(
+				object: $object,
+				source: new MoveAddress(register: $sourceRegister, schema: $sourceSchema),
+				target: new MoveAddress(register: $targetRegister, schema: $targetSchema),
+				actor: $actor
+			)
 		);
+	}//end move()
 
+	/**
+	 * Perform a move, keeping the object's uuid and everything keyed on it.
+	 *
+	 * @param ObjectMove $move The move.
+	 *
+	 * @return array{moved: bool, uuid: string, from: array<string, mixed>, to: array<string, mixed>, errors: array<int, string>}
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function perform(ObjectMove $move): array {
+		$object = $move->object;
+		$actor  = $move->actor;
 		if ($move->source->ids() === $move->target->ids()) {
 			return $this->refusal(move: $move, error: 'This object is already there.');
 		}
@@ -202,7 +217,7 @@ class MoveObject {
 			return $this->refusal(move: $move, error: $kept);
 		}
 
-		$verdict = $this->fits(object: $object, target: $targetSchema);
+		$verdict = $this->fits(object: $object, target: $move->target->schema);
 		if ($verdict['fits'] === false) {
 			return $move->answer(moved: false, errors: $verdict['errors']);
 		}
@@ -224,7 +239,7 @@ class MoveObject {
 		}
 
 		return $move->answer(moved: true, errors: $errors);
-	}//end move()
+	}//end perform()
 
 	/**
 	 * Why the object has to stay where it is, or null when it may leave.
@@ -295,7 +310,7 @@ class MoveObject {
 	 */
 	private function writeAtTarget(ObjectMove $move): ?string {
 		$object = $move->object;
-		$before = clone $object;
+		$before = $move->before();
 		try {
 			$sourceSlug = $this->assignTargetSlug(object: $object, targetRegister: $move->target->register, targetSchema: $move->target->schema);
 			$object->setRegister((string)$move->target->register->getId());
