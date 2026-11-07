@@ -79,7 +79,7 @@ class RelationsController extends Controller {
 	 */
 	private const LEAF_INTEGRATIONS = [
 		'talk' => [
-			'class' => \OCA\OpenRegister\Service\TalkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\TalkLinkServiceInterface::class,
 			'available' => 'isTalkAvailable',
 			'method' => 'getLinkedRooms',
 		],
