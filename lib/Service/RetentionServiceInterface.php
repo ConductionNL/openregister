@@ -270,6 +270,9 @@ interface RetentionServiceInterface {
 	 *
 	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
+	 *              them would hide which rule rejected an object.
+	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string;
