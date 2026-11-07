@@ -1,0 +1,1680 @@
+{
+    "supports pg": {
+        "result": true,
+        "trace": [],
+        "stored": null
+    },
+    "supports mariadb": {
+        "result": false,
+        "trace": [],
+        "stored": null
+    },
+    "tables all": {
+        "result": [
+            "t_1_2",
+            "t_1_3",
+            "t_5_6"
+        ],
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "tables register 1": {
+        "result": [
+            "t_1_2",
+            "t_1_3"
+        ],
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "tables register 5": {
+        "result": [
+            "t_5_6"
+        ],
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "tables register 99": {
+        "result": [],
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "row counts union fails": {
+        "result": {
+            "indexed": []
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "query": "SELECT 0 AS t, COUNT(*) AS n FROM \"oc_t_1_2\" UNION ALL SELECT 1 AS t, COUNT(*) AS n FROM \"oc_t_1_3\" UNION ALL SELECT 2 AS t, COUNT(*) AS n FROM \"oc_t_5_6\""
+            },
+            {
+                "query": "SELECT 0 AS t, COUNT(*) AS n FROM \"oc_t_1_2\""
+            },
+            {
+                "query": "SELECT 1 AS t, COUNT(*) AS n FROM \"oc_t_1_3\""
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not count the rows of a magic table",
+                    {
+                        "table": "t_1_3",
+                        "error": "relation oc_t_1_3 does not exist"
+                    }
+                ]
+            },
+            {
+                "query": "SELECT 2 AS t, COUNT(*) AS n FROM \"oc_t_5_6\""
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not count the rows of a magic table",
+                    {
+                        "table": "t_5_6",
+                        "error": "relation oc_t_5_6 does not exist"
+                    }
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "row counts union works": {
+        "result": {
+            "rowsInTables": 11,
+            "indexed": {
+                "alpha": 7,
+                "3": 4
+            }
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "query": "SELECT 0 AS t, COUNT(*) AS n FROM \"oc_t_1_2\" UNION ALL SELECT 1 AS t, COUNT(*) AS n FROM \"oc_t_1_3\" UNION ALL SELECT 2 AS t, COUNT(*) AS n FROM \"oc_t_5_6\""
+            }
+        ],
+        "stored": null
+    },
+    "indexes pg": {
+        "result": {
+            "idx_a": "CREATE INDEX idx_a ON oc_t_1_2 (a)",
+            "idx_b": "CREATE INDEX idx_b ON oc_t_1_2 (b)"
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "indexes pg empty table": {
+        "result": [],
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_none"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "indexes mariadb": {
+        "result": [],
+        "trace": [],
+        "stored": null
+    },
+    "index names pg": {
+        "result": {
+            "t_1_2": [
+                "idx_a",
+                "idx_b"
+            ],
+            "t_1_3": [
+                "idx_c"
+            ],
+            "t_none": [],
+            "7": []
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT tablename, indexname FROM pg_indexes WHERE tablename IN (?, ?, ?, ?) ORDER BY tablename, indexname",
+                "params": [
+                    "oc_t_1_2",
+                    "oc_t_1_3",
+                    "oc_t_none",
+                    "oc_7"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "index names pg none": {
+        "result": [],
+        "trace": [],
+        "stored": null
+    },
+    "index names mariadb": {
+        "result": {
+            "t_1_2": []
+        },
+        "trace": [],
+        "stored": null
+    },
+    "rebuild refused dry": {
+        "result": {
+            "startedAt": "<date>",
+            "state": "refused",
+            "reason": "This platform has no concurrent reindex. Rebuilding here would take the index away while it runs, and search would answer nothing rather than something stale.",
+            "tables": 0,
+            "indexes": 0,
+            "rebuilt": 0,
+            "failed": 0,
+            "failures": []
+        },
+        "trace": [],
+        "stored": null
+    },
+    "rebuild refused apply": {
+        "result": {
+            "startedAt": "<date>",
+            "state": "refused",
+            "reason": "This platform has no concurrent reindex. Rebuilding here would take the index away while it runs, and search would answer nothing rather than something stale.",
+            "tables": 0,
+            "indexes": 0,
+            "rebuilt": 0,
+            "failed": 0,
+            "failures": []
+        },
+        "trace": [
+            {
+                "setValueString": [
+                    "openregister",
+                    "search_index_last_run"
+                ]
+            }
+        ],
+        "stored": {
+            "startedAt": "<date>",
+            "state": "refused",
+            "reason": "This platform has no concurrent reindex. Rebuilding here would take the index away while it runs, and search would answer nothing rather than something stale.",
+            "tables": 0,
+            "indexes": 0,
+            "rebuilt": 0,
+            "failed": 0,
+            "failures": []
+        }
+    },
+    "rebuild dry run": {
+        "result": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "planned",
+            "tables": 3,
+            "indexes": 4,
+            "rebuilt": 0,
+            "failed": 0,
+            "failures": []
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_5_6"
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_a",
+                    1,
+                    4
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_b",
+                    2,
+                    4
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_3",
+                    "idx_c",
+                    3,
+                    4
+                ]
+            },
+            {
+                "progress": [
+                    "t_5_6",
+                    "idx_d",
+                    4,
+                    4
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "rebuild dry run no progress": {
+        "result": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "planned",
+            "tables": 2,
+            "indexes": 3,
+            "rebuilt": 0,
+            "failed": 0,
+            "failures": []
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "rebuild apply": {
+        "result": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "completed",
+            "tables": 2,
+            "indexes": 3,
+            "rebuilt": 3,
+            "failed": 0,
+            "failures": []
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_a",
+                    1,
+                    3
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_a\""
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_b",
+                    2,
+                    3
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_b\""
+            },
+            {
+                "progress": [
+                    "t_1_3",
+                    "idx_c",
+                    3,
+                    3
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_c\""
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "search_index_last_run"
+                ]
+            }
+        ],
+        "stored": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "completed",
+            "tables": 2,
+            "indexes": 3,
+            "rebuilt": 3,
+            "failed": 0,
+            "failures": []
+        }
+    },
+    "rebuild apply with failures": {
+        "result": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "failed",
+            "tables": 3,
+            "indexes": 4,
+            "rebuilt": 2,
+            "failed": 2,
+            "failures": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_b",
+                    "error": "cannot run \"idx_b\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_c",
+                    "error": "cannot run \"idx_c\""
+                }
+            ]
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_5_6"
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_a",
+                    1,
+                    4
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_a\""
+            },
+            {
+                "progress": [
+                    "t_1_2",
+                    "idx_b",
+                    2,
+                    4
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_b\""
+            },
+            {
+                "statement": "DROP INDEX IF EXISTS \"idx_b_ccnew\""
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not drop the leftover of a failed rebuild",
+                    {
+                        "index": "idx_b",
+                        "error": "cannot run idx_b_ccnew"
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "error",
+                    "[SearchIndexMaintenance] Rebuild failed, the current index still answers",
+                    {
+                        "table": "t_1_2",
+                        "index": "idx_b",
+                        "error": "cannot run \"idx_b\""
+                    }
+                ]
+            },
+            {
+                "progress": [
+                    "t_1_3",
+                    "idx_c",
+                    3,
+                    4
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_c\""
+            },
+            {
+                "statement": "DROP INDEX IF EXISTS \"idx_c_ccnew\""
+            },
+            {
+                "log": [
+                    "error",
+                    "[SearchIndexMaintenance] Rebuild failed, the current index still answers",
+                    {
+                        "table": "t_1_3",
+                        "index": "idx_c",
+                        "error": "cannot run \"idx_c\""
+                    }
+                ]
+            },
+            {
+                "progress": [
+                    "t_5_6",
+                    "idx_d",
+                    4,
+                    4
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_d\""
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "search_index_last_run"
+                ]
+            }
+        ],
+        "stored": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "failed",
+            "tables": 3,
+            "indexes": 4,
+            "rebuilt": 2,
+            "failed": 2,
+            "failures": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_b",
+                    "error": "cannot run \"idx_b\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_c",
+                    "error": "cannot run \"idx_c\""
+                }
+            ]
+        }
+    },
+    "rebuild apply bad index name": {
+        "result": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "failed",
+            "tables": 2,
+            "indexes": 4,
+            "rebuilt": 1,
+            "failed": 3,
+            "failures": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_b",
+                    "error": "cannot run \"idx_b\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_c",
+                    "error": "cannot run \"idx_c\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "bad name",
+                    "error": "Refusing to act on the index name 'bad name'."
+                }
+            ]
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_a\""
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_b\""
+            },
+            {
+                "statement": "DROP INDEX IF EXISTS \"idx_b_ccnew\""
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not drop the leftover of a failed rebuild",
+                    {
+                        "index": "idx_b",
+                        "error": "cannot run idx_b_ccnew"
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "error",
+                    "[SearchIndexMaintenance] Rebuild failed, the current index still answers",
+                    {
+                        "table": "t_1_2",
+                        "index": "idx_b",
+                        "error": "cannot run \"idx_b\""
+                    }
+                ]
+            },
+            {
+                "statement": "REINDEX INDEX CONCURRENTLY \"idx_c\""
+            },
+            {
+                "statement": "DROP INDEX IF EXISTS \"idx_c_ccnew\""
+            },
+            {
+                "log": [
+                    "error",
+                    "[SearchIndexMaintenance] Rebuild failed, the current index still answers",
+                    {
+                        "table": "t_1_3",
+                        "index": "idx_c",
+                        "error": "cannot run \"idx_c\""
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not drop the leftover of a failed rebuild",
+                    {
+                        "index": "bad name",
+                        "error": "Refusing to act on the index name 'bad name_ccnew'."
+                    }
+                ]
+            },
+            {
+                "log": [
+                    "error",
+                    "[SearchIndexMaintenance] Rebuild failed, the current index still answers",
+                    {
+                        "table": "t_1_3",
+                        "index": "bad name",
+                        "error": "Refusing to act on the index name 'bad name'."
+                    }
+                ]
+            },
+            {
+                "setValueString": [
+                    "openregister",
+                    "search_index_last_run"
+                ]
+            }
+        ],
+        "stored": {
+            "startedAt": "<date>",
+            "finishedAt": "<date>",
+            "state": "failed",
+            "tables": 2,
+            "indexes": 4,
+            "rebuilt": 1,
+            "failed": 3,
+            "failures": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_b",
+                    "error": "cannot run \"idx_b\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_c",
+                    "error": "cannot run \"idx_c\""
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "bad name",
+                    "error": "Refusing to act on the index name 'bad name'."
+                }
+            ]
+        }
+    },
+    "snapshot": {
+        "result": {
+            "report": {
+                "path": "<dir>/out.json",
+                "tables": 3,
+                "indexes": 5,
+                "bytes": 483
+            },
+            "file": {
+                "version": 1,
+                "takenAt": "<date>",
+                "prefix": "oc_",
+                "tables": {
+                    "t_1_2": {
+                        "idx_a": "CREATE INDEX idx_a ON oc_t_1_2 (a)",
+                        "idx_b": "CREATE INDEX idx_b ON oc_t_1_2 (b)"
+                    },
+                    "t_1_3": {
+                        "idx_c": "CREATE INDEX idx_c ON oc_t_1_3 (c)",
+                        "bad name": "CREATE INDEX \"bad name\""
+                    },
+                    "t_5_6": {
+                        "idx_d": "CREATE INDEX idx_d ON oc_t_5_6 (d)"
+                    }
+                }
+            }
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_5_6"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "snapshot register 5": {
+        "result": {
+            "report": {
+                "path": "<dir>/out5.json",
+                "tables": 1,
+                "indexes": 1,
+                "bytes": 195
+            },
+            "file": {
+                "version": 1,
+                "takenAt": "<date>",
+                "prefix": "oc_",
+                "tables": {
+                    "t_5_6": {
+                        "idx_d": "CREATE INDEX idx_d ON oc_t_5_6 (d)"
+                    }
+                }
+            }
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_5_6"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "snapshot unwritable": {
+        "result": {
+            "threw": "RuntimeException",
+            "message": "Could not write the index snapshot to '<dir>/missing/out.json'."
+        },
+        "trace": [
+            {
+                "findAll": [
+                    null,
+                    null,
+                    [],
+                    [],
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": [
+                    "warning",
+                    "[SearchIndexMaintenance] Could not resolve a magic table",
+                    {
+                        "register": 1,
+                        "schema": 4,
+                        "error": "no table for 4"
+                    }
+                ]
+            },
+            {
+                "getSchemasByRegisterId": [
+                    5,
+                    false,
+                    false
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_5_6"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "restore dry run": {
+        "result": {
+            "path": "<dir>/snap-2.json",
+            "missing": 3,
+            "created": 0,
+            "failed": 0,
+            "failures": [],
+            "indexes": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_new_1"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_2"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_3"
+                }
+            ]
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_9"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "restore apply": {
+        "result": {
+            "path": "<dir>/snap-3.json",
+            "missing": 3,
+            "created": 3,
+            "failed": 0,
+            "failures": [],
+            "indexes": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_new_1"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_2"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_3"
+                }
+            ]
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "statement": "CREATE INDEX idx_new_1 ON oc_t_1_2 (x)"
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "statement": "CREATE INDEX idx_new_2 ON oc_t_1_3 (y)"
+            },
+            {
+                "statement": "CREATE INDEX idx_new_3"
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_9"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "restore apply with failure": {
+        "result": {
+            "path": "<dir>/snap-4.json",
+            "missing": 3,
+            "created": 2,
+            "failed": 1,
+            "failures": [
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_2",
+                    "error": "cannot run idx_new_2"
+                }
+            ],
+            "indexes": [
+                {
+                    "table": "t_1_2",
+                    "index": "idx_new_1"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_2"
+                },
+                {
+                    "table": "t_1_3",
+                    "index": "idx_new_3"
+                }
+            ]
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "statement": "CREATE INDEX idx_new_1 ON oc_t_1_2 (x)"
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_3"
+                ]
+            },
+            {
+                "statement": "CREATE INDEX idx_new_2 ON oc_t_1_3 (y)"
+            },
+            {
+                "statement": "CREATE INDEX idx_new_3"
+            },
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_9"
+                ]
+            }
+        ],
+        "stored": null
+    },
+    "restore empty tables": {
+        "result": {
+            "path": "<dir>/snap-5.json",
+            "missing": 0,
+            "created": 0,
+            "failed": 0,
+            "failures": [],
+            "indexes": []
+        },
+        "trace": [],
+        "stored": null
+    },
+    "restore unreadable": {
+        "result": {
+            "threw": "RuntimeException",
+            "message": "Could not read the index snapshot at '<dir>/nope.json'."
+        },
+        "trace": [],
+        "stored": null
+    },
+    "restore not json": {
+        "result": {
+            "threw": "RuntimeException",
+            "message": "'<dir>/bad.json' is not an index snapshot this version can read."
+        },
+        "trace": [],
+        "stored": null
+    },
+    "restore no tables": {
+        "result": {
+            "threw": "RuntimeException",
+            "message": "'<dir>/bad2.json' is not an index snapshot this version can read."
+        },
+        "trace": [],
+        "stored": null
+    },
+    "restore scalar indexes": {
+        "result": {
+            "path": "<dir>/snap-8.json",
+            "missing": 1,
+            "created": 1,
+            "failed": 0,
+            "failures": [],
+            "indexes": [
+                {
+                    "table": "t_1_2",
+                    "index": "0"
+                }
+            ]
+        },
+        "trace": [
+            {
+                "getSystemValue": [
+                    "dbtableprefix",
+                    "oc_"
+                ]
+            },
+            {
+                "prepare": "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = ? ORDER BY indexname",
+                "params": [
+                    "oc_t_1_2"
+                ]
+            },
+            {
+                "statement": "idx_x"
+            }
+        ],
+        "stored": null
+    },
+    "last run empty": {
+        "result": [],
+        "trace": [],
+        "stored": null
+    },
+    "last run garbage": {
+        "result": [],
+        "trace": [],
+        "stored": null
+    },
+    "last run stored": {
+        "result": {
+            "state": "completed",
+            "rebuilt": 3
+        },
+        "trace": [],
+        "stored": {
+            "state": "completed",
+            "rebuilt": 3
+        }
+    }
+}

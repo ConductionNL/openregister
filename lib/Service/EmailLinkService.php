@@ -64,7 +64,6 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCP\App\IAppManager;
@@ -88,7 +87,7 @@ use Throwable;
  *
  * @spec openspec/specs/generic-integrations/spec.md
  */
-class EmailLinkService implements EmailLinkReaderInterface {
+class EmailLinkService implements EmailLinkServiceInterface {
 	/**
 	 * NC Mail app id.
 	 *
