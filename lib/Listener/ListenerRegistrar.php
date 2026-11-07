@@ -616,7 +616,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaUpdatedEvent::class, SystemEntityNotificationListener::class);
 
 		// Authorization cache eviction when the POLICY behind a memoised verdict
-		// is rewritten. PermissionHandler::clearInheritFromPublicCache() has
+		// is rewritten. PermissionHandlerInterface::clearInheritFromPublicCache() has
 		// always documented that "any path that mutates authorization and then
 		// re-reads it within the same request must bust this cache"; until this
 		// registration, nothing in production called it or its sibling

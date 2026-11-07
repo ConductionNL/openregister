@@ -5141,7 +5141,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
 	private function mayMove(ObjectEntity $object, array $schemas): bool {
-		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 
 		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
 			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');

@@ -257,9 +257,9 @@ class SaveObjects {
 	 * Permission handler for per-object RBAC enforcement;
 	 * wave-12 Fix 3 per-row RBAC + appendOnly gate
 	 *
-	 * @var PermissionHandler|null
+	 * @var PermissionHandlerInterface|null
 	 */
-	private readonly ?PermissionHandler $permissionHandler;
+	private readonly ?PermissionHandlerInterface $permissionHandler;
 
 	/**
 	 * Validation handler for per-object schema validation;
@@ -805,9 +805,9 @@ class SaveObjects {
 	 *     bypass RBAC or validation are silently ignored (flags reset to the
 	 *     defaults that DO enforce).
 	 *
-	 *  3. **Per-row PermissionHandler check.** Resolve the row's schema +
+	 *  3. **Per-row PermissionHandlerInterface check.** Resolve the row's schema +
 	 *     register, derive the action (CREATE vs UPDATE by UUID presence),
-	 *     and call `PermissionHandler::hasPermission`. Rows that fail are
+	 *     and call `PermissionHandlerInterface::hasPermission`. Rows that fail are
 	 *     moved to the `invalid` bucket with a structured error and excluded
 	 *     from the downstream pipeline.
 	 *
@@ -823,7 +823,7 @@ class SaveObjects {
 	 * Rejected rows are accumulated in `$result['invalid']` and reflected in
 	 * `$result['statistics']`.
 	 *
-	 * BC: when any of `PermissionHandler`, `ValidateObject`, or `IGroupManager`
+	 * BC: when any of `PermissionHandlerInterface`, `ValidateObject`, or `IGroupManager`
 	 * are NOT injected (legacy 7-arg constructor), each absent dependency
 	 * silently skips that gate's enforcement. The default service container
 	 * wiring DOES inject all three, so production callers get the full
@@ -1241,7 +1241,7 @@ class SaveObjects {
 	}//end appendOnlyRefusal()
 
 	/**
-	 * The refusal when PermissionHandler does not grant the row's action, or null.
+	 * The refusal when PermissionHandlerInterface does not grant the row's action, or null.
 	 *
 	 * @param BulkSafeguardRun $run The safeguard pass
 	 *
@@ -1348,7 +1348,7 @@ class SaveObjects {
 	 */
 	private function applyPropertyAuthorization(array $object, Schema $schema, ?ObjectEntity $existing, bool $isCreate): array {
 		// A system operation (cron, runAsSystem, the example-set installer) is trusted here as
-		// PermissionHandler::hasPermission trusts it for the object rule.
+		// PermissionHandlerInterface::hasPermission trusts it for the object rule.
 		if (SystemOperationContext::isActive() === true) {
 			return [$object, null];
 		}

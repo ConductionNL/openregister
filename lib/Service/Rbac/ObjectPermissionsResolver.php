@@ -260,7 +260,7 @@ class ObjectPermissionsResolver {
 	 * Flatten role definitions into a name to actions map.
 	 *
 	 * `extends` is NOT followed here, for the same reason it is not followed in
-	 * {@see ProvenanceResolver}: the hierarchy is resolved in PermissionHandler,
+	 * {@see ProvenanceResolver}: the hierarchy is resolved in PermissionHandlerInterface,
 	 * and a second walk of it could disagree with the one that decides. A caller
 	 * holding the resolved map passes that instead.
 	 *

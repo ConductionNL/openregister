@@ -17,7 +17,7 @@
  *  - ObjectEntity::getVersion()         → string|null
  *  - Register::getSlug() / Schema::getSlug() → string|null
  *    Slugs are resolved via RegisterMapper and SchemaMapper, injected lazily.
- *  - PermissionHandler::getReadableByUsers(ObjectEntity) → array<string>
+ *  - PermissionHandlerInterface::getReadableByUsers(ObjectEntity) → array<string>
  *    Returns user IDs that can read the object (empty array = all users / broadcast).
  *  - IQueue is resolved lazily from the container (OCA\NotifyPush\Queue\IQueue).
  *    If notify_push is not installed the container throws — soft-fail at most once.
@@ -54,7 +54,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Push\PushEvents;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -77,7 +77,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Listener must reference three event types
  *   (ObjectCreated/Updated/DeletedEvent), two mappers (register + schema), a container,
- *   logger, appConfig, and PermissionHandler; each dependency is required for the
+ *   logger, appConfig, and PermissionHandlerInterface; each dependency is required for the
  *   push-routing and slug-resolution responsibilities.
  */
 class NotifyPushListener implements IEventListener {
@@ -126,7 +126,7 @@ class NotifyPushListener implements IEventListener {
 	 * @param IAppManager $appManager Nextcloud app manager (notify_push install check).
 	 * @param LoggerInterface $logger PSR-3 logger.
 	 * @param ContainerInterface $container DI container for lazy IQueue resolution.
-	 * @param PermissionHandler $permissionHandler RBAC handler for reader-list resolution.
+	 * @param PermissionHandlerInterface $permissionHandler RBAC handler for reader-list resolution.
 	 * @param IAppConfig $appConfig App config for push_available flag.
 	 * @param RegisterMapperInterface $registerMapper Mapper for resolving register slugs.
 	 * @param SchemaMapperInterface $schemaMapper Mapper for resolving schema slugs.
@@ -137,7 +137,7 @@ class NotifyPushListener implements IEventListener {
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 		private readonly ContainerInterface $container,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IAppConfig $appConfig,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,

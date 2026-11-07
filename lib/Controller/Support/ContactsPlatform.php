@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\PersonLinkServiceInterface;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -39,7 +39,7 @@ final class ContactsPlatform {
 	 * @param PersonLinkServiceInterface $personLinks People on objects: user and contact links
 	 * @param IL10N             $l10n        Localization service
 	 * @param LoggerInterface   $logger      Logger
-	 * @param PermissionHandler $permissions Answers the object update right for contact writes
+	 * @param PermissionHandlerInterface $permissions Answers the object update right for contact writes
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ContactsPlatform {
 		public readonly PersonLinkServiceInterface $personLinks,
 		public readonly IL10N $l10n,
 		public readonly LoggerInterface $logger,
-		public readonly PermissionHandler $permissions,
+		public readonly PermissionHandlerInterface $permissions,
 	) {
 	}//end __construct()
 }//end class

@@ -10,7 +10,7 @@
  *
  * WHY this lives in one class rather than in each enforcement path. The scope has
  * to be honoured in FOUR places — the single-object verdict
- * ({@see \OCA\OpenRegister\Service\Object\PermissionHandler}), the relation-path
+ * ({@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface}), the relation-path
  * verdict ({@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::hasPermission()}),
  * and both list emitters (QueryBuilder and raw SQL). The predecessor change found
  * TWO real divergences between those paths in a single week: a dotted dynamic

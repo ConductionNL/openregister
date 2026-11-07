@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -77,7 +77,7 @@ class ScopesController extends Controller {
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param RegisterMapperInterface $registerMapper Register lookup.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param PermissionHandler $permissionHandler RBAC evaluator that
+	 * @param PermissionHandlerInterface $permissionHandler RBAC evaluator that
 	 *                                             owns the rule chain.
 	 */
 	public function __construct(
@@ -86,7 +86,7 @@ class ScopesController extends Controller {
 		ControllerSession $session,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -134,7 +134,7 @@ class ScopesController extends Controller {
 	 *
 	 * Admin callers receive every (register, schema) pair with all five
 	 * actions populated — this matches the admin-bypass semantics in
-	 * `PermissionHandler::hasPermission`.
+	 * `PermissionHandlerInterface::hasPermission`.
 	 *
 	 * @param string|null $register Optional register filter (id|uuid|slug).
 	 * @param string|null $schema Optional schema filter (id|uuid|slug).
@@ -330,7 +330,7 @@ class ScopesController extends Controller {
 	 * Probe the permission chain for every canonical action.
 	 *
 	 * Admin callers short-circuit to the full action vocabulary, mirroring the
-	 * admin-bypass branch in `PermissionHandler::hasPermission`.
+	 * admin-bypass branch in `PermissionHandlerInterface::hasPermission`.
 	 *
 	 * @param Schema $schema Schema being evaluated.
 	 * @param string|null $userId Active user (null = unauthenticated probe).

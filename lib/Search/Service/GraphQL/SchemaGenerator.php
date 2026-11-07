@@ -155,7 +155,7 @@ class SchemaGenerator {
 	 * resolve time on each query. Filtering schemas by the caller's organisation here
 	 * produces a different GraphQL schema per org, which silently hides every cross-org
 	 * schema from the type system even though those schemas are readable via REST under
-	 * the same session. Same rationale as PermissionHandler::resolveSchemaSlug (#1454).
+	 * the same session. Same rationale as PermissionHandlerInterface::resolveSchemaSlug (#1454).
 	 *
 	 * @return array<int, RegisterSchema> The schemas
 	 *

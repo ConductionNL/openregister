@@ -81,9 +81,9 @@ class RevertHandler {
 	/**
 	 * Permission handler for RBAC enforcement
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private PermissionHandler $permissionHandler;
+	private PermissionHandlerInterface $permissionHandler;
 
 	/**
 	 * Validator the save path uses, so a revert meets the same schema.
@@ -99,7 +99,7 @@ class RevertHandler {
 	 * @param ContainerInterface $container DI container.
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
 	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper.
-	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
+	 * @param PermissionHandlerInterface $permissionHandler Permission handler for RBAC.
 	 * @param ValidateObjectInterface $validateHandler Schema validator of the save path.
 	 */
 	public function __construct(
@@ -107,7 +107,7 @@ class RevertHandler {
 		ContainerInterface $container,
 		IEventDispatcher $eventDispatcher,
 		MagicMapperInterface $objectEntityMapper,
-		PermissionHandler $permissionHandler,
+		PermissionHandlerInterface $permissionHandler,
 		ValidateObjectInterface $validateHandler,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -84,7 +84,7 @@ class GraphQLResolver {
 	 *
 	 * @param GetObject $getObject Object finder
 	 * @param ObjectOperationsInterface $objectService Object service
-	 * @param PermissionHandler $permissionHandler Permission handler
+	 * @param PermissionHandlerInterface $permissionHandler Permission handler
 	 * @param PropertyRbacHandler $propertyRbac Property RBAC handler
 	 * @param RelationHandler $relationHandler Relation handler
 	 * @param RegisterMapperInterface $registerMapper Register mapper
@@ -98,7 +98,7 @@ class GraphQLResolver {
 	public function __construct(
 		private readonly GetObject $getObject,
 		private readonly ObjectOperationsInterface $objectService,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly PropertyRbacHandler $propertyRbac,
 		private readonly RelationHandler $relationHandler,
 		private readonly RegisterMapperInterface $registerMapper,

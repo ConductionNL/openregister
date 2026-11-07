@@ -31,7 +31,7 @@ final class BulkRowChecks {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param PermissionHandler|null       $permissionHandler Permission handler for per-object RBAC enforcement;
+	 * @param PermissionHandlerInterface|null       $permissionHandler Permission handler for per-object RBAC enforcement;
 	 *                                                        wave-12 Fix 3 per-row RBAC + appendOnly gate
 	 * @param ValidateObjectInterface|null $validateHandler   Validation handler for per-object schema validation;
 	 *                                                        wave-12 Fix 3 per-row JSON-Schema validation
@@ -41,7 +41,7 @@ final class BulkRowChecks {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		public readonly ?PermissionHandler $permissionHandler = null,
+		public readonly ?PermissionHandlerInterface $permissionHandler = null,
 		public readonly ?ValidateObjectInterface $validateHandler = null,
 		public readonly ?BulkRowRules $rowRules = null,
 	) {

@@ -58,7 +58,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -103,9 +103,9 @@ class ObjectIntegrationsController extends Controller {
 	/**
 	 * Answers the object update right for integration writes.
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private PermissionHandler $permissions;
+	private PermissionHandlerInterface $permissions;
 
 	/**
 	 * Constructor.

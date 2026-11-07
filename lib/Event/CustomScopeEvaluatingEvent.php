@@ -3,7 +3,7 @@
 /**
  * OpenRegister CustomScopeEvaluatingEvent
  *
- * Dispatched by `PermissionHandler::evaluatePermission()` when the
+ * Dispatched by `PermissionHandlerInterface::evaluatePermission()` when the
  * action being checked is NOT one of the canonical five
  * (`read`, `create`, `update`, `delete`, `list`). Consuming apps that
  * declare custom action verbs on a register (per the rbac-scopes
@@ -12,10 +12,10 @@
  *
  * Verdict semantics:
  *  - The first listener to call `allow()` wins; the verdict is final
- *    for the dispatch and PermissionHandler returns true.
+ *    for the dispatch and PermissionHandlerInterface returns true.
  *  - The first listener to call `deny()` wins (same precedence as
  *    `allow()` — first non-null verdict short-circuits the chain).
- *  - When no listener votes, PermissionHandler falls through to the
+ *  - When no listener votes, PermissionHandlerInterface falls through to the
  *    standard rule chain (which will likely deny because the static
  *    rules don't recognise the verb).
  *

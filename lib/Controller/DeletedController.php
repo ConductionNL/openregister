@@ -501,7 +501,7 @@ class DeletedController extends Controller {
 	/**
 	 * Restore multiple deleted objects
 	 *
-	 * Each soft-deleted object is gated through PermissionHandler with the
+	 * Each soft-deleted object is gated through PermissionHandlerInterface with the
 	 * `update` action against the object's resolved schema. Admins bypass.
 	 * Objects whose schema cannot be resolved or for which the caller lacks
 	 * `update` permission are skipped (counted as `failed`) so a partial
@@ -591,7 +591,7 @@ class DeletedController extends Controller {
 	/**
 	 * Permanently delete an object
 	 *
-	 * Gated through PermissionHandler with the `delete` action against the
+	 * Gated through PermissionHandlerInterface with the `delete` action against the
 	 * resolved schema (admins bypass). When register/schema context cannot
 	 * be derived the call is refused fail-closed. This closes the wave-3 C4
 	 * finding (no RBAC on `destroy`).
@@ -923,7 +923,7 @@ class DeletedController extends Controller {
 	/**
 	 * Permanently delete multiple objects
 	 *
-	 * Each soft-deleted object is gated through PermissionHandler with the
+	 * Each soft-deleted object is gated through PermissionHandlerInterface with the
 	 * `delete` action against the object's resolved schema. Admins bypass.
 	 * Objects whose schema cannot be resolved or for which the caller lacks
 	 * `delete` permission are skipped (counted as `failed`) so a partial

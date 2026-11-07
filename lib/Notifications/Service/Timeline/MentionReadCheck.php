@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * What the read check on a named principal is evaluated with.
@@ -33,11 +33,11 @@ final readonly class MentionReadCheck {
 	 * Bundle the services.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema for the read check.
-	 * @param PermissionHandler $permissions The one RBAC evaluator.
+	 * @param PermissionHandlerInterface $permissions The one RBAC evaluator.
 	 */
 	public function __construct(
 		public SchemaMapperInterface $schemaMapper,
-		public PermissionHandler $permissions,
+		public PermissionHandlerInterface $permissions,
 	) {
 	}//end __construct()
 }//end class

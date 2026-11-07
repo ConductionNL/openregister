@@ -6,7 +6,7 @@
  * Configuration- and mapping-layer for zaaktype-scoped authorization
  * (rbac-zaaktype). This service does NOT introduce a new authorization
  * engine — enforcement remains the responsibility of the existing RBAC
- * primitives (PermissionHandler, MagicRbacHandler, PropertyRbacHandler,
+ * primitives (PermissionHandlerInterface, MagicRbacHandler, PropertyRbacHandler,
  * ConditionMatcher). It provides:
  *
  *   - The canonical ZGW `vertrouwelijkheidaanduiding` (confidentiality) ordinal

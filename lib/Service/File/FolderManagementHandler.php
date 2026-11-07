@@ -984,7 +984,7 @@ class FolderManagementHandler {
 	 * process-scoped flag with no instance to inject; it is deliberately static so
 	 * the scope cannot be entered from request data. Annotated here with its reason
 	 * rather than added to phpmd.baseline.xml, where the same call in
-	 * MultiTenancyTrait and PermissionHandler is invisible.
+	 * MultiTenancyTrait and PermissionHandlerInterface is invisible.
 	 */
 	final public function assertFolderIsAccessible(
 		string $folderId,
@@ -1001,7 +1001,7 @@ class FolderManagementHandler {
 		//
 		// The scope is entered from PHP code only (never from request data) —
 		// the same signal `MultiTenancyTrait::hasRbacPermission()` and
-		// `PermissionHandler::hasPermission()` already trust for exactly this
+		// `PermissionHandlerInterface::hasPermission()` already trust for exactly this
 		// reason. Recognising it resolves the app's OWN principal and then runs
 		// the SAME four checks below against that principal's mount. The guard
 		// is not skipped and not widened: an anonymous request still has no

@@ -44,14 +44,14 @@ class RbacGroupCollector {
 	 *
 	 * `admin` is Nextcloud's built-in administrator group — it always exists and
 	 * is short-circuited before any group test in
-	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasGroupPermission()}.
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::hasGroupPermission()}.
 	 * `public` is a PSEUDO-principal denoting anonymous access; creating a real
 	 * Nextcloud group named `public` would be meaningless at best and would
 	 * suggest a membership-based grant that RBAC never consults.
 	 * `authenticated` is the same shape of pseudo-principal for "any logged-in
 	 * user". Three independent resolvers short-circuit it before any group test
 	 * — {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler},
-	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler} and
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface} and
 	 * {@see \OCA\OpenRegister\Service\PropertyRbacHandler} — so it is never
 	 * resolved through IGroupManager and a real group of that name grants
 	 * nothing extra. Leaving it out cost twice: provisioning created an empty

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\GraphQL;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 
 /**
@@ -35,14 +35,14 @@ final class GraphQLAccessServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param PermissionHandler         $permissionHandler Permission handler
+	 * @param PermissionHandlerInterface         $permissionHandler Permission handler
 	 * @param PropertyRbacHandler       $propertyRbac      Property RBAC handler
 	 * @param AuditTrailMapperInterface $auditTrailMapper  Audit trail mapper
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
 	public function __construct(
-		public readonly PermissionHandler $permissionHandler,
+		public readonly PermissionHandlerInterface $permissionHandler,
 		public readonly PropertyRbacHandler $propertyRbac,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 	) {

@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Notifications\Service\GraphQL;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * Manages GraphQL subscriptions delivered via Server-Sent Events (SSE).
@@ -56,11 +56,11 @@ class SubscriptionService {
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper
-	 * @param PermissionHandler $permissionHandler Permission handler
+	 * @param PermissionHandlerInterface $permissionHandler Permission handler
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 	) {
 	}//end __construct()
 

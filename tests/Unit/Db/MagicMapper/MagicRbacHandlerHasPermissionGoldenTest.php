@@ -29,6 +29,7 @@ use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -194,7 +195,7 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 	}//end decide()
 
 	private function container(string $wiring): ContainerInterface {
-		$permissionHandler = $this->createMock(PermissionHandler::class);
+		$permissionHandler = $this->createMock(PermissionHandlerInterface::class);
 		$permissionHandler->method('resolveAuthorization')->willReturnCallback(
 			function (Schema $schema) use ($wiring): ?array {
 				$this->calls[] = 'resolveAuthorization';

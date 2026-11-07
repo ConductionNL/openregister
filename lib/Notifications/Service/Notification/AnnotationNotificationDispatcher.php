@@ -1765,7 +1765,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * Read a schema's `authorization.roles` assignment as a role-to-groups map.
 	 *
-	 * The same map `PermissionHandler` expands for a lifecycle transition, read
+	 * The same map `PermissionHandlerInterface` expands for a lifecycle transition, read
 	 * here so a notification rule may address `{"kind": "role", "role": "..."}`
 	 * in the schema's own vocabulary rather than repeating the group ids the
 	 * assignment happens to hold today.

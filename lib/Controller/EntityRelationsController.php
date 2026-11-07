@@ -52,7 +52,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -93,9 +93,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * RBAC verdict for object-bound relations.
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private readonly PermissionHandler $permissionHandler;
+	private readonly PermissionHandlerInterface $permissionHandler;
 
 	/**
 	 * ObjectEntity loader (for object-bound authz).
@@ -283,7 +283,7 @@ class EntityRelationsController extends Controller {
 	 *      acting user's user-folder and `isUpdateable()` MUST return true.
 	 *   2. Else if the relation has `objectId` — the caller MUST hold
 	 *      `update` on the underlying ObjectEntity per the same
-	 *      PermissionHandler verdict the rest of OR uses for object writes.
+	 *      PermissionHandlerInterface verdict the rest of OR uses for object writes.
 	 *   3. Else if the relation has `emailId` — the email's parent
 	 *      ObjectEntity is looked up via EmailLink, then the same
 	 *      object-update verdict applies. Email links without a parent
@@ -362,7 +362,7 @@ class EntityRelationsController extends Controller {
 
 	/**
 	 * Object-bound authz: caller MUST hold `update` permission on the
-	 * specific ObjectEntity. Reuses `PermissionHandler::hasPermission`
+	 * specific ObjectEntity. Reuses `PermissionHandlerInterface::hasPermission`
 	 * — the same verdict the rest of OR runs for object writes, so this
 	 * PATCH cannot grant access the saveObject path would have denied.
 	 *

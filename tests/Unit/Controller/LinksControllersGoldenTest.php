@@ -124,7 +124,7 @@ class LinksControllersGoldenTest extends TestCase {
 			return $mock;
 		}
 
-		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandler::class) {
+		if ($class === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class) {
 			$mock->method('hasPermission')->willReturn(true);
 			return $mock;
 		}

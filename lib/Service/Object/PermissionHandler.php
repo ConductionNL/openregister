@@ -102,7 +102,7 @@ use Throwable;
  *
  * @spec openspec/specs/rbac-scopes/spec.md
  */
-class PermissionHandler {
+class PermissionHandler implements PermissionHandlerInterface {
 
 	/**
 	 * Per-request cache for register authorization lookups.
