@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -188,6 +189,60 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 
 		$this->assertSame(['u-1', 'u-1', 'u-2', 'u-2'], $this->converted);
 	}//end testTheMergeOfManyBatchesLeavesOutAPropertyUnderAnotherSpelling()
+
+	/**
+	 * @dataProvider encryptedOrders
+	 */
+	public function testASortEncryptedInOneSchemaIsRefusedOnTheUnionPath(mixed $order): void {
+		$this->assertRefused(order: $order, pairs: [$this->pair(name: 'a'), $this->encryptedPair()]);
+	}//end testASortEncryptedInOneSchemaIsRefusedOnTheUnionPath()
+
+	/**
+	 * @dataProvider encryptedOrders
+	 */
+	public function testASortEncryptedIsRefusedOnTheSequentialPath(mixed $order): void {
+		$this->assertRefused(order: $order, pairs: [$this->encryptedPair()]);
+	}//end testASortEncryptedIsRefusedOnTheSequentialPath()
+
+	public static function encryptedOrders(): array {
+		return [
+			'map' => [['title' => 'desc']],
+			'json map' => ['{"title":"desc"}'],
+			'graphql list' => ['[{"field":"title","direction":"DESC"}]'],
+			'name' => ['title:desc'],
+		];
+	}//end encryptedOrders()
+
+	private function encryptedPair(): array {
+		$pair = $this->pair(name: 'b');
+		$pair['schema']->setProperties(['title' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+
+		return $pair;
+	}//end encryptedPair()
+
+	private function assertRefused(mixed $order, array $pairs): void {
+		$mapper = $this->makeMapper(platform: 'postgres');
+		try {
+			$mapper->searchAcrossMultipleTables(query: ['_order' => $order], registerSchemaPairs: $pairs);
+			$this->fail('the search ran');
+		} catch (EncryptedFieldFilterException $refusal) {
+			$this->assertSame('title', $refusal->getProperty());
+			$this->assertStringContainsString('cannot be sorted on', $refusal->getMessage());
+		}
+
+		$this->assertSame([], array_filter($this->events, static fn (array $event): bool => isset($event['log']) === false));
+	}//end assertRefused()
+
+	public function testASortOnAFieldNoSchemaEncryptsRuns(): void {
+		$this->unionRows = [];
+
+		$results = $this->makeMapper(platform: 'postgres')->searchAcrossMultipleTables(
+			query: ['_order' => ['status' => 'desc']],
+			registerSchemaPairs: [$this->pair(name: 'a'), $this->encryptedPair()]
+		);
+
+		$this->assertSame([], $results);
+	}//end testASortOnAFieldNoSchemaEncryptsRuns()
 
 	private function runBatch(string $platform, array $pairNames, array $query): array {
 		$this->events = [];

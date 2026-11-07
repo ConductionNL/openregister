@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
 
 /**
@@ -202,11 +203,7 @@ class GraphQLResolver {
 
 		// Multitenancy is handled by the query context (ObjectService checks active org).
 		// RBAC is handled by checkSchemaPermission above.
-		$result = $this->objectService->searchObjectsPaginated(
-			query: $query,
-			_rbac: true,
-			_multitenancy: true
-		);
+		$result = $this->searchPage(query: $query);
 
 		// Build connection response.
 		$results = ($result['results'] ?? []);
@@ -674,6 +671,26 @@ class GraphQLResolver {
 
 		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
 	}//end notFoundError()
+
+	/**
+	 * One page of a list query, RBAC and multitenancy on.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return array<string, mixed> The paginated result.
+	 *
+	 * @throws Error When the query filters or sorts on an encrypted property.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 */
+	private function searchPage(array $query): array {
+		try {
+			return $this->objectService->searchObjectsPaginated(query: $query, _rbac: true, _multitenancy: true);
+		} catch (EncryptedFieldFilterException $e) {
+			$extensions = ['code' => 'BAD_REQUEST', 'reason' => $e->getReason(), 'property' => $e->getProperty()];
+			throw new Error($e->getMessage(), null, null, [], null, null, $extensions);
+		}
+	}//end searchPage()
 
 	/**
 	 * The VALIDATION_ERROR error for a failed save.

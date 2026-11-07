@@ -23,10 +23,13 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use GraphQL\Error\FormattedError;
+use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
@@ -136,6 +139,73 @@ class GraphQLResolverErrorsTest extends TestCase {
 	private function parts(Error $error): array {
 		return [$error->getMessage(), $error->getExtensions(), $error->getPrevious()];
 	}//end parts()
+
+	/**
+	 * A list query sorted on an encrypted property, as the resolver sends it.
+	 *
+	 * @return Error The error.
+	 */
+	private function encryptedSortError(): Error {
+		$resolver = $this->resolver();
+		$schema   = $this->schema();
+		$schema->setProperties(['bsn' => ['type' => 'string', 'x-openregister-encrypted' => true]]);
+
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willReturnCallback(
+			function (array $query) use ($schema): array {
+				(new EncryptedOrderRefusal(order: $query['_order']))->check(schemas: [$schema]);
+				return [];
+			}
+		);
+
+		return $this->errorOf(fn () => $resolver->resolveList($schema, null, ['sort' => ['field' => 'bsn', 'order' => 'desc']]));
+	}//end encryptedSortError()
+
+	/**
+	 * A sort on an encrypted property reaches the caller as a bad request naming it.
+	 *
+	 * @return void
+	 */
+	public function testAListSortedOnAnEncryptedPropertyIsABadRequest(): void {
+		$error = $this->encryptedSortError();
+
+		$this->assertSame(
+			[
+				'Property "bsn" is encrypted at rest and cannot be sorted on.',
+				['code' => 'BAD_REQUEST', 'reason' => 'encrypted-field-not-sortable', 'property' => 'bsn'],
+				null,
+			],
+			$this->parts(error: $error)
+		);
+	}//end testAListSortedOnAnEncryptedPropertyIsABadRequest()
+
+	/**
+	 * The formatted error keeps the message: a previous exception would hide it.
+	 *
+	 * @return void
+	 */
+	public function testTheRefusalSurvivesFormatting(): void {
+		$formatted = FormattedError::createFromException($this->encryptedSortError());
+
+		$this->assertSame('Property "bsn" is encrypted at rest and cannot be sorted on.', $formatted['message']);
+		$this->assertSame('BAD_REQUEST', $formatted['extensions']['code']);
+	}//end testTheRefusalSurvivesFormatting()
+
+	/**
+	 * A filter on an encrypted property is the same bad request.
+	 *
+	 * @return void
+	 */
+	public function testAListFilteredOnAnEncryptedPropertyIsABadRequest(): void {
+		$resolver = $this->resolver();
+		$this->objectService->method('buildSearchQuery')->willReturnArgument(0);
+		$this->objectService->method('searchObjectsPaginated')->willThrowException(new EncryptedFieldFilterException(property: 'bsn'));
+
+		$error = $this->errorOf(fn () => $resolver->resolveList($this->schema(), null, []));
+
+		$this->assertSame('encrypted-field-not-filterable', $error->getExtensions()['reason']);
+		$this->assertSame('bsn', $error->getExtensions()['property']);
+	}//end testAListFilteredOnAnEncryptedPropertyIsABadRequest()
 
 	/**
 	 * A missing single record names the schema title.

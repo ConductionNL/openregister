@@ -29,10 +29,8 @@ use Throwable;
 /**
  * Exception thrown when a search/filter/facet request targets an encrypted property.
  *
- * An encrypted field's magic-table value is opaque ciphertext (when a column
- * exists for it at all — see design.md, encrypted properties get no dedicated
- * magic-table column), so a plaintext filter against it can never match
- * correctly. Rather than silently returning zero rows (indistinguishable from
+ * An encrypted field's magic-table column holds only the opaque envelope, so a
+ * plaintext filter against it can never match correctly. Rather than silently returning zero rows (indistinguishable from
  * "no matches" — the exact anti-pattern flagged for this feature), OpenRegister
  * fails loud with this exception, translated to HTTP 400 by
  * {@see \OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware}.
@@ -50,6 +48,20 @@ use Throwable;
  */
 class EncryptedFieldFilterException extends Exception {
 	/**
+	 * What the refused request is told, with the property name in place of `%s`.
+	 *
+	 * @var string
+	 */
+	protected const MESSAGE = 'Property "%s" is encrypted at rest and cannot be filtered, searched or faceted server-side.';
+
+	/**
+	 * The stable identifier of this refusal in a response body.
+	 *
+	 * @var string
+	 */
+	protected const REASON = 'encrypted-field-not-filterable';
+
+	/**
 	 * Constructor for EncryptedFieldFilterException.
 	 *
 	 * @param string $property The encrypted property name that was targeted.
@@ -64,10 +76,7 @@ class EncryptedFieldFilterException extends Exception {
 		?Throwable $previous = null,
 	) {
 		parent::__construct(
-			message: sprintf(
-				'Property "%s" is encrypted at rest and cannot be filtered, searched or faceted server-side.',
-				$property
-			),
+			message: sprintf(static::MESSAGE, $property),
 			code: $code,
 			previous: $previous
 		);
@@ -81,4 +90,13 @@ class EncryptedFieldFilterException extends Exception {
 	public function getProperty(): string {
 		return $this->property;
 	}//end getProperty()
+
+	/**
+	 * The stable identifier of this refusal.
+	 *
+	 * @return string The identifier.
+	 */
+	public function getReason(): string {
+		return static::REASON;
+	}//end getReason()
 }//end class

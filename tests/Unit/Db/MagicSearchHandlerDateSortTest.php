@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
@@ -178,15 +179,38 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['t.priority', 'ASC']], $result);
 	}//end testNonDatePropertyKeepsBareColumn()
 
-	public function testEncryptedDatePropertyKeepsBareColumn(): void {
-		// An encrypted property's column holds ciphertext, not a datetime.
-		$result = $this->sort(
-			order: ['bornOn' => 'asc'],
-			properties: ['bornOn' => ['type' => 'string', 'format' => 'date', 'x-openregister-encrypted' => true]]
-		);
+	/**
+	 * @dataProvider encryptedProperties
+	 */
+	public function testAnEncryptedPropertyIsRefusedAndNothingIsOrdered(array $property): void {
+		try {
+			$this->sort(
+				order: ['title' => 'asc', 'bornOn' => 'asc'],
+				properties: ['title' => ['type' => 'string'], 'bornOn' => $property + ['x-openregister-encrypted' => true]]
+			);
+			$this->fail('the order ran');
+		} catch (EncryptedFieldFilterException $refusal) {
+			$this->assertSame('Property "bornOn" is encrypted at rest and cannot be sorted on.', $refusal->getMessage());
+			$this->assertSame(400, $refusal->getCode());
+		}
 
-		$this->assertSame([['t.born_on', 'ASC']], $result);
-	}//end testEncryptedDatePropertyKeepsBareColumn()
+		$this->assertSame([], $this->orderBy);
+	}//end testAnEncryptedPropertyIsRefusedAndNothingIsOrdered()
+
+	public static function encryptedProperties(): array {
+		return [
+			'text' => [['type' => 'string']],
+			'date' => [['type' => 'string', 'format' => 'date']],
+			'number' => [['type' => 'integer']],
+			'translatable' => [['type' => 'string', 'translatable' => true]],
+		];
+	}//end encryptedProperties()
+
+	public function testAPropertyEncryptedOnlyByFalseStillSorts(): void {
+		$result = $this->sort(order: ['title' => 'asc'], properties: ['title' => ['type' => 'string', 'x-openregister-encrypted' => false]]);
+
+		$this->assertSame([['LOWER("t"."title")', 'ASC']], $result);
+	}//end testAPropertyEncryptedOnlyByFalseStillSorts()
 
 	public function testMetadataSortsAreUnchanged(): void {
 		$result = $this->sort(

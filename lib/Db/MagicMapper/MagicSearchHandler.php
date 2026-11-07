@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\EncryptedFieldSortException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -4060,10 +4061,15 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
+	 * @throws EncryptedFieldSortException When the order names an encrypted property.
+	 *
 	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 */
 	private function applySorting(IQueryBuilder $qb, SortRequest $sort): void {
+		(new EncryptedOrderRefusal(order: $sort->order))->check(schemas: [$sort->schema]);
+
 		$properties = $sort->schema->getProperties();
 
 		foreach ($sort->order as $field => $direction) {
@@ -4349,8 +4355,7 @@ class MagicSearchHandler {
 	): string|IQueryFunction {
 		$isText = is_array($propertyConfig) === true
 			&& ($propertyConfig['type'] ?? 'string') === 'string'
-			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
-			&& ($propertyConfig['x-openregister-encrypted'] ?? false) === false;
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false;
 		if ($isText === true) {
 			// Text orders without regard to case, as OpenRegister's own lists
 			// do: "Leverancier accreditatie" before "Leverancier IBAN-wijziging"
@@ -4364,7 +4369,6 @@ class MagicSearchHandler {
 			|| is_array($propertyConfig) === false
 			|| ($propertyConfig['type'] ?? 'string') !== 'string'
 			|| in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
-			|| ($propertyConfig['x-openregister-encrypted'] ?? false) === true
 		) {
 			return "t.{$columnName}";
 		}

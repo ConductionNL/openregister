@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
@@ -1495,9 +1496,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @return array Array of ObjectEntity objects from all tables, sorted by relevance.
 	 *
+	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldSortException When the order names an encrypted property of any table.
+	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 */
 	public function searchAcrossMultipleTables(array $query, array $registerSchemaPairs): array {
+		(new EncryptedOrderRefusal(order: $query['_order'] ?? []))->check(schemas: array_column($registerSchemaPairs, 'schema'));
+
 		// The `_recent` lens (`recently-opened-means-opened`): the same order,
 		// paging and `@self.viewedAt` as the single-schema path. When the
 		// history orders the page, the restricted set is fetched whole (it is
