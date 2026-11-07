@@ -26,6 +26,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -47,6 +49,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		DecisionTableNode::class => [DecisionTableNodeInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
