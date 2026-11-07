@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\NotificationService;
 
 /**
@@ -36,10 +36,10 @@ final class ConfigurationDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConfigurationServiceInterface  $configurationService Configuration service
-	 * @param NotificationService   $notificationService  Notification service
-	 * @param GitHubClientInterface $githubHandler        GitHub handler
-	 * @param GitLabHandler         $gitlabHandler        GitLab handler
+	 * @param ConfigurationServiceInterface $configurationService Configuration service
+	 * @param NotificationService           $notificationService  Notification service
+	 * @param GitHubClientInterface         $githubHandler        GitHub handler
+	 * @param GitLabHandlerInterface        $gitlabHandler        GitLab handler
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ConfigurationDomain {
 		public readonly ConfigurationServiceInterface $configurationService,
 		public readonly NotificationService $notificationService,
 		public readonly GitHubClientInterface $githubHandler,
-		public readonly GitLabHandler $gitlabHandler,
+		public readonly GitLabHandlerInterface $gitlabHandler,
 	) {
 	}//end __construct()
 }//end class

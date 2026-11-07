@@ -55,6 +55,8 @@ use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -122,6 +124,7 @@ final class ContractBindings {
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
+		GitLabHandlerInterface::class => GitLabHandler::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
