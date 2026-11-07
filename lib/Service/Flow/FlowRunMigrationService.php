@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use Psr\Log\LoggerInterface;
@@ -291,29 +292,19 @@ class FlowRunMigrationService {
 		array $mapping = [],
 		int $limit = 100,
 	): array {
-		$results = [];
-		$migrated = 0;
-		$skipped = 0;
-
-		foreach ($this->runsOnVersion(flowId: $flowId, version: $sourceVersion, limit: $limit) as $run) {
-			$outcome = $this->migrate(
+		$results = array_map(
+			fn (FlowRun $run): array => $this->migrate(
 				runUuid: (string)$run->getUuid(),
 				targetVersion: $targetVersion,
 				reason: $reason,
 				actor: $actor,
 				mapping: $mapping,
-			);
+			),
+			$this->runsOnVersion(flowId: $flowId, version: $sourceVersion, limit: $limit)
+		);
+		$migrated = count(array_filter($results, static fn (array $outcome): bool => $outcome['migrated'] === true));
 
-			$results[] = $outcome;
-			if ($outcome['migrated'] === true) {
-				$migrated++;
-				continue;
-			}
-
-			$skipped++;
-		}
-
-		return ['migrated' => $migrated, 'skipped' => $skipped, 'results' => $results];
+		return ['migrated' => $migrated, 'skipped' => (count($results) - $migrated), 'results' => $results];
 	}//end migrateRunsOfVersion()
 
 	/**
@@ -345,69 +336,89 @@ class FlowRunMigrationService {
 	 */
 	public function migrateRunForSubject(string $subjectUuid, string $targetDefinitionRef, string $actorUid): array {
 		$live = $this->liveRunsOf(subjectUuid: $subjectUuid);
+		$refused = self::subjectRefusal(live: $live, targetDefinitionRef: $targetDefinitionRef);
+		if ($refused !== null) {
+			return $refused;
+		}
+
+		$outcomes = array_map(
+			fn (FlowRun $run): array => $this->migrate(
+				runUuid: (string)$run->getUuid(),
+				targetVersion: (int)$targetDefinitionRef,
+				reason: 'Migrated with its subject by ' . $actorUid,
+				actor: $actorUid,
+			),
+			($live ?? [])
+		);
+
+		return self::subjectOutcome(outcomes: $outcomes, targetDefinitionRef: $targetDefinitionRef);
+	}//end migrateRunForSubject()
+
+	/**
+	 * The answer for a subject whose runs are not moved one by one, or null when they are.
+	 *
+	 * @param array<int, FlowRun>|null $live                The live runs, or null when unreadable.
+	 * @param string                   $targetDefinitionRef The target version, as a number, or a flow uuid.
+	 *
+	 * @return array{migrated: bool, reason: string, runs: array<int, array<string, mixed>>}|null The answer.
+	 */
+	private static function subjectRefusal(?array $live, string $targetDefinitionRef): ?array {
 		if ($live === null) {
 			// An unreadable run store is NOT "no runs". Saying so lets the
 			// caller stop rather than proceed on an answer nobody checked.
-			return [
-				'migrated' => false,
-				'reason' => 'The flow runs of this object could not be read, so nothing was migrated.',
-				'runs' => [],
-			];
+			return ['migrated' => false, 'reason' => 'The flow runs of this object could not be read, so nothing was migrated.', 'runs' => []];
 		}
 
 		if ($live === []) {
-			return [
-				'migrated' => true,
-				'reason' => 'This object has no flow run in progress, so there was nothing to migrate.',
-				'runs' => [],
-			];
+			return ['migrated' => true, 'reason' => 'This object has no flow run in progress, so there was nothing to migrate.', 'runs' => []];
 		}
 
 		// A version NUMBER is the only reference this change can act on.
 		// Anything else names another flow, and this does not move a run
 		// between flows.
 		if (ctype_digit($targetDefinitionRef) === false) {
-			$livePlural = 's';
-			if (count($live) === 1) {
-				$livePlural = '';
-			}
-
-			return [
-				'migrated' => false,
-				'reason' => 'This object has ' . count($live) . ' flow run'
-					. $livePlural . ' in progress on a different process. '
-					. 'A run is moved between VERSIONS of one flow, never between flows, because two flows '
-					. 'share no steps to map a token onto. Finish or stop the run first.',
-				'runs' => [],
-			];
+			return ['migrated' => false, 'reason' => self::otherFlowReason(count: count($live)), 'runs' => []];
 		}
 
-		$outcomes = [];
-		$allMoved = true;
-		foreach ($live as $run) {
-			$outcome = $this->migrate(
-				runUuid: (string)$run->getUuid(),
-				targetVersion: (int)$targetDefinitionRef,
-				reason: 'Migrated with its subject by ' . $actorUid,
-				actor: $actorUid,
-			);
-			$outcomes[] = $outcome;
-			if ($outcome['migrated'] === false) {
-				$allMoved = false;
-			}
+		return null;
+	}//end subjectRefusal()
+
+	/**
+	 * Why runs on a subject are not moved onto another flow.
+	 *
+	 * @param int $count How many runs are in progress.
+	 *
+	 * @return string The reason.
+	 */
+	private static function otherFlowReason(int $count): string {
+		$livePlural = 's';
+		if ($count === 1) {
+			$livePlural = '';
 		}
 
+		return 'This object has ' . $count . ' flow run'
+			. $livePlural . ' in progress on a different process. '
+			. 'A run is moved between VERSIONS of one flow, never between flows, because two flows '
+			. 'share no steps to map a token onto. Finish or stop the run first.';
+	}//end otherFlowReason()
+
+	/**
+	 * The subject's answer once each of its runs has been asked to move.
+	 *
+	 * @param array<int, array<string, mixed>> $outcomes            One outcome per run.
+	 * @param string                           $targetDefinitionRef The target version, as given.
+	 *
+	 * @return array{migrated: bool, reason: string, runs: array<int, array<string, mixed>>} The answer.
+	 */
+	private static function subjectOutcome(array $outcomes, string $targetDefinitionRef): array {
+		$allMoved = (in_array(false, array_column($outcomes, 'migrated'), true) === false);
 		$outcomeReason = ($outcomes[0]['reason'] ?? 'A run of this object could not be moved.');
 		if ($allMoved === true) {
 			$outcomeReason = 'Every run of this object moved to version ' . $targetDefinitionRef . '.';
 		}
 
-		return [
-			'migrated' => $allMoved,
-			'reason' => $outcomeReason,
-			'runs' => $outcomes,
-		];
-	}//end migrateRunForSubject()
+		return ['migrated' => $allMoved, 'reason' => $outcomeReason, 'runs' => $outcomes];
+	}//end subjectOutcome()
 
 	/**
 	 * The runs still in progress on one object, or null when they cannot be read.
@@ -513,42 +524,62 @@ class FlowRunMigrationService {
 	 * @return int How many were superseded.
 	 */
 	private function supersedeTimers(FlowRunMigration $migration): int {
-		$runUuid = $migration->runUuid;
 		$mapping = $migration->mapping();
 		if ($mapping === []) {
 			return 0;
 		}
 
 		$moved = 0;
-		foreach ($this->timers->findOpenByRun(runUuid: $runUuid) as $timer) {
-			$nodeId = trim((string)$timer->getNodeId());
-			if ($nodeId === '' || array_key_exists($nodeId, $mapping) === false) {
-				continue;
-			}
-
-			try {
-				$this->timerService->supersede(
-					uuid: (string)$timer->getUuid(),
-					anchorEventAt: new DateTime(),
-					reason: self::LOG_ENTRY,
-					actor: $migration->actor,
-				);
+		foreach ($this->timers->findOpenByRun(runUuid: $migration->runUuid) as $timer) {
+			if (self::nodeMoved(timer: $timer, mapping: $mapping) === true && $this->supersede(timer: $timer, migration: $migration) === true) {
 				$moved++;
-			} catch (Throwable $e) {
-				// NOT fatal to the migration, and said out loud. The run has
-				// already moved; refusing here would leave it on the target
-				// version with the caller told it failed, which is the one
-				// state nobody can act on.
-				$this->logger->error(
-					message: '[FlowRunMigrationService] run ' . $runUuid . ' migrated, but timer '
-						. (string)$timer->getUuid() . ' could not be superseded: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}//end try
+			}
 		}
 
 		return $moved;
 	}//end supersedeTimers()
+
+	/**
+	 * Whether a timer's node is one the mapping moves.
+	 *
+	 * @param FlowTimer             $timer   The open timer.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return boolean True when the timer's node is mapped.
+	 */
+	private static function nodeMoved(FlowTimer $timer, array $mapping): bool {
+		$nodeId = trim((string)$timer->getNodeId());
+
+		return $nodeId !== '' && array_key_exists($nodeId, $mapping) === true;
+	}//end nodeMoved()
+
+	/**
+	 * Supersede one timer, logging rather than failing when it cannot be.
+	 *
+	 * NOT fatal to the migration, and said out loud. The run has already
+	 * moved; refusing here would leave it on the target version with the
+	 * caller told it failed, which is the one state nobody can act on.
+	 *
+	 * @param FlowTimer        $timer     The open timer.
+	 * @param FlowRunMigration $migration The run and actor.
+	 *
+	 * @return boolean True when superseded.
+	 */
+	private function supersede(FlowTimer $timer, FlowRunMigration $migration): bool {
+		$uuid = (string)$timer->getUuid();
+		try {
+			$this->timerService->supersede(uuid: $uuid, anchorEventAt: new DateTime(), reason: self::LOG_ENTRY, actor: $migration->actor);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated, but timer '
+					. $uuid . ' could not be superseded: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return false;
+		}
+
+		return true;
+	}//end supersede()
 
 	/**
 	 * A refusal shaped like every other answer.

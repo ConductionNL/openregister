@@ -39,9 +39,6 @@ namespace OCA\OpenRegister\Search\Service\Geo;
 
 /**
  * Builds GeoJSON FeatureCollections and WFS-compatible envelopes.
- *
- * @SuppressWarnings(PHPMD.StaticAccess) None used; documented for parity
- *   with sibling geo services.
  */
 class GeoFeatureCollectionBuilder {
 
@@ -80,28 +77,16 @@ class GeoFeatureCollectionBuilder {
 		?array $fields = null,
 		bool $includeArea = false,
 	): array {
-		$features = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			$feature = $this->buildFeature(
-				row: $row,
-				geoProperty: $geoProperty,
-				fields: $fields,
-				includeArea: $includeArea
-			);
-			if ($feature !== null) {
-				$features[] = $feature;
-			}
-		}
+		$rows = array_filter($rows, static fn ($row): bool => is_array($row));
+		$features = array_map(
+			fn (array $row): ?array => $this->buildFeature(row: $row, geoProperty: $geoProperty, fields: $fields, includeArea: $includeArea),
+			$rows
+		);
 
 		return [
 			'type' => 'FeatureCollection',
-			'features' => $features,
+			'features' => array_values(array_filter($features, static fn (?array $feature): bool => $feature !== null)),
 		];
-
 	}//end buildFeatureCollection()
 
 	/**
@@ -127,28 +112,47 @@ class GeoFeatureCollectionBuilder {
 			return null;
 		}
 
-		$properties = $this->shapeProperties(row: $row, geomKey: $geomKey, fields: $fields);
-
+		$properties = $this->allowedProperties(properties: $this->withoutKey(row: $row, key: $geomKey), fields: $fields);
 		if ($includeArea === true) {
-			$area = $this->geodesicAreaM2(geometry: $geometry);
-			if ($area !== null) {
-				$properties['_area_m2'] = $area;
-			}
+			$properties = $this->withArea(properties: $properties, geometry: $geometry);
 		}
 
-		$feature = [
-			'type' => 'Feature',
-			'geometry' => $geometry,
-			'properties' => $properties,
-		];
+		return $this->withId(feature: ['type' => 'Feature', 'geometry' => $geometry, 'properties' => $properties], row: $row);
+	}//end buildFeature()
 
+	/**
+	 * Add the row's id (or `@self.id`) to the Feature, when it has one.
+	 *
+	 * @param array $feature The Feature.
+	 * @param array $row     The object row.
+	 *
+	 * @return array
+	 */
+	private function withId(array $feature, array $row): array {
 		$id = ($row['id'] ?? ($row['@self']['id'] ?? null));
 		if ($id !== null) {
 			$feature['id'] = $id;
 		}
 
 		return $feature;
-	}//end buildFeature()
+	}//end withId()
+
+	/**
+	 * Add `_area_m2` to the properties when the geometry is polygonal.
+	 *
+	 * @param array $properties The Feature properties.
+	 * @param array $geometry   The Feature geometry.
+	 *
+	 * @return array
+	 */
+	private function withArea(array $properties, array $geometry): array {
+		$area = $this->geodesicAreaM2(geometry: $geometry);
+		if ($area !== null) {
+			$properties['_area_m2'] = $area;
+		}
+
+		return $properties;
+	}//end withArea()
 
 	/**
 	 * Build a WFS GetFeature-compatible response envelope.
@@ -204,32 +208,38 @@ class GeoFeatureCollectionBuilder {
 	}//end locateGeometry()
 
 	/**
-	 * Shape a row's non-geometry properties into Feature properties.
+	 * The row without the key holding the geometry.
 	 *
-	 * @param array $row The object row.
-	 * @param ?string $geomKey The key holding the geometry (excluded).
-	 * @param string[]|null $fields Allow-list, or null for all.
+	 * Keys are compared strictly, as the located key is always a string.
+	 *
+	 * @param array   $row The object row.
+	 * @param ?string $key The key holding the geometry (excluded).
+	 *
+	 * @return array
+	 *
+	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+	 */
+	private function withoutKey(array $row, ?string $key): array {
+		return array_filter($row, static fn ($rowKey): bool => $rowKey !== $key, ARRAY_FILTER_USE_KEY);
+	}//end withoutKey()
+
+	/**
+	 * Restrict the properties to an allow-list, when one is given.
+	 *
+	 * @param array         $properties The properties.
+	 * @param string[]|null $fields     Allow-list, or null for all.
 	 *
 	 * @return array The Feature properties.
 	 *
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
-	private function shapeProperties(array $row, ?string $geomKey, ?array $fields): array {
-		$properties = [];
-		foreach ($row as $key => $value) {
-			if ($key === $geomKey) {
-				continue;
-			}
-
-			if ($fields !== null && in_array($key, $fields, true) === false) {
-				continue;
-			}
-
-			$properties[$key] = $value;
+	private function allowedProperties(array $properties, ?array $fields): array {
+		if ($fields === null) {
+			return $properties;
 		}
 
-		return $properties;
-	}//end shapeProperties()
+		return array_filter($properties, static fn ($key): bool => in_array($key, $fields, true), ARRAY_FILTER_USE_KEY);
+	}//end allowedProperties()
 
 	/**
 	 * Coerce a raw value to a GeoJSON geometry array.
@@ -275,33 +285,52 @@ class GeoFeatureCollectionBuilder {
 			return null;
 		}
 
-		$polygons = [];
+		$polygons = ($geometry['coordinates'] ?? []);
 		if ($type === 'Polygon') {
-			$polygons = [($geometry['coordinates'] ?? [])];
-		} else {
-			$polygons = ($geometry['coordinates'] ?? []);
+			$polygons = [$polygons];
 		}
 
 		$total = 0.0;
 		foreach ($polygons as $rings) {
-			if (is_array($rings) === false || count($rings) === 0) {
-				continue;
-			}
-
-			$outer = abs($this->ringArea(ring: ($rings[0] ?? [])));
-			$holes = 0.0;
-			// Hoisted: $rings is not modified in the body, so re-counting it on
-			// every iteration was pure overhead.
-			$ringCount = count($rings);
-			for ($i = 1; $i < $ringCount; $i++) {
-				$holes += abs($this->ringArea(ring: $rings[$i]));
-			}
-
-			$total += ($outer - $holes);
+			$total += $this->polygonArea(rings: $rings);
 		}
 
 		return round($total, 2);
 	}//end geodesicAreaM2()
+
+	/**
+	 * Area of one polygon: its outer ring less its holes; 0.0 for an empty or malformed polygon.
+	 *
+	 * @param mixed $rings The polygon's rings, outer ring first.
+	 *
+	 * @return float
+	 */
+	private function polygonArea(mixed $rings): float {
+		if (is_array($rings) === false || count($rings) === 0) {
+			return 0.0;
+		}
+
+		$outer = abs($this->ringArea(ring: ($rings[0] ?? [])));
+
+		return ($outer - $this->holesArea(rings: $rings));
+	}//end polygonArea()
+
+	/**
+	 * Summed area of a polygon's holes: every ring after the first.
+	 *
+	 * @param array $rings The polygon's rings.
+	 *
+	 * @return float
+	 */
+	private function holesArea(array $rings): float {
+		$holes = 0.0;
+		$ringCount = count($rings);
+		for ($i = 1; $i < $ringCount; $i++) {
+			$holes += abs($this->ringArea(ring: $rings[$i]));
+		}
+
+		return $holes;
+	}//end holesArea()
 
 	/**
 	 * Spherical-excess area of a single ring in square meters.
@@ -313,33 +342,44 @@ class GeoFeatureCollectionBuilder {
 	 * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
 	 */
 	private function ringArea(array $ring): float {
-		$n = count($ring);
-		if ($n < 4) {
+		$count = count($ring);
+		if ($count < 4) {
 			return 0.0;
 		}
 
 		$area = 0.0;
-		for ($i = 0; $i < $n; $i++) {
-			$p1 = $ring[$i];
-			$p2 = $ring[(($i + 1) % $n)];
-			if (is_array($p1) === false || is_array($p2) === false) {
-				continue;
+		for ($i = 0; $i < $count; $i++) {
+			$term = $this->edgeTerm(edge: [$ring[$i], $ring[(($i + 1) % $count)]]);
+			if ($term !== null) {
+				$area += $term;
 			}
-
-			if (is_numeric($p1[0] ?? null) === false || is_numeric($p2[0] ?? null) === false) {
-				continue;
-			}
-
-			$lon1 = deg2rad((float)$p1[0]);
-			$lat1 = deg2rad((float)$p1[1]);
-			$lon2 = deg2rad((float)$p2[0]);
-			$lat2 = deg2rad((float)$p2[1]);
-
-			$area += ($lon2 - $lon1) * (2 + sin($lat1) + sin($lat2));
 		}
 
-		$area = ($area * self::EARTH_RADIUS_M * self::EARTH_RADIUS_M / 2.0);
-
-		return $area;
+		return ($area * self::EARTH_RADIUS_M * self::EARTH_RADIUS_M / 2.0);
 	}//end ringArea()
+
+	/**
+	 * One edge's term of the spherical-excess sum, or null when a vertex is not a position.
+	 *
+	 * @param array{0: mixed, 1: mixed} $edge The edge's start and end vertex.
+	 *
+	 * @return float|null
+	 */
+	private function edgeTerm(array $edge): ?float {
+		[$from, $to] = $edge;
+		if (is_array($from) === false || is_array($to) === false) {
+			return null;
+		}
+
+		if (is_numeric($from[0] ?? null) === false || is_numeric($to[0] ?? null) === false) {
+			return null;
+		}
+
+		$lon1 = deg2rad((float)$from[0]);
+		$lat1 = deg2rad((float)$from[1]);
+		$lon2 = deg2rad((float)$to[0]);
+		$lat2 = deg2rad((float)$to[1]);
+
+		return ($lon2 - $lon1) * (2 + sin($lat1) + sin($lat2));
+	}//end edgeTerm()
 }//end class

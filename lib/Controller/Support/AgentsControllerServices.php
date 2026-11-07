@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use Psr\Log\LoggerInterface;
@@ -36,7 +36,7 @@ final class AgentsControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AgentMapper         $agentMapper         Agent mapper for database operations
+	 * @param AgentMapperInterface         $agentMapper         Agent mapper for database operations
 	 * @param OrganisationServiceInterface $organisationService Organisation service for multi-tenancy
 	 * @param ToolRegistry        $toolRegistry        Tool registry for available tools
 	 * @param LoggerInterface     $logger              Logger for error tracking
@@ -44,7 +44,7 @@ final class AgentsControllerServices {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		public readonly AgentMapper $agentMapper,
+		public readonly AgentMapperInterface $agentMapper,
 		public readonly OrganisationServiceInterface $organisationService,
 		public readonly ToolRegistry $toolRegistry,
 		public readonly LoggerInterface $logger,

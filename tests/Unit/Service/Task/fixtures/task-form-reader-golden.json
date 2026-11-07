@@ -1,0 +1,1012 @@
+{
+    "checklist off string": {
+        "forms installed": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "fromConfig": {
+            "kind": null,
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "checklist only": {
+        "forms installed": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": true
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": true
+            },
+            "validate": "ok"
+        },
+        "fromConfig": {
+            "kind": null,
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": null,
+            "requireChecklist": true
+        }
+    },
+    "empty": {
+        "forms installed": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "fromConfig": {
+            "kind": null,
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "external": {
+        "forms installed": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 12,
+                "requireChecklist": true
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 12,
+                "requireChecklist": true
+            },
+            "validate": "An external form needs the Nextcloud Forms app, which is not installed on this instance."
+        },
+        "fromConfig": {
+            "kind": "external",
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": 12,
+            "requireChecklist": true
+        }
+    },
+    "external bad id": {
+        "forms installed": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "forms absent": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "fromConfig": "An external form must name the Forms form by its id."
+    },
+    "external float id": {
+        "forms installed": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 3,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 3,
+                "requireChecklist": false
+            },
+            "validate": "An external form needs the Nextcloud Forms app, which is not installed on this instance."
+        },
+        "fromConfig": {
+            "kind": "external",
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": 3,
+            "requireChecklist": false
+        }
+    },
+    "external without id": {
+        "forms installed": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "forms absent": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "fromConfig": "An external form must name the Forms form by its id."
+    },
+    "external zero id": {
+        "forms installed": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "forms absent": {
+            "refused": "An external form must name the Forms form by its id."
+        },
+        "fromConfig": "An external form must name the Forms form by its id."
+    },
+    "kind padded": {
+        "forms installed": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 7,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": "external",
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": 7,
+                "requireChecklist": false
+            },
+            "validate": "An external form needs the Nextcloud Forms app, which is not installed on this instance."
+        },
+        "fromConfig": {
+            "kind": "external",
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": 7,
+            "requireChecklist": false
+        }
+    },
+    "native action": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": "approve",
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"hidden\" of schema \"case\" cannot be asked for: the schema marks it not visible, so no form can show it."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": "approve",
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"hidden\" of schema \"case\" cannot be asked for: the schema marks it not visible, so no form can show it."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": "approve",
+            "fields": [],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native action and fields": {
+        "forms installed": {
+            "refused": "Name a lifecycle action or list the fields, not both: the action already declares its fields."
+        },
+        "forms absent": {
+            "refused": "Name a lifecycle action or list the fields, not both: the action already declares its fields."
+        },
+        "fromConfig": "Name a lifecycle action or list the fields, not both: the action already declares its fields."
+    },
+    "native duplicate": {
+        "forms installed": {
+            "refused": "Field \"reason\" is listed twice."
+        },
+        "forms absent": {
+            "refused": "Field \"reason\" is listed twice."
+        },
+        "fromConfig": "Field \"reason\" is listed twice."
+    },
+    "native duplicate after star": {
+        "forms installed": {
+            "refused": "Field \"reason\" is listed twice."
+        },
+        "forms absent": {
+            "refused": "Field \"reason\" is listed twice."
+        },
+        "fromConfig": "Field \"reason\" is listed twice."
+    },
+    "native field nested list": {
+        "forms installed": {
+            "refused": "Every form field entry must name its field."
+        },
+        "forms absent": {
+            "refused": "Every form field entry must name its field."
+        },
+        "fromConfig": "Every form field entry must name its field."
+    },
+    "native field null entry": {
+        "forms installed": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "forms absent": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "fromConfig": "Form fields must be a list of {field, required} entries."
+    },
+    "native field object entry": {
+        "forms installed": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "forms absent": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "fromConfig": "Form fields must be a list of {field, required} entries."
+    },
+    "native field unnamed": {
+        "forms installed": {
+            "refused": "Every form field entry must name its field."
+        },
+        "forms absent": {
+            "refused": "Every form field entry must name its field."
+        },
+        "fromConfig": "Every form field entry must name its field."
+    },
+    "native fields mixed": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    },
+                    {
+                        "field": "5",
+                        "required": false
+                    },
+                    {
+                        "field": "1",
+                        "required": false
+                    },
+                    {
+                        "field": "1.5",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"5\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    },
+                    {
+                        "field": "5",
+                        "required": false
+                    },
+                    {
+                        "field": "1",
+                        "required": false
+                    },
+                    {
+                        "field": "1.5",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"5\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": false
+                },
+                {
+                    "field": "5",
+                    "required": false
+                },
+                {
+                    "field": "1",
+                    "required": false
+                },
+                {
+                    "field": "1.5",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native fields names": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": true
+                    },
+                    {
+                        "field": "other",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"other\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": true
+                    },
+                    {
+                        "field": "other",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"other\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": true
+                },
+                {
+                    "field": "note",
+                    "required": true
+                },
+                {
+                    "field": "other",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native fields objects": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": true
+                },
+                {
+                    "field": "note",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native fields scalar": {
+        "forms installed": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "forms absent": {
+            "refused": "Form fields must be a list of {field, required} entries."
+        },
+        "fromConfig": "Form fields must be a list of {field, required} entries."
+    },
+    "native fields string": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": false
+                    },
+                    {
+                        "field": "locked",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"locked\" of schema \"case\" cannot be asked for: the schema marks it read-only, so a submitted value would be refused."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": true
+                    },
+                    {
+                        "field": "note",
+                        "required": false
+                    },
+                    {
+                        "field": "locked",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"locked\" of schema \"case\" cannot be asked for: the schema marks it read-only, so a submitted value would be refused."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": true
+                },
+                {
+                    "field": "note",
+                    "required": false
+                },
+                {
+                    "field": "locked",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native hidden field": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "hidden",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"hidden\" of schema \"case\" cannot be asked for: the schema marks it not visible, so no form can show it."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "hidden",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"hidden\" of schema \"case\" cannot be asked for: the schema marks it not visible, so no form can show it."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "hidden",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native missing schema": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "missing",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Schema \"missing\" does not exist."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "missing",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Schema \"missing\" does not exist."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "missing",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native no schema": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "A field form must name the subject schema its fields belong to."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "A field form must name the subject schema its fields belong to."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native nothing": {
+        "forms installed": {
+            "refused": "A field form needs a lifecycle action to inherit its fields from, or a list of fields."
+        },
+        "forms absent": {
+            "refused": "A field form needs a lifecycle action to inherit its fields from, or a list of fields."
+        },
+        "fromConfig": "A field form needs a lifecycle action to inherit its fields from, or a list of fields."
+    },
+    "native read-only field": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    },
+                    {
+                        "field": "locked",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"locked\" of schema \"case\" cannot be asked for: the schema marks it read-only, so a submitted value would be refused."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "reason",
+                        "required": false
+                    },
+                    {
+                        "field": "locked",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"locked\" of schema \"case\" cannot be asked for: the schema marks it read-only, so a submitted value would be refused."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "reason",
+                    "required": false
+                },
+                {
+                    "field": "locked",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native star only": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "",
+                        "required": true
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "",
+                        "required": true
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "",
+                    "required": true
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native undeclared field": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "ghost",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"ghost\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": null,
+                "fields": [
+                    {
+                        "field": "ghost",
+                        "required": false
+                    }
+                ],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Field \"ghost\" of schema \"case\" cannot be asked for: the schema has no such property."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": null,
+            "fields": [
+                {
+                    "field": "ghost",
+                    "required": false
+                }
+            ],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "native unknown action": {
+        "forms installed": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": "nope",
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Schema \"case\" declares no lifecycle action \"nope\"."
+        },
+        "forms absent": {
+            "form": {
+                "kind": "fields",
+                "schema": "case",
+                "action": "nope",
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "Schema \"case\" declares no lifecycle action \"nope\"."
+        },
+        "fromConfig": {
+            "kind": "fields",
+            "schema": "case",
+            "action": "nope",
+            "fields": [],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "orphaned empty values": {
+        "forms installed": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "forms absent": {
+            "form": {
+                "kind": null,
+                "schema": "",
+                "action": null,
+                "fields": [],
+                "formId": null,
+                "requireChecklist": false
+            },
+            "validate": "ok"
+        },
+        "fromConfig": {
+            "kind": null,
+            "schema": "",
+            "action": null,
+            "fields": [],
+            "formId": null,
+            "requireChecklist": false
+        }
+    },
+    "orphaned fields": {
+        "forms installed": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "forms absent": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "fromConfig": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+    },
+    "orphaned schema": {
+        "forms installed": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "forms absent": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "fromConfig": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+    },
+    "orphaned zero form id": {
+        "forms installed": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "forms absent": {
+            "refused": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+        },
+        "fromConfig": "A form was described without a kind. Set the form kind to \"fields\" or \"external\", or clear the form settings."
+    },
+    "unknown kind": {
+        "forms installed": {
+            "refused": "Form kind \"wizard\" is not one of fields, external."
+        },
+        "forms absent": {
+            "refused": "Form kind \"wizard\" is not one of fields, external."
+        },
+        "fromConfig": "Form kind \"wizard\" is not one of fields, external."
+    }
+}
