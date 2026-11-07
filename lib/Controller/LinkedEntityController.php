@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -52,7 +52,7 @@ class LinkedEntityController extends Controller {
 	 *
 	 * @param string $appName The app name
 	 * @param IRequest $request The request object
-	 * @param LinkedEntityService $linkedEntityService The linked entity service
+	 * @param LinkedEntityServiceInterface $linkedEntityService The linked entity service
 	 * @param LoggerInterface $logger Logger
 	 * @param IUserSession $userSession Active user session for caller identity
 	 * @param IGroupManager $groupManager Group manager for admin checks
@@ -60,7 +60,7 @@ class LinkedEntityController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly LinkedEntityService $linkedEntityService,
+		private readonly LinkedEntityServiceInterface $linkedEntityService,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,

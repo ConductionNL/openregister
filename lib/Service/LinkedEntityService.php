@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service integrates multiple mappers for cross-table lookups
  */
-class LinkedEntityService {
+class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * Maximum number of magic tables to scan for reverse lookups (circuit breaker).
 	 */
