@@ -30,6 +30,7 @@ namespace Unit\Service\Operations;
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapper;
+use OCA\OpenRegister\Service\Operations\JobAlertDelivery;
 use OCA\OpenRegister\Service\Operations\JobAlertService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
@@ -171,10 +172,12 @@ final class JobAlertServiceTest extends TestCase {
 		return new JobAlertService(
 			$this->runs,
 			$this->config(),
-			$this->notifications(),
-			$this->groupManager(),
 			$time,
-			$this->createMock(LoggerInterface::class)
+			new JobAlertDelivery(
+				$this->notifications(),
+				$this->groupManager(),
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 
