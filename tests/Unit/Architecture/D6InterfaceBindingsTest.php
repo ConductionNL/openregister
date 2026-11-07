@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
@@ -40,6 +42,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
@@ -74,9 +78,11 @@ final class D6InterfaceBindingsTest extends TestCase {
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
 		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
 		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
 		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
+		PortalTaskNode::class => [PortalTaskNodeInterface::class, ContractBindings::class],
 		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
 		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],

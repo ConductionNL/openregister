@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -51,18 +51,18 @@ class ContextsController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The application name.
-	 * @param IRequest $request The current request.
-	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
-	 * @param JsonLdContextService $contextService The JSON-LD context service.
+	 * @param string                        $appName        The application name.
+	 * @param IRequest                      $request        The current request.
+	 * @param RegisterMapperInterface       $registerMapper The register mapper.
+	 * @param SchemaMapperInterface         $schemaMapper   The schema mapper.
+	 * @param JsonLdContextServiceInterface $contextService The JSON-LD context service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly JsonLdContextService $contextService,
+		private readonly JsonLdContextServiceInterface $contextService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

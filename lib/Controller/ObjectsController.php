@@ -92,7 +92,7 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
@@ -6667,18 +6667,18 @@ class ObjectsController extends Controller {
 	 * nothing at all. Having none keeps the pre-existing refusal; calling a
 	 * method on null would turn a patch into a fatal.
 	 *
-	 * @return SchemaTypeConverter|null The converter.
+	 * @return SchemaTypeConverterInterface|null The converter.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
-	private function stringTypeConverter(): ?SchemaTypeConverter {
+	private function stringTypeConverter(): ?SchemaTypeConverterInterface {
 		try {
-			$converter = $this->container->get(SchemaTypeConverter::class);
+			$converter = $this->container->get(SchemaTypeConverterInterface::class);
 		} catch (NotFoundExceptionInterface|ContainerExceptionInterface $unavailable) {
 			return null;
 		}
 
-		if (($converter instanceof SchemaTypeConverter) === false) {
+		if (($converter instanceof SchemaTypeConverterInterface) === false) {
 			return null;
 		}
 
