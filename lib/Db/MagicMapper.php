@@ -7744,7 +7744,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function rowToObjectEntity(array $row): ?ObjectEntity {
-		// Check if we have the minimum required fields.
 		if (isset($row['_uuid']) === false) {
 			return null;
 		}
@@ -7752,7 +7751,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$entity = new ObjectEntity();
 		$entity->setUuid($row['_uuid']);
 
-		// Set metadata fields (register and schema are stored as strings).
+		$this->applyRowMetadata(entity: $entity, row: $row);
+		$entity->setObject($this->rowObjectData(row: $row, columnToPropertyMap: $this->rowColumnToPropertyMap(row: $row)));
+
+		return $entity;
+	}//end rowToObjectEntity()
+
+	/**
+	 * Set the metadata a row holds; register and schema are stored as strings.
+	 *
+	 * @param ObjectEntity $entity The object.
+	 * @param array        $row    The database row.
+	 *
+	 * @return void
+	 */
+	private function applyRowMetadata(ObjectEntity $entity, array $row): void {
 		if (isset($row['_register']) === true) {
 			$entity->setRegister((string)$row['_register']);
 		}
@@ -7764,82 +7777,121 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if (isset($row['_name']) === true) {
 			$entity->setName($row['_name']);
 		}
+	}//end applyRowMetadata()
 
-		// Build column-to-property mapping from schema if available.
-		// This allows us to restore original property names (e.g., 'e-mailadres').
-		// from their sanitized column names (e.g., 'e_mailadres').
-		$columnToPropertyMap = [];
-		if (isset($row['_schema']) === true) {
-			$schemaIdForMap = (int)$row['_schema'];
-			// PERF-12: reuse the memoised column→property map for this schema id
-			// instead of re-resolving the schema and rebuilding the map per row.
-			if (isset($this->rowColumnToPropertyCache[$schemaIdForMap]) === true) {
-				$columnToPropertyMap = $this->rowColumnToPropertyCache[$schemaIdForMap];
-			} else {
-				try {
-					// The find() call throws when the schema is missing; the catch below is
-					// the "not found" path, so no null test is needed here.
-					$schema = $this->schemaMapper->find($schemaIdForMap);
-
-					// BUG-DB-8: use the same disambiguated column names the write
-					// path produces (buildTableColumnsFromSchema), keyed by
-					// property name, so collision-resolved columns round-trip
-					// back to their original property instead of being lost.
-					$schemaProperties = ($schema->getProperties() ?? []);
-					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
-						// Skip metadata columns (handled separately above); a schema
-						// property whose name starts with an underscore stays.
-						if (str_starts_with((string)$propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
-							continue;
-						}
-
-						$physicalColumn = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
-						$columnToPropertyMap[$physicalColumn] = $propertyName;
-					}
-
-					$this->rowColumnToPropertyCache[$schemaIdForMap] = $columnToPropertyMap;
-				} catch (\Exception $e) {
-					// Schema not found - will fall back to column names as-is.
-					$this->logger->debug(
-						message: '[MagicMapper] Could not load schema for property mapping',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaId' => $row['_schema'],
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end if
-		}//end if
-
-		// Build the object data from non-metadata columns.
-		$objectData = [];
-		foreach ($row as $column => $value) {
-			// Skip metadata columns; a property column with the prefix is read.
-			if ((new MagicMetadataColumn())->field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
-				continue;
-			}
-
-			// Map column name back to original property name if we have a mapping.
-			$propertyName = $columnToPropertyMap[$column] ?? $column;
-
-			// Decode JSON values.
-			if (is_string($value) === true) {
-				$decoded = json_decode($value, true);
-				if (json_last_error() === JSON_ERROR_NONE) {
-					$objectData[$propertyName] = $decoded;
-					continue;
-				}
-			}
-
-			$objectData[$propertyName] = $value;
+	/**
+	 * The property each column of a row holds, memoised per schema (PERF-12).
+	 *
+	 * This restores original property names ('e-mailadres') from their
+	 * sanitized columns ('e_mailadres'). A schema that cannot be loaded leaves
+	 * the column names as they are, and is asked for again on the next row.
+	 *
+	 * @param array $row The database row.
+	 *
+	 * @return array<string, string> Property name per column.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowColumnToPropertyMap(array $row): array {
+		if (isset($row['_schema']) === false) {
+			return [];
 		}
 
-		$entity->setObject($objectData);
+		$schemaId = (int)$row['_schema'];
 
-		return $entity;
-	}//end rowToObjectEntity()
+		return ($this->rowColumnToPropertyCache[$schemaId] ?? $this->loadColumnToPropertyMap(schemaId: $schemaId));
+	}//end rowColumnToPropertyMap()
+
+	/**
+	 * Load and memoise the column map of a schema, or none when it cannot be loaded.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return array<string, string> Property name per column.
+	 */
+	private function loadColumnToPropertyMap(int $schemaId): array {
+		try {
+			$map = $this->schemaColumnToPropertyMap(schema: $this->schemaMapper->find($schemaId));
+		} catch (\Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Could not load schema for property mapping',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		$this->rowColumnToPropertyCache[$schemaId] = $map;
+
+		return $map;
+	}//end loadColumnToPropertyMap()
+
+	/**
+	 * The property of each column of a schema's table.
+	 *
+	 * BUG-DB-8: the same disambiguated column names the write path produces, so
+	 * collision-resolved columns round-trip back to their original property.
+	 * Metadata columns are left out; a schema property whose name starts with
+	 * an underscore stays.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<string, string> Property name per column.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function schemaColumnToPropertyMap(Schema $schema): array {
+		$properties = ($schema->getProperties() ?? []);
+		$map = [];
+		foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
+			if (str_starts_with((string)$propertyName, '_') === false || isset($properties[$propertyName]) === true) {
+				$map[($columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName))] = $propertyName;
+			}
+		}
+
+		return $map;
+	}//end schemaColumnToPropertyMap()
+
+	/**
+	 * The object data of a row: its non-metadata columns under their property names.
+	 *
+	 * @param array $row                 The database row.
+	 * @param array $columnToPropertyMap Property name per column.
+	 *
+	 * @return array The object data.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	private function rowObjectData(array $row, array $columnToPropertyMap): array {
+		$metadata   = new MagicMetadataColumn();
+		$objectData = [];
+		foreach ($row as $column => $value) {
+			if ($metadata->field(column: $column, columnToPropertyMap: $columnToPropertyMap) === null) {
+				$objectData[($columnToPropertyMap[$column] ?? $column)] = $this->decodedColumnValue(value: $value);
+			}
+		}
+
+		return $objectData;
+	}//end rowObjectData()
+
+	/**
+	 * A column value, decoded when it is a string holding JSON.
+	 *
+	 * @param mixed $value The stored value.
+	 *
+	 * @return mixed The value.
+	 */
+	private function decodedColumnValue(mixed $value): mixed {
+		if (is_string($value) === false) {
+			return $value;
+		}
+
+		$decoded = json_decode($value, true);
+		if (json_last_error() === JSON_ERROR_NONE) {
+			return $decoded;
+		}
+
+		return $value;
+	}//end decodedColumnValue()
 
 	/**
 	 * Check if a column exists in a database table.
