@@ -1,0 +1,574 @@
+{
+    "empty": {
+        "user": {
+            "taskData": {
+                "returned": {
+                    "title": "",
+                    "description": null,
+                    "state": "enabled",
+                    "performerType": "user",
+                    "priority": "normal",
+                    "assignee": null,
+                    "candidateUsers": null,
+                    "candidateGroups": null,
+                    "candidateRole": null,
+                    "routingStrategy": null,
+                    "routingFallback": null,
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.user-task",
+                        "flowNode": "ask",
+                        "outcomes": [],
+                        "outcomeKey": "task"
+                    }
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": ""
+                }
+            },
+            "outcomeKey": "task",
+            "renderedTitle": "",
+            "heartbeat": 15,
+            "performers": {
+                "returned": []
+            }
+        },
+        "portal": {
+            "taskData": {
+                "returned": {
+                    "title": "",
+                    "description": null,
+                    "state": "active",
+                    "performerType": "external",
+                    "priority": "normal",
+                    "assignee": "",
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.portal-task",
+                        "flowNode": "ask",
+                        "outcomeKey": "portalTask",
+                        "partyRole": "initiator",
+                        "partyReference": "",
+                        "cycle": 1,
+                        "previousTaskUuid": null,
+                        "reaskReason": null,
+                        "upload": {
+                            "required": false,
+                            "maxFiles": 1,
+                            "acceptedTypes": [],
+                            "maxSizeBytes": null
+                        }
+                    }
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "",
+                    "cycle": 1,
+                    "previousTaskUuid": null,
+                    "passedAt": null
+                }
+            },
+            "outcomeKey": "portalTask",
+            "renderedTitle": "",
+            "heartbeat": 15,
+            "uploadConstraints": {
+                "returned": {
+                    "required": false,
+                    "maxFiles": 1,
+                    "acceptedTypes": [],
+                    "maxSizeBytes": null
+                }
+            },
+            "subjectObjectUuid": {
+                "returned": ""
+            },
+            "reasonFrom": {
+                "returned": ""
+            }
+        }
+    },
+    "minimal": {
+        "user": {
+            "taskData": {
+                "returned": {
+                    "title": "Approve Ann",
+                    "description": null,
+                    "state": "active",
+                    "performerType": "user",
+                    "priority": "normal",
+                    "assignee": "alice",
+                    "candidateUsers": null,
+                    "candidateGroups": null,
+                    "candidateRole": null,
+                    "routingStrategy": null,
+                    "routingFallback": null,
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.user-task",
+                        "flowNode": "ask",
+                        "outcomes": [],
+                        "outcomeKey": "task"
+                    },
+                    "objectUuid": "u-1",
+                    "registerId": 4,
+                    "schemaId": 9
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "alice",
+                    "title": "Approve Ann"
+                }
+            },
+            "outcomeKey": "task",
+            "renderedTitle": "Approve Ann",
+            "heartbeat": 15,
+            "performers": {
+                "returned": [
+                    {
+                        "type": "user",
+                        "id": "alice"
+                    }
+                ]
+            }
+        },
+        "portal": {
+            "taskData": {
+                "returned": {
+                    "title": "Approve Ann",
+                    "description": null,
+                    "state": "active",
+                    "performerType": "external",
+                    "priority": "normal",
+                    "assignee": "",
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.portal-task",
+                        "flowNode": "ask",
+                        "outcomeKey": "portalTask",
+                        "partyRole": "initiator",
+                        "partyReference": "",
+                        "cycle": 1,
+                        "previousTaskUuid": null,
+                        "reaskReason": null,
+                        "upload": {
+                            "required": false,
+                            "maxFiles": 1,
+                            "acceptedTypes": [],
+                            "maxSizeBytes": null
+                        }
+                    },
+                    "objectUuid": "u-1",
+                    "registerId": 4,
+                    "schemaId": 9
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "Approve Ann",
+                    "cycle": 1,
+                    "previousTaskUuid": null,
+                    "passedAt": null
+                }
+            },
+            "outcomeKey": "portalTask",
+            "renderedTitle": "Approve Ann",
+            "heartbeat": 15,
+            "uploadConstraints": {
+                "returned": {
+                    "required": false,
+                    "maxFiles": 1,
+                    "acceptedTypes": [],
+                    "maxSizeBytes": null
+                }
+            },
+            "subjectObjectUuid": {
+                "returned": "u-1"
+            },
+            "reasonFrom": {
+                "returned": ""
+            }
+        }
+    },
+    "template-list": {
+        "user": {
+            "taskData": {
+                "returned": {
+                    "title": "Ann",
+                    "description": "D Ann",
+                    "state": "enabled",
+                    "performerType": "user",
+                    "priority": "high",
+                    "assignee": null,
+                    "candidateUsers": [
+                        "bob",
+                        "carol"
+                    ],
+                    "candidateGroups": [
+                        "staff",
+                        "3"
+                    ],
+                    "candidateRole": null,
+                    "routingStrategy": null,
+                    "routingFallback": null,
+                    "dueAt": "2030-01-01",
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.user-task",
+                        "flowNode": "ask",
+                        "outcomes": [
+                            "yes",
+                            "no"
+                        ],
+                        "outcomeKey": "review"
+                    },
+                    "objectUuid": "u-1",
+                    "registerId": 4,
+                    "schemaId": 9
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "Ann"
+                }
+            },
+            "outcomeKey": "review",
+            "renderedTitle": "Ann",
+            "heartbeat": 5,
+            "performers": {
+                "returned": [
+                    {
+                        "type": "user",
+                        "id": "group:a, user:b"
+                    },
+                    {
+                        "type": "user",
+                        "id": "bob, , carol"
+                    },
+                    {
+                        "type": "group",
+                        "id": "staff"
+                    }
+                ]
+            }
+        },
+        "portal": {
+            "taskData": {
+                "returned": {
+                    "title": "Ann",
+                    "description": "D Ann",
+                    "state": "active",
+                    "performerType": "external",
+                    "priority": "normal",
+                    "assignee": "",
+                    "dueAt": "2030-01-01",
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.portal-task",
+                        "flowNode": "ask",
+                        "outcomeKey": "review",
+                        "partyRole": "applicant",
+                        "partyReference": "",
+                        "cycle": 1,
+                        "previousTaskUuid": null,
+                        "reaskReason": null,
+                        "upload": {
+                            "required": true,
+                            "maxFiles": 2,
+                            "acceptedTypes": [
+                                "pdf",
+                                "image/*"
+                            ],
+                            "maxSizeBytes": null
+                        }
+                    },
+                    "objectUuid": "u-1",
+                    "registerId": 4,
+                    "schemaId": 9
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "Ann",
+                    "cycle": 1,
+                    "previousTaskUuid": null,
+                    "passedAt": null
+                }
+            },
+            "outcomeKey": "review",
+            "renderedTitle": "Ann",
+            "heartbeat": 5,
+            "uploadConstraints": {
+                "returned": {
+                    "required": true,
+                    "maxFiles": 2,
+                    "acceptedTypes": [
+                        "pdf",
+                        "image/*"
+                    ],
+                    "maxSizeBytes": null
+                }
+            },
+            "subjectObjectUuid": {
+                "returned": "u-1"
+            },
+            "reasonFrom": {
+                "returned": ""
+            }
+        }
+    },
+    "no-anchor": {
+        "user": {
+            "taskData": {
+                "returned": {
+                    "title": "T",
+                    "description": null,
+                    "state": "enabled",
+                    "performerType": "user",
+                    "priority": "normal",
+                    "assignee": null,
+                    "candidateUsers": null,
+                    "candidateGroups": null,
+                    "candidateRole": null,
+                    "routingStrategy": null,
+                    "routingFallback": null,
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.user-task",
+                        "flowNode": "ask",
+                        "outcomes": [],
+                        "outcomeKey": "task"
+                    }
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "T"
+                }
+            },
+            "outcomeKey": "task",
+            "renderedTitle": "T",
+            "heartbeat": 60,
+            "performers": {
+                "returned": []
+            }
+        },
+        "portal": {
+            "taskData": {
+                "returned": {
+                    "title": "T",
+                    "description": null,
+                    "state": "active",
+                    "performerType": "external",
+                    "priority": "normal",
+                    "assignee": "",
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.portal-task",
+                        "flowNode": "ask",
+                        "outcomeKey": "portalTask",
+                        "partyRole": "initiator",
+                        "partyReference": "",
+                        "cycle": 1,
+                        "previousTaskUuid": null,
+                        "reaskReason": null,
+                        "upload": {
+                            "required": false,
+                            "maxFiles": 1,
+                            "acceptedTypes": [],
+                            "maxSizeBytes": null
+                        }
+                    }
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "T",
+                    "cycle": 1,
+                    "previousTaskUuid": null,
+                    "passedAt": null
+                }
+            },
+            "outcomeKey": "portalTask",
+            "renderedTitle": "T",
+            "heartbeat": 60,
+            "uploadConstraints": {
+                "returned": {
+                    "required": false,
+                    "maxFiles": 1,
+                    "acceptedTypes": [],
+                    "maxSizeBytes": null
+                }
+            },
+            "subjectObjectUuid": {
+                "returned": ""
+            },
+            "reasonFrom": {
+                "returned": ""
+            }
+        }
+    },
+    "id-only": {
+        "user": {
+            "taskData": {
+                "returned": {
+                    "title": "T",
+                    "description": null,
+                    "state": "enabled",
+                    "performerType": "user",
+                    "priority": "normal",
+                    "assignee": null,
+                    "candidateUsers": null,
+                    "candidateGroups": null,
+                    "candidateRole": null,
+                    "routingStrategy": null,
+                    "routingFallback": null,
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.user-task",
+                        "flowNode": "ask",
+                        "outcomes": [],
+                        "outcomeKey": "task"
+                    },
+                    "objectUuid": "i-9"
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "T"
+                }
+            },
+            "outcomeKey": "task",
+            "renderedTitle": "T",
+            "heartbeat": 30,
+            "performers": {
+                "returned": []
+            }
+        },
+        "portal": {
+            "taskData": {
+                "returned": {
+                    "title": "T",
+                    "description": null,
+                    "state": "active",
+                    "performerType": "external",
+                    "priority": "normal",
+                    "assignee": "",
+                    "dueAt": null,
+                    "expiresAt": null,
+                    "onTimeout": null,
+                    "onReject": null,
+                    "metadata": {
+                        "flowNodeType": "openregister.portal-task",
+                        "flowNode": "ask",
+                        "outcomeKey": "portalTask",
+                        "partyRole": "initiator",
+                        "partyReference": "",
+                        "cycle": 1,
+                        "previousTaskUuid": null,
+                        "reaskReason": null,
+                        "upload": {
+                            "required": false,
+                            "maxFiles": 1,
+                            "acceptedTypes": [],
+                            "maxSizeBytes": null
+                        }
+                    },
+                    "objectUuid": "i-9"
+                }
+            },
+            "slotValues": {
+                "returned": {
+                    "taskUuid": "t-1",
+                    "askedAt": "<now>",
+                    "advance": 0,
+                    "assignee": "",
+                    "title": "T",
+                    "cycle": 1,
+                    "previousTaskUuid": null,
+                    "passedAt": null
+                }
+            },
+            "outcomeKey": "portalTask",
+            "renderedTitle": "T",
+            "heartbeat": 30,
+            "uploadConstraints": {
+                "returned": {
+                    "required": false,
+                    "maxFiles": 1,
+                    "acceptedTypes": [],
+                    "maxSizeBytes": null
+                }
+            },
+            "subjectObjectUuid": {
+                "returned": "i-9"
+            },
+            "reasonFrom": {
+                "returned": ""
+            }
+        }
+    }
+}

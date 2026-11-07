@@ -164,6 +164,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 import TabErrorState from '../shared/TabErrorState.vue'
+import { fetchFileTab } from './fileTabFetch.js'
 
 export default {
 	name: 'ExtractionTab',
@@ -302,35 +303,15 @@ export default {
 		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
-			this.loading = true
-			this.error = false
-			this.errorMessage = ''
-
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/files/{fileId}/extraction-status',
-					{
-						fileId: this.fileId,
-					},
-				)
-				const response = await axios.get(url)
-
-				if (response.data?.success) {
-					this.status = response.data.data
-				} else {
-					this.error = true
-					this.errorMessage =
-						response.data?.error || t('openregister', 'Unknown error')
-				}
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message
-				console.error(
-					'[ExtractionTab] Failed to fetch extraction status:',
-					err,
-				)
-			} finally {
-				this.loading = false
+			const failure = await fetchFileTab(
+				this,
+				'/apps/openregister/api/files/{fileId}/extraction-status',
+				(data) => {
+					this.status = data
+				},
+			)
+			if (failure) {
+				console.error('[ExtractionTab] Failed to fetch extraction status:', failure)
 			}
 		},
 

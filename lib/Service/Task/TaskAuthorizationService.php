@@ -37,10 +37,11 @@ namespace OCA\OpenRegister\Service\Task;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
+use OCA\OpenRegister\Service\Task\Authorization\FailClosedGroups;
+use OCA\OpenRegister\Service\Task\Authorization\TaskVerbAttempt;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
 use OCP\IGroupManager;
-use Throwable;
 
 /**
  * Decides who may run which lifecycle verb on which task.
@@ -97,6 +98,14 @@ class TaskAuthorizationService {
 	 */
 	private const ANSWERING_VERBS = ['complete', 'resolve', 'checklist'];
 
+
+	/**
+	 * The group backend, read fail-closed.
+	 *
+	 * @var FailClosedGroups
+	 */
+	private readonly FailClosedGroups $groups;
+
 	/**
 	 * Constructor.
 	 *
@@ -109,7 +118,7 @@ class TaskAuthorizationService {
 	 *                                         DENIES — the fail-closed
 	 *                                         direction, same as
 	 *                                         {@see \OCA\OpenRegister\Service\Flow\FlowRunAssignee}.
-	  * @param PrincipalResolverRegistry|null $principals Resolves a TYPED candidate
+	 * @param PrincipalResolverRegistry|null $principals Resolves a TYPED candidate
 	 *                             reference to whoever it means right now, so this
 	 *                             guard and the run guard cannot disagree. Absent,
 	 *                             a typed candidate is not affirmed.
@@ -117,9 +126,10 @@ class TaskAuthorizationService {
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
-		private readonly ?IGroupManager $groupManager = null,
+		?IGroupManager $groupManager = null,
 		private readonly ?PrincipalResolverRegistry $principals = null,
 	) {
+		$this->groups = new FailClosedGroups(groupManager: $groupManager);
 
 	}//end __construct()
 
@@ -142,54 +152,25 @@ class TaskAuthorizationService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function assertMay(string $verb, Task $task, ?string $uid): void {
-		$uid = $this->assertDeterminable(verb: $verb, task: $task, uid: $uid);
+		$attempt = new TaskVerbAttempt(verb: $verb, task: $task, uid: $this->identityOf(verb: $verb, uid: $uid));
+		$this->assertKnownPerformer(attempt: $attempt);
 
 		// An EXTERNAL task is decided by its own rule set, BEFORE the
 		// administrator bypass: the matched party is the only identity that
 		// may answer, and "an administrator acting through the seam" is one
 		// of the callers the spec names as denied.
 		if ((string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL) {
-			$this->assertExternal(verb: $verb, task: $task, uid: $uid);
+			$this->assertExternal(attempt: $attempt);
 			return;
 		}
 
-		if ($this->isAdmin(uid: $uid) === true) {
+		// `create` is the one verb carrying no per-task privilege beyond an
+		// identity: there is no task yet to have a relationship with.
+		if ($this->groups->isAdmin(uid: $attempt->uid) === true || $verb === 'create') {
 			return;
 		}
 
-		// The one verb carrying no per-task privilege beyond an identity:
-		// there is no task yet to have a relationship with.
-		if ($verb === 'create') {
-			return;
-		}
-
-		// An unknown verb has no rule, so it has no permission.
-		if (array_key_exists($verb, self::RULES) === false) {
-			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: no authorization rule exists for it.", $verb)
-			);
-		}
-
-		if (self::RULES[$verb] === 'assertPoolMember') {
-			$this->assertPoolMember(verb: $verb, task: $task, uid: $uid);
-			return;
-		}
-
-		if (self::RULES[$verb] === 'assertAssignee') {
-			$this->assertAssignee(verb: $verb, task: $task, uid: $uid);
-			return;
-		}
-
-		if (self::RULES[$verb] === 'assertAssigneeOrPoolMember') {
-			if (trim((string)$task->getAssignee()) === $uid) {
-				return;
-			}
-
-			$this->assertPoolMember(verb: $verb, task: $task, uid: $uid);
-			return;
-		}
-
-		$this->assertRequester(verb: $verb, task: $task, uid: $uid);
+		$this->assertRule(attempt: $attempt);
 	}//end assertMay()
 
 	/**
@@ -214,26 +195,27 @@ class TaskAuthorizationService {
 			return false;
 		}
 
-		if ($this->isAdmin(uid: $uid) === true) {
-			return true;
-		}
-
-		if (trim((string)$task->getAssignee()) === $uid || trim((string)$task->getRequester()) === $uid) {
-			return true;
-		}
-
-		if (in_array($uid, ($task->getWatchers() ?? []), true) === true) {
-			return true;
-		}
-
-		try {
-			$this->assertPoolMember(verb: 'read', task: $task, uid: $uid);
-
-			return true;
-		} catch (TaskAccessDeniedException) {
-			return false;
-		}
+		return $this->readsAs(task: $task, uid: $uid);
 	}//end mayRead()
+
+	/**
+	 * Whether an identified reader may read: administrator, assignee,
+	 * requester, watcher, or candidate-pool member, asked in that order.
+	 *
+	 * @param TaskInterface $task The task read.
+	 * @param string        $uid  The non-empty reading identity.
+	 *
+	 * @return boolean True when one relationship admits the reader.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function readsAs(TaskInterface $task, string $uid): bool {
+		if ($this->groups->isAdmin(uid: $uid) === true || $this->isRelated(task: $task, uid: $uid) === true) {
+			return true;
+		}
+
+		return $this->isPoolMember(attempt: new TaskVerbAttempt(verb: 'read', task: $task, uid: $uid));
+	}//end readsAs()
 
 	/**
 	 * Whether a uid is an administrator, for callers that must branch on it.
@@ -247,68 +229,149 @@ class TaskAuthorizationService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function isAdministrator(?string $uid): bool {
-		if ($uid === null || trim($uid) === '') {
-			return false;
-		}
-
-		return $this->isAdmin(uid: $uid);
+		return $uid !== null && trim($uid) !== '' && $this->groups->isAdmin(uid: $uid) === true;
 	}//end isAdministrator()
 
 	/**
-	 * Whether a uid is an administrator. Fail-closed: no backend, no admin.
+	 * Whether the reader is the assignee, the requester or a watcher.
 	 *
-	 * @param string $uid The acting identity.
+	 * @param TaskInterface $task The task read.
+	 * @param string        $uid  The non-empty reading identity.
 	 *
-	 * @return boolean True only when the group backend affirms it.
+	 * @return boolean True when one of the three relationships holds.
 	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
-	private function isAdmin(string $uid): bool {
-		if ($this->groupManager === null) {
-			return false;
-		}
-
-		try {
-			return $this->groupManager->isAdmin($uid);
-		} catch (Throwable) {
-			// An unavailable backend cannot GRANT anything.
-			return false;
-		}
-	}//end isAdmin()
+	private function isRelated(TaskInterface $task, string $uid): bool {
+		return trim((string)$task->getAssignee()) === $uid
+			|| trim((string)$task->getRequester()) === $uid
+			|| in_array($uid, ($task->getWatchers() ?? []), true) === true;
+	}//end isRelated()
 
 	/**
-	 * The two checks every verb makes before any rule: an acting identity
-	 * exists, and the performer type is in the vocabulary. Anything else is
-	 * UNDETERMINABLE, which is a denial — adding a type to PERFORMER_TYPES is
-	 * what admits it everywhere at once.
+	 * Whether the attempt's caller is in the candidate pool; any denial,
+	 * including an unresolvable role, answers false.
 	 *
-	 * @param string $verb The verb being attempted.
-	 * @param Task $task The task acted on.
-	 * @param string|null $uid The acting identity, or null when there is none.
+	 * @param TaskVerbAttempt $attempt The attempt.
 	 *
-	 * @return string The non-empty acting identity.
+	 * @return boolean True when the pool admits the caller.
 	 *
-	 * @throws TaskAccessDeniedException When anonymous or undeterminable.
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 */
+	private function isPoolMember(TaskVerbAttempt $attempt): bool {
+		try {
+			$this->assertPoolMember(attempt: $attempt);
+
+			return true;
+		} catch (TaskAccessDeniedException) {
+			return false;
+		}
+	}//end isPoolMember()
+
+	/**
+	 * The first check every verb makes: an acting identity exists. No verb
+	 * is anonymous, and no verb is reachable by uuid alone.
+	 *
+	 * @param string      $verb The verb being attempted.
+	 * @param string|null $uid  The acting identity, or null when there is none.
+	 *
+	 * @return string The non-empty acting identity (as given, not trimmed).
+	 *
+	 * @throws TaskAccessDeniedException When anonymous.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function assertDeterminable(string $verb, Task $task, ?string $uid): string {
-		// No verb is anonymous, and no verb is reachable by uuid alone.
+	private function identityOf(string $verb, ?string $uid): string {
 		if ($uid === null || trim($uid) === '') {
 			throw new TaskAccessDeniedException(
 				message: sprintf("Verb '%s' denied: no acting identity.", $verb)
 			);
 		}
 
-		$performerType = (string)$task->getPerformerType();
+		return $uid;
+	}//end identityOf()
+
+	/**
+	 * The second check every verb makes: the performer type is in the
+	 * vocabulary. Anything else is UNDETERMINABLE, which is a denial —
+	 * adding a type to PERFORMER_TYPES is what admits it everywhere at once.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When the performer type is unknown.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function assertKnownPerformer(TaskVerbAttempt $attempt): void {
+		$performerType = (string)$attempt->task->getPerformerType();
 		if (in_array($performerType, Task::PERFORMER_TYPES, true) === false) {
 			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.", $verb, $performerType)
+				message: sprintf(
+					"Verb '%s' denied: performer type '%s' is unknown, so authorization cannot be determined.",
+					$attempt->verb,
+					$performerType
+				)
 			);
 		}
+	}//end assertKnownPerformer()
 
-		return $uid;
-	}//end assertDeterminable()
+	/**
+	 * Apply the verb's rule from RULES; an unknown verb has no rule, so it
+	 * has no permission.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When denied.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function assertRule(TaskVerbAttempt $attempt): void {
+		if (array_key_exists($attempt->verb, self::RULES) === false) {
+			throw new TaskAccessDeniedException(message: sprintf("Verb '%s' denied: no authorization rule exists for it.", $attempt->verb));
+		}
+
+		$rule = self::RULES[$attempt->verb];
+		if ($rule === 'assertPoolMember') {
+			$this->assertPoolMember(attempt: $attempt);
+			return;
+		}
+
+		if ($rule === 'assertAssignee') {
+			$this->assertAssignee(attempt: $attempt);
+			return;
+		}
+
+		$this->assertRequesterRule(attempt: $attempt, rule: $rule);
+	}//end assertRule()
+
+	/**
+	 * The two remaining rules: assignee-or-pool (edit) and requester.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
+	 * @param string          $rule    The rule RULES names for the verb.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When denied.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function assertRequesterRule(TaskVerbAttempt $attempt, string $rule): void {
+		if ($rule !== 'assertAssigneeOrPoolMember') {
+			$this->assertRequester(attempt: $attempt);
+			return;
+		}
+
+		if (trim((string)$attempt->task->getAssignee()) === $attempt->uid) {
+			return;
+		}
+
+		$this->assertPoolMember(attempt: $attempt);
+	}//end assertRequesterRule()
 
 	/**
 	 * The rule set of an external (portal party) task.
@@ -326,9 +389,7 @@ class TaskAuthorizationService {
 	 * rule, administrator included, because withdrawing an ask is the
 	 * caseworker's act, not an answer.
 	 *
-	 * @param string $verb The verb being attempted.
-	 * @param Task $task The external task.
-	 * @param string $uid The acting identity (a party reference, or a uid).
+	 * @param TaskVerbAttempt $attempt The attempt on an external task.
 	 *
 	 * @return void
 	 *
@@ -336,39 +397,73 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
-	private function assertExternal(string $verb, Task $task, string $uid): void {
-		if ($verb === 'create') {
+	private function assertExternal(TaskVerbAttempt $attempt): void {
+		if ($attempt->verb === 'create') {
 			return;
 		}
 
-		if (in_array($verb, self::REFUSED_FOR_EXTERNAL, true) === true) {
+		$this->refuseExternalPooling(attempt: $attempt);
+
+		if (in_array($attempt->verb, self::ANSWERING_VERBS, true) === true) {
+			$this->assertMatchedParty(attempt: $attempt);
+			return;
+		}
+
+		$this->assertExternalCancel(attempt: $attempt);
+	}//end assertExternal()
+
+	/**
+	 * Refuse the pooling, mandate and assignment verbs on an external task.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt on an external task.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When the verb is one of REFUSED_FOR_EXTERNAL.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	private function refuseExternalPooling(TaskVerbAttempt $attempt): void {
+		if (in_array($attempt->verb, self::REFUSED_FOR_EXTERNAL, true) === true) {
 			throw new TaskAccessDeniedException(
 				message: sprintf(
 					"Verb '%s' refused: performer type '%s' has no candidate pool and no mandate model; cancel or re-ask instead.",
-					$verb,
+					$attempt->verb,
+					Task::PERFORMER_EXTERNAL
+				)
+			);
+		}
+	}//end refuseExternalPooling()
+
+	/**
+	 * `cancel` on an external task: administrator or requester. Any other
+	 * verb has no rule on this performer type.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt on an external task.
+	 *
+	 * @return void
+	 *
+	 * @throws TaskAccessDeniedException When denied.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
+	 */
+	private function assertExternalCancel(TaskVerbAttempt $attempt): void {
+		if ($attempt->verb !== 'cancel') {
+			throw new TaskAccessDeniedException(
+				message: sprintf(
+					"Verb '%s' denied: no authorization rule exists for it on performer type '%s'.",
+					$attempt->verb,
 					Task::PERFORMER_EXTERNAL
 				)
 			);
 		}
 
-		if (in_array($verb, self::ANSWERING_VERBS, true) === true) {
-			$this->assertMatchedParty(verb: $verb, task: $task, uid: $uid);
+		if ($this->groups->isAdmin(uid: $attempt->uid) === true) {
 			return;
 		}
 
-		if ($verb === 'cancel') {
-			if ($this->isAdmin(uid: $uid) === true) {
-				return;
-			}
-
-			$this->assertRequester(verb: $verb, task: $task, uid: $uid);
-			return;
-		}
-
-		throw new TaskAccessDeniedException(
-			message: sprintf("Verb '%s' denied: no authorization rule exists for it on performer type '%s'.", $verb, Task::PERFORMER_EXTERNAL)
-		);
-	}//end assertExternal()
+		$this->assertRequester(attempt: $attempt);
+	}//end assertExternalCancel()
 
 	/**
 	 * The caller must BE the stored party reference, as a whole.
@@ -378,9 +473,7 @@ class TaskAuthorizationService {
 	 * Only a whole-string match of two party references admits; there is no
 	 * administrator bypass and no on-behalf path.
 	 *
-	 * @param string $verb The verb, for the denial message.
-	 * @param Task $task The external task.
-	 * @param string $uid The acting identity.
+	 * @param TaskVerbAttempt $attempt The attempt on an external task.
 	 *
 	 * @return void
 	 *
@@ -388,15 +481,15 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
-	private function assertMatchedParty(string $verb, Task $task, string $uid): void {
-		$party = trim((string)$task->getAssignee());
+	private function assertMatchedParty(TaskVerbAttempt $attempt): void {
+		$party = trim((string)$attempt->task->getAssignee());
 		if ($party === ''
 			|| str_starts_with($party, Task::EXTERNAL_PARTY_PREFIX) === false
-			|| str_starts_with($uid, Task::EXTERNAL_PARTY_PREFIX) === false
-			|| hash_equals($party, $uid) === false
+			|| str_starts_with($attempt->uid, Task::EXTERNAL_PARTY_PREFIX) === false
+			|| hash_equals($party, $attempt->uid) === false
 		) {
 			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: only the matched portal subject may answer an external task.", $verb)
+				message: sprintf("Verb '%s' denied: only the matched portal subject may answer an external task.", $attempt->verb)
 			);
 		}
 	}//end assertMatchedParty()
@@ -408,9 +501,7 @@ class TaskAuthorizationService {
 	 * the delegate (recording both identities), so the delegate then IS the
 	 * assignee. There is no path where a non-assignee completes.
 	 *
-	 * @param string $verb The verb, for the denial message.
-	 * @param Task $task The task acted on.
-	 * @param string $uid The acting identity.
+	 * @param TaskVerbAttempt $attempt The attempt.
 	 *
 	 * @return void
 	 *
@@ -418,11 +509,11 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function assertAssignee(string $verb, Task $task, string $uid): void {
-		$assignee = trim((string)$task->getAssignee());
-		if ($assignee === '' || $assignee !== $uid) {
+	private function assertAssignee(TaskVerbAttempt $attempt): void {
+		$assignee = trim((string)$attempt->task->getAssignee());
+		if ($assignee === '' || $assignee !== $attempt->uid) {
 			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: only the current assignee may perform it.", $verb)
+				message: sprintf("Verb '%s' denied: only the current assignee may perform it.", $attempt->verb)
 			);
 		}
 	}//end assertAssignee()
@@ -430,9 +521,7 @@ class TaskAuthorizationService {
 	/**
 	 * The caller must be the task's requester.
 	 *
-	 * @param string $verb The verb, for the denial message.
-	 * @param Task $task The task acted on.
-	 * @param string $uid The acting identity.
+	 * @param TaskVerbAttempt $attempt The attempt.
 	 *
 	 * @return void
 	 *
@@ -440,11 +529,11 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function assertRequester(string $verb, Task $task, string $uid): void {
-		$requester = trim((string)$task->getRequester());
-		if ($requester === '' || $requester !== $uid) {
+	private function assertRequester(TaskVerbAttempt $attempt): void {
+		$requester = trim((string)$attempt->task->getRequester());
+		if ($requester === '' || $requester !== $attempt->uid) {
 			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: only the requester or an administrator may perform it.", $verb)
+				message: sprintf("Verb '%s' denied: only the requester or an administrator may perform it.", $attempt->verb)
 			);
 		}
 	}//end assertRequester()
@@ -458,9 +547,14 @@ class TaskAuthorizationService {
 	 * role naming a group that does not exist denies NAMING THE ROLE —
 	 * never "no check applicable".
 	 *
-	 * @param string $verb The verb, for the denial message.
-	 * @param TaskInterface $task The task acted on.
-	 * @param string $uid The acting identity.
+	 * 🔑 THE SAME PATH THE RUN GUARD TAKES runs last: a candidate entry that
+	 * names its own type — a position, a function, a case role — is resolved
+	 * by whichever app owns that concept, exactly as `FlowRunAssignee` does
+	 * it. Two guards over one question is how they come to disagree. It runs
+	 * AFTER the three legacy branches so nothing they already admit can be
+	 * narrowed by it.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
 	 *
 	 * @return void
 	 *
@@ -468,157 +562,128 @@ class TaskAuthorizationService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
-	private function assertPoolMember(string $verb, TaskInterface $task, string $uid): void {
-		$users = ($task->getCandidateUsers() ?? []);
-		if (in_array($uid, $users, true) === true) {
-			return;
-		}
-
-		$groups = ($task->getCandidateGroups() ?? []);
-		foreach ($groups as $groupId) {
-			// A typed `{type, id}` entry is the typed branch's to resolve below,
-			// never a bare group name.
-			if (is_array($groupId) === true) {
-				continue;
-			}
-
-			if ($this->isInGroup(uid: $uid, groupId: (string)$groupId) === true) {
-				return;
-			}
-		}
-
-		$role = trim((string)$task->getCandidateRole());
-		if ($role !== '') {
-			$this->assertRoleResolvable(verb: $verb, role: $role);
-			if ($this->isInGroup(uid: $uid, groupId: $role) === true) {
-				return;
-			}
-		}
-
-		// 🔑 THE SAME PATH THE RUN GUARD TAKES. A candidate entry that names
-		// its own type — a position, a function, a case role — is resolved by
-		// whichever app owns that concept, exactly as `FlowRunAssignee` does
-		// it. Two guards over one question is how they come to disagree, and a
-		// disagreement here means a task somebody can complete and cannot see,
-		// or the reverse.
-		//
-		// It runs AFTER the three legacy branches so nothing they already
-		// admit can be narrowed by it.
-		if ($this->matchesTypedCandidate(task: $task, uid: $uid) === true) {
+	private function assertPoolMember(TaskVerbAttempt $attempt): void {
+		if ($this->isNamedOrInGroup(attempt: $attempt) === true
+			|| $this->isRoleMember(attempt: $attempt) === true
+			|| $this->matchesTypedCandidate(attempt: $attempt) === true
+		) {
 			return;
 		}
 
 		throw new TaskAccessDeniedException(
-			message: sprintf("Verb '%s' denied: the caller is not in the task's candidate pool.", $verb)
+			message: sprintf("Verb '%s' denied: the caller is not in the task's candidate pool.", $attempt->verb)
 		);
 	}//end assertPoolMember()
 
 	/**
+	 * Whether the caller is named in `candidate_users` or in one of `candidate_groups`.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
+	 *
+	 * @return boolean True when named or a member.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function isNamedOrInGroup(TaskVerbAttempt $attempt): bool {
+		if (in_array($attempt->uid, ($attempt->task->getCandidateUsers() ?? []), true) === true) {
+			return true;
+		}
+
+		foreach (($attempt->task->getCandidateGroups() ?? []) as $groupId) {
+			// A typed `{type, id}` entry is the typed branch's to resolve, never a bare group name.
+			if (is_array($groupId) === true) {
+				continue;
+			}
+
+			if ($this->groups->isInGroup(uid: $attempt->uid, groupId: (string)$groupId) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isNamedOrInGroup()
+
+	/**
+	 * Whether the caller is in the group named by `candidate_role`; a role
+	 * that does not RESOLVE to a group denies naming the role.
+	 *
+	 * @param TaskVerbAttempt $attempt The attempt.
+	 *
+	 * @return boolean True when a role is set, resolves and has the caller.
+	 *
+	 * @throws TaskAccessDeniedException When the role cannot be resolved.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 */
+	private function isRoleMember(TaskVerbAttempt $attempt): bool {
+		$role = trim((string)$attempt->task->getCandidateRole());
+		if ($role === '') {
+			return false;
+		}
+
+		$problem = $this->groups->roleProblem(role: $role);
+		if ($problem !== null) {
+			throw new TaskAccessDeniedException(message: sprintf("Verb '%s' denied: %s", $attempt->verb, $problem));
+		}
+
+		return $this->groups->isInGroup(uid: $attempt->uid, groupId: $role);
+	}//end isRoleMember()
+
+	/**
 	 * Whether a TYPED candidate reference resolves to this caller.
 	 *
-	 * Only entries that carry an explicit type are considered. A bare string
-	 * has already been read by the legacy branches above, under the wider
-	 * meaning every stored task was written against.
+	 * Without a resolver a typed candidate cannot be affirmed, so it is not
+	 * affirmed (fail closed, like every other branch here).
 	 *
-	 * @param TaskInterface   $task The task acted on.
-	 * @param string $uid  The acting identity.
+	 * @param TaskVerbAttempt $attempt The attempt.
 	 *
 	 * @return boolean True when a typed candidate resolves to the caller.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::from()` and
-	 * `listFrom()` are NAMED CONSTRUCTORS on a value object, which is the
-	 * canonical PHP idiom for one and is indistinguishable to this rule from a
-	 * static call into a service. Injecting a reader for a value object would
-	 * be worse design chosen by a linter: the type has no dependencies, no
-	 * state and nothing to stub.
 	 */
-	private function matchesTypedCandidate(TaskInterface $task, string $uid): bool {
+	private function matchesTypedCandidate(TaskVerbAttempt $attempt): bool {
 		if ($this->principals === null) {
-			// Fail closed, like every other branch here: without a resolver a
-			// typed candidate cannot be affirmed, so it is not affirmed.
 			return false;
 		}
 
+		$typed = $this->typedCandidates(task: $attempt->task);
+		if ($typed === []) {
+			return false;
+		}
+
+		return in_array($attempt->uid, $this->principals->resolveAll(references: $typed), true);
+	}//end matchesTypedCandidate()
+
+	/**
+	 * The candidate entries that carry an explicit type.
+	 *
+	 * A bare string has already been read by the legacy branches, under the
+	 * wider meaning every stored task was written against; taking it again
+	 * here as the default type would widen the pool rather than extend it.
+	 *
+	 * @param TaskInterface $task The task acted on.
+	 *
+	 * @return array<int, PrincipalReference> The typed references.
+	 *
+	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::listFrom()` is a
+	 * NAMED CONSTRUCTOR on a value object, which is the canonical PHP idiom for
+	 * one and is indistinguishable to this rule from a static call into a
+	 * service. The type has no dependencies, no state and nothing to stub.
+	 */
+	private function typedCandidates(TaskInterface $task): array {
 		$typed = [];
-		$fields = [
-			($task->getCandidateUsers() ?? []),
-			($task->getCandidateGroups() ?? []),
-			[$task->getCandidateRole()],
-		];
+		$fields = [($task->getCandidateUsers() ?? []), ($task->getCandidateGroups() ?? []), [$task->getCandidateRole()]];
 
 		foreach ($fields as $field) {
 			foreach (PrincipalReference::listFrom(value: array_values(array_filter($field))) as $reference) {
-				// A bare entry read as the default type is the legacy reading,
-				// already applied above; taking it again here would widen the
-				// pool rather than extend it.
 				if ($reference->type !== PrincipalReference::DEFAULT_TYPE) {
 					$typed[] = $reference;
 				}
 			}
 		}
 
-		if ($typed === []) {
-			return false;
-		}
-
-		return in_array($uid, $this->principals->resolveAll(references: $typed), true);
-	}//end matchesTypedCandidate()
-
-	/**
-	 * Membership through the group backend, denying when it is absent.
-	 *
-	 * @param string $uid The acting identity.
-	 * @param string $groupId The group to test.
-	 *
-	 * @return boolean True only when the backend affirms membership.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	private function isInGroup(string $uid, string $groupId): bool {
-		if ($this->groupManager === null || $groupId === '') {
-			return false;
-		}
-
-		try {
-			return $this->groupManager->isInGroup($uid, $groupId);
-		} catch (Throwable) {
-			return false;
-		}
-	}//end isInGroup()
-
-	/**
-	 * A role must RESOLVE — to the group of the same name — or the decision
-	 * is undeterminable and denies naming the role.
-	 *
-	 * @param string $verb The verb, for the denial message.
-	 * @param string $role The role name.
-	 *
-	 * @return void
-	 *
-	 * @throws TaskAccessDeniedException When the role cannot be resolved.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 */
-	private function assertRoleResolvable(string $verb, string $role): void {
-		if ($this->groupManager === null) {
-			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: role '%s' cannot be resolved because no group backend is available.", $verb, $role)
-			);
-		}
-
-		$exists = false;
-		try {
-			$exists = $this->groupManager->groupExists($role);
-		} catch (Throwable) {
-			$exists = false;
-		}
-
-		if ($exists === false) {
-			throw new TaskAccessDeniedException(
-				message: sprintf("Verb '%s' denied: role '%s' does not resolve to any group.", $verb, $role)
-			);
-		}
-	}//end assertRoleResolvable()
+		return $typed;
+	}//end typedCandidates()
 }//end class

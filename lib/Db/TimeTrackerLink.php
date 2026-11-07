@@ -68,6 +68,8 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class TimeTrackerLink extends Entity implements JsonSerializable {
+	use ObjectLinkTypesTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The object uuid.
@@ -165,9 +167,7 @@ class TimeTrackerLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'objectUuid', type: 'string');
-		$this->addType(fieldName: 'registerId', type: 'integer');
-		$this->addType(fieldName: 'schemaId', type: 'integer');
+		$this->addObjectLinkTypes();
 		$this->addType(fieldName: 'entryType', type: 'string');
 		$this->addType(fieldName: 'clientId', type: 'string');
 		$this->addType(fieldName: 'taskId', type: 'string');
@@ -179,28 +179,4 @@ class TimeTrackerLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 	}//end __construct()
-
-	/**
-	 * JSON serialization.
-	 *
-	 * @return array<string,mixed>
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'objectUuid' => $this->objectUuid,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'entryType' => $this->entryType,
-			'clientId' => $this->clientId,
-			'taskId' => $this->taskId,
-			'timeId' => $this->timeId,
-			'name' => $this->name,
-			'duration' => $this->duration,
-			'billable' => $this->billable,
-			'startedAt' => $this->startedAt?->format(DateTime::ATOM),
-			'linkedBy' => $this->linkedBy,
-			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
-		];
-	}//end jsonSerialize()
 }//end class

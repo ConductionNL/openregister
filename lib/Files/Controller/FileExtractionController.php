@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
@@ -77,9 +77,9 @@ class FileExtractionController extends Controller {
 	/**
 	 * Chunk mapper for text chunks
 	 *
-	 * @var ChunkMapper
+	 * @var ChunkIndexOverviewInterface
 	 */
-	private readonly ChunkMapper $chunkMapper;
+	private readonly ChunkIndexOverviewInterface $chunkMapper;
 
 	/**
 	 * Entity relation mapper

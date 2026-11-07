@@ -60,6 +60,7 @@ use OCP\AppFramework\Db\Entity;
  */
 class BulkJobMember extends Entity implements JsonSerializable {
 	use HydrateBySettersTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The action would apply, or did apply, to this member.
@@ -204,27 +205,4 @@ class BulkJobMember extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'updated', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised member.
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'jobId' => $this->jobId,
-			'objectUuid' => $this->objectUuid,
-			'outcome' => $this->outcome,
-			'reason' => $this->reason,
-			'schemaVersion' => $this->schemaVersion,
-			'priorValues' => $this->priorValues,
-			'appliedValues' => $this->appliedValues,
-			'addedAtCommit' => $this->addedAtCommit,
-			'appliedAt' => $this->appliedAt?->format(DateTime::ATOM),
-			'created' => $this->created?->format(DateTime::ATOM),
-			'updated' => $this->updated?->format(DateTime::ATOM),
-		];
-
-	}//end jsonSerialize()
 }//end class

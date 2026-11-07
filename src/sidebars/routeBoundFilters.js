@@ -6,6 +6,7 @@
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
+import eventBus from '../eventBus.js'
 import { queriesEqual } from '../services/routeQuery.js'
 import { registerStore, schemaStore } from '../store/store.js'
 
@@ -47,6 +48,58 @@ export function routeBoundFilters(path) {
 		},
 
 		methods: {
+			/**
+			 * Start loading the register and schema lists when they are still empty.
+			 *
+			 * @spec exclude Lifecycle plumbing; fire-and-forget load of the picker lists.
+			 * @return {void}
+			 */
+			refreshEmptyScopeLists() {
+				if (!registerStore.registerList.length) {
+					registerStore.refreshRegisterList()
+				}
+
+				if (!schemaStore.schemaList.length) {
+					schemaStore.refreshSchemaList()
+				}
+			},
+
+			/**
+			 * Follow the filtered count the list announces on `event`.
+			 *
+			 * @param {string} event The event bus event carrying the count
+			 * @spec exclude Lifecycle plumbing; mirrors the list's filtered count.
+			 * @return {void}
+			 */
+			listenFilteredCount(event) {
+				eventBus.on(event, (count) => {
+					this.filteredCount = count
+				})
+			},
+
+			/**
+			 * Clear filters (alias for clearAllFilters for template compatibility)
+			 *
+			 * @spec exclude filter handler, UI plumbing
+			 * @return {void}
+			 */
+			clearFilters() {
+				this.clearAllFilters()
+			},
+
+			/**
+			 * Debounced version of applyFilters for text input
+			 *
+			 * @spec exclude filter handler, UI plumbing
+			 * @return {void}
+			 */
+			debouncedApplyFilters() {
+				clearTimeout(this.filterTimeout)
+				this.filterTimeout = setTimeout(() => {
+					this.applyFilters()
+				}, 500)
+			},
+
 			/**
 			 * @param {object|null} register The picked register
 			 * @spec exclude filter handler, clears the schema of another register

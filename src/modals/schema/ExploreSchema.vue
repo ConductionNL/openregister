@@ -61,61 +61,8 @@ import { navigationStore, schemaStore } from '../../store/store.js'
 						<div class="steps-section">
 							<h4>{{ t('openregister', 'Analysis steps:') }}</h4>
 							<ol class="steps-list">
-								<li>
-									{{
-										t(
-											'openregister',
-											'Retrieve all objects for this schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Extract properties from each object',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Detect data types and patterns',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Identify properties not in the schema',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Analyze existing properties for improvement opportunities',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Compare current schema with real object data',
-										)
-									}}
-								</li>
-								<li>
-									{{
-										t(
-											'openregister',
-											'Generate recommendations and confidence scores',
-										)
-									}}
+								<li v-for="step in analysisSteps" :key="step">
+									{{ step }}
 								</li>
 							</ol>
 						</div>
@@ -920,6 +867,33 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The steps of an analysis, listed before it runs.
+		 *
+		 * @spec exclude UI display helper — static, translated step list.
+		 * @return {Array<string>}
+		 */
+		analysisSteps() {
+			return [
+				this.t('openregister', 'Retrieve all objects for this schema'),
+				this.t('openregister', 'Extract properties from each object'),
+				this.t('openregister', 'Detect data types and patterns'),
+				this.t('openregister', 'Identify properties not in the schema'),
+				this.t(
+					'openregister',
+					'Analyze existing properties for improvement opportunities',
+				),
+				this.t(
+					'openregister',
+					'Compare current schema with real object data',
+				),
+				this.t(
+					'openregister',
+					'Generate recommendations and confidence scores',
+				),
+			]
+		},
+
 		/**
 		 * @spec exclude UI display helper — the counts shown above the analysis results.
 		 * @return {Array<object>} One label and value per card.

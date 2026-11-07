@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\BackgroundJob;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkStoreInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorStorageHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\EmbeddingGeneratorInterface;
 use Psr\Container\ContainerInterface;
@@ -47,9 +47,9 @@ final class ChunkVectorizationBatch {
 	/**
 	 * Chunk mapper
 	 *
-	 * @var ChunkMapper
+	 * @var ChunkStoreInterface
 	 */
-	private readonly ChunkMapper $chunkMapper;
+	private readonly ChunkStoreInterface $chunkMapper;
 
 	/**
 	 * Embedding coordinator
@@ -87,7 +87,7 @@ final class ChunkVectorizationBatch {
 	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
 	public function __construct(ContainerInterface $container) {
-		$this->chunkMapper    = $container->get(ChunkMapper::class);
+		$this->chunkMapper    = $container->get(ChunkStoreInterface::class);
 		$this->embeddings     = $container->get(EmbeddingGeneratorInterface::class);
 		$this->storageHandler = $container->get(VectorStorageHandlerInterface::class);
 		$this->logger         = $container->get(LoggerInterface::class);

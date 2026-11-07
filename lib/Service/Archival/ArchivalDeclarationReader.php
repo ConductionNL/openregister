@@ -118,28 +118,7 @@ class ArchivalDeclarationReader {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	private function translateAnnotation(ObjectEntity $object, array $annotation): array {
-		$data = ($object->getObject() ?? []);
-		if (is_array($data) === false) {
-			$data = [];
-		}
-
-		try {
-			$evaluation = $this->retention->evaluate(
-				annotation: $annotation,
-				row: $data,
-				createdAt: ($object->getCreated() ?? new DateTimeImmutable())
-			);
-		} catch (Throwable $error) {
-			$this->logger->warning(
-				'[ArchivalDeclarationReader] ' . (string)$object->getUuid()
-				. ' carries an x-openregister-archival block that decides no retention: '
-				. $error->getMessage()
-			);
-
-			return [];
-		}
-
-		$period = $this->text(value: ($evaluation['effectiveRetention'] ?? null));
+		$period = $this->periodFor(object: $object, annotation: $annotation);
 		if ($period === null) {
 			return [];
 		}
@@ -151,20 +130,71 @@ class ArchivalDeclarationReader {
 			'defaultRule' => ArchivalNominationService::RULE_ARCHIVAL_ANNOTATION,
 		];
 
-		$classification = $this->text(value: ($annotation['category'] ?? null));
-		if ($classification !== null) {
-			$block['classification'] = $classification;
+		return $this->withClassification(block: $block, annotation: $annotation);
+	}//end translateAnnotation()
+
+	/**
+	 * The retention period the annotation gives this row, or null when it decides none.
+	 *
+	 * @param ObjectEntity         $object     The record.
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return string|null The period, or null.
+	 */
+	private function periodFor(ObjectEntity $object, array $annotation): ?string {
+		try {
+			$createdAt = ($object->getCreated() ?? new DateTimeImmutable());
+			$evaluation = $this->retention->evaluate(annotation: $annotation, row: $this->rowOf(object: $object), createdAt: $createdAt);
+		} catch (Throwable $error) {
+			$this->logger->warning(
+				'[ArchivalDeclarationReader] ' . (string)$object->getUuid()
+				. ' carries an x-openregister-archival block that decides no retention: '
+				. $error->getMessage()
+			);
+
+			return null;
 		}
 
-		// The property a record overrides `category` with, carried under the
-		// archive block's name for it so one resolver reads both forms.
-		$override = $this->text(value: ($annotation['categoryProperty'] ?? null));
-		if ($override !== null) {
-			$block['classificationProperty'] = $override;
+		return ArchivalText::fromStringOrInt(value: ($evaluation['effectiveRetention'] ?? null));
+	}//end periodFor()
+
+	/**
+	 * The record's data, as the row the retention rules are matched against.
+	 *
+	 * @param ObjectEntity $object The record.
+	 *
+	 * @return array<string, mixed> The row, empty when the record carries none.
+	 */
+	private function rowOf(ObjectEntity $object): array {
+		$data = ($object->getObject() ?? []);
+		if (is_array($data) === false) {
+			return [];
+		}
+
+		return $data;
+	}//end rowOf()
+
+	/**
+	 * Add the category the annotation names, and the property a record overrides it with.
+	 *
+	 * The override property is carried under the archive block's name for it
+	 * so one resolver reads both forms.
+	 *
+	 * @param array<string, mixed> $block      The archive block so far.
+	 * @param array<string, mixed> $annotation The `x-openregister-archival` block.
+	 *
+	 * @return array<string, mixed> The archive block.
+	 */
+	private function withClassification(array $block, array $annotation): array {
+		foreach (['category' => 'classification', 'categoryProperty' => 'classificationProperty'] as $from => $to) {
+			$value = ArchivalText::fromStringOrInt(value: ($annotation[$from] ?? null));
+			if ($value !== null) {
+				$block[$to] = $value;
+			}
 		}
 
 		return $block;
-	}//end translateAnnotation()
+	}//end withClassification()
 
 	/**
 	 * The appraisal an annotation names, or destruction when it names none.
@@ -180,7 +210,7 @@ class ArchivalDeclarationReader {
 	 * @return string The canonical appraisal.
 	 */
 	private function declaredAppraisal(array $annotation): string {
-		$declared = $this->text(value: ($annotation['action'] ?? null));
+		$declared = ArchivalText::fromStringOrInt(value: ($annotation['action'] ?? null));
 		if ($declared === null) {
 			return Appraisal::DESTROY;
 		}
@@ -209,24 +239,4 @@ class ArchivalDeclarationReader {
 
 		return Appraisal::NOT_YET_DETERMINED;
 	}//end declaredAppraisal()
-
-	/**
-	 * A non-empty trimmed string, or null.
-	 *
-	 * @param mixed $value The candidate.
-	 *
-	 * @return string|null The string, or null when it says nothing.
-	 */
-	private function text(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
-			return null;
-		}
-
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end text()
 }//end class
