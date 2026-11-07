@@ -1,0 +1,265 @@
+{
+    "descriptors": [
+        {
+            "id": "demo.unions",
+            "name": "unions",
+            "description": "Union and nullable parameters.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "a": {
+                        "type": [
+                            "string",
+                            "integer"
+                        ],
+                        "description": "An id."
+                    },
+                    "b": {
+                        "type": [
+                            "string",
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "c": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "Nullable text."
+                    },
+                    "d": {
+                        "type": [
+                            "string",
+                            "integer",
+                            "number"
+                        ]
+                    },
+                    "e": []
+                },
+                "required": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "unions",
+            "paramNames": [
+                "a",
+                "b",
+                "c",
+                "d",
+                "e"
+            ],
+            "outputSchema": {
+                "type": [
+                    "integer",
+                    "null"
+                ]
+            }
+        },
+        {
+            "id": "demo.exotic",
+            "name": "exotic",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::exotic (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "x": [],
+                    "y": {
+                        "type": "array"
+                    },
+                    "z": {
+                        "type": [
+                            "array",
+                            "boolean"
+                        ]
+                    },
+                    "w": {
+                        "type": "object"
+                    },
+                    "rest": []
+                },
+                "required": [
+                    "x",
+                    "y",
+                    "z",
+                    "w"
+                ]
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "exotic",
+            "paramNames": [
+                "x",
+                "y",
+                "z",
+                "w",
+                "rest"
+            ],
+            "reach": "user",
+            "action": "read",
+            "annotations": {
+                "team": "sales"
+            },
+            "title": "Exotic"
+        },
+        {
+            "id": "demo.tagsOnly",
+            "name": "tagsOnly",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::tagsOnly (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "f": {
+                        "type": "number",
+                        "description": "A float."
+                    }
+                },
+                "required": [
+                    "f"
+                ]
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "tagsOnly",
+            "paramNames": [
+                "f"
+            ],
+            "readOnlyHint": true,
+            "idempotentHint": false,
+            "scope": "read",
+            "subject": "lead"
+        },
+        {
+            "id": "demo.named",
+            "name": "named",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::described (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": []
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "described",
+            "paramNames": [],
+            "outputSchema": {
+                "type": [
+                    "object",
+                    "null"
+                ]
+            }
+        },
+        {
+            "id": "demo.voidReturn",
+            "name": "voidReturn",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::voidReturn (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": []
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "voidReturn",
+            "paramNames": []
+        },
+        {
+            "id": "demo.stringReturn",
+            "name": "stringReturn",
+            "description": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture::stringReturn (no description declared).",
+            "inputSchema": {
+                "type": "object",
+                "properties": []
+            },
+            "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+            "method": "stringReturn",
+            "paramNames": [],
+            "outputSchema": {
+                "type": "string"
+            }
+        }
+    ],
+    "log": [
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `annotations`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "reservedKey",
+                "annotations": "ReadOnlyHint ",
+                "allowed": [
+                    "non-empty string key => scalar value, other than the MCP hint keys readOnlyHint, destructiveHint, idempotentHint, openWorldHint, title"
+                ]
+            }
+        ],
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `annotations`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "nestedAnnotation",
+                "annotations": "nested",
+                "allowed": [
+                    "non-empty string key => scalar value, other than the MCP hint keys readOnlyHint, destructiveHint, idempotentHint, openWorldHint, title"
+                ]
+            }
+        ],
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `annotations`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "intKey",
+                "annotations": "0",
+                "allowed": [
+                    "non-empty string key => scalar value, other than the MCP hint keys readOnlyHint, destructiveHint, idempotentHint, openWorldHint, title"
+                ]
+            }
+        ],
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `annotations`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "blankKey",
+                "annotations": " ",
+                "allowed": [
+                    "non-empty string key => scalar value, other than the MCP hint keys readOnlyHint, destructiveHint, idempotentHint, openWorldHint, title"
+                ]
+            }
+        ],
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `scope`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "badScopeAndReach",
+                "scope": "bogus",
+                "allowed": [
+                    "read",
+                    "create",
+                    "update",
+                    "delete"
+                ]
+            }
+        ],
+        [
+            "warning",
+            "[AttributeToolScanner] #[McpTool] declares an unrecognised `reach`; tool skipped",
+            {
+                "appId": "demo",
+                "class": "OCA\\OpenRegister\\Tests\\Unit\\Mcp\\AttributeToolScannerSchemaFixture",
+                "method": "badReachAndAnnotation",
+                "reach": "galaxy",
+                "allowed": [
+                    "self",
+                    "user",
+                    "instance",
+                    "external"
+                ]
+            }
+        ]
+    ]
+}
