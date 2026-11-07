@@ -62,6 +62,8 @@ final class SlaAddition {
 	 * @return WorkingCalendar The calendar.
 	 *
 	 * @throws FlowTimerValidationException When none was given.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function calendar(): WorkingCalendar {
 		if ($this->calendar === null) {
@@ -86,6 +88,8 @@ final class SlaAddition {
 	 * always had, and says so rather than pretending to be window-aware.
 	 *
 	 * @return WorkingCalendar|null The calendar, or null for wall-clock hours.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function serviceHoursCalendar(): ?WorkingCalendar {
 		if ($this->calendar !== null && $this->value > 0 && $this->calendar->getServiceHours()->areDeclared() === true) {
@@ -108,6 +112,8 @@ final class SlaAddition {
 	 * The amount to walk, as a non-negative number.
 	 *
 	 * @return float The amount.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function amount(): float {
 		if ($this->isForward() === true) {
@@ -121,6 +127,8 @@ final class SlaAddition {
 	 * The sign of the walk: +1 forward, -1 backward.
 	 *
 	 * @return integer The sign.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function sign(): int {
 		if ($this->isForward() === true) {
@@ -134,6 +142,8 @@ final class SlaAddition {
 	 * What the walk is doing, for the refusal when it runs too long.
 	 *
 	 * @return string The description.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function describe(): string {
 		$verb = 'Subtracting';

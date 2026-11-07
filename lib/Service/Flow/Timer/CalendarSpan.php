@@ -66,6 +66,8 @@ final class CalendarSpan {
 	 * @param string $what The quantity, such as `business days`.
 	 *
 	 * @return string The description.
+	 *
+	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
 	public function describe(string $what): string {
 		return sprintf('Measuring %s between %s and %s', $what, $this->from->format('c'), $this->to->format('c'));
