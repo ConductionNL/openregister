@@ -69,7 +69,7 @@ final class AppConfigurationRecord
 		$configuration = $this->configurationMapper->insert($configuration);
 
 		$this->logger->debug(
-			message: "[ImportHandler] Created new configuration for app {$import->appId}",
+			message: ImportLogTag::PREFIX."Created new configuration for app {$import->appId}",
 			context: ['file' => __FILE__, 'line' => __LINE__, 'configurationId' => $configuration->getId(), 'version' => $import->version]
 		);
 
@@ -110,7 +110,7 @@ final class AppConfigurationRecord
 	private function logTracked(AppImport $import, Configuration $configuration): void
 	{
 		$this->logger->debug(
-			message: "[ImportHandler] Updated configuration entity for app {$import->appId}",
+			message: ImportLogTag::PREFIX."Updated configuration entity for app {$import->appId}",
 			context: [
 				'file'            => __FILE__,
 				'line'            => __LINE__,

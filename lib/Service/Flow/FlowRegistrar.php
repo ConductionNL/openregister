@@ -108,7 +108,7 @@ final class FlowRegistrar {
 			\OCA\OpenRegister\Service\Flow\FlowStepDispatcher::class,
 			static function ($c) {
 				return new RegistryStepDispatcher(
-					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
+					registry: $c->get(\OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface::class),
 					// The acting-identity scope IS container state, unlike the
 					// guard: a loop's body steps must scope a contributed node
 					// to the run's runAs exactly as top-level steps do.

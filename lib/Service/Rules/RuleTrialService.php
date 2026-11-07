@@ -27,11 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Rules\Support\RuleTrialEngine;
-use OCA\OpenRegister\Service\Rules\Support\RuleTrialLookups;
 use Throwable;
 
 /**
@@ -78,14 +79,16 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 *
 	 * @param RuleInventoryService $inventory Finds the rule as declared.
 	 * @param RuleTrialEngine $engine The evaluator, the tracer and the dialect a rule is tried through.
-	 * @param RuleTrialLookups $lookups The register and object lookups for a named object.
+	 * @param RegisterMapperInterface $registerMapper Register lookup for a named object.
+	 * @param MagicTableRowReaderInterface $objectMapper Object lookup in the register and schema table.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly RuleInventoryService $inventory,
 		private readonly RuleTrialEngine $engine,
-		private readonly RuleTrialLookups $lookups,
+		private readonly RegisterMapperInterface $registerMapper,
+		private readonly MagicTableRowReaderInterface $objectMapper,
 	) {
 	}//end __construct()
 
@@ -156,9 +159,9 @@ final class RuleTrialService implements RuleTrialServiceInterface {
 	 */
 	private function storedObject(Schema $schema, string $register, string $objectId): ?ObjectEntity {
 		try {
-			return $this->lookups->objectMapper->findInRegisterSchemaTable(
+			return $this->objectMapper->findInRegisterSchemaTable(
 				identifier: $objectId,
-				register: $this->lookups->registerMapper->find($register),
+				register: $this->registerMapper->find($register),
 				schema: $schema
 			);
 		} catch (Throwable $e) {
