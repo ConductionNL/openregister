@@ -35,7 +35,6 @@ namespace OCA\OpenRegister\Formats;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use Sabre\VObject\InvalidDataException;
 use Sabre\VObject\Recur\RRuleIterator;
 use Throwable;
 
@@ -46,8 +45,6 @@ use Throwable;
  * declared `format` annotation (`hex` default, `rgba`, `oklch`). The `recurrence`
  * type stores an RFC 5545 RRULE string validated via sabre/vobject and may emit
  * the next N upcoming occurrences on read.
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-format colour dispatch is inherently branchy
  *
  * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
  * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
@@ -86,6 +83,16 @@ class ExtendedFieldTypeValidator {
 	private const REGEX_OKLCH = '/^oklch\(\s*[0-9]*\.?[0-9]+%?\s+[0-9]*\.?[0-9]+\s+[0-9]*\.?[0-9]+(?:deg)?\s*(?:\/\s*[0-9]*\.?[0-9]+%?\s*)?\)$/i';
 
 	/**
+	 * The pattern each regex-checked colour format must match.
+	 *
+	 * @var array<string, string>
+	 */
+	private const COLOR_PATTERNS = [
+		'hex' => self::REGEX_HEX,
+		'oklch' => self::REGEX_OKLCH,
+	];
+
+	/**
 	 * Validate a `color` value against the property's declared format.
 	 *
 	 * The default format is `hex`. The `rgba` format requires exactly four
@@ -106,61 +113,82 @@ class ExtendedFieldTypeValidator {
 			return "Property '{$propertyName}': color value must be a string";
 		}
 
-		$format = strtolower((string)$format);
-		if ($format === '') {
-			$format = 'hex';
-		}
-
-		if ($format === 'rgba') {
-			return $this->validateRgba(value: $value, propertyName: $propertyName);
-		}
-
-		if ($format === 'oklch') {
-			if (preg_match(self::REGEX_OKLCH, $value) === 1) {
-				return null;
-			}
-
-			return "Property '{$propertyName}' declared format 'oklch'; '{$value}' does not match oklch regex";
-		}
-
-		// Default + explicit `hex`.
-		if (preg_match(self::REGEX_HEX, $value) === 1) {
+		$problem = $this->colorProblem(value: $value, format: strtolower((string)$format));
+		if ($problem === null) {
 			return null;
 		}
 
-		return "Property '{$propertyName}' declared format 'hex'; '{$value}' does not match hex regex";
+		return "Property '{$propertyName}' {$problem}";
 	}//end validateColor()
 
 	/**
-	 * Validate an `rgba(...)` colour value: it MUST carry exactly 4 components.
+	 * What is wrong with a colour string under a lower-cased declared format.
 	 *
-	 * @param string $value The submitted colour string.
-	 * @param string $propertyName The property name (for the error message).
+	 * `rgba` counts components; `oklch` is matched against its regex; every
+	 * other format, including none, is treated as `hex`.
 	 *
-	 * @return string|null Null on success, or the exact 422 error message on failure.
+	 * @param string $value  The submitted colour string.
+	 * @param string $format The lower-cased declared format.
+	 *
+	 * @return string|null Null when valid, or the message without its property prefix.
 	 *
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
 	 */
-	private function validateRgba(string $value, string $propertyName): ?string {
-		$matched = preg_match('/^rgba\(\s*([^)]*)\)$/i', $value, $matches);
-		if ($matched !== 1) {
-			return "Property '{$propertyName}' declared format 'rgba'; '{$value}' does not match rgba regex";
+	private function colorProblem(string $value, string $format): ?string {
+		if ($format === 'rgba') {
+			return $this->rgbaProblem(value: $value);
 		}
 
+		if ($format !== 'oklch') {
+			$format = 'hex';
+		}
+
+		if (preg_match(self::COLOR_PATTERNS[$format], $value) === 1) {
+			return null;
+		}
+
+		return "declared format '{$format}'; '{$value}' does not match {$format} regex";
+	}//end colorProblem()
+
+	/**
+	 * What is wrong with an `rgba(...)` colour value: it MUST carry exactly 4 components.
+	 *
+	 * @param string $value The submitted colour string.
+	 *
+	 * @return string|null Null when valid, or the message without its property prefix.
+	 *
+	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
+	 */
+	private function rgbaProblem(string $value): ?string {
+		if (preg_match('/^rgba\(\s*([^)]*)\)$/i', $value, $matches) !== 1) {
+			return "declared format 'rgba'; '{$value}' does not match rgba regex";
+		}
+
+		$count = $this->countComponents(list: $matches[1]);
+		if ($count !== 4) {
+			return "format 'rgba' requires 4 components; got {$count}";
+		}
+
+		return null;
+	}//end rgbaProblem()
+
+	/**
+	 * Count the non-empty, comma-separated components inside an `rgba(...)` envelope.
+	 *
+	 * @param string $list The text between the parentheses.
+	 *
+	 * @return int The number of non-empty components.
+	 */
+	private function countComponents(string $list): int {
 		$components = array_filter(
-			array_map('trim', explode(',', $matches[1])),
+			array_map('trim', explode(',', $list)),
 			static function ($component) {
 				return $component !== '';
 			}
 		);
-		$count = count($components);
 
-		if ($count !== 4) {
-			return "Property '{$propertyName}' format 'rgba' requires 4 components; got {$count}";
-		}
-
-		return null;
-	}//end validateRgba()
+		return count($components);
+	}//end countComponents()
 
 	/**
 	 * Validate a `recurrence` value as a parseable RFC 5545 RRULE string.
@@ -185,8 +213,6 @@ class ExtendedFieldTypeValidator {
 			// Constructing the iterator parses the RRULE and throws on bad input.
 			new RRuleIterator($value, new DateTimeImmutable('now'));
 			return null;
-		} catch (InvalidDataException $e) {
-			return "Property '{$propertyName}': invalid RRULE '{$value}' (sabre/vobject parse error)";
 		} catch (Throwable $e) {
 			return "Property '{$propertyName}': invalid RRULE '{$value}' (sabre/vobject parse error)";
 		}//end try
@@ -209,37 +235,52 @@ class ExtendedFieldTypeValidator {
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
 	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array {
-		if ($count < 1) {
-			$count = self::DEFAULT_OCCURRENCES;
-		}
-
-		if ($count > self::MAX_OCCURRENCES) {
-			$count = self::MAX_OCCURRENCES;
-		}
-
-		if ($start === null) {
-			$start = new DateTimeImmutable('now');
-		}
-
 		try {
-			$iterator = new RRuleIterator($rrule, $start);
-			$occurrences = [];
-			$collected = 0;
-			while ($iterator->valid() === true && $collected < $count) {
-				$current = $iterator->current();
-				if ($current instanceof DateTimeInterface) {
-					$occurrences[] = $current->format(DateTimeInterface::ATOM);
-					$collected++;
-				}
-
-				$iterator->next();
-			}
-
-			return $occurrences;
+			$iterator = new RRuleIterator($rrule, $start ?? new DateTimeImmutable('now'));
+			return $this->collectOccurrences(iterator: $iterator, count: $this->clampCount(count: $count));
 		} catch (Throwable $e) {
 			// A value that fails to parse here would already have been rejected at
 			// write time; on read we degrade gracefully to no occurrences.
 			return [];
-		}//end try
+		}
 	}//end materialiseOccurrences()
+
+	/**
+	 * Clamp a requested occurrence count: below 1 means the default, above the maximum means the maximum.
+	 *
+	 * @param int $count The requested count.
+	 *
+	 * @return int The count to materialise.
+	 */
+	private function clampCount(int $count): int {
+		if ($count < 1) {
+			return self::DEFAULT_OCCURRENCES;
+		}
+
+		return min($count, self::MAX_OCCURRENCES);
+	}//end clampCount()
+
+	/**
+	 * Collect up to `$count` ISO-8601 timestamps from an RRULE iterator.
+	 *
+	 * @param RRuleIterator $iterator The iterator, positioned at its start.
+	 * @param int           $count    The maximum number of timestamps.
+	 *
+	 * @return array<int, string> ISO-8601 occurrence timestamps.
+	 */
+	private function collectOccurrences(RRuleIterator $iterator, int $count): array {
+		$occurrences = [];
+		$collected = 0;
+		while ($iterator->valid() === true && $collected < $count) {
+			$current = $iterator->current();
+			if ($current instanceof DateTimeInterface) {
+				$occurrences[] = $current->format(DateTimeInterface::ATOM);
+				$collected++;
+			}
+
+			$iterator->next();
+		}
+
+		return $occurrences;
+	}//end collectOccurrences()
 }//end class
