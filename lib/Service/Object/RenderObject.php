@@ -116,13 +116,6 @@ class RenderObject {
 	private array $objectsCache = [];
 
 	/**
-	 * Whether inverse results answer to the caller's read right, as the current render says.
-	 *
-	 * @var boolean
-	 */
-	private bool $inverseReadChecked = true;
-
-	/**
 	 * Transient cache of lightweight file IDs keyed by entity UUID.
 	 *
 	 * @var array<string, int[]>|null
@@ -205,6 +198,13 @@ class RenderObject {
 	 * @var InverseRenderSupport|null
 	 */
 	private ?InverseRenderSupport $inverseSupport = null;
+
+	/**
+	 * The read rule of the current render, built on first use.
+	 *
+	 * @var ExtendTargetReads|null
+	 */
+	private ?ExtendTargetReads $extendTargetReads = null;
 
 	/**
 	 * The explicit-reveal masker, resolved on first use.
@@ -406,8 +406,17 @@ class RenderObject {
 			return $this->objectsCache[$id];
 		}
 
+		if ($this->extendReads()->refused(id: $id) !== null) {
+			return null;
+		}
+
 		// Use cache service for optimized loading (only if not in ultra cache).
+		// Its own cache answers without a read check, so the answer is checked here.
 		$object = $this->objectCacheService->getObject($id);
+		if ($object !== null && $this->readableExtendTargets(objects: [$object]) === []) {
+			$this->extendReads()->refuse(id: $id, object: $object);
+			return null;
+		}
 
 		// Update local cache for backward compatibility.
 		if ($object !== null) {
@@ -1920,6 +1929,10 @@ class RenderObject {
 			return $entity;
 		}
 
+		if ($depth === 0) {
+			$this->applyReadRule(rbac: $_rbac, multitenancy: $_multitenancy);
+		}
+
 		$this->primeRenderCaches(registers: $registers, schemas: $schemas, objects: $objects);
 
 		$context = new RenderContext(
@@ -2294,29 +2307,109 @@ class RenderObject {
 			return $objectData;
 		}
 
-		$this->checkInverseReads(checked: $context->rbac);
-
 		return $this->inverseRelations()->handleInversedProperties(entity: $entity, objectData: $objectData);
 	}//end applyInversedProperties()
 
 	/**
-	 * Set whether inverse results answer to the caller's read right.
+	 * Set the read rule of a top-level render; what it extends stays under that rule.
 	 *
-	 * The inverse cache holds what one setting admitted, so a change empties it.
+	 * The object caches hold what one rule admitted, so a change empties them.
 	 *
-	 * @param bool $checked False for a trusted read.
+	 * @param bool $rbac         False for a trusted read.
+	 * @param bool $multitenancy False for a read across organisations.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	private function checkInverseReads(bool $checked): void {
-		if ($checked !== $this->inverseReadChecked) {
+	private function applyReadRule(bool $rbac, bool $multitenancy): void {
+		if ($this->extendReads()->applyRule(rbac: $rbac, multitenancy: $multitenancy) === true) {
 			$this->inverseSupport()->objects->cache->clear();
+			$this->objectsCache = [];
+		}
+	}//end applyReadRule()
+
+	/**
+	 * The read rule of the current render.
+	 *
+	 * @return ExtendTargetReads
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function extendReads(): ExtendTargetReads {
+		$this->extendTargetReads ??= new ExtendTargetReads(
+			mapper: $this->objectEntityMapper,
+			mayRead: fn (ObjectEntity $object): bool => $this->mayReadInverse(object: $object)
+		);
+
+		return $this->extendTargetReads;
+	}//end extendReads()
+
+	/**
+	 * The extend targets the caller may read.
+	 *
+	 * The preload behind an extend applies no access rule. Filtering here, before the
+	 * objects are cached, keeps them out of the extended property and out of
+	 * `@self.objects`. Without a container (legacy fixtures) nothing is filtered.
+	 *
+	 * @param ObjectEntity[] $objects The objects found.
+	 *
+	 * @return ObjectEntity[] The readable objects.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function readableExtendTargets(array $objects): array {
+		if ($this->container === null || $this->extendReads()->checked() === false || SystemOperationContext::isActive() === true) {
+			return $objects;
 		}
 
-		$this->inverseReadChecked = $checked;
-	}//end checkInverseReads()
+		return $this->extendReads()->readable(objects: $objects);
+	}//end readableExtendTargets()
+
+	/**
+	 * Keep preloaded objects: the readable ones in the objects cache, the others apart.
+	 *
+	 * @param ObjectEntity[] $objects The objects the preload found.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function cacheExtendTargets(array $objects): void {
+		$readable = $this->readableExtendTargets(objects: $objects);
+		foreach ($readable as $object) {
+			$this->objectsCache[$object->getUuid()] = $object;
+			$this->objectsCache[$object->getId()] = $object;
+		}
+
+		foreach ($objects as $object) {
+			if (in_array($object, $readable, true) === false) {
+				$this->extendReads()->refuse(id: (string)$object->getUuid(), object: $object);
+			}
+		}
+	}//end cacheExtendTargets()
+
+	/**
+	 * The object behind a reference: readable, or reached through a link that declares an exposure.
+	 *
+	 * A declared exposure carries a reader to a record they cannot open; the
+	 * run projects it to the declared properties.
+	 *
+	 * @param ExtendDotRun $run The extend pass, on one key.
+	 * @param mixed        $id  The reference.
+	 *
+	 * @return ObjectEntity|null The object, or null to keep the reference.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/row-field-level-security/spec.md
+	 */
+	private function extendTarget(ExtendDotRun $run, mixed $id): ?ObjectEntity {
+		$object = $this->getObject(id: $id);
+		if ($object === null && $run->descriptor !== null) {
+			return $this->extendReads()->refused(id: $id);
+		}
+
+		return $object;
+	}//end extendTarget()
 
 	/**
 	 * The inverse results the caller may read.
@@ -2332,7 +2425,7 @@ class RenderObject {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function readableInverseObjects(array $objects): array {
-		if ($this->container === null || $this->inverseReadChecked === false) {
+		if ($this->container === null || $this->extendReads()->checked() === false) {
 			return $objects;
 		}
 
@@ -3561,7 +3654,7 @@ class RenderObject {
 			return null;
 		}
 
-		$object = $this->getObject(id: $identifier);
+		$object = $this->extendTarget(run: $run, id: $identifier);
 		if ($object === null) {
 			$this->logger->debug(
 				message: '[RenderObject] Object not found in preloaded cache - preserving original UUID',
@@ -3636,7 +3729,7 @@ class RenderObject {
 			$value = end($pathExploded);
 		}
 
-		$object = $this->getObject(id: $value);
+		$object = $this->extendTarget(run: $run, id: $value);
 		if ($object === null) {
 			$this->logger->debug(
 				message: '[RenderObject] Single object not found in preloaded cache - skipping to prevent N+1 query',
@@ -3863,11 +3956,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->registerIdOf(entity: $entity)
 		);
-		// Add preloaded objects to local cache for immediate access.
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for extend',
@@ -4370,9 +4459,10 @@ class RenderObject {
 			]
 		);
 
+		$this->applyReadRule(rbac: $page->rbac, multitenancy: $page->multitenancy);
+
 		// Batch preload ALL related objects BEFORE rendering, to prevent N+1 queries.
 		if (empty($page->extend) === false && empty($entities) === false) {
-			$this->checkInverseReads(checked: $page->rbac);
 			$this->preloadExtendedRelations(entities: $entities, extend: $page->extend);
 		}
 
@@ -4460,11 +4550,7 @@ class RenderObject {
 			identifiers: $uuids,
 			registerId: $this->sharedRegisterIdOf(entities: $entities)
 		);
-
-		foreach ($preloadedObjects as $object) {
-			$this->objectsCache[$object->getUuid()] = $object;
-			$this->objectsCache[$object->getId()] = $object;
-		}
+		$this->cacheExtendTargets(objects: $preloadedObjects);
 
 		$this->logger->debug(
 			message: '[RenderObject] Batch preloaded objects for renderEntities',
