@@ -15,6 +15,8 @@ use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -44,6 +46,19 @@ final class D1InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		EntityRelationMapper::class => [EntityRelationMapperInterface::class, DbRegistrar::class, 'Db'],
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
+		TranslationMapper::class => [TranslationMapperInterface::class, DbRegistrar::class, 'Db'],
+	];
+
+	/**
+	 * Class => the outside callers deliberately left naming it, relative to lib/.
+	 *
+	 * BackfillTranslationSourceLanguageCommand is an occ command, whose
+	 * public signature this refactor keeps unchanged.
+	 *
+	 * @var array<class-string, list<string>>
+	 */
+	private const LEFT = [
+		TranslationMapper::class => ['Command/BackfillTranslationSourceLanguageCommand.php'],
 	];
 
 	/**
@@ -100,12 +115,15 @@ final class D1InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('hiddenClasses')]
 	public function testNoOtherComponentNamesTheClass(string $class, string $interface, string $registrar, string $component): void {
+		$lib    = realpath(self::LIB) . '/';
 		$naming = array_filter(
 			$this->filesOutside(component: $component),
 			fn (string $path): bool => in_array($class, $this->namesIn(path: $path), true)
 		);
+		$naming = array_map(static fn (string $path): string => substr($path, strlen($lib)), array_values($naming));
+		sort($naming);
 
-		$this->assertSame([], array_values($naming), $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
+		$this->assertSame(self::LEFT[$class] ?? [], $naming, $class . ' is named outside lib/' . $component . '; type the caller against ' . $interface);
 	}//end testNoOtherComponentNamesTheClass()
 
 	/**
