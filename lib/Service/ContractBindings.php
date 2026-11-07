@@ -159,6 +159,7 @@ final class ContractBindings {
 		CospendLinkServiceInterface::class => CospendLinkService::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
+		DeckCardServiceInterface::class => DeckCardService::class,
 		EmailLinkServiceInterface::class => EmailLinkService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,

@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\CospendLinkServiceInterface;
+use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -60,6 +62,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 		AppRegisterImportRunner::class => [AppRegisterImportRunnerInterface::class, ContractBindings::class, 'Service'],
 		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],
 		EmailLinkService::class => [EmailLinkServiceInterface::class, ContractBindings::class, 'Service'],
 	];
 
