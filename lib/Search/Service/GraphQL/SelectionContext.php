@@ -39,6 +39,8 @@ final class SelectionContext {
 	 * The context one level deeper.
 	 *
 	 * @return self
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
 	 */
 	public function deeper(): self {
 		return new self(depth: ($this->depth + 1), variables: $this->variables);
