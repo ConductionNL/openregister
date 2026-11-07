@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
@@ -62,6 +64,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ContractBindings::class],
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
 		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],

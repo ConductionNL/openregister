@@ -62,6 +62,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
@@ -157,6 +159,7 @@ final class ContractBindings {
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FlowTimerSweepInterface::class => FlowTimerSweep::class,
+		FlowVersionServiceInterface::class => FlowVersionService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
 		FormIdempotencyStoreInterface::class => FormIdempotencyStore::class,
