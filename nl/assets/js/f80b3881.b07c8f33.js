@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkopenregister_docs=globalThis.webpackChunkopenregister_docs||[]).push([[8047],{3976:e=>{e.exports={}}}]);

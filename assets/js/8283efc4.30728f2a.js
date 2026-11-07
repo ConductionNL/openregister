@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkopenregister_docs=globalThis.webpackChunkopenregister_docs||[]).push([[7546],{36212:e=>{e.exports=JSON.parse('{"name":"docusaurus-plugin-redoc","id":"client-registers"}')}}]);
