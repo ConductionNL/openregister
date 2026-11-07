@@ -36,6 +36,10 @@ use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInter
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Search\Service\Geo\GeoFilterParserInterface;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;
@@ -64,6 +68,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 		ContentProvider::class => [
 			ContentProviderInterface::class,
 			ContextChatRegistrar::class,
+			[],
+		],
+		GeoFilterApplier::class => [
+			GeoFilterApplierInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
+		GeoFilterParser::class => [
+			GeoFilterParserInterface::class,
+			SearchRegistrar::class,
 			[],
 		],
 		ScheduleFlowStore::class => [
