@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ExtendedByReads;
 use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
+use OCA\OpenRegister\Db\SchemaMapper\NotificationAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
@@ -156,6 +157,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @var array<int, int>
 	 */
 	private array $updateEventCounts = [];
+
+	/**
+	 * Whether a notification url action that cannot be linked to only warns on save.
+	 *
+	 * @var bool
+	 */
+	private bool $warnUnlinkable = false;
 
 	/**
 	 * Constructor
@@ -1169,10 +1177,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$advisory->checkSurvivorship(schema: $schema);
 		$advisory->checkMerge(schema: $schema);
 		$advisory->checkParty(schema: $schema);
-		$advisory->checkNotifications(schema: $schema);
+		$this->checkNotifications(schema: $schema);
 		$records->checkWidgets(schema: $schema);
 		$records->checkArchival(schema: $schema);
 	}//end checkDataDeclarations()
+
+	/**
+	 * Check the notification annotation; an unlinkable url action only warns while an import asked it.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 */
+	private function checkNotifications(Schema $schema): void {
+		$notifications = new NotificationAnnotationCheck(logger: $this->logger);
+		if ($this->warnUnlinkable === true) {
+			$notifications->warn(schema: $schema);
+			return;
+		}
+
+		$notifications->check(schema: $schema);
+	}//end checkNotifications()
 
 	/**
 	 * How objects leave or enter: handoff, MCP, registry, links and extending forms.
@@ -1407,6 +1432,34 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function updateEventCount(int $schemaId): int {
 		return ($this->updateEventCounts[$schemaId] ?? 0);
 	}//end updateEventCount()
+
+	/**
+	 * From now on a notification url action that cannot be linked to only warns on save.
+	 *
+	 * A configuration import sets it around its schema writes, so one such action
+	 * does not abort the register; a save by hand still refuses it.
+	 *
+	 * @return bool Whether it already did.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function warnOnUnlinkableNotificationActions(): bool {
+		$previous = $this->warnUnlinkable;
+		$this->warnUnlinkable = true;
+
+		return $previous;
+	}//end warnOnUnlinkableNotificationActions()
+
+	/**
+	 * From now on a notification url action that cannot be linked to refuses the save, as it does by default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	public function refuseUnlinkableNotificationActions(): void {
+		$this->warnUnlinkable = false;
+	}//end refuseUnlinkableNotificationActions()
 
 	/**
 	 * Updates a schema from an array

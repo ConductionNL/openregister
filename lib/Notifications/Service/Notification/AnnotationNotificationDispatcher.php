@@ -81,13 +81,6 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
-	 * The schemes a `url` action target may link to.
-	 *
-	 * @var array<int, string>
-	 */
-	private const LINKABLE_SCHEMES = ['http', 'https', 'mailto'];
-
-	/**
 	 * The nc-notification channel unit — injected, or lazily built.
 	 * Nullable-and-lazy keeps every existing constructor call site working:
 	 * the shared units are appended OPTIONAL constructor parameters, and a
@@ -2189,7 +2182,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		if ($kind === 'url') {
-			return self::linkableUrl(href: (string)($target['href'] ?? ''));
+			return (new LinkableUrl())->orNull(href: (string)($target['href'] ?? ''));
 		}
 
 		if ($kind === 'route') {
@@ -2235,22 +2228,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return null;
 	}//end resolveActionTarget()
-
-	/**
-	 * An action's absolute URL, null unless it is a web or mail link.
-	 *
-	 * @param string $href The declared URL.
-	 *
-	 * @return string|null
-	 */
-	private static function linkableUrl(string $href): ?string {
-		$scheme = strtolower((string)parse_url($href, PHP_URL_SCHEME));
-		if (filter_var($href, FILTER_VALIDATE_URL) === false || in_array($scheme, self::LINKABLE_SCHEMES, true) === false) {
-			return null;
-		}
-
-		return $href;
-	}//end linkableUrl()
 
 	/**
 	 * Resolve a relation-field deeplink ("Open client") through OR RBAC.

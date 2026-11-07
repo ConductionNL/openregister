@@ -1416,11 +1416,13 @@ class ImportHandler {
 			// knows them (per-register-schema-slug-uniqueness), so an app never
 			// reuses another register's schema that merely shares the slug.
 			$existingSchema = $this->resolveExistingSchemaForImport(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId, version: $version);
+
 			if ($existingSchema !== null) {
-				return $this->updateImportedSchema(update: new ImportedSchemaUpdate(data: $data, existing: $existingSchema), options: $options);
+				$update = new ImportedSchemaUpdate(data: $data, existing: $existingSchema);
+				return $this->withUnlinkableActionsAsWarnings(save: fn (): Schema => $this->updateImportedSchema(update: $update, options: $options));
 			}
 
-			return $this->createImportedSchema(data: $data, options: $options);
+			return $this->withUnlinkableActionsAsWarnings(save: fn (): Schema => $this->createImportedSchema(data: $data, options: $options));
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[ImportHandler] Failed to import schema: ' . $e->getMessage(),
@@ -1429,6 +1431,28 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Run a schema write of the import with an unlinkable notification url action as a warning.
+	 *
+	 * Like every other notification fault, it must not abort the register on import.
+	 *
+	 * @param callable(): Schema $save The write.
+	 *
+	 * @return Schema The stored schema.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 */
+	private function withUnlinkableActionsAsWarnings(callable $save): Schema {
+		$wasWarning = $this->schemaMapper->warnOnUnlinkableNotificationActions();
+		try {
+			return $save();
+		} finally {
+			if ($wasWarning === false) {
+				$this->schemaMapper->refuseUnlinkableNotificationActions();
+			}
+		}
+	}//end withUnlinkableActionsAsWarnings()
 
 	/**
 	 * Drop `orphanCleanup` from a schema a signed-in non-administrator imports.
