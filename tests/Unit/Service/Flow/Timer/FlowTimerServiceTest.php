@@ -48,6 +48,12 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\FlowTimerService
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerDeadlines
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerFactory
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerProjection
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerScope
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\FlowTimerValues
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Db\FlowTimerEvent
