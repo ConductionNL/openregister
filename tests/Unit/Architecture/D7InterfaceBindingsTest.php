@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
@@ -50,6 +52,10 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -82,6 +88,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
 		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
 		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
+		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
@@ -91,6 +98,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
+		JsonLdContextService::class => [JsonLdContextServiceInterface::class, ContractBindings::class],
+		JsonLdSerializer::class => [JsonLdSerializerInterface::class, ContractBindings::class],
 		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
 		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
 		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],

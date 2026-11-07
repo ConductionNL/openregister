@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\FormLinkService;
 use OCA\OpenRegister\Service\FormLinkServiceInterface;
+use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\MapLinkServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -65,6 +67,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		FlowLinkService::class => [FlowLinkServiceInterface::class, ContractBindings::class],
 		FormLinkService::class => [FormLinkServiceInterface::class, ContractBindings::class],
+		LinkedEntityService::class => [LinkedEntityServiceInterface::class, ContractBindings::class],
 		MapLinkService::class => [MapLinkServiceInterface::class, ContractBindings::class],
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],

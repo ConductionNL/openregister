@@ -24,7 +24,7 @@
 namespace OCA\OpenRegister\Mcp\Tool;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\RegisterService;
+use OCA\OpenRegister\Service\RegisterServiceInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -49,21 +49,21 @@ class RegisterTool extends AbstractTool {
 	/**
 	 * Register service
 	 *
-	 * @var RegisterService
+	 * @var RegisterServiceInterface
 	 */
-	private RegisterService $registerService;
+	private RegisterServiceInterface $registerService;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
-	 * @param RegisterService $registerService Register service
+	 * @param RegisterServiceInterface $registerService Register service
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
-		RegisterService $registerService,
+		RegisterServiceInterface $registerService,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);
 		$this->registerService = $registerService;

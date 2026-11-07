@@ -94,7 +94,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedPois',
 		],
 		'polls' => [
-			'class' => \OCA\OpenRegister\Service\PollLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PollLinkServiceInterface::class,
 			'available' => 'isPollsAvailable',
 			'method' => 'getLinkedPolls',
 		],
@@ -109,7 +109,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedPages',
 		],
 		'photos' => [
-			'class' => \OCA\OpenRegister\Service\PhotoLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PhotoLinkServiceInterface::class,
 			'available' => 'isPhotosAvailable',
 			'method' => 'getLinkedAlbums',
 		],
@@ -139,7 +139,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedWorkPackages',
 		],
 		'xwiki' => [
-			'class' => \OCA\OpenRegister\Service\XwikiLinkService::class,
+			'class' => \OCA\OpenRegister\Service\XwikiLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedPages',
 		],
