@@ -302,32 +302,83 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end validateImmutableConstraints()
 
 	/**
+	 * Configuration service.
+	 *
+	 * @var IAppConfig
+	 */
+	private IAppConfig $config;
+
+	/**
+	 * Object mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private MagicMapperInterface $objectMapper;
+
+	/**
+	 * Schema mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * URL generator.
+	 *
+	 * @var IURLGenerator
+	 */
+	private IURLGenerator $urlGenerator;
+
+	/**
+	 * Logger for logging operations.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
+	 * Backend consulted by the `user` string format.
+	 *
+	 * @var IUserManager
+	 */
+	private IUserManager $userManager;
+
+	/**
+	 * Reads and applies the recorded-incompleteness record.
+	 *
+	 * Nullable with a null default so the unit tests that build this class
+	 * without it keep working. The handler has no dependencies of its own, so
+	 * the fallback in notSupplied() constructs the real thing rather than
+	 * degrading to a no-op: there is no configuration that can make recorded
+	 * incompleteness silently stop being enforced.
+	 *
+	 * @var NotSuppliedHandler|null
+	 */
+	private ?NotSuppliedHandler $notSuppliedHandler;
+
+	/**
 	 * Constructor for ValidateObject
 	 *
-	 * @param IAppConfig $config Configuration service.
-	 * @param MagicMapperInterface $objectMapper Object mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param IURLGenerator $urlGenerator URL generator.
-	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param IUserManager $userManager Backend consulted by the `user` string format.
+	 * @param ValidationSchemaSource  $schemas            Loads the schemas and resolves their references.
+	 * @param ValidationLookups       $lookups            Looks existing objects and users up.
+	 * @param LoggerInterface         $logger             Logger for logging operations.
 	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
-		private IAppConfig $config,
-		private MagicMapperInterface $objectMapper,
-		private SchemaMapperInterface $schemaMapper,
-		private IURLGenerator $urlGenerator,
-		private LoggerInterface $logger,
-		private IUserManager $userManager,
-		// Nullable with a null default so the unit tests that build this class
-		// positionally keep working. The handler has no dependencies of its
-		// own, so the fallback below constructs the real thing rather than
-		// degrading to a no-op: there is no configuration that can make
-		// recorded incompleteness silently stop being enforced.
-		private ?NotSuppliedHandler $notSuppliedHandler = null,
+		ValidationSchemaSource $schemas,
+		ValidationLookups $lookups,
+		LoggerInterface $logger,
+		?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
+		$this->config = $schemas->config;
+		$this->schemaMapper = $schemas->schemaMapper;
+		$this->urlGenerator = $schemas->urlGenerator;
+		$this->objectMapper = $lookups->objectMapper;
+		$this->userManager = $lookups->userManager;
+		$this->logger = $logger;
+		$this->notSuppliedHandler = $notSuppliedHandler;
 	}//end __construct()
 
 	/**

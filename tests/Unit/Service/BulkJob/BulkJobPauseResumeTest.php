@@ -41,6 +41,9 @@ use OCP\IAppConfig;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
+use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
+use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
 
 final class BulkJobPauseResumeTest extends TestCase {
 
@@ -82,16 +85,22 @@ final class BulkJobPauseResumeTest extends TestCase {
 
 	private function service(): BulkJobService {
 		return new BulkJobService(
-			$this->jobMapper,
-			$this->createMock(BulkJobMemberMapper::class),
-			$this->createMock(BulkActionRegistry::class),
-			$this->createMock(BulkSelectionResolver::class),
-			$this->createMock(BulkJobExecutor::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserManager::class),
-			$this->jobList,
-			$this->createMock(IAppConfig::class),
-			new NullLogger()
+			new BulkJobStore(
+				$this->jobMapper,
+				$this->createMock(BulkJobMemberMapper::class),
+				$this->jobList,
+				new NullLogger()
+			),
+			new BulkJobActions(
+				$this->createMock(BulkActionRegistry::class),
+				$this->createMock(BulkSelectionResolver::class),
+				$this->createMock(BulkJobExecutor::class)
+			),
+			new BulkJobEnvironment(
+				$this->createMock(ObjectService::class),
+				$this->createMock(IUserManager::class),
+				$this->createMock(IAppConfig::class)
+			)
 		);
 	}
 
