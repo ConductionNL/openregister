@@ -22,42 +22,14 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationScanLevel;
 
 /**
  * One pass of the bulk relation scan over a level of object data, and where it is.
  *
  * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
  */
-final class BulkRelationRun {
-
-	/**
-	 * The property definitions of the schema, when there is one.
-	 *
-	 * @var array|null
-	 */
-	public ?array $schemaProperties = null;
-
-	/**
-	 * The relations found so far, by dot path.
-	 *
-	 * @var array
-	 */
-	public array $relations = [];
-
-	/**
-	 * The property being scanned.
-	 *
-	 * @var string
-	 */
-	public string $key = '';
-
-	/**
-	 * The dot path of the property being scanned.
-	 *
-	 * @var string
-	 */
-	public string $path = '';
+final class BulkRelationRun extends RelationScanLevel {
 
 	/**
 	 * The dot path of the array item being scanned.
@@ -72,31 +44,4 @@ final class BulkRelationRun {
 	 * @var boolean
 	 */
 	public bool $itemsAreObjects = false;
-
-	/**
-	 * @param string      $prefix The dot path of the level, empty at the top.
-	 * @param Schema|null $schema The schema the data is scanned against, if any.
-	 */
-	public function __construct(
-		public readonly string $prefix = '',
-		public readonly ?Schema $schema = null,
-	) {
-	}//end __construct()
-
-	/**
-	 * Put the scan on a key of its level.
-	 *
-	 * @param string $key The key.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	public function moveTo(string $key): void {
-		$this->key = $key;
-		$this->path = $key;
-		if ($this->prefix !== '') {
-			$this->path = $this->prefix . '.' . $key;
-		}
-	}//end moveTo()
 }//end class
