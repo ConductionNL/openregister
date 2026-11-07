@@ -69,6 +69,17 @@ class ContextRetrievalGoldenTest extends TestCase {
 			'view lookup fails' => [['agent' => ['mode' => 'semantic', 'views' => ['v1']], 'semantic' => $mixed, 'inViewThrows' => true]],
 			'semantic throws' => [['agent' => ['mode' => 'semantic'], 'semanticThrows' => true]],
 			'keyword throws' => [['keywordThrows' => true]],
+			'scalar and odd metadata' => [[
+				'agent' => ['mode' => 'semantic', 'num' => 10],
+				'semantic' => [
+					['entity_type' => 'object', 'entity_id' => 'scalarmeta1', 'metadata' => '"just a string"'],
+					['entity_type' => 'file', 'entity_id' => 'filemeta22', 'metadata' => '{"file_name": "", "name": "n.txt"}'],
+					['entity_type' => 'object', 'entity_id' => 7, 'metadata' => '{"title": "T7", "uri": "/7"}', 'score' => 0.4],
+					['entity_type' => 'note', 'entity_id' => 'notenote99', 'name' => 'A note', 'chunk_text' => 'chunk', 'text' => 'ignored'],
+				],
+			]],
+			'keyword hits with gaps' => [['agent' => ['mode' => 'keyword', 'num' => 4], 'keyword' => [3 => ['id' => 'k3'], 9 => ['uuid' => 'k9', '_score' => 0.1, 'title' => 't9']]]],
+			'semantic objects and files counted apart' => [['rag' => ['numSourcesFiles' => 1, 'numSourcesObjects' => 2], 'agent' => ['mode' => 'semantic'], 'semantic' => $mixed]],
 			'source name fallbacks' => [[
 				'agent' => ['mode' => 'semantic', 'num' => 10],
 				'semantic' => [
