@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Files\Controller\Support\CallerFileAccess;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Controller;

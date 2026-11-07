@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Controller
- * @package  OCA\OpenRegister\Files\Controller\Support
+ * @category Service
+ * @package  OCA\OpenRegister\Files\Service\File
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,9 +20,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Controller\Support;
+namespace OCA\OpenRegister\Files\Service\File;
 
-use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 

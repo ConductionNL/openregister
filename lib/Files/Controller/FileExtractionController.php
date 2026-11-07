@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\Files\Controller\Support\CallerFileAccess;
+use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionControllerServices;
 use OCA\OpenRegister\Files\Controller\Support\FileExtractionListing;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
