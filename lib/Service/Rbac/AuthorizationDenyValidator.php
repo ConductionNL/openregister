@@ -290,11 +290,11 @@ class AuthorizationDenyValidator {
 	 * @return string|null The prefixed principal, or null when the id is not a non-empty string.
 	 */
 	private function userPrincipal(mixed $user): ?string {
-		if (is_string($user) === true && $user !== '') {
-			return (DenyResolverInterface::USER_PREFIX . $user);
+		if (is_string($user) === false || $user === '') {
+			return null;
 		}
 
-		return null;
+		return (DenyResolverInterface::USER_PREFIX . $user);
 	}//end userPrincipal()
 
 	/**
