@@ -175,6 +175,7 @@ final class ContractBindings {
 		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
+		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
