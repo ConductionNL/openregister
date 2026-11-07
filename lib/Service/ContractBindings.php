@@ -124,6 +124,7 @@ final class ContractBindings {
 		GitHubClientInterface::class => GitHubHandler::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationServiceInterface::class => NotificationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
