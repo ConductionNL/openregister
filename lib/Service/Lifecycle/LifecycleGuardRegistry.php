@@ -39,6 +39,8 @@ use RuntimeException;
  * guard cannot proceed. The runtime exception is mapped to HTTP 500 in the
  * controller; install-time `occ openregister:check-guards` (future) catches
  * the same problem before it reaches a request.
+ *
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class LifecycleGuardRegistry {
 	use ResolvesThroughContainers;
