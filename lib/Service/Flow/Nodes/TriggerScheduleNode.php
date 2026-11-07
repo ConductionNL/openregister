@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
@@ -46,7 +45,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Starts the flow on a cron schedule.
  */
-class TriggerScheduleNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class TriggerScheduleNode implements TriggerScheduleNodeInterface, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *
