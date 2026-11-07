@@ -23,8 +23,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\FormLinkServiceInterface;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
+use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\MapLinkServiceInterface;
+use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCA\OpenRegister\Service\MigrationService;
@@ -35,6 +43,8 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
+use OCA\OpenRegister\Service\OpenProjectLinkService;
+use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCA\OpenRegister\Service\OperationsConsoleService;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -57,12 +67,17 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const CLASSES = [
+		FlowLinkService::class => [FlowLinkServiceInterface::class, ContractBindings::class],
+		FormLinkService::class => [FormLinkServiceInterface::class, ContractBindings::class],
 		LinkedEntityService::class => [LinkedEntityServiceInterface::class, ContractBindings::class],
+		MapLinkService::class => [MapLinkServiceInterface::class, ContractBindings::class],
+		MappingService::class => [MappingServiceInterface::class, ContractBindings::class],
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
 		NotificationService::class => [NotificationServiceInterface::class, ContractBindings::class],
 		OasService::class => [OasServiceInterface::class, ContractBindings::class],
 		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
+		OpenProjectLinkService::class => [OpenProjectLinkServiceInterface::class, ContractBindings::class],
 		OperationsConsoleService::class => [OperationsConsoleServiceInterface::class, ContractBindings::class],
 	];
 

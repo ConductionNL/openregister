@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
-use OCA\OpenRegister\Service\Schema\PropertyConversionService;
+use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationService;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReader;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
@@ -128,9 +128,9 @@ class SchemaMigrationController extends Controller {
 	/**
 	 * Publishes and previews a property type change.
 	 *
-	 * @var ?PropertyConversionService
+	 * @var ?PropertyConversionServiceInterface
 	 */
-	private readonly ?PropertyConversionService $conversions;
+	private readonly ?PropertyConversionServiceInterface $conversions;
 
 	/**
 	 * Constructor.

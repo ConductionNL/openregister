@@ -51,7 +51,7 @@ use UnexpectedValueException;
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class MergeNode implements IFlowNode, MergeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 
 	/**
 	 * The modes this node understands.

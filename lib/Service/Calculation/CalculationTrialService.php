@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Schema;
  * on. This service never looks an object up itself, so it cannot be handed an id that
  * skips the caller's read check.
  */
-final class CalculationTrialService {
+final class CalculationTrialService implements CalculationTrialServiceInterface {
 
 	/**
 	 * The synthetic name a trial declaration is validated under.
