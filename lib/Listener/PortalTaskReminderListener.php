@@ -143,30 +143,86 @@ class PortalTaskReminderListener implements IEventListener {
 			return;
 		}
 
-		$rungKey = (string)$this->read(source: $event, method: 'getRungKey');
-		$kind = match ($this->triggerOf(rungKey: $rungKey)) {
+		$kind = $this->kindFor(rungKey: (string)$this->read(source: $event, method: 'getRungKey'));
+		if ($kind === null) {
+			return;
+		}
+
+		$task = $this->addressedTask(event: $event);
+		if ($task === null) {
+			return;
+		}
+
+		$this->delivery->request(task: $task, kind: $kind, message: $this->messageOf(event: $event, task: $task, kind: $kind));
+	}//end remind()
+
+	/**
+	 * The delivery kind a rung asks for, or null when it escalates inward.
+	 *
+	 * @param string $rungKey The rung key, `<trigger>:<offset>:<unit>`.
+	 *
+	 * @return string|null The PortalTaskDelivery kind.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
+	 */
+	private function kindFor(string $rungKey): ?string {
+		return match ($this->triggerOf(rungKey: $rungKey)) {
 			self::TRIGGER_PRE_BREACH => PortalTaskDelivery::KIND_REMINDER,
 			self::TRIGGER_POST_BREACH => PortalTaskDelivery::KIND_OVERDUE,
 			// A slaBreached rung (and anything unknown) escalates inward.
 			// Deliberately no delivery to the party here.
 			default => null,
 		};
-		if ($kind === null) {
-			return;
-		}
+	}//end kindFor()
 
+	/**
+	 * The subject task, when it is an open external task the rung addresses.
+	 *
+	 * @param Event $event The timer fire.
+	 *
+	 * @return TaskInterface|null The task to remind about.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
+	 */
+	private function addressedTask(Event $event): ?TaskInterface {
 		$task = $this->subjectTask(event: $event);
-		if ($task === null || (string)$task->getPerformerType() !== Task::PERFORMER_EXTERNAL || $task->isInTerminalState() === true) {
-			return;
+		if ($task === null || $this->isOpenExternal(task: $task) === false) {
+			return null;
 		}
 
 		$party = (string)$task->getAssignee();
 		if ($this->addressesParty(recipients: (array)$this->read(source: $event, method: 'getRecipients'), party: $party) === false) {
-			return;
+			return null;
 		}
 
+		return $task;
+	}//end addressedTask()
+
+	/**
+	 * Whether a task is performed by an external party and still open.
+	 *
+	 * @param TaskInterface $task The subject task.
+	 *
+	 * @return bool True for an open external task.
+	 */
+	private function isOpenExternal(TaskInterface $task): bool {
+		return (string)$task->getPerformerType() === Task::PERFORMER_EXTERNAL && $task->isInTerminalState() === false;
+	}//end isOpenExternal()
+
+	/**
+	 * The delivery message: the seam's own, plus the rung's key, priority and message key.
+	 *
+	 * @param Event         $event The timer fire.
+	 * @param TaskInterface $task  The task reminded about.
+	 * @param string        $kind  The delivery kind.
+	 *
+	 * @return array<string, mixed> The message.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
+	 */
+	private function messageOf(Event $event, TaskInterface $task, string $kind): array {
 		$message = $this->delivery->messageFor(task: $task);
-		$message['rungKey'] = $rungKey;
+		$message['rungKey'] = (string)$this->read(source: $event, method: 'getRungKey');
 		$message['priority'] = $this->read(source: $event, method: 'getPriority');
 		$message['messageKey'] = $this->read(source: $event, method: 'getMessage');
 		if ($kind === PortalTaskDelivery::KIND_OVERDUE) {
@@ -174,8 +230,8 @@ class PortalTaskReminderListener implements IEventListener {
 			$message['consequence'] = $this->consequenceOf(event: $event);
 		}
 
-		$this->delivery->request(task: $task, kind: $kind, message: $message);
-	}//end remind()
+		return $message;
+	}//end messageOf()
 
 	/**
 	 * The consequence line a postBreach rung carries, when the event has one.
@@ -225,19 +281,32 @@ class PortalTaskReminderListener implements IEventListener {
 	 */
 	private function addressesParty(array $recipients, string $party): bool {
 		foreach ($recipients as $recipient) {
-			if (is_array($recipient) === false) {
-				continue;
-			}
-
-			$id = (string)($recipient['id'] ?? '');
-			$type = (string)($recipient['type'] ?? '');
-			if (($type === Task::PERFORMER_EXTERNAL || str_starts_with($id, Task::EXTERNAL_PARTY_PREFIX) === true) && hash_equals($party, $id) === true) {
+			if ($this->isParty(recipient: $recipient, party: $party) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end addressesParty()
+
+	/**
+	 * Whether one resolved recipient is the external party.
+	 *
+	 * @param mixed  $recipient The resolved recipient.
+	 * @param string $party     The task's stored party reference.
+	 *
+	 * @return bool True when the recipient is external and names the party.
+	 */
+	private function isParty(mixed $recipient, string $party): bool {
+		if (is_array($recipient) === false) {
+			return false;
+		}
+
+		$id = (string)($recipient['id'] ?? '');
+		$type = (string)($recipient['type'] ?? '');
+
+		return ($type === Task::PERFORMER_EXTERNAL || str_starts_with($id, Task::EXTERNAL_PARTY_PREFIX) === true) && hash_equals($party, $id) === true;
+	}//end isParty()
 
 	/**
 	 * The task the timer is anchored to, or null when it is not a task or is gone.
@@ -247,19 +316,7 @@ class PortalTaskReminderListener implements IEventListener {
 	 * @return TaskInterface|null The subject task.
 	 */
 	private function subjectTask(Event $event): ?TaskInterface {
-		$timer = $this->read(source: $event, method: 'getTimer');
-		// Is_callable, not method_exists: FlowTimer's getters are Entity::__call
-		// magic, so method_exists() said no on every real timer and no reminder
-		// ever reached a party; only a fake timer with real methods passed (#4166).
-		if (is_object($timer) === false || is_callable([$timer, 'getSubjectType']) === false || is_callable([$timer, 'getSubjectUuid']) === false) {
-			return null;
-		}
-
-		if ((string)$this->read(source: $timer, method: 'getSubjectType') !== 'task') {
-			return null;
-		}
-
-		$uuid = trim((string)$this->read(source: $timer, method: 'getSubjectUuid'));
+		$uuid = $this->taskUuidOf(timer: $this->read(source: $event, method: 'getTimer'));
 		if ($uuid === '') {
 			return null;
 		}
@@ -270,6 +327,28 @@ class PortalTaskReminderListener implements IEventListener {
 			return null;
 		}
 	}//end subjectTask()
+
+	/**
+	 * The uuid of the task a timer is anchored to, or '' when it is not a task timer.
+	 *
+	 * @param mixed $timer The fire's timer.
+	 *
+	 * @return string The task uuid, or ''.
+	 */
+	private function taskUuidOf(mixed $timer): string {
+		// Is_callable, not method_exists: FlowTimer's getters are Entity::__call
+		// magic, so method_exists() said no on every real timer and no reminder
+		// ever reached a party; only a fake timer with real methods passed (#4166).
+		if (is_object($timer) === false || is_callable([$timer, 'getSubjectType']) === false || is_callable([$timer, 'getSubjectUuid']) === false) {
+			return '';
+		}
+
+		if ((string)$this->read(source: $timer, method: 'getSubjectType') !== 'task') {
+			return '';
+		}
+
+		return trim((string)$this->read(source: $timer, method: 'getSubjectUuid'));
+	}//end taskUuidOf()
 
 	/**
 	 * Read one published accessor of a duck-typed object.

@@ -43,7 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -101,7 +101,7 @@ class SelectielijstImportService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectRetentionHandler $settingsHandler Names the selectielijst register and schema.
+	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the selectielijst register and schema.
 	 * @param RegisterMapperInterface         $registerMapper  Resolves the register.
 	 * @param SchemaMapperInterface           $schemaMapper    Resolves the schema.
 	 * @param MagicMapperInterface            $objectMapper    Reads the rows already stored.
@@ -109,7 +109,7 @@ class SelectielijstImportService {
 	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
 	 */
 	public function __construct(
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly ArchivalSettingsReaderInterface $settingsHandler,
 		private readonly RegisterMapperInterface $registerMapper,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly MagicMapperInterface $objectMapper,

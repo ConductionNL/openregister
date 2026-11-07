@@ -52,7 +52,7 @@ final class CapabilityRegistrar {
 			IntegrationsCapability::class,
 			function (ContainerInterface $container) {
 				return new IntegrationsCapability(
-					registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationRegistry::class),
+					registry: $container->get(\OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface::class),
 					userSession: $container->get('OCP\IUserSession'),
 					groupManager: $container->get('OCP\IGroupManager'),
 					appManager: $container->get('OCP\App\IAppManager'),

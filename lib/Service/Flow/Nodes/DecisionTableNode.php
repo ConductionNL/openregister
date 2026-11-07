@@ -46,7 +46,6 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IL10N;
 use OCP\IURLGenerator;
-use OCP\WorkflowEngine\IManager;
 use UnexpectedValueException;
 
 /**
@@ -60,7 +59,9 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
-class DecisionTableNode implements IFlowNode, DecisionTableNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class DecisionTableNode extends LogicNodeBase implements IFlowNode, DecisionTableNodeInterface,
+	IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy
+{
 
 	/**
 	 * The step type.
@@ -81,11 +82,11 @@ class DecisionTableNode implements IFlowNode, DecisionTableNodeInterface, IFlowN
 	public function __construct(
 		private readonly DecisionTableEvaluator $engine,
 		private readonly DecisionTableValidator $validator,
-		private readonly IL10N $l10n,
-		private readonly IURLGenerator $urls,
+		IL10N $l10n,
+		IURLGenerator $urls,
 		private readonly ?DecisionTableStore $store = null,
 	) {
-
+		parent::__construct(l10n: $l10n, urls: $urls);
 	}//end __construct()
 
 	/**
@@ -131,21 +132,6 @@ class DecisionTableNode implements IFlowNode, DecisionTableNodeInterface, IFlowN
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/checkmark.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes. Deciding over data the run already carries
-	 * grants no privilege; what may be read and written is governed where it
-	 * always is, at the object nodes.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return bool Whether it is available.
-	 *
-	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of a decision-table step.
@@ -598,16 +584,4 @@ class DecisionTableNode implements IFlowNode, DecisionTableNodeInterface, IFlowN
 		return IFlowNodeTaxonomy::KIND_BUSINESS_RULE_TASK;
 
 	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_LOGIC;
-
-	}//end getCategory()
 }//end class

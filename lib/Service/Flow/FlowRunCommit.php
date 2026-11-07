@@ -633,17 +633,7 @@ class FlowRunCommit {
 		$step->setDurationMs(($entry['durationMs'] ?? null));
 		$step->setCreated($now);
 		$step->setFinished($now);
-		$step->setError(($entry['error'] ?? ($entry['reason'] ?? null)));
-		$step->setOutput(
-			array_filter(
-				[
-					'itemsIn' => ($entry['itemsIn'] ?? null),
-					'itemsOut' => ($entry['itemsOut'] ?? null),
-					'checkId' => ($entry['checkId'] ?? null),
-				],
-				static fn ($v): bool => $v !== null
-			)
-		);
+		FlowStepOutcome::stamp(step: $step, entry: $entry);
 		$this->steps->insert($step);
 
 		return $step;

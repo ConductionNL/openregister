@@ -84,13 +84,25 @@ class UnknownMetadataFieldMiddleware extends Middleware {
 			['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		return new JSONResponse(
-			data: [
-				'error' => 'unknown-metadata-field',
-				'field' => $exception->getField(),
-				'message' => $exception->getMessage(),
-			],
-			statusCode: 400
-		);
+		return $this->refusal(exception: $exception);
 	}//end afterException()
+
+	/**
+	 * The 400 response naming the unknown field and the fields that do exist.
+	 *
+	 * @param UnknownMetadataFieldException $exception The rejection.
+	 *
+	 * @return JSONResponse The machine-readable error, the field and the message.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 */
+	private function refusal(UnknownMetadataFieldException $exception): JSONResponse {
+		$body = [
+			'error' => 'unknown-metadata-field',
+			'field' => $exception->getField(),
+			'message' => $exception->getMessage(),
+		];
+
+		return new JSONResponse(data: $body, statusCode: 400);
+	}//end refusal()
 }//end class

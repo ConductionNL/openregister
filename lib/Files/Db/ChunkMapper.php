@@ -48,7 +48,7 @@ use OCA\OpenRegister\Db\Source;
  *   query over openregister_chunks (counts, source lookups, work queues, keyword search);
  *   splitting the mapper would scatter the table's query surface without reducing complexity.
  */
-class ChunkMapper extends QBMapper implements ChunkMapperInterface {
+class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOverviewInterface, ChunkStoreInterface {
 
 	/**
 	 * PSR-3 logger.
