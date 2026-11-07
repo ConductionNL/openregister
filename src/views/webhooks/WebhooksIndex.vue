@@ -173,6 +173,7 @@ import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
 import WebhooksSidebar from '../../components/WebhooksSidebar.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
 import { editAction, refreshAction } from '../../services/menuActions.js'
 import { navigationStore, webhookStore } from '../../store/store.js'
 import { offsetPaging } from '../offsetPaging.js'
@@ -536,17 +537,7 @@ export default {
 			return url.substring(0, 37) + '...'
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
