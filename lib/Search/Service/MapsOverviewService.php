@@ -51,7 +51,7 @@ namespace OCA\OpenRegister\Search\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
-use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
@@ -97,7 +97,7 @@ class MapsOverviewService {
 	 *
 	 * @param ObjectOperationsInterface $objectService Canonical RBAC-scoped object read facade.
 	 * @param GeoFeatureCollectionBuilder $geoBuilder Extracts geometry from object rows.
-	 * @param IntegrationRegistry $registry Registry for the page-widget surface.
+	 * @param PageWidgetRegistryInterface $registry Registry for the page-widget surface.
 	 * @param IUserSession $userSession Current user (RBAC / write guard).
 	 * @param IGroupManager $groupManager Admin check (RBAC bypass for admins).
 	 *
@@ -106,7 +106,7 @@ class MapsOverviewService {
 	public function __construct(
 		private ObjectOperationsInterface $objectService,
 		private GeoFeatureCollectionBuilder $geoBuilder,
-		private IntegrationRegistry $registry,
+		private PageWidgetRegistryInterface $registry,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 	) {
