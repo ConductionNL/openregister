@@ -61,6 +61,10 @@ class TranslationProjectionGoldenTest extends TestCase {
 			'no translatable properties, delete failure swallowed' => ['translatable' => [], 'existing' => [['title', 'nl'], ['body', 'en']], 'deleteThrows' => true],
 			'signed-in translator' => ['user' => 'alice', 'data' => ['title' => ['en' => 'Hi']]],
 			'upsert failure is logged' => ['data' => ['title' => ['en' => 'Hi']], 'upsertThrows' => true],
+			'register lookup fails falls back to nl' => ['registerThrows' => true, 'data' => ['body' => 'Tekst', 'title' => 'Titre']],
+			'register without languages' => ['registerLanguages' => [], 'data' => ['body' => 'Tekst']],
+			'scalar language values' => ['data' => ['title' => ['nl' => true, 'en' => false, 'de' => 1.5, '7' => 'numeric key', 'fr' => 0], 'body' => 42]],
+			'both properties legacy and keyed' => ['user' => 'bob', 'data' => ['title' => 'Titre', 'body' => ['en' => 'B', 'nl' => 'C']], 'existing' => [['body', 'de']]],
 		];
 
 		$out = [];
@@ -81,7 +85,7 @@ class TranslationProjectionGoldenTest extends TestCase {
 			'other' => ['type' => 'string'],
 		]);
 		$register = new Register();
-		$register->setLanguages(['de', 'en']);
+		$register->setLanguages($case['registerLanguages'] ?? ['de', 'en']);
 
 		$translationMapper = $this->createMock(TranslationMapper::class);
 		$translationMapper->method('upsert')->willReturnCallback(
@@ -128,7 +132,11 @@ class TranslationProjectionGoldenTest extends TestCase {
 		}
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
-		$registerMapper->method('find')->willReturn($register);
+		if (($case['registerThrows'] ?? false) === true) {
+			$registerMapper->method('find')->willThrowException(new \RuntimeException('no register'));
+		} else {
+			$registerMapper->method('find')->willReturn($register);
+		}
 		$session = $this->createMock(IUserSession::class);
 		if (isset($case['user']) === true) {
 			$user = $this->createMock(IUser::class);
