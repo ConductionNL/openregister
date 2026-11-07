@@ -41,15 +41,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleDeclarationForms;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -68,7 +68,7 @@ class TemporalCalculationSweepService implements TemporalCalculationSweepService
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Schema enumeration (system scope).
 	 * @param RegisterMapperInterface $registerMapper Register enumeration for schema→register resolution.
-	 * @param MagicMapperInterface $objectMapper Raw per-table object enumeration.
+	 * @param MagicTableRowReaderInterface $objectMapper Raw per-table object enumeration.
 	 * @param CalculationEvaluatorInterface $evaluator Expression evaluator (exposes `now`).
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
 	 * @param ObjectOperationsInterface $objectService The normal object write path (events + audit).
@@ -79,7 +79,7 @@ class TemporalCalculationSweepService implements TemporalCalculationSweepService
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,
-		private readonly MagicMapperInterface $objectMapper,
+		private readonly MagicTableRowReaderInterface $objectMapper,
 		private readonly CalculationEvaluatorInterface $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
 		private readonly ObjectOperationsInterface $objectService,

@@ -99,6 +99,48 @@ class SecurityService {
 	private const CACHE_PREFIX_AUTH_LOCKOUT = 'openregister_auth_lockout_';
 
 	/**
+	 * The two login lockouts, checked in this order: the account, then the address.
+	 *
+	 * @var list<array{prefix: string, field: string, event: string, reason: string}>
+	 */
+	private const LOGIN_LOCKOUTS = [
+		[
+			'prefix' => self::CACHE_PREFIX_USER_LOCKOUT,
+			'field'  => 'username',
+			'event'  => 'login_attempt_during_lockout',
+			'reason' => 'Account temporarily locked due to too many failed login attempts',
+		],
+		[
+			'prefix' => self::CACHE_PREFIX_IP_LOCKOUT,
+			'field'  => 'ip_address',
+			'event'  => 'login_attempt_from_blocked_ip',
+			'reason' => 'IP address temporarily blocked due to suspicious activity',
+		],
+	];
+
+	/**
+	 * Security events logged as warnings; every other event is logged as info.
+	 *
+	 * @var list<string>
+	 */
+	private const WARNING_EVENTS = ['user_locked_out', 'login_attempt_during_lockout', 'auth_locked_out'];
+
+	/**
+	 * Patterns removed from sanitised input after HTML escaping.
+	 *
+	 * @var list<string>
+	 */
+	private const DANGEROUS_PATTERNS = [
+		'/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi',
+		'/javascript:/i',
+		'/vbscript:/i',
+		'/onload\s*=/i',
+		'/onerror\s*=/i',
+		'/onclick\s*=/i',
+		'/onmouseover\s*=/i',
+	];
+
+	/**
 	 * Constructor for SecurityService
 	 *
 	 * @param ICacheFactory $cacheFactory Factory for creating cache instances
@@ -157,18 +199,8 @@ class SecurityService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public static function assertSafeFetchUrl(string $url): void {
-		$parts = parse_url($url);
-		if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
-			throw new InvalidArgumentException('Invalid URL.');
-		}
-
-		$scheme = strtolower($parts['scheme']);
-		if (in_array($scheme, ['http', 'https'], true) === false) {
-			throw new InvalidArgumentException('Only http and https URLs are allowed.');
-		}
-
 		$guard = new OutboundAddressGuard();
-		$ips   = $guard->addressesOf(host: $parts['host']);
+		$ips   = $guard->addressesOf(host: self::fetchableHost(url: $url));
 		if (empty($ips) === true) {
 			// Fail closed: a host we cannot resolve must not be fetched.
 			throw new InvalidArgumentException('URL host could not be resolved.');
@@ -180,6 +212,28 @@ class SecurityService {
 			}
 		}
 	}//end assertSafeFetchUrl()
+
+	/**
+	 * The host of a URL that is well-formed and http(s), or a refusal.
+	 *
+	 * @param string $url The user-supplied URL.
+	 *
+	 * @return string The host to resolve.
+	 *
+	 * @throws InvalidArgumentException When the URL is malformed or not http(s).
+	 */
+	private static function fetchableHost(string $url): string {
+		$parts = parse_url($url);
+		if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+			throw new InvalidArgumentException('Invalid URL.');
+		}
+
+		if (in_array(strtolower($parts['scheme']), ['http', 'https'], true) === false) {
+			throw new InvalidArgumentException('Only http and https URLs are allowed.');
+		}
+
+		return $parts['host'];
+	}//end fetchableHost()
 
 	/**
 	 * Check if login attempt is allowed based on rate limiting rules
@@ -194,80 +248,94 @@ class SecurityService {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function checkLoginRateLimit(string $username, string $ipAddress): array {
-		$username = $this->sanitizeForCacheKey(input: $username);
-		$ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
-
-		$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-		$userLockoutUntil = $this->cache->get($userLockoutKey);
-		if ($userLockoutUntil !== null && $userLockoutUntil > time()) {
-			$this->logSecurityEvent(
-				event: 'login_attempt_during_lockout',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'lockout_until' => $userLockoutUntil,
-				]
+		$who = $this->loginIdentity(username: $username, ipAddress: $ipAddress);
+		foreach (self::LOGIN_LOCKOUTS as $lockout) {
+			$refusal = $this->activeLoginLockout(
+				key: $lockout['prefix'] . $who[$lockout['field']],
+				event: $lockout['event'],
+				reason: $lockout['reason'],
+				who: $who
 			);
-
-			return [
-				'allowed' => false,
-				'lockout_until' => $userLockoutUntil,
-				'reason' => 'Account temporarily locked due to too many failed login attempts',
-			];
+			if ($refusal !== null) {
+				return $refusal;
+			}
 		}
 
-		$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-		$ipLockoutUntil = $this->cache->get($ipLockoutKey);
-		if ($ipLockoutUntil !== null && $ipLockoutUntil > time()) {
-			$this->logSecurityEvent(
-				event: 'login_attempt_from_blocked_ip',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'lockout_until' => $ipLockoutUntil,
-				]
-			);
-
-			return [
-				'allowed' => false,
-				'lockout_until' => $ipLockoutUntil,
-				'reason' => 'IP address temporarily blocked due to suspicious activity',
-			];
-		}
-
-		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
-		$userAttempts = $this->cache->get($userAttemptsKey) ?? 0;
-
-		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
-		$ipAttempts = $this->cache->get($ipAttemptsKey) ?? 0;
-
-		if ($userAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
-			$delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY . $username . '_' . $ipAddress;
-			$currentDelay = $this->cache->get($delayKey) ?? self::PROGRESSIVE_DELAY_BASE;
-
-			$nextDelay = min($currentDelay * 2, self::MAX_PROGRESSIVE_DELAY);
-			$this->cache->set($delayKey, $nextDelay, self::LOGIN_RATE_LIMIT_WINDOW);
-
-			$this->logSecurityEvent(
-				event: 'rate_limit_exceeded',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'user_attempts' => $userAttempts,
-					'ip_attempts' => $ipAttempts,
-					'delay' => $currentDelay,
-				]
-			);
-
-			return [
-				'allowed' => false,
-				'delay' => $currentDelay,
-				'reason' => 'Too many login attempts. Please wait before trying again.',
-			];
-		}//end if
-
-		return ['allowed' => true];
+		return ($this->progressiveDelayRefusal(who: $who) ?? ['allowed' => true]);
 	}//end checkLoginRateLimit()
+
+	/**
+	 * The sanitised username and address a login is keyed and logged under.
+	 *
+	 * @param string $username  The username.
+	 * @param string $ipAddress The client address.
+	 *
+	 * @return array{username: string, ip_address: string}
+	 */
+	private function loginIdentity(string $username, string $ipAddress): array {
+		return [
+			'username'   => $this->sanitizeForCacheKey(input: $username),
+			'ip_address' => $this->sanitizeForCacheKey(input: $ipAddress),
+		];
+	}//end loginIdentity()
+
+	/**
+	 * The refusal for a login lockout still in force, logged; null when there is none.
+	 *
+	 * @param string                                       $key    The lockout cache key.
+	 * @param string                                       $event  The security event to log.
+	 * @param string                                       $reason The refusal reason.
+	 * @param array{username: string, ip_address: string} $who    The login identity.
+	 *
+	 * @return array{allowed: false, lockout_until: mixed, reason: string}|null
+	 */
+	private function activeLoginLockout(string $key, string $event, string $reason, array $who): ?array {
+		$lockoutUntil = $this->cache->get($key);
+		if ($lockoutUntil === null || ($lockoutUntil > time()) === false) {
+			return null;
+		}
+
+		$this->logSecurityEvent(event: $event, context: $who + ['lockout_until' => $lockoutUntil]);
+
+		return ['allowed' => false, 'lockout_until' => $lockoutUntil, 'reason' => $reason];
+	}//end activeLoginLockout()
+
+	/**
+	 * The progressive-delay refusal once either login counter reached the limit; null below it.
+	 *
+	 * @param array{username: string, ip_address: string} $who The login identity.
+	 *
+	 * @return array{allowed: false, delay: mixed, reason: string}|null
+	 */
+	private function progressiveDelayRefusal(array $who): ?array {
+		$userAttempts = ($this->cache->get(self::CACHE_PREFIX_LOGIN_ATTEMPTS . $who['username']) ?? 0);
+		$ipAttempts   = ($this->cache->get(self::CACHE_PREFIX_IP_ATTEMPTS . $who['ip_address']) ?? 0);
+		if (($userAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS || $ipAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) === false) {
+			return null;
+		}
+
+		$delay = $this->nextProgressiveDelay(key: self::CACHE_PREFIX_PROGRESSIVE_DELAY . $who['username'] . '_' . $who['ip_address']);
+		$this->logSecurityEvent(
+			event: 'rate_limit_exceeded',
+			context: $who + ['user_attempts' => $userAttempts, 'ip_attempts' => $ipAttempts, 'delay' => $delay]
+		);
+
+		return ['allowed' => false, 'delay' => $delay, 'reason' => 'Too many login attempts. Please wait before trying again.'];
+	}//end progressiveDelayRefusal()
+
+	/**
+	 * The delay in force now; the stored delay doubles, capped, for the next attempt.
+	 *
+	 * @param string $key The progressive-delay cache key.
+	 *
+	 * @return mixed The current delay in seconds.
+	 */
+	private function nextProgressiveDelay(string $key): mixed {
+		$currentDelay = ($this->cache->get($key) ?? self::PROGRESSIVE_DELAY_BASE);
+		$this->cache->set($key, min($currentDelay * 2, self::MAX_PROGRESSIVE_DELAY), self::LOGIN_RATE_LIMIT_WINDOW);
+
+		return $currentDelay;
+	}//end nextProgressiveDelay()
 
 	/**
 	 * Record a failed login attempt
@@ -281,60 +349,53 @@ class SecurityService {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason = 'invalid_credentials'): void {
-		$username = $this->sanitizeForCacheKey(input: $username);
-		$ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
+		$who          = $this->loginIdentity(username: $username, ipAddress: $ipAddress);
+		$userAttempts = $this->countAttempt(key: self::CACHE_PREFIX_LOGIN_ATTEMPTS . $who['username'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
+		$ipAttempts   = $this->countAttempt(key: self::CACHE_PREFIX_IP_ATTEMPTS . $who['ip_address'], ttl: self::LOGIN_RATE_LIMIT_WINDOW);
 
-		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
-		$userAttempts = ($this->cache->get($userAttemptsKey) ?? 0) + 1;
-		$this->cache->set($userAttemptsKey, $userAttempts, self::LOGIN_RATE_LIMIT_WINDOW);
-
-		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
-		$ipAttempts = ($this->cache->get($ipAttemptsKey) ?? 0) + 1;
-		$this->cache->set($ipAttemptsKey, $ipAttempts, self::LOGIN_RATE_LIMIT_WINDOW);
-
-		if ($userAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = time() + self::LOGIN_LOCKOUT_DURATION;
-			$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-			$this->cache->set($userLockoutKey, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
-
-			$this->logSecurityEvent(
-				event: 'user_locked_out',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'attempts' => $userAttempts,
-					'lockout_until' => $lockoutUntil,
-				]
-			);
-		}
-
-		if ($ipAttempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) {
-			$lockoutUntil = time() + self::LOGIN_LOCKOUT_DURATION;
-			$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-			$this->cache->set($ipLockoutKey, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
-
-			$this->logSecurityEvent(
-				event: 'ip_locked_out',
-				context: [
-					'username' => $username,
-					'ip_address' => $ipAddress,
-					'attempts' => $ipAttempts,
-					'lockout_until' => $lockoutUntil,
-				]
-			);
-		}
+		$this->lockOutAtLimit(attempts: $userAttempts, key: self::CACHE_PREFIX_USER_LOCKOUT . $who['username'], event: 'user_locked_out', who: $who);
+		$this->lockOutAtLimit(attempts: $ipAttempts, key: self::CACHE_PREFIX_IP_LOCKOUT . $who['ip_address'], event: 'ip_locked_out', who: $who);
 
 		$this->logSecurityEvent(
 			event: 'failed_login_attempt',
-			context: [
-				'username' => $username,
-				'ip_address' => $ipAddress,
-				'reason' => $reason,
-				'user_attempts' => $userAttempts,
-				'ip_attempts' => $ipAttempts,
-			]
+			context: $who + ['reason' => $reason, 'user_attempts' => $userAttempts, 'ip_attempts' => $ipAttempts]
 		);
 	}//end recordFailedLoginAttempt()
+
+	/**
+	 * Add one attempt to a counter and return the new count.
+	 *
+	 * @param string $key The counter cache key.
+	 * @param int    $ttl The counter window in seconds.
+	 *
+	 * @return mixed The count after this attempt.
+	 */
+	private function countAttempt(string $key, int $ttl): mixed {
+		$attempts = (($this->cache->get($key) ?? 0) + 1);
+		$this->cache->set($key, $attempts, $ttl);
+
+		return $attempts;
+	}//end countAttempt()
+
+	/**
+	 * Lock a login identity out, and log it, once its counter reached the limit.
+	 *
+	 * @param mixed                                        $attempts The count after this attempt.
+	 * @param string                                       $key      The lockout cache key.
+	 * @param string                                       $event    The security event to log.
+	 * @param array{username: string, ip_address: string} $who      The login identity.
+	 *
+	 * @return void
+	 */
+	private function lockOutAtLimit(mixed $attempts, string $key, string $event, array $who): void {
+		if (($attempts >= self::LOGIN_RATE_LIMIT_ATTEMPTS) === false) {
+			return;
+		}
+
+		$lockoutUntil = (time() + self::LOGIN_LOCKOUT_DURATION);
+		$this->cache->set($key, $lockoutUntil, self::LOGIN_LOCKOUT_DURATION);
+		$this->logSecurityEvent(event: $event, context: $who + ['attempts' => $attempts, 'lockout_until' => $lockoutUntil]);
+	}//end lockOutAtLimit()
 
 	/**
 	 * Record a successful login attempt
@@ -347,34 +408,21 @@ class SecurityService {
 	 * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
 	 */
 	public function recordSuccessfulLogin(string $username, string $ipAddress): void {
-		$username = $this->sanitizeForCacheKey(input: $username);
-		$ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
+		$who = $this->loginIdentity(username: $username, ipAddress: $ipAddress);
 
-		// Clear user-based rate limits.
-		$userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS . $username;
-		$this->cache->remove($userAttemptsKey);
+		// Clear the user-based and IP-based rate limits, then the progressive delay.
+		$keys = [
+			self::CACHE_PREFIX_LOGIN_ATTEMPTS . $who['username'],
+			self::CACHE_PREFIX_USER_LOCKOUT . $who['username'],
+			self::CACHE_PREFIX_IP_ATTEMPTS . $who['ip_address'],
+			self::CACHE_PREFIX_IP_LOCKOUT . $who['ip_address'],
+			self::CACHE_PREFIX_PROGRESSIVE_DELAY . $who['username'] . '_' . $who['ip_address'],
+		];
+		foreach ($keys as $key) {
+			$this->cache->remove($key);
+		}
 
-		$userLockoutKey = self::CACHE_PREFIX_USER_LOCKOUT . $username;
-		$this->cache->remove($userLockoutKey);
-
-		// Clear IP-based rate limits.
-		$ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS . $ipAddress;
-		$this->cache->remove($ipAttemptsKey);
-
-		$ipLockoutKey = self::CACHE_PREFIX_IP_LOCKOUT . $ipAddress;
-		$this->cache->remove($ipLockoutKey);
-
-		// Clear progressive delay.
-		$delayKey = self::CACHE_PREFIX_PROGRESSIVE_DELAY . $username . '_' . $ipAddress;
-		$this->cache->remove($delayKey);
-
-		$this->logSecurityEvent(
-			event: 'successful_login',
-			context: [
-				'username' => $username,
-				'ip_address' => $ipAddress,
-			]
-		);
+		$this->logSecurityEvent(event: 'successful_login', context: $who);
 	}//end recordSuccessfulLogin()
 
 	/**
@@ -513,50 +561,43 @@ class SecurityService {
 	 */
 	public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason = 'inbound_auth_failed'): void {
 		$compositeKey = $this->buildAuthCompositeKey(identity: $identity, ipAddress: $ipAddress);
-		$sanitizedIp = $this->sanitizeForCacheKey(input: $ipAddress);
-		$ceiling = $this->authCeiling();
+		$who          = ['identity' => $identity, 'ip_address' => $this->sanitizeForCacheKey(input: $ipAddress)];
+		$ceiling      = $this->authCeiling();
 
-		// Composite (identity+IP) counter — primary gate.
-		$attemptsKey = self::CACHE_PREFIX_AUTH_ATTEMPTS . $compositeKey;
-		$attempts = ($this->cache->get($attemptsKey) ?? 0) + 1;
-		$this->cache->set($attemptsKey, $attempts, $ceiling['windowSeconds']);
+		// Composite (identity+IP) counter — primary gate; coarse per-IP counter — high-ceiling backstop only.
+		$counts = [
+			'attempts'    => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_ATTEMPTS . $compositeKey, ttl: $ceiling['windowSeconds']),
+			'ip_attempts' => $this->countAttempt(key: self::CACHE_PREFIX_AUTH_IP_ATTEMPTS . $who['ip_address'], ttl: $ceiling['windowSeconds']),
+		];
 
-		// Coarse per-IP counter — high-ceiling backstop only.
-		$ipAttemptsKey = self::CACHE_PREFIX_AUTH_IP_ATTEMPTS . $sanitizedIp;
-		$ipAttempts = ($this->cache->get($ipAttemptsKey) ?? 0) + 1;
-		$this->cache->set($ipAttemptsKey, $ipAttempts, $ceiling['windowSeconds']);
-
-		$lockoutTriggered = false;
-		if ($attempts >= $ceiling['attemptsPerIdentity'] || $ipAttempts >= $ceiling['attemptsPerAddress']) {
-			$lockoutTriggered = true;
-			$lockoutUntil = time() + $ceiling['lockoutSeconds'];
-			$lockoutKey = self::CACHE_PREFIX_AUTH_LOCKOUT . $compositeKey;
-			$this->cache->set($lockoutKey, $lockoutUntil, $ceiling['lockoutSeconds']);
-
-			$this->logSecurityEvent(
-				event: 'auth_locked_out',
-				context: [
-					'identity' => $identity,
-					'ip_address' => $sanitizedIp,
-					'attempts' => $attempts,
-					'ip_attempts' => $ipAttempts,
-					'lockout_until' => $lockoutUntil,
-				]
-			);
-		}
-
+		$lockoutTriggered = $this->lockOutAuthAtCeiling(compositeKey: $compositeKey, counts: $counts, ceiling: $ceiling, who: $who);
 		$this->logSecurityEvent(
 			event: 'failed_auth_attempt',
-			context: [
-				'identity' => $identity,
-				'ip_address' => $sanitizedIp,
-				'reason' => $reason,
-				'attempts' => $attempts,
-				'ip_attempts' => $ipAttempts,
-				'lockout_triggered' => $lockoutTriggered,
-			]
+			context: $who + ['reason' => $reason] + $counts + ['lockout_triggered' => $lockoutTriggered]
 		);
 	}//end recordFailedAuthAttempt()
+
+	/**
+	 * Lock the identity+address pair out, and log it, once either counter reached its ceiling.
+	 *
+	 * @param string                                                        $compositeKey The identity+address cache key.
+	 * @param array{attempts: mixed, ip_attempts: mixed}                    $counts       The counts after this attempt.
+	 * @param array{attemptsPerIdentity: int, attemptsPerAddress: int, windowSeconds: int, lockoutSeconds: int} $ceiling The ceiling in force.
+	 * @param array{identity: string, ip_address: string}                   $who          The identity and sanitised address.
+	 *
+	 * @return bool Whether this attempt triggered the lockout.
+	 */
+	private function lockOutAuthAtCeiling(string $compositeKey, array $counts, array $ceiling, array $who): bool {
+		if (($counts['attempts'] >= $ceiling['attemptsPerIdentity'] || $counts['ip_attempts'] >= $ceiling['attemptsPerAddress']) === false) {
+			return false;
+		}
+
+		$lockoutUntil = (time() + $ceiling['lockoutSeconds']);
+		$this->cache->set(self::CACHE_PREFIX_AUTH_LOCKOUT . $compositeKey, $lockoutUntil, $ceiling['lockoutSeconds']);
+		$this->logSecurityEvent(event: 'auth_locked_out', context: $who + $counts + ['lockout_until' => $lockoutUntil]);
+
+		return true;
+	}//end lockOutAuthAtCeiling()
 
 	/**
 	 * Clear the inbound-API auth rate-limit counters for an identity+IP.
@@ -638,32 +679,31 @@ class SecurityService {
 			return $input;
 		}
 
-		$input = trim($input);
+		return $this->sanitizeString(input: $input, maxLength: $maxLength);
+	}//end sanitizeInput()
 
+	/**
+	 * Trim, cut, strip null bytes, HTML-escape and remove the dangerous patterns from one string.
+	 *
+	 * @param string $input     The string.
+	 * @param int    $maxLength Maximum length kept.
+	 *
+	 * @return string|null The sanitised string (null only when a pattern fails to apply).
+	 */
+	private function sanitizeString(string $input, int $maxLength): ?string {
+		$input = trim($input);
 		if (strlen($input) > $maxLength) {
 			$input = substr($input, 0, $maxLength);
 		}
 
 		$input = str_replace("\0", '', $input);
-
 		$input = htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-		$dangerousPatterns = [
-			'/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi',
-			'/javascript:/i',
-			'/vbscript:/i',
-			'/onload\s*=/i',
-			'/onerror\s*=/i',
-			'/onclick\s*=/i',
-			'/onmouseover\s*=/i',
-		];
-
-		foreach ($dangerousPatterns as $pattern) {
+		foreach (self::DANGEROUS_PATTERNS as $pattern) {
 			$input = preg_replace($pattern, '', $input);
 		}
 
 		return $input;
-	}//end sanitizeInput()
+	}//end sanitizeString()
 
 	/**
 	 * Validate and sanitize login credentials
@@ -676,44 +716,44 @@ class SecurityService {
 	 */
 	public function validateLoginCredentials(array $credentials): array {
 		if (empty($credentials['username']) === true || empty($credentials['password']) === true) {
-			return [
-				'valid' => false,
-				'error' => 'Username and password are required',
-			];
+			return ['valid' => false, 'error' => 'Username and password are required'];
 		}
 
 		$sanitizedUsername = $this->sanitizeInput(input: $credentials['username'], maxLength: 320);
-
-		if (strlen($sanitizedUsername) < 2) {
-			return [
-				'valid' => false,
-				'error' => 'Username must be at least 2 characters long',
-			];
-		}
-
-		if (preg_match('/[<>"\'\\/\\\\]/', $sanitizedUsername) === 1) {
-			return [
-				'valid' => false,
-				'error' => 'Username contains invalid characters',
-			];
-		}
-
-		$password = $credentials['password'];
-		if (strlen($password) > 1000) {
-			return [
-				'valid' => false,
-				'error' => 'Password is too long',
-			];
+		$error = $this->credentialError(username: $sanitizedUsername, password: $credentials['password']);
+		if ($error !== null) {
+			return ['valid' => false, 'error' => $error];
 		}
 
 		return [
 			'valid' => true,
-			'credentials' => [
-				'username' => $sanitizedUsername,
-				'password' => $password,
-			],
+			'credentials' => ['username' => $sanitizedUsername, 'password' => $credentials['password']],
 		];
 	}//end validateLoginCredentials()
+
+	/**
+	 * Why a sanitised username and password are refused, or null when they are not.
+	 *
+	 * @param mixed $username The sanitised username.
+	 * @param mixed $password The password as submitted.
+	 *
+	 * @return string|null The refusal, or null.
+	 */
+	private function credentialError(mixed $username, mixed $password): ?string {
+		if (strlen($username) < 2) {
+			return 'Username must be at least 2 characters long';
+		}
+
+		if (preg_match('/[<>"\'\\/\\\\]/', $username) === 1) {
+			return 'Username contains invalid characters';
+		}
+
+		if (strlen($password) > 1000) {
+			return 'Password is too long';
+		}
+
+		return null;
+	}//end credentialError()
 
 	/**
 	 * Add security headers to response
@@ -784,24 +824,13 @@ class SecurityService {
 		$context['event'] = $event;
 		$context['timestamp'] = (new DateTime())->format('Y-m-d H:i:s');
 
-		switch ($event) {
-			case 'user_locked_out':
-			case 'login_attempt_during_lockout':
-			case 'auth_locked_out':
-				$this->logger->warning(
-					message: "[SecurityService] Security event: {$event}",
-					context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
-				);
-				break;
-			case 'rate_limit_exceeded':
-			case 'failed_login_attempt':
-			case 'successful_login':
-			default:
-				$this->logger->info(
-					message: "[SecurityService] Security event: {$event}",
-					context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context)
-				);
-				break;
+		$message = "[SecurityService] Security event: {$event}";
+		$context = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
+		if (in_array($event, self::WARNING_EVENTS, true) === true) {
+			$this->logger->warning(message: $message, context: $context);
+			return;
 		}
+
+		$this->logger->info(message: $message, context: $context);
 	}//end logSecurityEvent()
 }//end class

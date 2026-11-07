@@ -554,7 +554,7 @@ class SearchTrailMapper extends QBMapper {
 	 *
 	 * An array matches any of its values. A string holding commas matches any
 	 * of its trimmed parts. The markers `IS NULL` and `IS NOT NULL` add their
-	 * null check and then, as they always have, an equality on the marker text.
+	 * null check and nothing else.
 	 *
 	 * @param IQueryBuilder $qb    The query builder
 	 * @param string        $field The column.
@@ -570,6 +570,7 @@ class SearchTrailMapper extends QBMapper {
 
 		if ($value === 'IS NOT NULL' || $value === 'IS NULL') {
 			$qb->andWhere($this->nullCondition(qb: $qb, field: $field, marker: $value));
+			return;
 		}
 
 		$qb->andWhere($this->valueCondition(qb: $qb, field: $field, value: $value));

@@ -52,9 +52,6 @@
             "#1 from(openregister_search_trails, NULL)",
             "#1 expr.isNotNull(search_term)",
             "#1 andWhere(isNotNull(search_term))",
-            "#1 param :p1 = IS NOT NULL, 2",
-            "#1 expr.eq(search_term, :p1, NULL)",
-            "#1 andWhere(eq(search_term, :p1, NULL))",
             "#1 executeQuery()"
         ]
     },
@@ -66,9 +63,6 @@
             "#1 from(openregister_search_trails, NULL)",
             "#1 expr.isNull(schema)",
             "#1 andWhere(isNull(schema))",
-            "#1 param :p1 = IS NULL, 2",
-            "#1 expr.eq(schema, :p1, NULL)",
-            "#1 andWhere(eq(schema, :p1, NULL))",
             "#1 executeQuery()"
         ]
     },
@@ -157,16 +151,13 @@
             "#1 andWhere(eq(user, :p1, NULL))",
             "#1 expr.isNull(schema)",
             "#1 andWhere(isNull(schema))",
-            "#1 param :p2 = IS NULL, 2",
-            "#1 expr.eq(schema, :p2, NULL)",
-            "#1 andWhere(eq(schema, :p2, NULL))",
-            "#1 param :p3 = [\"4\",\"5\"], 102",
-            "#1 expr.in(register, :p3, NULL)",
-            "#1 andWhere(in(register, :p3, NULL))",
-            "#1 param :p4 = 10, 2",
-            "#1 expr.eq(size, :p4, NULL)",
-            "#1 expr.orX(eq(size, :p4, NULL))",
-            "#1 andWhere(orX(eq(size, :p4, NULL)))",
+            "#1 param :p2 = [\"4\",\"5\"], 102",
+            "#1 expr.in(register, :p2, NULL)",
+            "#1 andWhere(in(register, :p2, NULL))",
+            "#1 param :p3 = 10, 2",
+            "#1 expr.eq(size, :p3, NULL)",
+            "#1 expr.orX(eq(size, :p3, NULL))",
+            "#1 andWhere(orX(eq(size, :p3, NULL)))",
             "#1 executeQuery()"
         ]
     },
