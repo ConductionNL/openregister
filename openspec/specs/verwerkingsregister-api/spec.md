@@ -196,8 +196,9 @@ audit entry for that query.
 #### Scenario: a search by ids that names no table is refused like the table read
 
 - **GIVEN** a schema that asks for a purpose, and a request on `/api/objects` with `_ids`, alone or beside only `register` or only `schema`
-- **WHEN** one of the ids is a row of that schema and the request declares no usable purpose
+- **WHEN** one of the ids is a row of that schema that the caller may read, and the request declares no usable purpose
 - **THEN** the read is refused with 403 `PURPOSE_REFUSED`, as `GET /api/objects/{register}/{schema}` refuses it
+- **AND** an id of a row there that the caller may not read answers as an id that matches no row
 - **AND** ids that only hit tables without the annotation answer as before
 - @e2e exclude {needs an administered purpose and processing activity; proven on a live NC 34 + PostgreSQL bench, unit tests pin the refusal and the leave-out}
 

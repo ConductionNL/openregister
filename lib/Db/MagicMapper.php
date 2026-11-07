@@ -9962,8 +9962,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$queryIds    = $searchQuery['_ids'] ?? null;
 		if (is_array($queryIds) === true && count($queryIds) > 0) {
 			$pairs = $this->tablesOfRows(rows: $this->findMultipleAcrossAllMagicTables(uuids: $queryIds, includeDeleted: false));
-			$this->purposeBoundTables()->refuseUnbound(pairs: $pairs);
-			return $this->searchTables(pairs: $pairs, request: $request);
+			return $this->searchTables(pairs: $this->purposeReadableTables(pairs: $pairs, request: $request), request: $request);
 		}
 
 		$unscoped = ($scope['registerId'] === null && $scope['schemaId'] === null);
@@ -10253,7 +10252,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
 	 */
 	private function searchTables(array $pairs, array $request): array {
-		$query   = array_replace($request['search'], ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']]);
+		$query   = self::tableQuery(request: $request);
 		$results = $this->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
 		return [
@@ -10261,6 +10260,47 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			'total'   => $this->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs),
 		] + $this->serialisedTablesOfPage(results: $results, pairs: $pairs);
 	}//end searchTables()
+
+	/**
+	 * The query of a table search, with the request's read rules.
+	 *
+	 * @param array $request The search request: queries and flags
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-multi-tenancy-integration-with-scopes
+	 */
+	private static function tableQuery(array $request): array {
+		return array_replace($request['search'], ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']]);
+	}//end tableQuery()
+
+	/**
+	 * The tables a search by ids may run on.
+	 *
+	 * A table that asks for a purpose the request does not carry refuses the
+	 * search only when the caller may read one of the rows in it. A row the
+	 * caller may not read answers as a missing row does.
+	 *
+	 * @param array $pairs   The register and schema of each table.
+	 * @param array $request The search request: queries and flags
+	 *
+	 * @return array The tables the search may run on.
+	 *
+	 * @throws \OCA\OpenRegister\Service\Audit\PurposeRefusedException When the caller may read a row in a table that refuses.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeReadableTables(array $pairs, array $request): array {
+		$tables = $this->purposeBoundTables();
+		$query  = self::tableQuery(request: $request);
+		foreach ($tables->unreadable(pairs: $pairs) as $pair) {
+			if ($this->countAcrossMultipleTables(query: $query, registerSchemaPairs: [$pair]) > 0) {
+				$tables->refuseUnbound(pairs: [$pair]);
+			}
+		}
+
+		return $tables->readable(pairs: $pairs);
+	}//end purposeReadableTables()
 
 	/**
 	 * The purpose rule of each table, for a search that finds its own tables.

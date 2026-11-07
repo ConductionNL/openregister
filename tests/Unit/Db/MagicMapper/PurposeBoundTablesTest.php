@@ -73,6 +73,12 @@ final class PurposeBoundTablesTest extends TestCase {
 		$this->assertSame([1, 3], array_map(static fn (array $pair): int => $pair['schema']->getId(), $readable));
 	}//end testReadableLeavesOutTheRefusedTablesInOrder()
 
+	public function testUnreadableKeepsOnlyTheRefusedTables(): void {
+		$unreadable = (new PurposeBoundTables(guard: $this->guard()))->unreadable(pairs: self::pairs());
+
+		$this->assertSame([2], array_map(static fn (array $pair): int => $pair['schema']->getId(), $unreadable));
+	}//end testUnreadableKeepsOnlyTheRefusedTables()
+
 	public function testOneRefusedTableRefusesThemAll(): void {
 		$this->expectException(PurposeRefusedException::class);
 
