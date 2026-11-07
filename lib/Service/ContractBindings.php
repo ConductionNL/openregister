@@ -21,18 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Db\FlowRunMapperInterface;
-use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
@@ -56,11 +44,29 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
@@ -72,14 +78,48 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
@@ -95,8 +135,22 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -114,6 +168,24 @@ use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\Quality\QualityScorer;
+use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
+use OCA\OpenRegister\Service\Quality\QualityStatisticsService;
+use OCA\OpenRegister\Service\Quality\QualityStatisticsServiceInterface;
+use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
+use OCA\OpenRegister\Service\Relation\RelationGraphService;
+use OCA\OpenRegister\Service\Relation\RelationGraphServiceInterface;
+use OCA\OpenRegister\Service\Schema\PropertyConversionService;
+use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
@@ -147,36 +219,81 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
+		ActivityFilterServiceInterface::class => ActivityFilterService::class,
+		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
+		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
+		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
+		\OCA\OpenRegister\Service\Object\BatchOperationStatusInterface::class => \OCA\OpenRegister\Service\Object\BatchOperationStatus::class,
+		FlowStateNodeInterface::class => FlowStateNode::class,
+		IterateNodeInterface::class => IterateNode::class,
+		LinkObjectNodeInterface::class => LinkObjectNode::class,
+		MapNodeInterface::class => MapNode::class,
+		MergeNodeInterface::class => MergeNode::class,
+		RouterNodeInterface::class => RouterNode::class,
+		SetFieldsNodeInterface::class => SetFieldsNode::class,
+		SubFlowNodeInterface::class => SubFlowNode::class,
+		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
+		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
+		BulkTranslationServiceInterface::class => BulkTranslationService::class,
+		CalculationTrialServiceInterface::class => CalculationTrialService::class,
+		CalendarLinkServiceInterface::class => CalendarLinkService::class,
+		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
 		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		ContactServiceInterface::class => ContactService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
+		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DecisionTableNodeInterface::class => DecisionTableNode::class,
+		DeckCardServiceInterface::class => DeckCardService::class,
+		DeckLinkServiceInterface::class => DeckLinkService::class,
+		DemoDataServiceInterface::class => DemoDataService::class,
+		EmailLinkServiceInterface::class => EmailLinkService::class,
+		EndpointServiceInterface::class => EndpointService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		ExampleSetRecordInterface::class => ExampleSetRecord::class,
 		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
+		ExplodeNodeInterface::class => ExplodeNode::class,
+		\OCA\OpenRegister\Service\Object\FacetCacheVersionInterface::class => \OCA\OpenRegister\Service\Object\FacetCacheVersion::class,
+		FavouriteServiceInterface::class => FavouriteService::class,
+		FederatedConfigServiceInterface::class => FederatedConfigService::class,
+		FilterNodeInterface::class => FilterNode::class,
+		FlowLinkServiceInterface::class => FlowLinkService::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FlowTimerSweepInterface::class => FlowTimerSweep::class,
+		FlowVersionServiceInterface::class => FlowVersionService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
 		FormIdempotencyStoreInterface::class => FormIdempotencyStore::class,
+		FormLinkServiceInterface::class => FormLinkService::class,
 		FormSubmitServiceInterface::class => FormSubmitService::class,
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		GitLabHandlerInterface::class => GitLabHandler::class,
 		HandoffServiceInterface::class => HandoffService::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		ImportPreviewServiceInterface::class => ImportPreviewService::class,
+		IterateNodeInterface::class => IterateNode::class,
+		JobAlertServiceInterface::class => JobAlertService::class,
+		JsonLdContextServiceInterface::class => JsonLdContextService::class,
+		JsonLdSerializerInterface::class => JsonLdSerializer::class,
 		LifecycleActionExecutorInterface::class => LifecycleActionExecutor::class,
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
+		LinkedEntityServiceInterface::class => LinkedEntityService::class,
+		ManifestServiceInterface::class => ManifestService::class,
+		MapLinkServiceInterface::class => MapLinkService::class,
+		MapNodeInterface::class => MapNode::class,
+		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
@@ -195,45 +312,73 @@ final class ContractBindings {
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		ObjectReadNodeInterface::class => ObjectReadNode::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		\OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface::class => \OCA\OpenRegister\Service\Object\ObjectSlugBackfillService::class,
+		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
+		ObjectRelationServiceInterface::class => ObjectRelationService::class,
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		ObjectWriteNodeInterface::class => ObjectWriteNode::class,
+		OpenProjectLinkServiceInterface::class => OpenProjectLinkService::class,
 		OperationsConsoleServiceInterface::class => OperationsConsoleService::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
+		\OCA\OpenRegister\Service\Object\RenderObjectInterface::class => \OCA\OpenRegister\Service\Object\RenderObject::class,
+		OperationsJobsServiceInterface::class => OperationsJobsService::class,
+		PartyRoleServiceInterface::class => PartyRoleService::class,
+		PartyServiceInterface::class => PartyService::class,
+		PersonLinkServiceInterface::class => PersonLinkService::class,
+		PhotoLinkServiceInterface::class => PhotoLinkService::class,
+		PollLinkServiceInterface::class => PollLinkService::class,
+		PortalTaskNodeInterface::class => PortalTaskNode::class,
+		PropertyConversionServiceInterface::class => PropertyConversionService::class,
 		PropertyValidatorHandlerInterface::class => PropertyValidatorHandler::class,
+		QualityScorerInterface::class => QualityScorer::class,
+		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
+		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
+		ReferenceResolverInterface::class => ReferenceResolver::class,
+		RouterNodeInterface::class => RouterNode::class,
+		WaitNodeInterface::class => WaitNode::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
+		RegisterServiceInterface::class => RegisterService::class,
+		RelationGraphServiceInterface::class => RelationGraphService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class,
+		SchemaShareableConfigScannerInterface::class => SchemaShareableConfigScanner::class,
 		SchemaTypeConverterInterface::class => SchemaTypeConverter::class,
 		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SemanticTypeResolverInterface::class => SemanticTypeResolver::class,
 		SequenceServiceInterface::class => SequenceService::class,
+		ShareableConfigTypeRegistryInterface::class => ShareableConfigTypeRegistry::class,
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
+		SourceRowReaderInterface::class => SourceRowReader::class,
 		StateConditionEvaluatorInterface::class => StateConditionEvaluator::class,
 		StateFieldRuleResolverInterface::class => StateFieldRuleResolver::class,
+		SubstantiveChangeEvaluatorInterface::class => SubstantiveChangeEvaluator::class,
 		SurvivorshipResolverInterface::class => SurvivorshipResolver::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
+		TransitionNodeInterface::class => TransitionNode::class,
+		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
+		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
+		TranslationStatusServiceInterface::class => TranslationStatusService::class,
+		TriggerObjectNodeInterface::class => TriggerObjectNode::class,
+		TriggerScheduleNodeInterface::class => TriggerScheduleNode::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
+		WatcherServiceInterface::class => WatcherService::class,
+		XwikiLinkServiceInterface::class => XwikiLinkService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,
 		SettingsServiceInterface::class => SettingsService::class,
 		ExternalIntegrationRouterInterface::class => ExternalIntegrationRouter::class,
-		SchemaMapperInterface::class => SchemaMapper::class,
-		AuditTrailMapperInterface::class => AuditTrailMapper::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
 		TaskServiceInterface::class => TaskService::class,
 		FlowRunServiceInterface::class => FlowRunService::class,
-		OrganisationMapperInterface::class => OrganisationMapper::class,
 		ConfigurationServiceInterface::class => ConfigurationService::class,
 		RetentionServiceInterface::class => RetentionService::class,
-		FlowRunMapperInterface::class => FlowRunMapper::class,
-		EntityRelationMapperInterface::class => EntityRelationMapper::class,
-		RegisterMapperInterface::class => RegisterMapper::class,
-		\OCA\OpenRegister\Db\MagicMapperInterface::class => \OCA\OpenRegister\Db\MagicMapper::class,
 		\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class => \OCA\OpenRegister\Service\Object\CacheHandler::class,
 		\OCA\OpenRegister\Service\Object\ValidateObjectInterface::class => \OCA\OpenRegister\Service\Object\ValidateObject::class,
 		\OCA\OpenRegister\Service\Object\SaveObjectInterface::class => \OCA\OpenRegister\Service\Object\SaveObject::class,

@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
-use OCA\OpenRegister\Service\Quality\QualityScorer;
+use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -60,9 +60,9 @@ class QualityScoreOnSaveListener implements IEventListener {
 	/**
 	 * Wire collaborators used to look up and score the schema's quality rules.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param QualityScorer $scorer Pure data-quality scorer.
-	 * @param LoggerInterface $logger PSR logger for warnings.
+	 * @param SchemaMapperInterface  $schemaMapper Schema lookup mapper.
+	 * @param QualityScorerInterface $scorer       Pure data-quality scorer.
+	 * @param LoggerInterface        $logger       PSR logger for warnings.
 	 *
 	 * @return void
 	 *
@@ -70,7 +70,7 @@ class QualityScoreOnSaveListener implements IEventListener {
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly QualityScorer $scorer,
+		private readonly QualityScorerInterface $scorer,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

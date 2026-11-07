@@ -44,7 +44,7 @@ use OCP\IURLGenerator;
  *
  * @spec openspec/specs/json-ld-output/spec.md
  */
-class JsonLdSerializer {
+class JsonLdSerializer implements JsonLdSerializerInterface {
 
 	/**
 	 * The IANA media type for JSON-LD.

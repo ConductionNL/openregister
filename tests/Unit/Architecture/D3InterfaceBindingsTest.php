@@ -21,9 +21,35 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
+use OCA\OpenRegister\Service\AnalyticsLinkService;
+use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
+use OCA\OpenRegister\Service\AppRegisterImportRunner;
+use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
+use OCA\OpenRegister\Service\BookmarkLinkService;
+use OCA\OpenRegister\Service\BookmarkLinkServiceInterface;
+use OCA\OpenRegister\Service\BulkTranslationService;
+use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
+use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
+use OCA\OpenRegister\Service\CollectiveLinkService;
+use OCA\OpenRegister\Service\CollectiveLinkServiceInterface;
+use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\ContactServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CospendLinkService;
 use OCA\OpenRegister\Service\CospendLinkServiceInterface;
+use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
+use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\DeckLinkServiceInterface;
+use OCA\OpenRegister\Service\DemoDataService;
+use OCA\OpenRegister\Service\DemoDataServiceInterface;
+use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
+use OCA\OpenRegister\Service\EndpointService;
+use OCA\OpenRegister\Service\EndpointServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -45,7 +71,20 @@ final class D3InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: string}>
 	 */
 	private const CASES = [
+		ActivityFilterService::class => [ActivityFilterServiceInterface::class, ContractBindings::class, 'Service'],
+		AnalyticsLinkService::class => [AnalyticsLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		AppRegisterImportRunner::class => [AppRegisterImportRunnerInterface::class, ContractBindings::class, 'Service'],
+		BookmarkLinkService::class => [BookmarkLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		BulkTranslationService::class => [BulkTranslationServiceInterface::class, ContractBindings::class, 'Service'],
+		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		CollectiveLinkService::class => [CollectiveLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		ContactService::class => [ContactServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],
+		DeckLinkService::class => [DeckLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		DemoDataService::class => [DemoDataServiceInterface::class, ContractBindings::class, 'Service'],
+		EmailLinkService::class => [EmailLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		EndpointService::class => [EndpointServiceInterface::class, ContractBindings::class, 'Service'],
 	];
 
 	/**

@@ -28,14 +28,48 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweep;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSweepInterface;
 use PHPUnit\Framework\TestCase;
@@ -58,13 +92,30 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		AwaitSignalNode::class => [AwaitSignalNodeInterface::class, ContractBindings::class],
 		DecisionTableNode::class => [DecisionTableNodeInterface::class, ContractBindings::class],
+		ExplodeNode::class => [ExplodeNodeInterface::class, ContractBindings::class],
+		FilterNode::class => [FilterNodeInterface::class, ContractBindings::class],
 		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ContractBindings::class],
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
+		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
 		FlowTimerSweep::class => [FlowTimerSweepInterface::class, ContractBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
+		IterateNode::class => [IterateNodeInterface::class, ContractBindings::class],
+		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
+		MapNode::class => [MapNodeInterface::class, ContractBindings::class],
+		MergeNode::class => [MergeNodeInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],
 		ObjectWriteNode::class => [ObjectWriteNodeInterface::class, ContractBindings::class],
+		PortalTaskNode::class => [PortalTaskNodeInterface::class, ContractBindings::class],
+		RouterNode::class => [RouterNodeInterface::class, ContractBindings::class],
+		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
+		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
+		TransitionNode::class => [TransitionNodeInterface::class, ContractBindings::class],
+		TriggerObjectNode::class => [TriggerObjectNodeInterface::class, ContractBindings::class],
+		TriggerScheduleNode::class => [TriggerScheduleNodeInterface::class, ContractBindings::class],
 		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
+		WaitNode::class => [WaitNodeInterface::class, ContractBindings::class],
 	];
 
 	/**

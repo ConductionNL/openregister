@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Service\ManifestServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -60,7 +60,7 @@ class ManifestController extends Controller {
 	 *
 	 * @param string $appName The app name ('openregister').
 	 * @param IRequest $request The HTTP request.
-	 * @param ManifestService $manifestService Service that enriches manifests.
+	 * @param ManifestServiceInterface $manifestService Service that enriches manifests.
 	 * @param IAppManager $appManager Nextcloud app manager (path resolution).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -69,7 +69,7 @@ class ManifestController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ManifestService $manifestService,
+		private readonly ManifestServiceInterface $manifestService,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

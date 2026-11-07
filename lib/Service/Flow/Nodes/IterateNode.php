@@ -55,7 +55,7 @@ use UnexpectedValueException;
 /**
  * A declared loop region: a source, a body, and a bound.
  */
-class IterateNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class IterateNode implements IFlowNode, IterateNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * Default ceiling when a flow declares none.

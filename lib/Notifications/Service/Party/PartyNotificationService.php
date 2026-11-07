@@ -35,7 +35,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 
 /**
  * Resolves and reaches the parties on an object over their own addresses.
@@ -62,15 +62,15 @@ class PartyNotificationService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
-	 * @param PartyService $parties The party records and their addresses.
-	 * @param PartyIndicatorGuard $indicators The declared effects, which decide who may be reached.
-	 * @param EmailSender $email The email channel.
-	 * @param OptOutAuthority $optOut Asks integriq whether a party's address may be mailed.
+	 * @param ContactLinkMapper     $links      The link rows, for the parties on an object.
+	 * @param PartyServiceInterface $parties    The party records and their addresses.
+	 * @param PartyIndicatorGuard   $indicators The declared effects, which decide who may be reached.
+	 * @param EmailSender           $email      The email channel.
+	 * @param OptOutAuthority       $optOut     Asks integriq whether a party's address may be mailed.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly PartyServiceInterface $parties,
 		private readonly PartyIndicatorGuard $indicators,
 		private readonly EmailSender $email,
 		private readonly OptOutAuthority $optOut,

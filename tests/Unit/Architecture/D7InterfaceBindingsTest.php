@@ -31,9 +31,27 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
+use OCA\OpenRegister\Service\Config\FederatedConfigService;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
+use OCA\OpenRegister\Service\Config\SchemaShareableConfigScannerInterface;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
@@ -50,6 +68,20 @@ use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
+use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
+use OCA\OpenRegister\Service\Import\SourceRowReader;
+use OCA\OpenRegister\Service\Import\SourceRowReaderInterface;
+use OCA\OpenRegister\Service\Interaction\FavouriteService;
+use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
+use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluatorInterface;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
+use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
+use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
+use OCA\OpenRegister\Service\JsonLd\JsonLdSerializerInterface;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelector;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionSelectorInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionExecutor;
@@ -79,11 +111,16 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
 		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
 		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
 		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
+		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
+		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
+		FavouriteService::class => [FavouriteServiceInterface::class, ContractBindings::class],
+		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
 		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
 		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
 		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
@@ -91,10 +128,21 @@ final class D7InterfaceBindingsTest extends TestCase {
 		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
+		ImportPreviewService::class => [ImportPreviewServiceInterface::class, ContractBindings::class],
+		JsonLdContextService::class => [JsonLdContextServiceInterface::class, ContractBindings::class],
+		JsonLdSerializer::class => [JsonLdSerializerInterface::class, ContractBindings::class],
 		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
 		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
+		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ContractBindings::class],
+		ReferenceResolver::class => [ReferenceResolverInterface::class, ContractBindings::class],
+		SchemaShareableConfigScanner::class => [SchemaShareableConfigScannerInterface::class, ContractBindings::class],
+		ShareableConfigTypeRegistry::class => [ShareableConfigTypeRegistryInterface::class, ContractBindings::class],
+		SourceRowReader::class => [SourceRowReaderInterface::class, ContractBindings::class],
 		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
 		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
+		SubstantiveChangeEvaluator::class => [SubstantiveChangeEvaluatorInterface::class, ContractBindings::class],
+		TemporalCalculationSweepService::class => [TemporalCalculationSweepServiceInterface::class, ContractBindings::class],
+		WatcherService::class => [WatcherServiceInterface::class, ContractBindings::class],
 	];
 
 	/**

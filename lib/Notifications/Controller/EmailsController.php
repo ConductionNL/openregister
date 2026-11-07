@@ -29,7 +29,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
-use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -77,9 +77,9 @@ class EmailsController extends Controller {
 	/**
 	 * Object-scoped email link reads and writes.
 	 *
-	 * @var EmailLinkService
+	 * @var EmailLinkServiceInterface
 	 */
-	private readonly EmailLinkService $emailLinkService;
+	private readonly EmailLinkServiceInterface $emailLinkService;
 
 	/**
 	 * Answers the object update right.
@@ -97,7 +97,7 @@ class EmailsController extends Controller {
 	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param \OCP\IUserSession $userSession User session
 	 * @param \Psr\Log\LoggerInterface $logger Logger
-	 * @param EmailLinkService $emailLinkService Object-scoped email links
+	 * @param EmailLinkServiceInterface $emailLinkService Object-scoped email links
 	 * @param PermissionHandler $permissions Answers the object update right
 	 * @param ReplyThreadService|null $replyThreads Resolves reply headers onto objects
 	 *
@@ -110,7 +110,7 @@ class EmailsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		\OCP\IUserSession $userSession,
 		\Psr\Log\LoggerInterface $logger,
-		EmailLinkService $emailLinkService,
+		EmailLinkServiceInterface $emailLinkService,
 		PermissionHandler $permissions,
 		private readonly ?ReplyThreadService $replyThreads = null,
 	) {

@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
-use OCA\OpenRegister\Service\Party\PartyRoleService;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 
 /**
  * The domain services of the party API.
@@ -36,17 +36,17 @@ final class PartyDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectOperationsInterface       $objects    Object service, to resolve the object a party sits on.
-	 * @param PartyRoleService    $roles      The parties on an object.
-	 * @param PartyService        $parties    The party records.
-	 * @param PartyIndicatorGuard $indicators The declared effects.
+	 * @param ObjectOperationsInterface $objects    Object service, to resolve the object a party sits on.
+	 * @param PartyRoleServiceInterface $roles      The parties on an object.
+	 * @param PartyServiceInterface     $parties    The party records.
+	 * @param PartyIndicatorGuard       $indicators The declared effects.
 	 *
 	 * @spec openspec/specs/party-model/spec.md
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objects,
-		public readonly PartyRoleService $roles,
-		public readonly PartyService $parties,
+		public readonly PartyRoleServiceInterface $roles,
+		public readonly PartyServiceInterface $parties,
 		public readonly PartyIndicatorGuard $indicators,
 	) {
 	}//end __construct()

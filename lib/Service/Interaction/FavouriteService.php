@@ -43,7 +43,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
  */
-class FavouriteService {
+class FavouriteService implements FavouriteServiceInterface {
 
 	/**
 	 * Constructor.

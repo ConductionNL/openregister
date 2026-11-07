@@ -45,10 +45,14 @@ final class D5InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const CASES = [
+		'OCA\OpenRegister\Service\PersonLinkService' => ['OCA\OpenRegister\Service\PersonLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\PhotoLinkService' => ['OCA\OpenRegister\Service\PhotoLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\PollLinkService' => ['OCA\OpenRegister\Service\PollLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairService' => [
 			'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface',
 			ContractBindings::class,
 		],
+		'OCA\OpenRegister\Service\RegisterService' => ['OCA\OpenRegister\Service\RegisterServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SchemaApplicationMigrator' => [
 			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
 			ContractBindings::class,
@@ -62,6 +66,15 @@ final class D5InterfaceBindingsTest extends TestCase {
 		],
 		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\TranslationProjectionService' => [
+			'OCA\OpenRegister\Service\TranslationProjectionServiceInterface',
+			ContractBindings::class,
+		],
+		'OCA\OpenRegister\Service\TranslationStatusService' => [
+			'OCA\OpenRegister\Service\TranslationStatusServiceInterface',
+			ContractBindings::class,
+		],
+		'OCA\OpenRegister\Service\XwikiLinkService' => ['OCA\OpenRegister\Service\XwikiLinkServiceInterface', ContractBindings::class],
 	];
 
 	/**

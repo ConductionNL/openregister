@@ -34,8 +34,8 @@ namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
-use OCA\OpenRegister\Service\Config\FederatedConfigService;
-use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
+use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
+use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -64,13 +64,13 @@ class FederatedStoreCatalog {
 	/**
 	 * Constructor.
 	 *
-	 * @param ShareableConfigTypeRegistry $registry  Resolves a declared type id to its type.
-	 * @param FederatedConfigService      $federated Discovery, fetch, trust and install.
-	 * @param LoggerInterface             $logger    PSR logger, server-side detail only.
+	 * @param ShareableConfigTypeRegistryInterface $registry  Resolves a declared type id to its type.
+	 * @param FederatedConfigServiceInterface      $federated Discovery, fetch, trust and install.
+	 * @param LoggerInterface                      $logger    PSR logger, server-side detail only.
 	 */
 	public function __construct(
-		private readonly ShareableConfigTypeRegistry $registry,
-		private readonly FederatedConfigService $federated,
+		private readonly ShareableConfigTypeRegistryInterface $registry,
+		private readonly FederatedConfigServiceInterface $federated,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

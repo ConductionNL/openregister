@@ -1,7 +1,7 @@
 <?php
 
 /**
- * SchemaTypeConverterInterface: what callers outside the Service layer use of SchemaTypeConverter.
+ * SchemaTypeConverterInterface: what callers outside the Service component ask of SchemaTypeConverter.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -13,6 +13,8 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
+ * @version GIT: <git-id>
+ *
  * @link https://OpenRegister.app
  */
 
@@ -21,25 +23,27 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 /**
- * Converts stored column values to the type their schema property declares,
- * and restores the stored form of `type: string` values a read decoded.
+ * Schema-typed reads of a raw column value, and the PATCH-side restore of
+ * untouched string-typed JSON values.
+ *
+ * @spec openspec/specs/schema-driven-read-coercion/spec.md
  */
 interface SchemaTypeConverterInterface {
 
 	/**
-	 * Convert a database column value to the type declared in the JSON Schema.
+	 * Convert a raw column value to the PHP type its schema property declares.
 	 *
 	 * @param mixed  $value      The raw column value as returned by the DB driver.
 	 * @param string $schemaType The declared JSON-Schema property type.
 	 *
-	 * @return mixed The schema-typed PHP value; null stays null.
+	 * @return mixed The schema-typed PHP value.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function convertValue(mixed $value, string $schemaType): mixed;
 
 	/**
-	 * Re-encode the `type: string` values a read decoded and the caller did not send.
+	 * Restore untouched string-typed properties that the read decoded into arrays.
 	 *
 	 * @param array $data         The object data about to be saved.
 	 * @param array $properties   The schema's property definitions, keyed by property name.

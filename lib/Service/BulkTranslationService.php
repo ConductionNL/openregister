@@ -37,24 +37,24 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use Psr\Log\LoggerInterface;
 
-class BulkTranslationService {
+class BulkTranslationService implements BulkTranslationServiceInterface {
 	/**
 	 * Constructor.
 	 *
 	 * @param TranslationProviderInterface $provider The translation provider.
-	 * @param TranslationMapper $translationMapper The translation mapper.
+	 * @param TranslationMapperInterface $translationMapper The translation mapper.
 	 * @param TranslationHandler $translationHandler The translation handler.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		private readonly TranslationProviderInterface $provider,
-		private readonly TranslationMapper $translationMapper,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly TranslationHandler $translationHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,

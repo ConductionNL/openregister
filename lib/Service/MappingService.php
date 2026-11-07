@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service;
 use Adbar\Dot;
 use Exception;
 use OCA\OpenRegister\Db\Mapping;
-use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -60,7 +60,7 @@ use Twig\TemplateWrapper;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Mapping execution requires comprehensive handling
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      $list parameter clearly indicates list processing mode
  */
-class MappingService {
+class MappingService implements MappingServiceInterface {
 
 	/**
 	 * Casts that carry an argument: prefix as written => cast type.
@@ -141,7 +141,7 @@ class MappingService {
 	/**
 	 * MappingService constructor
 	 *
-	 * @param MappingMapper $mappingMapper The mapping mapper for database operations
+	 * @param MappingMapperInterface $mappingMapper The mapping mapper for database operations
 	 * @param ICacheFactory $cacheFactory Cache factory for distributed caching
 	 * @param LoggerInterface $logger Logger for cache diagnostics
 	 * @param IEventDispatcher|null $events Collects Twig functions contributed by other apps.
@@ -149,7 +149,7 @@ class MappingService {
 	 *                                      dispatcher is available (tests, early boot).
 	 */
 	public function __construct(
-		private readonly MappingMapper $mappingMapper,
+		private readonly MappingMapperInterface $mappingMapper,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 		private readonly ?IEventDispatcher $events = null,

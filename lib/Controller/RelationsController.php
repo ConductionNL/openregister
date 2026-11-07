@@ -25,8 +25,8 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
-use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\ContactServiceInterface;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -84,32 +84,32 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedRooms',
 		],
 		'forms' => [
-			'class' => \OCA\OpenRegister\Service\FormLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FormLinkServiceInterface::class,
 			'available' => null,
 			'method' => 'getLinkedForms',
 		],
 		'maps' => [
-			'class' => \OCA\OpenRegister\Service\MapLinkService::class,
+			'class' => \OCA\OpenRegister\Service\MapLinkServiceInterface::class,
 			'available' => 'isMapsAvailable',
 			'method' => 'getLinkedPois',
 		],
 		'polls' => [
-			'class' => \OCA\OpenRegister\Service\PollLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PollLinkServiceInterface::class,
 			'available' => 'isPollsAvailable',
 			'method' => 'getLinkedPolls',
 		],
 		'bookmarks' => [
-			'class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\BookmarkLinkServiceInterface::class,
 			'available' => 'isBookmarksAvailable',
 			'method' => 'getLinkedBookmarks',
 		],
 		'collectives' => [
-			'class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,
+			'class' => \OCA\OpenRegister\Service\CollectiveLinkServiceInterface::class,
 			'available' => 'isCollectivesAvailable',
 			'method' => 'getLinkedPages',
 		],
 		'photos' => [
-			'class' => \OCA\OpenRegister\Service\PhotoLinkService::class,
+			'class' => \OCA\OpenRegister\Service\PhotoLinkServiceInterface::class,
 			'available' => 'isPhotosAvailable',
 			'method' => 'getLinkedAlbums',
 		],
@@ -124,22 +124,22 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedEntries',
 		],
 		'analytics' => [
-			'class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+			'class' => \OCA\OpenRegister\Service\AnalyticsLinkServiceInterface::class,
 			'available' => 'isAnalyticsAvailable',
 			'method' => 'getLinkedReports',
 		],
 		'flow' => [
-			'class' => \OCA\OpenRegister\Service\FlowLinkService::class,
+			'class' => \OCA\OpenRegister\Service\FlowLinkServiceInterface::class,
 			'available' => 'isFlowAvailable',
 			'method' => 'getLinkedOperations',
 		],
 		'openproject' => [
-			'class' => \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+			'class' => \OCA\OpenRegister\Service\OpenProjectLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedWorkPackages',
 		],
 		'xwiki' => [
-			'class' => \OCA\OpenRegister\Service\XwikiLinkService::class,
+			'class' => \OCA\OpenRegister\Service\XwikiLinkServiceInterface::class,
 			'available' => 'isOpenConnectorAvailable',
 			'method' => 'getLinkedPages',
 		],
@@ -183,16 +183,16 @@ class RelationsController extends Controller {
 	/**
 	 * Contact service.
 	 *
-	 * @var ContactService
+	 * @var ContactServiceInterface
 	 */
-	private readonly ContactService $contactService;
+	private readonly ContactServiceInterface $contactService;
 
 	/**
 	 * Deck card service.
 	 *
-	 * @var DeckCardService
+	 * @var DeckCardServiceInterface
 	 */
-	private readonly DeckCardService $deckCardService;
+	private readonly DeckCardServiceInterface $deckCardService;
 
 	/**
 	 * Logger for surfacing per-type aggregation failures.

@@ -23,6 +23,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\FormLinkService;
+use OCA\OpenRegister\Service\FormLinkServiceInterface;
+use OCA\OpenRegister\Service\LinkedEntityService;
+use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
+use OCA\OpenRegister\Service\ManifestService;
+use OCA\OpenRegister\Service\ManifestServiceInterface;
+use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\MapLinkServiceInterface;
+use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCA\OpenRegister\Service\MigrationService;
@@ -33,6 +45,8 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectRelationCleanupServiceInterface;
+use OCA\OpenRegister\Service\OpenProjectLinkService;
+use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCA\OpenRegister\Service\OperationsConsoleService;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -55,11 +69,18 @@ final class D4InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const CLASSES = [
+		FlowLinkService::class => [FlowLinkServiceInterface::class, ContractBindings::class],
+		FormLinkService::class => [FormLinkServiceInterface::class, ContractBindings::class],
+		LinkedEntityService::class => [LinkedEntityServiceInterface::class, ContractBindings::class],
+		ManifestService::class => [ManifestServiceInterface::class, ContractBindings::class],
+		MapLinkService::class => [MapLinkServiceInterface::class, ContractBindings::class],
+		MappingService::class => [MappingServiceInterface::class, ContractBindings::class],
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
 		NotificationService::class => [NotificationServiceInterface::class, ContractBindings::class],
 		OasService::class => [OasServiceInterface::class, ContractBindings::class],
 		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
+		OpenProjectLinkService::class => [OpenProjectLinkServiceInterface::class, ContractBindings::class],
 		OperationsConsoleService::class => [OperationsConsoleServiceInterface::class, ContractBindings::class],
 	];
 
@@ -146,13 +167,15 @@ final class D4InterfaceBindingsTest extends TestCase {
 	/**
 	 * The first-level lib/ directory holding the class.
 	 *
+	 * Read from the namespace, which PSR-4 maps onto lib/ (OCA\OpenRegister\<Component>\...
+	 * lives in lib/<Component>/), so it does not depend on where the checkout or the
+	 * autoloader's copy of the file sits.
+	 *
 	 * @param string $class The fully qualified class name
 	 *
 	 * @return string The component directory name
 	 */
 	private function componentOf(string $class): string {
-		$file = (string) (new \ReflectionClass($class))->getFileName();
-		$path = substr($file, strlen((string) realpath(self::LIB)) + 1);
-		return explode('/', $path)[0];
+		return explode('\\', $class)[2];
 	}//end componentOf()
 }//end class
