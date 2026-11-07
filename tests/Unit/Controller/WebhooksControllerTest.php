@@ -346,6 +346,27 @@ class WebhooksControllerTest extends TestCase {
 		$this->assertEquals(201, $result->getStatus());
 	}
 
+	public function testFailedCreateAndUpdateLogFieldNamesNotValues(): void {
+		$logged = [];
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = $context['fields'] ?? $context;
+			}
+		);
+		$this->request->method('getParams')->willReturn([
+			'name' => 'New Hook',
+			'url' => 'https://example.com/hook',
+			'secret' => 'the-signing-secret',
+		]);
+		$this->webhookMapper->method('createFromArray')->willThrowException(new \RuntimeException('refused'));
+		$this->webhookMapper->method('updateFromArray')->willThrowException(new \RuntimeException('refused'));
+
+		$this->controller->create();
+		$this->controller->update(1);
+
+		$this->assertSame([['name', 'url', 'secret'], ['name', 'url', 'secret']], $logged);
+	}
+
 	public function testCreateMissingRequired(): void {
 		$this->request->method('getParams')->willReturn([
 			'name' => 'New Hook',
