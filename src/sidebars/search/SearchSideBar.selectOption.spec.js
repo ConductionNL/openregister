@@ -32,7 +32,10 @@ const InlineOption = {
  * @return {string} The markup
  */
 function markup(wrapper) {
-	return wrapper.html().replace(/<!--.*?-->/g, '').replace(/>\s+</g, '><')
+	return wrapper
+		.html()
+		.replace(/<!--.*?-->/g, '')
+		.replace(/>\s+</g, '><')
 }
 
 describe('search sidebar select option', () => {
