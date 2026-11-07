@@ -119,9 +119,13 @@ class ScopedPropertyAccessGoldenTest extends TestCase {
 	 */
 	#[DataProvider('refusedDeclarations')]
 	public function testARefusedDeclarationNamesWhy(array $property, string $message): void {
-		foreach (['fromProperty', 'assert'] as $method) {
+		$entryPoints = [
+			'fromProperty' => static fn () => ScopedPropertyDeclaration::fromProperty(property: $property, path: 'p/x'),
+			'assert'       => static fn () => ScopedPropertyDeclaration::assert(property: $property, path: 'p/x'),
+		];
+		foreach ($entryPoints as $method => $call) {
 			try {
-				ScopedPropertyDeclaration::$method(property: $property, path: 'p/x');
+				$call();
 				$this->fail($method . ' admitted a malformed scope');
 			} catch (ScopedPropertyException $e) {
 				$this->assertSame($message, $e->getMessage());
@@ -189,7 +193,7 @@ class ScopedPropertyAccessGoldenTest extends TestCase {
 		);
 		$asOf   = new DateTimeImmutable('2026-01-02T03:04:05+00:00');
 
-		$report = $this->governance()->unusedReport(schema: $schema, counts: ['used' => '4', 'unused' => 0, 'plain' => 0], asOf: $asOf);
+		$report = $this->governance()->unusedReport(schema: $schema, counts: ['used' => 4, 'unused' => 0, 'plain' => 0], asOf: $asOf);
 
 		$row = static fn (string $p, string $s, ?int $v, string $state): array => [
 			'property' => $p, 'scope' => $s, 'values' => $v, 'state' => $state,
