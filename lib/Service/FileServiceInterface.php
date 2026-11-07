@@ -43,42 +43,7 @@ use OCP\Files\NotPermittedException;
 /**
  * The file operations controllers and the Files component call on FileService.
  */
-interface FileServiceInterface {
-
-	/**
-	 * Adds a new file to an object's folder.
-	 *
-	 * Delegates to CreateFileHandler for single-responsibility file creation operations.
-	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to add the file to.
-	 * @param string $fileName The name of the file to create.
-	 * @param string|resource $content File content: a byte string, or a readable stream resource.
-	 * @param bool $share Whether to create a share link for the file.
-	 * @param array $tags Optional array of tags to attach to the file.
-	 * @param int|string|Schema|null $_schema The register of the object to add the file to.
-	 * @param int|string|Register|null $_register The register of the object to add the file to.
-	 * @param int|string|null $registerId The registerId of the object to add the file to.
-	 *
-	 * @return File The created file.
-	 *
-	 * @throws NotPermittedException If file creation fails due to permissions.
-	 * @throws Exception If file creation fails for other reasons.
-	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
-	 */
-	public function addFile(
-		ObjectEntity|string $objectEntity,
-		string $fileName,
-		mixed $content,
-		bool $share = false,
-		array $tags = [],
-		int|string|Schema|null $_schema = null,
-		int|string|Register|null $_register = null,
-		int|string|null $registerId = null,
-	): File;
+interface FileServiceInterface extends ObjectFilesInterface, FileFolderServiceInterface {
 
 	/**
 	 * Anonymize a document by replacing detected entities (DELEGATED to DocumentProcessingHandler).
@@ -125,28 +90,6 @@ interface FileServiceInterface {
 	public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File;
 
 	/**
-	 * Creates a folder for either a Register or ObjectEntity and stores the folder ID.
-	 *
-	 * This unified method creates folders and stores the folder ID as an integer
-	 * in the entity's folder property instead of using unstable path mapping.
-	 * For ObjectEntity, it ensures the folder is nested under the register folder.
-	 *
-	 * @param Register|ObjectEntity $entity The entity to create a folder for
-	 *
-	 * @return Node|null The created folder Node or null if creation fails
-	 *
-	 * @throws Exception If folder creation fails or entities not found
-	 * @throws NotPermittedException If folder creation is not permitted
-	 * @throws NotFoundException If parent folders do not exist
-	 *
-	 * @phpstan-return Node|null
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#object-and-register-folder-provisioning
-	 *   (unified entry: provisions the backing folder for a Register or ObjectEntity, degrading to null on failure)
-	 */
-	public function createEntityFolder(Register|ObjectEntity $entity): ?Node;
-
-	/**
 	 * Create a ZIP archive containing all files for a specific object.
 	 *
 	 * This method retrieves all files associated with an object and creates a ZIP archive
@@ -168,48 +111,6 @@ interface FileServiceInterface {
 	 * @spec exclude Object-files ZIP build; deferred to the file-actions FilePublishingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
 	public function createObjectFilesZip(ObjectEntity|string $object, ?string $zipName = null): array;
-
-	/**
-	 * Delete a file by node, path, or ID.
-	 *
-	 * Delegates to DeleteFileHandler for single-responsibility file deletion operations.
-	 *
-	 * @param Node|string|int $file The file Node object, path (from root), or file ID to delete.
-	 * @param ObjectEntity|null $object Optional object entity.
-	 *
-	 * @return bool True if successful, false if the file didn't exist.
-	 *
-	 * @throws Exception If deleting the file is not permitted or file operations fail.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-update-and-delete-enforce-per-action-node-permissions
-	 *   (deletes a file resolved by node/path/id, with object-folder context)
-	 */
-	public function deleteFile(Node|string|int $file, ?ObjectEntity $object = null): bool;
-
-	/**
-	 * The object a managed file belongs to, or null.
-	 *
-	 * @param Node $file The file.
-	 *
-	 * @return ObjectEntity|null The owning object.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 */
-	public function findObjectForFile(Node $file): ?ObjectEntity;
-
-	/**
-	 * Formats a single Node file into a metadata array (DELEGATED to FileFormattingHandler).
-	 *
-	 * @param Node $file The Node file to format.
-	 *
-	 * @return array The formatted file metadata array.
-	 *
-	 * @psalm-return   array{labels: list<string>,...}
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @spec exclude File JSON formatting; deferred to the file-actions FileFormattingHandler follow-up pass (see file-actions tasks.md DROP list).
-	 */
-	public function formatFile(Node $file): array;
 
 	/**
 	 * Formats an array of Node files into an array of metadata arrays (DELEGATED to FileFormattingHandler).
@@ -258,72 +159,6 @@ interface FileServiceInterface {
 	public function getBatchHandler(): FileBatchHandler;
 
 	/**
-	 * Get a file by file identifier (ID or name/path) or by object and file name/path.
-	 *
-	 * Delegates to ReadFileHandler for single-responsibility file retrieval operations.
-	 *
-	 * @param ObjectEntity|string|null $object The object or object ID to fetch files for (ignored if $file is an ID).
-	 * @param string|int $file The file name/path within the object folder,
-	 *                         or the file ID (int or numeric string).
-	 *
-	 * @return File|null The file if found, null otherwise.
-	 *
-	 * @throws NotFoundException If the folder is not found.
-	 * @throws DoesNotExistException If the object ID is not found.
-	 *
-	 * @psalm-param   ObjectEntity|string|null $object
-	 * @psalm-param   string|int $file
-	 * @phpstan-param ObjectEntity|string|null $object
-	 * @phpstan-param string|int $file
-	 *
-	 * @psalm-return   File|null
-	 * @phpstan-return File|null
-	 */
-	public function getFile(ObjectEntity|string|null $object = null, string|int $file = ''): ?File;
-
-	/**
-	 * Get a file by its Nextcloud file ID without needing object context.
-	 *
-	 * This method retrieves a file directly using its Nextcloud file ID,
-	 * which is useful for authenticated file access endpoints.
-	 *
-	 * @param int $fileId The Nextcloud file ID
-	 *
-	 * @return File|null The file node or null if not found
-	 *
-	 * @throws \Exception If there's an error accessing the file
-	 *
-	 * @phpstan-param  int $fileId
-	 * @phpstan-return File|null
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
-	 *   (resolves a single file node by NC file id, null on miss)
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 */
-	public function getFileById(int $fileId): ?File;
-
-	/**
-	 * Get all files for an object.
-	 *
-	 * Delegates to ReadFileHandler for single-responsibility file retrieval operations.
-	 *
-	 * @param ObjectEntity|string $object The object or object ID to fetch files for.
-	 * @param bool|null $sharedFilesOnly Whether to return only shared files.
-	 *
-	 * @return array Array of file nodes.
-	 *
-	 * @throws NotFoundException If the folder is not found.
-	 * @throws DoesNotExistException If the object ID is not found.
-	 *
-	 * @psalm-return   list<\OCP\Files\Node>
-	 * @phpstan-return array<int, Node>
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
-	 *   (lists an object's files via its stored folder, with optional shared-only filter)
-	 */
-	public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly = false): array;
-
-	/**
 	 * Residual entities from the most recent anonymizeDocument() call.
 	 *
 	 * Best-effort policy: the anonymised file is produced even when some entity
@@ -357,21 +192,6 @@ interface FileServiceInterface {
 	public function getLockHandler(): FileLockHandler;
 
 	/**
-	 * Get an object folder by its stored ID.
-	 *
-	 * @param ObjectEntity|string $objectEntity The object entity to get the folder for
-	 * @param int|string|null $registerId The register of the object to add the file to
-	 *
-	 * @return Folder|null The folder Node or null if not found
-	 *
-	 * @psalm-return   Folder|null
-	 * @phpstan-return Folder|null
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId = null): ?Folder;
-
-	/**
 	 * Get the file preview handler.
 	 *
 	 * @return FilePreviewHandler The preview handler.
@@ -386,17 +206,6 @@ interface FileServiceInterface {
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function getVersioningHandler(): FileVersioningHandler;
-
-	/**
-	 * Whether a node lies in OpenRegister's managed folder tree.
-	 *
-	 * @param Node $node The node.
-	 *
-	 * @return bool True when it is an object's or a register's file or folder.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 */
-	public function isManagedFile(Node $node): bool;
 
 	/**
 	 * Move a file to another object (copy + delete source).
@@ -477,33 +286,6 @@ interface FileServiceInterface {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse;
-
-	/**
-	 * Overwrites an existing file in NextCloud.
-	 *
-	 * Delegates to UpdateFileHandler for single-responsibility file update operations.
-	 *
-	 * @param string|int $filePath The path (from root) where to save the file,
-	 *                             including filename and extension, or file ID.
-	 * @param string|resource|null $content Optional content of the file: a byte string, or a
-	 *                                      readable stream resource (streamed straight to storage
-	 *                                      via OCP\Files\File::putContent()).
-	 *                                      If null, only metadata like tags will be updated.
-	 * @param array $tags Optional array of tags to attach to the file
-	 *                    (excluding object tags which are preserved).
-	 * @param ObjectEntity|null $object Optional object entity to search in object folder first.
-	 *
-	 * @throws Exception If the file doesn't exist or if file operations fail.
-	 *
-	 * @return File The updated file.
-	 *
-	 * @phpstan-param array<int, string> $tags
-	 * @psalm-param   array<int, string> $tags
-	 *
-	 * @spec openspec/specs/file-actions/spec.md#file-update-guards-locks-preserves-object-tags-and-persists-or-side-metadata-separately
-	 *   (updates a file's content and tags within an object's folder)
-	 */
-	public function updateFile(string|int $filePath, mixed $content = null, array $tags = [], ?ObjectEntity $object = null): File;
 
 	/**
 	 * Update a file's OpenRegister-side metadata.

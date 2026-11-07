@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
@@ -91,7 +91,7 @@ class PortalTaskService {
 	 * @param TaskMapper $mapper The subject-scoped finders.
 	 * @param TaskInboxService $inbox Row shaping and case context.
 	 * @param TaskTemporalProjection $temporal The clock for the row projection.
-	 * @param FileService $files Stores uploads onto the case object.
+	 * @param FileWriterInterface $files Stores uploads onto the case object.
 	 * @param LoggerInterface $logger Diagnostics.
 	 */
 	public function __construct(
@@ -99,7 +99,7 @@ class PortalTaskService {
 		private readonly TaskMapper $mapper,
 		private readonly TaskInboxService $inbox,
 		private readonly TaskTemporalProjection $temporal,
-		private readonly FileService $files,
+		private readonly FileWriterInterface $files,
 		private readonly LoggerInterface $logger,
 	) {
 

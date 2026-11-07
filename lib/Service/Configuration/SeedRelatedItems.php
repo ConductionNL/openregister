@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\TaskService;
 use Psr\Log\LoggerInterface;
@@ -37,9 +37,9 @@ final class SeedRelatedItems
 {
 
 	/**
-	 * @var FileService|null Writes the seed files, when present.
+	 * @var FileWriterInterface|null Writes the seed files, when present.
 	 */
-	private ?FileService $fileService = null;
+	private ?FileWriterInterface $fileService = null;
 
 	/**
 	 * @var NoteServiceInterface|null Writes the seed notes, when present.
@@ -63,13 +63,13 @@ final class SeedRelatedItems
 	/**
 	 * Set the service that writes seed files.
 	 *
-	 * @param FileService|null $fileService The file service.
+	 * @param FileWriterInterface|null $fileService The file service.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function useFileService(?FileService $fileService): void
+	public function useFileService(?FileWriterInterface $fileService): void
 	{
 		$this->fileService = $fileService;
 	}//end useFileService()

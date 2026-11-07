@@ -110,7 +110,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
-class FileService implements FileServiceInterface {
+class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 
 
 

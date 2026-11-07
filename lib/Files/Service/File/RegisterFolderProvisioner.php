@@ -30,7 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\FileFolderServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -44,11 +44,11 @@ class RegisterFolderProvisioner implements RegisterFolderProvisionerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileServiceInterface $fileService File service facade whose createEntityFolder() finds or makes the folder.
+	 * @param FileFolderServiceInterface $fileService File service facade whose createEntityFolder() finds or makes the folder.
 	 * @param LoggerInterface $logger Logger for the tally and for failures.
 	 */
 	public function __construct(
-		private readonly FileServiceInterface $fileService,
+		private readonly FileFolderServiceInterface $fileService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -50,11 +50,11 @@ final class ObjectFileFinder
 	 * Constructor.
 	 *
 	 * @param LoggerInterface                        $logger      The logger.
-	 * @param \OCA\OpenRegister\Service\FileService $fileService The file service.
+	 * @param \OCA\OpenRegister\Service\FileHandlerSupportInterface $fileService The file service.
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly \OCA\OpenRegister\Service\FileService $fileService,
+		private readonly \OCA\OpenRegister\Service\FileHandlerSupportInterface $fileService,
 	) {
 	}//end __construct()
 

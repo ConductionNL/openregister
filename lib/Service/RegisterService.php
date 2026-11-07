@@ -100,9 +100,9 @@ class RegisterService implements RegisterServiceInterface {
 	 *
 	 * Handles file operations related to registers.
 	 *
-	 * @var FileService File service instance
+	 * @var FileFolderServiceInterface File service instance
 	 */
-	private readonly FileService $fileService;
+	private readonly FileFolderServiceInterface $fileService;
 
 	/**
 	 * Organisation service
@@ -141,7 +141,7 @@ class RegisterService implements RegisterServiceInterface {
 	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
 	 * @param IDBConnection $db Database connection for custom queries
-	 * @param FileService $fileService File service for file operations
+	 * @param FileFolderServiceInterface $fileService File service for file operations
 	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param RegisterSerializer $registerSerializer Serializer for `_extend` post-processing
@@ -152,7 +152,7 @@ class RegisterService implements RegisterServiceInterface {
 		RegisterMapperInterface $registerMapper,
 		SchemaMapperInterface $schemaMapper,
 		IDBConnection $db,
-		FileService $fileService,
+		FileFolderServiceInterface $fileService,
 		OrganisationServiceInterface $organisationService,
 		LoggerInterface $logger,
 		RegisterSerializer $registerSerializer,
