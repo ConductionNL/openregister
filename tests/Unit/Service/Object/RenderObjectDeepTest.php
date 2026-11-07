@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -107,7 +107,6 @@ class RenderObjectDeepTest extends TestCase {
 			$this->schemaMapper,
 			$this->systemTagManager,
 			$this->systemTagMapper,
-			$this->cacheHandler,
 			$this->objectCacheService,
 			$this->propertyRbacHandler,
 			$this->logger,
@@ -228,13 +227,14 @@ class RenderObjectDeepTest extends TestCase {
 	}
 
 	/**
-	 * Test resolveSchemaReference with UUID falls through to slug resolution
-	 * because preg_match === true check fails (returns 1, not true).
+	 * Test resolveSchemaReference with a UUID no schema answers to falls through
+	 * to slug resolution and keeps the reference.
 	 */
 	public function testResolveSchemaReferenceWithUuidFallsThrough(): void {
 		$uuid = 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4';
 
-		// UUID is not numeric and not a path, so it goes to slug-based findAll
+		$this->schemaMapper->method('find')
+			->willThrowException(new \Exception('not found'));
 		$this->schemaMapper->method('findAll')
 			->willReturn([]);
 

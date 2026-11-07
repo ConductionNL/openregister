@@ -165,4 +165,15 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$this->assertFalse($route->invoke($mapper, ['_referenced' => $related]));
 		$this->assertFalse($route->invoke($mapper, ['_aggregations' => ['x']]));
 	}//end testARelatedRowFilterTakesTheSequentialRoute()
+
+	/**
+	 * The raw-SQL union has no relation filter, so a search on one takes the sequential route.
+	 *
+	 * @return void
+	 */
+	public function testARelationFilterTakesTheSequentialRoute(): void {
+		$route = new \ReflectionMethod(MagicMapper::class, 'shouldUseUnionQuery');
+
+		$this->assertFalse($route->invoke($this->makeMapper(), ['_relations_contains' => 'u']));
+	}//end testARelationFilterTakesTheSequentialRoute()
 }//end class

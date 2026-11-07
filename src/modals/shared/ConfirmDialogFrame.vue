@@ -1,5 +1,5 @@
 <template>
-	<NcDialog :name="name" size="normal">
+	<NcDialog :name="name" size="normal" noClose>
 		<slot />
 		<NcNoteCard v-if="success && successText" type="success">
 			<p>{{ successText }}</p>

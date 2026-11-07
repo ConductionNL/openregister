@@ -1,0 +1,630 @@
+{
+    "empty everything": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            }
+        ]
+    },
+    "empty initial string": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "everything wrong at once": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"x\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"x\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"x\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #1 must be an object with `from` and `to`."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"x\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"x\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"x\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #1 must be an object with `from` and `to`."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            },
+            {
+                "code": "lifecycle-initial-missing",
+                "message": "A lifecycle must declare its initial state."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"x\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"x\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"x\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #1 must be an object with `from` and `to`."
+            }
+        ]
+    },
+    "from shapes": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"empty list\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"blank\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"number\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"bad member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"non-string member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"keyed list\" has from-state \"gone\", which is not a declared state."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"empty list\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"blank\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"number\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"bad member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"non-string member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"keyed list\" has from-state \"gone\", which is not a declared state."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"empty list\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"blank\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"number\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"bad member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"non-string member\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"keyed list\" has from-state \"gone\", which is not a declared state."
+            }
+        ]
+    },
+    "guards shapes": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"scalar\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"null\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"mixed\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"mixed\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"mixed\" must declare `guards` as a list of guard tokens."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"scalar\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"null\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"?\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"?\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"nope\"."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"scalar\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guards-malformed",
+                "message": "Transition \"null\" must declare `guards` as a list of guard tokens."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"isOwner\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"?\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"hasFile\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"?\"."
+            },
+            {
+                "code": "lifecycle-guard-unknown",
+                "message": "Transition \"mixed\" declares unknown guard token \"nope\"."
+            }
+        ]
+    },
+    "initial undeclared": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-initial-not-declared",
+                "message": "Initial state \"gone\" is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-initial-not-declared",
+                "message": "Initial state \"gone\" is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-initial-not-declared",
+                "message": "Initial state \"gone\" is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"open\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "initial with no states": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-states-empty",
+                "message": "A lifecycle must declare at least one named state."
+            }
+        ]
+    },
+    "odd state entries": {
+        "no catalogue": [],
+        "catalogue": [],
+        "empty catalogue": []
+    },
+    "to shapes": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"blank\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"list\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"missing\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"blank\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"list\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"missing\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"blank\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"list\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"missing\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "transition scalars": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition \"a\" must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #4 must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"b\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"b\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition \"a\" must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #4 must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"b\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"b\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition \"a\" must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-transition-malformed",
+                "message": "Transition #4 must be an object with `from` and `to`."
+            },
+            {
+                "code": "lifecycle-from-missing",
+                "message": "Transition \"b\" must declare a non-empty `from` state or list of states."
+            },
+            {
+                "code": "lifecycle-to-missing",
+                "message": "Transition \"b\" must declare a non-empty `to` state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "undeclared endpoints": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"gone\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"lost\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-to-not-declared",
+                "message": "Transition \"go\" has to-state \"nowhere\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition #2 has from-state \"nope\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"gone\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"lost\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-to-not-declared",
+                "message": "Transition \"go\" has to-state \"nowhere\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition #2 has from-state \"nope\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"gone\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition \"go\" has from-state \"lost\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-to-not-declared",
+                "message": "Transition \"go\" has to-state \"nowhere\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-from-not-declared",
+                "message": "Transition #2 has from-state \"nope\", which is not a declared state."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "unreachable initial only": {
+        "no catalogue": [],
+        "catalogue": [],
+        "empty catalogue": []
+    },
+    "unreachable states": {
+        "no catalogue": [
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "catalogue": [
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ],
+        "empty catalogue": [
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"review\" is unreachable: no transition starts or ends in it."
+            },
+            {
+                "code": "lifecycle-state-unreachable",
+                "message": "State \"closed\" is unreachable: no transition starts or ends in it."
+            }
+        ]
+    },
+    "valid list": {
+        "no catalogue": [],
+        "catalogue": [],
+        "empty catalogue": []
+    },
+    "valid map": {
+        "no catalogue": [],
+        "catalogue": [],
+        "empty catalogue": []
+    }
+}

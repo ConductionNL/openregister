@@ -2,7 +2,7 @@
 	<NcDialog
 		:name="dialogTitle"
 		size="large"
-		:canClose="!saving"
+		:noClose="saving"
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField

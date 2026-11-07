@@ -45,7 +45,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\NotesProvider' => [
-			'OCA\OpenRegister\Service\NoteService',
+			'OCA\OpenRegister\Files\Service\NoteService',
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider' => [
@@ -150,7 +150,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\ShareLinkService' => [
-			'OCP\IL10N',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\CaseTokenService' => [

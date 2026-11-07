@@ -70,6 +70,15 @@ final class GeneratedIdentifierDeclaration {
 	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn'];
 
 	/**
+	 * A placeholder the format renders: `{seq}`, `{seq:n}`, `{year}` or `{month}`.
+	 *
+	 * One expression for rendering and for reading back, so the two cannot drift.
+	 *
+	 * @var string
+	 */
+	private const PLACEHOLDER = '/\{(seq(?::(\d+))?|year|month)\}/';
+
+	/**
 	 * Constructor.
 	 *
 	 * Private: a declaration only ever comes from {@see self::fromProperty()},
@@ -105,38 +114,39 @@ final class GeneratedIdentifierDeclaration {
 		}
 
 		if (is_array($raw) === false) {
-			throw new GeneratedIdentifierException(
-				sprintf('%s at \'%s\' must be an object with a sequence and a format.', self::ANNOTATION, $path),
-				path: $path
-			);
+			throw self::refusal(message: sprintf('%s at \'%s\' must be an object with a sequence and a format.', self::ANNOTATION, $path), path: $path);
 		}
 
 		self::assertStringProperty(property: $property, path: $path);
 		self::assertNoUnknownKeys(raw: $raw, path: $path);
+		return self::fromAnnotation(raw: $raw, path: $path);
+	}//end fromProperty()
 
-		$sequence = self::requireNonEmptyString(raw: $raw, key: 'sequence', path: $path);
-		$format = self::requireNonEmptyString(raw: $raw, key: 'format', path: $path);
+	/**
+	 * Build a declaration from an annotation block whose keys are known.
+	 *
+	 * The sequence and format are required first, then the reset period, then
+	 * whether the format can produce a unique value.
+	 *
+	 * @param array<string, mixed> $raw  The annotation block.
+	 * @param string               $path The property's path, for the error message.
+	 *
+	 * @throws GeneratedIdentifierException When the declaration is malformed.
+	 *
+	 * @return self The validated declaration.
+	 */
+	private static function fromAnnotation(array $raw, string $path): self {
+		$sequence = (self::required(raw: $raw, key: 'sequence') ?? throw self::missing(key: 'sequence', path: $path));
+		$format = (self::required(raw: $raw, key: 'format') ?? throw self::missing(key: 'format', path: $path));
 		$resetOn = (string)($raw['resetOn'] ?? self::RESET_NEVER);
-
 		if (in_array($resetOn, [self::RESET_NEVER, self::RESET_YEAR], true) === false) {
-			throw new GeneratedIdentifierException(
-				sprintf(
-					'%s.resetOn at \'%s\' is \'%s\'. It must be \'%s\' or \'%s\'.',
-					self::ANNOTATION,
-					$path,
-					$resetOn,
-					self::RESET_NEVER,
-					self::RESET_YEAR
-				),
-				path: $path
-			);
+			throw self::unknownReset(resetOn: $resetOn, path: $path);
 		}
 
-		self::assertFormatIsRenderable(format: $format, resetOn: $resetOn, path: $path);
-
-		return new self(sequence: $sequence, format: $format, resetOn: $resetOn);
-
-	}//end fromProperty()
+		$declaration = new self(sequence: $sequence, format: $format, resetOn: $resetOn);
+		self::assertRenderable(declaration: $declaration, path: $path);
+		return $declaration;
+	}//end fromAnnotation()
 
 	/**
 	 * The counter's name.
@@ -200,23 +210,14 @@ final class GeneratedIdentifierDeclaration {
 	 */
 	public function render(int $sequenceValue, DateTimeInterface $moment): string {
 		return (string)preg_replace_callback(
-			'/\{(seq(?::(\d+))?|year|month)\}/',
-			static function (array $match) use ($sequenceValue, $moment): string {
-				if ($match[1] === 'year') {
-					return $moment->format('Y');
-				}
-
-				if ($match[1] === 'month') {
-					return $moment->format('m');
-				}
-
-				$pad = (int)($match[2] ?? 1);
-
-				return str_pad((string)$sequenceValue, $pad, '0', STR_PAD_LEFT);
+			self::PLACEHOLDER,
+			static fn (array $match): string => match ($match[1]) {
+				'year' => $moment->format('Y'),
+				'month' => $moment->format('m'),
+				default => str_pad((string)$sequenceValue, (int)($match[2] ?? 1), '0', STR_PAD_LEFT),
 			},
 			$this->format
 		);
-
 	}//end render()
 
 	/**
@@ -238,39 +239,53 @@ final class GeneratedIdentifierDeclaration {
 	 */
 	public function parse(string $value): ?array {
 		['pattern' => $pattern, 'groups' => $groups] = $this->readBackPattern();
-
 		if (preg_match('/^'.$pattern.'$/', $value, $found) !== 1) {
 			return null;
 		}
 
-		$sequence = null;
-		$year = null;
-		foreach ($groups as $index => $name) {
-			$captured = ($found[($index + 1)] ?? '');
-			if ($name === 'seq') {
-				$sequence = (int)$captured;
-			}
-
-			if ($name === 'year') {
-				$year = $captured;
-			}
-		}
-
-		if ($sequence === null) {
+		$captured = $this->capturedByKind(groups: $groups, found: $found);
+		if (array_key_exists('seq', $captured) === false) {
 			return null;
 		}
 
-		// The period comes from the value itself, not from the clock: an import
-		// landing in January that carries last year's numbers must advance LAST
-		// year's counter, not this one's.
-		$period = '';
-		if ($this->resetOn === self::RESET_YEAR) {
-			$period = (string)$year;
+		return ['sequence' => (int)$captured['seq'], 'period' => $this->periodOf(year: ($captured['year'] ?? null))];
+	}//end parse()
+
+	/**
+	 * What each kind of placeholder captured; a later group of one kind wins.
+	 *
+	 * @param array<int, string>     $groups The kind of each capture group, in order.
+	 * @param array<int|string, string> $found  The preg_match captures.
+	 *
+	 * @return array<string, string> The captured text by kind.
+	 */
+	private function capturedByKind(array $groups, array $found): array {
+		$captured = [];
+		foreach ($groups as $index => $kind) {
+			$captured[$kind] = ($found[($index + 1)] ?? '');
 		}
 
-		return ['sequence' => $sequence, 'period' => $period];
+		return $captured;
+	}//end capturedByKind()
 
-	}//end parse()
+	/**
+	 * The period a parsed value belongs to.
+	 *
+	 * The period comes from the value itself, not from the clock: an import
+	 * landing in January that carries last year's numbers must advance LAST
+	 * year's counter, not this one's.
+	 *
+	 * @param string|null $year The year the value rendered, when it rendered one.
+	 *
+	 * @return string The period key.
+	 */
+	private function periodOf(?string $year): string {
+		if ($this->resetOn === self::RESET_YEAR) {
+			return (string)$year;
+		}
+
+		return '';
+	}//end periodOf()
 
 	/**
 	 * Build the expression that reads a rendered value back apart.
@@ -288,35 +303,39 @@ final class GeneratedIdentifierDeclaration {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	private function readBackPattern(): array {
-		$pattern = '';
-		$groups = [];
-		$offset = 0;
-
-		preg_match_all('/\{(seq(?::(\d+))?|year|month)\}/', $this->format, $matches, PREG_OFFSET_CAPTURE);
+		[$pattern, $groups, $offset] = ['', [], 0];
+		preg_match_all(self::PLACEHOLDER, $this->format, $matches, PREG_OFFSET_CAPTURE);
 		foreach ($matches[0] as $index => $placeholder) {
-			$pattern .= preg_quote(substr($this->format, $offset, ($placeholder[1] - $offset)), '/');
-			$offset = ($placeholder[1] + strlen($placeholder[0]));
-
 			$name = $matches[1][$index][0];
-
-			// `{seq:5}` captures as `seq:5`, so the KIND has to be normalised
-			// before it is recorded. Storing the raw capture instead leaves every
-			// padded sequence unrecognised further down, and `parse()` then answers
-			// null for a value this very format rendered.
-			$kind = $name;
-			if (str_starts_with($name, 'seq') === true) {
-				$kind = 'seq';
-			}
-
-			$groups[] = $kind;
+			$pattern .= preg_quote(substr($this->format, $offset, ($placeholder[1] - $offset)), '/');
 			$pattern .= $this->groupFor(name: $name, declaredPad: $matches[2][$index][0]);
-		}//end foreach
+			$offset = ($placeholder[1] + strlen($placeholder[0]));
+			$groups[] = $this->kindOf(name: $name);
+		}
 
 		$pattern .= preg_quote(substr($this->format, $offset), '/');
-
 		return ['pattern' => $pattern, 'groups' => $groups];
-
 	}//end readBackPattern()
+
+	/**
+	 * The kind of a placeholder, with a padded sequence normalised to `seq`.
+	 *
+	 * `{seq:5}` captures as `seq:5`, so the KIND has to be normalised before it
+	 * is recorded. Storing the raw capture instead leaves every padded sequence
+	 * unrecognised further down, and `parse()` then answers null for a value
+	 * this very format rendered.
+	 *
+	 * @param string $name The placeholder's name as captured.
+	 *
+	 * @return string `seq`, `year` or `month`.
+	 */
+	private function kindOf(string $name): string {
+		if (str_starts_with($name, 'seq') === true) {
+			return 'seq';
+		}
+
+		return $name;
+	}//end kindOf()
 
 	/**
 	 * The capture group one placeholder reads back as.
@@ -334,22 +353,27 @@ final class GeneratedIdentifierDeclaration {
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
 	private function groupFor(string $name, string $declaredPad): string {
-		if ($name === 'year') {
-			return '(\d{4})';
-		}
-
-		if ($name === 'month') {
-			return '(\d{2})';
-		}
-
-		$pad = 1;
-		if ($declaredPad !== '') {
-			$pad = (int)$declaredPad;
-		}
-
-		return '(\d{'.$pad.',})';
-
+		return match ($name) {
+			'year' => '(\d{4})',
+			'month' => '(\d{2})',
+			default => '(\d{'.$this->padOf(declaredPad: $declaredPad).',})',
+		};
 	}//end groupFor()
+
+	/**
+	 * The least number of digits a sequence reads back as: its declared pad, else one.
+	 *
+	 * @param string $declaredPad The digits after `seq:`, or an empty string.
+	 *
+	 * @return int The pad.
+	 */
+	private function padOf(string $declaredPad): int {
+		if ($declaredPad === '') {
+			return 1;
+		}
+
+		return (int)$declaredPad;
+	}//end padOf()
 
 	/**
 	 * Refuse a declaration on a property that is not a string.
@@ -372,16 +396,8 @@ final class GeneratedIdentifierDeclaration {
 			$label = (string)json_encode($label);
 		}
 
-		throw new GeneratedIdentifierException(
-			sprintf(
-				'%s at \'%s\' is declared on a \'%s\' property. A generated identifier is a string.',
-				self::ANNOTATION,
-				$path,
-				$label
-			),
-			path: $path
-		);
-
+		$message = sprintf('%s at \'%s\' is declared on a \'%s\' property. A generated identifier is a string.', self::ANNOTATION, $path, $label);
+		throw self::refusal(message: $message, path: $path);
 	}//end assertStringProperty()
 
 	/**
@@ -400,42 +416,79 @@ final class GeneratedIdentifierDeclaration {
 			return;
 		}
 
-		throw new GeneratedIdentifierException(
-			sprintf(
-				'%s at \'%s\' carries unknown key(s) \'%s\'. It accepts %s.',
-				self::ANNOTATION,
-				$path,
-				implode(', ', $unknown),
-				implode(', ', self::KNOWN_KEYS)
-			),
-			path: $path
+		$message = sprintf(
+			'%s at \'%s\' carries unknown key(s) \'%s\'. It accepts %s.',
+			self::ANNOTATION,
+			$path,
+			implode(', ', $unknown),
+			implode(', ', self::KNOWN_KEYS)
 		);
-
+		throw self::refusal(message: $message, path: $path);
 	}//end assertNoUnknownKeys()
 
 	/**
-	 * Read a required non-empty string off the annotation.
+	 * A required key's value when it is a non-empty string, else null.
 	 *
 	 * @param array<string, mixed> $raw The annotation block.
-	 * @param string $key The key to read.
-	 * @param string $path The property's path.
+	 * @param string               $key The key to read.
 	 *
-	 * @throws GeneratedIdentifierException When the key is missing or empty.
-	 *
-	 * @return string The value.
+	 * @return string|null The value, or null when it is missing, blank or not a string.
 	 */
-	private static function requireNonEmptyString(array $raw, string $key, string $path): string {
+	private static function required(array $raw, string $key): ?string {
 		$value = ($raw[$key] ?? null);
 		if (is_string($value) === true && trim($value) !== '') {
 			return $value;
 		}
 
-		throw new GeneratedIdentifierException(
-			sprintf('%s.%s at \'%s\' is required and must be a non-empty string.', self::ANNOTATION, $key, $path),
+		return null;
+	}//end required()
+
+	/**
+	 * The refusal for a required key that is missing or empty.
+	 *
+	 * @param string $key  The key.
+	 * @param string $path The property's path.
+	 *
+	 * @return GeneratedIdentifierException The refusal.
+	 */
+	private static function missing(string $key, string $path): GeneratedIdentifierException {
+		return self::refusal(
+			message: sprintf('%s.%s at \'%s\' is required and must be a non-empty string.', self::ANNOTATION, $key, $path),
 			path: $path
 		);
+	}//end missing()
 
-	}//end requireNonEmptyString()
+	/**
+	 * The refusal for a reset period other than never or year.
+	 *
+	 * @param string $resetOn The declared reset period.
+	 * @param string $path    The property's path.
+	 *
+	 * @return GeneratedIdentifierException The refusal.
+	 */
+	private static function unknownReset(string $resetOn, string $path): GeneratedIdentifierException {
+		$message = sprintf(
+			'%s.resetOn at \'%s\' is \'%s\'. It must be \'%s\' or \'%s\'.',
+			self::ANNOTATION,
+			$path,
+			$resetOn,
+			self::RESET_NEVER,
+			self::RESET_YEAR
+		);
+		return self::refusal(message: $message, path: $path);
+	}//end unknownReset()
+
+	/**
+	 * A refusal naming the property's path.
+	 *
+	 * @param string $message The refusal.
+	 * @param string $path    The property's path.
+	 *
+	 * @return GeneratedIdentifierException The refusal.
+	 */
+	private static function refusal(string $message, string $path): GeneratedIdentifierException {
+		return new GeneratedIdentifierException($message, path: $path);
+	}//end refusal()
 
 	/**
 	 * Refuse a format that cannot produce a unique value.
@@ -450,9 +503,8 @@ final class GeneratedIdentifierDeclaration {
 	 *   while rendering the same strings as last year, which is the worst of
 	 *   the three: it works for a year.
 	 *
-	 * @param string $format The declared format.
-	 * @param string $resetOn The declared reset period.
-	 * @param string $path The property's path.
+	 * @param self   $declaration The declaration, built but not yet handed out.
+	 * @param string $path        The property's path.
 	 *
 	 * @throws GeneratedIdentifierException When the format cannot produce a unique value.
 	 *
@@ -460,43 +512,36 @@ final class GeneratedIdentifierDeclaration {
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	private static function assertFormatIsRenderable(string $format, string $resetOn, string $path): void {
+	private static function assertRenderable(self $declaration, string $path): void {
+		self::assertKnownPlaceholders(format: $declaration->format, path: $path);
+		if (preg_match('/\{seq(?::\d+)?\}/', $declaration->format) !== 1) {
+			$message = '%s.format at \'%s\' has no {seq} placeholder, so every object would get the same identifier.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+
+		if ($declaration->resetOn === self::RESET_YEAR && str_contains($declaration->format, '{year}') === false) {
+			$message = '%s.format at \'%s\' resets each year but does not render {year}, so next year repeats this year\'s identifiers.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+	}//end assertRenderable()
+
+	/**
+	 * Refuse a placeholder the format cannot render.
+	 *
+	 * @param string $format The declared format.
+	 * @param string $path   The property's path.
+	 *
+	 * @throws GeneratedIdentifierException When the format uses an unknown placeholder.
+	 *
+	 * @return void
+	 */
+	private static function assertKnownPlaceholders(string $format, string $path): void {
 		preg_match_all('/\{([^}]*)\}/', $format, $matches);
 		foreach ($matches[1] as $placeholder) {
 			if (preg_match('/^(seq(?::\d+)?|year|month)$/', $placeholder) !== 1) {
-				throw new GeneratedIdentifierException(
-					sprintf(
-						'%s.format at \'%s\' uses unknown placeholder \'{%s}\'. It accepts {seq}, {seq:n}, {year} and {month}.',
-						self::ANNOTATION,
-						$path,
-						$placeholder
-					),
-					path: $path
-				);
+				$message = '%s.format at \'%s\' uses unknown placeholder \'{%s}\'. It accepts {seq}, {seq:n}, {year} and {month}.';
+				throw self::refusal(message: sprintf($message, self::ANNOTATION, $path, $placeholder), path: $path);
 			}
 		}
-
-		if (preg_match('/\{seq(?::\d+)?\}/', $format) !== 1) {
-			throw new GeneratedIdentifierException(
-				sprintf(
-					'%s.format at \'%s\' has no {seq} placeholder, so every object would get the same identifier.',
-					self::ANNOTATION,
-					$path
-				),
-				path: $path
-			);
-		}
-
-		if ($resetOn === self::RESET_YEAR && str_contains($format, '{year}') === false) {
-			throw new GeneratedIdentifierException(
-				sprintf(
-					'%s.format at \'%s\' resets each year but does not render {year}, so next year repeats this year\'s identifiers.',
-					self::ANNOTATION,
-					$path
-				),
-				path: $path
-			);
-		}
-
-	}//end assertFormatIsRenderable()
+	}//end assertKnownPlaceholders()
 }//end class

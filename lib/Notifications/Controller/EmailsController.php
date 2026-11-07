@@ -222,6 +222,8 @@ class EmailsController extends Controller {
 				);
 			}
 
+			$this->emailLinkService->assertAccountOwnership(accountId: (int)$data['mailAccountId']);
+
 			$link = $this->emailService->linkEmail(
 				$object->getUuid(),
 				(int)$object->getRegister(),
@@ -238,8 +240,8 @@ class EmailsController extends Controller {
 				return new JSONResponse(['error' => $e->getMessage()], 409);
 			}
 
-			if ($code === 404) {
-				return new JSONResponse(['error' => $e->getMessage()], 404);
+			if ($code === 403 || $code === 404) {
+				return new JSONResponse(['error' => $e->getMessage()], $code);
 			}
 
 			return new JSONResponse(['error' => $e->getMessage()], 400);

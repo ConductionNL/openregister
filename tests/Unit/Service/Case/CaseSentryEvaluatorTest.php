@@ -31,6 +31,8 @@ use PHPUnit\Framework\TestCase;
  * Coverage of CaseSentryEvaluator, and of the three catalog entries it relies on.
  *
  * @covers \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryOnPart
+ * @covers \OCA\OpenRegister\Service\Case\CaseSentryMoment
  * @covers \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @covers \OCA\OpenRegister\Exception\CaseValidationException
  * @uses \OCA\OpenRegister\Db\CaseItem
