@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
-use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
 use OCA\OpenRegister\Service\Object\PropertySourceLanguage;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCP\IUserSession;
@@ -46,7 +46,7 @@ class TranslationProjectionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param TranslationMapper $translationMapper The translation mapper.
+	 * @param TranslationMapperInterface $translationMapper The translation mapper.
 	 * @param TranslationHandler $translationHandler The translation handler.
 	 * @param SchemaMapperInterface $schemaMapper The schema mapper.
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
@@ -54,7 +54,7 @@ class TranslationProjectionService {
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly TranslationMapper $translationMapper,
+		private readonly TranslationMapperInterface $translationMapper,
 		private readonly TranslationHandler $translationHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly RegisterMapperInterface $registerMapper,

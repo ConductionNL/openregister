@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Db\TranslationMapperInterface;
+use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\BulkTranslationServiceInterface;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Controller;
@@ -60,9 +62,9 @@ class TranslationController extends Controller {
 	/**
 	 * The translation mapper.
 	 *
-	 * @var TranslationMapper
+	 * @var TranslationMapperInterface
 	 */
-	private readonly TranslationMapper $translationMapper;
+	private readonly TranslationMapperInterface $translationMapper;
 
 	/**
 	 * The schema mapper.
