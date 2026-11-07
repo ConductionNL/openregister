@@ -41,6 +41,7 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\ImportService
+ * @uses   \OCA\OpenRegister\Service\Import\ImportValueCaster
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\MigrationPack\MappingEngine
@@ -172,5 +173,18 @@ class ImportServiceCsvRowGoldenTest extends TestCase {
 		$row = $transform->invoke($service, ['2024' => 'x', 'name' => 'y'], null, null, null);
 
 		$this->assertSame([2024 => 'x', 'name' => 'y'], $row);
+	}
+
+	/**
+	 * An importer who is not an admin sets no `@self` value, and `_` and `@` columns never become properties.
+	 *
+	 * @return void
+	 */
+	public function testASheetRowKeepsSystemColumnsOutOfTheProperties(): void {
+		$service = (new \ReflectionClass(ImportService::class))->newInstanceWithoutConstructor();
+		$transform = new \ReflectionMethod(ImportService::class, 'transformExcelRowToObject');
+		$row = ['_hidden' => 'a', '@self.owner' => 'b', '@other' => 'c', 'name' => 'd', 'empty' => '', 'id' => 'e'];
+
+		$this->assertSame(['name' => 'd', 'id' => 'e', '@self' => ['id' => 'e']], $transform->invoke($service, $row, null, null, null));
 	}
 }

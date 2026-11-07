@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
@@ -66,7 +66,7 @@ class TagsController extends Controller {
 	 * @param IRequest $request HTTP request object
 	 * @param ObjectService $objectService Object service instance
 	 * @param FileService $fileService File service instance for tag retrieval
-	 * @param TaggingHandler $taggingHandler Tagging handler for object-level tags
+	 * @param TaggingHandlerInterface $taggingHandler Tagging handler for object-level tags
 	 * @param IUserSession $userSession Session for the @PublicPage anonymous-deny guard
 	 *
 	 * @return void
@@ -76,7 +76,7 @@ class TagsController extends Controller {
 		IRequest $request,
 		private readonly ObjectService $objectService,
 		private readonly FileService $fileService,
-		private readonly TaggingHandler $taggingHandler,
+		private readonly TaggingHandlerInterface $taggingHandler,
 		private readonly ?IUserSession $userSession = null,
 	) {
 		// Call parent constructor to initialize base controller.

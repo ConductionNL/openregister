@@ -378,7 +378,7 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 				'checked is true or false',
 			],
 			'a creation moment that is not a date' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => 'once'], 'createdAt "once" is not a date'],
-			'a creation moment in the future' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => '2999-01-01T09:00:00+00:00'], 'lies in the future'],
+			'a creation moment in the future' => [['title' => 'T', 'objectUuid' => $on, 'createdAt' => date('c', strtotime('+10 years'))], 'lies in the future'],
 			'a claim before the task existed' => [
 				['title' => 'T', 'objectUuid' => $on, 'createdAt' => '{{datetime:-2 16:20}}', 'claimedAt' => '{{datetime:-3 09:05}}'],
 				'claimedAt lies before createdAt',

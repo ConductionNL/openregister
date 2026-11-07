@@ -40,7 +40,7 @@ class SftpLibraryContractTest extends TestCase {
 			$this->markTestSkipped('phpseclib3 is not in this vendor directory.');
 		}
 
-		foreach (['login', 'put', 'filesize', 'getLastSFTPError', 'pwd'] as $method) {
+		foreach (['getServerPublicHostKey', 'login', 'put', 'filesize', 'getLastSFTPError', 'pwd'] as $method) {
 			$this->assertTrue(method_exists(SFTP::class, $method), $method);
 		}
 
