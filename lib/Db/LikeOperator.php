@@ -107,22 +107,15 @@ class LikeOperator {
 	public function terms(mixed $value): array {
 		$values = [$value];
 		if (is_array($value) === true) {
-			$values = array_values($value);
+			$values = $value;
 		}
 
-		$terms = [];
-		foreach ($values as $item) {
-			if (is_scalar($item) === false) {
-				continue;
-			}
+		$terms = array_map(
+			static fn (mixed $item): string => (string)$item,
+			array_filter($values, 'is_scalar')
+		);
 
-			$term = (string)$item;
-			if ($term !== '') {
-				$terms[] = $term;
-			}
-		}
-
-		return $terms;
+		return array_values(array_filter($terms, static fn (string $term): bool => $term !== ''));
 	}//end terms()
 
 	/**
