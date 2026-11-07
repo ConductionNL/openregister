@@ -46,10 +46,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\LinkedTypesRule;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
+ * @covers \OCA\OpenRegister\Db\Schema\LinkedTypesRule::validateLinkedTypesValue
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
  */
@@ -115,9 +116,7 @@ class SchemaLinkedTypesTest extends TestCase {
 	 * @return void
 	 */
 	private function invokeValidateLinkedTypesValue(mixed $value): void {
-		$method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
-		$method->setAccessible(true);
-		$method->invoke($this->schema, $value);
+		(new LinkedTypesRule())->validateLinkedTypesValue($value);
 	}//end invokeValidateLinkedTypesValue()
 
 	/**

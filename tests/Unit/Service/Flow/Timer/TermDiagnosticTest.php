@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Service\Flow\Timer\WalkCollector;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
@@ -202,7 +203,7 @@ class TermDiagnosticTest extends TestCase {
 		}
 
 		$this->assertSame(
-			[SlaCalculator::class],
+			[SlaCalculatorInterface::class],
 			$types,
 			'a mapper, a connection or a dispatcher here would be something that could arm a timer'
 		);

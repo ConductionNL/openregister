@@ -150,14 +150,7 @@ class ValidationSettingsController extends Controller {
 	 */
 	public function massValidateObjects(): JSONResponse {
 		try {
-			$options = $this->massValidationOptions();
-			$results = $this->settingsService->massValidateObjects(
-				maxObjects: $options['maxObjects'],
-				batchSize: $options['batchSize'],
-				mode: $options['mode'],
-				collectErrors: $options['collectErrors']
-			);
-			return new JSONResponse(data: $results);
+			return new JSONResponse(data: $this->runMassValidation(options: $this->massValidationOptions()));
 		} catch (InvalidArgumentException $e) {
 			// Parameter validation errors.
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -165,6 +158,22 @@ class ValidationSettingsController extends Controller {
 			return $this->massValidationFailed(e: $e);
 		}
 	}//end massValidateObjects()
+
+	/**
+	 * Run a mass validation with the options the request asked for.
+	 *
+	 * @param array{maxObjects: int, batchSize: int, mode: string, collectErrors: bool} $options The options.
+	 *
+	 * @return array The validation results
+	 */
+	private function runMassValidation(array $options): array {
+		return $this->settingsService->massValidateObjects(
+			maxObjects: $options['maxObjects'],
+			batchSize: $options['batchSize'],
+			mode: $options['mode'],
+			collectErrors: $options['collectErrors']
+		);
+	}//end runMassValidation()
 
 	/**
 	 * The mass validation options: query parameters, else the JSON body when the query left the defaults.
@@ -242,17 +251,25 @@ class ValidationSettingsController extends Controller {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 		);
 
-		return new JSONResponse(
-			data: [
-				'success' => false,
-				'error' => 'Mass validation failed: ' . $e->getMessage(),
-				'stats' => self::EMPTY_MASS_VALIDATION_STATS,
-				'errors' => [['error' => $e->getMessage()]],
-				'timestamp' => date('c'),
-			],
-			statusCode: 500
-		);
+		return new JSONResponse(data: $this->massValidationFailure(e: $e), statusCode: 500);
 	}//end massValidationFailed()
+
+	/**
+	 * The body answering a failed mass validation.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return array<string, mixed> The body
+	 */
+	private function massValidationFailure(Exception $e): array {
+		return [
+			'success' => false,
+			'error' => 'Mass validation failed: ' . $e->getMessage(),
+			'stats' => self::EMPTY_MASS_VALIDATION_STATS,
+			'errors' => [['error' => $e->getMessage()]],
+			'timestamp' => date('c'),
+		];
+	}//end massValidationFailure()
 
 	/**
 	 * Predict memory usage for mass validation operation
@@ -268,18 +285,26 @@ class ValidationSettingsController extends Controller {
 			$estimate = $this->memoryEstimate(maxObjects: $this->predictionMaxObjects());
 			return new JSONResponse(data: $this->memoryPrediction(estimate: $estimate));
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to predict memory usage: ' . $e->getMessage(),
-					// Default to safe if we can't predict.
-					'prediction_safe' => true,
-					'formatted' => ['total_predicted' => 'Unknown', 'available' => 'Unknown'],
-				],
-				statusCode: 500
-			);
+			return new JSONResponse(data: $this->predictionFailure(e: $e), statusCode: 500);
 		}
 	}//end predictMassValidationMemory()
+
+	/**
+	 * The body answering a memory prediction that failed. It defaults to safe.
+	 *
+	 * @param Exception $e The failure.
+	 *
+	 * @return array<string, mixed> The body
+	 */
+	private function predictionFailure(Exception $e): array {
+		return [
+			'success' => false,
+			'error' => 'Failed to predict memory usage: ' . $e->getMessage(),
+			// Default to safe if we can't predict.
+			'prediction_safe' => true,
+			'formatted' => ['total_predicted' => 'Unknown', 'available' => 'Unknown'],
+		];
+	}//end predictionFailure()
 
 	/**
 	 * The object count asked for: the query parameter, else the JSON body's when the query left it at 0.

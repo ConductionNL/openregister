@@ -31,7 +31,6 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rbac\OrphanCleanupFlag;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Rbac\CrossOrganisationMarkerChange;
 use OCA\OpenRegister\Service\Rbac\DefinitionWriteRights;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
@@ -48,7 +47,7 @@ use RuntimeException;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class SchemasToolProvider implements IMcpToolProvider {
+class SchemasToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the schemas tool
@@ -68,20 +67,11 @@ class SchemasToolProvider implements IMcpToolProvider {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
-	 *
-	 * @return string Always "openregister"
-	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
 	 * The tool definitions.
 	 *
 	 * @var array<int, array<string, mixed>>
 	 */
-	private const TOOLS = [
+	protected const TOOLS = [
 		[
 			'id' => self::TOOL_ID,
 			'name' => 'schemas',
@@ -89,11 +79,7 @@ class SchemasToolProvider implements IMcpToolProvider {
 			'inputSchema' => [
 				'type' => 'object',
 				'properties' => [
-					'action' => [
-						'type' => 'string',
-						'enum' => ['list', 'get', 'create', 'update', 'delete'],
-						'description' => 'The CRUD action to perform',
-					],
+					...CrudToolSchema::ACTION,
 					'id' => [
 						'type' => 'integer',
 						'description' => 'Schema ID (required for get, update, delete)',
@@ -102,28 +88,12 @@ class SchemasToolProvider implements IMcpToolProvider {
 						'type' => 'object',
 						'description' => 'Schema fields (for create and update)',
 					],
-					'limit' => [
-						'type' => 'integer',
-						'description' => 'Maximum number of results (for list)',
-					],
-					'offset' => [
-						'type' => 'integer',
-						'description' => 'Number of results to skip (for list)',
-					],
+					...CrudToolSchema::PAGING,
 				],
 				'required' => ['action'],
 			],
 		],
 	];
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return self::TOOLS;
-	}//end getTools()
 
 	/**
 	 * Invoke the schemas tool.
@@ -321,20 +291,4 @@ class SchemasToolProvider implements IMcpToolProvider {
 
 		return $data;
 	}//end checkedBody()
-
-	/**
-	 * Assert a parameter is present in arguments.
-	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException If parameter is missing
-	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
-		}
-	}//end requireParam()
 }//end class
