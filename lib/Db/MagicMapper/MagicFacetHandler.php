@@ -943,68 +943,98 @@ class MagicFacetHandler {
 	private function normalizeArrayFacetBuckets(array $rawBuckets): array {
 		// Map to accumulate counts: value => count.
 		$valueCounts = [];
-
 		foreach ($rawBuckets as $bucket) {
-			$key = $bucket['key'];
-			$count = $bucket['count'];
-
-			// Skip null/empty values.
-			if ($key === null || $key === '' || $key === 'null') {
-				continue;
+			foreach ($this->bucketKeyValues(key: $bucket['key']) as $value) {
+				$valueCounts[$value] = ($valueCounts[$value] ?? 0) + $bucket['count'];
 			}
+		}
 
-			// Check if this looks like a JSON array (starts with '[').
-			if (is_string($key) === true && str_starts_with(trim($key), '[') === true) {
-				// Try to decode as JSON array.
-				$decoded = json_decode($key, true);
+		return $this->countedBuckets(valueCounts: $valueCounts);
+	}//end normalizeArrayFacetBuckets()
 
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					// It's a valid JSON array - distribute count to each element.
-					foreach ($decoded as $element) {
-						// Skip null/empty elements.
-						if ($element === null || $element === '') {
-							continue;
-						}
+	/**
+	 * The facet values one raw bucket key counts for.
+	 *
+	 * Null and empty keys count for nothing, a JSON array counts for each of its
+	 * non-empty elements and any other key counts for its cleaned value.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array<int, string> The values the bucket's count goes to.
+	 */
+	private function bucketKeyValues(mixed $key): array {
+		if ($key === null || $key === '' || $key === 'null') {
+			return [];
+		}
 
-						$elementKey = (string)$element;
-						if (isset($valueCounts[$elementKey]) === false) {
-							$valueCounts[$elementKey] = 0;
-						}
+		$elements = $this->jsonArrayKey(key: $key);
+		if ($elements !== null) {
+			return $this->nonEmptyElements(elements: $elements);
+		}
 
-						$valueCounts[$elementKey] += $count;
-					}
+		// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
+		return [(string)$this->cleanJsonValue(value: $key)];
+	}//end bucketKeyValues()
 
-					continue;
-				}
-			}//end if
+	/**
+	 * The decoded elements of a bucket key that is a JSON array.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array|null The decoded array, or null when the key is no JSON array.
+	 */
+	private function jsonArrayKey(mixed $key): ?array {
+		if (is_string($key) === false || str_starts_with(trim($key), '[') === false) {
+			return null;
+		}
 
-			// Not an array - use value as-is.
-			// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
-			$cleanKey = $this->cleanJsonValue(value: $key);
-			$cleanKeyStr = (string)$cleanKey;
+		$decoded = json_decode($key, true);
+		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
+			return null;
+		}
 
-			if (isset($valueCounts[$cleanKeyStr]) === false) {
-				$valueCounts[$cleanKeyStr] = 0;
+		return $decoded;
+	}//end jsonArrayKey()
+
+	/**
+	 * The elements of a decoded JSON array that are neither null nor empty, as strings.
+	 *
+	 * @param array $elements The decoded elements.
+	 *
+	 * @return array<int, string> The non-empty elements.
+	 */
+	private function nonEmptyElements(array $elements): array {
+		$values = [];
+		foreach ($elements as $element) {
+			if ($element !== null && $element !== '') {
+				$values[] = (string)$element;
 			}
+		}
 
-			$valueCounts[$cleanKeyStr] += $count;
-		}//end foreach
+		return $values;
+	}//end nonEmptyElements()
 
-		// Convert back to bucket format, sorted by count descending.
-		$normalizedBuckets = [];
+	/**
+	 * Buckets for accumulated value counts, highest count first and capped.
+	 *
+	 * @param array<array-key, int> $valueCounts Counts by value.
+	 *
+	 * @return array<int, array{key: array-key, count: int}> The buckets.
+	 */
+	private function countedBuckets(array $valueCounts): array {
+		$buckets = [];
 		foreach ($valueCounts as $key => $count) {
-			$normalizedBuckets[] = [
+			$buckets[] = [
 				'key' => $key,
 				'count' => $count,
 			];
 		}
 
 		// Sort by count descending (highest first).
-		usort($normalizedBuckets, fn ($a, $b) => $b['count'] <=> $a['count']);
+		usort($buckets, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-		// Apply limit.
-		return array_slice($normalizedBuckets, 0, self::MAX_FACET_BUCKETS);
-	}//end normalizeArrayFacetBuckets()
+		return array_slice($buckets, 0, self::MAX_FACET_BUCKETS);
+	}//end countedBuckets()
 
 	/**
 	 * Get date histogram facet using UNION ALL across multiple tables.
@@ -1683,21 +1713,13 @@ class MagicFacetHandler {
 			return $value;
 		}
 
-		// Try to decode JSON strings.
+		// Invalid JSON decodes to null, which is neither scalar nor array.
 		$decoded = json_decode($value, true);
-		if (json_last_error() === JSON_ERROR_NONE) {
-			// If it decoded to a scalar, return that.
-			if (is_scalar($decoded) === true) {
-				return $decoded;
-			}
-
-			// If it's an array with one element, return that element.
-			if (is_array($decoded) === true && count($decoded) === 1) {
-				return reset($decoded);
-			}
-		}
-
-		return $value;
+		return match (true) {
+			is_scalar($decoded) === true => $decoded,
+			is_array($decoded) === true && count($decoded) === 1 => reset($decoded),
+			default => $value,
+		};
 	}//end cleanJsonValue()
 
 	/**
