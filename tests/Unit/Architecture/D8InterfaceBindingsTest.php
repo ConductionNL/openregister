@@ -69,6 +69,7 @@ final class D8InterfaceBindingsTest extends TestCase {
 		'OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver' => ['OCA\OpenRegister\Service\Survivorship\SurvivorshipResolverInterface', []],
 		'OCA\OpenRegister\Service\Sync\HarvestPipelineService' => ['OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface', []],
 		'OCA\OpenRegister\Service\Task\TaskSequenceService' => ['OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface', []],
+		'OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard' => ['OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface', []],
 		'OCA\OpenRegister\Service\Vocabulary\ConceptRepository' => ['OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface', []],
 	];
 
