@@ -110,6 +110,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  * @uses   \OCA\OpenRegister\Service\Object\ObjectDateValues
+ * @uses \OCA\OpenRegister\Service\Object\SaveAccessRequest
  */
 class ObjectServiceCascadeScopeTest extends TestCase {
 
