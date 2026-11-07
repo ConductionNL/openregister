@@ -66,7 +66,7 @@ use Throwable;
  *     cyclomatic score; splitting into helper classes would scatter
  *     the leaf-row contract.
  */
-class TalkLinkService {
+class TalkLinkService implements TalkLinkServiceInterface {
 	private const REQUIRED_APP = 'spreed';
 	private const ROOM_TAG = '[or:';
 	private const STALE_AFTER = 300;
