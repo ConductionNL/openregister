@@ -100,30 +100,24 @@ class EmailService implements EmailServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param EmailLinkMapper $emailLinkMapper Email link mapper.
-	 * @param IAppManager $appManager App manager.
-	 * @param IDBConnection $db Database connection.
-	 * @param IUserSession $userSession User session.
-	 * @param LoggerInterface $logger Logger.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper.
-	 * @param MagicMapperInterface $magicMapper Magic mapper.
+	 * @param EmailLinkMapper    $emailLinkMapper Email link mapper.
+	 * @param EmailMailAppReader $mailApp         App manager, database connection and user session for the Mail app.
+	 * @param EmailLinkedSchemas $linkedSchemas   Schema and object mappers for the mail-linked schemas.
+	 * @param LoggerInterface    $logger          Logger.
 	 */
 	public function __construct(
 		EmailLinkMapper $emailLinkMapper,
-		IAppManager $appManager,
-		IDBConnection $db,
-		IUserSession $userSession,
+		EmailMailAppReader $mailApp,
+		EmailLinkedSchemas $linkedSchemas,
 		LoggerInterface $logger,
-		SchemaMapperInterface $schemaMapper,
-		MagicMapperInterface $magicMapper,
 	) {
 		$this->emailLinkMapper = $emailLinkMapper;
-		$this->appManager = $appManager;
-		$this->db = $db;
-		$this->userSession = $userSession;
+		$this->appManager = $mailApp->appManager;
+		$this->db = $mailApp->db;
+		$this->userSession = $mailApp->userSession;
 		$this->logger = $logger;
-		$this->schemaMapper = $schemaMapper;
-		$this->magicMapper = $magicMapper;
+		$this->schemaMapper = $linkedSchemas->schemaMapper;
+		$this->magicMapper = $linkedSchemas->magicMapper;
 	}//end __construct()
 
 	/**

@@ -36,6 +36,14 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
 use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
@@ -82,6 +90,10 @@ final class D12InterfaceBindingsTest extends TestCase {
 		JobRunRecorder::class => [JobRunRecorderInterface::class, ContractBindings::class],
 		JobScheduleService::class => [JobScheduleServiceInterface::class, ContractBindings::class],
 		MaintenanceModeService::class => [MaintenanceModeServiceInterface::class, ContractBindings::class],
+		ObjectActionBulk::class => [ObjectActionBulkInterface::class, ContractBindings::class],
+		ObjectActionDefinitions::class => [ObjectActionDefinitionsInterface::class, ContractBindings::class],
+		ObjectActionList::class => [ObjectActionListInterface::class, ContractBindings::class],
+		ObjectActionRunner::class => [ObjectActionRunnerInterface::class, ContractBindings::class],
 		SupportBundleService::class => [SupportBundleServiceInterface::class, ContractBindings::class],
 	];
 

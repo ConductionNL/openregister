@@ -77,7 +77,7 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -141,9 +141,9 @@ class FileService {
 	/**
 	 * Builds share links for the host the visitor used
 	 *
-	 * @var ShareUrlBuilder
+	 * @var ShareUrlBuilderInterface
 	 */
-	private ShareUrlBuilder $shareUrls;
+	private ShareUrlBuilderInterface $shareUrls;
 
 
 	/**

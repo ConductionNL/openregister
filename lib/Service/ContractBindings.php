@@ -176,6 +176,14 @@ use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulkInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
@@ -334,6 +342,10 @@ final class ContractBindings {
 		NotificationServiceInterface::class => NotificationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		OasServiceInterface::class => OasService::class,
+		ObjectActionBulkInterface::class => ObjectActionBulk::class,
+		ObjectActionDefinitionsInterface::class => ObjectActionDefinitions::class,
+		ObjectActionListInterface::class => ObjectActionList::class,
+		ObjectActionRunnerInterface::class => ObjectActionRunner::class,
 		ObjectActionValidatorInterface::class => ObjectActionValidator::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,

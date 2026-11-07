@@ -45,7 +45,7 @@ use OCP\IL10N;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
  */
-class ObjectActionList {
+class ObjectActionList implements ObjectActionListInterface {
 
 	/**
 	 * Constructor.
