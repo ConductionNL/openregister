@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Configuration\ObjectChangePreview
+ * @uses \OCA\OpenRegister\Service\Configuration\ObjectPreviewTargets
  * @uses \OCA\OpenRegister\Service\Configuration\PreviewHandler
  */
 class PreviewHandlerGoldenTest extends TestCase {
