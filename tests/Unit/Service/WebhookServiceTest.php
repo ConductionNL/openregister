@@ -1524,9 +1524,11 @@ class WebhookServiceTest extends TestCase {
 				})
 			);
 
+		$log = new WebhookLog();
+		$log->setEventClass('SomeEvent');
+
 		$this->invokeRecorderMethod('scheduleRetry', [
-			'webhook' => $webhook,
-			'eventName' => 'SomeEvent',
+			'delivery' => new \OCA\OpenRegister\Service\WebhookDeliveryAttempt(webhook: $webhook, log: $log),
 			'attempt' => 2,
 		]);
 	}//end testScheduleRetryLogsInfo()
