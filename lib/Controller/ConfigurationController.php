@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
-use OCA\OpenRegister\Service\NotificationService;
+use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
@@ -77,9 +77,9 @@ class ConfigurationController extends Controller {
 	/**
 	 * Notification service instance.
 	 *
-	 * @var NotificationService The notification service instance.
+	 * @var NotificationServiceInterface The notification service instance.
 	 */
-	private NotificationService $notificationService;
+	private NotificationServiceInterface $notificationService;
 
 	/**
 	 * GitHub handler instance.
