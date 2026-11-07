@@ -55,14 +55,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectCreatingEvent|ObjectUpdatingEvent>
  */
-class UniqueConstraintListener implements IEventListener {
-
-	/**
-	 * The error code a refused write carries, so a client can branch on it.
-	 *
-	 * @var string
-	 */
-	public const ERROR_CODE = 'unique-constraint-breached';
+class UniqueConstraintListener implements IEventListener, UniqueConstraintListenerInterface {
 
 	/**
 	 * The `validation` key a reported breach is recorded under.

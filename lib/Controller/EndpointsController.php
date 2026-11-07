@@ -26,8 +26,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Endpoint;
-use OCA\OpenRegister\Db\EndpointLogMapper;
-use OCA\OpenRegister\Db\EndpointMapper;
+use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointMapperInterface;
 use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -72,9 +72,9 @@ class EndpointsController extends Controller {
 	 *
 	 * Handles CRUD operations for endpoint entities in the database.
 	 *
-	 * @var EndpointMapper Endpoint mapper instance
+	 * @var EndpointMapperInterface Endpoint mapper instance
 	 */
-	private readonly EndpointMapper $endpointMapper;
+	private readonly EndpointMapperInterface $endpointMapper;
 
 	/**
 	 * Endpoint service for business logic
@@ -90,9 +90,9 @@ class EndpointsController extends Controller {
 	 *
 	 * Handles database operations for endpoint execution logs.
 	 *
-	 * @var EndpointLogMapper Endpoint log mapper instance
+	 * @var EndpointLogMapperInterface Endpoint log mapper instance
 	 */
-	private readonly EndpointLogMapper $endpointLogMapper;
+	private readonly EndpointLogMapperInterface $endpointLogMapper;
 
 	/**
 	 * Logger for error tracking and debugging
@@ -118,8 +118,8 @@ class EndpointsController extends Controller {
 	 *
 	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param EndpointMapper $endpointMapper Endpoint mapper for database operations
-	 * @param EndpointLogMapper $endpointLogMapper Endpoint log mapper for log operations
+	 * @param EndpointMapperInterface $endpointMapper Endpoint mapper for database operations
+	 * @param EndpointLogMapperInterface $endpointLogMapper Endpoint log mapper for log operations
 	 * @param EndpointServiceInterface $endpointService Endpoint service for business logic
 	 * @param ControllerSession $session Session, group manager and logger.
 	 *
@@ -128,8 +128,8 @@ class EndpointsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		EndpointMapper $endpointMapper,
-		EndpointLogMapper $endpointLogMapper,
+		EndpointMapperInterface $endpointMapper,
+		EndpointLogMapperInterface $endpointLogMapper,
 		EndpointServiceInterface $endpointService,
 		ControllerSession $session,
 	) {

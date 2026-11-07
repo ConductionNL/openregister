@@ -63,7 +63,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<Endpoint>
  */
-class EndpointMapper extends QBMapper {
+class EndpointMapper extends QBMapper implements EndpointMapperInterface {
 	use MultiTenancyTrait;
 
 	/**

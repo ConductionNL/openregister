@@ -46,7 +46,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/data-sync-harvesting/spec.md
  */
-class SyncRecordMapper extends QBMapper {
+class SyncRecordMapper extends QBMapper implements SyncRecordMapperInterface {
 	/**
 	 * Constructor.
 	 *
