@@ -293,71 +293,101 @@ class RegistersController extends Controller {
 		// Get request parameters for filtering and searching.
 		$params = $this->request->getParams();
 
-		$page = $this->listPage(params: $params);
-		$limit = $page['limit'];
-		$offset = $page['offset'];
-
 		// Note: search parameter not currently used in this endpoint.
-		$extend = $params['_extend'] ?? [];
+		$extend = $this->extendList(extend: ($params['_extend'] ?? []));
+		$registers = $this->anonymousVisible(registers: $this->listedRegisters(params: $params));
+
+		return new JSONResponse(data: ['results' => $this->serializedList(registers: $registers, extend: $extend)]);
+	}//end index()
+
+	/**
+	 * An `_extend` value as a list.
+	 *
+	 * @param mixed $extend The value of the parameter.
+	 *
+	 * @return mixed A list for a single value; anything else as it came.
+	 */
+	private function extendList(mixed $extend): mixed {
 		if (is_string($extend) === true) {
-			$extend = [$extend];
+			return [$extend];
 		}
 
-		// Extract filters.
-		$filters = $params['filters'] ?? [];
+		return $extend;
+	}//end extendList()
 
-		// Fetch entities so the anonymous-published guard can filter
-		// them before serialization. The serialized output is produced
-		// by RegisterService::findAllSerialized below (shared between
-		// HTTP and DI consumers — see register-service-extensions spec).
-		$registers = $this->registerService->findAll(
-			limit: $limit,
-			offset: $offset,
-			filters: $filters,
+	/**
+	 * The page of registers a list request asks for.
+	 *
+	 * Entities, so the anonymous guard can filter them before serialization.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<int, Register> The registers.
+	 */
+	private function listedRegisters(array $params): array {
+		$page = $this->listPage(params: $params);
+
+		return $this->registerService->findAll(
+			limit: $page['limit'],
+			offset: $page['offset'],
+			filters: ($params['filters'] ?? []),
 			searchConditions: [],
 			searchParams: [],
 			_multitenancy: false
 		);
+	}//end listedRegisters()
 
-		// Read-visibility guard: this endpoint is @PublicPage so it stays
-		// reachable when OpenRegister is restricted to a user group. Anonymous
-		// callers may only see registers whose RBAC authorization grants read
-		// access to the `public` group; authenticated users are unaffected.
-		// Visibility is derived from server-side authorization rules, never
-		// from client-supplied parameters.
-		if ($this->isAnonymousRequest() === true) {
-			$registers = array_values(
-				array_filter(
-					$registers,
-					fn ($register) => $this->isPublicReadable(authorization: $register->getAuthorization())
-				)
-			);
+	/**
+	 * The registers the caller may list.
+	 *
+	 * The list is @PublicPage so it stays reachable when OpenRegister is restricted to
+	 * a user group. Anonymous callers may only see registers whose RBAC authorization
+	 * grants read access to the `public` group; authenticated users are unaffected.
+	 * Visibility is derived from server-side authorization rules, never from
+	 * client-supplied parameters.
+	 *
+	 * @param array<int, Register> $registers The registers.
+	 *
+	 * @return array<int, Register> The visible registers.
+	 */
+	private function anonymousVisible(array $registers): array {
+		if ($this->isAnonymousRequest() === false) {
+			return $registers;
 		}
 
-		// Pre-compute per-register stats if both `schemas` + `@self.stats`
-		// were requested, then hand the resulting entity list to the
-		// serializer in a single call. RegisterSerializer owns the
-		// schema-expansion + orphan-ID retention contract.
+		return array_values(
+			array_filter(
+				$registers,
+				fn ($register) => $this->isPublicReadable(authorization: $register->getAuthorization())
+			)
+		);
+	}//end anonymousVisible()
+
+	/**
+	 * Serialize a list, with statistics when `@self.stats` is requested.
+	 *
+	 * With `schemas` as well, per-schema counts are computed once and handed to the
+	 * serializer, which owns the schema expansion and orphan-id retention contract.
+	 *
+	 * @param array<int, Register> $registers The registers.
+	 * @param mixed                $extend    The `_extend` list.
+	 *
+	 * @return array<int, array<string, mixed>> The serialized registers.
+	 */
+	private function serializedList(array $registers, mixed $extend): array {
+		$wantsStats = in_array('@self.stats', $extend, true);
 		$statsByRegisterId = null;
-		if (in_array('schemas', $extend, true) === true
-			&& in_array('@self.stats', $extend, true) === true
-		) {
+		if ($wantsStats === true && in_array('schemas', $extend, true) === true) {
 			$statsByRegisterId = $this->statistics->schemaCounts(registers: $registers);
 		}
 
-		$registersArr = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
-
-		// If '@self.stats' is requested, attach register-level statistics
-		// alongside the schema-level stats already produced by the
-		// serializer. Register-level stats remain a controller concern
-		// because they depend on multiple mappers (object-entity +
-		// audit-trail) the serializer does not have access to.
-		if (in_array('@self.stats', $extend, true) === true) {
-			$registersArr = $this->withRegisterStats(registers: $registersArr, statsByRegisterId: $statsByRegisterId);
+		$serialized = $this->services->registers->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
+		if ($wantsStats === true) {
+			return $this->withRegisterStats(registers: $serialized, statsByRegisterId: $statsByRegisterId);
 		}
 
-		return new JSONResponse(data: ['results' => $registersArr]);
-	}//end index()
+		return $serialized;
+	}//end serializedList()
 
 	/**
 	 * The limit and offset a list request asks for; a page with a limit sets the offset.
@@ -432,56 +462,67 @@ class RegistersController extends Controller {
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
-			$extend = $this->request->getParam(key: '_extend', default: []);
-			if (is_string($extend) === true) {
-				$extend = [$extend];
-			}
-
-			$register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
-
-			// Read-visibility guard (@PublicPage): an anonymous caller may only view
-			// a register whose RBAC authorization grants read access to the `public`
-			// group. Derived from server-side authorization rules, never from
-			// client-supplied parameters.
-			if ($this->isAnonymousRequest() === true
-				&& $this->isPublicReadable(authorization: $register->getAuthorization()) === false
-			) {
-				return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-			}
-
-			$registerArr = $register->jsonSerialize();
-			// If '@self.stats' is requested, attach statistics to the register.
-			if (in_array('@self.stats', $extend, true) === true) {
-				$registerArr['stats'] = [
-					'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
-					'logs' => $this->auditLogStats(registerId: (int)$registerArr['id']),
-					'files' => [ 'total' => 0, 'size' => 0 ],
-				];
-			}
-
-			return new JSONResponse(data: $registerArr);
+			return $this->shownRegister(id: $id);
 		} catch (DoesNotExistException $e) {
-			// Unknown id/uuid/slug — a clean 404 JSON error, not an uncaught
-			// exception falling through to Nextcloud's HTML error template
-			// (caught live via the openregister-register-resolver Newman
-			// collection: GET /api/registers/{unknown-slug} was returning a
-			// 500 HTML page instead of a JSON 404, mirroring the pattern
-			// SchemasController::show() already guards against).
+			// Unknown id, uuid or slug: a clean 404 JSON error, not an uncaught exception
+			// falling through to Nextcloud's HTML error template.
 			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
 		} catch (Exception $e) {
 			$this->logger->error(
 				message: '[RegistersController] Failed to retrieve register',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register_id' => $id,
-					'error_message' => $e->getMessage(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'register_id' => $id, 'error_message' => $e->getMessage()]
 			);
 
 			return new JSONResponse(data: ['error' => 'Failed to retrieve register: ' . $e->getMessage()], statusCode: 500);
 		}//end try
 	}//end show()
+
+	/**
+	 * Answer with one register, when the caller may read it.
+	 *
+	 * Read-visibility guard (@PublicPage): an anonymous caller may only view a register
+	 * whose RBAC authorization grants read access to the `public` group. Derived from
+	 * server-side authorization rules, never from client-supplied parameters.
+	 *
+	 * @param int|string $id The ID of the register.
+	 *
+	 * @return JSONResponse The register, or 401.
+	 *
+	 * @throws DoesNotExistException When the register does not exist.
+	 * @throws Exception             When reading fails; show() answers it.
+	 */
+	private function shownRegister(int|string $id): JSONResponse {
+		$extend = $this->extendList(extend: $this->request->getParam(key: '_extend', default: []));
+		$register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+
+		if ($this->isAnonymousRequest() === true
+			&& $this->isPublicReadable(authorization: $register->getAuthorization()) === false
+		) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
+
+		$registerArr = $register->jsonSerialize();
+		if (in_array('@self.stats', $extend, true) === true) {
+			$registerArr['stats'] = $this->shownStats(registerId: $registerArr['id']);
+		}
+
+		return new JSONResponse(data: $registerArr);
+	}//end shownRegister()
+
+	/**
+	 * The statistics of one shown register.
+	 *
+	 * @param mixed $registerId The id in the serialized register.
+	 *
+	 * @return array<string, mixed> The object, log and file statistics.
+	 */
+	private function shownStats(mixed $registerId): array {
+		return [
+			'objects' => $this->services->mappers->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null),
+			'logs' => $this->auditLogStats(registerId: (int)$registerId),
+			'files' => [ 'total' => 0, 'size' => 0 ],
+		];
+	}//end shownStats()
 
 	/**
 	 * Creates a new register
