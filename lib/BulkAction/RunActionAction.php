@@ -48,14 +48,7 @@ use OCP\IUser;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
  */
-class RunActionAction implements BulkActionInterface {
-
-	/**
-	 * The bulk action id.
-	 *
-	 * @var string
-	 */
-	public const ID = 'openregister:run-action';
+class RunActionAction implements RunActionActionInterface {
 
 	/**
 	 * Constructor.
