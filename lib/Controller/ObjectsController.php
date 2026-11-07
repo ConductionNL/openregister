@@ -91,7 +91,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
@@ -846,7 +846,7 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-list-page-size-is-bounded-by-a-hard-maximum
 	 */
 	private function crossTablePaged(array $query): array {
-		$limit = min((int)($query['_limit'] ?? 20), QueryHandler::MAX_PAGE_SIZE);
+		$limit = min((int)($query['_limit'] ?? 20), QueryHandlerInterface::MAX_PAGE_SIZE);
 		if (($query['_page'] ?? null) !== null && ($query['_offset'] ?? null) === null && $limit > 0) {
 			$query['_offset'] = ((max(1, (int)$query['_page']) - 1) * $limit);
 		}
@@ -909,7 +909,7 @@ class ObjectsController extends Controller {
 	 * @return array{total: int|null, pages: int, page: int, limit: int} The fields.
 	 */
 	private function crossTablePagination(array $query, ?int $total): array {
-		$limit  = min((int)($query['_limit'] ?? 20), QueryHandler::MAX_PAGE_SIZE);
+		$limit  = min((int)($query['_limit'] ?? 20), QueryHandlerInterface::MAX_PAGE_SIZE);
 		$offset = (int)($query['_offset'] ?? 0);
 		$pages  = 1;
 		$page   = 1;

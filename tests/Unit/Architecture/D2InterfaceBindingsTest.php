@@ -29,6 +29,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +59,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
+		QueryHandler::class => [QueryHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		RenderObject::class => [RenderObjectInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
