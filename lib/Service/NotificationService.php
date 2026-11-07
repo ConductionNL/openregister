@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  */
-class NotificationService {
+class NotificationService implements NotificationServiceInterface {
 
 	/**
 	 * Constructor.
