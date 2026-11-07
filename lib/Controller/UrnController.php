@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\UrnServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -44,7 +44,7 @@ class UrnController extends Controller {
 	/**
 	 * Error body for a URN that does not parse.
 	 */
-	private const MALFORMED_URN_ERROR = 'malformed URN; expected urn:' . UrnService::DEFAULT_NID . ':<instance>:<register>:<schema>:<uuid>';
+	private const MALFORMED_URN_ERROR = 'malformed URN; expected urn:' . UrnServiceInterface::DEFAULT_NID . ':<instance>:<register>:<schema>:<uuid>';
 
 	/**
 	 * Maximum number of URNs accepted by one bulk() request.
@@ -62,12 +62,12 @@ class UrnController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param UrnService $urnService The URN resolution service.
+	 * @param UrnServiceInterface $urnService The URN resolution service.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly UrnService $urnService,
+		private readonly UrnServiceInterface $urnService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -106,7 +106,7 @@ class UrnController extends Controller {
 	 * Build the response for a URN that parsed: 200 with its URL and parts, or 404.
 	 *
 	 * @param string $urn The parsed URN.
-	 * @param array<string, mixed> $parts The addressing parts returned by UrnService::parse().
+	 * @param array<string, mixed> $parts The addressing parts returned by UrnServiceInterface::parse().
 	 *
 	 * @return JSONResponse The resolution result or a 404 when the URN does not resolve here.
 	 *

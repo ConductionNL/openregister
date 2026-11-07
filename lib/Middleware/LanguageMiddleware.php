@@ -39,7 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use OCA\OpenRegister\Db\TranslationMapperInterface;
-use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\LanguageServiceInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -73,13 +73,13 @@ class LanguageMiddleware extends Middleware {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming request.
-	 * @param LanguageService $languageService The request-scoped language service.
+	 * @param LanguageServiceInterface $languageService The request-scoped language service.
 	 * @param TranslationMapperInterface $translationMapper Mapper for source-language lookups (response side).
 	 * @param LoggerInterface $logger Logger for invalid-tag warnings.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
-		private readonly LanguageService $languageService,
+		private readonly LanguageServiceInterface $languageService,
 		private readonly TranslationMapperInterface $translationMapper,
 		private readonly LoggerInterface $logger,
 	) {
@@ -99,51 +99,83 @@ class LanguageMiddleware extends Middleware {
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
 	 */
 	public function beforeController($controller, $methodName): void {
-		// 1. Query-parameter overrides take precedence over Accept-Language.
+		// Query-parameter overrides take precedence over Accept-Language.
 		$resolvedFromQuery = $this->resolveFromQueryParams();
 		if ($resolvedFromQuery !== null) {
-			$this->languageService->setPreferredLanguage($resolvedFromQuery);
-			$this->languageService->setRequestedLanguageSource('query');
+			$this->setPreferredLanguage(language: $resolvedFromQuery, source: 'query');
 		}
 
-		// 2. Accept-Language header is the next priority.
-		$acceptLanguage = $this->request->getHeader('Accept-Language');
-		if ($acceptLanguage !== '') {
-			$acceptedLanguages = LanguageService::parseAcceptLanguageHeader($acceptLanguage);
-			$this->languageService->setAcceptedLanguages($acceptedLanguages);
-
-			if (empty($acceptedLanguages) === false && $resolvedFromQuery === null) {
-				$preferred = strtolower(explode('-', $acceptedLanguages[0])[0]);
-				$this->languageService->setPreferredLanguage($preferred);
-				$this->languageService->setRequestedLanguageSource('header');
-			}
-		}
-
-		// 3. _translations=all (existing).
-		$translations = $this->request->getParam('_translations');
-		if ($translations === 'all') {
+		$this->applyAcceptLanguage(queryResolved: $resolvedFromQuery !== null);
+		if ($this->request->getParam('_translations') === 'all') {
 			$this->languageService->setReturnAllTranslations(true);
 		}
 
-		// 4. Write-side X-Translation-Target-Language on mutating verbs.
-		$method = strtoupper((string)$this->request->getMethod());
-		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === true) {
-			$targetHeader = $this->request->getHeader('X-Translation-Target-Language');
-			if ($targetHeader !== '') {
-				$targetTrim = trim($targetHeader);
-				if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
-					$this->languageService->setTargetLanguage($targetTrim);
-				} else {
-					$this->logger->warning(
-						sprintf(
-							'[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.',
-							$targetTrim
-						)
-					);
-				}
-			}
-		}
+		$this->applyTargetLanguage();
 	}//end beforeController()
+
+	/**
+	 * Record the preferred language and where it came from.
+	 *
+	 * @param string $language The language code.
+	 * @param string $source   Where it came from: `query` or `header`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function setPreferredLanguage(string $language, string $source): void {
+		$this->languageService->setPreferredLanguage($language);
+		$this->languageService->setRequestedLanguageSource($source);
+	}//end setPreferredLanguage()
+
+	/**
+	 * Read the Accept-Language header into the accepted languages, and into the
+	 * preferred language when no query parameter already chose one.
+	 *
+	 * @param bool $queryResolved Whether a query parameter already set the preferred language.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function applyAcceptLanguage(bool $queryResolved): void {
+		$acceptLanguage = $this->request->getHeader('Accept-Language');
+		if ($acceptLanguage === '') {
+			return;
+		}
+
+		$acceptedLanguages = $this->languageService::parseAcceptLanguageHeader($acceptLanguage);
+		$this->languageService->setAcceptedLanguages($acceptedLanguages);
+
+		if (empty($acceptedLanguages) === false && $queryResolved === false) {
+			$preferred = strtolower(explode('-', $acceptedLanguages[0])[0]);
+			$this->setPreferredLanguage(language: $preferred, source: 'header');
+		}
+	}//end applyAcceptLanguage()
+
+	/**
+	 * Set the write-side target language from X-Translation-Target-Language on a
+	 * POST, PUT or PATCH; an invalid value is logged and ignored.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+	 */
+	private function applyTargetLanguage(): void {
+		$method       = strtoupper((string)$this->request->getMethod());
+		$targetHeader = $this->request->getHeader('X-Translation-Target-Language');
+		if (in_array($method, ['POST', 'PUT', 'PATCH'], true) === false || $targetHeader === '') {
+			return;
+		}
+
+		$targetTrim = trim($targetHeader);
+		if (preg_match(self::BCP47_PATTERN, $targetTrim) === 1) {
+			$this->languageService->setTargetLanguage($targetTrim);
+			return;
+		}
+
+		$this->logger->warning(sprintf('[LanguageMiddleware] Invalid X-Translation-Target-Language "%s" — ignoring.', $targetTrim));
+	}//end applyTargetLanguage()
 
 	/**
 	 * Emit language response headers.

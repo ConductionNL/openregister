@@ -48,7 +48,7 @@ use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
@@ -108,9 +108,9 @@ class FilesController extends Controller {
 	 *
 	 * Handles file storage, retrieval, and management operations.
 	 *
-	 * @var FileService File service instance
+	 * @var FileServiceInterface File service instance
 	 */
-	private readonly FileService $fileService;
+	private readonly FileServiceInterface $fileService;
 
 	/**
 	 * Object service for handling object operations

@@ -8,7 +8,7 @@
  * admin UI may itself depend on the thing that is broken. A diagnosis available
  * only through the surface under repair is not reliably available.
  *
- * It formats {@see RegisterDescriptorService::inventory()} and nothing more, so
+ * It formats {@see RegisterDescriptorServiceInterface::inventory()} and nothing more, so
  * the command and the panel cannot drift into disagreeing about the same
  * instance.
  *
@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
-use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\RegisterDescriptorServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -89,19 +89,19 @@ class DescriptorListCommand extends Command {
 	 * @var array<string, string>
 	 */
 	private const STATE_TAGS = [
-		RegisterDescriptorService::STATE_ABSENT => 'error',
-		RegisterDescriptorService::STATE_BEHIND => 'comment',
+		RegisterDescriptorServiceInterface::STATE_ABSENT => 'error',
+		RegisterDescriptorServiceInterface::STATE_BEHIND => 'comment',
 	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterDescriptorService $descriptors The descriptor inventory.
+	 * @param RegisterDescriptorServiceInterface $descriptors The descriptor inventory.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterDescriptorService $descriptors,
+		private readonly RegisterDescriptorServiceInterface $descriptors,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -184,7 +184,7 @@ class DescriptorListCommand extends Command {
 		}
 
 		return array_values(
-			array_filter($rows, static fn (array $row): bool => $row['state'] !== RegisterDescriptorService::STATE_CURRENT)
+			array_filter($rows, static fn (array $row): bool => $row['state'] !== RegisterDescriptorServiceInterface::STATE_CURRENT)
 		);
 	}//end visibleRows()
 
@@ -197,9 +197,9 @@ class DescriptorListCommand extends Command {
 	 */
 	private static function summary(array $rows): string {
 		$counts = [
-			RegisterDescriptorService::STATE_CURRENT => 0,
-			RegisterDescriptorService::STATE_BEHIND  => 0,
-			RegisterDescriptorService::STATE_ABSENT  => 0,
+			RegisterDescriptorServiceInterface::STATE_CURRENT => 0,
+			RegisterDescriptorServiceInterface::STATE_BEHIND  => 0,
+			RegisterDescriptorServiceInterface::STATE_ABSENT  => 0,
 		];
 		foreach ($rows as $row) {
 			$counts[$row['state']]++;

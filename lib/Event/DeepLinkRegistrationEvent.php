@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -39,12 +39,12 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Constructor for DeepLinkRegistrationEvent.
 	 *
-	 * @param DeepLinkRegistryService $registry The deep link registry service
+	 * @param DeepLinkRegistryServiceInterface $registry The deep link registry service
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DeepLinkRegistryService $registry,
+		private readonly DeepLinkRegistryServiceInterface $registry,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -52,11 +52,11 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Get the deep link registry service to register URL patterns.
 	 *
-	 * @return DeepLinkRegistryService The registry service
+	 * @return DeepLinkRegistryServiceInterface The registry service
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-9
 	 */
-	public function getRegistry(): DeepLinkRegistryService {
+	public function getRegistry(): DeepLinkRegistryServiceInterface {
 		return $this->registry;
 	}//end getRegistry()
 

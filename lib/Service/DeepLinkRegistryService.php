@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class DeepLinkRegistryService {
+class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 	/**
 	 * In-memory registry keyed by "registerSlug::schemaSlug".

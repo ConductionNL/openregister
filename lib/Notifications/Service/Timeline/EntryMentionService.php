@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IURLGenerator;
@@ -87,7 +87,7 @@ class EntryMentionService {
 	 * @param PermissionHandler       $permissions   The one RBAC evaluator.
 	 * @param INotificationManager    $notifications Sends the notification.
 	 * @param LoggerInterface         $logger        Logger for the fail-closed paths.
-	 * @param DeepLinkRegistryService $deepLinks     Finds the app page that owns the object.
+	 * @param DeepLinkRegistryServiceInterface $deepLinks     Finds the app page that owns the object.
 	 * @param IURLGenerator           $urls          Builds Open Register's own object page as the fallback link.
 	 *
 	 * @return void
@@ -100,7 +100,7 @@ class EntryMentionService {
 		private readonly PermissionHandler $permissions,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,
-		private readonly DeepLinkRegistryService $deepLinks,
+		private readonly DeepLinkRegistryServiceInterface $deepLinks,
 		private readonly IURLGenerator $urls,
 	) {
 	}//end __construct()
