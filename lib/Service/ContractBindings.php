@@ -80,6 +80,10 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
+use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Service\Party\PartyServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -135,6 +139,8 @@ final class ContractBindings {
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		PartyRoleServiceInterface::class => PartyRoleService::class,
+		PartyServiceInterface::class => PartyService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
