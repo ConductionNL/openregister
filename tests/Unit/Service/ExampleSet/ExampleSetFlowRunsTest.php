@@ -70,6 +70,7 @@ use OCA\OpenRegister\Db\FlowRun;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRunCheck
  */
 class ExampleSetFlowRunsTest extends ExampleSetTestCase {
 	/**

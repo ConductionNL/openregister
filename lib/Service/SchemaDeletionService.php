@@ -65,7 +65,7 @@ use Throwable;
  * for the record.
  *
  * KEPT ROWS: a frozen, archived or locked row refuses every whole-table delete. The
- * cascade reads the magic tables first and refuses before any row is touched, unless
+ * cascade reads the magic tables inside phase 1 and refuses before any row is touched, unless
  * an operator forces it from the CLI, and a forced teardown leaves its own audit entry.
  *
  * KNOWN LIMIT: the cascade is synchronous, and its audit writes are inherently
@@ -268,7 +268,6 @@ class SchemaDeletionService {
 
 		foreach ($schemas as $schema) {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
-			$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
 		}
 
 		$deletedCount = 0;
@@ -276,6 +275,10 @@ class SchemaDeletionService {
 
 		$this->db->beginTransaction();
 		try {
+			foreach ($schemas as $schema) {
+				$this->teardownGuard()->rows->assertNoneKept(register: $register, schema: $schema);
+			}
+
 			foreach ($schemas as $schema) {
 				$result = $this->deleteObjectsOfPair(
 					register: $register,
@@ -362,14 +365,13 @@ class SchemaDeletionService {
 			$this->rejectIfArchivalImmutable(schema: $schema, operation: 'delete');
 		}
 
-		$forcedRows = $this->keptRowsLifted(schema: $schema, override: $override);
-
 		$schemaId = (int)$schema->getId();
 		$tables = $this->resolveMagicTablesForSchema(schema: $schema);
 
 		// ---- Phase 1: one transaction. ----
 		$this->db->beginTransaction();
 		try {
+			$forcedRows = $this->keptRowsLifted(schema: $schema, override: $override);
 			$this->teardownGuard()->recordForced(schema: $schema, keptRows: $forcedRows);
 
 			$removed = $this->deleteObjectsOfTables(schema: $schema, tables: $tables);

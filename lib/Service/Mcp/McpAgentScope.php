@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Mcp;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Mcp\Db\AgentMapper;
+use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -69,14 +69,14 @@ class McpAgentScope {
 	/**
 	 * Constructor
 	 *
-	 * @param AgentMapper $agentMapper Agent lookup
+	 * @param AgentMapperInterface $agentMapper Agent lookup
 	 * @param ToolGrantResolver $grantResolver Grant grammar (shared with the chat)
 	 * @param McpToolsService $toolsService The MCP tool catalogue
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param LoggerInterface $logger Logger
 	 */
 	public function __construct(
-		private readonly AgentMapper $agentMapper,
+		private readonly AgentMapperInterface $agentMapper,
 		private readonly ToolGrantResolver $grantResolver,
 		private readonly McpToolsService $toolsService,
 		ICacheFactory $cacheFactory,

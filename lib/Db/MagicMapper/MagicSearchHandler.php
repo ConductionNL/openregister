@@ -890,11 +890,7 @@ class MagicSearchHandler {
 			);
 		}
 
-		// Apply relations contains filter if provided.
-		$relationsContains = $query['_relations_contains'] ?? null;
-		if ($relationsContains !== null && empty($relationsContains) === false) {
-			$this->applyRelationsContainsFilter(qb: $qb, uuid: $relationsContains);
-		}
+		$this->applyRelationsContains(qb: $qb, query: $query);
 
 		// Apply dotted relation-field filters: `_relations.<field>` => <id>.
 		$this->applyRelationFieldFilters(qb: $qb, query: $query);
@@ -3708,6 +3704,24 @@ class MagicSearchHandler {
 	}//end applyIdFilters()
 
 	/**
+	 * Keep the objects that reference every `_relations_contains` value.
+	 *
+	 * @param IQueryBuilder $qb    Query builder to modify
+	 * @param array         $query The search query
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function applyRelationsContains(IQueryBuilder $qb, array $query): void {
+		foreach ((array)($query['_relations_contains'] ?? []) as $uuid) {
+			if (empty($uuid) === false) {
+				$this->applyRelationsContainsFilter(qb: $qb, uuid: $uuid);
+			}
+		}
+	}//end applyRelationsContains()
+
+	/**
 	 * Apply relations contains filter to find objects referencing a specific UUID.
 	 *
 	 * Relations can be stored as either an array (`["uuid1", "uuid2", ...]`, the
@@ -4475,7 +4489,7 @@ class MagicSearchHandler {
 					'line' => __LINE__,
 					'error' => $e->getMessage(),
 					'tableName' => $tableName,
-					'row' => $row,
+					'columns' => array_keys($row),
 				]
 			);
 

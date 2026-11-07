@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Mcp\Service\ChatService;
+use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 
 /**
@@ -34,13 +34,13 @@ final class ChatDomain {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ChatService         $chatService         Chat service for AI interactions
+	 * @param ChatServiceInterface         $chatService         Chat service for AI interactions
 	 * @param OrganisationServiceInterface $organisationService Organisation service for permissions
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		public readonly ChatService $chatService,
+		public readonly ChatServiceInterface $chatService,
 		public readonly OrganisationServiceInterface $organisationService,
 	) {
 	}//end __construct()
