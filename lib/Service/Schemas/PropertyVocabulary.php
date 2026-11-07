@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  *
  * @spec openspec/specs/runtime-schema-api/spec.md
  */
-final class PropertyVocabulary {
+final class PropertyVocabulary implements PropertyVocabularyInterface {
 
 	/**
 	 * Every type, in a shape a property editor can render.

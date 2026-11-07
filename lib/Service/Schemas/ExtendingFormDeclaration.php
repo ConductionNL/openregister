@@ -56,44 +56,7 @@ namespace OCA\OpenRegister\Service\Schemas;
  *
  * @spec openspec/specs/runtime-schema-api/spec.md
  */
-final class ExtendingFormDeclaration {
-
-	/**
-	 * The annotation key, in OpenRegister's own namespace.
-	 *
-	 * @var string
-	 */
-	public const ANNOTATION = 'x-openregister-extends-form';
-
-	/**
-	 * Roles that are not vocabulary keys, and the key each one supplies.
-	 *
-	 * Exactly one today. `propertiesFromDefinitions` reads
-	 * `mapped($record, $map, 'definition')` as the fallback source for a
-	 * description, so `definition` is a second source for `description`
-	 * rather than a property key of its own. It is declared here because a
-	 * shipped role the platform refuses by name is the same breakage as a
-	 * mis-read map, one release later.
-	 *
-	 * @var array<string, string>
-	 */
-	public const SOURCE_ALIASES = ['definition' => 'description'];
-
-	/**
-	 * Roles the consumer reads to steer the form, not to fill a property key.
-	 *
-	 * `@conduction/nextcloud-vue` 2.79.0 added `hideOnCreate` to the
-	 * `DEFAULT_MAP` of `propertiesFromDefinitions`: a definition whose mapped
-	 * field is `true` gets no field on a create form, because the app fills
-	 * that answer in itself. It forwards no vocabulary key, so it is neither
-	 * counted as forwarded nor written onto a property built from a form.
-	 * Refusing it by name refused dossiq's whole case schema at import.
-	 *
-	 * @var array<string, string>
-	 */
-	public const FORM_ROLES = [
-		'hideOnCreate' => 'The create form leaves the field out, because the app fills it in itself. Edit forms still show it.',
-	];
+final class ExtendingFormDeclaration implements ExtendingFormDeclarationInterface {
 
 	/**
 	 * The refusals a declaration can earn, by template name.
