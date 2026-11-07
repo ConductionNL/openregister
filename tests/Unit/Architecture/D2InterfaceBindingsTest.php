@@ -25,6 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
@@ -55,6 +57,7 @@ final class D2InterfaceBindingsTest extends TestCase {
 		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
 		BatchOperationStatus::class => [BatchOperationStatusInterface::class, ContractBindings::BINDINGS, 'Service'],
 		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
+		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
 	];
 
 	/**
@@ -66,6 +69,10 @@ final class D2InterfaceBindingsTest extends TestCase {
 		ObjectEventGate::class => [
 			'BackgroundJob/DeferredObjectEventJob.php' => 'constructs the gate (`new`) around its own dispatcher',
 			'Db/MagicMapper.php' => 'constructs the gate (`new`); the file is also changed by open PR #6108',
+		],
+		ObjectService::class => [
+			'Controller/ObjectsController.php' => 'public action parameter of show(), destroy(), canDelete(); showServices() reads its permission handler',
+			'Controller/TagsController.php' => 'reads its permission handler, which no interface carries',
 		],
 	];
 
