@@ -5058,7 +5058,7 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
 		}
 
-		if ($this->mayMove(object: $object, schemas: [$from['schema'], $to['schema']]) === false) {
+		if ($this->mayMove(object: $object, schemas: [$ends['from']['schema'], $ends['to']['schema']]) === false) {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 

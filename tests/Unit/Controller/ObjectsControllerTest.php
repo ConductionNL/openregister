@@ -6481,12 +6481,54 @@ class ObjectsControllerTest extends TestCase {
 			$schemas['s'],
 			'alice'
 		)->willReturn(['moved' => $moved]);
-		$this->container->method('get')->willReturn($mover);
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
+			function (...$args) use ($schemas, $object): bool {
+				$this->assertSame(
+					$args[1] === 'update' ? [$schemas['b'], $object] : [$schemas['s'], null],
+					[$args[0], $args[5] ?? null]
+				);
+				return true;
+			}
+		);
+		$this->moveServices(mover: $mover, permissions: $permissions);
 
 		$result = $this->controller->move('a', 'b', 'uuid-123');
 
 		$this->assertSame($expected, $result->getStatus());
 		$this->assertSame(['moved' => $moved], $result->getData());
+	}
+
+	/**
+	 * A caller without the update right on the object or the create right on the target gets 403 and nothing moves.
+	 *
+	 * @return void
+	 */
+	public function testMoveWithoutTheRightsIsRefused(): void {
+		$this->prepareMove(['targetRegister' => 'r', 'targetSchema' => 's']);
+		$this->registerMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
+		$mover->expects($this->never())->method('move');
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturn(false);
+		$this->moveServices(mover: $mover, permissions: $permissions);
+
+		$this->assertSame(403, $this->controller->move('a', 'b', 'uuid-123')->getStatus());
+	}
+
+	/**
+	 * Let the container hand out the mover and the permission handler.
+	 *
+	 * @param object $mover       The mover.
+	 * @param object $permissions The permission handler.
+	 *
+	 * @return void
+	 */
+	private function moveServices(object $mover, object $permissions): void {
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id) => ($id === \OCA\OpenRegister\Service\Object\PermissionHandler::class) ? $permissions : $mover
+		);
 	}
 
 	/**
