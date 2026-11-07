@@ -198,6 +198,7 @@ final class ContractBindings {
 		PortalTaskNodeInterface::class => PortalTaskNode::class,
 		\OCA\OpenRegister\Service\Object\QueryHandlerInterface::class => \OCA\OpenRegister\Service\Object\QueryHandler::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
+		RegisterServiceInterface::class => RegisterService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaApplicationMigratorInterface::class => SchemaApplicationMigrator::class,
 		SchemaExplorationInterface::class => SchemaService::class,

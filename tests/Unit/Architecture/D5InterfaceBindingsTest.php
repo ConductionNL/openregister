@@ -49,6 +49,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 			'OCA\OpenRegister\Service\RegisterSchemaLinkageRepairServiceInterface',
 			ContractBindings::class,
 		],
+		'OCA\OpenRegister\Service\RegisterService' => ['OCA\OpenRegister\Service\RegisterServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SchemaApplicationMigrator' => [
 			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
 			ContractBindings::class,
