@@ -86,12 +86,18 @@ class MagicMapperRecentLensTest extends TestCase {
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
+		$pairs = $this->pairs();
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(static fn (int $id): Schema => $pairs[($id - 1)]['schema']);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($pairs[0]['register']);
+
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs(
 				[
 					$this->createMock(IDBConnection::class),
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
+					$schemas,
+					$registers,
 					$this->createMock(IConfig::class),
 					$this->createMock(IEventDispatcher::class),
 					$this->createMock(IUserSession::class),
@@ -103,7 +109,7 @@ class MagicMapperRecentLensTest extends TestCase {
 					$container,
 				]
 			)
-			->onlyMethods(['searchObjectsInRegisterSchemaTable'])
+			->onlyMethods(['searchObjectsInRegisterSchemaTable', 'countObjectsInRegisterSchemaTable', 'findMultipleAcrossAllMagicTables'])
 			->getMock();
 
 		$rows = ['zaak' => ['uuid-a', 'uuid-c', 'uuid-e'], 'taak' => ['uuid-b', 'uuid-d']];
@@ -269,17 +275,26 @@ class MagicMapperRecentLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheGlobalIdsPathOrdersAndStamps(): void {
-		$objects = array_map(fn (string $uuid): ObjectEntity => $this->object(uuid: $uuid), ['uuid-e', 'uuid-a', 'uuid-c', 'uuid-b']);
+		$located = [];
+		foreach ([1, 2] as $schema) {
+			$row = $this->object(uuid: 'uuid-' . $schema);
+			$row->setRegister('7');
+			$row->setSchema((string) $schema);
+			$located[] = $row;
+		}
 
-		$method = new \ReflectionMethod(MagicMapper::class, 'getGlobalSearchResult');
-		$result = $method->invoke(
-			$this->mapper(),
-			$objects,
-			$this->query(['_limit' => 2, '_offset' => 1]),
-			false
+		$mapper = $this->mapper();
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn($located);
+		$mapper->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
+			static fn (array $query, Register $register, Schema $schema): int => ($schema->getId() === 1 ? 3 : 2)
 		);
 
-		$this->assertSame(4, $result['total']);
+		$result = $mapper->searchObjectsPaginated(
+			searchQuery: $this->query(['_limit' => 2, '_offset' => 1, '_ids' => array_keys(self::VIEWS)]),
+			countQuery: ['_aggregations' => [], '_ids' => array_keys(self::VIEWS)]
+		);
+
+		$this->assertSame(5, $result['total']);
 		$this->assertSame(
 			[['uuid-b', self::VIEWS['uuid-b']], ['uuid-a', self::VIEWS['uuid-a']]],
 			$this->shape($result['results'])
