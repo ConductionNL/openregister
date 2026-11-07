@@ -66,7 +66,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
  */
-final class SemanticTypeResolver {
+final class SemanticTypeResolver implements SemanticTypeResolverInterface {
 
 	/**
 	 * Request-scoped cache of resolved schemas, keyed by
