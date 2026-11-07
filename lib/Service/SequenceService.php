@@ -138,12 +138,7 @@ class SequenceService implements SequenceServiceInterface {
 	 * @throws DbException When the fallback increment cannot read the row.
 	 */
 	private function seedScope(array $scope, int $nextValue = 2): int {
-		$entity = new Sequence();
-		$entity->setRegisterId($scope['registerId']);
-		$entity->setSchemaId($scope['schemaId']);
-		$entity->setScopeKey($scope['scopeKey']);
-		// Storing n+1 means value n has just been reserved.
-		$entity->setNextValue($nextValue);
+		$entity = $this->newScopeRow(scope: $scope, nextValue: $nextValue);
 
 		try {
 			$this->mapper->insert($entity);
@@ -154,6 +149,25 @@ class SequenceService implements SequenceServiceInterface {
 			return $this->lastReserved(scope: $scope);
 		}
 	}//end seedScope()
+
+	/**
+	 * A new counter row for a scope.
+	 *
+	 * @param array{registerId: int, schemaId: int, scopeKey: string} $scope     The counter scope.
+	 * @param int                                                    $nextValue The next value to store.
+	 *
+	 * @return Sequence
+	 */
+	private function newScopeRow(array $scope, int $nextValue): Sequence {
+		$entity = new Sequence();
+		$entity->setRegisterId($scope['registerId']);
+		$entity->setSchemaId($scope['schemaId']);
+		$entity->setScopeKey($scope['scopeKey']);
+		// Storing n+1 means value n has just been reserved.
+		$entity->setNextValue($nextValue);
+
+		return $entity;
+	}//end newScopeRow()
 
 	/**
 	 * Push a counter past a number that is already printed on a record.
@@ -210,7 +224,10 @@ class SequenceService implements SequenceServiceInterface {
 	 */
 	private function seedOrRaise(array $scope, int $target): void {
 		try {
-			$this->seedScope(scope: $scope, nextValue: $target);
+			// Insert directly rather than through seedScope(): seedScope() answers a
+			// lost insert race by spending a number, which would leave the counter
+			// below the imported one.
+			$this->mapper->insert($this->newScopeRow(scope: $scope, nextValue: $target));
 		} catch (Throwable $e) {
 			// Lost the seed race. The row exists now, so raise it instead.
 			$this->mapper->raiseTo(...$scope, minNextValue: $target);

@@ -69,6 +69,7 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class AnalyticsSeries extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Stable series key (unique per instance).
@@ -203,25 +204,14 @@ class AnalyticsSeries extends Entity implements JsonSerializable {
 	}//end getDatasetsArray()
 
 	/**
-	 * JSON serialization — returns the full chart-ready render contract
-	 * (labels + datasets decoded back to arrays).
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string,mixed>
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'seriesKey' => $this->seriesKey,
-			'registerId' => $this->registerId,
-			'schemaId' => $this->schemaId,
-			'title' => $this->title,
-			'chartType' => $this->chartType,
 			'labels' => $this->getLabelsArray(),
 			'datasets' => $this->getDatasetsArray(),
-			'visibility' => $this->visibility,
-			'createdBy' => $this->createdBy,
-			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
-			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
 		];
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

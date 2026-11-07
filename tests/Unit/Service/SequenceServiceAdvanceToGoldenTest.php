@@ -72,13 +72,20 @@ class SequenceServiceAdvanceToGoldenTest extends TestCase {
 		$this->service->advanceTo(1, 2, '2026', 120);
 	}//end testMissingCounterIsSeededPastTheNumber()
 
-	public function testSeedDbFailureFallsBackToIncrementInsideSeed(): void {
-		$this->mapper->expects($this->once())->method('raiseTo')->willReturn(0);
-		$this->mapper->expects($this->exactly(2))->method('findForScope')->with(1, 2, '2026')->willReturn(null);
+	public function testSeedDbFailureRaisesInsteadOfSpendingANumber(): void {
+		$calls = [];
+		$this->mapper->method('raiseTo')->willReturnCallback(
+			function (int $r, int $s, string $k, int $min) use (&$calls): int {
+				$calls[] = [$r, $s, $k, $min];
+				return 0;
+			}
+		);
+		$this->mapper->expects($this->once())->method('findForScope')->with(1, 2, '2026')->willReturn(null);
 		$this->mapper->method('insert')->willThrowException(new DbException('duplicate'));
-		$this->mapper->expects($this->once())->method('incrementScope')->with(1, 2, '2026')->willReturn(1);
+		$this->mapper->expects($this->never())->method('incrementScope');
 		$this->service->advanceTo(1, 2, '2026', 120);
-	}//end testSeedDbFailureFallsBackToIncrementInsideSeed()
+		$this->assertSame([[1, 2, '2026', 121], [1, 2, '2026', 121]], $calls);
+	}//end testSeedDbFailureRaisesInsteadOfSpendingANumber()
 
 	public function testSeedOtherFailureRaisesAgain(): void {
 		$calls = [];

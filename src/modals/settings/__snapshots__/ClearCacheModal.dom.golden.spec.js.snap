@@ -1,0 +1,105 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`clear cache modal renders when hidden 1`] = `""`;
+
+exports[`clear cache modal renders with all selected 1`] = `
+"<x-ncdialog name="Clear Cache" noclose="false">
+<slot-actions>
+<x-ncbutton disabled="false">
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Cache</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="dialog-content">
+<h3>🗑️ Clear Cache</h3>
+<p class="warning-text">Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.</p>
+<div class="cache-type-selection">
+<h4>Cache Type:</h4>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="all" name="cache_type" type="radio" value="all">
+<slot-default>Clear All Cache (Recommended)</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="all" name="cache_type" type="radio" value="object">
+<slot-default>Object Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="all" name="cache_type" type="radio" value="schema">
+<slot-default>Schema Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="all" name="cache_type" type="radio" value="facet">
+<slot-default>Facet Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="all" name="cache_type" type="radio" value="distributed">
+<slot-default>Distributed Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear cache modal renders with the facet cache selected while clearing 1`] = `
+"<x-ncdialog name="Clear Cache" noclose="true">
+<slot-actions>
+<x-ncbutton disabled="true">
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Clearing...</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="dialog-content">
+<h3>🗑️ Clear Cache</h3>
+<p class="warning-text">Select the type of cache to clear. This action cannot be undone and may temporarily impact performance.</p>
+<div class="cache-type-selection">
+<h4>Cache Type:</h4>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="all">
+<slot-default>Clear All Cache (Recommended)</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="object">
+<slot-default>Object Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="schema">
+<slot-default>Schema Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+<x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="facet">
+<slot-default>Facet Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+<div class="radio-group">
+<x-nccheckboxradioswitch modelvalue="facet" name="cache_type" type="radio" value="distributed">
+<slot-default>Distributed Cache Only</slot-default>
+</x-nccheckboxradioswitch>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;

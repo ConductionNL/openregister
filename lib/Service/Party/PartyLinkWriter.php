@@ -49,12 +49,12 @@ class PartyLinkWriter {
 	 * Constructor.
 	 *
 	 * @param ContactLinkMapper $links The link rows.
-	 * @param PartyService $parties The party records.
+	 * @param TrustedPartyReaderInterface $parties The party records.
 	 * @param IUserSession $session The signed-in user, recorded as the linker.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly TrustedPartyReaderInterface $parties,
 		private readonly IUserSession $session,
 	) {
 	}//end __construct()
