@@ -43,11 +43,13 @@ final class WebhookDeliveryRecorderGoldenTest extends TestCase {
 	/** @var array<int,WebhookLog> */
 	private array $inserted = [];
 
+	/** @var WebhookDeliveryRecorder The recorder under test */
 	private WebhookDeliveryRecorder $recorder;
 
 	protected function setUp(): void {
 		$lines = &$this->logLines;
 		$logger = new class($lines) extends AbstractLogger {
+			/** @var array Captured log lines */
 			private array $lines;
 
 			public function __construct(array &$lines) {
