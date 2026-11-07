@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\SharedSchemaDedupeService;
+use OCA\OpenRegister\Service\SharedSchemaDedupeServiceInterface;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -57,12 +57,12 @@ class DedupeSharedSchemasCommand extends Command {
 	/**
 	 * Wire the dedupe service.
 	 *
-	 * @param SharedSchemaDedupeService $dedupe The shared-schema repair service.
+	 * @param SharedSchemaDedupeServiceInterface $dedupe The shared-schema repair service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly SharedSchemaDedupeService $dedupe,
+		private readonly SharedSchemaDedupeServiceInterface $dedupe,
 	) {
 		parent::__construct();
 	}//end __construct()
