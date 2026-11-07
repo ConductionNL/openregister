@@ -1838,6 +1838,10 @@ class MagicFacetHandler {
 		$year = (int)$matches[1];
 		$startMonth = (((int)$matches[2] - 1) * 3) + 1;
 		$endMonth = $startMonth + 2;
+		if (checkdate($endMonth, 1, $year) === false) {
+			throw new \ValueError('Invalid date');
+		}
+
 		return [
 			'from' => sprintf('%04d-%02d-01', $year, $startMonth),
 			'to' => (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $endMonth)))->format('Y-m-t'),
