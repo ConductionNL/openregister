@@ -4016,7 +4016,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function rejectDeleteOnSchema(ObjectDeleteRequest $request, Schema $schema): void
     {
         if ($schema->isAppendOnly() === true) {
-            throw new AppendOnlyException(schemaIdentifier: ($schema->getSlug() ?? (string) $schema->getId()), operation: 'delete');
+            throw $this->appendOnlyDeleteRefusal(schema: $schema);
         }
 
         $draft = $this->isDeletableDraft(
