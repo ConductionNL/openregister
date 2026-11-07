@@ -58,6 +58,10 @@ use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetViewsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
