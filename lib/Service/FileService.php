@@ -73,7 +73,7 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
-use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilderInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -137,9 +137,9 @@ class FileService {
 	/**
 	 * Builds share links for the host the visitor used
 	 *
-	 * @var ShareUrlBuilder
+	 * @var ShareUrlBuilderInterface
 	 */
-	private ShareUrlBuilder $shareUrls;
+	private ShareUrlBuilderInterface $shareUrls;
 
 
 	/**
@@ -343,7 +343,7 @@ class FileService {
 	 *
 	 * @param LoggerInterface $logger Logger
 	 * @param IRootFolder $rootFolder Root folder
-	 * @param ShareUrlBuilder $shareUrls Share link builder
+	 * @param ShareUrlBuilderInterface $shareUrls Share link builder
 	 * @param IUserSession $userSession User session
 	 * @param FileValidationHandler $fileValidHandler File validation handler
 	 * @param FolderManagementHandler $folderMgmtHandler Folder management handler
@@ -368,7 +368,7 @@ class FileService {
 	public function __construct(
 		LoggerInterface $logger,
 		IRootFolder $rootFolder,
-		ShareUrlBuilder $shareUrls,
+		ShareUrlBuilderInterface $shareUrls,
 		IUserSession $userSession,
 		FileValidationHandler $fileValidHandler,
 		FolderManagementHandler $folderMgmtHandler,
