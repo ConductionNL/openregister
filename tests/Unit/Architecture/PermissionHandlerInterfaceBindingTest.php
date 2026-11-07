@@ -58,7 +58,7 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheClassImplementsTheInterface(): void {
-		$this->assertTrue(is_subclass_of(PermissionHandler::class, PermissionHandlerInterface::class));
+		$this->assertTrue(condition: is_subclass_of(object_or_class: PermissionHandler::class, class: PermissionHandlerInterface::class));
 	}//end testTheClassImplementsTheInterface()
 
 	/**
@@ -67,7 +67,7 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheInterfaceIsBound(): void {
-		$this->assertSame(PermissionHandler::class, ContractBindings::BINDINGS[PermissionHandlerInterface::class] ?? null);
+		$this->assertSame(expected: PermissionHandler::class, actual: ContractBindings::BINDINGS[PermissionHandlerInterface::class] ?? null);
 	}//end testTheInterfaceIsBound()
 
 	/**
@@ -91,6 +91,6 @@ final class PermissionHandlerInterfaceBindingTest extends TestCase {
 		}
 
 		sort($naming);
-		$this->assertSame(self::STATIC_CALLERS, $naming);
+		$this->assertSame(expected: self::STATIC_CALLERS, actual: $naming);
 	}//end testOnlyStaticCallersNameTheClass()
 }//end class
