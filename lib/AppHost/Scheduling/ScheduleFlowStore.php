@@ -41,7 +41,7 @@ use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
  *
  * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
  */
-class ScheduleFlowStore {
+class ScheduleFlowStore implements ScheduleFlowStoreInterface {
 	/**
 	 * More schedules than one manifest declares.
 	 */
