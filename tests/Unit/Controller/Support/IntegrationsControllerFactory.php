@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\IntegrationsController;
 
 /**
- * Builds IntegrationsController from its services as separate arguments.
+ * Builds IntegrationsController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class IntegrationsControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class IntegrationsControllerFactory {
 		return [
 			$appName,
 			$request,
-			$registry,
-			$userSession,
-			$groupManager,
-			$logger,
+			new \OCA\OpenRegister\Controller\Support\IntegrationsControllerServices(
+				registry: $registry,
+				userSession: $userSession,
+				groupManager: $groupManager,
+				logger: $logger,
+			),
 		];
 	}//end args()
 

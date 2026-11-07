@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowTimerDiagnosticController;
+use OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\TermDiagnostic;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowTimerDiagnosticControllerFactory;
@@ -191,7 +192,16 @@ class FlowTimerDiagnosticControllerTest extends TestCase {
 	public function testNothingOnThePathCanWrite(): void {
 		$types = [];
 		foreach ((new ReflectionClass(FlowTimerDiagnosticController::class))->getConstructor()->getParameters() as $parameter) {
-			$types[] = (string)$parameter->getType();
+			$type = (string)$parameter->getType();
+			if ($type !== FlowTimerDiagnosticControllerServices::class) {
+				$types[] = $type;
+				continue;
+			}
+
+			// The bundle carries the collaborators; read through it.
+			foreach ((new ReflectionClass($type))->getConstructor()->getParameters() as $bundled) {
+				$types[] = (string)$bundled->getType();
+			}
 		}
 
 		$this->assertSame(

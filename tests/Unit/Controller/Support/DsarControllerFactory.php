@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\DsarController;
 
 /**
- * Builds DsarController from its services as separate arguments.
+ * Builds DsarController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class DsarControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class DsarControllerFactory {
 		return [
 			$appName,
 			$request,
-			$dsarService,
-			$complianceService,
-			$userSession,
-			$groupManager,
+			new \OCA\OpenRegister\Controller\Support\DsarControllerServices(
+				dsarService: $dsarService,
+				complianceService: $complianceService,
+				userSession: $userSession,
+				groupManager: $groupManager,
+			),
 		];
 	}//end args()
 

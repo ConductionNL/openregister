@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\FlowTimerDiagnosticController;
 
 /**
- * Builds FlowTimerDiagnosticController from its services as separate arguments.
+ * Builds FlowTimerDiagnosticController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class FlowTimerDiagnosticControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class FlowTimerDiagnosticControllerFactory {
 		return [
 			$appName,
 			$request,
-			$userSession,
-			$groupManager,
-			$diagnostic,
+			new \OCA\OpenRegister\Controller\Support\FlowTimerDiagnosticControllerServices(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				diagnostic: $diagnostic,
+			),
 		];
 	}//end args()
 

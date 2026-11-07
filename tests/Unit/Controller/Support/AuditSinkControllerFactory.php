@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\AuditSinkController;
 
 /**
- * Builds AuditSinkController from its services as separate arguments.
+ * Builds AuditSinkController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class AuditSinkControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class AuditSinkControllerFactory {
 		return [
 			$appName,
 			$request,
-			$sink,
-			$status,
-			$userSession,
-			$groupManager,
+			new \OCA\OpenRegister\Controller\Support\AuditSinkControllerServices(
+				sink: $sink,
+				status: $status,
+				userSession: $userSession,
+				groupManager: $groupManager,
+			),
 		];
 	}//end args()
 

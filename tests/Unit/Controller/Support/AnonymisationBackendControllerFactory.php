@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\AnonymisationBackendController;
 
 /**
- * Builds AnonymisationBackendController from its services as separate arguments.
+ * Builds AnonymisationBackendController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class AnonymisationBackendControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class AnonymisationBackendControllerFactory {
 		return [
 			$appName,
 			$request,
-			$userSession,
-			$groupManager,
-			$service,
+			new \OCA\OpenRegister\Controller\Support\AnonymisationBackendControllerServices(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				service: $service,
+			),
 		];
 	}//end args()
 

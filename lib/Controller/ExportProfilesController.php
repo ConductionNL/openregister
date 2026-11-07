@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices;
 use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
@@ -58,26 +59,52 @@ use OCP\IUserSession;
 class ExportProfilesController extends Controller {
 
 	/**
+	 * Profile administration and runs.
+	 *
+	 * @var ExportProfileService
+	 */
+	private readonly ExportProfileService $service;
+
+	/**
+	 * Current-user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for the admin check.
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Records the export this run served.
+	 *
+	 * @var ExportRunRecorder
+	 */
+	private readonly ExportRunRecorder $exportRuns;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string               $appName      Application name.
 	 * @param IRequest             $request      HTTP request.
-	 * @param ExportProfileService $service      Profile administration and runs.
-	 * @param IUserSession         $userSession  Current-user session.
-	 * @param IGroupManager        $groupManager Group manager for the admin check.
-	 * @param ExportRunRecorder     $exportRuns   Records the export this run served.
+	 * @param ExportProfilesControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ExportProfileService $service,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly ExportRunRecorder $exportRuns,
+		ExportProfilesControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->service = $services->service;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->exportRuns = $services->exportRuns;
 	}//end __construct()
 
 	/**

@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\IntegrationsControllerServices;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
 use OCP\AppFramework\Controller;
@@ -54,26 +55,52 @@ use Psr\Log\LoggerInterface;
  */
 class IntegrationsController extends Controller {
 	/**
+	 * Integration registry.
+	 *
+	 * @var IntegrationCatalogueInterface
+	 */
+	private IntegrationCatalogueInterface $registry;
+
+	/**
+	 * Current user session.
+	 *
+	 * @var IUserSession
+	 */
+	private IUserSession $userSession;
+
+	/**
+	 * Group manager (admin check).
+	 *
+	 * @var IGroupManager
+	 */
+	private IGroupManager $groupManager;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Current request.
-	 * @param IntegrationCatalogueInterface $registry Integration registry.
-	 * @param IUserSession $userSession Current user session.
-	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param LoggerInterface $logger Logger.
+	 * @param IntegrationsControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private IntegrationCatalogueInterface $registry,
-		private IUserSession $userSession,
-		private IGroupManager $groupManager,
-		private LoggerInterface $logger,
+		IntegrationsControllerServices $services,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->registry = $services->registry;
+		$this->userSession = $services->userSession;
+		$this->groupManager = $services->groupManager;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**

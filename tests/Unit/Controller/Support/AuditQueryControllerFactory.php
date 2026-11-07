@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\AuditQueryController;
 
 /**
- * Builds AuditQueryController from its services as separate arguments.
+ * Builds AuditQueryController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class AuditQueryControllerFactory {
 	/**
@@ -36,9 +36,11 @@ final class AuditQueryControllerFactory {
 		return [
 			$appName,
 			$request,
-			$auditQueryService,
-			$userSession,
-			$groupManager,
+			new \OCA\OpenRegister\Controller\Support\AuditQueryControllerServices(
+				auditQueryService: $auditQueryService,
+				userSession: $userSession,
+				groupManager: $groupManager,
+			),
 		];
 	}//end args()
 

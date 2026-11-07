@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\LinkedEntityController;
 
 /**
- * Builds LinkedEntityController from its services as separate arguments.
+ * Builds LinkedEntityController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class LinkedEntityControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class LinkedEntityControllerFactory {
 		return [
 			$appName,
 			$request,
-			$linkedEntityService,
-			$logger,
-			$userSession,
-			$groupManager,
+			new \OCA\OpenRegister\Controller\Support\LinkedEntityControllerServices(
+				linkedEntityService: $linkedEntityService,
+				logger: $logger,
+				userSession: $userSession,
+				groupManager: $groupManager,
+			),
 		];
 	}//end args()
 

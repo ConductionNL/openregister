@@ -12,7 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 use OCA\OpenRegister\Controller\ExportProfilesController;
 
 /**
- * Builds ExportProfilesController from its services as separate arguments.
+ * Builds ExportProfilesController from its services as separate arguments, wrapped into its constructor bundle.
  */
 final class ExportProfilesControllerFactory {
 	/**
@@ -38,10 +38,12 @@ final class ExportProfilesControllerFactory {
 		return [
 			$appName,
 			$request,
-			$service,
-			$userSession,
-			$groupManager,
-			$exportRuns,
+			new \OCA\OpenRegister\Controller\Support\ExportProfilesControllerServices(
+				service: $service,
+				userSession: $userSession,
+				groupManager: $groupManager,
+				exportRuns: $exportRuns,
+			),
 		];
 	}//end args()
 
