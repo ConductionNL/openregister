@@ -31,10 +31,12 @@ use OCA\OpenRegister\Service\Case\CaseAnchorReader;
 use OCA\OpenRegister\Service\Case\CaseBusinessStateWriter;
 use OCA\OpenRegister\Service\Case\CasePlanCascade;
 use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
+use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CasePlanTree;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -154,13 +156,9 @@ class CasePlanCascadeTest extends TestCase {
 	 */
 	private function cascade(): CasePlanCascade {
 		$machine = new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $this->db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $this->realiser,
-			writer: $this->createMock(CaseBusinessStateWriter::class),
-			db: $this->db,
-			logger: new NullLogger()
+			effects: new CaseTransitionEffects(realiser: $this->realiser, writer: $this->createMock(CaseBusinessStateWriter::class))
 		);
 
 		return new CasePlanCascade(

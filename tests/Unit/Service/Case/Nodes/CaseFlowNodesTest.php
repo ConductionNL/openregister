@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Case\CasePlanStateMachine;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
@@ -104,7 +105,7 @@ class CaseFlowNodesTest extends TestCase {
 		$anchor->method('mayRead')->willReturn(true);
 		$writer = $this->createMock(CaseBusinessStateWriter::class);
 		$sentries = new CaseSentryEvaluator(catalog: new EventCatalogService());
-		$machine = new CasePlanStateMachine(items: $this->items, audits: $this->audits, table: new CasePlanTransitions(), realiser: $realiser, writer: $writer, db: $db, logger: new NullLogger());
+		$machine = new CasePlanStateMachine(store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()), table: new CasePlanTransitions(), effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer));
 
 		return new CasePlanService(
 			store: new CasePlanStore(

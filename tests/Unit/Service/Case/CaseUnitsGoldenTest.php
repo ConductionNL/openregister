@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Case\CasePlanStore;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
+use OCA\OpenRegister\Service\Case\CaseTransitionEffects;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
@@ -281,13 +282,9 @@ class CaseUnitsGoldenTest extends TestCase {
 
 	private function machine(IDBConnection $db, CaseRealisationService $realiser, CaseBusinessStateWriter $writer): CasePlanStateMachine {
 		return new CasePlanStateMachine(
-			items: $this->items,
-			audits: $this->audits,
+			store: new CasePlanStore(items: $this->items, audits: $this->audits, db: $db, logger: new NullLogger()),
 			table: new CasePlanTransitions(),
-			realiser: $realiser,
-			writer: $writer,
-			db: $db,
-			logger: new NullLogger()
+			effects: new CaseTransitionEffects(realiser: $realiser, writer: $writer)
 		);
 	}//end machine()
 
