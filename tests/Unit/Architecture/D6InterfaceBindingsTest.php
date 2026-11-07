@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
+use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -59,6 +61,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
 		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
 		SubFlowNode::class => [SubFlowNodeInterface::class, ContractBindings::class],
+		UserTaskNode::class => [UserTaskNodeInterface::class, ContractBindings::class],
 	];
 
 	/**
