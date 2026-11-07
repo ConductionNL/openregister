@@ -33,14 +33,6 @@ namespace OCA\OpenRegister\Notifications\Service\Timeline;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
-use OCA\OpenRegister\Service\Interaction\WatcherServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCP\IURLGenerator;
-use OCP\IUserManager;
-use OCP\IUserSession;
-use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -80,28 +72,18 @@ class EntryMentionService {
 	/**
 	 * Constructor.
 	 *
-	 * @param WatcherServiceInterface $watchers      Subscribes the named principal.
-	 * @param IUserManager            $userManager   Resolves a token to a real principal.
-	 * @param IUserSession            $userSession   The caller, who is never notified of their own mention.
-	 * @param SchemaMapperInterface   $schemaMapper  Resolves the object's schema for the read check.
-	 * @param PermissionHandler       $permissions   The one RBAC evaluator.
-	 * @param INotificationManager    $notifications Sends the notification.
-	 * @param LoggerInterface         $logger        Logger for the fail-closed paths.
-	 * @param DeepLinkRegistryServiceInterface $deepLinks     Finds the app page that owns the object.
-	 * @param IURLGenerator           $urls          Builds Open Register's own object page as the fallback link.
+	 * @param MentionPrincipals $principals Resolves, identifies and subscribes the people named.
+	 * @param MentionReadCheck  $readCheck  What the read check on a named principal uses.
+	 * @param MentionDelivery   $delivery   Sends the notification and builds its link.
+	 * @param LoggerInterface   $logger     Logger for the fail-closed paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly WatcherServiceInterface $watchers,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly PermissionHandler $permissions,
-		private readonly INotificationManager $notifications,
+		private readonly MentionPrincipals $principals,
+		private readonly MentionReadCheck $readCheck,
+		private readonly MentionDelivery $delivery,
 		private readonly LoggerInterface $logger,
-		private readonly DeepLinkRegistryServiceInterface $deepLinks,
-		private readonly IURLGenerator $urls,
 	) {
 	}//end __construct()
 
@@ -163,7 +145,7 @@ class EntryMentionService {
 		}
 
 		foreach ($candidates as $candidate) {
-			if ($candidate !== '' && $this->userManager->userExists($candidate) === true) {
+			if ($candidate !== '' && $this->principals->userManager->userExists($candidate) === true) {
 				return $candidate;
 			}
 		}
@@ -195,7 +177,7 @@ class EntryMentionService {
 		?string $register = null,
 		?string $schema = null,
 	): array {
-		$caller = $this->userSession->getUser()?->getUID();
+		$caller = $this->principals->userSession->getUser()?->getUID();
 		$pulled = [];
 
 		foreach ($this->parse(text: $text) as $uid) {
@@ -205,32 +187,50 @@ class EntryMentionService {
 				continue;
 			}
 
-			if ($this->mayRead(object: $object, userId: $uid) === false) {
-				continue;
-			}
-
-			try {
-				$this->watchers->subscribeMentioned(
-					object: $object,
-					userId: $uid,
-					register: $register,
-					schema: $schema
-				);
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					'[EntryMentionService] '.$uid.' was named in entry '.$entryUuid
-						.' but could not be subscribed',
-					['exception' => $e]
-				);
+			if ($this->pullIn(object: $object, uid: $uid, entryUuid: $entryUuid, addressed: [$register, $schema]) === false) {
 				continue;
 			}
 
 			$this->notify(object: $object, uid: $uid, entryUuid: $entryUuid, author: $caller);
 			$pulled[] = $uid;
-		}//end foreach
+		}
 
 		return $pulled;
 	}//end apply()
+
+	/**
+	 * Subscribe one named principal, when they may read the object.
+	 *
+	 * @param ObjectEntity                   $object    The object the entry hangs on.
+	 * @param string                         $uid       The named principal.
+	 * @param string                         $entryUuid The entry that named them.
+	 * @param array{0:?string, 1:?string}    $addressed The register and schema as the caller addressed them.
+	 *
+	 * @return boolean True when they were subscribed.
+	 */
+	private function pullIn(ObjectEntity $object, string $uid, string $entryUuid, array $addressed): bool {
+		if ($this->mayRead(object: $object, userId: $uid) === false) {
+			return false;
+		}
+
+		try {
+			$this->principals->watchers->subscribeMentioned(
+				object: $object,
+				userId: $uid,
+				register: $addressed[0],
+				schema: $addressed[1]
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[EntryMentionService] '.$uid.' was named in entry '.$entryUuid
+					.' but could not be subscribed',
+				['exception' => $e]
+			);
+			return false;
+		}
+
+		return true;
+	}//end pullIn()
 
 	/**
 	 * Whether a named principal may read the object at all.
@@ -248,7 +248,7 @@ class EntryMentionService {
 	 */
 	public function mayRead(ObjectEntity $object, string $userId): bool {
 		try {
-			$schema = $this->schemaMapper->find(
+			$schema = $this->readCheck->schemaMapper->find(
 				id: (string)$object->getSchema(),
 				_rbac: false,
 				_multitenancy: false
@@ -263,7 +263,7 @@ class EntryMentionService {
 			return false;
 		}
 
-		return $this->permissions->hasPermission(
+		return $this->readCheck->permissions->hasPermission(
 			schema: $schema,
 			action: 'read',
 			userId: $userId,
@@ -289,7 +289,7 @@ class EntryMentionService {
 	 */
 	private function notify(ObjectEntity $object, string $uid, string $entryUuid, ?string $author): void {
 		try {
-			$notification = $this->notifications->createNotification();
+			$notification = $this->delivery->notifications->createNotification();
 			$notification->setApp('openregister')
 				->setUser($uid)
 				->setDateTime(new DateTime())
@@ -306,7 +306,7 @@ class EntryMentionService {
 					]
 				);
 			$notification->setLink($this->objectLink(object: $object));
-			$this->notifications->notify($notification);
+			$this->delivery->notifications->notify($notification);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[EntryMentionService] '.$uid.' was subscribed through entry '.$entryUuid
@@ -332,21 +332,21 @@ class EntryMentionService {
 		$schemaId = (int)$object->getSchema();
 		$uuid = (string)$object->getUuid();
 
-		$url = $this->deepLinks->resolveUrl(
+		$url = $this->delivery->deepLinks->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
 			objectData: ['uuid' => $uuid, 'id' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
 		);
 
 		if ($url === null || $url === '') {
-			return $this->urls->linkToRouteAbsolute(
+			return $this->delivery->urls->linkToRouteAbsolute(
 				'openregister.ui.objectDetail',
 				['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
 			);
 		}
 
 		if (str_starts_with($url, 'http://') === false && str_starts_with($url, 'https://') === false) {
-			return $this->urls->getAbsoluteURL($url);
+			return $this->delivery->urls->getAbsoluteURL($url);
 		}
 
 		return $url;
