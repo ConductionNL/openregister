@@ -195,19 +195,27 @@ class FileFormattingHandler {
 		$isAuthenticated = $this->userSession->getUser() !== null;
 		$formattedFiles = [];
 		foreach ($files as $file) {
-			try {
-				$formattedFiles[] = $this->formatFile(file: $file);
-			} catch (LockedException $lockedException) {
-				$formattedFiles[] = $this->buildLockedStubEntry(
-					file: $file,
-					lockedException: $lockedException,
-					isAuthenticated: $isAuthenticated
-				);
-			}
+			$formattedFiles[] = $this->formatOrStub(file: $file, isAuthenticated: $isAuthenticated);
 		}
 
 		return $formattedFiles;
 	}//end formatEach()
+
+	/**
+	 * One file formatted, or its stub when it raised LockedException.
+	 *
+	 * @param Node $file            The file node.
+	 * @param bool $isAuthenticated Whether the request has a user session.
+	 *
+	 * @return array<string, mixed> The formatted file or its stub.
+	 */
+	private function formatOrStub(Node $file, bool $isAuthenticated): array {
+		try {
+			return $this->formatFile(file: $file);
+		} catch (LockedException $lockedException) {
+			return $this->buildLockedStubEntry(file: $file, lockedException: $lockedException, isAuthenticated: $isAuthenticated);
+		}
+	}//end formatOrStub()
 
 	/**
 	 * The metadata every formatted file carries: node properties, share links
@@ -477,13 +485,27 @@ class FileFormattingHandler {
 			return $stub;
 		}
 
+		return $this->withStubLock(stub: $stub, lock: $bestEffortLock);
+	}//end buildLockedStubEntry()
+
+	/**
+	 * The stub's `locked` flag and, when one was found, its lock envelope.
+	 *
+	 * Only called for authenticated callers.
+	 *
+	 * @param array<string, mixed>      $stub The stub.
+	 * @param array<string, mixed>|null $lock The best-effort lock envelope.
+	 *
+	 * @return array<string, mixed> The stub with its lock fields.
+	 */
+	private function withStubLock(array $stub, ?array $lock): array {
 		$stub['locked'] = true;
-		if ($bestEffortLock !== null) {
-			$stub['lock'] = $bestEffortLock;
+		if ($lock !== null) {
+			$stub['lock'] = $lock;
 		}
 
 		return $stub;
-	}//end buildLockedStubEntry()
+	}//end withStubLock()
 
 	/**
 	 * Log that a locked file is listed as a stub.
