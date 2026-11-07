@@ -47,7 +47,7 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -75,7 +75,7 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @param string $appName Application name.
 	 * @param IRequest $request HTTP request.
-	 * @param MigrationPackService $service Business logic.
+	 * @param MigrationPackServiceInterface $service Business logic.
 	 * @param ControllerSession $session Session, group manager and logger.
 	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
 	 * @param MigrationPackErrorResponder $errors Builds every error response.
@@ -85,7 +85,7 @@ class MigrationPacksController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly MigrationPackService $service,
+		private readonly MigrationPackServiceInterface $service,
 		private readonly ControllerSession $session,
 		private readonly MigrationPackRequestReader $requestReader,
 		private readonly MigrationPackErrorResponder $errors,

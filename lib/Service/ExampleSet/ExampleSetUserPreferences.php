@@ -90,7 +90,7 @@ class ExampleSetUserPreferences {
 			return 'account "'.$uid.'" is not one the set creates or adopts';
 		}
 
-		if (preg_match(self::SECRET, $key) === 1 || $this->sensitive(uid: $uid, app: $app, key: $key) === true) {
+		if ($this->holdsSecret(preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $key])) === true) {
 			return 'user preference '.$app.' '.$key.' holds a secret; a set never writes one';
 		}
 
@@ -111,16 +111,16 @@ class ExampleSetUserPreferences {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function apply(string $uid, string $app, string $key, string $value): array {
-		$had = $this->has(uid: $uid, app: $app, key: $key);
-		$old = $this->read(uid: $uid, app: $app, key: $key);
+		$preference = new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $key]);
+		$had        = $this->has(preference: $preference);
+		$old        = $this->read(preference: $preference);
 		if ($had === true && $old === $value) {
 			return ['error' => '', 'entry' => null];
 		}
 
-		try {
-			$this->config->setUserValue($uid, $app, $key, $value);
-		} catch (Throwable $e) {
-			return ['error' => $e->getMessage(), 'entry' => null];
+		$error = $this->write(preference: $preference, value: $value);
+		if ($error !== null) {
+			return ['error' => $error, 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => ['user' => $uid, 'app' => $app, 'key' => $key, 'had' => $had, 'old' => $old, 'new' => $value]];
@@ -161,7 +161,7 @@ class ExampleSetUserPreferences {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function lost(array $entry): bool {
-		return $this->read(uid: (string) $entry['user'], app: (string) $entry['app'], key: (string) $entry['key']) !== (string) $entry['new'];
+		return $this->read(preference: new UserPreferenceKey(entry: $entry)) !== (string) $entry['new'];
 	}//end lost()
 
 	/**
@@ -174,60 +174,95 @@ class ExampleSetUserPreferences {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function revert(array $entry): string {
-		$uid = (string) $entry['user'];
-		$app = (string) $entry['app'];
-		$key = (string) $entry['key'];
-		if ($this->has(uid: $uid, app: $app, key: $key) === true && $this->read(uid: $uid, app: $app, key: $key) !== (string) $entry['new']) {
+		$preference = new UserPreferenceKey(entry: $entry);
+		if ($this->has(preference: $preference) === true && $this->read(preference: $preference) !== (string) $entry['new']) {
 			return 'left';
 		}
 
+		return $this->putBack(preference: $preference, entry: $entry);
+	}//end revert()
+
+	/**
+	 * Put back the value a preference replaced, or delete the preference when it had none.
+	 *
+	 * @param UserPreferenceKey    $preference The preference.
+	 * @param array<string, mixed> $entry      A record entry from apply().
+	 *
+	 * @return string `restored` or `failed`.
+	 */
+	private function putBack(UserPreferenceKey $preference, array $entry): string {
 		try {
 			if (($entry['had'] ?? false) === true) {
-				$this->config->setUserValue($uid, $app, $key, (string) $entry['old']);
+				$this->config->setUserValue($preference->uid, $preference->app, $preference->key, (string) $entry['old']);
 				return 'restored';
 			}
 
-			$this->config->deleteUserValue($uid, $app, $key);
+			$this->config->deleteUserValue($preference->uid, $preference->app, $preference->key);
 		} catch (Throwable) {
 			return 'failed';
 		}
 
 		return 'restored';
-	}//end revert()
+	}//end putBack()
+
+	/**
+	 * Write a user value; the reason when that failed, null when it was written.
+	 *
+	 * @param UserPreferenceKey $preference The preference.
+	 * @param string            $value      The value.
+	 *
+	 * @return string|null
+	 */
+	private function write(UserPreferenceKey $preference, string $value): ?string {
+		try {
+			$this->config->setUserValue($preference->uid, $preference->app, $preference->key, $value);
+		} catch (Throwable $e) {
+			return $e->getMessage();
+		}
+
+		return null;
+	}//end write()
 
 	/**
 	 * Whether a user has a key.
 	 *
-	 * @param string $uid The account id.
-	 * @param string $app The app.
-	 * @param string $key The key.
+	 * @param UserPreferenceKey $preference The preference.
 	 *
 	 * @return bool
 	 */
-	private function has(string $uid, string $app, string $key): bool {
+	private function has(UserPreferenceKey $preference): bool {
 		try {
-			return in_array($key, $this->config->getUserKeys($uid, $app), true);
+			return in_array($preference->key, $this->config->getUserKeys($preference->uid, $preference->app), true);
 		} catch (Throwable) {
 			return false;
 		}
 	}//end has()
 
 	/**
-	 * Whether an existing user value is kept as sensitive.
+	 * Whether a preference holds a secret: by its key's name, or because the instance keeps it as sensitive.
 	 *
-	 * @param string $uid The account id.
-	 * @param string $app The app.
-	 * @param string $key The key.
+	 * @param UserPreferenceKey $preference The preference.
 	 *
 	 * @return bool
 	 */
-	private function sensitive(string $uid, string $app, string $key): bool {
-		if ($this->has(uid: $uid, app: $app, key: $key) === false) {
+	private function holdsSecret(UserPreferenceKey $preference): bool {
+		return preg_match(self::SECRET, $preference->key) === 1 || $this->sensitive(preference: $preference) === true;
+	}//end holdsSecret()
+
+	/**
+	 * Whether an existing user value is kept as sensitive.
+	 *
+	 * @param UserPreferenceKey $preference The preference.
+	 *
+	 * @return bool
+	 */
+	private function sensitive(UserPreferenceKey $preference): bool {
+		if ($this->has(preference: $preference) === false) {
 			return false;
 		}
 
 		try {
-			return $this->userConfig->isSensitive($uid, $app, $key, null) === true;
+			return $this->userConfig->isSensitive($preference->uid, $preference->app, $preference->key, null) === true;
 		} catch (Throwable) {
 			return true;
 		}
@@ -236,15 +271,13 @@ class ExampleSetUserPreferences {
 	/**
 	 * A user value as text, '' when it is not there.
 	 *
-	 * @param string $uid The account id.
-	 * @param string $app The app.
-	 * @param string $key The key.
+	 * @param UserPreferenceKey $preference The preference.
 	 *
 	 * @return string
 	 */
-	private function read(string $uid, string $app, string $key): string {
+	private function read(UserPreferenceKey $preference): string {
 		try {
-			return (string) $this->config->getUserValue($uid, $app, $key, '');
+			return (string) $this->config->getUserValue($preference->uid, $preference->app, $preference->key, '');
 		} catch (Throwable) {
 			return '';
 		}
