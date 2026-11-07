@@ -384,11 +384,6 @@ interface SettingsServiceInterface {
 	 *
 	 * @throws Exception If mass validation operation fails.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex batch validation requires comprehensive logic
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-4
 	 */
 	public function massValidateObjects(int $maxObjects = 0, int $batchSize = 1000, string $mode = 'serial', bool $collectErrors = false): array;

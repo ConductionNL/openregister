@@ -81,10 +81,6 @@ interface DeckCardServiceInterface {
 	 *
 	 * @throws Exception If parameters are missing or Deck operations fail.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two mutually exclusive dispatch paths
-	 *   (link existing card vs. create new card) each require their own guard and error
-	 *   branches; the logic cannot be split further without hiding the business rule.
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-8
 	 */
 	public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink;
