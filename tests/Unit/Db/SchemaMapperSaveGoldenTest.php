@@ -114,6 +114,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses \OCA\OpenRegister\Db\EntityChangeDetector
  * @uses \OCA\OpenRegister\Db\SchemaPropertyInheritance

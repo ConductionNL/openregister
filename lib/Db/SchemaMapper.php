@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
@@ -1116,6 +1117,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
 		))->check(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
+		(new ReferenceLoopCheck())->check(schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**

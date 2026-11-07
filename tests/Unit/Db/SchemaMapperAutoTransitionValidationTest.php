@@ -52,6 +52,8 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  */
 class SchemaMapperAutoTransitionValidationTest extends TestCase {
 
@@ -97,6 +99,22 @@ class SchemaMapperAutoTransitionValidationTest extends TestCase {
 		$method = new ReflectionMethod(SchemaMapper::class, 'cleanObject');
 		$method->invoke($this->mapper, $schema);
 	}//end validate()
+
+	/**
+	 * A save refuses a reference that comes back to itself.
+	 *
+	 * @return void
+	 */
+	public function testASaveRefusesAReferenceLoop(): void {
+		$schema = new Schema();
+		$schema->setSlug('loop');
+		$schema->setProperties(['a' => ['$ref' => '#/properties/a']]);
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('the $ref at "#/properties/a" comes back to itself');
+
+		(new ReflectionMethod(SchemaMapper::class, 'cleanObject'))->invoke($this->mapper, $schema);
+	}//end testASaveRefusesAReferenceLoop()
 
 	/**
 	 * A static lifecycle whose `beslissen` transition carries the given extras.
