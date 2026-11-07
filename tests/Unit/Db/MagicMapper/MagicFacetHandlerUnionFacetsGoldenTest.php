@@ -41,6 +41,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicFacetFieldLabel
  * @uses   \OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
