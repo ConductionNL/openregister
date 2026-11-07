@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Search\SearchRegistrar;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplierInterface;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
@@ -55,6 +57,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		],
 		GeoFilterParser::class => [
 			GeoFilterParserInterface::class,
+			SearchRegistrar::class,
+			[],
+		],
+		TimeseriesRequestValidator::class => [
+			TimeseriesRequestValidatorInterface::class,
 			SearchRegistrar::class,
 			[],
 		],
