@@ -28,6 +28,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\FavouriteServiceInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
@@ -54,6 +64,11 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		FavouriteService::class => [FavouriteServiceInterface::class, ContractBindings::class],
+		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
+		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
+		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
+		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
+		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		SubstantiveChangeEvaluator::class => [SubstantiveChangeEvaluatorInterface::class, ContractBindings::class],
 		WatcherService::class => [WatcherServiceInterface::class, ContractBindings::class],
 	];
