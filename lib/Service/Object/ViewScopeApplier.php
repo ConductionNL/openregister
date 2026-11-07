@@ -244,11 +244,11 @@ class ViewScopeApplier {
 	 * Add a view's search terms to what the caller searched for.
 	 *
 	 * @param mixed $existing The query's `_search`.
-	 * @param string|array<int, string> $terms The view's terms.
+	 * @param mixed $terms The view's terms, as its author stored them.
 	 *
 	 * @return string The combined search.
 	 */
-	private function mergedSearch(mixed $existing, string|array $terms): string {
+	private function mergedSearch(mixed $existing, mixed $terms): string {
 		if (is_array($terms) === true) {
 			$terms = implode(' ', $terms);
 		}
@@ -257,7 +257,7 @@ class ViewScopeApplier {
 			return $existing . ' ' . $terms;
 		}
 
-		return $terms;
+		return (string)$terms;
 	}//end mergedSearch()
 
 	/**
