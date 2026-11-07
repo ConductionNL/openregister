@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 	/**
