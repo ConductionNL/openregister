@@ -58,6 +58,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
+use OCA\OpenRegister\Service\Rbac\RoleBlockExpander;
 use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -3702,8 +3703,6 @@ class PermissionHandler {
 	 *
 	 * @return array The authorization with roles expanded to action-level entries.
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Role expansion: validate defs, resolve `extends` chains, merge action sets, guard malformed data
-	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function expandRoles(array $authorization, Schema $schema): array {
@@ -3718,227 +3717,15 @@ class PermissionHandler {
 			$authorization[DenyResolver::DENY_KEY] = $this->expandRoles(authorization: $deny, schema: $schema);
 		}
 
-		if (isset($authorization['roles']) === false || is_array($authorization['roles']) === false) {
+		if (is_array($authorization['roles'] ?? null) === false) {
 			return $authorization;
 		}
 
-		$roleAssignments = $authorization['roles'];
-		unset($authorization['roles']);
-
-		// Get role definitions from the parent register.
-		$roleDefinitions = $this->getRoleDefinitionsForSchema(schema: $schema);
-		if (empty($roleDefinitions) === true) {
-			$this->logger->warning(
-				message: '[PermissionHandler] Schema has role references but register has no role definitions',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $schema->getId(),
-				]
-			);
-			return $this->grantNothingWhenEmpty(authorization: $authorization);
-		}
-
-		// Build the lookup map with role-hierarchy support. A role
-		// definition can declare `extends: <otherRoleName>` to inherit
-		// that role's action set; the union is computed once and cached
-		// so circular `extends` chains can't recurse forever. This is
-		// the smallest expression of the spec's "Role Definitions and
-		// Hierarchy" requirement: register-level roles declare an
-		// optional `extends` reference, schemas keep their compact
-		// `roles: {assignedRole: [groups]}` syntax, and the resolved
-		// action set composes inherited + own actions transparently.
-		$rawRoleMap = [];
-		foreach ($roleDefinitions as $roleDef) {
-			if (isset($roleDef['name']) === true) {
-				$rawRoleMap[$roleDef['name']] = $roleDef;
-			}
-		}
-
-		$roleMap = $this->resolveRoleHierarchy(rawRoleMap: $rawRoleMap, schema: $schema);
-
-		// Expand each role assignment into action-level entries.
-		foreach ($roleAssignments as $roleName => $groups) {
-			if (isset($roleMap[$roleName]) === false) {
-				$this->logger->warning(
-					message: '[PermissionHandler] Unknown role name referenced in authorization',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'roleName' => $roleName,
-						'schemaId' => $schema->getId(),
-					]
-				);
-				continue;
-			}
-
-			$actions = $roleMap[$roleName];
-			foreach ($actions as $action) {
-				if (isset($authorization[$action]) === false) {
-					$authorization[$action] = [];
-				}
-
-				// Merge groups, avoiding duplicates.
-				foreach ((array)$groups as $group) {
-					if (in_array($group, $authorization[$action], true) === false) {
-						$authorization[$action][] = $group;
-					}
-				}
-			}
-		}//end foreach
-
-		return $this->grantNothingWhenEmpty(authorization: $authorization);
+		return (new RoleBlockExpander(logger: $this->logger, schemaId: $schema->getId()))->expand(
+			authorization: $authorization,
+			definitions: $this->getRoleDefinitionsForSchema(schema: $schema)
+		);
 	}//end expandRoles()
-
-	/**
-	 * A roles block that resolved to nothing grants nothing.
-	 *
-	 * 🔴 THE SAME DIRECTION AS {@see stripMcpScope()}, FOR THE SAME REASON. An
-	 * author who writes `roles` has opted the schema into authorization. When
-	 * none of those roles can be expanded (the register declares no role
-	 * definitions, or every name is unknown) the block used to come back as
-	 * `[]`, and `[]` is "no authorization configured", which is default-OPEN:
-	 * every signed in account could read, change and delete. Found live on
-	 * 2026-10-11, where a case schema declaring `roles` only, written so a
-	 * notification dispatcher could find who holds a role, left every case of
-	 * the register readable by a user in no group at all.
-	 *
-	 * Between a fail-safe and a fail-open reading of an ambiguous block the
-	 * block gets the fail-safe one: the canonical verbs are listed with nobody
-	 * in them. The block is non-empty, so an unlisted verb is refused as well,
-	 * and the administrator and owner bypasses still apply. A denial is loud
-	 * and fixed by declaring the roles; a grant is silent.
-	 *
-	 * @param array<string, mixed> $authorization The block after expansion.
-	 *
-	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function grantNothingWhenEmpty(array $authorization): array {
-		if ($authorization !== []) {
-			return $authorization;
-		}
-
-		return [
-			'read' => [],
-			'create' => [],
-			'update' => [],
-			'delete' => [],
-		];
-	}//end grantNothingWhenEmpty()
-
-	/**
-	 * Flatten a role hierarchy into a `name => actions` map.
-	 *
-	 * Supports an optional `extends: <roleName>` (string) or `extends: [<roleName>, ...]`
-	 * (array of role names) on each role definition. Inherited actions
-	 * are merged with the role's own actions; cycles abort safely
-	 * (a `WARN`-logged shorter chain wins) so a misconfigured register
-	 * can't deadlock the request.
-	 *
-	 * @param array<string, array<string, mixed>> $rawRoleMap Role definitions keyed by name.
-	 * @param Schema $schema Schema for diagnostic context.
-	 *
-	 * @return array<string, array<int, string>> Flat `name => actions` map.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Role hierarchy: missing-name guard, visited-node cycle check, and parent action set merging
-	 */
-	private function resolveRoleHierarchy(array $rawRoleMap, Schema $schema): array {
-		$resolved = [];
-
-		foreach (array_keys($rawRoleMap) as $roleName) {
-			$resolved[$roleName] = $this->collectRoleActions(
-				roleName: $roleName,
-				rawRoleMap: $rawRoleMap,
-				visited: [],
-				schema: $schema
-			);
-		}
-
-		return $resolved;
-	}//end resolveRoleHierarchy()
-
-	/**
-	 * Walk the `extends` chain for a role and return the combined action set.
-	 *
-	 * @param string $roleName Name of the role being resolved.
-	 * @param array<string, array<string, mixed>> $rawRoleMap Full role-definition map.
-	 * @param array<string, true> $visited Roles already visited in this chain (cycle guard).
-	 * @param Schema $schema Schema for diagnostic context.
-	 *
-	 * @return array<int, string> Deduplicated action list.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collects actions: existence check, cycle guard, extends string/array, parent recursion, merging
-	 */
-	private function collectRoleActions(
-		string $roleName,
-		array $rawRoleMap,
-		array $visited,
-		Schema $schema,
-	): array {
-		if (isset($rawRoleMap[$roleName]) === false) {
-			return [];
-		}
-
-		if (isset($visited[$roleName]) === true) {
-			$this->logger->warning(
-				message: '[PermissionHandler] Cyclic role-hierarchy reference; ignoring repeat',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'roleName' => $roleName,
-					'schemaId' => $schema->getId(),
-				]
-			);
-			return [];
-		}
-
-		$visited[$roleName] = true;
-		$definition = $rawRoleMap[$roleName];
-
-		$actions = [];
-
-		// Inherit from `extends` first, so the role's own actions can
-		// override (or just live alongside) inherited entries.
-		$extends = $definition['extends'] ?? null;
-		if ($extends !== null) {
-			$parents = [$extends];
-			if (is_array($extends) === true) {
-				$parents = $extends;
-			}
-
-			foreach ($parents as $parent) {
-				if (is_string($parent) === false || $parent === '') {
-					continue;
-				}
-
-				$inherited = $this->collectRoleActions(
-					roleName: $parent,
-					rawRoleMap: $rawRoleMap,
-					visited: $visited,
-					schema: $schema
-				);
-				foreach ($inherited as $inheritedAction) {
-					if (in_array($inheritedAction, $actions, true) === false) {
-						$actions[] = $inheritedAction;
-					}
-				}//end foreach
-			}//end foreach
-		}//end if
-
-		// Own actions on top.
-		$ownActions = $definition['actions'] ?? [];
-		if (is_array($ownActions) === true) {
-			foreach ($ownActions as $ownAction) {
-				if (is_string($ownAction) === true && in_array($ownAction, $actions, true) === false) {
-					$actions[] = $ownAction;
-				}
-			}
-		}
-
-		return $actions;
-	}//end collectRoleActions()
 
 	/**
 	 * Get role definitions for a schema from its parent register.
