@@ -1983,6 +1983,17 @@ class FilesControllerTest extends TestCase {
 		$this->assertEquals('doc.pdf', $result[0]['name']);
 	}
 
+	// -- fileBelongsToObject --
+
+	public function testAFileInAFolderWithoutANameBelongsToNoObjectWithoutIds(): void {
+		$parent = $this->createMock(\OCP\Files\Folder::class);
+		$parent->method('getName')->willReturn('');
+		$file = $this->createMock(\OCP\Files\File::class);
+		$file->method('getParent')->willReturn($parent);
+
+		$this->assertFalse($this->invokePrivateMethod('fileBelongsToObject', [$file, new ObjectEntity()]));
+	}
+
 	// -- processUploadedFiles --
 
 	public function testProcessUploadedFilesEmpty(): void {
