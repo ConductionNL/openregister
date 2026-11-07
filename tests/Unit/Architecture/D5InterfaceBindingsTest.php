@@ -53,6 +53,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 			'OCA\OpenRegister\Service\SchemaApplicationMigratorInterface',
 			ContractBindings::class,
 		],
+		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SharedSchemaDedupeService' => [
 			'OCA\OpenRegister\Service\SharedSchemaDedupeServiceInterface',
