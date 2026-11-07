@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\AnalyticsLinkService;
 use OCA\OpenRegister\Service\AnalyticsLinkServiceInterface;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
+use OCA\OpenRegister\Service\BookmarkLinkService;
+use OCA\OpenRegister\Service\BookmarkLinkServiceInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
@@ -60,6 +62,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 		ActivityFilterService::class => [ActivityFilterServiceInterface::class, ContractBindings::class, 'Service'],
 		AnalyticsLinkService::class => [AnalyticsLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		AppRegisterImportRunner::class => [AppRegisterImportRunnerInterface::class, ContractBindings::class, 'Service'],
+		BookmarkLinkService::class => [BookmarkLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		DeckCardService::class => [DeckCardServiceInterface::class, ContractBindings::class, 'Service'],

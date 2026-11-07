@@ -150,6 +150,7 @@ final class ContractBindings {
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
+		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,
