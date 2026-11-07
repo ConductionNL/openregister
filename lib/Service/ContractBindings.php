@@ -56,6 +56,10 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
@@ -111,6 +115,8 @@ final class ContractBindings {
 		ContactMatcherInterface::class => ContactMatchingService::class,
 		CospendLinkServiceInterface::class => CospendLinkService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
+		ExampleSetRecordInterface::class => ExampleSetRecord::class,
+		ExampleSetRemoverInterface::class => ExampleSetRemover::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
@@ -134,6 +140,7 @@ final class ContractBindings {
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SequenceServiceInterface::class => SequenceService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
