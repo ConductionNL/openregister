@@ -53,9 +53,21 @@ export default {
 					key: 'enabled',
 					heading: t('openregister', 'Status'),
 					options: [
-						{ id: 'all', value: null, label: t('openregister', 'All Webhooks') },
-						{ id: 'enabled', value: true, label: t('openregister', 'Enabled') },
-						{ id: 'disabled', value: false, label: t('openregister', 'Disabled') },
+						{
+							id: 'all',
+							value: null,
+							label: t('openregister', 'All Webhooks'),
+						},
+						{
+							id: 'enabled',
+							value: true,
+							label: t('openregister', 'Enabled'),
+						},
+						{
+							id: 'disabled',
+							value: false,
+							label: t('openregister', 'Disabled'),
+						},
 					],
 				},
 			]

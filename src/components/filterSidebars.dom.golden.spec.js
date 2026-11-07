@@ -117,7 +117,10 @@ function markup(wrapper) {
 function radios(wrapper) {
 	return wrapper
 		.findAllComponents({ name: 'NcCheckboxRadioSwitch' })
-		.map((radio) => `${radio.attributes('value')}=${radio.attributes('modelvalue')}`)
+		.map(
+			(radio) =>
+				`${radio.attributes('value')}=${radio.attributes('modelvalue')}`,
+		)
 }
 
 describe('filter sidebars golden', () => {
@@ -153,7 +156,9 @@ describe('filter sidebars golden', () => {
 			const all = wrapper.findAllComponents({ name: 'NcCheckboxRadioSwitch' })
 			for (let index = 0; index < all.length; index++) {
 				await fire(
-					wrapper.findAllComponents({ name: 'NcCheckboxRadioSwitch' })[index],
+					wrapper.findAllComponents({ name: 'NcCheckboxRadioSwitch' })[
+						index
+					],
 					'update:modelValue',
 					true,
 				)
@@ -163,7 +168,9 @@ describe('filter sidebars golden', () => {
 			await fire(search, 'update:modelValue', 'fir')
 			await fire(search, 'update:modelValue', 'first')
 			jest.advanceTimersByTime(499)
-			states.push(`before debounce: ${JSON.stringify(wrapper.emitted('update:search') ?? null)}`)
+			states.push(
+				`before debounce: ${JSON.stringify(wrapper.emitted('update:search') ?? null)}`,
+			)
 			jest.advanceTimersByTime(1)
 			await wrapper.vm.$nextTick()
 			states.push(`clear shown: ${wrapper.find('.clear-filters').exists()}`)

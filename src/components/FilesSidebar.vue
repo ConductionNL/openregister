@@ -61,23 +61,63 @@ export default {
 					key: 'status',
 					heading: t('openregister', 'Extraction Status'),
 					options: [
-						{ id: 'all', value: null, label: t('openregister', 'All Files') },
-						{ id: 'pending', value: 'pending', label: t('openregister', 'Pending') },
-						{ id: 'processing', value: 'processing', label: t('openregister', 'Processing') },
-						{ id: 'completed', value: 'completed', label: t('openregister', 'Completed') },
-						{ id: 'failed', value: 'failed', label: t('openregister', 'Failed') },
+						{
+							id: 'all',
+							value: null,
+							label: t('openregister', 'All Files'),
+						},
+						{
+							id: 'pending',
+							value: 'pending',
+							label: t('openregister', 'Pending'),
+						},
+						{
+							id: 'processing',
+							value: 'processing',
+							label: t('openregister', 'Processing'),
+						},
+						{
+							id: 'completed',
+							value: 'completed',
+							label: t('openregister', 'Completed'),
+						},
+						{
+							id: 'failed',
+							value: 'failed',
+							label: t('openregister', 'Failed'),
+						},
 					],
 				},
 				{
 					key: 'riskLevel',
 					heading: t('openregister', 'Risk Level'),
 					options: [
-						{ id: 'all', value: null, label: t('openregister', 'All Levels') },
-						{ id: 'none', value: 'none', label: t('openregister', 'None') },
+						{
+							id: 'all',
+							value: null,
+							label: t('openregister', 'All Levels'),
+						},
+						{
+							id: 'none',
+							value: 'none',
+							label: t('openregister', 'None'),
+						},
 						{ id: 'low', value: 'low', label: t('openregister', 'Low') },
-						{ id: 'medium', value: 'medium', label: t('openregister', 'Medium') },
-						{ id: 'high', value: 'high', label: t('openregister', 'High') },
-						{ id: 'very_high', value: 'very_high', label: t('openregister', 'Very High') },
+						{
+							id: 'medium',
+							value: 'medium',
+							label: t('openregister', 'Medium'),
+						},
+						{
+							id: 'high',
+							value: 'high',
+							label: t('openregister', 'High'),
+						},
+						{
+							id: 'very_high',
+							value: 'very_high',
+							label: t('openregister', 'Very High'),
+						},
 					],
 				},
 			]
