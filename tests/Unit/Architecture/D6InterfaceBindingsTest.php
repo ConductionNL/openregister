@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
@@ -54,6 +56,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		DecisionTableNode::class => [DecisionTableNodeInterface::class, ContractBindings::class],
 		FlowNodePreflight::class => [FlowNodePreflightInterface::class, ContractBindings::class],
 		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		ObjectReadNode::class => [ObjectReadNodeInterface::class, ContractBindings::class],

@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
-use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
+use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
@@ -99,7 +99,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param TriggerManualNode $triggerManual The "When someone runs it" entry point.
 	 * @param UserTaskNodeInterface $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNodeInterface $portalTask The built-in "Ask a party outside the organisation" node.
-	 * @param DecisionTableNode $decisionTable The built-in "Evaluate a decision table" node.
+	 * @param DecisionTableNodeInterface $decisionTable The built-in "Evaluate a decision table" node.
 	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
 	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
 	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
@@ -133,7 +133,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly TriggerManualNode $triggerManual,
 		private readonly UserTaskNodeInterface $userTask,
 		private readonly PortalTaskNodeInterface $portalTask,
-		private readonly DecisionTableNode $decisionTable,
+		private readonly DecisionTableNodeInterface $decisionTable,
 		private readonly CaseOpenNode $caseOpen,
 		private readonly CaseAdvanceNode $caseAdvance,
 		private readonly ActionInputsNode $actionInputs,
