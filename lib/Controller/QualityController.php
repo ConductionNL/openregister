@@ -71,15 +71,9 @@ class QualityController extends Controller {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
 	 */
 	public function stats(string $register, string $schema): JSONResponse {
-		try {
-			$result = $this->statistics->statisticsFor(register: $register, schema: $schema);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (RuntimeException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
-		}
-
-		return new JSONResponse($result);
+		return $this->respond(
+			query: fn (): array => $this->statistics->statisticsFor(register: $register, schema: $schema)
+		);
 	}//end stats()
 
 	/**
@@ -98,41 +92,71 @@ class QualityController extends Controller {
 	 * @spec openspec/changes/mdm-surface-api/tasks.md#task-2
 	 */
 	public function index(string $register, string $schema): JSONResponse {
+		return $this->respond(query: fn (): array => $this->lowestQuality(register: $register, schema: $schema));
+	}//end index()
+
+	/**
+	 * Query the lowest-quality listing with the request's filter, sort and page.
+	 *
+	 * @param string $register Register reference.
+	 * @param string $schema Schema reference.
+	 *
+	 * @return array<string, mixed> The paginated listing.
+	 */
+	private function lowestQuality(string $register, string $schema): array {
+		return $this->statistics->lowestQuality(
+			register: $register,
+			schema: $schema,
+			qualityStatus: $this->qualityStatusParam(),
+			sort: (string)$this->request->getParam('sort', 'qualityScore'),
+			order: (string)$this->request->getParam('order', 'asc'),
+			limit: $this->limitParam(),
+			offset: max(0, (int)$this->request->getParam('offset', 0))
+		);
+	}//end lowestQuality()
+
+	/**
+	 * The optional `qualityStatus` filter, as a string when given.
+	 *
+	 * @return string|null The filter, or null when absent.
+	 */
+	private function qualityStatusParam(): ?string {
 		$qualityStatus = $this->request->getParam('qualityStatus');
-		if ($qualityStatus !== null) {
-			$qualityStatus = (string)$qualityStatus;
+		if ($qualityStatus === null) {
+			return null;
 		}
 
-		$sort = (string)$this->request->getParam('sort', 'qualityScore');
-		$order = (string)$this->request->getParam('order', 'asc');
+		return (string)$qualityStatus;
+	}//end qualityStatusParam()
 
+	/**
+	 * The page size, falling back to 20 when not positive.
+	 *
+	 * @return integer The page size.
+	 */
+	private function limitParam(): int {
 		$limit = (int)$this->request->getParam('limit', 20);
-		$offset = (int)$this->request->getParam('offset', 0);
-
 		if ($limit <= 0) {
-			$limit = 20;
+			return 20;
 		}
 
-		if ($offset < 0) {
-			$offset = 0;
-		}
+		return $limit;
+	}//end limitParam()
 
+	/**
+	 * Run a statistics query and translate its refusals to HTTP.
+	 *
+	 * @param callable():array $query The statistics query.
+	 *
+	 * @return JSONResponse The result, a 403 when not authorised, or a 404.
+	 */
+	private function respond(callable $query): JSONResponse {
 		try {
-			$result = $this->statistics->lowestQuality(
-				register: $register,
-				schema: $schema,
-				qualityStatus: $qualityStatus,
-				sort: $sort,
-				order: $order,
-				limit: $limit,
-				offset: $offset
-			);
+			return new JSONResponse($query());
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (RuntimeException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
 		}
-
-		return new JSONResponse($result);
-	}//end index()
+	}//end respond()
 }//end class
