@@ -44,7 +44,7 @@ use OCP\IDBConnection;
 /**
  * Move registers and schemas from one owning application id to another.
  */
-class SchemaApplicationMigrator {
+class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 	/**
 	 * Constructor.
 	 *

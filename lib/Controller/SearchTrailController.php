@@ -27,7 +27,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\SearchTrailServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
@@ -49,7 +49,7 @@ class SearchTrailController extends Controller {
 	 *
 	 * @param string $appName The name of the app
 	 * @param IRequest $request The request object
-	 * @param SearchTrailService $searchTrailService The search trail service
+	 * @param SearchTrailServiceInterface $searchTrailService The search trail service
 	 * @param SearchTrailMapper $searchTrailMapper Mapper the admin clear-all path deletes through
 	 * @param IUserSession $userSession Active user session for caller identity
 	 * @param IGroupManager $groupManager Group manager for admin / role checks
@@ -57,7 +57,7 @@ class SearchTrailController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly SearchTrailService $searchTrailService,
+		private readonly SearchTrailServiceInterface $searchTrailService,
 		private readonly SearchTrailMapper $searchTrailMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
