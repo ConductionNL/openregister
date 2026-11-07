@@ -42,6 +42,22 @@ use OCP\IRequest;
  */
 class UrnController extends Controller {
 	/**
+	 * Error body for a URN that does not parse.
+	 */
+	private const MALFORMED_URN_ERROR = 'malformed URN; expected urn:' . UrnService::DEFAULT_NID . ':<instance>:<register>:<schema>:<uuid>';
+
+	/**
+	 * Maximum number of URNs accepted by one bulk() request.
+	 *
+	 * SECURITY: bulk() is reachable by every authenticated user (`@NoAdminRequired`),
+	 * so this cap is mandatory. Each URN triggers a parse → register find → schema
+	 * find → object find chain (~4 DB round-trips per URN), so an uncapped input list
+	 * (e.g. 100k URNs ≈ 400k round-trips) is a direct DoS lever. Do not relax this cap
+	 * without adding a per-user rate limit upstream.
+	 */
+	private const MAX_BULK_URNS = 1000;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The application name.
@@ -80,31 +96,37 @@ class UrnController extends Controller {
 
 		$parts = $this->urnService->parse($urn);
 		if ($parts === null) {
-			return new JSONResponse(
-				['error' => 'malformed URN; expected urn:' . UrnService::DEFAULT_NID . ':<instance>:<register>:<schema>:<uuid>'],
-				Http::STATUS_BAD_REQUEST
-			);
+			return new JSONResponse(['error' => self::MALFORMED_URN_ERROR], Http::STATUS_BAD_REQUEST);
 		}
 
+		return $this->resolvedResponse(urn: $urn, parts: $parts);
+	}//end resolve()
+
+	/**
+	 * Build the response for a URN that parsed: 200 with its URL and parts, or 404.
+	 *
+	 * @param string $urn The parsed URN.
+	 * @param array<string, mixed> $parts The addressing parts returned by UrnService::parse().
+	 *
+	 * @return JSONResponse The resolution result or a 404 when the URN does not resolve here.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
+	 */
+	private function resolvedResponse(string $urn, array $parts): JSONResponse {
 		$url = $this->urnService->resolveUrl($urn);
 		if ($url === null) {
-			return new JSONResponse(
-				['error' => 'URN does not resolve on this instance', 'urn' => $urn, 'parts' => $parts],
-				Http::STATUS_NOT_FOUND
-			);
+			return new JSONResponse(['error' => 'URN does not resolve on this instance', 'urn' => $urn, 'parts' => $parts], Http::STATUS_NOT_FOUND);
 		}
 
-		return new JSONResponse(
-			[
-				'urn' => $urn,
-				'url' => $url,
-				'instance' => $parts['instance'],
-				'register' => $parts['register'],
-				'schema' => $parts['schema'],
-				'uuid' => $parts['uuid'],
-			]
-		);
-	}//end resolve()
+		return new JSONResponse([
+			'urn' => $urn,
+			'url' => $url,
+			'instance' => $parts['instance'],
+			'register' => $parts['register'],
+			'schema' => $parts['schema'],
+			'uuid' => $parts['uuid'],
+		]);
+	}//end resolvedResponse()
 
 	/**
 	 * Reverse: derive the URN that addresses an OpenRegister object URL.
@@ -126,18 +148,10 @@ class UrnController extends Controller {
 
 		$urn = $this->urnService->urnFromUrl($url);
 		if ($urn === null) {
-			return new JSONResponse(
-				['error' => 'URL is not an OpenRegister object reference', 'url' => $url],
-				Http::STATUS_NOT_FOUND
-			);
+			return new JSONResponse(['error' => 'URL is not an OpenRegister object reference', 'url' => $url], Http::STATUS_NOT_FOUND);
 		}
 
-		return new JSONResponse(
-			[
-				'url' => $url,
-				'urn' => $urn,
-			]
-		);
+		return new JSONResponse(['url' => $url, 'urn' => $urn]);
 	}//end lookup()
 
 	/**
@@ -163,27 +177,13 @@ class UrnController extends Controller {
 			return new JSONResponse(['error' => 'urns array is required'], Http::STATUS_BAD_REQUEST);
 		}
 
-		// SECURITY: this route is reachable by every authenticated user
-		// (`@NoAdminRequired` above), so the 1000-URN cap is mandatory.
-		// Each URN triggers a parse → register find → schema find →
-		// object find chain (~4 DB round-trips per URN), so an
-		// uncapped input list (e.g. 100k URNs ≈ 400k round-trips) is a
-		// direct DoS lever. Do not relax this cap without adding a
-		// per-user rate limit upstream.
-		if (count($urns) > 1000) {
-			return new JSONResponse(
-				['error' => 'Too many URNs (max 1000 per request)', 'count' => count($urns)],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+		// SECURITY: mandatory DoS cap, see MAX_BULK_URNS before relaxing it.
+		if (count($urns) > self::MAX_BULK_URNS) {
+			return new JSONResponse(['error' => 'Too many URNs (max 1000 per request)', 'count' => count($urns)], Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
 		$resolved = $this->urnService->resolveBulk($urns);
 
-		return new JSONResponse(
-			[
-				'count' => count($resolved),
-				'resolved' => $resolved,
-			]
-		);
+		return new JSONResponse(['count' => count($resolved), 'resolved' => $resolved]);
 	}//end bulk()
 }//end class
