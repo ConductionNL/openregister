@@ -42,7 +42,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md
  */
-class MigrationPackService {
+class MigrationPackService implements MigrationPackServiceInterface {
 	/**
 	 * App config key listing the slugs of deleted built-in packs.
 	 *

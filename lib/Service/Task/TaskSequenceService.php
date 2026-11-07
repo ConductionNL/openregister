@@ -53,7 +53,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
  * idiom and TaskState is the published, stateless state vocabulary.
  */
-class TaskSequenceService {
+class TaskSequenceService implements TaskSequenceServiceInterface {
 
 	/**
 	 * The system actor prefix a sequence writes into task audits.

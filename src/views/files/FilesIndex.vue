@@ -192,11 +192,12 @@ import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import FilesSidebar from '../../components/FilesSidebar.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
-import FilesSidebar from '../../components/FilesSidebar.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
 
@@ -493,17 +494,7 @@ export default {
 			return labels[level] || level || t('openregister', 'None')
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>

@@ -73,17 +73,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md
  */
-class OperationsConsoleService {
-
-	/**
-	 * The window the console reports over, in hours.
-	 *
-	 * A day, because that is the span in which "it started failing this
-	 * morning" is still answerable and a nightly job has run exactly once.
-	 *
-	 * @var int
-	 */
-	public const DEFAULT_WINDOW_HOURS = 24;
+class OperationsConsoleService implements OperationsConsoleServiceInterface {
 
 	/**
 	 * The longest window one request may ask for, in hours.
