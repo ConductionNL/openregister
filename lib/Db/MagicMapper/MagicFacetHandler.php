@@ -128,6 +128,29 @@ class MagicFacetHandler {
 	];
 
 	/**
+	 * PostgreSQL TO_CHAR pattern of each date histogram interval.
+	 */
+	private const PG_DATE_FORMATS = [
+		'day' => 'YYYY-MM-DD',
+		'week' => 'IYYY-IW',
+		'month' => 'YYYY-MM',
+		'year' => 'YYYY',
+		'quarter' => 'YYYY-"Q"Q',
+	];
+
+	/**
+	 * MariaDB/MySQL DATE_FORMAT pattern of each date histogram interval but quarter.
+	 *
+	 * Week is ISO year + ISO week, matching PostgreSQL IYYY-IW.
+	 */
+	private const MYSQL_DATE_FORMATS = [
+		'day' => '%Y-%m-%d',
+		'week' => '%x-%v',
+		'year' => '%Y',
+		'month' => '%Y-%m',
+	];
+
+	/**
 	 * Metadata column prefix used in MagicMapper tables.
 	 */
 	private const METADATA_PREFIX = '_';
@@ -857,8 +880,6 @@ class MagicFacetHandler {
 	 */
 	private function labelTermsBuckets(TermsFacetUnion $facet, array $normalizedBuckets): array {
 		$labelMap = $this->termsUnionLabelMap(facet: $facet, normalizedBuckets: $normalizedBuckets);
-		$tableConfigs = $facet->tableConfigs;
-		$firstConfig = reset($tableConfigs);
 
 		$buckets = [];
 		foreach ($normalizedBuckets as $bucket) {
@@ -866,13 +887,7 @@ class MagicFacetHandler {
 			// For metadata facets, use getFieldLabel to resolve IDs to names.
 			$label = $labelMap[$key] ?? (string)$key;
 			if ($facet->isMetadata === true) {
-				$label = $this->getFieldLabel(
-					field: $facet->field,
-					value: $key,
-					isMetadata: true,
-					register: $firstConfig['register'],
-					schema: $firstConfig['schema']
-				);
+				$label = $this->getFieldLabel(field: $facet->field, value: $key);
 			}
 
 			$buckets[] = [
@@ -936,68 +951,98 @@ class MagicFacetHandler {
 	private function normalizeArrayFacetBuckets(array $rawBuckets): array {
 		// Map to accumulate counts: value => count.
 		$valueCounts = [];
-
 		foreach ($rawBuckets as $bucket) {
-			$key = $bucket['key'];
-			$count = $bucket['count'];
-
-			// Skip null/empty values.
-			if ($key === null || $key === '' || $key === 'null') {
-				continue;
+			foreach ($this->bucketKeyValues(key: $bucket['key']) as $value) {
+				$valueCounts[$value] = ($valueCounts[$value] ?? 0) + $bucket['count'];
 			}
+		}
 
-			// Check if this looks like a JSON array (starts with '[').
-			if (is_string($key) === true && str_starts_with(trim($key), '[') === true) {
-				// Try to decode as JSON array.
-				$decoded = json_decode($key, true);
+		return $this->countedBuckets(valueCounts: $valueCounts);
+	}//end normalizeArrayFacetBuckets()
 
-				if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-					// It's a valid JSON array - distribute count to each element.
-					foreach ($decoded as $element) {
-						// Skip null/empty elements.
-						if ($element === null || $element === '') {
-							continue;
-						}
+	/**
+	 * The facet values one raw bucket key counts for.
+	 *
+	 * Null and empty keys count for nothing, a JSON array counts for each of its
+	 * non-empty elements and any other key counts for its cleaned value.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array<int, string> The values the bucket's count goes to.
+	 */
+	private function bucketKeyValues(mixed $key): array {
+		if ($key === null || $key === '' || $key === 'null') {
+			return [];
+		}
 
-						$elementKey = (string)$element;
-						if (isset($valueCounts[$elementKey]) === false) {
-							$valueCounts[$elementKey] = 0;
-						}
+		$elements = $this->jsonArrayKey(key: $key);
+		if ($elements !== null) {
+			return $this->nonEmptyElements(elements: $elements);
+		}
 
-						$valueCounts[$elementKey] += $count;
-					}
+		// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
+		return [(string)$this->cleanJsonValue(value: $key)];
+	}//end bucketKeyValues()
 
-					continue;
-				}
-			}//end if
+	/**
+	 * The decoded elements of a bucket key that is a JSON array.
+	 *
+	 * @param mixed $key The raw bucket key.
+	 *
+	 * @return array|null The decoded array, or null when the key is no JSON array.
+	 */
+	private function jsonArrayKey(mixed $key): ?array {
+		if (is_string($key) === false || str_starts_with(trim($key), '[') === false) {
+			return null;
+		}
 
-			// Not an array - use value as-is.
-			// Clean up JSON-encoded single values (e.g., "\"value\"" -> "value").
-			$cleanKey = $this->cleanJsonValue(value: $key);
-			$cleanKeyStr = (string)$cleanKey;
+		$decoded = json_decode($key, true);
+		if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
+			return null;
+		}
 
-			if (isset($valueCounts[$cleanKeyStr]) === false) {
-				$valueCounts[$cleanKeyStr] = 0;
+		return $decoded;
+	}//end jsonArrayKey()
+
+	/**
+	 * The elements of a decoded JSON array that are neither null nor empty, as strings.
+	 *
+	 * @param array $elements The decoded elements.
+	 *
+	 * @return array<int, string> The non-empty elements.
+	 */
+	private function nonEmptyElements(array $elements): array {
+		$values = [];
+		foreach ($elements as $element) {
+			if ($element !== null && $element !== '') {
+				$values[] = (string)$element;
 			}
+		}
 
-			$valueCounts[$cleanKeyStr] += $count;
-		}//end foreach
+		return $values;
+	}//end nonEmptyElements()
 
-		// Convert back to bucket format, sorted by count descending.
-		$normalizedBuckets = [];
+	/**
+	 * Buckets for accumulated value counts, highest count first and capped.
+	 *
+	 * @param array<array-key, int> $valueCounts Counts by value.
+	 *
+	 * @return array<int, array{key: array-key, count: int}> The buckets.
+	 */
+	private function countedBuckets(array $valueCounts): array {
+		$buckets = [];
 		foreach ($valueCounts as $key => $count) {
-			$normalizedBuckets[] = [
+			$buckets[] = [
 				'key' => $key,
 				'count' => $count,
 			];
 		}
 
 		// Sort by count descending (highest first).
-		usort($normalizedBuckets, fn ($a, $b) => $b['count'] <=> $a['count']);
+		usort($buckets, fn ($a, $b) => $b['count'] <=> $a['count']);
 
-		// Apply limit.
-		return array_slice($normalizedBuckets, 0, self::MAX_FACET_BUCKETS);
-	}//end normalizeArrayFacetBuckets()
+		return array_slice($buckets, 0, self::MAX_FACET_BUCKETS);
+	}//end countedBuckets()
 
 	/**
 	 * Get date histogram facet using UNION ALL across multiple tables.
@@ -1515,10 +1560,7 @@ class MagicFacetHandler {
 					key: $key,
 					labelMap: $labelMap,
 					batchResolved: is_string($key) === true && isset($batchKeys[$key]) === true,
-					field: $facet->field,
-					isMetadata: $facet->isMetadata,
-					register: $facet->register,
-					schema: $facet->schema
+					field: $facet->field
 				);
 			}
 
@@ -1618,9 +1660,6 @@ class MagicFacetHandler {
 	 * @param array<string, string> $labelMap      Labels from batchResolveUuidLabels().
 	 * @param bool                  $batchResolved Whether the batch lookup already asked about this key.
 	 * @param string                $field         The facet field.
-	 * @param bool                  $isMetadata    Whether this is a metadata field.
-	 * @param Register              $register      The register context.
-	 * @param Schema                $schema        The schema context.
 	 *
 	 * @return string The bucket label.
 	 *
@@ -1633,9 +1672,6 @@ class MagicFacetHandler {
 		array $labelMap,
 		bool $batchResolved,
 		string $field,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
 	): string {
 		if (is_string($key) === true && isset($labelMap[$key]) === true) {
 			return $labelMap[$key];
@@ -1645,13 +1681,7 @@ class MagicFacetHandler {
 			return substr((string)$key, 0, 8) . '...';
 		}
 
-		return $this->getFieldLabel(
-			field: $field,
-			value: $key,
-			isMetadata: $isMetadata,
-			register: $register,
-			schema: $schema
-		);
+		return $this->getFieldLabel(field: $field, value: $key);
 	}//end resolveBucketLabel()
 
 	/**
@@ -1691,21 +1721,13 @@ class MagicFacetHandler {
 			return $value;
 		}
 
-		// Try to decode JSON strings.
+		// Invalid JSON decodes to null, which is neither scalar nor array.
 		$decoded = json_decode($value, true);
-		if (json_last_error() === JSON_ERROR_NONE) {
-			// If it decoded to a scalar, return that.
-			if (is_scalar($decoded) === true) {
-				return $decoded;
-			}
-
-			// If it's an array with one element, return that element.
-			if (is_array($decoded) === true && count($decoded) === 1) {
-				return reset($decoded);
-			}
-		}
-
-		return $value;
+		return match (true) {
+			is_scalar($decoded) === true => $decoded,
+			is_array($decoded) === true && count($decoded) === 1 => reset($decoded),
+			default => $value,
+		};
 	}//end cleanJsonValue()
 
 	/**
@@ -2211,20 +2233,7 @@ class MagicFacetHandler {
 	 * @return string PostgreSQL TO_CHAR date format string.
 	 */
 	private function getDateFormatForInterval(string $interval): string {
-		switch ($interval) {
-			case 'day':
-				return 'YYYY-MM-DD';
-			case 'week':
-				return 'IYYY-IW';
-			case 'month':
-				return 'YYYY-MM';
-			case 'year':
-				return 'YYYY';
-			case 'quarter':
-				return 'YYYY-"Q"Q';
-			default:
-				return 'YYYY-MM';
-		}
+		return self::PG_DATE_FORMATS[$interval] ?? 'YYYY-MM';
 	}//end getDateFormatForInterval()
 
 	/**
@@ -2247,9 +2256,7 @@ class MagicFacetHandler {
 	 * @return string The full SQL expression that evaluates to the bucket key string.
 	 */
 	private function buildDateKeyExpr(string $field, string $interval): string {
-		$isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
-
-		if ($isPostgres === true) {
+		if ($this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
 			$pgFormat = $this->getDateFormatForInterval(interval: $interval);
 			return "TO_CHAR({$field}, '{$pgFormat}')";
 		}
@@ -2260,23 +2267,7 @@ class MagicFacetHandler {
 			return "CONCAT(YEAR({$field}), '-Q', QUARTER({$field}))";
 		}
 
-		switch ($interval) {
-			case 'day':
-				$myFormat = '%Y-%m-%d';
-				break;
-			case 'week':
-				// ISO year + ISO week — matches PostgreSQL IYYY-IW.
-				$myFormat = '%x-%v';
-				break;
-			case 'year':
-				$myFormat = '%Y';
-				break;
-			case 'month':
-			default:
-				$myFormat = '%Y-%m';
-				break;
-		}
-
+		$myFormat = self::MYSQL_DATE_FORMATS[$interval] ?? '%Y-%m';
 		return "DATE_FORMAT({$field}, '{$myFormat}')";
 	}//end buildDateKeyExpr()
 
@@ -2482,108 +2473,15 @@ class MagicFacetHandler {
 	 * Get human-readable label for a field value.
 	 *
 	 * @param string $field The field name.
-	 * @param mixed $value The field value.
-	 * @param bool $isMetadata Whether this is a metadata field.
-	 * @param Register $register The register context.
-	 * @param Schema $schema The schema context.
+	 * @param mixed  $value The field value.
 	 *
 	 * @return string Human-readable label.
 	 *
-	 * @psalm-suppress UnusedParam Parameters reserved for future label lookup from related entities.
+	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
-	private function getFieldLabel(
-		string $field,
-		mixed $value,
-		bool $isMetadata,
-		Register $register,
-		Schema $schema,
-	): string {
+	private function getFieldLabel(string $field, mixed $value): string {
 		$this->resolveLazyDependencies();
 
-		// For register field, try to get the register title.
-		if ($field === self::METADATA_PREFIX . 'register' && is_numeric($value) === true) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('title')
-					->from('openregister_registers')
-					->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$value)));
-				$result = $qb->executeQuery();
-				$title = $result->fetchOne();
-				if ($title !== false) {
-					return (string)$title;
-				}
-			} catch (\Exception $e) {
-				// Fall through to default.
-			}
-
-			return "Register $value";
-		}
-
-		// For schema field, try to get the schema title.
-		if ($field === self::METADATA_PREFIX . 'schema' && is_numeric($value) === true) {
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('title')
-					->from('openregister_schemas')
-					->where($qb->expr()->eq('id', $qb->createNamedParameter((int)$value)));
-				$result = $qb->executeQuery();
-				$title = $result->fetchOne();
-				if ($title !== false) {
-					return (string)$title;
-				}
-			} catch (\Exception $e) {
-				// Fall through to default.
-			}
-
-			return "Schema $value";
-		}
-
-		// For organisation field, try to get the organisation name.
-		if ($field === self::METADATA_PREFIX . 'organisation' && is_string($value) === true && $value !== '') {
-			// First try system organisations table.
-			try {
-				$qb = $this->db->getQueryBuilder();
-				$qb->select('name')
-					->from('openregister_organisations')
-					->where($qb->expr()->eq('uuid', $qb->createNamedParameter($value)));
-				$result = $qb->executeQuery();
-				$name = $result->fetchOne();
-				if ($name !== false && $name !== null) {
-					return (string)$name;
-				}
-			} catch (\Exception $e) {
-				// Fall through to CacheHandler lookup.
-			}
-
-			// Try CacheHandler for dynamic object name lookup.
-			if ($this->cacheHandler !== null) {
-				$names = $this->cacheHandler->getMultipleObjectNames([$value]);
-				if (isset($names[$value]) === true) {
-					return $names[$value];
-				}
-			}
-
-			// Return shortened UUID if name not found.
-			return substr($value, 0, 8) . '...';
-		}//end if
-
-		// For object fields containing UUIDs, try to resolve to object names.
-		// Note: Using relaxed UUID pattern to match non-standard UUIDs (e.g., version 1 time-based).
-		if (is_string($value) === true
-			&& UuidFormat::isCanonical(value: $value) === true
-		) {
-			// Use CacheHandler for dynamic object name lookup.
-			if ($this->cacheHandler !== null) {
-				$names = $this->cacheHandler->getMultipleObjectNames([$value]);
-				if (isset($names[$value]) === true) {
-					return $names[$value];
-				}
-			}
-
-			// Return shortened UUID if name not found.
-			return substr($value, 0, 8) . '...';
-		}
-
-		return (string)$value;
+		return (new MagicFacetFieldLabel(db: $this->db, names: $this->cacheHandler))->labelOf(field: $field, value: $value);
 	}//end getFieldLabel()
 }//end class

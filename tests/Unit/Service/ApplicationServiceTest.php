@@ -129,6 +129,24 @@ class ApplicationServiceTest extends TestCase {
 		$this->assertSame(1, $result->getId());
 	}
 
+	public function testCreateAndUpdateLogFieldNamesNotValues(): void {
+		$logged = [];
+		$this->logger->method('info')->willReturnCallback(
+			static function (string $message, array $context) use (&$logged): void {
+				$logged[] = $context;
+			}
+		);
+		$this->applicationMapper->method('createFromArray')->willReturn(new Application());
+		$this->applicationMapper->method('updateFromArray')->willReturn(new Application());
+
+		$this->service->create(['description' => 'Contact: Jan Jansen']);
+		$this->service->update(1, ['description' => 'Contact: Jan Jansen']);
+
+		$this->assertNotSame([], $logged);
+		$this->assertStringContainsString('description', (string)json_encode($logged));
+		$this->assertStringNotContainsString('Jan Jansen', (string)json_encode($logged));
+	}
+
 	public function testCreateWithEmptyData(): void {
 		$app = new Application();
 

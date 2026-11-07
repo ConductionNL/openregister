@@ -255,4 +255,17 @@ final class OasValidationReport {
 		);
 
 	}//end filterBySeverity()
+
+	/**
+	 * A reference repair pass that reports here.
+	 *
+	 * @param list<string> $componentNames The component schemas of the document
+	 *
+	 * @return OasReferenceRepair
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+	 */
+	public function referenceRepair(array $componentNames): OasReferenceRepair {
+		return new OasReferenceRepair(componentNames: $componentNames, report: $this);
+	}//end referenceRepair()
 }//end class

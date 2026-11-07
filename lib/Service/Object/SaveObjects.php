@@ -75,6 +75,8 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\BulkObjectSlugs;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
@@ -107,8 +109,6 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SaveObjects {
-	use RelationDetectionTrait;
-
 	/**
 	 * Maximum number of audit entries materialised into AuditTrail entities
 	 * and persisted per insertAuditTrails() call. Bounds peak memory: a save
@@ -1870,7 +1870,7 @@ class SaveObjects {
 
 		// RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
 		$relationData = $tempEntity->getObject();
-		$relations = $this->scanForRelations(data: $relationData, prefix: '', schema: $schema);
+		$relations = (new BulkRelationScanner())->scan(data: $relationData, run: new BulkRelationRun(schema: $schema));
 		$selfData['relations'] = $relations;
 
 		$object['@self'] = $selfData;
@@ -2037,7 +2037,7 @@ class SaveObjects {
 		// `image` / `slug` property is not mistaken for the magic-table column of
 		// the same name (openregister#2781).
 		$businessData = $this->extractBusinessData(object: $object, schema: $defaults->schema);
-		$selfData['relations'] = $this->scanForRelations(data: $businessData, prefix: '', schema: $defaults->schema);
+		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $defaults->schema));
 		$this->logBulkRelationScan(selfData: $selfData, businessData: $businessData);
 
 		// Store the clean business data in the database object column.
@@ -2152,7 +2152,6 @@ class SaveObjects {
 				'has_@self' => isset($object['@self']),
 				'@self_keys' => $selfKeys,
 				'has_object_property' => isset($object['object']),
-				'sample_data' => array_slice($object, 0, 3, true),
 			]
 		);
 	}//end logBulkObjectStructure()
@@ -2172,7 +2171,6 @@ class SaveObjects {
 				'uuid' => $selfData['uuid'] ?? 'unknown',
 				'relationCount' => count($selfData['relations']),
 				'businessDataKeys' => array_keys($businessData),
-				'relationsPreview' => array_slice($selfData['relations'], 0, 5, true),
 			]
 		);
 	}//end logBulkRelationScan()
@@ -3504,7 +3502,6 @@ class SaveObjects {
 				[
 					'available_keys' => array_keys($object),
 					'has_object_property' => isset($object['object']),
-					'sample_data' => array_slice($object, 0, 3, true),
 				]
 			);
 
@@ -3527,7 +3524,7 @@ class SaveObjects {
 				);
 			} elseif (isset($schemaCache[$selfData['schema']]) === true) {
 				$schema = $schemaCache[$selfData['schema']];
-				$relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
+				$relations = (new BulkRelationScanner())->scan(data: $businessData, run: new BulkRelationRun(schema: $schema));
 				$selfData['relations'] = $relations;
 
 				$this->logger->debug(
@@ -3535,7 +3532,6 @@ class SaveObjects {
 					[
 						'uuid' => $selfData['uuid'] ?? 'unknown',
 						'relationCount' => count($relations),
-						'relations' => array_slice($relations, 0, 3, true),
 					]
 				);
 			}//end if
@@ -3752,7 +3748,6 @@ class SaveObjects {
 				),
 				'kept_as_schema_properties' => array_values(array_intersect($kept, array_keys($object))),
 				'remaining_keys' => array_keys($businessData),
-				'business_data_sample' => array_slice($businessData, 0, 3, true),
 			]
 		);
 
@@ -3792,7 +3787,7 @@ class SaveObjects {
 				$this->logger->error(
 					'Object reconstruction failed: Missing UUID after bulk save operation',
 					[
-						'objectData' => $objData,
+						'objectKeys' => array_keys($objData),
 						'error' => 'UUID missing in saved object data',
 						'context' => 'reconstructSavedObjects',
 					]
@@ -3834,205 +3829,6 @@ class SaveObjects {
 
 		return $savedObjects;
 	}//end reconstructSavedObjects()
-
-	/**
-	 * Scans an object for relations (UUIDs and URLs) and returns them in dot notation
-	 *
-	 * This method checks schema properties for relation types:
-	 * - Properties with type 'text' and format 'uuid', 'uri', or 'url'
-	 * - Properties with type 'object' that contain string values (always treated as relations)
-	 * - Properties with type 'array' of objects that contain string values
-	 *
-	 * This is ported from SaveObject.php to provide consistent relation handling
-	 * for bulk operations.
-	 *
-	 * @param array $data The object data to scan
-	 * @param string $prefix The current prefix for dot notation (used in recursion)
-	 * @param Schema|null $schema The schema to check property definitions against
-	 *
-	 * @return array Array of relations with dot notation paths as keys and UUIDs/URLs as values
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning across nested structures
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		$relations = [];
-
-		// NO ERROR SUPPRESSION: Let relation scanning errors bubble up immediately!
-		// Get schema properties if available.
-		$schemaProperties = null;
-		if ($schema !== null) {
-			// NO ERROR SUPPRESSION: Let schema property parsing errors bubble up immediately!
-			$schemaProperties = $schema->getProperties();
-		}
-
-		foreach ($data as $key => $value) {
-			// Skip if key is not a string or is empty.
-			if (is_string($key) === false || empty($key) === true) {
-				continue;
-			}
-
-			$currentPath = $key;
-			if ($prefix !== '') {
-				$currentPath = $prefix . '.' . $key;
-			}
-
-			$propertyRelations = $this->scanPropertyForRelation(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties,
-				schema: $schema
-			);
-			$relations = array_merge($relations, $propertyRelations);
-		}//end foreach
-
-		return $relations;
-	}//end scanForRelations()
-
-	/**
-	 * Scan a single property value for relations (UUIDs and URLs)
-	 *
-	 * Checks the property type and delegates to the appropriate handler
-	 * for arrays, nested objects, or scalar string values.
-	 *
-	 * @param string $key The property key name
-	 * @param mixed $value The property value to scan
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 * @param Schema|null $schema The schema for recursive scanning
-	 *
-	 * @return array Relations found in this property
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanPropertyForRelation(
-		string $key,
-		mixed $value,
-		string $currentPath,
-		?array $schemaProperties,
-		?Schema $schema,
-	): array {
-		if (is_array($value) === true && empty($value) === false) {
-			return $this->scanArrayForRelations(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties,
-				schema: $schema
-			);
-		}
-
-		if (is_string($value) === true && empty($value) === false && trim($value) !== '') {
-			return $this->scanStringForRelation(
-				key: $key,
-				value: $value,
-				currentPath: $currentPath,
-				schemaProperties: $schemaProperties
-			);
-		}
-
-		return [];
-	}//end scanPropertyForRelation()
-
-	/**
-	 * Scan an array value for relations by iterating its items
-	 *
-	 * Handles both arrays of objects (schema-typed) and generic arrays,
-	 * recursing into nested structures and identifying string references.
-	 *
-	 * @param string $key The property key name
-	 * @param array $value The array value to scan
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 * @param Schema|null $schema The schema for recursive scanning
-	 *
-	 * @return array Relations found in the array items
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Array scanning requires type-checking each element
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanArrayForRelations(
-		string $key,
-		array $value,
-		string $currentPath,
-		?array $schemaProperties,
-		?Schema $schema,
-	): array {
-		$relations = [];
-
-		// Check if this is an array property in the schema.
-		$propertyConfig = $schemaProperties[$key] ?? null;
-		$isArrayOfObjects = $propertyConfig !== null
-						  && ($propertyConfig['type'] ?? '') === 'array'
-						  && isset($propertyConfig['items']['type'])
-						  && $propertyConfig['items']['type'] === 'object';
-
-		foreach ($value as $index => $item) {
-			if (is_array($item) === true) {
-				// Recursively scan nested arrays/objects.
-				$itemRelations = $this->scanForRelations(
-					data: $item,
-					prefix: $currentPath . '.' . $index,
-					schema: $schema
-				);
-				$relations = array_merge($relations, $itemRelations);
-				continue;
-			}
-
-			if (is_string($item) === false || empty($item) === true) {
-				continue;
-			}
-
-			if ($isArrayOfObjects === true) {
-				// String values in object arrays are always treated as relations.
-				$relations[$currentPath . '.' . $index] = $item;
-				continue;
-			}
-
-			// For non-object arrays, record only genuine references.
-			if ($this->isRecordableReference(value: $item) === true) {
-				$relations[$currentPath . '.' . $index] = $item;
-			}
-		}//end foreach
-
-		return $relations;
-	}//end scanArrayForRelations()
-
-	/**
-	 * Check if a string property value is a relation based on schema config or reference patterns
-	 *
-	 * Uses schema property type/format to determine relation status first,
-	 * then falls back to reference pattern matching.
-	 *
-	 * @param string $key The property key name
-	 * @param string $value The string value to check
-	 * @param string $currentPath The current dot-notation path
-	 * @param array|null $schemaProperties The schema properties definition
-	 *
-	 * @return array Relations found (empty array or single-element array)
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function scanStringForRelation(
-		string $key,
-		string $value,
-		string $currentPath,
-		?array $schemaProperties,
-	): array {
-		$propertyConfig = null;
-		if ($schemaProperties !== null && isset($schemaProperties[$key]) === true) {
-			$propertyConfig = $schemaProperties[$key];
-		}
-
-		if ($this->isRecordableReference(value: $value, propertyConfig: $propertyConfig) === true) {
-			return [$currentPath => $value];
-		}
-
-		return [];
-	}//end scanStringForRelation()
 
 	/**
 	 * Drop the decision-table rows the single save would have refused.

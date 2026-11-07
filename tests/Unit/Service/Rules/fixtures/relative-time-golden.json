@@ -1,0 +1,1802 @@
+{
+    "both comparisons": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "both comparisons bad lessThan": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "both comparisons lessThan first": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "declaration scalar": {
+        "calendar": {
+            "refusalFor": {
+                "result": "\"$age\" must be an object naming a property and a comparison"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must be an object naming a property and a comparison",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must be an object naming a property and a comparison",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" must be an object naming a property and a comparison"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must be an object naming a property and a comparison",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must be an object naming a property and a comparison",
+                "previous": null
+            }
+        }
+    },
+    "empty date": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        }
+    },
+    "empty property": {
+        "calendar": {
+            "refusalFor": {
+                "result": "\"$age\" must name the date property it compares"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" must name the date property it compares"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            }
+        }
+    },
+    "exactly at threshold": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "just after threshold": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 1 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 1 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-13T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-13T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 1 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 1 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 2.5 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-09T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 2.5 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-11T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-11T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 2.5 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 2.5 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T02:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 3 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-09T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 3 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "lessThan 3 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 3 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-14T00:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 40 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-07-20T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "lessThan 40 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-08-05T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-08-05T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "lessThan 40 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-12T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-12T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "lessThan 40 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2026-09-07T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "max value": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2025-07-24T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": ">",
+                    "value": "2025-07-24T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "missing date": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        }
+    },
+    "missing unit": {
+        "calendar": {
+            "refusalFor": {
+                "result": "unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 1 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 1 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-13T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-13T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 1 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 1 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 2.5 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-09T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 2.5 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-11T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-11T21:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 2.5 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 2.5 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T02:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 3 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-09T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 3 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-11T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "moreThan 3 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T06:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 3 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T00:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 40 businessDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-07-20T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in businessDays, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "moreThan 40 calendarDays": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-08-05T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-08-05T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        }
+    },
+    "moreThan 40 hours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-12T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-12T17:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "moreThan 40 workingHours": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-07T09:30:00+02:00"
+                }
+            },
+            "holds": {
+                "result": false
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" is counted in workingHours, and no working calendar resolves for this schema; it would silently become wall-clock time, which is a different deadline",
+                "previous": null
+            }
+        }
+    },
+    "negative value": {
+        "calendar": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        }
+    },
+    "no comparison": {
+        "calendar": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" must declare one of moreThan or lessThan"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" must declare one of moreThan or lessThan",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" must declare one of moreThan or lessThan",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" on \"createdAt\" must declare one of moreThan or lessThan"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" must declare one of moreThan or lessThan",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" on \"createdAt\" must declare one of moreThan or lessThan",
+                "previous": null
+            }
+        }
+    },
+    "no property": {
+        "calendar": {
+            "refusalFor": {
+                "result": "\"$age\" must name the date property it compares"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"$age\" must name the date property it compares"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"$age\" must name the date property it compares",
+                "previous": null
+            }
+        }
+    },
+    "number date": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds no readable date on this object",
+                "previous": null
+            }
+        }
+    },
+    "numeric string value": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T07:00:00+02:00"
+                }
+            },
+            "holds": {
+                "result": true
+            }
+        }
+    },
+    "offset scalar": {
+        "calendar": {
+            "refusalFor": {
+                "result": "\"lessThan\" on \"createdAt\" must be {value, unit}"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"lessThan\" on \"createdAt\" must be {value, unit}",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"lessThan\" on \"createdAt\" must be {value, unit}",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "\"lessThan\" on \"createdAt\" must be {value, unit}"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"lessThan\" on \"createdAt\" must be {value, unit}",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"lessThan\" on \"createdAt\" must be {value, unit}",
+                "previous": null
+            }
+        }
+    },
+    "plain node": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: the node is not a relative-time condition",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: the node is not a relative-time condition",
+                "previous": null
+            }
+        }
+    },
+    "scalar": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: the node is not a relative-time condition",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: the node is not a relative-time condition",
+                "previous": null
+            }
+        }
+    },
+    "text value": {
+        "calendar": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        }
+    },
+    "too large value": {
+        "calendar": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        }
+    },
+    "unknown unit": {
+        "calendar": {
+            "refusalFor": {
+                "result": "unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: unit \"weeks\" on \"createdAt\" is refused: use one of hours, workingHours, calendarDays, businessDays",
+                "previous": null
+            }
+        }
+    },
+    "unreadable date": {
+        "calendar": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds \"not a date\", which is not a date",
+                "previous": "DateMalformedStringException"
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": null
+            },
+            "compile": {
+                "result": {
+                    "property": "createdAt",
+                    "operator": "<=",
+                    "value": "2026-09-14T08:30:00+02:00"
+                }
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: \"createdAt\" holds \"not a date\", which is not a date",
+                "previous": "DateMalformedStringException"
+            }
+        }
+    },
+    "zero value": {
+        "calendar": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        },
+        "none": {
+            "refusalFor": {
+                "result": "offset on \"createdAt\" must be a positive number no greater than 10000"
+            },
+            "compile": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            },
+            "holds": {
+                "threw": "OCA\\OpenRegister\\Service\\Rules\\ConditionRefusedException",
+                "message": "[Rules] condition \"$age\" could not be resolved: offset on \"createdAt\" must be a positive number no greater than 10000",
+                "previous": null
+            }
+        }
+    }
+}
