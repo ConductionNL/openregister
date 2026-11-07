@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Service\Configuration
  */
-class GitLabHandler {
+class GitLabHandler implements GitLabHandlerInterface {
 
 	/**
 	 * GitLab API base URL (can be configured for self-hosted instances)

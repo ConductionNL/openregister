@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class AutoTransitionSelector {
+class AutoTransitionSelector implements AutoTransitionSelectorInterface {
 
 	/**
 	 * Constructor.
