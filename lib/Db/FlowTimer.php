@@ -141,6 +141,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreatedBy(?string $createdBy)
  */
 class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Lifecycle states. Nothing else is persistable; there is NO overdue state.
@@ -556,17 +557,18 @@ class FlowTimer extends Entity implements JsonSerializable, FlowTimerInterface {
 	}//end isEnforcing()
 
 	/**
-	 * Serialise for the API. Carries NO overdue flag: that is derived by the reader.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<string, mixed> The timer.
+	 * The API form carries NO overdue flag: that is derived by the reader.
+	 *
+	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
-	public function jsonSerialize(): array {
-		$json = (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
-		$json['rollToWorkingDay'] = ($this->rollToWorkingDay ?? 'none');
-
-		return $json;
-	}//end jsonSerialize()
+	protected function jsonOverrides(): array {
+		return [
+			'rollToWorkingDay' => ($this->rollToWorkingDay ?? 'none'),
+		];
+	}//end jsonOverrides()
 
 }//end class

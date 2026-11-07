@@ -59,6 +59,7 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  */
 class FlowTimerEvent extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * Event types.
@@ -177,15 +178,4 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The event.
-	 *
-	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
-	 */
-	public function jsonSerialize(): array {
-		return (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
-	}//end jsonSerialize()
 }//end class

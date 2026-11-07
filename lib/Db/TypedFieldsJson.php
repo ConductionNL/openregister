@@ -66,6 +66,45 @@ final class TypedFieldsJson {
 	}//end pick()
 
 	/**
+	 * The same entries with some keys renamed, in the same order.
+	 *
+	 * @param array<string, mixed>  $json  The serialised fields.
+	 * @param array<string, string> $names Field name to the key it is serialised under.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec exclude shared entity plumbing, not a capability of its own
+	 */
+	public function renamed(array $json, array $names): array {
+		$renamed = [];
+		foreach ($json as $key => $value) {
+			$renamed[($names[$key] ?? $key)] = $value;
+		}
+
+		return $renamed;
+	}//end renamed()
+
+	/**
+	 * The same entries with new ones placed right after the key they are listed under.
+	 *
+	 * @param array<string, mixed>                $json         The serialised fields.
+	 * @param array<string, array<string, mixed>> $entriesAfter Key to the new entries that follow it.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec exclude shared entity plumbing, not a capability of its own
+	 */
+	public function inserted(array $json, array $entriesAfter): array {
+		$inserted = [];
+		foreach ($json as $key => $value) {
+			$inserted[$key] = $value;
+			$inserted += ($entriesAfter[$key] ?? []);
+		}
+
+		return $inserted;
+	}//end inserted()
+
+	/**
 	 * One value, a date-time formatted.
 	 *
 	 * @param mixed $value The stored value.

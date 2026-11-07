@@ -8,7 +8,9 @@
  * test rebuilds the same snapshot from the current code and requires it to be
  * identical: field types in registration order, the serialised form of an
  * empty, a filled and two hydrated instances, the fields each marks updated,
- * and which setters refuse a sample value.
+ * and which setters refuse a sample value. A timestamp within an hour of the
+ * current time (a blank date-time hydrates to "now") is recorded as "now", so
+ * the snapshot does not depend on today's date.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -202,13 +204,37 @@ class EntitySnapshotGoldenTest extends TestCase {
 		}
 
 		if ($value instanceof DateTimeInterface) {
-			return get_class($value) . '@' . $value->format('c');
+			return get_class($value) . '@' . self::moment($value->format('c'));
 		}
 
 		if (is_object($value) === true) {
 			return get_class($value) . ':' . json_encode($value);
 		}
 
+		if (is_string($value) === true) {
+			return self::moment($value);
+		}
+
 		return $value;
 	}//end plain()
+
+	/**
+	 * A timestamp near the current time, as a blank date-time hydrates to, read as "now".
+	 *
+	 * @param string $value The value.
+	 *
+	 * @return string
+	 */
+	private static function moment(string $value): string {
+		if (preg_match('/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/', $value) !== 1) {
+			return $value;
+		}
+
+		$time = strtotime($value);
+		if ($time !== false && abs($time - time()) < 3600) {
+			return 'now';
+		}
+
+		return $value;
+	}//end moment()
 }//end class

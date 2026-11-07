@@ -57,6 +57,7 @@ use OCP\AppFramework\Db\Entity;
  * @link https://OpenRegister.app
  */
 class FlowState extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The uuid of the flow this state belongs to.
@@ -92,14 +93,13 @@ class FlowState extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * Serialise for API output.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array The serialised state.
+	 * @return array<string, mixed>
 	 */
-	public function jsonSerialize(): array {
-		$json = (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this));
-		$json['state'] = ($this->state ?? []);
-
-		return $json;
-	}//end jsonSerialize()
+	protected function jsonOverrides(): array {
+		return [
+			'state' => ($this->state ?? []),
+		];
+	}//end jsonOverrides()
 }//end class
