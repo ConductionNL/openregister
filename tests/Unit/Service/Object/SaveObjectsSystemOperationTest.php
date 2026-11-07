@@ -38,6 +38,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -79,20 +83,12 @@ class SaveObjectsSystemOperationTest extends TestCase {
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->service = new SaveObjects(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SaveObject::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(LoggerInterface::class),
-			null,
-			null,
-			null,
-			$this->dispatcher,
+			stores: new BulkSaveStores(objectEntityMapper: $this->createMock(MagicMapper::class), schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class), groupManager: null),
 			// No AuditTrailMapper: this test is about EVENTS, and a null mapper
 			// skips the audit branch entirely rather than needing it stubbed.
-			null
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class), eventDispatcher: $this->dispatcher, auditTrailMapper: null),
+			checks: new BulkRowChecks(permissionHandler: null, validateHandler: null, rowRules: null)
 		);
 
 	}//end setUp()
