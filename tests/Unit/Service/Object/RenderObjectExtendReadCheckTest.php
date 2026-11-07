@@ -22,7 +22,7 @@ use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -71,8 +71,8 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 	/** @var MagicMapper&MockObject */
 	private MagicMapper $mapper;
 
-	/** @var PermissionHandler&MockObject */
-	private PermissionHandler $permissions;
+	/** @var PermissionHandlerInterface&MockObject */
+	private PermissionHandlerInterface $permissions;
 
 	/** @var CacheHandler&MockObject */
 	private CacheHandler $cache;
@@ -83,7 +83,7 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$this->mapper->method('filterReadableUuids')->willReturnCallback(
 			static fn (int $registerId, int $schemaId, array $uuids): array => array_values(array_intersect($uuids, [self::OPEN]))
 		);
-		$this->permissions = $this->createMock(PermissionHandler::class);
+		$this->permissions = $this->createMock(PermissionHandlerInterface::class);
 		$this->permissions->method('hasPermission')->willReturnCallback(
 			static fn (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac, ?ObjectEntity $object): bool
 				=> $object?->getUuid() !== self::CLOSED
@@ -160,7 +160,7 @@ class RenderObjectExtendReadCheckTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id): object {
-				if ($id === PermissionHandler::class) {
+				if ($id === PermissionHandlerInterface::class) {
 					return $this->permissions;
 				}
 

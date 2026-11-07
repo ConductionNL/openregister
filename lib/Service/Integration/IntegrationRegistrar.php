@@ -187,7 +187,7 @@ final class IntegrationRegistrar {
 						),
 						access: new ObjectIntegrationsAccess(
 							visibility: $container->get(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface::class),
-							permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandler::class)
+							permissions: $container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class)
 						),
 						logger: $container->get('Psr\Log\LoggerInterface')
 					)

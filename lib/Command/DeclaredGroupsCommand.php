@@ -8,7 +8,7 @@
  *
  * Read-only. Exists because provisioning solved half the problem: a declared
  * group now always EXISTS, but one nobody belongs to still denies every caller,
- * and `PermissionHandler::hasGroupPermission()` decides by membership test
+ * and `PermissionHandlerInterface::hasGroupPermission()` decides by membership test
  * alone — so an unpopulated group is indistinguishable from a correctly
  * configured one until someone is refused.
  *

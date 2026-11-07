@@ -23,7 +23,7 @@
  *     decision, once, in code review;
  *  2. the CALLER holds OpenRegister's own object-RBAC permission on the
  *     SUBJECT object named in the request — evaluated on every call, the
- *     same {@see \OCA\OpenRegister\Service\Object\PermissionHandler} the
+ *     same {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface} the
  *     patch/create object-op path already goes through.
  *
  * `flow.run` (the flow named-rights matrix `FlowAccess` guards) is
@@ -65,7 +65,7 @@ use OCA\OpenRegister\Service\Flow\FlowUnattributed;
 use OCA\OpenRegister\Service\Flow\IFlowDirectlyInvokable;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -156,9 +156,9 @@ class FlowNodeRunController extends Controller {
 	/**
 	 * The SAME object-RBAC evaluator the
 	 *
-	 * @var PermissionHandler
+	 * @var PermissionHandlerInterface
 	 */
-	private readonly PermissionHandler $permissions;
+	private readonly PermissionHandlerInterface $permissions;
 
 	/**
 	 * Constructor.

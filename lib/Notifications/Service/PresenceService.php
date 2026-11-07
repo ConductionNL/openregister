@@ -19,7 +19,7 @@
  * arrival precisely so the caller cannot get that wrong.
  *
  * 🔴 PRESENCE NEVER REVEALS AN OBJECT (D-3). The list is served to whoever may
- * read the object and the push goes to the users `PermissionHandler` resolves
+ * read the object and the push goes to the users `PermissionHandlerInterface` resolves
  * for it, which is the same rule the object itself is under. A presence list
  * that answered more widely than the object would be a way to learn that an
  * object exists, and who is interested in it, without being allowed to read it.

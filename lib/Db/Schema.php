@@ -1371,7 +1371,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		);
 
 		// Reserved non-action authorization flags. These are cascade/behaviour
-		// toggles read at runtime by PermissionHandler, not CRUD rule sets.
+		// toggles read at runtime by PermissionHandlerInterface, not CRUD rule sets.
 		$reservedFlags = ['inheritFromPublic'];
 
 		foreach ($authorization as $action => $rules) {
@@ -1832,7 +1832,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return bool True if the group has permission for the action
 	 *
 	 * @deprecated This is a pre-unification duplicate of the RBAC matcher. The
-	 *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasPermission()}
+	 *             canonical evaluators are {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::hasPermission()}
 	 *             (PHP-side) and {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}
 	 *             (SQL-side), both of which delegate conditional match evaluation
 	 *             to {@see \OCA\OpenRegister\Service\ConditionMatcher}. This method
@@ -1874,7 +1874,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 		// (non-empty block), an action that is not explicitly listed is denied —
 		// including the `public` pseudo-group. The empty-block open-default above
 		// and the admin/owner bypasses still apply. Kept consistent with the
-		// active enforcement paths (PermissionHandler / MagicRbacHandler) even
+		// active enforcement paths (PermissionHandlerInterface / MagicRbacHandler) even
 		// though this entity-level helper currently has no lib/ enforcement callers.
 		if (empty($this->authorization[$action]) === true) {
 			return false;

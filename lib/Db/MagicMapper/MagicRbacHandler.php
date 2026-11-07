@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
@@ -188,7 +189,7 @@ class MagicRbacHandler {
 	/**
 	 * The deny enforcement switch.
 	 *
-	 * Read here and in {@see \OCA\OpenRegister\Service\Object\PermissionHandler},
+	 * Read here and in {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface},
 	 * and nowhere else, so the list query and the per-object read cannot end up
 	 * in different modes inside one request. Nullable-with-default and
 	 * equivalent when freshly built, like the resolvers above: it reads the same
@@ -445,7 +446,7 @@ class MagicRbacHandler {
 	 * from a list would be enforcement wearing a different label, and because
 	 * the total and the facet counts are exactly what it would change. The
 	 * recording happens on the read path in
-	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandler}, where there is
+	 * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface}, where there is
 	 * a row to name; a list has none yet at the point the SQL is built.
 	 *
 	 * @param array|null  $authorization The schema/register block (no object).
@@ -841,7 +842,7 @@ class MagicRbacHandler {
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.
 	 *
-	 * Delegates to PermissionHandler::resolveInheritFromPublic() (cascade:
+	 * Delegates to PermissionHandlerInterface::resolveInheritFromPublic() (cascade:
 	 * schema → register → IAppConfig → true) via the container so the SQL
 	 * emitters and the PHP-side check honour the flag identically. Fails safe
 	 * to `true` (the pre-flag behaviour) if resolution errors.
@@ -854,15 +855,15 @@ class MagicRbacHandler {
 	 */
 	private function authenticatedInheritsPublic(Schema $schema): bool {
 		try {
-			return $this->container->get(PermissionHandler::class)->resolveInheritFromPublic(schema: $schema);
+			return $this->container->get(PermissionHandlerInterface::class)->resolveInheritFromPublic(schema: $schema);
 		} catch (\Throwable $e) {
 			// Fail to the configured tenant posture rather than a hard-coded
 			// grant, so a cluster-wide lock-down (rbac.inherit_from_public_default
 			// = false) is not silently softened on this code path. Symmetric with
-			// PermissionHandler::resolveInheritFromPublic()'s own fail-safe.
+			// PermissionHandlerInterface::resolveInheritFromPublic()'s own fail-safe.
 			$fallback = true;
 			try {
-				$fallback = $this->container->get(PermissionHandler::class)->inheritFromPublicTenantDefault();
+				$fallback = $this->container->get(PermissionHandlerInterface::class)->inheritFromPublicTenantDefault();
 			} catch (\Throwable $inner) {
 				$fallback = $this->appConfig->getValueBool(
 					app: 'openregister',
@@ -1138,7 +1139,7 @@ class MagicRbacHandler {
 		}
 
 		// User-level override (delegation): a bare `user:<uid>` rule grants the
-		// action to that one user on the LIST path, mirroring PermissionHandler's
+		// action to that one user on the LIST path, mirroring PermissionHandlerInterface's
 		// single-object verdict (rbac-zaaktype). Fail closed: anonymous users and
 		// non-matching uids never qualify. Additive — never widens group access.
 		if ($this->matchesUserOverride(rule: $rule, userId: $userId) === true) {
@@ -1158,7 +1159,7 @@ class MagicRbacHandler {
 	 * that grants access to the current user.
 	 *
 	 * Shared by the QueryBuilder, raw-SQL, and multitenancy-bypass paths so the
-	 * three LIST emitters agree with PermissionHandler's single-object verdict.
+	 * three LIST emitters agree with PermissionHandlerInterface's single-object verdict.
 	 * SECURITY: exact-uid match only; anonymous principals never match; the
 	 * `user:` prefix with a blank uid never matches.
 	 *
@@ -1695,7 +1696,7 @@ class MagicRbacHandler {
 		// its scope and nothing puts it back — and the object-level deny an
 		// author is most likely to write is precisely one about a row somebody
 		// owns. Administrators returned above and stay exempt, for the reason
-		// {@see \OCA\OpenRegister\Service\Object\PermissionHandler::denialFor()}
+		// {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::denialFor()}
 		// gives: an access model that can deny its own administration away is
 		// recoverable only from the database.
 		if ($this->deniesHere(check: $check) === true) {
@@ -1773,11 +1774,11 @@ class MagicRbacHandler {
 	 * The cascaded block (schema-level, else the register's block with its roles
 	 * expanded, with the `mcp` scope stripped) is the same block both list
 	 * emitters filter on. An empty block is open to everyone; a non-empty block
-	 * that does not list the action denies it (consistent with PermissionHandler).
+	 * that does not list the action denies it (consistent with PermissionHandlerInterface).
 	 *
 	 * Conditional match evaluation is delegated to the shared
 	 * {@see \OCA\OpenRegister\Service\ConditionMatcher} (ADR-011), which also
-	 * serves PermissionHandler and PropertyRbacHandler; the SQL emitter handles
+	 * serves PermissionHandlerInterface and PropertyRbacHandler; the SQL emitter handles
 	 * the row-level path.
 	 *
 	 * @param RbacPermissionCheck $check The permission check.
@@ -1860,7 +1861,7 @@ class MagicRbacHandler {
 	 * Whether the caller is the subject of a conditional rule.
 	 *
 	 * The `authenticated` pseudo-group admits any logged-in user, independent
-	 * of real group membership, as both SQL emitters and PermissionHandler do.
+	 * of real group membership, as both SQL emitters and PermissionHandlerInterface do.
 	 *
 	 * @param RbacPermissionCheck $check The permission check.
 	 * @param array               $rule  The conditional rule.
@@ -2154,7 +2155,7 @@ class MagicRbacHandler {
 		// action no longer bypasses filtering (no early `bypass => true`). Flow
 		// falls through to the owner conditions; unmatched callers (e.g.
 		// anonymous) get the deny-all empty-conditions result — consistent with
-		// applyRbacFilters and PermissionHandler. Admins already returned; the
+		// applyRbacFilters and PermissionHandlerInterface. Admins already returned; the
 		// empty-block open-default above is unchanged.
 		$conditions = array_merge(
 			$ownerAdmits,
@@ -2873,7 +2874,7 @@ class MagicRbacHandler {
 	 * Two userless contexts are the system rather than a caller: the command
 	 * line (occ, repair steps, cron, background calculations), and code running
 	 * inside ObjectService::runAsSystem() (SystemOperationContext), which
-	 * PermissionHandler::hasPermission() already trusts. Without the second, a
+	 * PermissionHandlerInterface::hasPermission() already trusts. Without the second, a
 	 * calculation run by a system write in a WEB request (dossiq's portal Woo
 	 * intake resolving caseType and statusType) had every reference read
 	 * clamped to nothing.
@@ -3342,9 +3343,9 @@ class MagicRbacHandler {
 	/**
 	 * Resolve the effective authorization for a schema.
 	 *
-	 * Delegates to PermissionHandler::resolveAuthorization() which handles
+	 * Delegates to PermissionHandlerInterface::resolveAuthorization() which handles
 	 * register cascade and role expansion. Falls back to schema-only
-	 * authorization if PermissionHandler is not available.
+	 * authorization if PermissionHandlerInterface is not available.
 	 *
 	 * @param Schema $schema The schema to resolve authorization for.
 	 *
@@ -3354,7 +3355,7 @@ class MagicRbacHandler {
 	 */
 	private function resolveSchemaAuthorization(Schema $schema): ?array {
 		try {
-			$permissionHandler = $this->container->get(PermissionHandler::class);
+			$permissionHandler = $this->container->get(PermissionHandlerInterface::class);
 			return $permissionHandler->resolveAuthorization($schema);
 		} catch (AuthorizationUnresolvableException $e) {
 			// Fail-closed: propagate. Falling back to the schema's own (possibly
@@ -3362,7 +3363,7 @@ class MagicRbacHandler {
 			// now closes — `empty($authorization)` below means "open to all".
 			throw $e;
 		} catch (\Throwable $e) {
-			// Fallback to direct schema authorization if PermissionHandler unavailable.
+			// Fallback to direct schema authorization if PermissionHandlerInterface unavailable.
 			$this->logger->debug(
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]

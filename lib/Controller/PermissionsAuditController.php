@@ -310,7 +310,7 @@ class PermissionsAuditController extends Controller {
 	 * The role name to actions map a register declares.
 	 *
 	 * `extends` is not folded in here. The hierarchy is resolved in
-	 * PermissionHandler, and a second walk of it in a reporting endpoint could
+	 * PermissionHandlerInterface, and a second walk of it in a reporting endpoint could
 	 * disagree with the one that actually decides, which would make a comparison
 	 * screen confidently wrong.
 	 *

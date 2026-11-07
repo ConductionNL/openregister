@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 
 /**
@@ -35,13 +35,13 @@ final class PartySearch {
 	 * Bundle the services.
 	 *
 	 * @param PartySearchService $search      The capped party query.
-	 * @param PermissionHandler  $permissions The object-level permission check a party write asks.
+	 * @param PermissionHandlerInterface  $permissions The object-level permission check a party write asks.
 	 *
 	 * @spec openspec/specs/party-model/spec.md
 	 */
 	public function __construct(
 		public readonly PartySearchService $search,
-		public readonly PermissionHandler $permissions,
+		public readonly PermissionHandlerInterface $permissions,
 	) {
 	}//end __construct()
 }//end class

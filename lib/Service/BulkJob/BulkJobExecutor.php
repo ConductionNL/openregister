@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -73,7 +73,7 @@ class BulkJobExecutor {
 	 * @param BulkJobMemberMapperInterface $memberMapper Member persistence.
 	 * @param BulkSelectionResolver $resolver Selection resolution.
 	 * @param BulkActionRegistry $registry The catalogue of registered actions.
-	 * @param PermissionHandler $permissionHandler Per-object access checks.
+	 * @param PermissionHandlerInterface $permissionHandler Per-object access checks.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the access check.
 	 * @param AuditTrailMapperInterface $auditTrailMapper Audit entries per member.
 	 * @param IUserManager $userManager Actor lookup.
@@ -84,7 +84,7 @@ class BulkJobExecutor {
 		private readonly BulkJobMemberMapperInterface $memberMapper,
 		private readonly BulkSelectionResolver $resolver,
 		private readonly BulkActionRegistry $registry,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly IUserManager $userManager,

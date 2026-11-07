@@ -236,7 +236,7 @@ class ShareLinkService {
 	 * @return bool True when they do; false too when it cannot be asked.
 	 */
 	private function mayUpdateObject(?object $entity): bool {
-		$permissions = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandler');
+		$permissions = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\Object\\PermissionHandlerInterface');
 		$schemas = $this->lookup(serviceName: 'OCA\\OpenRegister\\Db\\SchemaMapper');
 		if (($entity instanceof ObjectEntity) === false || $permissions === null || $schemas === null) {
 			return false;

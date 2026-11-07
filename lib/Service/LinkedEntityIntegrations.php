@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * The integration registry, the deep-link registry and the permission handler of the linked entity service.
@@ -35,14 +35,14 @@ final class LinkedEntityIntegrations {
 	 * Bundle the collaborators.
 	 *
 	 * @param IntegrationRegistry     $integrationRegistry Integration registry, the authoritative type-id source
-	 * @param PermissionHandler       $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
+	 * @param PermissionHandlerInterface       $permissionHandler   RBAC handler for write-permission checks (SEC-CTRL-4)
 	 * @param DeepLinkRegistryService $deepLinkRegistry    Deep-link registry service for cross-app deep links
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
 		public readonly IntegrationRegistry $integrationRegistry,
-		public readonly PermissionHandler $permissionHandler,
+		public readonly PermissionHandlerInterface $permissionHandler,
 		public readonly DeepLinkRegistryService $deepLinkRegistry,
 	) {
 	}//end __construct()

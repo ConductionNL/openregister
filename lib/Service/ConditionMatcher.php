@@ -261,7 +261,7 @@ class ConditionMatcher {
 	 *
 	 * When a property has been expanded into its full related object (array with
 	 * an 'id' key), RBAC conditions still compare against the scalar id. Mirrors
-	 * the behaviour of the pre-unification PermissionHandler::evaluateMatchConditions
+	 * the behaviour of the pre-unification PermissionHandlerInterface::evaluateMatchConditions
 	 * — without this, a rule like {"match": {"parent": "uuid-123"}} would flip from
 	 * allow to deny for any schema where "parent" is a resolved relation
 	 * (list-vs-find drift). Arrays without an 'id' key are not resolved relations

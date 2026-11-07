@@ -249,7 +249,7 @@ class RenderObject implements RenderObjectInterface {
 	 *        (registry-subscriptions) — NOT constructor-injected directly: that dependency
 	 *        chains ObjectService -> RenderObject -> RegistrySubscriptionService -> ObjectService,
 	 *        a cycle Nextcloud's container refuses to construct eagerly. Same lazy-resolution
-	 *        pattern PermissionHandler already uses for the same reason.
+	 *        pattern PermissionHandlerInterface already uses for the same reason.
 	 * @param LensResolver|null $lensResolver Resolves a schema's declared lenses at read time
 	 *        (objects-as-the-hinge-between-cases). Nullable-with-a-default because this class is
 	 *        constructed by hand in several tests, where a new required argument is a fatal; a
@@ -846,7 +846,7 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * Property `authorization.read` (group-based) stripping and field decryption REMAIN
 	 * `_rbac` / SystemOperationContext-gated: those are trusted-internal-read bypasses that
-	 * mirror PermissionHandler::hasPermission(), and are unchanged by #460.
+	 * mirror PermissionHandlerInterface::hasPermission(), and are unchanged by #460.
 	 *
 	 * Strips the object body AND the `@self.relations` search index copy (#429), which is a
 	 * separate scalar mirror of reference-shaped values and therefore leaks a writeOnly
@@ -2722,7 +2722,7 @@ class RenderObject implements RenderObjectInterface {
 				$owner = null;
 			}
 
-			return $this->container->get(PermissionHandler::class)->hasPermission(
+			return $this->container->get(PermissionHandlerInterface::class)->hasPermission(
 				schema: $schema,
 				action: 'read',
 				objectOwner: $owner,
@@ -2944,7 +2944,7 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * Property `authorization.read` stripping is rbac-gated: it is bypassed for
 	 * `_rbac: false` reads and during a SystemOperationContext, mirroring
-	 * PermissionHandler::hasPermission().
+	 * PermissionHandlerInterface::hasPermission().
 	 *
 	 * @param ObjectEntity $entity     The entity being rendered
 	 * @param Schema|null  $schema     The object's schema
@@ -3563,7 +3563,7 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * Opt-in through `_extend[]=@self.can`, because it costs one permission
 	 * evaluation per row and only the records list's in-place editor asks for
-	 * it. The verdict is PermissionHandler's own (schema, owner and conditional
+	 * it. The verdict is PermissionHandlerInterface's own (schema, owner and conditional
 	 * rules), so the list never offers an edit the save would refuse on rights.
 	 * Resolved through the container like the markers above, to keep the
 	 * render layer free of a construction cycle. A failure leaves the marker
@@ -3609,7 +3609,7 @@ class RenderObject implements RenderObjectInterface {
 	}//end asksForRights()
 
 	/**
-	 * Set the `can` marker: the actions the caller may run, and PermissionHandler's verdict on update.
+	 * Set the `can` marker: the actions the caller may run, and PermissionHandlerInterface's verdict on update.
 	 *
 	 * @param ObjectEntity $entity The entity being rendered.
 	 * @param Schema       $schema The object's schema.
@@ -3623,7 +3623,7 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		$permissions = $this->container->get(PermissionHandler::class);
+		$permissions = $this->container->get(PermissionHandlerInterface::class);
 		$owner       = $entity->getOwner();
 		if (is_string($owner) === false) {
 			$owner = null;

@@ -71,7 +71,7 @@ class GraphQLSubscriptionController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded downstream: SubscriptionService filters every streamed event through
-	 *   verifyEventRBAC -> PermissionHandler::hasPermission(schema,'read'); non-readable schemas are never streamed.
+	 *   verifyEventRBAC -> PermissionHandlerInterface::hasPermission(schema,'read'); non-readable schemas are never streamed.
 	 *
 	 * @CORS
 	 *

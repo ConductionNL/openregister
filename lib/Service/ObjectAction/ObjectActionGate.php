@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IL10N;
@@ -51,13 +51,13 @@ class ObjectActionGate {
 	/**
 	 * Constructor.
 	 *
-	 * @param PermissionHandler $permissions The authorization block's judge, and its app matrix rows.
+	 * @param PermissionHandlerInterface $permissions The authorization block's judge, and its app matrix rows.
 	 * @param IUserSession      $userSession The acting user.
 	 * @param IL10N             $l10n        Picks the reason's language.
 	 * @param ObjectActionElevationEntries $elevation Resolves an action's `elevate` entries.
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissions,
+		private readonly PermissionHandlerInterface $permissions,
 		private readonly IUserSession $userSession,
 		private readonly IL10N $l10n,
 		private readonly ObjectActionElevationEntries $elevation,

@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
  * The timeline visibility filter and the object update right the integrations API applies.
@@ -35,13 +35,13 @@ final class ObjectIntegrationsAccess {
 	 * Bundle the services.
 	 *
 	 * @param TimelineVisibilityServiceInterface $visibility  Internal/public filter for the timeline leaves.
-	 * @param PermissionHandler                  $permissions Answers the object update right for integration writes.
+	 * @param PermissionHandlerInterface                  $permissions Answers the object update right for integration writes.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-19
 	 */
 	public function __construct(
 		public readonly TimelineVisibilityServiceInterface $visibility,
-		public readonly PermissionHandler $permissions,
+		public readonly PermissionHandlerInterface $permissions,
 	) {
 	}//end __construct()
 }//end class

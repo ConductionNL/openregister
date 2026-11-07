@@ -34,7 +34,7 @@ use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCA\OpenRegister\Search\Service\GraphQL\QueryComplexityAnalyzer;
 use OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\IAppConfig;
 use OCP\IRequest;
@@ -141,7 +141,7 @@ class GraphQLServiceGoldenTest extends TestCase {
 			GraphQLErrorFormatter::class     => $formatter,
 			GraphQLResolver::class           => $this->createMock(GraphQLResolver::class),
 			ObjectOperationsInterface::class => $this->createMock(ObjectOperationsInterface::class),
-			PermissionHandler::class         => $this->createMock(PermissionHandler::class),
+			PermissionHandlerInterface::class         => $this->createMock(PermissionHandlerInterface::class),
 			PropertyRbacHandler::class       => $this->createMock(PropertyRbacHandler::class),
 			AuditTrailMapperInterface::class => $this->createMock(AuditTrailMapperInterface::class),
 			RegisterMapperInterface::class   => $this->createMock(RegisterMapperInterface::class),
@@ -242,7 +242,7 @@ class GraphQLServiceGoldenTest extends TestCase {
 			array_keys($this->context ?? [])
 		);
 		$this->assertSame($this->deps[ObjectOperationsInterface::class], $this->context['objectService']);
-		$this->assertSame($this->deps[PermissionHandler::class], $this->context['permissionHandler']);
+		$this->assertSame($this->deps[PermissionHandlerInterface::class], $this->context['permissionHandler']);
 		$this->assertSame($this->deps[PropertyRbacHandler::class], $this->context['propertyRbac']);
 		$this->assertSame($this->deps[AuditTrailMapperInterface::class], $this->context['auditTrailMapper']);
 		$this->assertSame($this->deps[RegisterMapperInterface::class], $this->context['registerMapper']);

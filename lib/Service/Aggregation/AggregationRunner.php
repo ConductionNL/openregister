@@ -53,7 +53,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -156,7 +156,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * @param PlaceholderResolverInterface $placeholders Resolves dynamic placeholders inside filters.
 	 * @param IDBConnection $db Database connection for the Postgres-native fast path.
 	 * @param AggregationCacheInterface $cache 60s aggregation result cache.
-	 * @param PermissionHandler $permissionHandler RBAC verdict on the schema's `list` action.
+	 * @param PermissionHandlerInterface $permissionHandler RBAC verdict on the schema's `list` action.
 	 * @param IUserSession $userSession Active session, for the RBAC + cache-key user scope.
 	 * @param OrganisationServiceInterface $organisationService Active-organisation lookup for the cache key.
 	 * @param MagicOrganizationHandler $organizationHandler Owns the organisation-boundary decision the native SQL renders.
@@ -185,7 +185,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		private readonly PlaceholderResolverInterface $placeholders,
 		private readonly IDBConnection $db,
 		private readonly AggregationCacheInterface $cache,
-		private readonly PermissionHandler $permissionHandler,
+		private readonly PermissionHandlerInterface $permissionHandler,
 		private readonly IUserSession $userSession,
 		private readonly OrganisationServiceInterface $organisationService,
 		private readonly MagicOrganizationHandler $organizationHandler,
@@ -3684,7 +3684,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 * first three are the ones the cross-schema `from` path relies on; the
 	 * fourth was missing and cost a cross-tenant read (see $extraFilter below):
 	 *  1. An explicit `list` permission gate on the JOINED schema via
-	 *     {@see PermissionHandler::hasPermission()}, refusing with
+	 *     {@see PermissionHandlerInterface::hasPermission()}, refusing with
 	 *     RuntimeException('Forbidden: ...') before a single row is read.
 	 *  2. Tenancy: the joined aggregate runs through the same
 	 *     {@see tryNativeAggregation()} (which appends the
@@ -4457,7 +4457,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 		// owner-context to gate against. The owner-specific branch of
 		// permissionHandler->hasPermission() only applies when both
 		// $userId and $objectOwner are non-null. The corresponding
-		// `object: null` reinforces this: PermissionHandler treats the
+		// `object: null` reinforces this: PermissionHandlerInterface treats the
 		// (null, null) pair as the list-level form.
 		$userId = $this->userSession->getUser()?->getUID();
 		if ($bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {

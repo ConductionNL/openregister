@@ -926,7 +926,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// NC's IResult (OC\DB\ResultAdapter) does not expose Doctrine's
 		// fetchAllAssociative() on every supported server (absent on NC 32) —
 		// calling it throws "undefined method". This method runs inside the
-		// PermissionHandler authorization resolver (getRegisterForSchema), whose
+		// PermissionHandlerInterface authorization resolver (getRegisterForSchema), whose
 		// catch re-throws as AuthorizationUnresolvableException and FAIL-CLOSES
 		// the action — so on NC 32 EVERY RBAC-checked read (find(): dashboard
 		// widgets, status-transition engine, single-object reads) is denied,

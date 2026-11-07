@@ -14,7 +14,7 @@
  * populates it. That is deliberate, but it means the empty state has to be
  * visible rather than silent; see {@see self::inventory()}.
  *
- * Why this exists: {@see \OCA\OpenRegister\Service\Object\PermissionHandler::hasGroupPermission()}
+ * Why this exists: {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::hasGroupPermission()}
  * resolves access by MEMBERSHIP test alone. A group that was never created is
  * indistinguishable from a group nobody belongs to — both deny every caller,
  * silently and with no error anywhere. A typo in an authorization block reads
