@@ -19,6 +19,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -50,10 +54,16 @@ final class D1InterfaceBindingsTest extends TestCase {
 		FlowRunMapper::class => [FlowRunMapperInterface::class, DbRegistrar::class, 'Db'],
 		MagicMapper::class => [MagicMapperInterface::class, DbRegistrar::class, 'Db'],
 		MappingMapper::class => [MappingMapperInterface::class, DbRegistrar::class, 'Db'],
+		RegisterMapper::class => [RegisterMapperInterface::class, DbRegistrar::class, 'Db'],
+		SchemaMapper::class => [SchemaMapperInterface::class, DbRegistrar::class, 'Db'],
 	];
 
 	/**
 	 * Class => the outside callers deliberately left naming it, relative to lib/.
+	 *
+	 * ObjectActionElevationEntries resolves the ids a permission elevation is
+	 * checked against; permission code is out of scope for this refactor, so
+	 * it keeps its concrete RegisterMapper and SchemaMapper.
 	 *
 	 * ExportHandler and ImportHandler are rewritten by the open flow
 	 * export/import PR (#5968); they and the registrar that builds them keep
@@ -67,6 +77,8 @@ final class D1InterfaceBindingsTest extends TestCase {
 			'Service/Configuration/ExportHandler.php',
 			'Service/Configuration/ImportHandler.php',
 		],
+		RegisterMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
+		SchemaMapper::class => ['Service/ObjectAction/ObjectActionElevationEntries.php'],
 	];
 
 	/**
