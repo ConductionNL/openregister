@@ -47,7 +47,7 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
- * @uses \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
+ * @covers \OCA\OpenRegister\Service\Flow\Timer\EscalationRule
  */
 class EscalationLadderGoldenTest extends TestCase {
 
