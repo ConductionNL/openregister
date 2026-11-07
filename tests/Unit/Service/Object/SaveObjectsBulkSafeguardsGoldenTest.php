@@ -25,6 +25,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -264,7 +268,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			'logger'              => $logger,
 		];
 		if ($wiring === 'legacy') {
-			return new SaveObjects(...$args);
+			return $this->built(args: $args);
 		}
 
 		if ($wiring !== 'no-groups') {
@@ -280,8 +284,24 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 			$args['rowRules'] = new BulkRowRules(propertyRbac: $this->propertyRbac(mode: $case['propertyRbac']));
 		}
 
-		return new SaveObjects(...$args);
+		return $this->built(args: $args);
 	}//end handler()
+
+	/**
+	 * The handler built from its collaborators, keyed by the collaborator they fill.
+	 *
+	 * @param array<string, mixed> $args The collaborators
+	 *
+	 * @return SaveObjects
+	 */
+	private function built(array $args): SaveObjects {
+		return new SaveObjects(
+			stores: new BulkSaveStores(objectEntityMapper: $args['objectEntityMapper'], schemaMapper: $args['schemaMapper'], registerMapper: $args['registerMapper'], saveHandler: $args['saveHandler']),
+			session: new BulkSaveSession(userSession: $args['userSession'], organisationService: $args['organisationService'], groupManager: ($args['groupManager'] ?? null)),
+			reporting: new BulkSaveReporting(logger: $args['logger']),
+			checks: new BulkRowChecks(permissionHandler: ($args['permissionHandler'] ?? null), validateHandler: ($args['validateHandler'] ?? null), rowRules: ($args['rowRules'] ?? null))
+		);
+	}//end built()
 
 	/**
 	 * The default schema argument: an entity (id 7), an id, or nothing.
