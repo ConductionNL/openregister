@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
+use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
 use OCP\Comments\NotFoundException;
 use Psr\Container\ContainerInterface;
@@ -43,10 +43,22 @@ use Throwable;
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
  */
 class ExampleSetNotes extends ExampleSetEngineRows {
+	use ExampleSetUserObjectRows;
+
 	/**
 	 * The note fields a fragment may set.
 	 */
 	public const FIELDS = ['user', 'objectUuid', 'message', 'createdAt'];
+
+	/**
+	 * The row in the unknown-field message.
+	 */
+	private const FIELD_WORD = 'note';
+
+	/**
+	 * The refusal for a row without its object.
+	 */
+	private const NEEDS_OBJECT = 'a note needs the object it is on (objectUuid)';
 
 	/**
 	 * The comment object type OpenRegister's notes live under.
@@ -98,21 +110,12 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-leave-notes-of-the-sets-own-accounts-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a note field a set may write';
+		$refusal = $this->userObjectRefusal(data: $data, users: $users);
+		if ($refusal !== '') {
+			return $refusal;
 		}
 
-		$user = (string) ($data['user'] ?? '');
-		if (in_array($user, $users, true) === false) {
-			return 'user "'.$user.'" is not an account the set creates or adopts';
-		}
-
-		if (is_string($data['objectUuid'] ?? null) === false || trim($data['objectUuid']) === '') {
-			return 'a note needs the object it is on (objectUuid)';
-		}
-
-		if (is_string($data['message'] ?? null) === false || trim($data['message']) === '') {
+		if ($this->isBlank(value: ($data['message'] ?? null)) === true) {
 			return 'a note needs a message';
 		}
 
@@ -137,14 +140,7 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 	public function write(string $app, string $key, array $data): array {
 		try {
 			$comments = $this->comments();
-			$comment  = $comments->create('users', (string) $data['user'], self::OBJECT_TYPE, (string) $data['objectUuid']);
-			$comment->setMessage((string) $data['message']);
-			$comment->setVerb('comment');
-			$moment = $this->moment(value: ($data['createdAt'] ?? null));
-			if ($moment !== null) {
-				$comment->setCreationDateTime($moment);
-			}
-
+			$comment  = $this->newComment(comments: $comments, data: $data);
 			$comments->save($comment);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
@@ -152,6 +148,26 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['id' => (string) $comment->getId()]];
 	}//end write()
+
+	/**
+	 * The note as a comment of the account on the object, with its message and, when given, its moment.
+	 *
+	 * @param ICommentsManager     $comments The comments manager.
+	 * @param array<string, mixed> $data     The filled fields.
+	 *
+	 * @return IComment
+	 */
+	private function newComment(ICommentsManager $comments, array $data): IComment {
+		$comment = $comments->create('users', (string) $data['user'], self::OBJECT_TYPE, (string) $data['objectUuid']);
+		$comment->setMessage((string) $data['message']);
+		$comment->setVerb('comment');
+		$moment = $this->moment(value: ($data['createdAt'] ?? null));
+		if ($moment !== null) {
+			$comment->setCreationDateTime($moment);
+		}
+
+		return $comment;
+	}//end newComment()
 
 	/**
 	 * Whether a written note is no longer there.
@@ -192,25 +208,6 @@ class ExampleSetNotes extends ExampleSetEngineRows {
 
 		return 'removed';
 	}//end revert()
-
-	/**
-	 * A date and time as written by `{{datetime:...}}`, or null.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
 
 	/**
 	 * The comments manager.

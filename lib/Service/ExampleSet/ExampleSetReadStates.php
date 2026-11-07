@@ -31,10 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
-use DateTime;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use Psr\Container\ContainerInterface;
-use Throwable;
 
 /**
  * Checks, writes, proves and takes away the read states of an example set.
@@ -42,10 +40,22 @@ use Throwable;
  * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
  */
 class ExampleSetReadStates extends ExampleSetEngineRows {
+	use ExampleSetUserObjectRows;
+
 	/**
 	 * The read-state fields a fragment may set.
 	 */
 	public const FIELDS = ['user', 'objectUuid', 'register', 'schema', 'seenAt'];
+
+	/**
+	 * The row in the unknown-field message.
+	 */
+	private const FIELD_WORD = 'read-state';
+
+	/**
+	 * The refusal for a row without its object.
+	 */
+	private const NEEDS_OBJECT = 'a read state needs the object that was opened (objectUuid)';
 
 	/**
 	 * Constructor.
@@ -92,18 +102,9 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a read-state field a set may write';
-		}
-
-		$user = (string) ($data['user'] ?? '');
-		if (in_array($user, $users, true) === false) {
-			return 'user "'.$user.'" is not an account the set creates or adopts';
-		}
-
-		if (is_string($data['objectUuid'] ?? null) === false || trim($data['objectUuid']) === '') {
-			return 'a read state needs the object that was opened (objectUuid)';
+		$refusal = $this->userObjectRefusal(data: $data, users: $users);
+		if ($refusal !== '') {
+			return $refusal;
 		}
 
 		if (isset($data['seenAt']) === true && $this->moment(value: $data['seenAt']) === null) {
@@ -125,29 +126,16 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$register = null;
-		if (isset($data['register']) === true) {
-			$register = (string) $data['register'];
-		}
-
-		$schema = null;
-		if (isset($data['schema']) === true) {
-			$schema = (string) $data['schema'];
-		}
-
-		try {
-			$this->mapper()->markSeen(
+		return $this->userObjectWrite(
+			write: fn () => $this->mapper()->markSeen(
 				userId: (string) $data['user'],
 				objectUuid: (string) $data['objectUuid'],
-				register: $register,
-				schema: $schema,
+				register: $this->textOrNull(value: ($data['register'] ?? null)),
+				schema: $this->textOrNull(value: ($data['schema'] ?? null)),
 				seenAt: $this->moment(value: ($data['seenAt'] ?? null))
-			);
-		} catch (Throwable $e) {
-			return ['error' => $e->getMessage(), 'entry' => null];
-		}
-
-		return ['error' => '', 'entry' => ['user' => (string) $data['user'], 'objectUuid' => (string) $data['objectUuid']]];
+			),
+			data: $data
+		);
 	}//end write()
 
 	/**
@@ -160,11 +148,9 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-say-which-objects-the-sets-own-accounts-opened-and-when
 	 */
 	public function lost(array $entry): bool {
-		try {
-			return $this->mapper()->findOne(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid']) === null;
-		} catch (Throwable) {
-			return true;
-		}
+		return $this->userObjectLost(
+			find: fn () => $this->mapper()->findOne(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid'])
+		);
 	}//end lost()
 
 	/**
@@ -177,33 +163,10 @@ class ExampleSetReadStates extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-takes-away-the-notes-and-read-states-a-set-wrote
 	 */
 	public function revert(array $entry): string {
-		try {
-			$this->mapper()->markUnread(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid']);
-		} catch (Throwable) {
-			return 'failed';
-		}
-
-		return 'removed';
+		return $this->userObjectRevert(
+			remove: fn () => $this->mapper()->markUnread(userId: (string) $entry['user'], objectUuid: (string) $entry['objectUuid'])
+		);
 	}//end revert()
-
-	/**
-	 * A date and time as written by `{{datetime:...}}`, or null.
-	 *
-	 * @param mixed $value The filled value.
-	 *
-	 * @return DateTime|null
-	 */
-	private function moment(mixed $value): ?DateTime {
-		if (is_string($value) === false || trim($value) === '') {
-			return null;
-		}
-
-		try {
-			return new DateTime($value);
-		} catch (Throwable) {
-			return null;
-		}
-	}//end moment()
 
 	/**
 	 * The read-state mapper.
