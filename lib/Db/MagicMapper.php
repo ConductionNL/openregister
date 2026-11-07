@@ -5280,6 +5280,40 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end findMultipleAcrossAllMagicTables()
 
 	/**
+	 * Find objects by uuid across all magic tables, each with every stored column.
+	 *
+	 * The plain lookup, findMultipleAcrossAllMagicTables(), fills only the name, register,
+	 * schema and data. Anything that writes an object back, or decides on its owner, status
+	 * or retention, reads it here.
+	 *
+	 * @param array $uuids          The uuids to search for.
+	 * @param bool  $includeDeleted Whether to include soft-deleted objects.
+	 *
+	 * @return ObjectEntity[] The found objects (may be fewer than requested).
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function findStoredAcrossAllMagicTables(array $uuids, bool $includeDeleted = false): array {
+		if (empty($uuids) === true) {
+			return [];
+		}
+
+		$uuids = array_unique($uuids);
+		$scan = new MagicCrossTableScan(label: 'findStoredAcrossAllMagicTables');
+		$scan->includeDeleted = $includeDeleted;
+		$scan->storedRows = true;
+		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
+		$scan->parameters = $uuids;
+
+		$uuidsByTable = $this->locateCrossTableMatches(scan: $scan);
+		if ($uuidsByTable === null) {
+			return [];
+		}
+
+		return array_values(array_filter($this->fetchCrossTableMatches(scan: $scan, uuidsByTable: $uuidsByTable)));
+	}//end findStoredAcrossAllMagicTables()
+
+	/**
 	 * Discover every magic table name (oc_openregister_table_<reg>_<schema>).
 	 *
 	 * @return array<string, array{registerId: int, schemaId: int}> Map of full
@@ -5796,6 +5830,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				foreach ($rows as $row) {
 					$row['_register'] = (string)$registerId;
 					$row['_schema'] = (string)$schemaId;
+					if ($scan->storedRows === true) {
+						$foundObjects[] = $this->convertRowToObjectEntity(
+							row: $row,
+							_register: $registerCache[$scan->label][$registerId],
+							_schema: $schemaCache[$scan->label][$schemaId]
+						);
+						continue;
+					}
+
 					$foundObjects[] = $this->rowToObjectEntity(row: $row);
 				}
 			} catch (\Exception $e) {

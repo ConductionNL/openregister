@@ -168,7 +168,7 @@ class ObjectServiceSharedMasterDataDeleteTest extends TestCase {
 		$registers = $this->createMock(RegisterMapper::class);
 		$registers->method('find')->willReturnCallback(static fn (int|string $id): Register => self::register((int)$id));
 		$mapper = $this->createMock(MagicMapper::class);
-		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(
+		$mapper->method('findStoredAcrossAllMagicTables')->willReturnCallback(
 			static fn (array $uuids): array => array_map(self::row(...), $uuids)
 		);
 		$mapper->method('find')->willReturnCallback(
