@@ -46,13 +46,53 @@ use Psr\Log\LoggerInterface;
  * Pins allowed and refused outcomes (status, body, headers) of all three TMLO actions.
  */
 class TmloControllerA24GoldenTest extends TestCase {
+	/**
+	 * The request of the case.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+	/**
+	 * The tmlo of the case.
+	 *
+	 * @var TmloService&MockObject
+	 */
 	private TmloService&MockObject $tmlo;
+	/**
+	 * The objects of the case.
+	 *
+	 * @var ObjectService&MockObject
+	 */
 	private ObjectService&MockObject $objects;
+	/**
+	 * The registers of the case.
+	 *
+	 * @var RegisterMapper&MockObject
+	 */
 	private RegisterMapper&MockObject $registers;
+	/**
+	 * The schemas of the case.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemas;
+	/**
+	 * The logger of the case.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
+	/**
+	 * The gate of the case.
+	 *
+	 * @var ExportGate&MockObject
+	 */
 	private ExportGate&MockObject $gate;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var TmloController
+	 */
 	private TmloController $controller;
 
 	protected function setUp(): void {

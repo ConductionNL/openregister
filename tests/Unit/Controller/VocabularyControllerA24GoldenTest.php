@@ -38,20 +38,50 @@ use RuntimeException;
  * Pins language negotiation, the option envelope and the concept list paging.
  */
 class VocabularyControllerA24GoldenTest extends TestCase {
+	/**
+	 * The params of the case.
+	 *
+	 * @var array
+	 */
 	private array $params = [];
+	/**
+	 * The acceptLanguage of the case.
+	 *
+	 * @var string
+	 */
 	private string $acceptLanguage = '';
+	/**
+	 * The objects of the case.
+	 *
+	 * @var ObjectOperationsInterface&MockObject
+	 */
 	private ObjectOperationsInterface&MockObject $objects;
+	/**
+	 * The options of the case.
+	 *
+	 * @var CodedOptionsBuilder&MockObject
+	 */
 	private CodedOptionsBuilder&MockObject $options;
+	/**
+	 * The resolver of the case.
+	 *
+	 * @var VocabularyDeclarationResolver&MockObject
+	 */
 	private VocabularyDeclarationResolver&MockObject $resolver;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var VocabularyController
+	 */
 	private VocabularyController $controller;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			fn (string $key, mixed $default = null): mixed => (array_key_exists($key, $this->params) ? $this->params[$key] : $default)
+			fn (string $key, mixed $default = null): mixed => ($this->params[$key] ?? $default)
 		);
-		$request->method('getHeader')->willReturnCallback(fn (string $name): string => ($name === 'Accept-Language' ? $this->acceptLanguage : ''));
+		$request->method('getHeader')->willReturnCallback(fn (string $name): string => (['Accept-Language' => $this->acceptLanguage][$name] ?? ''));
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->options = $this->createMock(CodedOptionsBuilder::class);
 		$this->resolver = $this->createMock(VocabularyDeclarationResolver::class);
@@ -80,11 +110,13 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider languages
-	 *
 	 * @param array<string, mixed> $params   Request params.
 	 * @param string               $header   Accept-Language.
 	 * @param string               $expected Negotiated tag.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider languages
 	 */
 	public function testTheNegotiatedLanguage(array $params, string $header, string $expected): void {
 		$this->assertSame($expected, $this->languageFor(params: $params, header: $header));
@@ -137,7 +169,7 @@ class VocabularyControllerA24GoldenTest extends TestCase {
 		$alt = $this->concept('c3', ['altLabel' => ['nl' => 'kapboom']]);
 		$scheme = $this->concept('sch-uuid', []);
 		$this->objects->method('findAll')->willReturnCallback(
-			static fn (array $config): array => (($config['filters']['schema'] ?? '') === 'conceptScheme' ? [] : [$matching, $other, $alt])
+			static fn (array $config): array => (['conceptScheme' => []][$config['filters']['schema'] ?? ''] ?? [$matching, $other, $alt])
 		);
 		$this->objects->expects($this->once())->method('find')->willReturn($scheme);
 

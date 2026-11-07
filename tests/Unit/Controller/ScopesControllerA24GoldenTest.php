@@ -43,11 +43,41 @@ use RuntimeException;
  * Pins what each caller (anonymous, member, admin) is told it may do, and every fallback.
  */
 class ScopesControllerA24GoldenTest extends TestCase {
+	/**
+	 * The userSession of the case.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+	/**
+	 * The groupManager of the case.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
 	private IGroupManager&MockObject $groupManager;
+	/**
+	 * The registers of the case.
+	 *
+	 * @var RegisterMapperInterface&MockObject
+	 */
 	private RegisterMapperInterface&MockObject $registers;
+	/**
+	 * The schemas of the case.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
+	/**
+	 * The permissions of the case.
+	 *
+	 * @var PermissionHandlerInterface&MockObject
+	 */
 	private PermissionHandlerInterface&MockObject $permissions;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var ScopesController
+	 */
 	private ScopesController $controller;
 
 	protected function setUp(): void {
@@ -141,7 +171,12 @@ class ScopesControllerA24GoldenTest extends TestCase {
 		$this->assertFalse($data['isAdmin']);
 		$this->assertSame(
 			[
-				['register' => 'zaken', 'schema' => 'zaak', 'actions' => ['read', 'delete', 'list'], 'provenance' => ['read' => ['granted' => true, 'source' => 'role']]],
+				[
+					'register' => 'zaken',
+					'schema' => 'zaak',
+					'actions' => ['read', 'delete', 'list'],
+					'provenance' => ['read' => ['granted' => true, 'source' => 'role']],
+				],
 				['register' => 'zaken', 'schema' => 'besluit', 'actions' => ['read', 'list'], 'provenance' => []],
 			],
 			$data['scopes']
@@ -160,7 +195,12 @@ class ScopesControllerA24GoldenTest extends TestCase {
 		$data = $this->controller->index()->getData();
 
 		$this->assertSame(
-			['user' => null, 'isAdmin' => false, 'groups' => [], 'scopes' => [['register' => 'hr', 'schema' => 'medewerker', 'actions' => ['read'], 'provenance' => []]]],
+			[
+				'user' => null,
+				'isAdmin' => false,
+				'groups' => [],
+				'scopes' => [['register' => 'hr', 'schema' => 'medewerker', 'actions' => ['read'], 'provenance' => []]],
+			],
 			$data
 		);
 	}

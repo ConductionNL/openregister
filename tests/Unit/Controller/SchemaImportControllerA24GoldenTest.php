@@ -46,19 +46,54 @@ use RuntimeException;
  * Pins status + body + side effects of every SchemaImportController action.
  */
 class SchemaImportControllerA24GoldenTest extends TestCase {
+	/**
+	 * The params of the case.
+	 *
+	 * @var array
+	 */
 	private array $params = [];
+	/**
+	 * The service of the case.
+	 *
+	 * @var SchemaImportService&MockObject
+	 */
 	private SchemaImportService&MockObject $service;
+	/**
+	 * The schemas of the case.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
+	/**
+	 * The registers of the case.
+	 *
+	 * @var RegisterMapperInterface&MockObject
+	 */
 	private RegisterMapperInterface&MockObject $registers;
+	/**
+	 * The versioning of the case.
+	 *
+	 * @var SchemaVersioningService&MockObject
+	 */
 	private SchemaVersioningService&MockObject $versioning;
+	/**
+	 * The logger of the case.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var SchemaImportController
+	 */
 	private SchemaImportController $controller;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			fn (string $key, mixed $default = null): mixed => (array_key_exists($key, $this->params) ? $this->params[$key] : $default)
+			fn (string $key, mixed $default = null): mixed => ($this->params[$key] ?? $default)
 		);
 		$request->method('getParams')->willReturnCallback(fn (): array => $this->params);
 		$this->service = $this->createMock(SchemaImportService::class);
@@ -95,7 +130,8 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 
 	public function testDiscoveryAndSnapshotPassThroughOrMapTheFailure(): void {
 		$this->params = ['q' => 'pers'];
-		$this->service->method('discover')->with('ggm', 'pers')->willReturnOnConsecutiveCalls(['r'], $this->throwException(new SchemaImportException('unknown', 404)));
+		$unknown = $this->throwException(new SchemaImportException('unknown', 404));
+		$this->service->method('discover')->with('ggm', 'pers')->willReturnOnConsecutiveCalls(['r'], $unknown);
 		$this->service->method('snapshotInfo')->willReturnOnConsecutiveCalls(['v' => 1], $this->throwException(new SchemaImportException('gone', 410)));
 
 		$this->assertSame([200, ['r']], $this->pair($this->controller->types('ggm')));

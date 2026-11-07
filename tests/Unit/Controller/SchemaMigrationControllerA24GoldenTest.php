@@ -55,22 +55,77 @@ use Psr\Log\NullLogger;
  * Pins status + body of every SchemaMigrationController action, before it is restructured.
  */
 class SchemaMigrationControllerA24GoldenTest extends TestCase {
+	/**
+	 * The params of the case.
+	 *
+	 * @var array
+	 */
 	private array $params = [];
+	/**
+	 * The schemas of the case.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
+	/**
+	 * The changelog of the case.
+	 *
+	 * @var SchemaChangelogMapper&MockObject
+	 */
 	private SchemaChangelogMapper&MockObject $changelog;
+	/**
+	 * The runs of the case.
+	 *
+	 * @var SchemaRunMapper&MockObject
+	 */
 	private SchemaRunMapper&MockObject $runs;
+	/**
+	 * The entries of the case.
+	 *
+	 * @var SchemaRunEntryMapper&MockObject
+	 */
 	private SchemaRunEntryMapper&MockObject $entries;
+	/**
+	 * The revalidation of the case.
+	 *
+	 * @var SchemaRevalidationService&MockObject
+	 */
 	private SchemaRevalidationService&MockObject $revalidation;
+	/**
+	 * The migration of the case.
+	 *
+	 * @var SchemaMigrationService&MockObject
+	 */
 	private SchemaMigrationService&MockObject $migration;
+	/**
+	 * The reader of the case.
+	 *
+	 * @var SchemaObjectReader&MockObject
+	 */
 	private SchemaObjectReader&MockObject $reader;
+	/**
+	 * The jobs of the case.
+	 *
+	 * @var IJobList&MockObject
+	 */
 	private IJobList&MockObject $jobs;
+	/**
+	 * The userSession of the case.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+	/**
+	 * The conversions of the case.
+	 *
+	 * @var PropertyConversionServiceInterface&MockObject
+	 */
 	private PropertyConversionServiceInterface&MockObject $conversions;
 
 	private function controller(bool $withConversions = true): SchemaMigrationController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			fn (string $key, mixed $default = null): mixed => (array_key_exists($key, $this->params) ? $this->params[$key] : $default)
+			fn (string $key, mixed $default = null): mixed => ($this->params[$key] ?? $default)
 		);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
 		$this->changelog = $this->createMock(SchemaChangelogMapper::class);
@@ -91,11 +146,15 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 			'openregister',
 			$request,
 			new SchemaMigrationControllerServices(
-				mappers: new SchemaMigrationMappers(schemaMapper: $this->schemas, changelogMapper: $this->changelog, runMapper: $this->runs, runEntryMapper: $this->entries),
-				domain: new SchemaMigrationDomain(revalidationService: $this->revalidation, migrationService: $this->migration, objectReader: $this->reader, conversions: $conversions),
+				mappers: new SchemaMigrationMappers($this->schemas, $this->changelog, $this->runs, $this->entries),
+				domain: new SchemaMigrationDomain($this->revalidation, $this->migration, $this->reader, $conversions),
 				platform: new SchemaMigrationPlatform(jobList: $this->jobs, userSession: $this->userSession, logger: new NullLogger())
 			)
 		);
+	}
+
+	private function missing(): \PHPUnit\Framework\MockObject\Stub\Exception {
+		return $this->throwException(new DoesNotExistException('x'));
 	}
 
 	private function pair($response): array {
@@ -124,7 +183,8 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 	}
 
 	public function testPreviewConversionRefusals(): void {
-		$this->assertSame([501, ['error' => 'Property conversion is not configured']], $this->pair($this->controller(withConversions: false)->previewConversion(1)));
+		$unconfigured = $this->controller(withConversions: false)->previewConversion(1);
+		$this->assertSame([501, ['error' => 'Property conversion is not configured']], $this->pair($unconfigured));
 
 		$controller = $this->controller();
 		$this->reader->method('canReadValues')->willReturnOnConsecutiveCalls(false, true, true, true, true);
@@ -180,7 +240,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 	public function testRevalidateOutcomes(): void {
 		$controller = $this->controller();
 		$this->signIn();
-		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->throwException(new DoesNotExistException('x')), new Schema(), new Schema(), new Schema());
+		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->missing(), new Schema(), new Schema(), new Schema());
 		$this->reader->method('resolveRegisterId')->willReturnOnConsecutiveCalls(null, 9, 9);
 		$this->params = ['proposedDefinition' => 'bad'];
 		$this->revalidation->method('start')->with(3, 9, null, 'alice')->willReturnOnConsecutiveCalls(
@@ -214,7 +274,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 
 	public function testPreviewMigrationOutcomes(): void {
 		$controller = $this->controller();
-		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->throwException(new DoesNotExistException('x')), new Schema(), new Schema(), new Schema(), new Schema());
+		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->missing(), new Schema(), new Schema(), new Schema(), new Schema());
 		$this->assertSame([404, ['error' => 'Schema not found']], $this->pair($controller->previewMigration(3)));
 
 		$this->assertSame([422, ['error' => 'A "plan" array is required']], $this->pair($controller->previewMigration(3)));
@@ -232,7 +292,7 @@ class SchemaMigrationControllerA24GoldenTest extends TestCase {
 
 	public function testMigrateOutcomes(): void {
 		$controller = $this->controller();
-		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->throwException(new DoesNotExistException('x')), new Schema(), new Schema(), new Schema(), new Schema(), new Schema());
+		$this->schemas->method('find')->willReturnOnConsecutiveCalls($this->missing(), ...array_fill(0, 5, new Schema()));
 		$this->assertSame([404, ['error' => 'Schema not found']], $this->pair($controller->migrate(3)));
 		$this->assertSame([422, ['error' => 'A "plan" array is required']], $this->pair($controller->migrate(3)));
 

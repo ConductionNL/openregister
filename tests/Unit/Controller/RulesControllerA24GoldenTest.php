@@ -53,21 +53,66 @@ use RuntimeException;
  * Pins every RulesController outcome (status + body) a refactor could move.
  */
 class RulesControllerA24GoldenTest extends TestCase {
+	/**
+	 * The params of the case.
+	 *
+	 * @var array
+	 */
 	private array $params = [];
+	/**
+	 * The schemas of the case.
+	 *
+	 * @var SchemaMapperInterface&MockObject
+	 */
 	private SchemaMapperInterface&MockObject $schemas;
+	/**
+	 * The inventory of the case.
+	 *
+	 * @var RuleInventoryServiceInterface&MockObject
+	 */
 	private RuleInventoryServiceInterface&MockObject $inventory;
+	/**
+	 * The runs of the case.
+	 *
+	 * @var RuleRunMapper&MockObject
+	 */
 	private RuleRunMapper&MockObject $runs;
+	/**
+	 * The trials of the case.
+	 *
+	 * @var RuleTrialServiceInterface&MockObject
+	 */
 	private RuleTrialServiceInterface&MockObject $trials;
+	/**
+	 * The enablement of the case.
+	 *
+	 * @var RuleEnablementServiceInterface&MockObject
+	 */
 	private RuleEnablementServiceInterface&MockObject $enablement;
+	/**
+	 * The replays of the case.
+	 *
+	 * @var RuleReplayServiceInterface&MockObject
+	 */
 	private RuleReplayServiceInterface&MockObject $replays;
+	/**
+	 * The userSession of the case.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var RulesController
+	 */
 	private RulesController $controller;
 
 	protected function setUp(): void {
 		parent::setUp();
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
-			fn (string $key, mixed $default = null): mixed => (array_key_exists($key, $this->params) ? $this->params[$key] : $default)
+			fn (string $key, mixed $default = null): mixed => ($this->params[$key] ?? $default)
 		);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
 		$this->inventory = $this->createMock(RuleInventoryServiceInterface::class);

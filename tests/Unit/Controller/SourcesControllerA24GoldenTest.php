@@ -52,13 +52,53 @@ use RuntimeException;
  * Pins allowed and refused outcomes (status + body) of every SourcesController access path.
  */
 class SourcesControllerA24GoldenTest extends TestCase {
+	/**
+	 * The request of the case.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+	/**
+	 * The sourceMapper of the case.
+	 *
+	 * @var SourceMapper&MockObject
+	 */
 	private SourceMapper&MockObject $sourceMapper;
+	/**
+	 * The crypto of the case.
+	 *
+	 * @var ICrypto&MockObject
+	 */
 	private ICrypto&MockObject $crypto;
+	/**
+	 * The registry of the case.
+	 *
+	 * @var SourceFetcherRegistry&MockObject
+	 */
 	private SourceFetcherRegistry&MockObject $registry;
+	/**
+	 * The pipeline of the case.
+	 *
+	 * @var HarvestPipelineService&MockObject
+	 */
 	private HarvestPipelineService&MockObject $pipeline;
+	/**
+	 * The connections of the case.
+	 *
+	 * @var DbalConnectionFactory&MockObject
+	 */
 	private DbalConnectionFactory&MockObject $connections;
+	/**
+	 * The introspection of the case.
+	 *
+	 * @var DatabaseIntrospectionService&MockObject
+	 */
 	private DatabaseIntrospectionService&MockObject $introspection;
+	/**
+	 * The logger of the case.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	private function controller(bool $isAdmin): SourcesController {
@@ -122,10 +162,12 @@ class SourcesControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider adminOnlyActions
-	 *
 	 * @param string            $action The action.
 	 * @param array<int, mixed> $args   Its arguments.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider adminOnlyActions
 	 */
 	public function testANonAdminIsRefusedBeforeAnySourceIsTouched(string $action, array $args): void {
 		$controller = $this->controller(isAdmin: false);
@@ -288,9 +330,11 @@ class SourcesControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider databaseActions
-	 *
 	 * @param string $action The action.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider databaseActions
 	 */
 	public function testDatabaseActionsAnswer404And422(string $action): void {
 		$controller = $this->controller(isAdmin: true);

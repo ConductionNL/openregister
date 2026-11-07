@@ -40,12 +40,47 @@ use RuntimeException;
  * Pins who may call each selectielijst action, and what each intake path answers.
  */
 class SelectielijstControllerA24GoldenTest extends TestCase {
+	/**
+	 * The request of the case.
+	 *
+	 * @var IRequest&MockObject
+	 */
 	private IRequest&MockObject $request;
+	/**
+	 * The service of the case.
+	 *
+	 * @var SelectielijstImportService&MockObject
+	 */
 	private SelectielijstImportService&MockObject $service;
+	/**
+	 * The settings of the case.
+	 *
+	 * @var ObjectRetentionHandler&MockObject
+	 */
 	private ObjectRetentionHandler&MockObject $settings;
+	/**
+	 * The userSession of the case.
+	 *
+	 * @var IUserSession&MockObject
+	 */
 	private IUserSession&MockObject $userSession;
+	/**
+	 * The groups of the case.
+	 *
+	 * @var IGroupManager&MockObject
+	 */
 	private IGroupManager&MockObject $groups;
+	/**
+	 * The logger of the case.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
+	/**
+	 * The controller of the case.
+	 *
+	 * @var SelectielijstController
+	 */
 	private SelectielijstController $controller;
 
 	protected function setUp(): void {
@@ -87,9 +122,11 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider actions
-	 *
 	 * @param string $action The action.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider actions
 	 */
 	public function testAnAnonymousCallerIsRefused401(string $action): void {
 		$this->userSession->method('getUser')->willReturn(null);
@@ -101,9 +138,11 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider actions
-	 *
 	 * @param string $action The action.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider actions
 	 */
 	public function testANonArchivistNonAdminIsRefused403(string $action): void {
 		$this->signIn(archivist: false, admin: false);
@@ -126,10 +165,12 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider allowed
-	 *
 	 * @param bool $archivist In the archivaris group.
 	 * @param bool $admin     An administrator.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider allowed
 	 */
 	public function testAnArchivistOrAdminReadsTheVersions(bool $archivist, bool $admin): void {
 		$this->signIn(archivist: $archivist, admin: $admin);
@@ -188,10 +229,12 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 	}
 
 	/**
-	 * @dataProvider nothingSent
-	 *
 	 * @param mixed                $upload What the upload answers.
 	 * @param array<string, mixed> $params The request params.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider nothingSent
 	 */
 	public function testNothingUsableSentSaysWhatToSend(mixed $upload, array $params): void {
 		$this->signIn(archivist: true, admin: false);
