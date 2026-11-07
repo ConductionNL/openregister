@@ -380,9 +380,13 @@ class FlowDefinitionBuilder {
 			return [];
 		}
 
+		// The incoming() call takes a string id, so once it has answered the id is one.
+		$incoming = $this->graph()->incoming(nodeId: $id, edges: $net->edges);
+		$nodeId = (string)$id;
+
 		return array_map(
-			fn (array $edge): string => $this->graph()->joinPlace(nodeId: $id, edgeId: $edge['id']),
-			$this->graph()->incoming(nodeId: $id, edges: $net->edges)
+			fn (array $edge): string => $this->graph()->joinPlace(nodeId: $nodeId, edgeId: $edge['id']),
+			$incoming
 		);
 	}//end joinPlaces()
 
