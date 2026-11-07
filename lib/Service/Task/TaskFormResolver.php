@@ -55,7 +55,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
  */
-class TaskFormResolver {
+class TaskFormResolver implements TaskFormResolverInterface {
 
 	/**
 	 * Every declared field renders.

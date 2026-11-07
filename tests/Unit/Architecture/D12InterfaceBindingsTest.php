@@ -68,6 +68,16 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\Task\TaskFormCompletion;
+use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
+use OCA\OpenRegister\Service\Task\TaskFormResolver;
+use OCA\OpenRegister\Service\Task\TaskFormResolverInterface;
+use OCA\OpenRegister\Service\Task\TaskProjectionService;
+use OCA\OpenRegister\Service\Task\TaskProjectionServiceInterface;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
+use OCA\OpenRegister\Service\Task\TaskSubjectLocatorInterface;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
+use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGateInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -111,6 +121,11 @@ final class D12InterfaceBindingsTest extends TestCase {
 		SendEmailNode::class => [SendEmailNodeInterface::class, ContractBindings::class],
 		SendNotificationNode::class => [SendNotificationNodeInterface::class, ContractBindings::class],
 		SendTalkMessageNode::class => [SendTalkMessageNodeInterface::class, ContractBindings::class],
+		TaskFormCompletion::class => [TaskFormCompletionInterface::class, ContractBindings::class],
+		TaskFormResolver::class => [TaskFormResolverInterface::class, ContractBindings::class],
+		TaskProjectionService::class => [TaskProjectionServiceInterface::class, ContractBindings::class],
+		TaskSubjectLocator::class => [TaskSubjectLocatorInterface::class, ContractBindings::class],
+		TaskVtodoWriteBackGate::class => [TaskVtodoWriteBackGateInterface::class, ContractBindings::class],
 		TriggerManualNode::class => [TriggerManualNodeInterface::class, ContractBindings::class],
 		ZaaktypeCaseSkeletonMapper::class => [ZaaktypeCaseSkeletonMapperInterface::class, ContractBindings::class],
 	];

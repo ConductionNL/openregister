@@ -62,7 +62,7 @@ use Throwable;
  *
  * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-ticking-off-the-vtodo-completes-the-engine-task-through-authorization
  */
-class TaskVtodoWriteBackGate {
+class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 
 	/**
 	 * The verbs a VTODO status may request. Nothing else crosses.

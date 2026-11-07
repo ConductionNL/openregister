@@ -44,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-tasks/spec.md
  */
-class TaskSubjectLocator {
+class TaskSubjectLocator implements TaskSubjectLocatorInterface {
 
 	/**
 	 * Uuids per cross-table search.
