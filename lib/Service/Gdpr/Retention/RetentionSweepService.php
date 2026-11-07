@@ -100,8 +100,27 @@ class RetentionSweepService {
 	 */
 	public function runSweep(bool $dryRun = false): array {
 		$now = $this->time->getTime();
+		$summary = $this->openSummary(dryRun: $dryRun);
 
-		$summary = [
+		foreach ($this->accessor->findAllCaseEntities() as $case) {
+			$summary['evaluated']++;
+			$this->sweepCase(case: $case, now: $now, dryRun: $dryRun, summary: $summary);
+		}
+
+		$summary['withheldCount'] = count($summary['withheld']);
+
+		return $summary;
+	}//end runSweep()
+
+	/**
+	 * The empty sweep summary.
+	 *
+	 * @param bool $dryRun Whether this pass only reports.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function openSummary(bool $dryRun): array {
+		return [
 			'dryRun' => $dryRun,
 			'evaluated' => 0,
 			'purged' => [],
@@ -111,58 +130,91 @@ class RetentionSweepService {
 			'withheld' => [],
 			'withinWindow' => 0,
 		];
+	}//end openSummary()
 
-		foreach ($this->accessor->findAllCaseEntities() as $case) {
-			$summary['evaluated']++;
-			$uuid = (string)$case->getUuid();
-			$data = $case->getObject();
+	/**
+	 * Decide one case: untouched, skipped, withheld, or purged (reported only on a dry run).
+	 *
+	 * @param ObjectEntity         $case    The case entity.
+	 * @param int                  $now     Current unix time.
+	 * @param bool                 $dryRun  When true, nothing is scrubbed or deleted.
+	 * @param array<string, mixed> $summary The sweep summary (mutated by reference).
+	 *
+	 * @return void
+	 */
+	private function sweepCase(ObjectEntity $case, int $now, bool $dryRun, array &$summary): void {
+		$data = $case->getObject();
 
-			// Not yet expired → untouched.
-			if ($this->isExpired(data: $data, now: $now) === false) {
-				$summary['withinWindow']++;
-				continue;
-			}
+		// Not yet expired → untouched.
+		if ($this->isExpired(data: $data, now: $now) === false) {
+			$summary['withinWindow']++;
+			return;
+		}
 
-			// Legal-hold / immutability aware: skip held or immutable cases
-			// intact, exactly as the erase path already does. This is the
-			// fail-safe against irreversible destruction.
-			if ($this->isProtected(case: $case) === true) {
-				$summary['skippedHeld'][] = $uuid;
-				$this->logger->info(
-					message: sprintf('[RetentionSweep] case "%s" past window but under legal hold/immutable — skipped', $uuid)
-				);
-				continue;
-			}
+		$this->sweepExpired(case: $case, data: $data, dryRun: $dryRun, summary: $summary);
+	}//end sweepCase()
 
-			// RETENTION WINS OVER ERASURE, AND THIS SWEEP HAD AN EXPLICIT BYPASS.
-			// `isProtected()` above reads the case's own legal hold and
-			// archiefstatus; it says nothing about `x-openregister-archival` on
-			// the case schema. Worse, the delete below hands
-			// `_retentionSweep: true` to ObjectService, which is exactly the flag
-			// that waves a row past the archival gate. So an archival case was
-			// hard-deleted here with no refusal anywhere in the chain. The gate is
-			// asked BEFORE the bypass is used, of the same
-			// Schema::hasArchivalAnnotation() the four HTTP doors ask. Refused
-			// cases are named in `withheld`; the rest of the sweep runs on.
-			$refusal = $this->archivalGuard->erasureRefusal(object: $case);
-			if ($refusal !== null) {
-				$summary['withheld'][] = $refusal;
-				continue;
-			}
+	/**
+	 * An expired case: skipped or withheld when refused, else purged (reported only on a dry run).
+	 *
+	 * @param ObjectEntity         $case    The expired case entity.
+	 * @param array<string, mixed> $data    The case payload.
+	 * @param bool                 $dryRun  When true, nothing is scrubbed or deleted.
+	 * @param array<string, mixed> $summary The sweep summary (mutated by reference).
+	 *
+	 * @return void
+	 */
+	private function sweepExpired(ObjectEntity $case, array $data, bool $dryRun, array &$summary): void {
+		$refusal = $this->refusalFor(case: $case);
+		if ($refusal !== null) {
+			$summary[$refusal[0]][] = $refusal[1];
+			return;
+		}
 
-			if ($dryRun === true) {
-				$summary['purged'][] = $uuid;
-				continue;
-			}
-
+		if ($dryRun === false) {
 			$this->purge(case: $case, data: $data);
-			$summary['purged'][] = $uuid;
-		}//end foreach
+		}
 
-		$summary['withheldCount'] = count($summary['withheld']);
+		$summary['purged'][] = (string)$case->getUuid();
+	}//end sweepExpired()
 
-		return $summary;
-	}//end runSweep()
+	/**
+	 * Why an expired case must be left intact, as [bucket, entry], or null.
+	 *
+	 * Legal-hold / immutability aware: a held or immutable case is skipped
+	 * intact, exactly as the erase path already does. This is the fail-safe
+	 * against irreversible destruction.
+	 *
+	 * RETENTION WINS OVER ERASURE, AND THIS SWEEP HAD AN EXPLICIT BYPASS.
+	 * `isProtected()` reads the case's own legal hold and archiefstatus; it
+	 * says nothing about `x-openregister-archival` on the case schema. Worse,
+	 * the delete in purge() hands `_retentionSweep: true` to ObjectService,
+	 * which is exactly the flag that waves a row past the archival gate. So an
+	 * archival case was hard-deleted here with no refusal anywhere in the
+	 * chain. The gate is asked BEFORE the bypass is used, of the same
+	 * Schema::hasArchivalAnnotation() the four HTTP doors ask. Refused cases
+	 * are named in `withheld`; the rest of the sweep runs on.
+	 *
+	 * @param ObjectEntity $case The expired case entity.
+	 *
+	 * @return array{0: string, 1: mixed}|null `skippedHeld` + uuid, `withheld` + refusal, or null.
+	 */
+	private function refusalFor(ObjectEntity $case): ?array {
+		$uuid = (string)$case->getUuid();
+		if ($this->isProtected(case: $case) === true) {
+			$this->logger->info(
+				message: sprintf('[RetentionSweep] case "%s" past window but under legal hold/immutable — skipped', $uuid)
+			);
+			return ['skippedHeld', $uuid];
+		}
+
+		$refusal = $this->archivalGuard->erasureRefusal(object: $case);
+		if ($refusal !== null) {
+			return ['withheld', $refusal];
+		}
+
+		return null;
+	}//end refusalFor()
 
 	/**
 	 * Whether a case's `retainUntil` has passed.
@@ -222,18 +274,41 @@ class RetentionSweepService {
 		// Scrub evidence PII via the existing erase primitive (pseudonymise),
 		// never a hand-rolled scrub. A missing subject id is logged, not fatal.
 		if ($subjectId !== '') {
-			try {
-				$this->dsrService->erase(
-					subjectId: $subjectId,
-					eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					message: sprintf('[RetentionSweep] evidence scrub failed for case "%s": %s', $uuid, $e->getMessage())
-				);
-			}
+			$this->scrubEvidence(uuid: $uuid, subjectId: $subjectId);
 		}
 
+		$this->deleteDossier(uuid: $uuid);
+	}//end purge()
+
+	/**
+	 * Erase-pseudonymise the subject's evidence PII; a failure is logged.
+	 *
+	 * @param string $uuid      The case uuid (for the log).
+	 * @param string $subjectId The case's subject id.
+	 *
+	 * @return void
+	 */
+	private function scrubEvidence(string $uuid, string $subjectId): void {
+		try {
+			$this->dsrService->erase(
+				subjectId: $subjectId,
+				eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: sprintf('[RetentionSweep] evidence scrub failed for case "%s": %s', $uuid, $e->getMessage())
+			);
+		}
+	}//end scrubEvidence()
+
+	/**
+	 * Hard-delete the dossier through the audited sweep delete; a failure is logged.
+	 *
+	 * @param string $uuid The case uuid.
+	 *
+	 * @return void
+	 */
+	private function deleteDossier(string $uuid): void {
 		try {
 			$this->accessor->deleteForSweep(caseUuid: $uuid);
 			$this->logger->info(
@@ -244,5 +319,5 @@ class RetentionSweepService {
 				message: sprintf('[RetentionSweep] dossier delete failed for case "%s": %s', $uuid, $e->getMessage())
 			);
 		}
-	}//end purge()
+	}//end deleteDossier()
 }//end class
