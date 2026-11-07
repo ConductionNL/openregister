@@ -26,7 +26,7 @@ use OCA\OpenRegister\Controller\Support\RelationsControllerServices;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -190,9 +190,9 @@ class RelationsController extends Controller {
 	/**
 	 * Deck card service.
 	 *
-	 * @var DeckCardService
+	 * @var DeckCardServiceInterface
 	 */
-	private readonly DeckCardService $deckCardService;
+	private readonly DeckCardServiceInterface $deckCardService;
 
 	/**
 	 * Logger for surfacing per-type aggregation failures.
