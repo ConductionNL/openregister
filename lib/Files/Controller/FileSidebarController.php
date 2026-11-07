@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
+use OCA\OpenRegister\Files\Controller\Support\CallerFileAccess;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\IRootFolder;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,11 +55,11 @@ class FileSidebarController extends Controller {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * The user session.
+	 * Whether the caller can open a file.
 	 *
-	 * @var IUserSession
+	 * @var CallerFileAccess
 	 */
-	private readonly IUserSession $userSession;
+	private readonly CallerFileAccess $fileAccess;
 
 	/**
 	 * Constructor.
@@ -76,13 +76,17 @@ class FileSidebarController extends Controller {
 		IRequest $request,
 		private readonly FileSidebarService $fileSidebarService,
 		ControllerSession $session,
-		private readonly IRootFolder $rootFolder,
-		private readonly ?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
+		IRootFolder $rootFolder,
+		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
 		$this->logger = $session->logger;
-		$this->userSession = $session->userSession;
+		$this->fileAccess = new CallerFileAccess(
+			fileReadScope: $fileReadScope,
+			userSession: $session->userSession,
+			rootFolder: $rootFolder
+		);
 	}//end __construct()
 
 	/**
@@ -98,19 +102,7 @@ class FileSidebarController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
-		// An object's file sits in the openregister account's home, never in
-		// the caller's own tree: the object's read rule decides it.
-		if ($this->fileReadScope !== null) {
-			return $this->fileReadScope->mayReadFile(fileId: $fileId);
-		}
-
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		$userFolder = $this->rootFolder->getUserFolder($user->getUID());
-		return empty($userFolder->getById($fileId)) === false;
+		return $this->fileAccess->mayOpen(fileId: $fileId);
 	}//end hasFileAccess()
 
 	/**
