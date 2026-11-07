@@ -15,7 +15,6 @@ import {
 		name="import"
 		:title="t('openregister', 'Import Data into Register')"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard
 			v-if="success && importSummary && !hasImportErrors"

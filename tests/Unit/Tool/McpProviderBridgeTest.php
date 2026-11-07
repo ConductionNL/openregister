@@ -3,7 +3,7 @@
 namespace Unit\Tool;
 
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
-use OCA\OpenRegister\Tool\McpProviderBridge;
+use OCA\OpenRegister\Mcp\Tool\McpProviderBridge;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

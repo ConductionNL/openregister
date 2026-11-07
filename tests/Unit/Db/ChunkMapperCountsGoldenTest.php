@@ -21,13 +21,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Db\ChunkMapper
+ * @covers \OCA\OpenRegister\Files\Db\ChunkMapper
  */
 class ChunkMapperCountsGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

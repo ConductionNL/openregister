@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\Agent;
 use OCP\EventDispatcher\Event;
 
 /**

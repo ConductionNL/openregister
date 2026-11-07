@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\TaskService;
 use Psr\Log\LoggerInterface;
@@ -69,7 +69,7 @@ class DestructionScopeService {
 	 * @param AuditTrailMapperInterface                  $auditTrailMapper Versions and content-bearing audit rows.
 	 * @param LoggerInterface                   $logger           PSR logger.
 	 * @param DestructionScopeReader            $reader           Reads the scope a schema declares.
-	 * @param NoteService|null                  $noteService      Notes on the object.
+	 * @param NoteServiceInterface|null                  $noteService      Notes on the object.
 	 * @param FileService|null                  $fileService      The object's bound folder.
 	 * @param TaskService|null                  $taskService      CalDAV tasks linked to the object.
 	 * @param ObjectRelationCleanupService|null $relationCleanup  The remaining timeline links.
@@ -80,7 +80,7 @@ class DestructionScopeService {
 		private readonly AuditTrailMapperInterface $auditTrailMapper,
 		private readonly LoggerInterface $logger,
 		private readonly DestructionScopeReader $reader,
-		private readonly ?NoteService $noteService = null,
+		private readonly ?NoteServiceInterface $noteService = null,
 		private readonly ?FileService $fileService = null,
 		private readonly ?TaskService $taskService = null,
 		private readonly ?ObjectRelationCleanupService $relationCleanup = null,

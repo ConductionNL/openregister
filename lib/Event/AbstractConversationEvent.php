@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Conversation;
+use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCP\EventDispatcher\Event;
 
 /**

@@ -26,10 +26,10 @@ use ReflectionMethod;
  */
 class EntityEventsGoldenTest extends TestCase {
 	private const FAMILIES = [
-		'Agent'         => ['agent', ['Created', 'Deleted'], 'Db\\Agent'],
+		'Agent'         => ['agent', ['Created', 'Deleted'], 'Mcp\\Db\\Agent'],
 		'Application'   => ['application', ['Created', 'Deleted'], 'Db\\Application'],
 		'Configuration' => ['configuration', ['Created', 'Deleted'], 'Db\\Configuration'],
-		'Conversation'  => ['conversation', ['Created', 'Deleted'], 'Db\\Conversation'],
+		'Conversation'  => ['conversation', ['Created', 'Deleted'], 'Mcp\\Db\\Conversation'],
 		'Organisation'  => ['organisation', ['Created', 'Deleted'], 'Db\\Organisation'],
 		'Register'      => ['register', ['Created', 'Deleted'], 'Db\\Register'],
 		'Schema'        => ['schema', ['Created', 'Deleted'], 'Db\\Schema'],
