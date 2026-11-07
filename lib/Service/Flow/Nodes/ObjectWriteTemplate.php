@@ -67,18 +67,18 @@ final class ObjectWriteTemplate {
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public static function resolve(mixed $value, array $json): array {
+	public function resolve(mixed $value, array $json): array {
 		if (is_string($value) === false) {
 			return ['resolved' => true, 'value' => $value];
 		}
 
 		$whole = [];
 		if (preg_match(self::WHOLE, $value, $whole) === 1) {
-			$found = self::lookup(path: $whole[1], json: $json);
+			$found = $this->lookup(path: $whole[1], json: $json);
 			return ['resolved' => $found['found'], 'value' => $found['value']];
 		}
 
-		return self::resolveInline(template: $value, json: $json);
+		return $this->resolveInline(template: $value, json: $json);
 	}//end resolve()
 
 	/**
@@ -95,13 +95,13 @@ final class ObjectWriteTemplate {
 	 *
 	 * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
 	 */
-	public static function lookup(string $path, array $json): array {
+	public function lookup(string $path, array $json): array {
 		$path = trim($path);
 		if ($path === '') {
 			return self::NOT_FOUND;
 		}
 
-		$found = self::walk(segments: explode('.', $path), json: $json);
+		$found = $this->walk(segments: explode('.', $path), json: $json);
 		if ($found['value'] === null || $found['value'] === []) {
 			return self::NOT_FOUND;
 		}
@@ -127,8 +127,8 @@ final class ObjectWriteTemplate {
 	 *
 	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
 	 */
-	public static function isSkipped(string $path, array $json): bool {
-		$value = self::lookup(path: $path, json: $json)['value'];
+	public function isSkipped(string $path, array $json): bool {
+		$value = $this->lookup(path: $path, json: $json)['value'];
 		if (is_bool($value) === true) {
 			return $value;
 		}
@@ -148,12 +148,12 @@ final class ObjectWriteTemplate {
 	 *
 	 * @return array{resolved: bool, value: mixed} The verdict and the value.
 	 */
-	private static function resolveInline(string $template, array $json): array {
+	private function resolveInline(string $template, array $json): array {
 		$missing = false;
-		$out = preg_replace_callback(self::INLINE, static function (array $matches) use ($json, &$missing): string {
-			$found = self::lookup(path: $matches[1], json: $json);
+		$out = preg_replace_callback(self::INLINE, function (array $matches) use ($json, &$missing): string {
+			$found = $this->lookup(path: $matches[1], json: $json);
 			$missing = ($missing === true || $found['found'] === false);
-			return self::stringify(value: $found['value']);
+			return $this->stringify(value: $found['value']);
 		}, $template);
 
 		if ($missing === true) {
@@ -171,7 +171,7 @@ final class ObjectWriteTemplate {
 	 *
 	 * @return array{found: bool, value: mixed} The verdict and the value.
 	 */
-	private static function walk(array $segments, array $json): array {
+	private function walk(array $segments, array $json): array {
 		$cursor = $json;
 		foreach ($segments as $segment) {
 			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
@@ -191,7 +191,7 @@ final class ObjectWriteTemplate {
 	 *
 	 * @return string Its string form.
 	 */
-	private static function stringify(mixed $value): string {
+	private function stringify(mixed $value): string {
 		if (is_scalar($value) === true && is_bool($value) === false) {
 			return (string)$value;
 		}

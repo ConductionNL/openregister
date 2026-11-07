@@ -47,6 +47,9 @@ use Throwable;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteBulk
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteBulkPage
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePayload
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteConfigForm
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteConfigValidator
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteOptions
