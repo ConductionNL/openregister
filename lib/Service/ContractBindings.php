@@ -93,6 +93,7 @@ final class ContractBindings {
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,
+		\OCA\OpenRegister\Service\Object\ObjectEventGateInterface::class => \OCA\OpenRegister\Service\Object\ObjectEventGate::class,
 		ObjectExporterInterface::class => ExportService::class,
 		ObjectImporterInterface::class => ImportService::class,
 		ObjectMergerInterface::class => MergeService::class,
