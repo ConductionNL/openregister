@@ -2053,6 +2053,73 @@ class RenderObjectTest extends TestCase {
 	}
 
 	// =========================================================================
+	// file rendering limits
+	// =========================================================================
+
+	private function fileRecord(): array {
+		return ['fileid' => 42, 'path' => '/a.txt', 'name' => 'a.txt', 'size' => 3];
+	}
+
+	private function renderFilesOf(array $objectData, array $properties): array {
+		$schema = $this->createSchema(1);
+		$schema->setProperties($properties);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', $objectData);
+		return $this->invokePrivate('renderFileProperties', [$entity])->getObject();
+	}
+
+	public function testAFileOverTheCapIsNotEmbedded(): void {
+		$mockFile = $this->createMock(\OCP\Files\File::class);
+		$mockFile->method('getSize')->willReturn(10 * 1024 * 1024 + 1);
+		$mockFile->expects($this->never())->method('getContent');
+		$this->fileService->method('getFileById')->willReturn($mockFile);
+
+		$this->assertNull($this->invokePrivate('getFileAsBase64', [42]));
+	}
+
+	public function testAFileAtTheCapIsEmbedded(): void {
+		$mockFile = $this->createMock(\OCP\Files\File::class);
+		$mockFile->method('getSize')->willReturn(10 * 1024 * 1024);
+		$mockFile->method('getContent')->willReturn('x');
+		$mockFile->method('getMimeType')->willReturn('text/plain');
+		$this->fileService->method('getFileById')->willReturn($mockFile);
+
+		$this->assertSame('data:text/plain;base64,' . base64_encode('x'), $this->invokePrivate('getFileAsBase64', [42]));
+	}
+
+	public function testAPageRenderUsesTheFileReferenceInsteadOfBase64(): void {
+		(new \ReflectionProperty($this->handler, 'pageRenderActive'))->setValue($this->handler, true);
+		$this->fileMapper->method('getFile')->willReturn($this->fileRecord());
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+		$this->fileService->expects($this->never())->method('getFileById');
+
+		$data = $this->renderFilesOf(['avatar' => '42'], ['avatar' => ['type' => 'file', 'format' => 'base64']]);
+
+		$this->assertSame('42', $data['avatar']['id']);
+	}
+
+	public function testMetadataKeysAreNotHydratedEvenWhenDeclaredAsFiles(): void {
+		$this->fileMapper->expects($this->never())->method('getFile');
+
+		$data = $this->renderFilesOf(
+			['@logo' => '42', 'id' => '42'],
+			['@logo' => ['type' => 'file'], 'id' => ['type' => 'file']]
+		);
+
+		$this->assertEquals(['@logo' => '42', 'id' => '42'], $data);
+	}
+
+	public function testAFileObjectIsLoadedOncePerRequest(): void {
+		$this->fileMapper->expects($this->once())->method('getFile')->willReturn($this->fileRecord());
+		$this->systemTagMapper->method('getTagIdsForObjects')->willReturn([]);
+
+		$first = $this->invokePrivate('getFileObject', [42]);
+
+		$this->assertSame($first, $this->invokePrivate('getFileObject', ['42']));
+	}
+
+	// =========================================================================
 	// getFileAsBase64 - private method
 	// =========================================================================
 
