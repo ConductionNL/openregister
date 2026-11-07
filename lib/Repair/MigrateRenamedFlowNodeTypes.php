@@ -46,7 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowMapper;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -101,15 +101,10 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) renamedTypes() is a compiled-in
-	 * catalogue of old-to-current type ids, not collaborator state. Injecting the
-	 * registry here would make a repair step that runs before the container is
-	 * fully warm depend on a service it does not otherwise need.
-	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function run(IOutput $output): void {
-		$renamed = FlowNodeRegistry::renamedTypes();
+		$renamed = $this->renamedTypes();
 		if ($renamed === []) {
 			$output->info('OpenRegister: no flow node types are aliased — nothing to rewrite.');
 			return;
@@ -176,6 +171,17 @@ class MigrateRenamedFlowNodeTypes implements IRepairStep {
 		);
 
 	}//end run()
+
+	/**
+	 * The rename map: a compiled-in constant on the registry's interface, not
+	 * collaborator state, so this step reads it without the registry. Typed as
+	 * a map so the empty-map branch stays reachable once the last alias retires.
+	 *
+	 * @return array<string, string> Old type id => new type id.
+	 */
+	private function renamedTypes(): array {
+		return FlowNodeRegistryInterface::RENAMED_TYPES;
+	}//end renamedTypes()
 
 	/**
 	 * Rewrite one flow's renamed node types, saving only if something changed.

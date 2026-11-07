@@ -38,6 +38,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderDelivery;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderPlatform;
+use OCA\OpenRegister\Search\BackgroundJob\Support\ReportRenderSources;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -123,30 +126,79 @@ class ReportRenderJob extends TimedJob {
 	private const DASHBOARD_SCAN_LIMIT = 200;
 
 	/**
+	 * Register lookup.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup for the register's schemas.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object loader.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Render composer.
+	 *
+	 * @var ReportRenderService
+	 */
+	private readonly ReportRenderService $renderService;
+
+	/**
+	 * Files root.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * App-config reader.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * Logger.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory.
-	 * @param IAppConfig $appConfig App-config reader.
-	 * @param ReportRenderService $renderService Render composer.
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup for the register's schemas.
-	 * @param MagicMapperInterface $objectMapper Object loader.
-	 * @param IRootFolder $rootFolder Files root.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ITimeFactory         $time     Time factory.
+	 * @param ReportRenderSources  $sources  Register, schema and object lookup.
+	 * @param ReportRenderDelivery $delivery Render composer and Files root.
+	 * @param ReportRenderPlatform $platform App-config reader and logger.
+	 *
+	 * @spec openspec/specs/rapportage-bi-export/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly IAppConfig $appConfig,
-		private readonly ReportRenderService $renderService,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly IRootFolder $rootFolder,
-		private readonly LoggerInterface $logger,
+		ReportRenderSources $sources,
+		ReportRenderDelivery $delivery,
+		ReportRenderPlatform $platform,
 	) {
 		parent::__construct(time: $time);
+		$this->registerMapper = $sources->registerMapper;
+		$this->schemaMapper = $sources->schemaMapper;
+		$this->objectMapper = $sources->objectMapper;
+		$this->renderService = $delivery->renderService;
+		$this->rootFolder = $delivery->rootFolder;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
 		$this->setInterval(seconds: self::RUN_INTERVAL_SECONDS);
-
 	}//end __construct()
 
 	/**

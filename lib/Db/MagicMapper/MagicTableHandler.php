@@ -58,7 +58,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.StaticAccess)           MagicMapper::isTableColumnsVerified / setTableColumnsVerified
  *   are process-scoped static caches with no injectable alternative in the current design.
  */
-class MagicTableHandler {
+class MagicTableHandler implements MagicTableHandlerInterface {
 	/**
 	 * Constructor for MagicTableHandler
 	 *

@@ -4,7 +4,7 @@
  * Lane D13: the classes below are reached from other components only through
  * an interface next to them.
  *
- * Two Service/Object draft classes that a BackgroundJob, an occ command and the object-draft controller used to name directly.
+ * Classes that other components used to name directly: two Service/Object draft classes and a Db/MagicMapper handler.
  *
  * Each class implements its interface, the component's registrar binds the
  * interface to the class, and no lib/ file outside the class's component
@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
@@ -54,6 +57,7 @@ final class D13InterfaceBindingsTest extends TestCase {
 	private const HIDDEN = [
 		DraftActivation::class => [DraftActivationInterface::class, ContractBindings::class],
 		DraftExpiry::class => [DraftExpiryInterface::class, ContractBindings::class],
+		MagicTableHandler::class => [MagicTableHandlerInterface::class, DbRegistrar::class],
 	];
 
 	/**

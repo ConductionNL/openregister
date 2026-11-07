@@ -64,7 +64,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
-class ToolRegistry {
+class ToolRegistry implements ToolRegistryInterface {
 
 	/**
 	 * Registered tools

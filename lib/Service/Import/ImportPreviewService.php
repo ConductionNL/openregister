@@ -44,21 +44,11 @@ namespace OCA\OpenRegister\Service\Import;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
-use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRow;
-use OCA\OpenRegister\Db\ImportPreviewRowMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
-use OCA\OpenRegister\Service\MigrationPackService;
-use OCA\OpenRegister\Service\Object\ValidateObjectInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 
@@ -101,32 +91,14 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ImportPreviewMapper $previewMapper Preview persistence.
-	 * @param ImportPreviewRowMapper $rowMapper Per-row decision persistence.
-	 * @param SourceRowReader $reader The file reader.
-	 * @param MatchResolver $matchResolver The match lookup.
-	 * @param MappingEngine $mappingEngine The saved column mapping.
-	 * @param MigrationPackService $packService Saved mappings.
-	 * @param ImportService $importService The row transform the write path uses.
-	 * @param ObjectOperationsInterface $objectService The write path.
-	 * @param ValidateObjectInterface $validateObject Schema validation.
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup.
-	 * @param LoggerInterface $logger Logger.
+	 * @param ImportPreviewStore $store The preview and row persistence, the file reader and the logger.
+	 * @param ImportPreviewMatching $matching The match lookup, the saved column mapping and the row transform.
+	 * @param ImportPreviewTargets $targets The register and schema lookups, schema validation and the write path.
 	 */
 	public function __construct(
-		private readonly ImportPreviewMapper $previewMapper,
-		private readonly ImportPreviewRowMapper $rowMapper,
-		private readonly SourceRowReader $reader,
-		private readonly MatchResolver $matchResolver,
-		private readonly MappingEngine $mappingEngine,
-		private readonly MigrationPackService $packService,
-		private readonly ImportService $importService,
-		private readonly ObjectOperationsInterface $objectService,
-		private readonly ValidateObjectInterface $validateObject,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly LoggerInterface $logger,
+		private readonly ImportPreviewStore $store,
+		private readonly ImportPreviewMatching $matching,
+		private readonly ImportPreviewTargets $targets,
 	) {
 	}//end __construct()
 
@@ -153,7 +125,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		$sourceName = (string)($params['sourceName'] ?? basename($filePath));
-		$format = ($params['format'] ?? $this->reader->formatFromName(fileName: $sourceName));
+		$format = ($params['format'] ?? $this->store->reader->formatFromName(fileName: $sourceName));
 
 		if ($format === null) {
 			throw new InvalidArgumentException(
@@ -178,7 +150,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$this->resolvePack(packSlug: (string)$packSlug, schema: $schema);
 		}
 
-		return $this->previewMapper->createFromArray(
+		return $this->store->previewMapper->createFromArray(
 			data: [
 				'registerId' => $register->getId(),
 				'schemaId' => $schema->getId(),
@@ -187,7 +159,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				'matchKey' => $matchKey,
 				'sourceName' => $sourceName,
 				'sourceFormat' => $format,
-				'sourceHash' => $this->reader->hash(filePath: $filePath),
+				'sourceHash' => $this->store->reader->hash(filePath: $filePath),
 				'sourcePath' => $filePath,
 				'state' => ImportPreview::STATE_PENDING,
 				'createdBy' => $currentUser?->getUID(),
@@ -208,7 +180,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 */
 	public function runPreview(ImportPreview $preview): ImportPreview {
 		$preview->setState(ImportPreview::STATE_PREVIEWING);
-		$this->previewMapper->persist(preview: $preview);
+		$this->store->previewMapper->persist(preview: $preview);
 
 		try {
 			$register = $this->resolveRegister(value: $preview->getRegisterId());
@@ -219,14 +191,14 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				$pack = $this->resolvePack(packSlug: $preview->getPackSlug(), schema: $schema);
 			}
 
-			$rows = $this->reader->read(
+			$rows = $this->store->reader->read(
 				filePath: (string)$preview->getSourcePath(),
 				format: (string)$preview->getSourceFormat()
 			);
 
 			// Re-deciding a preview replaces its decisions rather than adding
 			// a second set beside them.
-			$this->rowMapper->deleteByPreview(previewId: (int)$preview->getId());
+			$this->store->rowMapper->deleteByPreview(previewId: (int)$preview->getId());
 
 			$preview->setTotal(count($rows));
 			$preview->setProcessed(0);
@@ -234,7 +206,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			$preview->setToUpdate(0);
 			$preview->setToSkip(0);
 			$preview->setToRefuse(0);
-			$this->previewMapper->persist(preview: $preview);
+			$this->store->previewMapper->persist(preview: $preview);
 
 			foreach ($rows as $index => $row) {
 				$decision = $this->decideRow(
@@ -249,18 +221,18 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 				$preview->setProcessed($index + 1);
 
 				if ((($index + 1) % self::PROGRESS_EVERY) === 0) {
-					$this->previewMapper->persist(preview: $preview);
+					$this->store->previewMapper->persist(preview: $preview);
 				}
 			}
 
 			$preview->setState(ImportPreview::STATE_PREVIEWED);
 			$preview->setReport($this->buildReport(preview: $preview));
 
-			return $this->previewMapper->persist(preview: $preview);
+			return $this->store->previewMapper->persist(preview: $preview);
 		} catch (Throwable $exception) {
 			$preview->setState(ImportPreview::STATE_FAILED);
 			$preview->setReport(['error' => $exception->getMessage()]);
-			$this->previewMapper->persist(preview: $preview);
+			$this->store->previewMapper->persist(preview: $preview);
 
 			throw $exception;
 		} finally {
@@ -281,19 +253,19 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function releaseSource(ImportPreview $preview): void {
 		$path = $preview->getSourcePath();
 
-		if ($this->reader->isStaged(filePath: $path) === false) {
+		if ($this->store->reader->isStaged(filePath: $path) === false) {
 			return;
 		}
 
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
-			$this->logger->warning(
+			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
 				context: ['previewId' => $preview->getId()]
 			);
 		}
 
 		$preview->setSourcePath(null);
-		$this->previewMapper->persist(preview: $preview);
+		$this->store->previewMapper->persist(preview: $preview);
 	}//end releaseSource()
 
 	/**
@@ -335,11 +307,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$schema = $this->resolveSchema(value: $preview->getSchemaId());
 
 		$preview->setState(ImportPreview::STATE_COMMITTING);
-		$this->previewMapper->persist(preview: $preview);
+		$this->store->previewMapper->persist(preview: $preview);
 
 		try {
 			while (true) {
-				$batch = $this->rowMapper->findPendingWrites(
+				$batch = $this->store->rowMapper->findPendingWrites(
 					previewId: (int)$preview->getId(),
 					limit: self::COMMIT_BATCH
 				);
@@ -356,17 +328,17 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 					currentUser: $currentUser
 				);
 
-				$this->previewMapper->persist(preview: $preview);
+				$this->store->previewMapper->persist(preview: $preview);
 			}
 
 			$preview->setState(ImportPreview::STATE_COMMITTED);
 			$preview->setReport($this->buildReport(preview: $preview));
 
-			return $this->previewMapper->persist(preview: $preview);
+			return $this->store->previewMapper->persist(preview: $preview);
 		} catch (Throwable $exception) {
 			$preview->setState(ImportPreview::STATE_FAILED);
 			$preview->setReport(['error' => $exception->getMessage()]);
-			$this->previewMapper->persist(preview: $preview);
+			$this->store->previewMapper->persist(preview: $preview);
 
 			throw $exception;
 		}//end try
@@ -427,7 +399,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			$result = $this->objectService->saveObjects(
+			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
 				register: $register,
 				schema: $schema,
@@ -450,7 +422,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			// A batch that threw says nothing about which row was at fault, and
 			// a per-row outcome is the whole point of a previewed import. Walk
 			// the batch one row at a time so every row gets its own verdict.
-			$this->logger->warning(
+			$this->store->logger->warning(
 				message: '[ImportPreviewService] Batch write failed, isolating rows: '.$exception->getMessage(),
 				context: ['previewId' => $preview->getId()]
 			);
@@ -486,7 +458,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		?IUser $currentUser,
 	): void {
 		try {
-			$this->objectService->saveObject(
+			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
 				register: $register,
 				schema: $schema,
@@ -515,7 +487,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		foreach ($invalid as $item) {
 			$key = self::batchKeyOf(batch: $batch, object: ($item['object'] ?? $item));
 			if ($key === null) {
-				$this->logger->warning(message: '[ImportPreviewService] A refused row matches no row of its batch');
+				$this->store->logger->warning(message: '[ImportPreviewService] A refused row matches no row of its batch');
 				return null;
 			}
 
@@ -565,7 +537,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 */
 	private function stampFailed(ImportPreview $preview, ImportPreviewRow $row): void {
 		$row->setAppliedAt(new DateTime());
-		$this->rowMapper->persist(row: $row);
+		$this->store->rowMapper->persist(row: $row);
 		$preview->setFailed(($preview->getFailed() + 1));
 	}//end stampFailed()
 
@@ -582,7 +554,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($rows as $row) {
 			$row->setAppliedAt($now);
-			$this->rowMapper->persist(row: $row);
+			$this->store->rowMapper->persist(row: $row);
 		}
 
 		$preview->setApplied(($preview->getApplied() + count($rows)));
@@ -614,7 +586,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$data = $row['data'];
 
 		if ($pack !== null) {
-			$mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $data, rowNumber: $row['row']);
+			$mapped = $this->matching->mappingEngine->mapRow(pack: $pack, sourceRow: $data, rowNumber: $row['row']);
 
 			if (($mapped['errors'] ?? []) !== []) {
 				$messages = [];
@@ -629,7 +601,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			$object = $this->importService->transformCsvRowToObject(
+			$object = $this->matching->importService->transformCsvRowToObject(
 				rowData: $data,
 				register: $register,
 				schema: $schema,
@@ -639,18 +611,18 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return $this->refusal(reason: 'The row could not be mapped onto the schema: '.$exception->getMessage());
 		}
 
-		$validation = $this->validateObject->validateObject(object: $object, schema: $schema);
+		$validation = $this->targets->validateObject->validateObject(object: $object, schema: $schema);
 
 		if ($validation->isValid() === false) {
 			return $this->refusal(
 				reason: 'The row does not validate against the schema: '
-					.$this->validateObject->generateErrorMessage(result: $validation),
+					.$this->targets->validateObject->generateErrorMessage(result: $validation),
 				payload: $object
 			);
 		}
 
 		try {
-			$candidates = $this->matchResolver->resolve(
+			$candidates = $this->matching->matchResolver->resolve(
 				object: $object,
 				matchKey: ($preview->getMatchKey() ?? []),
 				register: $register,
@@ -738,7 +710,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		$entity->setCandidates($decision['candidates']);
 		$entity->setPayload($decision['payload']);
 
-		$this->rowMapper->persist(row: $entity);
+		$this->store->rowMapper->persist(row: $entity);
 
 		match ($decision['decision']) {
 			ImportPreviewRow::DECISION_CREATE => $preview->setToCreate(($preview->getToCreate() + 1)),
@@ -758,7 +730,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function buildReport(ImportPreview $preview): array {
 		$refusals = [];
 
-		foreach ($this->rowMapper->findByPreview(
+		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
 			decision: ImportPreviewRow::DECISION_REFUSE
 		) as $row) {
@@ -803,7 +775,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->registerMapper->find($value);
+			return $this->targets->registerMapper->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Register "'.(string)$value.'" was not found.', 0, $exception);
 		}
@@ -828,7 +800,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		}
 
 		try {
-			return $this->schemaMapper->find($value);
+			return $this->targets->schemaMapper->find($value);
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Schema "'.(string)$value.'" was not found.', 0, $exception);
 		}
@@ -849,7 +821,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 */
 	private function resolvePack(string $packSlug, Schema $schema): array {
 		try {
-			$definition = $this->packService->findByPackSlug(packSlug: $packSlug)->getDefinitionArray();
+			$definition = $this->matching->packService->findByPackSlug(packSlug: $packSlug)->getDefinitionArray();
 		} catch (DoesNotExistException $exception) {
 			throw new InvalidArgumentException('Column mapping "'.$packSlug.'" was not found.', 0, $exception);
 		}

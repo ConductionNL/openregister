@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Mcp\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
 use OCA\OpenRegister\Mcp\Tool\ToolInterface;
 use OCP\EventDispatcher\Event;
 
@@ -66,18 +66,18 @@ class ToolRegistrationEvent extends Event {
 	/**
 	 * Tool registry
 	 *
-	 * @var ToolRegistry
+	 * @var ToolRegistryInterface
 	 */
-	private ToolRegistry $registry;
+	private ToolRegistryInterface $registry;
 
 	/**
 	 * Constructor
 	 *
-	 * @param ToolRegistry $registry Tool registry to register tools with
+	 * @param ToolRegistryInterface $registry Tool registry to register tools with
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 */
-	public function __construct(ToolRegistry $registry) {
+	public function __construct(ToolRegistryInterface $registry) {
 		parent::__construct();
 		$this->registry = $registry;
 	}//end __construct()
