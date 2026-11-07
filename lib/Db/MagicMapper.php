@@ -1707,7 +1707,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * UNION ALL is faster but has limitations:
 	 * - All tables must exist
 	 * - No complex aggregations
-	 * - No related-row filters (`_related`, `_referenced`)
+	 * - No related-row filters (`_related`, `_referenced`) or `_relations_contains`
 	 * - Simpler query structure
 	 *
 	 * @param array $query Search query parameters.
@@ -1726,9 +1726,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true
-			|| array_key_exists('_element', $query) === true
-		) {
+		// `_relations_contains` has no raw-SQL twin either: a union would answer
+		// without the filter.
+		$builderOnly = ['_related', '_referenced', '_element', '_relations_contains'];
+		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
 
@@ -8230,6 +8231,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$filters['_search'] = $search;
 		}
 
+		$filters = $this->narrowedToUses(query: $filters, uses: $uses);
+
 		$entities = $this->findAllInRegisterSchemaTable(
 			register: $register,
 			schema: $schema,
@@ -9539,6 +9542,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return [];
 		}
 
+		$query = $this->narrowedToUses(query: $query, uses: $uses);
+
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
@@ -9640,6 +9645,32 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end selectsNothing()
 
 	/**
+	 * The query narrowed to the objects that use the given object.
+	 *
+	 * A relation the query already asks for stays: the objects have to use both.
+	 *
+	 * @param array       $query The search query.
+	 * @param string|null $uses  The object they have to use, or null or empty for no narrowing.
+	 *
+	 * @return array The query.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function narrowedToUses(array $query, ?string $uses): array {
+		if ($uses === null || $uses === '') {
+			return $query;
+		}
+
+		$relations = array_unique([...(array)($query['_relations_contains'] ?? []), $uses]);
+		$query['_relations_contains'] = $uses;
+		if (count($relations) > 1) {
+			$query['_relations_contains'] = array_values($relations);
+		}
+
+		return $query;
+	}//end narrowedToUses()
+
+	/**
 	 * Count search objects.
 	 *
 	 * @param array $query Search query
@@ -9667,6 +9698,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
 			return 0;
 		}
+
+		$query = $this->narrowedToUses(query: $query, uses: $uses);
 
 		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
 		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
@@ -9839,8 +9872,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		$request = [
-			'search'        => $searchQuery,
-			'count'         => $this->narrowedToIds(query: $countQuery, ids: $ids),
+			'search'        => $this->narrowedToUses(query: $searchQuery, uses: $uses),
+			'count'         => $this->narrowedToUses(query: $this->narrowedToIds(query: $countQuery, ids: $ids), uses: $uses),
 			'activeOrgUuid' => $_activeOrgUuid,
 			'rbac'          => $_rbac,
 			'multitenancy'  => $_multitenancy,
@@ -9855,8 +9888,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjectsPaginated()
 
 	/**
-	 * A search that resolved no register and schema: a given id list narrows
-	 * a search of those, so alone it selects nothing.
+	 * A search that resolved no register and schema: given ids or `uses` narrow
+	 * a search of those, so alone they select nothing.
 	 *
 	 * @param array $request The search request: queries and flags
 	 * @param array $scope   The search scope
@@ -9864,7 +9897,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array<string, mixed>
 	 */
 	private function searchUnresolvedScope(array $request, array $scope): array {
-		if ($request['ids'] !== null) {
+		if ($request['ids'] !== null || ($request['uses'] ?? '') !== '') {
 			return ['results' => [], 'total' => 0, 'registers' => [], 'schemas' => []];
 		}
 
