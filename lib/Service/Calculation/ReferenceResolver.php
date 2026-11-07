@@ -203,7 +203,12 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 */
 	private function resolveByMode(string $mode, ReferenceQuery $query, array $spec): array {
 		if ($mode === 'relatedObject') {
-			return $this->resolveRelatedObject(query: $query, field: (string)($spec['field'] ?? ''));
+			$id = $this->foreignKey(payload: $query->payload, field: (string)($spec['field'] ?? ''));
+			if ($id === null) {
+				return ['entity' => null, 'attempted' => false];
+			}
+
+			return $this->resolveRelatedObject(query: $query, id: $id);
 		}
 
 		return $this->resolveLookup(query: $query, spec: $spec);
@@ -228,49 +233,32 @@ class ReferenceResolver implements ReferenceResolverInterface {
 	 * Resolve a `relatedObject` (FK) reference via ObjectService::find().
 	 *
 	 * @param ReferenceQuery $query The read's inputs.
-	 * @param string $field Local field holding the referenced uuid/id.
+	 * @param string|int $id The filled foreign key.
 	 *
-	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object, and whether a key was set.
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object; attempted, since a key was set.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	private function resolveRelatedObject(ReferenceQuery $query, string $field): array {
-		$id = $this->foreignKey(payload: $query->payload, field: $field);
-		if ($id === null) {
-			return ['entity' => null, 'attempted' => false];
-		}
-
+	private function resolveRelatedObject(ReferenceQuery $query, string|int $id): array {
 		// Read as the system, not as the saver: an anonymous portal write and
 		// an administrator's write must compute the same value. The tenant
 		// boundary is enforced by the guard below instead of by the session.
-		$entity = WriteCause::asLookup(fn () => $this->findRelated(id: $id, query: $query));
+		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $id,
+			register: $query->register,
+			schema: $query->schema,
+			_rbac: false,
+			_multitenancy: false
+		));
 
 		return [
 			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $query->organisation, candidates: [$entity]),
 			'attempted' => true,
 		];
 	}//end resolveRelatedObject()
-
-	/**
-	 * Read the object a foreign key names, as the system.
-	 *
-	 * @param string|int $id The foreign key.
-	 * @param ReferenceQuery $query The read's inputs.
-	 *
-	 * @return ObjectEntity|null The object, or null when absent.
-	 */
-	private function findRelated(string|int $id, ReferenceQuery $query): ?ObjectEntity {
-		return $this->objectService->find(
-			id: $id,
-			register: $query->register,
-			schema: $query->schema,
-			_rbac: false,
-			_multitenancy: false
-		);
-	}//end findRelated()
 
 	/**
 	 * The filled foreign key a `relatedObject` reference reads, or null.
