@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowScheduleService;
+use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
@@ -57,6 +59,7 @@ final class D6InterfaceBindingsTest extends TestCase {
 	 */
 	private const HIDDEN = [
 		AwaitSignalNode::class => [AwaitSignalNodeInterface::class, ContractBindings::class],
+		FlowScheduleService::class => [FlowScheduleServiceInterface::class, ContractBindings::class],
 		FlowStateNode::class => [FlowStateNodeInterface::class, ContractBindings::class],
 		LinkObjectNode::class => [LinkObjectNodeInterface::class, ContractBindings::class],
 		SetFieldsNode::class => [SetFieldsNodeInterface::class, ContractBindings::class],
