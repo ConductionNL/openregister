@@ -54,6 +54,8 @@ final class ServiceHoursDeclaration {
 	 * @return array<int, array<int, array{start: int, end: int}>> The windows.
 	 *
 	 * @throws FlowTimerValidationException On any refused weekday or window.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
 	public function windows(mixed $value): array {
 		if (is_array($value) === false) {
