@@ -272,8 +272,14 @@ class SchemaDeclarationsGoldenTest extends TestCase {
 	 */
 	public function testAGeneratedIdentifierRefusalCarriesOneError(): void {
 		$e = new GeneratedIdentifierException('Nope.', 'p/q');
-		$this->assertSame([['code' => 'generated-identifier-invalid', 'key' => 'x-openregister-generated', 'path' => 'p/q', 'message' => 'Nope.']], $e->getErrors());
-		$this->assertSame([['code' => 'reference-filter-invalid', 'key' => 'x-openregister-reference-filter', 'path' => '', 'message' => 'M']], (new ReferenceFilterException('M'))->getErrors());
+		$this->assertSame(
+			[['code' => 'generated-identifier-invalid', 'key' => 'x-openregister-generated', 'path' => 'p/q', 'message' => 'Nope.']],
+			$e->getErrors()
+		);
+		$this->assertSame(
+			[['code' => 'reference-filter-invalid', 'key' => 'x-openregister-reference-filter', 'path' => '', 'message' => 'M']],
+			(new ReferenceFilterException('M'))->getErrors()
+		);
 	}//end testAGeneratedIdentifierRefusalCarriesOneError()
 
 	/**
@@ -374,7 +380,10 @@ class SchemaDeclarationsGoldenTest extends TestCase {
 		$vocabulary = new PropertyVocabulary();
 		$all        = $vocabulary->all();
 
-		$this->assertSame(['types', 'categories', 'constraints', 'modifiers', 'passthrough', 'keys', 'localisation', 'vendorExtensionPrefix', 'counts'], array_keys($all));
+		$this->assertSame(
+			['types', 'categories', 'constraints', 'modifiers', 'passthrough', 'keys', 'localisation', 'vendorExtensionPrefix', 'counts'],
+			array_keys($all)
+		);
 		$this->assertSame(
 			[
 				'types'       => count($all['types']),
