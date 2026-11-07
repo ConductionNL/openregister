@@ -28,13 +28,11 @@ jest.mock('../store/store.js', () => ({
  * @return {object} The wrapper
  */
 function host() {
-	return mount(
-		{
-			mixins: [scopeListLoader],
-			data: () => ({ registerLoading: true, schemaLoading: true }),
-			render: () => null,
-		},
-	)
+	return mount({
+		mixins: [scopeListLoader],
+		data: () => ({ registerLoading: true, schemaLoading: true }),
+		render: () => null,
+	})
 }
 
 /**
