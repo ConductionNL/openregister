@@ -6967,12 +6967,30 @@ class RenderObjectTest extends TestCase {
 
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
 		$data = ['org' => 1, 'orgs' => [2, 9, ['x' => 1]], 'emb' => ['id' => 'kept', 'name' => 'Embedded'], 'plain' => 'p-1', 'blank' => 'b'];
-		[$objectData, $extend] = $this->invokePrivate(
-			'extendObjectSourceRefs',
-			[$entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, 0, ['visited']]
-		);
+		[$objectData, $extend] = $this->extendSourceRefs($entity, ['org', 'orgs', 'emb', 'org.sub', 'plain', 'blank', 'other'], $data, ['visited']);
 
 		return [$objectData, $extend, $asked];
+	}
+
+	/**
+	 * Run one extendObjectSourceRefs() pass.
+	 *
+	 * @param ObjectEntity $entity     The entity.
+	 * @param array        $extend     The extend list.
+	 * @param array        $objectData The object data.
+	 * @param array        $visitedIds The visited ids.
+	 *
+	 * @return array{0: array, 1: array} The object data and the remaining extends.
+	 */
+	private function extendSourceRefs(ObjectEntity $entity, array $extend, array $objectData, array $visitedIds = []): array {
+		$run = new \OCA\OpenRegister\Service\Object\SourceRefRun();
+		$run->entity = $entity;
+		$run->extend = $extend;
+		$run->objectData = $objectData;
+		$run->visitedIds = $visitedIds;
+		$this->invokePrivate('extendObjectSourceRefs', [$run]);
+
+		return [$run->objectData, $run->extend];
 	}
 
 	/**
@@ -6982,6 +7000,6 @@ class RenderObjectTest extends TestCase {
 	 */
 	public function testExtendObjectSourceRefsWithoutARegistryChangesNothing(): void {
 		$entity = $this->createBasicEntity(1, 'aaaaaaaa-0000-0000-0000-000000000001');
-		$this->assertSame([['org' => 1], ['org']], $this->invokePrivate('extendObjectSourceRefs', [$entity, ['org'], ['org' => 1], 0, []]));
+		$this->assertSame([['org' => 1], ['org']], $this->extendSourceRefs($entity, ['org'], ['org' => 1]));
 	}
 }
