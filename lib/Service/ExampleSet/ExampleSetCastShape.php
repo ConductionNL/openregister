@@ -38,8 +38,7 @@ class ExampleSetCastShape {
 	/**
 	 * The cast so far: people, organisations and groups by key, and all three merged as `entries`.
 	 *
-	 * @var array{people: array<string, array<string, mixed>>, organisations: array<string, array<string, mixed>>,
-	 *            groups: array<string, array<string, mixed>>, entries: array<string, array<string, mixed>>}
+	 * @var array<string, array<string, array<string, mixed>>>
 	 */
 	private array $keyed = ['people' => [], 'organisations' => [], 'groups' => [], 'entries' => []];
 
@@ -97,6 +96,8 @@ class ExampleSetCastShape {
 			throw new ExampleSetException($this->file.': every cast entry needs a key of its own; "'.$key.'" in '.$part.' is missing or used twice.');
 		}
 
+		// The entry has a key, so it is an array; the cast only tells static analysis so.
+		$entry = (array) $entry;
 		if ($part !== 'groups' && is_string($entry['contactsUid'] ?? null) === false) {
 			$entry['contactsUid'] = 'example-set-'.$this->set.'-'.$key;
 		}
