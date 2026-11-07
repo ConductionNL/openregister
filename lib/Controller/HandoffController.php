@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -71,13 +71,13 @@ class HandoffController extends Controller {
 	 *
 	 * @param string $appName App name (injected by NC).
 	 * @param IRequest $request Request (injected by NC).
-	 * @param HandoffService $handoffService The handoff engine.
+	 * @param HandoffServiceInterface $handoffService The handoff engine.
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly HandoffService $handoffService,
+		private readonly HandoffServiceInterface $handoffService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);

@@ -38,6 +38,9 @@ use OCA\OpenRegister\BulkAction\RunActionAction;
 use OCA\OpenRegister\BulkAction\RunActionActionInterface;
 use OCA\OpenRegister\BulkAction\SetPropertiesAction;
 use OCA\OpenRegister\BulkAction\SetPropertiesActionInterface;
+use OCA\OpenRegister\ContextChat\ContentProvider;
+use OCA\OpenRegister\ContextChat\ContentProviderInterface;
+use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
@@ -75,6 +78,11 @@ final class D9InterfaceBindingsTest extends TestCase {
 		AssignAction::class => [
 			AssignActionInterface::class,
 			BulkActionRegistrar::class,
+			[],
+		],
+		ContentProvider::class => [
+			ContentProviderInterface::class,
+			ContextChatRegistrar::class,
 			[],
 		],
 		RestorePriorValuesAction::class => [
