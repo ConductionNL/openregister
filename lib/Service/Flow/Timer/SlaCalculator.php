@@ -235,8 +235,7 @@ final class SlaCalculator {
 			start: DateTimeImmutable::createFromInterface($from),
 			value: $value,
 			unit: $unit,
-			calendar: $calendar,
-			collector: $collector
+			calendar: $calendar
 		);
 		$this->validateUnit(unit: $unit);
 
@@ -248,7 +247,7 @@ final class SlaCalculator {
 			return $this->addCalendarDays(start: $addition->start, value: $value);
 		}
 
-		return $this->walk(addition: $addition);
+		return $this->walk(addition: $addition, collector: $collector);
 	}//end add()
 
 	/**
@@ -437,20 +436,21 @@ final class SlaCalculator {
 	/**
 	 * Walk over working days in the request's direction, consuming fractions of each.
 	 *
-	 * @param SlaAddition $addition The request; its calendar is required.
+	 * @param SlaAddition        $addition  The request; its calendar is required.
+	 * @param WalkCollector|null $collector Records each day the walk examines, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
 	 *
 	 * @throws FlowTimerValidationException Without a calendar, or when the walk exceeds its bound.
 	 */
-	private function walk(SlaAddition $addition): DateTimeImmutable {
+	private function walk(SlaAddition $addition, ?WalkCollector $collector): DateTimeImmutable {
 		$addition->calendar();
 		$cursor = $addition->start;
 		$remaining = $addition->amount();
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
 			$next = $this->boundary(addition: $addition, cursor: $cursor);
 			$available = (abs($next->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
-			if ($addition->examine(day: self::earlier(cursor: $cursor, next: $next)) === true) {
+			if ($addition->examine(day: self::earlier(cursor: $cursor, next: $next), collector: $collector) === true) {
 				if ($remaining <= ($available + self::EPSILON)) {
 					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', $addition->sign() * (int)round($remaining * self::DAY)));
 				}

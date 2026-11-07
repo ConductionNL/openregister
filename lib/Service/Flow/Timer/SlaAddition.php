@@ -38,14 +38,12 @@ final class SlaAddition {
 	 * @param float                $value     The amount; negative subtracts.
 	 * @param string               $unit      The unit.
 	 * @param WorkingCalendar|null $calendar  The resolved calendar, when one was given.
-	 * @param WalkCollector|null   $collector Records the walk when a diagnostic is asking.
 	 */
 	public function __construct(
 		public readonly DateTimeImmutable $start,
 		public readonly float $value,
 		public readonly string $unit,
 		private readonly ?WorkingCalendar $calendar,
-		private readonly ?WalkCollector $collector,
 	) {
 
 	}//end __construct()
@@ -162,15 +160,16 @@ final class SlaAddition {
 	 * engine did not apply. A day that is non-working because the working week
 	 * does not include it has no rule, and the collector calls that `weekend`.
 	 *
-	 * @param DateTimeImmutable $day The day examined.
+	 * @param DateTimeImmutable  $day       The day examined.
+	 * @param WalkCollector|null $collector Records the walk when a diagnostic is asking.
 	 *
 	 * @return boolean True when it is a working day.
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
-	public function examine(DateTimeImmutable $day): bool {
+	public function examine(DateTimeImmutable $day, ?WalkCollector $collector): bool {
 		$working = $this->calendar()->isWorkingDay($day);
-		$this->collector?->examine(day: $day, counted: $working, rule: $this->skipRule(day: $day, counted: $working));
+		$collector?->examine(day: $day, counted: $working, rule: $this->skipRule(day: $day, counted: $working));
 
 		return $working;
 	}//end examine()
