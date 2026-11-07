@@ -21,16 +21,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 
 /**
  * Handles file publishing and archiving operations.
@@ -59,13 +59,13 @@ class FilePublishingHandler {
 	/**
 	 * Constructor for FilePublishingHandler.
 	 *
-	 * @param MagicMapperInterface $objectEntityMapper Object entity mapper for fetching objects.
+	 * @param MagicObjectFinderInterface $objectEntityMapper Object entity mapper for fetching objects.
 	 * @param FileMapperInterface $fileMapper File mapper for share operations.
 	 * @param LoggerInterface $logger Logger for logging operations.
 	 * @param IServerContainer $container Container, for the lazily resolved party indicator guard.
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectEntityMapper,
+		private readonly MagicObjectFinderInterface $objectEntityMapper,
 		private readonly FileMapperInterface $fileMapper,
 		private readonly LoggerInterface $logger,
 		private readonly IServerContainer $container,
