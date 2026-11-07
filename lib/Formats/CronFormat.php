@@ -81,12 +81,8 @@ class CronFormat implements Format {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function validate(mixed $data): bool {
-		if (is_string($data) === false) {
-			return false;
-		}
-
-		$fields = preg_split('/\s+/', trim($data), flags: PREG_SPLIT_NO_EMPTY);
-		if (is_array($fields) === false || count($fields) !== 5) {
+		$fields = $this->fieldsOf(data: $data);
+		if ($fields === null) {
 			return false;
 		}
 
@@ -98,6 +94,29 @@ class CronFormat implements Format {
 
 		return true;
 	}//end validate()
+
+	/**
+	 * Split a value into its five whitespace-separated fields.
+	 *
+	 * @param mixed $data The data to split.
+	 *
+	 * @return list<string>|null The five fields, or null when the value is not
+	 *                           a string of exactly five fields.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function fieldsOf(mixed $data): ?array {
+		if (is_string($data) === false) {
+			return null;
+		}
+
+		$fields = preg_split('/\s+/', trim($data), flags: PREG_SPLIT_NO_EMPTY);
+		if (is_array($fields) === false || count($fields) !== 5) {
+			return null;
+		}
+
+		return $fields;
+	}//end fieldsOf()
 
 	/**
 	 * Whether one field is a legal term for its position.
@@ -144,25 +163,33 @@ class CronFormat implements Format {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function isValidTerm(string $term, array $range): bool {
-		if ($term === '') {
-			return false;
-		}
-
 		$parts = explode('/', $term);
-		if (count($parts) > 2) {
+		if ($term === '' || count($parts) > 2) {
 			return false;
 		}
 
-		// A step of 0 would never advance, so the expression names no time at
-		// all rather than every time.
-		if (count($parts) === 2
-			&& (preg_match('/^\d+$/', $parts[1]) !== 1 || (int)$parts[1] < 1)
-		) {
+		if (count($parts) === 2 && $this->isValidStep(step: $parts[1]) === false) {
 			return false;
 		}
 
 		return $this->isValidBody(body: $parts[0], range: $range);
 	}//end isValidTerm()
+
+	/**
+	 * Whether a step — the part after the slash — is legal.
+	 *
+	 * A step of 0 would never advance, so the expression names no time at all
+	 * rather than every time.
+	 *
+	 * @param string $step The step.
+	 *
+	 * @return bool True when the step is a positive whole number.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function isValidStep(string $step): bool {
+		return preg_match('/^\d+$/', $step) === 1 && (int)$step >= 1;
+	}//end isValidStep()
 
 	/**
 	 * Whether a term's body — the part before any step — is legal.
@@ -181,31 +208,52 @@ class CronFormat implements Format {
 			return true;
 		}
 
-		$bounds = explode('-', $body);
-		if (count($bounds) > 2) {
-			return false;
-		}
-
-		$numbers = [];
-		foreach ($bounds as $bound) {
-			if (preg_match('/^\d+$/', $bound) !== 1) {
-				return false;
-			}
-
-			$value = (int)$bound;
-			if ($value < $range[0] || $value > $range[1]) {
-				return false;
-			}
-
-			$numbers[] = $value;
-		}
+		$numbers = $this->boundsOf(body: $body, range: $range);
 
 		// A backwards range names no values at all.
-		if (count($numbers) === 2 && $numbers[0] > $numbers[1]) {
-			return false;
+		return $numbers !== null && (count($numbers) < 2 || $numbers[0] <= $numbers[1]);
+	}//end isValidBody()
+
+	/**
+	 * The one or two numbers of a value or `a-b` range body.
+	 *
+	 * @param string          $body  The body.
+	 * @param array{int, int} $range Its inclusive bounds.
+	 *
+	 * @return list<int>|null The bounds, or null when there are more than two
+	 *                        or one is not a whole number inside the range.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function boundsOf(string $body, array $range): ?array {
+		$bounds = explode('-', $body);
+		if (count($bounds) > 2) {
+			return null;
 		}
 
-		return true;
-	}//end isValidBody()
+		foreach ($bounds as $bound) {
+			if ($this->isNumberInRange(value: $bound, range: $range) === false) {
+				return null;
+			}
+		}
+
+		return array_map('intval', $bounds);
+	}//end boundsOf()
+
+	/**
+	 * Whether a value is a whole number inside the inclusive range.
+	 *
+	 * @param string          $value The value.
+	 * @param array{int, int} $range Its inclusive bounds.
+	 *
+	 * @return bool True when the value is in range.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function isNumberInRange(string $value, array $range): bool {
+		return preg_match('/^\d+$/', $value) === 1
+			&& (int)$value >= $range[0]
+			&& (int)$value <= $range[1];
+	}//end isNumberInRange()
 
 }//end class
