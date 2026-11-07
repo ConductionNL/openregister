@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\CollectiveLinkService;
 use OCA\OpenRegister\Service\CollectiveLinkServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CospendLinkService;
+use OCA\OpenRegister\Service\CospendLinkServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -46,6 +48,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 	 */
 	private const CASES = [
 		CollectiveLinkService::class => [CollectiveLinkServiceInterface::class, ContractBindings::class, 'Service'],
+		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
 	];
 
 	/**

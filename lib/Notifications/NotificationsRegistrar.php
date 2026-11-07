@@ -68,6 +68,8 @@ use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
+use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCacheInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\Files\AppData\IAppDataFactory;
@@ -95,6 +97,7 @@ final class NotificationsRegistrar {
 		RateLimiterInterface::class => RateLimiter::class,
 		OptOutAuthorityInterface::class => OptOutAuthority::class,
 		WatcherMapperInterface::class => WatcherMapper::class,
+		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
 		TimelineVisibilityServiceInterface::class => TimelineVisibilityService::class,
 		NcNotificationSenderInterface::class => NcNotificationSender::class,
 		PresenceServiceInterface::class => PresenceService::class,

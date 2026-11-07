@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -55,13 +55,13 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param MigrationPackService $migrationPackService Migration pack business logic.
+	 * @param MigrationPackServiceInterface $migrationPackService Migration pack business logic.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MigrationPackService $migrationPackService,
+		private readonly MigrationPackServiceInterface $migrationPackService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

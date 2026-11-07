@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Aggregation;
 
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-
 /**
  * Validates the `join` clause of an aggregation spec.
  *
