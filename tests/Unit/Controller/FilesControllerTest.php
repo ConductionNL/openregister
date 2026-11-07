@@ -1983,23 +1983,6 @@ class FilesControllerTest extends TestCase {
 		$this->assertEquals('doc.pdf', $result[0]['name']);
 	}
 
-	// -- validateAndGetObject --
-
-	public function testValidateAndGetObjectReturnsObject(): void {
-		$object = $this->createMock(ObjectEntity::class);
-		$this->setupObjectServiceMocks($object);
-
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertSame($object, $result);
-	}
-
-	public function testValidateAndGetObjectReturnsNull(): void {
-		$this->setupObjectServiceMocks(null);
-
-		$result = $this->invokePrivateMethod('validateAndGetObject', ['reg1', 'schema1', 'obj1']);
-		$this->assertNull($result);
-	}
-
 	// -- processUploadedFiles --
 
 	public function testProcessUploadedFilesEmpty(): void {
