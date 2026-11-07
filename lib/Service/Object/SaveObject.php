@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\DefaultValueContext;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\InverseRelations;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseRelationWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
@@ -665,6 +666,15 @@ class SaveObject implements SaveObjectInterface {
 	}//end lookups()
 
 	/**
+	 * The inverse relation writer of this save handler.
+	 *
+	 * @return InverseRelations
+	 */
+	private function inverseRelations(): InverseRelations {
+		return new InverseRelations(objects: $this->objectEntityMapper, schemas: $this->schemaMapper, logger: $this->logger);
+	}//end inverseRelations()
+
+	/**
 	 * The relation scanner of this save handler.
 	 *
 	 * @return RelationScanner
@@ -797,242 +807,6 @@ class SaveObject implements SaveObjectInterface {
 	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
 		return $this->relationScanner()->scan(data: $data, scan: new RelationScanRun(prefix: $prefix, schema: $schema));
 	}//end scanForRelations()
-
-	/**
-	 * Updates inverse relations on related objects (bidirectional relationship management).
-	 *
-	 * When an object references another object (e.g., contactpersoon references organisatie),
-	 * this method updates the referenced object's relations to include the referencing object.
-	 * This ensures bidirectional relationships are maintained.
-	 *
-	 * @param ObjectEntity $savedEntity The saved object that has relations
-	 * @param Register $register The register the saved entity belongs to
-	 * @param Schema $schema The schema the saved entity belongs to
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void {
-		$relations = $savedEntity->getRelations();
-
-		$relationsCount = 0;
-		if ($relations !== null) {
-			$relationsCount = count($relations);
-		}
-
-		$this->logger->debug(
-			message: '[SaveObject] updateInverseRelations called',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'savedObjectUuid' => $savedEntity->getUuid(),
-				'relationsCount' => $relationsCount,
-				'schemaId' => $schema->getId(),
-			]
-		);
-
-		if (empty($relations) === true) {
-			return;
-		}
-
-		$write = new InverseRelationWrite();
-		$write->savedUuid = $savedEntity->getUuid();
-		$write->register = $register;
-		$write->schema = $schema;
-		$write->schemaProperties = ($schema->getProperties() ?? []);
-
-		// Process each relation (key = property path, value = related UUID).
-		foreach ($relations as $propertyPath => $relatedUuid) {
-			if (is_string($relatedUuid) === false
-				|| UuidFormat::isCanonical(value: $relatedUuid) === false
-			) {
-				continue;
-			}
-
-			$write->propertyPath = (string)$propertyPath;
-			$write->relatedUuid = $relatedUuid;
-			$this->writeInverseRelation(write: $write);
-		}
-	}//end updateInverseRelations()
-
-	/**
-	 * Add the saved object to the relations of the one object a relation points at.
-	 *
-	 * A failure is logged and the next relation is processed.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function writeInverseRelation(InverseRelationWrite $write): void {
-		try {
-			$targetSchema = $this->inverseRelationTargetSchema(write: $write);
-			if ($targetSchema === null) {
-				return;
-			}
-
-			$relatedObject = $this->objectEntityMapper->find(
-				identifier: $write->relatedUuid,
-				register: $write->register,
-				schema: $targetSchema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-			$this->appendInverseRelation(write: $write, relatedObject: $relatedObject);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] Failed to update inverse relation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'savedUuid' => $write->savedUuid,
-					'relatedUuid' => $write->relatedUuid,
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
-	}//end writeInverseRelation()
-
-	/**
-	 * The schema a relation's property points at, or null when the property is no resolvable relation.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return Schema|null The target schema.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function inverseRelationTargetSchema(InverseRelationWrite $write): ?Schema {
-		$targetSchemaSlug = $this->inverseRelationTargetSlug(write: $write);
-		if ($targetSchemaSlug === null) {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find(
-				id: $targetSchemaSlug,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\Exception $e) {
-			$this->logger->warning(
-				message: '[SaveObject] Could not resolve target schema',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'targetSchemaSlug' => $targetSchemaSlug,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
-	}//end inverseRelationTargetSchema()
-
-	/**
-	 * The schema slug a relation's property references through its `$ref`, or null when there is none.
-	 *
-	 * Both `$ref` forms are in real use across the fleet's register
-	 * definitions: "#/components/schemas/organisation" (pointer) and
-	 * "organisation" (bare slug). A property with no `$ref` is not a relation
-	 * (`data`, `subject` and `payload` are free-form blobs) and is skipped
-	 * silently; a `$ref` that is authored but cannot be read is a warning,
-	 * because the declared relation will then quietly not be maintained.
-	 *
-	 * @param InverseRelationWrite $write The inverse relation write, on one relation.
-	 *
-	 * @return string|null The target schema slug.
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function inverseRelationTargetSlug(InverseRelationWrite $write): ?string {
-		// The base property name (e.g., "organisation" from "organisatie.0").
-		$baseProperty = explode('.', $write->propertyPath)[0];
-		$propertyConfig = $write->schemaProperties[$baseProperty] ?? null;
-		if ($propertyConfig === null) {
-			$this->logger->debug(
-				message: '[SaveObject] No property config for relation',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]
-			);
-			return null;
-		}
-
-		// For arrays, the $ref is in items.$ref instead of directly on the property.
-		$ref = $propertyConfig['$ref'] ?? '';
-		if (empty($ref) === true && isset($propertyConfig['items']['$ref']) === true) {
-			$ref = $propertyConfig['items']['$ref'];
-		}
-
-		if (empty($ref) === true || is_string($ref) === false) {
-			return null;
-		}
-
-		if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
-			return $matches[1];
-		}
-
-		// Slug-shaped values only, so a URL or a malformed pointer is reported instead of looked up.
-		if (preg_match('~^[A-Za-z][A-Za-z0-9_-]*$~', $ref) === 1) {
-			return $ref;
-		}
-
-		$this->logger->warning(
-			message: '[SaveObject] Relation skipped: $ref is neither a "#/components/schemas/<slug>" pointer nor a bare schema slug',
-			context: [
-				'file'     => __FILE__,
-				'line'     => __LINE__,
-				'property' => $baseProperty,
-				'ref'      => $ref,
-				'schema'   => $write->schema->getSlug(),
-			]
-		);
-		return null;
-	}//end inverseRelationTargetSlug()
-
-	/**
-	 * Add the saved object's UUID to a related object's relations and store it, unless it is already there.
-	 *
-	 * @param InverseRelationWrite $write         The inverse relation write, on one relation.
-	 * @param ObjectEntity         $relatedObject The object the relation points at.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function appendInverseRelation(InverseRelationWrite $write, ObjectEntity $relatedObject): void {
-		$relatedRelations = $relatedObject->getRelations() ?? [];
-		if (in_array($write->savedUuid, $relatedRelations, true) === true) {
-			$this->logger->debug(
-				message: '[SaveObject] Object already in related object\'s relations',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'savedUuid' => $write->savedUuid,
-					'relatedUuid' => $write->relatedUuid,
-				]
-			);
-			return;
-		}
-
-		$relatedRelations[] = $write->savedUuid;
-		$relatedObject->setRelations($relatedRelations);
-		$relatedObject->setUpdated(new DateTime());
-		$this->objectEntityMapper->update($relatedObject);
-
-		$this->logger->debug(
-			message: '[SaveObject] Updated inverse relation',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'savedUuid' => $write->savedUuid,
-				'relatedUuid' => $write->relatedUuid,
-				'newRelationsCount' => count($relatedRelations),
-			]
-		);
-	}//end appendInverseRelation()
 
 	/**
 	 * Hydrates object metadata fields based on schema configuration.
@@ -3566,7 +3340,7 @@ class SaveObject implements SaveObjectInterface {
 		// the parent handles the relationship, and cascadeSingleObject already set
 		// the inversedBy property before saving.
 		if ($call->flags->silent === false) {
-			$this->updateInverseRelations(savedEntity: $savedEntity, register: $call->register, schema: $call->schema);
+			$this->inverseRelations()->update(saved: $savedEntity, write: new InverseRelationWrite(register: $call->register, schema: $call->schema));
 			\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
 		}
 
@@ -5114,7 +4888,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Bidirectional relations; skipped in silent mode (cascaded sub-objects) for performance.
 		if ($silent === false) {
-			$this->updateInverseRelations(savedEntity: $updatedEntity, register: $register, schema: $schema);
+			$this->inverseRelations()->update(saved: $updatedEntity, write: new InverseRelationWrite(register: $register, schema: $schema));
 		}
 
 		return $updatedEntity;
