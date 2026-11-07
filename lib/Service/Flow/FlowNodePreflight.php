@@ -285,12 +285,12 @@ class FlowNodePreflight implements FlowNodePreflightInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The live catalogue of node types.
+	 * @param FlowNodeCatalogueInterface $registry The live catalogue of node types.
 	 * @param IAppManager $appManager Tells an absent app from a stale one.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeCatalogueInterface $registry,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {

@@ -40,7 +40,7 @@ use UnexpectedValueException;
 /**
  * Holds the registered node types and resolves a step's type to one.
  */
-class FlowNodeRegistry implements FlowNodeRegistryInterface {
+class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 
 	/**
 	 * Registered nodes, keyed by their id.

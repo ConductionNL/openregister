@@ -80,7 +80,7 @@ class WorkingDayRoll {
 		$instant = DateTimeImmutable::createFromInterface($moment);
 		$unrolled = ['at' => $instant, 'unrolledAt' => null, 'rolledBy' => null];
 
-		if ($roll === SlaCalculator::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
+		if ($roll === SlaCalculatorInterface::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
 			return $unrolled;
 		}
 
@@ -90,7 +90,7 @@ class WorkingDayRoll {
 		$rolledBy = $this->nonWorkingReason(moment: $instant, calendar: $calendar);
 
 		$modifier = '+1 day';
-		if ($roll === SlaCalculator::ROLL_PREVIOUS) {
+		if ($roll === SlaCalculatorInterface::ROLL_PREVIOUS) {
 			$modifier = '-1 day';
 		}
 
