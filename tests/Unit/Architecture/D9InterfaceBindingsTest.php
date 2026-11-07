@@ -22,6 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\AppHost\AppHostRegistrar;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
@@ -48,6 +53,16 @@ final class D9InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: array<int, string>}>
 	 */
 	private const HIDDEN = [
+		ScheduleFlowStore::class => [
+			ScheduleFlowStoreInterface::class,
+			AppHostRegistrar::class,
+			[],
+		],
+		ScheduleManifestLoader::class => [
+			ScheduleManifestLoaderInterface::class,
+			AppHostRegistrar::class,
+			[],
+		],
 		TimeseriesRequestValidator::class => [
 			TimeseriesRequestValidatorInterface::class,
 			SearchRegistrar::class,
