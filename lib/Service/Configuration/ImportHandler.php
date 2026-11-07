@@ -63,7 +63,6 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use stdClass;
 
 /**
  * Class ImportHandler
@@ -336,6 +335,20 @@ class ImportHandler {
 	private ImportDuplicates $duplicates;
 
 	/**
+	 * Refuses a schema that cannot be imported and normalises its properties.
+	 *
+	 * @var ImportedSchemaShape
+	 */
+	private ImportedSchemaShape $schemaShape;
+
+	/**
+	 * Counts and names the schemas an import rejected.
+	 *
+	 * @var RejectedSchemaReport
+	 */
+	private RejectedSchemaReport $rejectedSchemas;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -373,7 +386,7 @@ class ImportHandler {
 		LoggerInterface $logger,
 		string $appDataPath,
 		ObjectOperationsInterface $objectService,
-		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
+		?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 		private readonly ?SchemaImportInstaller $schemaInstaller = null,
@@ -392,6 +405,8 @@ class ImportHandler {
 		$this->duplicates = new ImportDuplicates(registerMapper: $registerMapper, schemaMapper: $schemaMapper, logger: $logger);
 		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $shippedGuard, logger: $logger);
 		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $configurationMapper, logger: $logger);
+		$this->schemaShape = new ImportedSchemaShape(validator: $schemaShapeValidator, logger: $logger);
+		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -1165,74 +1180,6 @@ class ImportHandler {
 	private const IMPORT_RULES = 'seed-content-3:';
 
 	/**
-	 * Classify the definition an import is about to write against the stored one.
-	 *
-	 * Null when there is no versioning service, when the import carries no
-	 * definition, or when classifying failed: the import itself never breaks
-	 * on this, it is only left unclassified, which is how it was before.
-	 *
-	 * @param Schema               $existing The schema already stored.
-	 * @param array<string, mixed> $data     The incoming schema, as it will be written.
-	 *
-	 * @return SchemaChangeSet|null The change set, or null when not classified.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	private function classifyImportedSchemaChange(Schema $existing, array $data): ?SchemaChangeSet {
-		if ($this->schemaVersioning === null
-			|| (isset($data['properties']) === false && isset($data['required']) === false)
-		) {
-			return null;
-		}
-
-		try {
-			return $this->schemaVersioning->classify(
-				existing: $existing,
-				newDefinition: [
-					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
-					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
-				]
-			);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[ImportHandler] Could not classify an imported schema change: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $existing->getId()]
-			);
-			return null;
-		}
-	}//end classifyImportedSchemaChange()
-
-	/**
-	 * Write the changelog entry for an imported schema change, and log a breaking one.
-	 *
-	 * @param Schema               $schema    The schema as written.
-	 * @param SchemaChangeSet|null $changeSet The classified change, or null when not classified.
-	 * @param string|null          $appId     The app whose import made the change.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	private function recordImportedSchemaChange(Schema $schema, ?SchemaChangeSet $changeSet, ?string $appId): void {
-		if ($this->schemaVersioning === null || $changeSet === null || $changeSet->hasChanges() === false) {
-			return;
-		}
-
-		$origin = 'configuration import';
-		if ($appId !== null) {
-			$origin .= ' of '.$appId;
-		}
-
-		$this->schemaVersioning->recordChangelog(
-			schemaId: (int)$schema->getId(),
-			version: $schema->getVersion(),
-			changeSet: $changeSet,
-			acknowledged: false,
-			origin: $origin
-		);
-	}//end recordImportedSchemaChange()
-
-	/**
 	 * Whether an incoming schema says anything different from the stored one.
 	 *
 	 * @param array<string, mixed> $data The incoming schema definition.
@@ -1481,8 +1428,8 @@ class ImportHandler {
 		bool $force = false,
 		?array $registerSchemaIds = null,
 	): Schema {
-		$this->assertImportableSchemaShape(data: $data);
-		$this->assertImportableSchemaSlug(data: $data);
+		$this->schemaShape->assertShape(data: $data);
+		$this->schemaShape->assertSlug(data: $data);
 		$options = new SchemaImportOptions(owner: $owner, appId: $appId, version: $version, force: $force);
 
 		try {
@@ -1541,80 +1488,6 @@ class ImportHandler {
 	}//end withoutOrphanCleanupForNonAdmin()
 
 	/**
-	 * Refuse a schema whose shape fails the minimal meta-schema, before it is mutated.
-	 *
-	 * A structurally invalid import (no `properties` map, wrong type) then
-	 * fails with a clear error rather than deep in the mapper. Without a
-	 * shape validator wired the check stands down.
-	 *
-	 * @param array $data The schema data.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When the shape is invalid.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function assertImportableSchemaShape(array $data): void {
-		if ($this->schemaShapeValidator === null) {
-			return;
-		}
-
-		$shapeErrors = $this->schemaShapeValidator->validate(
-			body: $data,
-			schema: $this->minimalSchemaShapeMetaSchema()
-		);
-		if ($shapeErrors === []) {
-			return;
-		}
-
-		$msg = 'imported schema fails OAS-shape validation: ' . implode(
-			'; ',
-			array_map(
-				static fn ($e) => ($e['path'] . ' ' . $e['message']),
-				$shapeErrors
-			)
-		);
-		throw new RuntimeException($msg);
-	}//end assertImportableSchemaShape()
-
-	/**
-	 * Refuse a schema fragment without a non-empty slug.
-	 *
-	 * The slug lookup would otherwise raise a \TypeError, an \Error the
-	 * caller's `catch (Exception)` never sees, aborting the whole register
-	 * import on one bad fragment. A \RuntimeException lets the caller skip
-	 * this fragment and import the rest.
-	 *
-	 * @param array $data The schema data.
-	 *
-	 * @return void
-	 *
-	 * @throws RuntimeException When the slug is missing or blank.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function assertImportableSchemaSlug(array $data): void {
-		$slug = $data['slug'] ?? null;
-		if (is_string($slug) === true && trim($slug) !== '') {
-			return;
-		}
-
-		$title = (string)($data['title'] ?? '');
-		$hint = 'no title';
-		if ($title !== '') {
-			$hint = "title '{$title}'";
-		}
-
-		$msg = "imported schema fragment is missing a 'slug' ({$hint}); skipping fragment";
-		$this->logger->error(
-			message: '[ImportHandler] ' . $msg,
-			context: ['file' => __FILE__, 'line' => __LINE__]
-		);
-		throw new RuntimeException($msg);
-	}//end assertImportableSchemaSlug()
-
-	/**
 	 * Normalise every property of an imported schema and map its slugs to ids.
 	 *
 	 * @param array $data           The schema data.
@@ -1631,7 +1504,7 @@ class ImportHandler {
 
 		$references = new ImportReferenceMap(slugsAndIds: $slugsAndIdsMap);
 		foreach ($data['properties'] as $key => &$property) {
-			$property = $this->normaliseImportedPropertyShape(key: $key, property: $property);
+			$property = $this->schemaShape->normalisedProperty(key: $key, property: $property);
 			$property = $this->normaliseImportedProperty(property: $property, references: $references);
 		}
 
@@ -1655,98 +1528,6 @@ class ImportHandler {
 
 		return $this->mapImportedLegacyRegisters(property: $property, references: $references);
 	}//end normaliseImportedProperty()
-
-	/**
-	 * Give an imported property an array shape, a title, a type and object-typed empty configurations.
-	 *
-	 * Empty `objectConfiguration` / `fileConfiguration` maps decode from JSON
-	 * as `[]` and are turned back into objects. The binary-ish formats
-	 * `string`, `binary` and `byte` are dropped from the property and its items.
-	 *
-	 * @param int|string $key      The property name, the title when none is set.
-	 * @param mixed      $property The property definition.
-	 *
-	 * @return array The normalised property.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function normaliseImportedPropertyShape(int|string $key, mixed $property): array {
-		if (is_object($property) === true) {
-			$property = (array)$property;
-		}
-
-		if (empty($property['title']) === true) {
-			$property['title'] = $key;
-		}
-
-		$property['type'] = ($property['type'] ?? 'string');
-		$property = $this->normaliseDefinitionShape(definition: $property);
-		return $this->withNormalisedItemsShape(property: $property);
-	}//end normaliseImportedPropertyShape()
-
-	/**
-	 * Normalise a property's `items` definition when it is an object or an array.
-	 *
-	 * An object is turned into an array first.
-	 *
-	 * @param array $property The property definition.
-	 *
-	 * @return array The property.
-	 */
-	private function withNormalisedItemsShape(array $property): array {
-		if (is_object($property['items'] ?? null) === true) {
-			$property['items'] = (array)$property['items'];
-		}
-
-		if (is_array($property['items'] ?? null) === true) {
-			$property['items'] = $this->normaliseDefinitionShape(definition: $property['items']);
-		}
-
-		return $property;
-	}//end withNormalisedItemsShape()
-
-	/**
-	 * Give a property or items definition object-typed empty configurations and no binary-ish format.
-	 *
-	 * @param array $definition A property or items definition.
-	 *
-	 * @return array The definition.
-	 */
-	private function normaliseDefinitionShape(array $definition): array {
-		return $this->withoutBinaryFormat(definition: $this->withObjectTypedEmptyConfigurations(definition: $definition));
-	}//end normaliseDefinitionShape()
-
-	/**
-	 * Turn empty `objectConfiguration` and `fileConfiguration` arrays into objects.
-	 *
-	 * @param array $definition A property or items definition.
-	 *
-	 * @return array The definition.
-	 */
-	private function withObjectTypedEmptyConfigurations(array $definition): array {
-		foreach (['objectConfiguration', 'fileConfiguration'] as $configKey) {
-			if (($definition[$configKey] ?? null) === []) {
-				$definition[$configKey] = new stdClass();
-			}
-		}
-
-		return $definition;
-	}//end withObjectTypedEmptyConfigurations()
-
-	/**
-	 * Drop a `format` of `string`, `binary` or `byte`.
-	 *
-	 * @param array $definition A property or items definition.
-	 *
-	 * @return array The definition.
-	 */
-	private function withoutBinaryFormat(array $definition): array {
-		if (in_array(($definition['format'] ?? null), ['string', 'binary', 'byte'], true) === true) {
-			unset($definition['format']);
-		}
-
-		return $definition;
-	}//end withoutBinaryFormat()
 
 	/**
 	 * Map a property's `$ref` and its `items.$ref` from slugs to schema ids.
@@ -1954,27 +1735,59 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function updateImportedSchema(ImportedSchemaUpdate $update, SchemaImportOptions $options): Schema {
-		$existing = $update->existing;
 		if ($this->isUnchangedReimport(update: $update, options: $options) === true) {
-			return $existing;
+			return $update->existing;
 		}
 
+		return $this->writeChangedSchema(update: $update, options: $options);
+	}//end updateImportedSchema()
+
+	/**
+	 * Write a schema an import changed, with its version and changelog entry.
+	 *
+	 * @param ImportedSchemaUpdate $update  The normalised definition and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
+	 *
+	 * @return Schema The stored schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function writeChangedSchema(ImportedSchemaUpdate $update, SchemaImportOptions $options): Schema {
+		$existing = $update->existing;
+		$changeLog = new ImportedSchemaChangeLog(versioning: $this->schemaVersioning, logger: $this->logger, appId: $options->appId);
 		$guarded = $this->shippedBaseline->resolve(update: $update, options: $options);
-		$changeSet = $this->classifyImportedSchemaChange(existing: $existing, data: $guarded->data);
+		$changeSet = $changeLog->classify(existing: $existing, data: $guarded->data);
 		$data = $guarded->data;
 		if (version_compare($update->incomingVersion(), $update->existingVersion(), '>') === false) {
 			$data = $this->withRetainedSchemaVersion(update: new ImportedSchemaUpdate(data: $data, existing: $existing), changeSet: $changeSet);
 		}
 
-		$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existing->getId());
-		$schema = $this->schemaMapper->updateFromArray(id: $existing->getId(), object: $data);
-		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
-		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
+		$schema = $this->storeUpdatedSchema(update: new ImportedSchemaUpdate(data: $data, existing: $existing), options: $options);
 		$this->shippedBaseline->recordPending(pending: $guarded, options: $options);
-		$this->recordImportedSchemaChange(schema: $schema, changeSet: $changeSet, appId: $options->appId);
+		$changeLog->record(schema: $schema, changeSet: $changeSet);
 
 		return $schema;
-	}//end updateImportedSchema()
+	}//end writeChangedSchema()
+
+	/**
+	 * Write an updated schema with the import's ownership, installing it when no event did.
+	 *
+	 * @param ImportedSchemaUpdate $update  The definition to write and the stored schema.
+	 * @param SchemaImportOptions  $options The caller's settings.
+	 *
+	 * @return Schema The stored schema.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function storeUpdatedSchema(ImportedSchemaUpdate $update, SchemaImportOptions $options): Schema {
+		$id = $update->existing->getId();
+		$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$id);
+		$schema = $this->schemaMapper->updateFromArray(id: $id, object: $update->data);
+		$schema = $this->schemaMapper->update($this->withImportOwnership(schema: $schema, options: $options));
+		$this->installWhenNoEventFired(schema: $schema, eventsBefore: $eventsBefore);
+
+		return $schema;
+	}//end storeUpdatedSchema()
 
 	/**
 	 * Whether a re-import may be skipped: its version is not newer and its content is unchanged.
@@ -2504,7 +2317,7 @@ class ImportHandler {
 			}
 		}
 
-		$this->warnRejectedSchemas(run: $run);
+		$this->rejectedSchemas->warn(run: $run);
 		$this->logger->debug(
 			message: '[ImportHandler] Pass 1 completed - all schemas created',
 			context: [
@@ -2582,7 +2395,7 @@ class ImportHandler {
 			$schema = $this->importSchemaComponent(run: $run, component: $component);
 		} catch (Exception $e) {
 			$component->error = $e;
-			$this->recordRejectedSchema(run: $run, rejection: $component);
+			$this->rejectedSchemas->record(run: $run, rejection: $component);
 		} finally {
 			// Restore on every path — success, rejection, or an \Error escaping this loop entirely.
 			$this->schemasMap = $savedSchemasMap;
@@ -2631,71 +2444,6 @@ class ImportHandler {
 			registerSchemaIds: $run->slugToSchemaIds[$schemaSlugLower] ?? null
 		);
 	}//end importSchemaComponent()
-
-	/**
-	 * Count and name a schema pass 1 rejected.
-	 *
-	 * A rejected schema is CONTAINED (siblings still import) but never silent:
-	 * it is counted and NAMED in the result, so the operator sees it here
-	 * rather than three layers downstream.
-	 *
-	 * @param ImportRun       $run       The import.
-	 * @param ImportComponent $rejection The schema component and the exception that rejected it.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function recordRejectedSchema(ImportRun $run, ImportComponent $rejection): void {
-		$error = $rejection->error;
-		$run->result['skipped']['schemas']++;
-		$run->result['failed']['schemas'][] = [
-			'key' => (string)$rejection->key,
-			'slug' => (string)($rejection->data['slug'] ?? $rejection->key),
-			'error' => $error->getMessage(),
-		];
-		$this->logger->error(
-			message: '[ImportHandler] Failed to create schema (Pass 1)',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'schemaKey' => $rejection->key,
-				'error' => $error->getMessage(),
-				'trace' => $error->getTraceAsString(),
-			]
-		);
-	}//end recordRejectedSchema()
-
-	/**
-	 * Warn once, naming every schema pass 1 rejected.
-	 *
-	 * The per-schema `error` lines are easy to miss in a log that is almost all
-	 * `debug`; this is the line that says the import was PARTIAL.
-	 *
-	 * @param ImportRun $run The import.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md
-	 */
-	private function warnRejectedSchemas(ImportRun $run): void {
-		if ($run->result['failed']['schemas'] === []) {
-			return;
-		}
-
-		$rejectedSlugs = array_column($run->result['failed']['schemas'], 'slug');
-		$this->logger->warning(
-			message: sprintf(
-				'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
-				. 'linked to any register in this import: %s. Registers declaring them were '
-				. 'created without those schema references.',
-				count($rejectedSlugs),
-				count($run->data['components']['schemas']),
-				implode(', ', $rejectedSlugs)
-			),
-			context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $run->appId, 'failedSchemas' => $run->result['failed']['schemas']]
-		);
-	}//end warnRejectedSchemas()
 
 	/**
 	 * Pass 2: resolve the cross-references of every schema pass 1 created.
@@ -5597,42 +5345,4 @@ class ImportHandler {
 		$objectEntity->setUpdated($now);
 		return $objectEntity;
 	}//end newSeedEntity()
-
-	/**
-	 * Minimal meta-schema describing the structural shape an OR schema
-	 * MUST satisfy at import time. Stricter shapes (per-property type
-	 * validation, RBAC sigil presence) belong in `SchemaService` after
-	 * the import succeeds — this pass only catches the cases that
-	 * would fail catastrophically downstream (non-object, missing
-	 * `properties`, wrong type for `properties`).
-	 *
-	 * The full OpenAPI 3.1 meta-schema is vendored at
-	 * `lib/Service/Resources/meta/openapi-3.1.0.json` (closes #1378). It
-	 * is used by `OasService::validateOas()` for the generated OAS
-	 * document; for imported OR register schemas we keep using the
-	 * smaller shape check here because OR schemas are not full OAS
-	 * documents — they are JSON-Schema-with-OR-extensions, and the
-	 * OpenAPI meta would over-reject them.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function minimalSchemaShapeMetaSchema(): array {
-		return [
-			'type' => 'object',
-			'required' => ['properties'],
-			'properties' => [
-				'title' => ['type' => 'string'],
-				'description' => ['type' => 'string'],
-				'slug' => ['type' => 'string'],
-				'properties' => [
-					'type' => 'object',
-				],
-				'required' => [
-					'type' => 'array',
-					'items' => ['type' => 'string'],
-				],
-			],
-		];
-
-	}//end minimalSchemaShapeMetaSchema()
 }//end class
