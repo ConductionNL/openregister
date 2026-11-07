@@ -49,6 +49,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 		'OCA\OpenRegister\Service\SemanticTypeResolver' => ['OCA\OpenRegister\Service\SemanticTypeResolverInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\SequenceService' => ['OCA\OpenRegister\Service\SequenceServiceInterface', ContractBindings::class],
 		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
+		'OCA\OpenRegister\Service\TimeTrackerLinkService' => ['OCA\OpenRegister\Service\TimeTrackerLinkServiceInterface', ContractBindings::class],
 	];
 
 	/**
