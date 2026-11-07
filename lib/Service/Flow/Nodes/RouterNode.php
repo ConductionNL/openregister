@@ -47,7 +47,7 @@ use UnexpectedValueException;
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
+class RouterNode implements IFlowNode, RouterNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *

@@ -37,15 +37,15 @@ use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
-use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
-use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
-use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
-use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
@@ -59,7 +59,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode;
-use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -76,21 +76,21 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param SetFieldsNode $setFields The built-in "Edit fields" node.
 	 * @param ExplodeNode $explode The built-in "Explode" node.
 	 * @param FilterNode $filter The built-in "Filter" node.
-	 * @param WaitNode $wait The built-in "Wait" node.
+	 * @param WaitNodeInterface $wait The built-in "Wait" node.
 	 * @param AwaitSignalNode $awaitSignal The built-in "Wait for an answer" node.
 	 * @param SwitchNode $switch The built-in "Switch" node.
 	 * @param EndNode $end The built-in "End" node.
-	 * @param MergeNode $merge The built-in "Merge" node.
+	 * @param MergeNodeInterface $merge The built-in "Merge" node.
 	 * @param LockObjectNode $lockObject The built-in "Lock an object" node.
 	 * @param UnlockObjectNode $unlockObject The built-in "Unlock an object" node.
 	 * @param LoopNode $loop The built-in "Loop over items" node.
 	 * @param SubFlowNode $subFlow The built-in "Run a flow" node.
-	 * @param RouterNode $router The built-in "Route items" node.
+	 * @param RouterNodeInterface $router The built-in "Route items" node.
 	 * @param ObjectWriteNode $objectWrite The built-in "Write an object" node.
 	 * @param ObjectReadNode $objectRead The built-in "Read objects" node.
 	 * @param FlowStateNode $flowState The built-in "Flow state" node.
-	 * @param MapNode $map The built-in "Map" node.
-	 * @param IterateNode $iterate The built-in "Repeat until done" node.
+	 * @param MapNodeInterface $map The built-in "Map" node.
+	 * @param IterateNodeInterface $iterate The built-in "Repeat until done" node.
 	 * @param SendNotificationNode $sendNotification The built-in "Send a notification" node.
 	 * @param SendEmailNode $sendEmail The built-in "Send an email" node.
 	 * @param SendTalkMessageNode $sendTalkMessage The built-in "Send a Talk message" node.
@@ -110,21 +110,21 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly SetFieldsNode $setFields,
 		private readonly ExplodeNode $explode,
 		private readonly FilterNode $filter,
-		private readonly WaitNode $wait,
+		private readonly WaitNodeInterface $wait,
 		private readonly AwaitSignalNode $awaitSignal,
 		private readonly SwitchNode $switch,
 		private readonly EndNode $end,
-		private readonly MergeNode $merge,
+		private readonly MergeNodeInterface $merge,
 		private readonly LockObjectNode $lockObject,
 		private readonly UnlockObjectNode $unlockObject,
 		private readonly LoopNode $loop,
 		private readonly SubFlowNode $subFlow,
-		private readonly RouterNode $router,
+		private readonly RouterNodeInterface $router,
 		private readonly ObjectWriteNode $objectWrite,
 		private readonly ObjectReadNode $objectRead,
 		private readonly FlowStateNode $flowState,
-		private readonly MapNode $map,
-		private readonly IterateNode $iterate,
+		private readonly MapNodeInterface $map,
+		private readonly IterateNodeInterface $iterate,
 		private readonly SendNotificationNode $sendNotification,
 		private readonly SendEmailNode $sendEmail,
 		private readonly SendTalkMessageNode $sendTalkMessage,
