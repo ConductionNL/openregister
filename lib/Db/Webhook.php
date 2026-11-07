@@ -421,9 +421,10 @@ class Webhook extends Entity implements JsonSerializable {
 			return true;
 		}
 
-		// Check for wildcard patterns.
+		// Check for wildcard patterns. A backslash in a namespaced event class is
+		// literal, so it must not act as fnmatch's escape character.
 		foreach ($events as $pattern) {
-			if (fnmatch($pattern, $eventClass) === true) {
+			if (fnmatch($pattern, $eventClass, FNM_NOESCAPE) === true) {
 				return true;
 			}
 		}

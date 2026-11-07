@@ -55,6 +55,25 @@ final class ArchivalFactsValidator {
 	private const ALLOWED_USE_RESTRICTION_KEYS = ['type', 'description'];
 
 	/**
+	 * The object-valued facts: their error-code prefix, allowed keys and the
+	 * message for a value that is not an object.
+	 *
+	 * @var array<string, array{code: string, allowed: array<int, string>, notObject: string}>
+	 */
+	private const BLOCKS = [
+		'useRestriction' => [
+			'code' => 'archival-use-restriction',
+			'allowed' => self::ALLOWED_USE_RESTRICTION_KEYS,
+			'notObject' => 'x-openregister-archival.useRestriction must be an object with a "type".',
+		],
+		'temporalCoverage' => [
+			'code' => 'archival-temporal-coverage',
+			'allowed' => self::ALLOWED_TEMPORAL_COVERAGE_KEYS,
+			'notObject' => 'x-openregister-archival.temporalCoverage must be an object with a "type" and a "startProperty".',
+		],
+	];
+
+	/**
 	 * Validate `aggregationLevel`, a term of MDTO's Aggregatieniveaus list.
 	 *
 	 * @param array<string, mixed> $annotation The annotation block.
@@ -73,23 +92,31 @@ final class ArchivalFactsValidator {
 			return [];
 		}
 
+		return [$this->unknownAggregationLevel(value: $value)];
+	}//end validateAggregationLevel()
+
+	/**
+	 * The error for an `aggregationLevel` that is not an MDTO term.
+	 *
+	 * @param mixed $value The declared value.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private function unknownAggregationLevel(mixed $value): array {
 		$shown = gettype($value);
 		if (is_scalar($value) === true) {
 			$shown = (string)$value;
 		}
 
-		return [
-			[
-				'code' => 'archival-aggregation-level-unknown',
-				'message' => sprintf(
-					'x-openregister-archival.aggregationLevel "%s" is not a term of MDTO\'s %s. Allowed: %s.',
-					$shown,
-					MdtoTerms::AGGREGATION_LEVEL_LIST,
-					implode(', ', MdtoTerms::AGGREGATION_LEVELS)
-				),
-			],
-		];
-	}//end validateAggregationLevel()
+		$message = sprintf(
+			'x-openregister-archival.aggregationLevel "%s" is not a term of MDTO\'s %s. Allowed: %s.',
+			$shown,
+			MdtoTerms::AGGREGATION_LEVEL_LIST,
+			implode(', ', MdtoTerms::AGGREGATION_LEVELS)
+		);
+
+		return $this->error(code: 'archival-aggregation-level-unknown', message: $message);
+	}//end unknownAggregationLevel()
 
 	/**
 	 * Validate `useRestriction`, whose type is a term of BeperkingGebruikTypeLijst.
@@ -101,46 +128,12 @@ final class ArchivalFactsValidator {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
 	public function validateUseRestriction(array $annotation): array {
-		if (isset($annotation['useRestriction']) === false) {
-			return [];
+		$shape = $this->blockShape(annotation: $annotation, key: 'useRestriction');
+		if ($shape['block'] === null) {
+			return $shape['errors'];
 		}
 
-		$block = $annotation['useRestriction'];
-		if (is_array($block) === false) {
-			return [
-				[
-					'code' => 'archival-use-restriction-not-object',
-					'message' => 'x-openregister-archival.useRestriction must be an object with a "type".',
-				],
-			];
-		}
-
-		$errors = $this->unknownKeys(
-			block: $block,
-			allowed: self::ALLOWED_USE_RESTRICTION_KEYS,
-			path: 'x-openregister-archival.useRestriction',
-			code: 'archival-use-restriction-unknown-key'
-		);
-
-		if (in_array(($block['type'] ?? null), MdtoTerms::USE_RESTRICTION_TYPES, true) === false) {
-			$errors[] = [
-				'code' => 'archival-use-restriction-type-unknown',
-				'message' => sprintf(
-					'x-openregister-archival.useRestriction.type is required and must be a term of MDTO\'s %s. Allowed: %s.',
-					MdtoTerms::USE_RESTRICTION_LIST,
-					implode(', ', MdtoTerms::USE_RESTRICTION_TYPES)
-				),
-			];
-		}
-
-		if (isset($block['description']) === true && is_string($block['description']) === false) {
-			$errors[] = [
-				'code' => 'archival-use-restriction-description-not-string',
-				'message' => 'x-openregister-archival.useRestriction.description must be a string when present.',
-			];
-		}
-
-		return $errors;
+		return array_merge($shape['errors'], $this->useRestrictionValueErrors(block: $shape['block']));
 	}//end validateUseRestriction()
 
 	/**
@@ -159,50 +152,99 @@ final class ArchivalFactsValidator {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-a-schema-may-declare-the-archival-facts-mdto-asks-for
 	 */
 	public function validateTemporalCoverage(array $annotation): array {
-		if (isset($annotation['temporalCoverage']) === false) {
-			return [];
+		$shape = $this->blockShape(annotation: $annotation, key: 'temporalCoverage');
+		if ($shape['block'] === null) {
+			return $shape['errors'];
 		}
 
-		$block = $annotation['temporalCoverage'];
+		return array_merge($shape['errors'], $this->temporalCoverageValueErrors(block: $shape['block']));
+	}//end validateTemporalCoverage()
+
+	/**
+	 * Check that an object-valued fact is an object with only allowed keys.
+	 *
+	 * @param array<string, mixed> $annotation The annotation block.
+	 * @param string               $key        The fact: a key of BLOCKS.
+	 *
+	 * @return array{block: array<string, mixed>|null, errors: array<int, array{code: string, message: string}>}
+	 *         The block when its values still need checking, and the errors so far.
+	 */
+	private function blockShape(array $annotation, string $key): array {
+		if (isset($annotation[$key]) === false) {
+			return ['block' => null, 'errors' => []];
+		}
+
+		$spec = self::BLOCKS[$key];
+		$block = $annotation[$key];
 		if (is_array($block) === false) {
-			return [
-				[
-					'code' => 'archival-temporal-coverage-not-object',
-					'message' => 'x-openregister-archival.temporalCoverage must be an object with a "type" and a "startProperty".',
-				],
-			];
+			return ['block' => null, 'errors' => [$this->error(code: $spec['code'] . '-not-object', message: $spec['notObject'])]];
 		}
 
-		$errors = $this->unknownKeys(
-			block: $block,
-			allowed: self::ALLOWED_TEMPORAL_COVERAGE_KEYS,
-			path: 'x-openregister-archival.temporalCoverage',
-			code: 'archival-temporal-coverage-unknown-key'
-		);
+		$path = 'x-openregister-archival.' . $key;
+		$errors = $this->unknownKeys(block: $block, allowed: $spec['allowed'], path: $path, code: $spec['code'] . '-unknown-key');
 
-		foreach (['type', 'startProperty'] as $required) {
-			if (is_string(($block[$required] ?? null)) === false || trim((string)$block[$required]) === '') {
-				$errors[] = [
-					'code' => 'archival-temporal-coverage-' . strtolower($required) . '-missing',
-					'message' => sprintf(
-						'x-openregister-archival.temporalCoverage.%s is required and must be a non-empty string.',
-						$required
-					),
-				];
-			}
+		return ['block' => $block, 'errors' => $errors];
+	}//end blockShape()
+
+	/**
+	 * Check the values of a `useRestriction` object.
+	 *
+	 * @param array<string, mixed> $block The `useRestriction` object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function useRestrictionValueErrors(array $block): array {
+		$errors = [];
+		if (in_array(($block['type'] ?? null), MdtoTerms::USE_RESTRICTION_TYPES, true) === false) {
+			$format = 'x-openregister-archival.useRestriction.type is required and must be a term of MDTO\'s %s. Allowed: %s.';
+			$message = sprintf($format, MdtoTerms::USE_RESTRICTION_LIST, implode(', ', MdtoTerms::USE_RESTRICTION_TYPES));
+			$errors[] = $this->error(code: 'archival-use-restriction-type-unknown', message: $message);
 		}
 
-		if (isset($block['endProperty']) === true
-			&& (is_string($block['endProperty']) === false || trim($block['endProperty']) === '')
-		) {
-			$errors[] = [
-				'code' => 'archival-temporal-coverage-endproperty-not-string',
-				'message' => 'x-openregister-archival.temporalCoverage.endProperty must be a non-empty string when present.',
-			];
+		if (isset($block['description']) === true && is_string($block['description']) === false) {
+			$message = 'x-openregister-archival.useRestriction.description must be a string when present.';
+			$errors[] = $this->error(code: 'archival-use-restriction-description-not-string', message: $message);
 		}
 
 		return $errors;
-	}//end validateTemporalCoverage()
+	}//end useRestrictionValueErrors()
+
+	/**
+	 * Check the values of a `temporalCoverage` object.
+	 *
+	 * @param array<string, mixed> $block The `temporalCoverage` object.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function temporalCoverageValueErrors(array $block): array {
+		$errors = [];
+		foreach (['type', 'startProperty'] as $required) {
+			if (ArchivalText::fromString(value: ($block[$required] ?? null)) === null) {
+				$message = sprintf('x-openregister-archival.temporalCoverage.%s is required and must be a non-empty string.', $required);
+				$code = 'archival-temporal-coverage-' . strtolower($required) . '-missing';
+				$errors[] = $this->error(code: $code, message: $message);
+			}
+		}
+
+		if (isset($block['endProperty']) === true && ArchivalText::fromString(value: $block['endProperty']) === null) {
+			$message = 'x-openregister-archival.temporalCoverage.endProperty must be a non-empty string when present.';
+			$errors[] = $this->error(code: 'archival-temporal-coverage-endproperty-not-string', message: $message);
+		}
+
+		return $errors;
+	}//end temporalCoverageValueErrors()
+
+	/**
+	 * One validation error.
+	 *
+	 * @param string $code    The error code.
+	 * @param string $message The message.
+	 *
+	 * @return array{code: string, message: string} The error.
+	 */
+	private function error(string $code, string $message): array {
+		return ['code' => $code, 'message' => $message];
+	}//end error()
 
 	/**
 	 * Report every key of a block that is not on its allow-list.
@@ -220,15 +262,8 @@ final class ArchivalFactsValidator {
 		$errors = [];
 		foreach (array_keys($block) as $key) {
 			if (in_array((string)$key, $allowed, true) === false) {
-				$errors[] = [
-					'code' => $code,
-					'message' => sprintf(
-						'%s contains unknown key "%s". Allowed: %s.',
-						$path,
-						(string)$key,
-						implode(', ', $allowed)
-					),
-				];
+				$message = sprintf('%s contains unknown key "%s". Allowed: %s.', $path, (string)$key, implode(', ', $allowed));
+				$errors[] = $this->error(code: $code, message: $message);
 			}
 		}
 

@@ -41,8 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
-use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
-use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
+use OCA\OpenRegister\Service\Integration\Providers\KvkLookupInterface;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesSearchInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -59,14 +59,14 @@ class CompanyLookupController extends Controller {
 	 *
 	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
-	 * @param KvkProvider $kvkProvider KvK lookup leaf.
-	 * @param OpenCorporatesProvider $openCorporatesProvider OpenCorporates search leaf.
+	 * @param KvkLookupInterface $kvkProvider KvK lookup leaf.
+	 * @param OpenCorporatesSearchInterface $openCorporatesProvider OpenCorporates search leaf.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly KvkProvider $kvkProvider,
-		private readonly OpenCorporatesProvider $openCorporatesProvider,
+		private readonly KvkLookupInterface $kvkProvider,
+		private readonly OpenCorporatesSearchInterface $openCorporatesProvider,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()

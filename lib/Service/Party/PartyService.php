@@ -48,7 +48,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.StaticAccess) `PartyDefinition::fromSchema()` is the
  *   value object's named constructor; there is no instance to call it on.
  */
-class PartyService implements PartyServiceInterface {
+class PartyService implements TrustedPartyReaderInterface, PartySchemaCatalogueInterface {
 
 	/**
 	 * The effects an indicator may declare.

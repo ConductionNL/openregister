@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Quality;
 
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use Throwable;
 
 /**
@@ -39,10 +39,10 @@ class DedupRuleResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterScopedSchemaResolver $scopedSchemaResolver Resolves a schema inside its register.
+	 * @param RegisterScopedSchemaResolverInterface $scopedSchemaResolver Resolves a schema inside its register.
 	 */
 	public function __construct(
-		private readonly RegisterScopedSchemaResolver $scopedSchemaResolver,
+		private readonly RegisterScopedSchemaResolverInterface $scopedSchemaResolver,
 	) {
 	}//end __construct()
 

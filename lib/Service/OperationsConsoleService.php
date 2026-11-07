@@ -57,6 +57,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapperInterface;
 use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
+use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapperInterface;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCP\BackgroundJob\IJob;
@@ -132,6 +133,20 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 * @var string
 	 */
 	private const OWN_JOB_PREFIX = 'OCA\\OpenRegister\\';
+
+	/**
+	 * The states from which a bulk job can be started again.
+	 *
+	 * @var list<string>
+	 */
+	private const RETRYABLE_STATES = [BulkJob::STATE_FAILED, BulkJob::STATE_CANCELLED, BulkJob::STATE_COMPLETED];
+
+	/**
+	 * The states from which a bulk job can be given up on.
+	 *
+	 * @var list<string>
+	 */
+	private const CANCELLABLE_STATES = [BulkJob::STATE_RUNNING, BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED];
 
 	/**
 	 * The bulk job records.
@@ -295,28 +310,37 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 */
 	private function ruleRunsPane(DateTime $since): array {
 		$runs = $this->ruleRuns->findRecent(since: $since, limit: self::MAX_ROWS);
-		$verdicts = [];
-
-		foreach ($runs as $run) {
-			$verdict = (string)$run->getVerdict();
-
-			if ($verdict === '') {
-				continue;
-			}
-
-			$verdicts[$verdict] = ((int)($verdicts[$verdict] ?? 0) + 1);
-		}
-
 		$failing = $this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS);
 
 		return [
 			'id' => 'rule-runs',
 			'total' => count($runs),
 			'attention' => count($failing),
-			'counts' => $verdicts,
+			'counts' => $this->countVerdicts(runs: $runs),
 			'rulesHoldingAnError' => count($failing),
 		];
 	}//end ruleRunsPane()
+
+	/**
+	 * The runs counted by verdict; a run without a verdict is not counted.
+	 *
+	 * @param iterable<RuleRun> $runs The runs.
+	 *
+	 * @return array<string, int> The count per verdict, in first-seen order.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	private function countVerdicts(iterable $runs): array {
+		$verdicts = [];
+		foreach ($runs as $run) {
+			$verdict = (string)$run->getVerdict();
+			if ($verdict !== '') {
+				$verdicts[$verdict] = ((int)($verdicts[$verdict] ?? 0) + 1);
+			}
+		}
+
+		return $verdicts;
+	}//end countVerdicts()
 
 	/**
 	 * The job pane's rows: the bulk jobs, and the inventory they sit in.
@@ -363,26 +387,35 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 		);
 
 		$failing = [];
-
 		foreach ($this->ruleSummaries->findHoldingAnError(limit: self::MAX_ROWS) as $summary) {
-			$failing[] = [
-				'ruleId' => $summary->getRuleId(),
-				'schemaSlug' => $summary->getSchemaSlug(),
-				'lastVerdict' => $summary->getLastVerdict(),
-				'lastError' => $summary->getLastError(),
-				'lastErrorAt' => $summary->getLastErrorAt()?->format(DateTime::ATOM),
-				'lastRun' => $summary->getLastRun()?->format(DateTime::ATOM),
-			];
+			$failing[] = $this->describeFailingRule(summary: $summary);
 		}
 
 		return [
-			'results' => array_map(
-				static fn (RuleRun $run): array => $run->jsonSerialize(),
-				$runs
-			),
+			'results' => array_map(static fn (RuleRun $run): array => $run->jsonSerialize(), $runs),
 			'holdingAnError' => $failing,
 		];
 	}//end ruleRuns()
+
+	/**
+	 * One rule holding an error, as the rule-run listing shows it.
+	 *
+	 * @param RuleRunSummary $summary The rule's run summary.
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	private function describeFailingRule(RuleRunSummary $summary): array {
+		return [
+			'ruleId' => $summary->getRuleId(),
+			'schemaSlug' => $summary->getSchemaSlug(),
+			'lastVerdict' => $summary->getLastVerdict(),
+			'lastError' => $summary->getLastError(),
+			'lastErrorAt' => $summary->getLastErrorAt()?->format(DateTime::ATOM),
+			'lastRun' => $summary->getLastRun()?->format(DateTime::ATOM),
+		];
+	}//end describeFailingRule()
 
 	/**
 	 * One bulk job, with what this instance will let be done to it.
@@ -406,16 +439,8 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 				'actions' => [
 					'pause' => ($state === BulkJob::STATE_RUNNING),
 					'resume' => ($state === BulkJob::STATE_PAUSED),
-					'retry' => in_array(
-						$state,
-						[BulkJob::STATE_FAILED, BulkJob::STATE_CANCELLED, BulkJob::STATE_COMPLETED],
-						true
-					),
-					'cancel' => in_array(
-						$state,
-						[BulkJob::STATE_RUNNING, BulkJob::STATE_PREVIEWED, BulkJob::STATE_PAUSED],
-						true
-					),
+					'retry' => in_array($state, self::RETRYABLE_STATES, true),
+					'cancel' => in_array($state, self::CANCELLABLE_STATES, true),
 				],
 			]
 		);
@@ -435,38 +460,47 @@ class OperationsConsoleService implements OperationsConsoleServiceInterface {
 	 */
 	private function backgroundJobs(): array {
 		$seen = [];
-
 		foreach ($this->jobListPage() as $job) {
-			$class = $job::class;
-
-			if (str_starts_with($class, self::OWN_JOB_PREFIX) === false) {
-				continue;
+			if (str_starts_with($job::class, self::OWN_JOB_PREFIX) === true) {
+				$seen[$job::class] = $this->inventoryRow(row: ($seen[$job::class] ?? null), job: $job);
 			}
-
-			$lastRun = $job->getLastRun();
-
-			if (array_key_exists($class, $seen) === true) {
-				// One class may hold many queued rows, one per argument. The
-				// inventory is about the job, so the newest run of any of them
-				// is the one that answers "has this run".
-				$seen[$class]['queued'] = ((int)$seen[$class]['queued'] + 1);
-				$seen[$class]['lastRun'] = max((int)$seen[$class]['lastRun'], $lastRun);
-				continue;
-			}
-
-			$seen[$class] = [
-				'class' => $class,
-				'name' => substr($class, (strrpos($class, '\\') + 1)),
-				'queued' => 1,
-				'lastRun' => $lastRun,
-				'observed' => $this->isObserved(class: $class),
-			];
 		}
 
 		ksort($seen);
 
 		return array_values($seen);
 	}//end backgroundJobs()
+
+	/**
+	 * A job's inventory row, with one more queued row of its class folded in.
+	 *
+	 * One class may hold many queued rows, one per argument. The inventory is
+	 * about the job, so the newest run of any of them is the one that answers
+	 * "has this run".
+	 *
+	 * @param array<string, mixed>|null $row The row so far, or null for the first of its class.
+	 * @param IJob                      $job The queued job.
+	 *
+	 * @return array<string, mixed> The row.
+	 *
+	 * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	private function inventoryRow(?array $row, IJob $job): array {
+		$class = $job::class;
+		if ($row !== null) {
+			$row['queued'] = ((int)$row['queued'] + 1);
+			$row['lastRun'] = max((int)$row['lastRun'], $job->getLastRun());
+			return $row;
+		}
+
+		return [
+			'class' => $class,
+			'name' => substr($class, (strrpos($class, '\\') + 1)),
+			'queued' => 1,
+			'lastRun' => $job->getLastRun(),
+			'observed' => $this->isObserved(class: $class),
+		];
+	}//end inventoryRow()
 
 	/**
 	 * Does this job leave a run row behind.

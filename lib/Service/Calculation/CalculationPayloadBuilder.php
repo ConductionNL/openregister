@@ -45,7 +45,7 @@ use OCA\OpenRegister\Db\Schema;
  * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
  *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
  */
-class CalculationPayloadBuilder {
+class CalculationPayloadBuilder implements CalculationPayloadBuilderInterface {
 	/**
 	 * Synthetic payload key listing the declared references that could not be resolved.
 	 *

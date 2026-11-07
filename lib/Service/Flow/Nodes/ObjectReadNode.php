@@ -81,7 +81,6 @@ use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
-use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
@@ -89,7 +88,7 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class ObjectReadNode extends ObjectNodeBase implements IFlowNode, ObjectReadNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
 
 	/**
 	 * The step type.
@@ -179,17 +178,6 @@ class ObjectReadNode implements IFlowNode, ObjectReadNodeInterface, IFlowNodeCon
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/search.svg');
 	}//end getIcon()
-
-	/**
-	 * Available in both scopes — the owner's RBAC is what bounds the read.
-	 *
-	 * @param int $scope The scope constant.
-	 *
-	 * @return boolean Whether it is available.
-	 */
-	public function isAvailableForScope(int $scope): bool {
-		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
-	}//end isAvailableForScope()
 
 	/**
 	 * The config vocabulary of an object-read step.
@@ -590,28 +578,4 @@ class ObjectReadNode implements IFlowNode, ObjectReadNodeInterface, IFlowNodeCon
 		}
 
 	}//end resolveSchema()
-
-	/**
-	 * What kind of step this is. Calls the register to read.
-	 *
-	 * @return string The BPMN kind.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-semantic-kind-drawn-from-bpmn
-	 */
-	public function getKind(): string {
-		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
-
-	}//end getKind()
-
-	/**
-	 * Where an author should look for this step.
-	 *
-	 * @return string The palette category.
-	 *
-	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-a-node-declares-a-palette-category-independent-of-its-kind
-	 */
-	public function getCategory(): string {
-		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
-
-	}//end getCategory()
 }//end class

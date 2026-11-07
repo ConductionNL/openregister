@@ -139,6 +139,29 @@ class MagicMetadataColumnHealer {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function ensure(string $tableName): array {
+		$known = $this->known(tableName: $tableName);
+		if ($known !== null) {
+			return $known;
+		}
+
+		$missing = $this->inspectQuietly(tableName: $tableName);
+		if ($missing === null) {
+			return [];
+		}
+
+		return $this->healOnRequest(tableName: $tableName, missing: $missing);
+	}//end ensure()
+
+	/**
+	 * What this process or the distributed cache already knows about a table.
+	 *
+	 * A cached answer is copied into the per-process memo.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return list<string>|null Missing columns ([] for healthy), or null when nothing is known.
+	 */
+	private function known(string $tableName): array|null {
 		if (isset(self::$verified[$tableName]) === true) {
 			return self::$verified[$tableName];
 		}
@@ -146,11 +169,21 @@ class MagicMetadataColumnHealer {
 		$cached = $this->readCache(tableName: $tableName);
 		if ($cached !== null) {
 			self::$verified[$tableName] = $cached;
-			return $cached;
 		}
 
+		return $cached;
+	}//end known()
+
+	/**
+	 * The metadata columns a table lacks, or null when its columns cannot be read.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return array<string, array>|null Missing column definitions keyed by column name, or null.
+	 */
+	private function inspectQuietly(string $tableName): array|null {
 		try {
-			$missing = $this->inspect(tableName: $tableName);
+			return $this->inspect(tableName: $tableName);
 		} catch (\Throwable $e) {
 			// The columns could not be read. Do not guess and do not cache:
 			// the query that follows reports the real problem, and the next
@@ -158,9 +191,19 @@ class MagicMetadataColumnHealer {
 			$this->logger->debug(
 				message: '[MagicMetadataColumnHealer] Could not read columns of '.$tableName.': '.$e->getMessage()
 			);
-			return [];
+			return null;
 		}
+	}//end inspectQuietly()
 
+	/**
+	 * Heal a table on the request path, unless an open transaction forbids DDL now.
+	 *
+	 * @param string               $tableName Bare magic table name.
+	 * @param array<string, array> $missing   Missing column definitions keyed by column name.
+	 *
+	 * @return list<string> Metadata column names still missing after the attempt.
+	 */
+	private function healOnRequest(string $tableName, array $missing): array {
 		if ($missing === []) {
 			$this->remember(tableName: $tableName, missing: []);
 			return [];
@@ -177,7 +220,7 @@ class MagicMetadataColumnHealer {
 		$result = $this->heal(tableName: $tableName, missing: $missing);
 
 		return array_keys($result['failed']);
-	}//end ensure()
+	}//end healOnRequest()
 
 	/**
 	 * The metadata columns a table lacks, read fresh from the database.
@@ -227,37 +270,46 @@ class MagicMetadataColumnHealer {
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
 	 */
 	public function heal(string $tableName, ?array $missing = null): array {
-		if ($missing === null) {
-			$missing = $this->inspect(tableName: $tableName);
-		}
+		$outcome = $this->addAll(tableName: $tableName, missing: $missing ?? $this->inspect(tableName: $tableName));
 
-		$added = [];
-		$failed = [];
-		foreach ($missing as $name => $definition) {
-			$reason = $this->addColumn(tableName: $tableName, name: (string)$name, definition: $definition);
-			if ($reason === null) {
-				$added[] = (string)$name;
-				continue;
-			}
-
-			$failed[(string)$name] = $reason;
-		}
-
-		if ($added !== []) {
+		if ($outcome['added'] !== []) {
 			$this->logger->info(
-				message: '[MagicMetadataColumnHealer] Added missing metadata columns to '.$tableName.': '.implode(', ', $added)
+				message: '[MagicMetadataColumnHealer] Added missing metadata columns to '.$tableName.': '.implode(', ', $outcome['added'])
 			);
 		}
 
-		if ($failed === []) {
+		if ($outcome['failed'] === []) {
 			$this->remember(tableName: $tableName, missing: []);
-			return ['added' => $added, 'failed' => []];
+			return $outcome;
 		}
 
-		$this->rememberFailure(tableName: $tableName, failed: $failed);
+		$this->rememberFailure(tableName: $tableName, failed: $outcome['failed']);
 
-		return ['added' => $added, 'failed' => $failed];
+		return $outcome;
 	}//end heal()
+
+	/**
+	 * Add each missing column on its own, so one that fails does not stop the rest.
+	 *
+	 * @param string               $tableName Bare magic table name.
+	 * @param array<string, array> $missing   Missing column definitions keyed by column name.
+	 *
+	 * @return array{added: list<string>, failed: array<string, string>} Column names added, and failures with their reason.
+	 */
+	private function addAll(string $tableName, array $missing): array {
+		$outcome = ['added' => [], 'failed' => []];
+		foreach ($missing as $name => $definition) {
+			$reason = $this->addColumn(tableName: $tableName, name: (string)$name, definition: $definition);
+			if ($reason === null) {
+				$outcome['added'][] = (string)$name;
+				continue;
+			}
+
+			$outcome['failed'][(string)$name] = $reason;
+		}
+
+		return $outcome;
+	}//end addAll()
 
 	/**
 	 * The metadata columns this process knows a table lacks, without any I/O.
@@ -351,31 +403,52 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return string|null Null when the column is now present, else the reason it is not.
 	 */
-	private function addColumn(string $tableName, string $name, array $definition): ?string {
-		if (($definition['primary'] ?? false) === true || ($definition['autoincrement'] ?? false) === true) {
+	private function addColumn(string $tableName, string $name, array $definition): string|null {
+		if ($this->isPrimaryKey(definition: $definition) === true) {
 			return 'a primary key column cannot be added to an existing table';
 		}
 
 		try {
-			$this->db->executeStatement(
-				$this->magicMapper->buildAddColumnSql(tableName: $tableName, definition: $definition)
-			);
+			$this->db->executeStatement($this->magicMapper->buildAddColumnSql(tableName: $tableName, definition: $definition));
 			return null;
 		} catch (\Throwable $e) {
 			// Another request may have added it between our read and our
 			// ALTER. Ask the database rather than parse a driver message.
-			try {
-				$current = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-				if (isset($current[$name]) === true) {
-					return null;
-				}
-			} catch (\Throwable $_reread) {
-				// Fall through to the original reason.
+			if ($this->hasColumnNow(tableName: $tableName, name: $name) === true) {
+				return null;
 			}
 
 			return $e->getMessage();
 		}//end try
 	}//end addColumn()
+
+	/**
+	 * Whether a column definition is the primary key (or auto-increments).
+	 *
+	 * @param array $definition Column definition from getMetadataColumns().
+	 *
+	 * @return bool True for a primary key column.
+	 */
+	private function isPrimaryKey(array $definition): bool {
+		return ($definition['primary'] ?? false) === true || ($definition['autoincrement'] ?? false) === true;
+	}//end isPrimaryKey()
+
+	/**
+	 * Whether a table has a column right now, false when its columns cannot be read.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 * @param string $name      Column name.
+	 *
+	 * @return bool True when the column is present.
+	 */
+	private function hasColumnNow(string $tableName, string $name): bool {
+		try {
+			$current = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+			return isset($current[$name]) === true;
+		} catch (\Throwable $_reread) {
+			return false;
+		}
+	}//end hasColumnNow()
 
 	/**
 	 * Whether a DDL statement may run now without committing someone's transaction.
@@ -404,26 +477,38 @@ class MagicMetadataColumnHealer {
 	 *
 	 * @return list<string>|null Missing columns ([] for healthy), or null when nothing is cached.
 	 */
-	private function readCache(string $tableName): ?array {
+	private function readCache(string $tableName): array|null {
 		if ($this->cache === null) {
 			return null;
 		}
 
 		try {
-			if ($this->cache->get($this->healthyKey(tableName: $tableName)) === true) {
-				return [];
-			}
-
-			$failed = $this->cache->get($this->failedKey(tableName: $tableName));
-			if (is_array($failed) === true) {
-				return array_values(array_map('strval', $failed));
-			}
+			return $this->cachedAnswer(cache: $this->cache, tableName: $tableName);
 		} catch (\Throwable $e) {
 			return null;
 		}
+	}//end readCache()
+
+	/**
+	 * The healthy or degraded answer the distributed cache holds for a table.
+	 *
+	 * @param ICache $cache     The distributed cache.
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return list<string>|null Missing columns ([] for healthy), or null when nothing is cached.
+	 */
+	private function cachedAnswer(ICache $cache, string $tableName): array|null {
+		if ($cache->get($this->healthyKey(tableName: $tableName)) === true) {
+			return [];
+		}
+
+		$failed = $cache->get($this->failedKey(tableName: $tableName));
+		if (is_array($failed) === true) {
+			return array_values(array_map('strval', $failed));
+		}
 
 		return null;
-	}//end readCache()
+	}//end cachedAnswer()
 
 	/**
 	 * Remember a complete table, here and across requests.
@@ -460,16 +545,7 @@ class MagicMetadataColumnHealer {
 	private function rememberFailure(string $tableName, array $failed): void {
 		$names = array_keys($failed);
 		self::$verified[$tableName] = $names;
-
-		if (isset(self::$warned[$tableName]) === false) {
-			self::$warned[$tableName] = true;
-			$this->logger->warning(
-				message: '[MagicMetadataColumnHealer] Could not add metadata columns to '.$tableName
-					.'; queries leave them out until this is fixed. Run occ openregister:tables:reconcile --apply '
-					.'as a user allowed to alter tables.',
-				context: ['tableName' => $tableName, 'failed' => $failed]
-			);
-		}
+		$this->warnOnce(tableName: $tableName, failed: $failed);
 
 		if ($this->cache === null) {
 			return;
@@ -481,6 +557,28 @@ class MagicMetadataColumnHealer {
 			return;
 		}
 	}//end rememberFailure()
+
+	/**
+	 * Warn about a table that could not be healed, once per process.
+	 *
+	 * @param string                $tableName Bare magic table name.
+	 * @param array<string, string> $failed    Column name => reason.
+	 *
+	 * @return void
+	 */
+	private function warnOnce(string $tableName, array $failed): void {
+		if (isset(self::$warned[$tableName]) === true) {
+			return;
+		}
+
+		self::$warned[$tableName] = true;
+		$this->logger->warning(
+			message: '[MagicMetadataColumnHealer] Could not add metadata columns to '.$tableName
+				.'; queries leave them out until this is fixed. Run occ openregister:tables:reconcile --apply '
+				.'as a user allowed to alter tables.',
+			context: ['tableName' => $tableName, 'failed' => $failed]
+		);
+	}//end warnOnce()
 
 	/**
 	 * Cache key for a healthy answer.
