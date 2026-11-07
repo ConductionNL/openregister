@@ -37,7 +37,6 @@ namespace OCA\OpenRegister\Service\Relation;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectRelation;
 use OCA\OpenRegister\Db\ObjectRelationMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IAppConfig;
@@ -107,6 +106,13 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	public const TRUNCATED_CAP = 'cap';
 
 	/**
+	 * Shapes the nodes and edges of the graph.
+	 *
+	 * @var RelationGraphShapes
+	 */
+	private readonly RelationGraphShapes $shapes;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapperInterface $objectEntityMapper Mapper for object entities.
@@ -126,6 +132,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->shapes = new RelationGraphShapes();
 	}//end __construct()
 
 	/**
@@ -233,7 +240,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		}
 	}//end walkLevels()
 
-
 	/**
 	 * Follow every edge of the frontier once, making the newly reached nodes the next frontier.
 	 *
@@ -303,7 +309,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		return true;
 	}//end followEdge()
 
-
 	/**
 	 * Record an edge the first time the walk meets it.
 	 *
@@ -352,8 +357,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	private function reachNode(GraphWalk $walk, array $edge): void {
 		$other = self::otherEnd(edge: $edge);
 
-		if (($edge['kind'] ?? null) === ObjectRelation::KIND_EXTERNAL) {
-			$walk->nodes[$other] = self::externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
+		if ($this->shapes->isExternal(edge: $edge) === true) {
+			$walk->nodes[$other] = $this->shapes->externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
 			return;
 		}
 
@@ -364,28 +369,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		);
 		$walk->next[] = $other;
 	}//end reachNode()
-
-
-	/**
-	 * The node of an external address: resolved, with the title the stored row carries.
-	 *
-	 * @param array<string, mixed> $edge     The edge that reached it.
-	 * @param string               $uuid     The address.
-	 * @param int                  $distance Its distance from the root.
-	 *
-	 * @return array<string, mixed> The node.
-	 */
-	private static function externalNode(array $edge, string $uuid, int $distance): array {
-		return [
-			'uuid' => $uuid,
-			'title' => ($edge['targetTitle'] ?? $uuid),
-			'register' => null,
-			'schema' => null,
-			'distance' => $distance,
-			'resolved' => true,
-			'external' => true,
-		];
-	}//end externalNode()
 
 	/**
 	 * The end of an edge the walk has not come from: its source for an incoming edge, else its target.
@@ -484,7 +467,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		return $rows;
 	}//end rowsOf()
 
-
 	/**
 	 * Uuid => title of every node in a graph.
 	 *
@@ -541,7 +523,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		// Source two: the stored rows for the links no property can hold. One
 		// query for the whole level, not one per node.
 		foreach ($this->relationMapper->findTouching(uuids: $uuids) as $stored) {
-			$edges[] = self::storedEdge(stored: $stored, uuids: $uuids);
+			$edges[] = $this->shapes->storedEdge(stored: $stored, uuids: $uuids);
 		}
 
 		return $edges;
@@ -566,7 +548,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		foreach ($this->linksOf(relations: ($object->getRelations() ?? []), uuid: $uuid) as [$path, $target]) {
 			$descriptor = $this->relationTypes->descriptorFor(schema: $schema, property: $path, language: $language);
 			$row        = $this->relationTypes->row(descriptor: $descriptor, direction: RelationTypeResolver::DIRECTION_OUTGOING, path: $path);
-			$edges[]    = ['from' => $uuid, 'to' => $target] + self::outgoingDetails(row: $row);
+			$edges[]    = ['from' => $uuid, 'to' => $target] + $this->shapes->outgoingDetails(row: $row);
 		}
 
 		return $edges;
@@ -592,79 +574,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 
 		return $links;
 	}//end linksOf()
-
-	/**
-	 * The direction, label, type and kind fields of an outgoing property edge.
-	 *
-	 * @param array<string, mixed> $row The relation type row of the edge's path.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function outgoingDetails(array $row): array {
-		return [
-			'direction' => RelationTypeResolver::DIRECTION_OUTGOING,
-			'label' => ($row['displayLabel'] ?? null),
-			'inverseLabel' => ($row['inverseLabel'] ?? null),
-			'type' => ($row['type'] ?? null),
-			'property' => ($row['property'] ?? null),
-			'origin' => 'property',
-			'kind' => ObjectRelation::KIND_OBJECT,
-		];
-	}//end outgoingDetails()
-
-	/**
-	 * One edge from a stored relation row, outgoing when its source is on this level.
-	 *
-	 * @param ObjectRelation     $stored The stored row.
-	 * @param array<int, string> $uuids  The uuids of this level.
-	 *
-	 * @return array<string, mixed> The edge.
-	 */
-	private static function storedEdge(ObjectRelation $stored, array $uuids): array {
-		$source    = (string)$stored->getSourceUuid();
-		$direction = RelationTypeResolver::DIRECTION_INCOMING;
-		if (in_array($source, $uuids, true) === true) {
-			$direction = RelationTypeResolver::DIRECTION_OUTGOING;
-		}
-
-		return ['from' => $source, 'to' => self::storedTarget(stored: $stored), 'direction' => $direction] + self::storedDetails(stored: $stored);
-	}//end storedEdge()
-
-	/**
-	 * The other end of a stored row: its target uuid, or its address when it has none.
-	 *
-	 * @param ObjectRelation $stored The stored row.
-	 *
-	 * @return string
-	 */
-	private static function storedTarget(ObjectRelation $stored): string {
-		$target = (string)($stored->getTargetUuid() ?? '');
-		if ($target === '') {
-			return (string)$stored->getTargetUrl();
-		}
-
-		return $target;
-	}//end storedTarget()
-
-	/**
-	 * The label, type, origin and target fields of an edge from a stored row.
-	 *
-	 * @param ObjectRelation $stored The stored row.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function storedDetails(ObjectRelation $stored): array {
-		return [
-			'label' => ($stored->getLabel() ?? $stored->getRelationType()),
-			'inverseLabel' => $stored->getInverseLabel(),
-			'type' => $stored->getRelationType(),
-			'property' => null,
-			'origin' => $stored->getOrigin(),
-			'kind' => $stored->getKind(),
-			'targetUrl' => $stored->getTargetUrl(),
-			'targetTitle' => $stored->getTargetTitle(),
-		];
-	}//end storedDetails()
 
 	/**
 	 * The uuids a stored relation value holds.
@@ -705,7 +614,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 */
 	private function node(string $uuid, ?ObjectEntity $object, int $distance): array {
 		if ($object === null) {
-			return self::unresolvedNode(uuid: $uuid, distance: $distance);
+			return $this->shapes->unresolvedNode(uuid: $uuid, distance: $distance);
 		}
 
 		return [
@@ -718,27 +627,6 @@ class RelationGraphService implements RelationGraphServiceInterface {
 			'external' => false,
 		];
 	}//end node()
-
-
-	/**
-	 * The node of an object that could not be loaded: it still appears, unresolved.
-	 *
-	 * @param string $uuid     The uuid.
-	 * @param int    $distance Its distance from the root.
-	 *
-	 * @return array<string, mixed> The node.
-	 */
-	private static function unresolvedNode(string $uuid, int $distance): array {
-		return [
-			'uuid' => $uuid,
-			'title' => null,
-			'register' => null,
-			'schema' => null,
-			'distance' => $distance,
-			'resolved' => false,
-			'external' => false,
-		];
-	}//end unresolvedNode()
 
 	/**
 	 * Load one object by uuid, or null when it cannot be read.
