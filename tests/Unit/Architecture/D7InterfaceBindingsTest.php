@@ -30,6 +30,16 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -49,6 +59,11 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
+		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
+		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
+		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
+		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
+		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 	];
 

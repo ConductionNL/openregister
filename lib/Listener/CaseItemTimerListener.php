@@ -70,23 +70,49 @@ class CaseItemTimerListener implements IEventListener {
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof CaseItemTransitionedEvent) {
-			$item = $event->getItem();
-			if ($item->getState() === CaseItem::STATE_ACTIVE) {
-				$this->timers->onEntered(item: $item, actor: null);
-			}
-
-			if ($item->isInTerminalState() === true) {
-				$this->timers->onTerminal(item: $item);
-			}
+			$this->onTransitioned(event: $event);
 
 			return;
 		}
 
 		if ($event instanceof FlowTimerFiredEvent) {
-			$itemUuid = $this->timers->itemToTerminate(event: $event);
-			if ($itemUuid !== null) {
-				$this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: (string)$event->getTimer()->getUuid());
-			}
+			$this->onTimerFired(event: $event);
 		}
 	}//end handle()
+
+	/**
+	 * Arm an item's deadlines on entering active; disarm them on going terminal.
+	 *
+	 * @param CaseItemTransitionedEvent $event The transition.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function onTransitioned(CaseItemTransitionedEvent $event): void {
+		$item = $event->getItem();
+		if ($item->getState() === CaseItem::STATE_ACTIVE) {
+			$this->timers->onEntered(item: $item, actor: null);
+		}
+
+		if ($item->isInTerminalState() === true) {
+			$this->timers->onTerminal(item: $item);
+		}
+	}//end onTransitioned()
+
+	/**
+	 * Expire the plan item a fired timer names, if it names one.
+	 *
+	 * @param FlowTimerFiredEvent $event The fired timer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function onTimerFired(FlowTimerFiredEvent $event): void {
+		$itemUuid = $this->timers->itemToTerminate(event: $event);
+		if ($itemUuid !== null) {
+			$this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: (string)$event->getTimer()->getUuid());
+		}
+	}//end onTimerFired()
 }//end class
