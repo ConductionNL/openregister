@@ -45,15 +45,15 @@ describe('registerOas', () => {
 		revoked = []
 		URL.createObjectURL = jest.fn(() => 'blob:oas')
 		URL.revokeObjectURL = jest.fn((href) => revoked.push(href))
-		jest
-			.spyOn(HTMLAnchorElement.prototype, 'click')
-			.mockImplementation(function() {
+		jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
+			function () {
 				clicked.push({
 					href: this.getAttribute('href'),
 					download: this.download,
 					attached: document.body.contains(this),
 				})
-			})
+			},
+		)
 	})
 
 	afterEach(() => {
