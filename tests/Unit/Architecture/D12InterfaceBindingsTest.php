@@ -24,6 +24,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskFormCompletion;
 use OCA\OpenRegister\Service\Task\TaskFormCompletionInterface;
 use OCA\OpenRegister\Service\Task\TaskFormResolver;
@@ -57,6 +69,12 @@ final class D12InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
+		FlowLocator::class => [FlowLocatorInterface::class, ContractBindings::class],
+		FlowNodeRegistry::class => [FlowNodeRegistryInterface::class, ContractBindings::class],
+		FlowRunMigrationService::class => [FlowRunMigrationServiceInterface::class, ContractBindings::class],
+		FlowService::class => [FlowServiceInterface::class, ContractBindings::class],
+		FlowTriggerValidator::class => [FlowTriggerValidatorInterface::class, ContractBindings::class],
+		FlowVersionService::class => [FlowVersionServiceInterface::class, ContractBindings::class],
 		TaskFormCompletion::class => [TaskFormCompletionInterface::class, ContractBindings::class],
 		TaskFormResolver::class => [TaskFormResolverInterface::class, ContractBindings::class],
 		TaskProjectionService::class => [TaskProjectionServiceInterface::class, ContractBindings::class],

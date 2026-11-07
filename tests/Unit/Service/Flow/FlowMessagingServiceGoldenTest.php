@@ -38,6 +38,10 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Flow\FlowMessagingChannels;
+use OCA\OpenRegister\Service\Flow\FlowMessagingOverrides;
+use OCA\OpenRegister\Service\Flow\FlowMessagingPlatform;
+use OCA\OpenRegister\Service\Flow\FlowMessagingRecipients;
 
 /**
  * Runs sendEmail(), sendNotification() and sendTalkMessage() over a fixed
@@ -225,20 +229,28 @@ class FlowMessagingServiceGoldenTest extends TestCase {
 		$dispatcher->method('dispatchTyped')->willReturnCallback(fn ($event) => $this->record(call: 'event', args: [get_class($event), $event->getRecipient(), $event->getChannelKind(), $event->getSubject(), $event->getBody(), $event->getStepName()]));
 
 		return new FlowMessagingService(
-			channelPolicy: $policy,
-			recipientResolver: $this->resolver(),
-			templating: $templating,
-			ncSender: $this->ncSender(),
-			emailSender: $this->emailSender(),
-			talkSender: $this->talkSender(),
-			rateLimiter: $this->rateLimiter(),
-			preferences: $this->preferences(),
-			userManager: $this->userManager(),
-			appConfig: $appConfig,
-			logger: $logger,
-			eventDispatcher: $dispatcher,
-			runContext: null,
-			optOut: $this->optOut()
+			channels: new FlowMessagingChannels(
+				channelPolicy: $policy,
+				ncSender: $this->ncSender(),
+				emailSender: $this->emailSender(),
+				talkSender: $this->talkSender()
+			),
+			recipients: new FlowMessagingRecipients(
+				recipientResolver: $this->resolver(),
+				preferences: $this->preferences(),
+				rateLimiter: $this->rateLimiter(),
+				userManager: $this->userManager()
+			),
+			platform: new FlowMessagingPlatform(
+				templating: $templating,
+				appConfig: $appConfig,
+				logger: $logger,
+				eventDispatcher: $dispatcher
+			),
+			overrides: new FlowMessagingOverrides(
+				runContext: null,
+				optOut: $this->optOut()
+			)
 		);
 	}//end service()
 

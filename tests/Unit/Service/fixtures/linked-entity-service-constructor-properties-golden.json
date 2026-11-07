@@ -1,0 +1,10 @@
+{
+    "deepLinkRegistry": "deepLinkRegistry",
+    "integrationRegistry": "integrationRegistry",
+    "logger": "logger",
+    "magicMapper": "magicMapper",
+    "organisationMapper": "organisationMapper",
+    "permissionHandler": "permissionHandler",
+    "registerMapper": "registerMapper",
+    "schemaMapper": "schemaMapper"
+}

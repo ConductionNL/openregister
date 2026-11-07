@@ -36,6 +36,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
+use OCA\OpenRegister\Service\Configuration\ConfigurationGitHosts;
+use OCA\OpenRegister\Service\Configuration\ConfigurationServicePlatform;
+use OCA\OpenRegister\Service\Configuration\ConfigurationTransferHandlers;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -170,49 +173,33 @@ class ConfigurationService implements ConfigurationServiceInterface {
 	 *
 	 * Initializes service with required dependencies for configuration operations.
 	 *
-	 * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
-	 * @param IAppManager $appManager App manager for checking installed apps
-	 * @param ContainerInterface $container Container for lazy service loading
-	 * @param IAppConfig $appConfig App config for configuration metadata
-	 * @param LoggerInterface $logger Logger for error tracking
-	 * @param GitHubHandler $githubHandler GitHub handler for GitHub operations
-	 * @param GitLabHandler $gitlabHandler GitLab handler for GitLab operations
-	 * @param CacheHandler $cacheHandler Cache handler for configuration caching
-	 * @param PreviewHandler $previewHandler Preview handler for preview operations
-	 * @param ExportHandler $exportHandler Export handler for export operations
-	 * @param UploadHandler $uploadHandler Upload handler for file upload operations
+	 * @param ConfigurationMapper           $configurationMapper Configuration mapper for configuration operations
+	 * @param ConfigurationServicePlatform  $platform            App manager, container, app config and logger
+	 * @param ConfigurationGitHosts         $gitHosts            The GitHub and GitLab handlers
+	 * @param ConfigurationTransferHandlers $transfer            The cache, preview, export and upload handlers
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
 		ConfigurationMapper $configurationMapper,
-		IAppManager $appManager,
-		ContainerInterface $container,
-		IAppConfig $appConfig,
-		LoggerInterface $logger,
-		GitHubHandler $githubHandler,
-		GitLabHandler $gitlabHandler,
-		CacheHandler $cacheHandler,
-		PreviewHandler $previewHandler,
-		ExportHandler $exportHandler,
+		ConfigurationServicePlatform $platform,
+		ConfigurationGitHosts $gitHosts,
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler() to prevent circular dependency.
-		UploadHandler $uploadHandler,
+		ConfigurationTransferHandlers $transfer,
 	) {
 		// Store dependencies for use in service methods.
 		$this->configurationMapper = $configurationMapper;
-		$this->appManager = $appManager;
-		$this->container = $container;
-		$this->appConfig = $appConfig;
-		$this->logger = $logger;
-		$this->githubHandler = $githubHandler;
-		$this->gitlabHandler = $gitlabHandler;
-		$this->cacheHandler = $cacheHandler;
-		$this->previewHandler = $previewHandler;
-		$this->exportHandler = $exportHandler;
+		$this->appManager = $platform->appManager;
+		$this->container = $platform->container;
+		$this->appConfig = $platform->appConfig;
+		$this->logger = $platform->logger;
+		$this->githubHandler = $gitHosts->githubHandler;
+		$this->gitlabHandler = $gitHosts->gitlabHandler;
+		$this->cacheHandler = $transfer->cacheHandler;
+		$this->previewHandler = $transfer->previewHandler;
+		$this->exportHandler = $transfer->exportHandler;
 		// NOTE: ImportHandler is lazy-loaded via getImportHandler().
-		$this->uploadHandler = $uploadHandler;
+		$this->uploadHandler = $transfer->uploadHandler;
 
 		// NOTE: PreviewHandler wiring removed to prevent circular dependency during construction.
 		// PreviewHandler should use lazy loading or dependency injection if it needs ConfigurationService.
