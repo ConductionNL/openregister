@@ -80,6 +80,10 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Operations\JobAlertService;
+use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
+use OCA\OpenRegister\Service\Operations\OperationsJobsService;
+use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -123,6 +127,7 @@ final class ContractBindings {
 		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		HarvestPipelineServiceInterface::class => HarvestPipelineService::class,
+		JobAlertServiceInterface::class => JobAlertService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationServiceInterface::class => MigrationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
@@ -135,6 +140,7 @@ final class ContractBindings {
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
+		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
 		SequenceServiceInterface::class => SequenceService::class,
