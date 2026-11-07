@@ -107,7 +107,7 @@ class DenyEntryMatcher {
 
 		$user = ($entry['user'] ?? null);
 		if (is_string($user) === true && $user !== '') {
-			$named = (DenyResolver::USER_PREFIX . $user);
+			$named = (DenyResolverInterface::USER_PREFIX . $user);
 			if (in_array(needle: $named, haystack: $principals, strict: true) === true) {
 				return $named;
 			}

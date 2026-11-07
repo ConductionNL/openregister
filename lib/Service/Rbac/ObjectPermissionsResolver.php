@@ -67,12 +67,12 @@ class ObjectPermissionsResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver        $denyResolver The one reader of the deny grammar.
-	 * @param PermissionCatalogue $catalogue    The grantable set, so an undeclared verb is reported as one.
+	 * @param DenyResolverInterface        $denyResolver The one reader of the deny grammar.
+	 * @param PermissionCatalogueInterface $catalogue    The grantable set, so an undeclared verb is reported as one.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver = new DenyResolver(),
-		private readonly PermissionCatalogue $catalogue = new PermissionCatalogue(),
+		private readonly DenyResolverInterface $denyResolver = new DenyResolver(),
+		private readonly PermissionCatalogueInterface $catalogue = new PermissionCatalogue(),
 	) {
 	}//end __construct()
 
@@ -127,7 +127,7 @@ class ObjectPermissionsResolver {
 		// The control keys minus `roles`, which is handled on its own branch
 		// below. Subtracting it rather than relying on the branch order keeps
 		// the two readings of the same key from contradicting each other.
-		$settings = array_values(array_diff(PermissionCatalogue::CONTROL_KEYS, [self::ROLES_KEY]));
+		$settings = array_values(array_diff(PermissionCatalogueInterface::CONTROL_KEYS, [self::ROLES_KEY]));
 
 		$rules = [];
 		foreach ($block as $key => $entries) {

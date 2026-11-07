@@ -232,7 +232,7 @@ class TokenGrantNarrower {
 		$verbs = [];
 		foreach (array_keys($block) as $key) {
 			$key = (string)$key;
-			if (in_array($key, PermissionCatalogue::CONTROL_KEYS, true) === true || $key === self::MARKER) {
+			if (in_array($key, PermissionCatalogueInterface::CONTROL_KEYS, true) === true || $key === self::MARKER) {
 				continue;
 			}
 
@@ -248,6 +248,6 @@ class TokenGrantNarrower {
 	 * @return array<int, string> The verbs.
 	 */
 	private function catalogueVerbs(): array {
-		return array_keys(PermissionCatalogue::CANONICAL);
+		return array_keys(PermissionCatalogueInterface::CANONICAL);
 	}//end catalogueVerbs()
 }//end class

@@ -48,6 +48,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
 use OCP\IGroupManager;
@@ -63,7 +64,15 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
-class PropertyRbacHandler {
+class PropertyRbacHandler implements PropertyRbacHandlerInterface {
+
+	/**
+	 * Walks one declared write-only dot-path through a body.
+	 *
+	 * @var WriteOnlyPathWalker
+	 */
+	private readonly WriteOnlyPathWalker $paths;
+
 	/**
 	 * Constructor for PropertyRbacHandler
 	 *
@@ -84,6 +93,7 @@ class PropertyRbacHandler {
 		private readonly StateFieldRuleResolver $stateFieldRules,
 		private readonly ?RevealCollector $reveals = null,
 	) {
+		$this->paths = new WriteOnlyPathWalker(logger: $logger);
 	}//end __construct()
 
 	/**
@@ -208,55 +218,55 @@ class PropertyRbacHandler {
 		// An admin skips the group read rules (writeOnly and state rules were
 		// applied above). Explicit-reveal masking is not done here: the
 		// ExplicitRevealMasker applies it on the render routes, admins included.
-		if ($this->isAdmin() === true) {
+		// A schema with no property-level authorization is returned as-is.
+		if ($this->isAdmin() === true || $schema->hasPropertyAuthorization() === false) {
 			return $object;
 		}
 
-		// If schema has no property-level authorization, return as-is.
-		if ($schema->hasPropertyAuthorization() === false) {
-			return $object;
-		}
-
-		// Get properties with authorization.
 		// Returns associative array: propertyName => authorizationConfig.
-		$propertiesWithAuth = $schema->getPropertiesWithAuthorization();
-
-		// Filter out properties user cannot read.
-		foreach (array_keys($propertiesWithAuth) as $propertyName) {
+		foreach ($schema->getPropertiesWithAuthorization() as $propertyName => $authorization) {
 			// Only filter if the property exists in the object.
-			if (array_key_exists($propertyName, $object) === false) {
-				continue;
+			if (array_key_exists($propertyName, $object) === true) {
+				$object = $this->keepIfReadable(schema: $schema, property: $propertyName, authorization: $authorization, object: $object);
 			}
-
-			// Check if user can read this property.
-			if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $object) === false) {
-				unset($object[$propertyName]);
-				$this->logger->debug(
-					message: '[PropertyRbacHandler] Filtered unreadable property',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
-				);
-				continue;
-			}
-
-			// 🔴 THE REVEAL IS RECORDED HERE, WHERE THE VALUE SURVIVES THE
-			// FILTER, and not where the check runs (ledger row 5.6, D-1). Those
-			// are the same line today and will not always be, and only one of
-			// them is the fact being recorded: a denial is already logged, and
-			// what a data protection officer asks is who SAW the BSN.
-			//
-			// A stripped property reaches the `continue` above and writes
-			// nothing, which is the spec's third scenario and the one an
-			// implementation that recorded before the check would get backwards.
-			$this->recordReveal(
-				schema: $schema,
-				property: $propertyName,
-				authorization: $propertiesWithAuth[$propertyName],
-				object: $object
-			);
 		}
 
 		return $object;
 	}//end filterReadableProperties()
+
+	/**
+	 * Drop one property the user cannot read; record the reveal of one they can.
+	 *
+	 * @param Schema               $schema        The schema being read.
+	 * @param string               $property      The property, present in the object.
+	 * @param mixed                $authorization The property's authorization block.
+	 * @param array<string, mixed> $object        The object being read.
+	 *
+	 * @return array<string, mixed> The object, without the property when it is unreadable.
+	 */
+	private function keepIfReadable(Schema $schema, string $property, mixed $authorization, array $object): array {
+		if ($this->canReadProperty(schema: $schema, property: $property, object: $object) === false) {
+			unset($object[$property]);
+			$this->logger->debug(
+				message: '[PropertyRbacHandler] Filtered unreadable property',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property]
+			);
+			return $object;
+		}
+
+		// 🔴 THE REVEAL IS RECORDED HERE, WHERE THE VALUE SURVIVES THE
+		// FILTER, and not where the check runs (ledger row 5.6, D-1). Those
+		// are the same line today and will not always be, and only one of
+		// them is the fact being recorded: a denial is already logged, and
+		// what a data protection officer asks is who SAW the BSN.
+		//
+		// A stripped property reaches the `continue` above and writes
+		// nothing, which is the spec's third scenario and the one an
+		// implementation that recorded before the check would get backwards.
+		$this->recordReveal(schema: $schema, property: $property, authorization: $authorization, object: $object);
+
+		return $object;
+	}//end keepIfReadable()
 
 	/**
 	 * Record a reveal, when the property asked for one.
@@ -275,27 +285,16 @@ class PropertyRbacHandler {
 	 * @return void
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function recordReveal(Schema $schema, string $property, mixed $authorization, array $object): void {
-		// An explicit-reveal property is masked unless granted, and the
-		// ExplicitRevealMasker records the granted reveal itself.
-		if ($this->reveals === null || is_array($authorization) === false || ExplicitReveal::isExplicitRules(rules: $authorization) === true) {
-			return;
-		}
-
-		if ($this->reveals->isAudited(propertyRules: $authorization) === false) {
+		if ($this->revealIsAudited(authorization: $authorization) === false) {
 			return;
 		}
 
 		try {
-			$this->reveals->record(
-				userId: (string)$this->userSession->getUser()?->getUID(),
-				objectUuid: (string)($object['id'] ?? ($object['uuid'] ?? ($object['@self']['id'] ?? ''))),
-				property: $property,
-				schemaId: $schema->getId()
-			);
+			$userId = (string)$this->userSession->getUser()?->getUID();
+			$objectUuid = $this->objectUuid(object: $object);
+			$this->reveals?->record(userId: $userId, objectUuid: $objectUuid, property: $property, schemaId: $schema->getId());
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[PropertyRbacHandler] Could not record a reveal; the read is unaffected',
@@ -303,6 +302,36 @@ class PropertyRbacHandler {
 			);
 		}
 	}//end recordReveal()
+
+	/**
+	 * Whether a surviving property's reveal is to be recorded.
+	 *
+	 * @param mixed $authorization The property's authorization block.
+	 *
+	 * @return bool True when a collector is wired and the block asks for an audit.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
+	 */
+	private function revealIsAudited(mixed $authorization): bool {
+		// An explicit-reveal property is masked unless granted, and the
+		// ExplicitRevealMasker records the granted reveal itself.
+		if ($this->reveals === null || is_array($authorization) === false || ExplicitReveal::isExplicitRules(rules: $authorization) === true) {
+			return false;
+		}
+
+		return $this->reveals->isAudited(propertyRules: $authorization);
+	}//end revealIsAudited()
+
+	/**
+	 * The object's id as a reveal names it.
+	 *
+	 * @param array<string, mixed> $object The object being read.
+	 *
+	 * @return string The id, uuid or `@self.id`, else the empty string.
+	 */
+	private function objectUuid(array $object): string {
+		return (string)($object['id'] ?? ($object['uuid'] ?? ($object['@self']['id'] ?? '')));
+	}//end objectUuid()
 
 	/**
 	 * Strip write-only properties from outgoing object data.
@@ -336,102 +365,37 @@ class PropertyRbacHandler {
 		}
 
 		if ($hasProperties === true) {
-			foreach ($schema->getWriteOnlyProperties() as $propertyName) {
-				if (array_key_exists($propertyName, $object) === true) {
-					unset($object[$propertyName]);
-					$this->logger->debug(
-						message: '[PropertyRbacHandler] Stripped write-only property',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
-					);
-				}
-			}
+			$object = $this->stripWriteOnlyTopLevel(schema: $schema, object: $object);
 		}
 
 		foreach ($paths as $path) {
-			$object = $this->stripWriteOnlyPath(path: $path, object: $object);
+			$object = $this->paths->strip(path: $path, object: $object);
 		}
 
 		return $object;
 	}//end stripWriteOnlyProperties()
 
 	/**
-	 * Remove one declared write-only dot-path from an outgoing array.
+	 * Remove the top-level `writeOnly: true` properties from outgoing object data.
 	 *
-	 * This handles BOTH shapes OpenRegister renders a write-only value in,
-	 * because the same declaration has to cover both and every caller of
-	 * stripWriteOnlyProperties() passes one or the other:
+	 * @param Schema $schema Schema containing property definitions
+	 * @param array  $object Object data to filter
 	 *
-	 * 1. The object BODY, where `configuration.authentication.client_secret`
-	 *    is a nested structure to descend into and unset.
-	 * 2. The `relations` search-index MIRROR, where SaveObject::scanForRelations()
-	 *    flattens nested values into LITERAL dot-path keys — the mirror map is
-	 *    already keyed `configuration.authentication.client_secret`. jsonSerialize()
-	 *    surfaces that map as `@self.relations`, so a nested secret leaks there
-	 *    even after the body strip, exactly as top-level writeOnly did in #429.
-	 *
-	 * Both operations are applied unconditionally and are mutually inert: a body
-	 * has no literal dotted key (dots are not used in property names), and a flat
-	 * mirror map has nothing to descend. That keeps this method total over every
-	 * input the render path hands it, rather than relying on the caller to know
-	 * which shape it holds.
-	 *
-	 * A declared path removes the value at that location AND its whole sub-tree —
-	 * declaring `configuration.authentication` strips every key beneath it, and in
-	 * the mirror that means every flattened key prefixed `configuration.authentication.`
-	 * (this is what covers `configuration.authentication.keys.<apiKey>`, whose leaf
-	 * segments are attacker-supplied and therefore cannot be enumerated in advance).
-	 *
-	 * @param string $path The declared dot-path.
-	 * @param array $object The object body or relations mirror.
-	 *
-	 * @return array The array with the path removed.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+	 * @return array Object data without its write-only properties
 	 */
-	private function stripWriteOnlyPath(string $path, array $object): array {
-		// Shape 2: the flattened relations mirror. Remove an exact dot-path key
-		// and every key beneath it.
-		$prefix = $path . '.';
-		foreach (array_keys($object) as $key) {
-			$key = (string)$key;
-			if ($key === $path || str_starts_with($key, $prefix) === true) {
-				unset($object[$key]);
+	private function stripWriteOnlyTopLevel(Schema $schema, array $object): array {
+		foreach ($schema->getWriteOnlyProperties() as $propertyName) {
+			if (array_key_exists($propertyName, $object) === true) {
+				unset($object[$propertyName]);
 				$this->logger->debug(
-					message: '[PropertyRbacHandler] Stripped write-only path from relations mirror',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $key]
+					message: '[PropertyRbacHandler] Stripped write-only property',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
 				);
 			}
 		}
 
-		// Shape 1: the nested object body. Walk the path by reference and unset
-		// the final segment. Bail out the moment the path stops resolving —
-		// a declared path that is absent from this object is normal (the value
-		// was never set) and must not create keys on the way down.
-		$segments = explode('.', $path);
-		$leaf = array_pop($segments);
-		$cursor = &$object;
-
-		foreach ($segments as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				unset($cursor);
-				return $object;
-			}
-
-			$cursor = &$cursor[$segment];
-		}
-
-		if (is_array($cursor) === true && array_key_exists($leaf, $cursor) === true) {
-			unset($cursor[$leaf]);
-			$this->logger->debug(
-				message: '[PropertyRbacHandler] Stripped write-only path',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
-			);
-		}
-
-		unset($cursor);
-
 		return $object;
-	}//end stripWriteOnlyPath()
+	}//end stripWriteOnlyTopLevel()
 
 	/**
 	 * Collect the declared write-only locations that an incoming update payload OMITS.
@@ -492,7 +456,7 @@ class PropertyRbacHandler {
 
 		$omitted = [];
 		foreach ($declared as $path) {
-			if ($this->pathExists(path: $path, object: $incoming) === false) {
+			if ($this->paths->exists(path: $path, object: $incoming) === false) {
 				$omitted[] = $path;
 			}
 		}
@@ -528,19 +492,32 @@ class PropertyRbacHandler {
 		$omitted = [];
 		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $propertyName) {
 			$propertyName = (string) $propertyName;
-			if (array_key_exists($propertyName, $incoming) === true || array_key_exists($propertyName, $stored) === false) {
-				continue;
-			}
-
-			if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $stored) === false
-				|| $this->canUpdateProperty(schema: $schema, property: $propertyName, object: $stored) === false
-			) {
+			if ($this->carriesForward(schema: $schema, property: $propertyName, incoming: $incoming, stored: $stored) === true) {
 				$omitted[] = $propertyName;
 			}
 		}
 
 		return $omitted;
 	}//end collectOmittedProtectedProperties()
+
+	/**
+	 * Whether a stored property the payload omits is one the writer may not read, or may not update.
+	 *
+	 * @param Schema $schema   Schema whose property authorization applies.
+	 * @param string $property The governed property.
+	 * @param array  $incoming The raw incoming update payload.
+	 * @param array  $stored   The stored record's match envelope.
+	 *
+	 * @return bool True when its omission must be carried forward.
+	 */
+	private function carriesForward(Schema $schema, string $property, array $incoming, array $stored): bool {
+		if (array_key_exists($property, $incoming) === true || array_key_exists($property, $stored) === false) {
+			return false;
+		}
+
+		return $this->canReadProperty(schema: $schema, property: $property, object: $stored) === false
+			|| $this->canUpdateProperty(schema: $schema, property: $property, object: $stored) === false;
+	}//end carriesForward()
 
 	/**
 	 * Carry stored write-only values forward onto an update payload that omitted them.
@@ -578,128 +555,18 @@ class PropertyRbacHandler {
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
 	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array {
-		if (empty($omittedPaths) === true) {
-			return $prepared;
-		}
-
 		foreach ($omittedPaths as $path) {
 			// Nothing stored at this location: the value was never set. Restoring
 			// would invent a key that never existed, so leave the payload alone and
 			// let normal PUT semantics apply.
-			if ($this->pathExists(path: $path, object: $stored) === false) {
-				continue;
+			if ($this->paths->exists(path: $path, object: $stored) === true) {
+				$value = $this->paths->read(path: $path, object: $stored);
+				$prepared = $this->paths->restore(path: $path, prepared: $prepared, value: $value);
 			}
-
-			$prepared = $this->restoreWriteOnlyPath(
-				path: $path,
-				prepared: $prepared,
-				value: $this->readPath(path: $path, object: $stored)
-			);
 		}
 
 		return $prepared;
 	}//end restoreWriteOnlyValues()
-
-	/**
-	 * Whether a dot-path resolves to an existing key in an array.
-	 *
-	 * Uses array_key_exists rather than isset at every segment, because a location
-	 * present with an explicit null MUST report true — that is precisely the "client
-	 * deliberately cleared the secret" signal that isset() would silently misreport as
-	 * absent, re-preserving the value the operator just asked to delete.
-	 *
-	 * @param string $path The dot-path to probe.
-	 * @param array $object The array to probe.
-	 *
-	 * @return bool True when the path resolves to an existing key.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
-	 */
-	private function pathExists(string $path, array $object): bool {
-		$cursor = $object;
-
-		foreach (explode('.', $path) as $segment) {
-			if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-				return false;
-			}
-
-			$cursor = $cursor[$segment];
-		}
-
-		return true;
-	}//end pathExists()
-
-	/**
-	 * Read the value at a dot-path. Callers MUST have confirmed pathExists() first.
-	 *
-	 * @param string $path The dot-path to read.
-	 * @param array $object The array to read from.
-	 *
-	 * @return mixed The value at that location (may legitimately be null).
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
-	 */
-	private function readPath(string $path, array $object): mixed {
-		$cursor = $object;
-
-		foreach (explode('.', $path) as $segment) {
-			$cursor = $cursor[$segment];
-		}
-
-		return $cursor;
-	}//end readPath()
-
-	/**
-	 * Write one stored write-only value back into the payload at its declared path.
-	 *
-	 * The mirror of stripWriteOnlyPath()'s body walk, inverted: that one descends and
-	 * unsets, this one descends and sets. It differs in exactly one deliberate respect —
-	 * where the strip BAILS on a missing intermediate segment (never create keys on the
-	 * way out), this one CREATES it. A payload that dropped the whole `authentication`
-	 * block still has to get its secret back, and the parent has to exist to hold it.
-	 *
-	 * Bails only when an intermediate segment exists but holds a NON-array: the client
-	 * replaced that sub-tree with a scalar, so there is nowhere to put the leaf. Forcing
-	 * it would silently discard the value the client actually sent.
-	 *
-	 * @param string $path The declared dot-path.
-	 * @param array $prepared The payload to restore into.
-	 * @param mixed $value The stored value to write, verbatim.
-	 *
-	 * @return array The payload with the value restored.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
-	 */
-	private function restoreWriteOnlyPath(string $path, array $prepared, mixed $value): array {
-		$segments = explode('.', $path);
-		$leaf = array_pop($segments);
-		$cursor = &$prepared;
-
-		foreach ($segments as $segment) {
-			if (array_key_exists($segment, $cursor) === false || $cursor[$segment] === null) {
-				$cursor[$segment] = [];
-			}
-
-			if (is_array($cursor[$segment]) === false) {
-				// The client sent a scalar where this path expects a sub-tree.
-				unset($cursor);
-				return $prepared;
-			}
-
-			$cursor = &$cursor[$segment];
-		}
-
-		$cursor[$leaf] = $value;
-		unset($cursor);
-
-		// Deliberately never logs the value — only that a restore happened.
-		$this->logger->debug(
-			message: '[PropertyRbacHandler] Preserved omitted write-only value on save',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
-		);
-
-		return $prepared;
-	}//end restoreWriteOnlyPath()
 
 	/**
 	 * Validate writable properties on incoming data
@@ -717,12 +584,7 @@ class PropertyRbacHandler {
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (validates incoming writes against
 	 *       property update rules; skips unchanged values so PATCH may resubmit protected fields)
 	 */
-	public function getUnauthorizedProperties(
-		Schema $schema,
-		array $object,
-		array $incomingData,
-		bool $isCreate = false,
-	): array {
+	public function getUnauthorizedProperties(Schema $schema, array $object, array $incomingData, bool $isCreate = false): array {
 		// A field the object's state HIDES is refused here and survives both
 		// short-circuits below, so GraphQL and every other caller of this
 		// method inherit the refusal without a call-site change. It belongs on
@@ -735,57 +597,70 @@ class PropertyRbacHandler {
 		// sentence for a field the user can see and normally edit.
 		// StateFieldRuleListener refuses that one with 422 naming the field and
 		// the state, which is what the requirement's scenario reads.
-		$unauthorizedProps = $this->stateHiddenWrites(
-			schema: $schema,
-			object: $object,
-			incomingData: $incomingData
-		);
+		$unauthorizedProps = $this->stateHiddenWrites(schema: $schema, object: $object, incomingData: $incomingData);
 
-		// If user is admin, no further restrictions.
-		if ($this->isAdmin() === true) {
+		// An admin, or a schema without property-level authorization, has no further restrictions.
+		if ($this->isAdmin() === true || $schema->hasPropertyAuthorization() === false) {
 			return $unauthorizedProps;
 		}
 
-		// If schema has no property-level authorization, no further restrictions.
-		if ($schema->hasPropertyAuthorization() === false) {
-			return $unauthorizedProps;
-		}
+		$request = new PropertyAccessRequest(object: $object, isCreate: $isCreate);
+		$refused = $this->refusedWrites(schema: $schema, request: $request, incomingData: $incomingData);
 
-		// Get properties with authorization.
-		// Returns associative array: propertyName => authorizationConfig.
-		$propertiesWithAuth = $schema->getPropertiesWithAuthorization();
-
-		// Check each incoming property that has authorization rules.
-		foreach (array_keys($propertiesWithAuth) as $propertyName) {
-			// Only check properties that are being submitted.
-			if (array_key_exists($propertyName, $incomingData) === false) {
-				continue;
-			}
-
-			// Skip authorization check if the value hasn't actually changed.
-			// This allows PATCH operations to include unchanged protected fields
-			// without triggering authorization errors.
-			if ($isCreate === false
-				&& array_key_exists($propertyName, $object) === true
-				&& $incomingData[$propertyName] === $object[$propertyName]
-			) {
-				continue;
-			}
-
-			// Check if user can update this property.
-			if ($this->canUpdateProperty(
-				schema: $schema,
-				property: $propertyName,
-				object: $object,
-				isCreate: $isCreate
-			) === false
-			) {
-				$unauthorizedProps[] = $propertyName;
-			}
-		}//end foreach
-
-		return array_values(array_unique($unauthorizedProps));
+		return array_values(array_unique([...$unauthorizedProps, ...$refused]));
 	}//end getUnauthorizedProperties()
+
+	/**
+	 * The submitted governed properties the user may not write.
+	 *
+	 * @param Schema                $schema       Schema containing property definitions
+	 * @param PropertyAccessRequest $request      The existing object and create flag
+	 * @param array                 $incomingData Incoming data from client
+	 *
+	 * @return array<int, int|string> The refused property names, in schema order
+	 */
+	private function refusedWrites(Schema $schema, PropertyAccessRequest $request, array $incomingData): array {
+		$refused = [];
+		// Check each incoming property that has authorization rules; only submitted ones.
+		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $name) {
+			if (array_key_exists($name, $incomingData) === true
+				&& $this->refusesChange(schema: $schema, property: $name, request: $request, incoming: $incomingData[$name]) === true
+			) {
+				$refused[] = $name;
+			}
+		}
+
+		return $refused;
+	}//end refusedWrites()
+
+	/**
+	 * Whether the user may not write a submitted value to one property.
+	 *
+	 * @param Schema                $schema   Schema containing property definitions
+	 * @param int|string            $property The submitted property
+	 * @param PropertyAccessRequest $request  The existing object and create flag
+	 * @param mixed                 $incoming The submitted value
+	 *
+	 * @return bool True when the write is refused
+	 */
+	private function refusesChange(Schema $schema, int|string $property, PropertyAccessRequest $request, mixed $incoming): bool {
+		// Skip authorization check if the value hasn't actually changed.
+		// This allows PATCH operations to include unchanged protected fields
+		// without triggering authorization errors.
+		if ($request->isCreate === false
+			&& array_key_exists($property, $request->object) === true
+			&& $incoming === $request->object[$property]
+		) {
+			return false;
+		}
+
+		return $this->canUpdateProperty(
+			schema: $schema,
+			property: $property,
+			object: $request->object,
+			isCreate: $request->isCreate
+		) === false;
+	}//end refusesChange()
 
 	/**
 	 * The lifecycle state's field rules for one object, already decided.
@@ -831,12 +706,7 @@ class PropertyRbacHandler {
 			unset($object[$property]);
 			$this->logger->debug(
 				message: '[PropertyRbacHandler] Filtered property hidden by lifecycle state',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'property' => $property,
-					'state' => $rules->getState(),
-				]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'state' => $rules->getState()]
 			);
 		}
 
@@ -864,28 +734,15 @@ class PropertyRbacHandler {
 			$source = $incomingData;
 		}
 
-		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $source);
-		if ($rules->getHidden() === []) {
-			return [];
-		}
+		$hidden = $this->stateFieldRules->resolve(schema: $schema, data: $source)->getHidden();
 
-		$blocked = [];
-		foreach ($rules->getHidden() as $property) {
-			if (array_key_exists($property, $incomingData) === false) {
-				continue;
-			}
+		// Resubmitting the stored value is not a change, exactly as the
+		// property-authorization loop below allows, so a PATCH may carry
+		// the whole object back without tripping over its frozen fields.
+		$changed = static fn ($property): bool => array_key_exists($property, $incomingData) === true
+			&& ($object[$property] ?? null) !== $incomingData[$property];
 
-			// Resubmitting the stored value is not a change, exactly as the
-			// property-authorization loop below allows, so a PATCH may carry
-			// the whole object back without tripping over its frozen fields.
-			if (($object[$property] ?? null) === $incomingData[$property]) {
-				continue;
-			}
-
-			$blocked[] = $property;
-		}
-
-		return $blocked;
+		return array_values(array_filter($hidden, $changed));
 	}//end stateHiddenWrites()
 
 	/**
@@ -1022,6 +879,18 @@ class PropertyRbacHandler {
 			return true;
 		}
 
+		return $this->objectMatches(match: $match, request: $request);
+	}//end checkConditionalRule()
+
+	/**
+	 * Whether the object meets a rule's match conditions.
+	 *
+	 * @param mixed                 $match   The rule's non-empty match conditions
+	 * @param PropertyAccessRequest $request The user, object and create flag
+	 *
+	 * @return bool True if the conditions hold
+	 */
+	private function objectMatches(mixed $match, PropertyAccessRequest $request): bool {
 		// For creates, skip organisation matching since there's no existing object.
 		// Other match conditions still apply.
 		if ($request->isCreate === true) {
@@ -1033,7 +902,7 @@ class PropertyRbacHandler {
 
 		// Check if object matches all conditions.
 		return $this->conditionMatcher->objectMatchesConditions(object: $request->object, match: $match);
-	}//end checkConditionalRule()
+	}//end objectMatches()
 
 	/**
 	 * Check if current user is admin

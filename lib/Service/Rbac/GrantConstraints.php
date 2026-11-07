@@ -80,7 +80,7 @@ class GrantConstraints {
 	 *
 	 * @var array<int, string>
 	 */
-	private const SKIPPED_KEYS = ['public', 'inheritFromPublic', ObjectScopeResolver::SCOPE_KEY];
+	private const SKIPPED_KEYS = ['public', 'inheritFromPublic', ObjectScopeResolverInterface::SCOPE_KEY];
 
 	/**
 	 * Whether any entry in this block carries a constraint at all.
@@ -165,7 +165,7 @@ class GrantConstraints {
 			return $value;
 		}
 
-		if ($key === DenyResolver::DENY_KEY) {
+		if ($key === DenyResolverInterface::DENY_KEY) {
 			return $this->apply(authorization: $value, area: $area, now: $now);
 		}
 

@@ -94,7 +94,7 @@ class ObjectAuthorizationWriter {
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'uuid' => $objectUuid,
-				'scope' => ($block[ObjectScopeResolver::SCOPE_KEY] ?? null),
+				'scope' => ($block[ObjectScopeResolverInterface::SCOPE_KEY] ?? null),
 			]
 		);
 	}//end writeAuthorizationBlock()

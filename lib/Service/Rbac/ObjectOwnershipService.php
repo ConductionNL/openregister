@@ -372,14 +372,14 @@ class ObjectOwnershipService {
 		// Read-modify-write ONE key, exactly as the scope is written: an action
 		// override or a scope in the same block must survive this.
 		$block = ($object->getAuthorization() ?? []);
-		$before = $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null));
+		$before = $this->groupNameOf(value: ($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] ?? null));
 
 		if ($group === null || $group === '') {
-			unset($block[ObjectScopeResolver::OWNER_GROUP_KEY]);
+			unset($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY]);
 		}
 
 		if ($group !== null && $group !== '') {
-			$block[ObjectScopeResolver::OWNER_GROUP_KEY] = $group;
+			$block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] = $group;
 		}
 
 		$this->authorizationWriter->writeAuthorizationBlock(
@@ -394,7 +394,7 @@ class ObjectOwnershipService {
 		$this->grantAuditor?->recordOwnerGroup(
 			object: $object,
 			before: $before,
-			after: $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null))
+			after: $this->groupNameOf(value: ($block[ObjectScopeResolverInterface::OWNER_GROUP_KEY] ?? null))
 		);
 
 		return $block;

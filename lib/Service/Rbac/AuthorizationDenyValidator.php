@@ -71,10 +71,10 @@ class AuthorizationDenyValidator {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver $denyResolver The one reader of the deny grammar.
+	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver,
+		private readonly DenyResolverInterface $denyResolver,
 	) {
 	}//end __construct()
 
@@ -264,7 +264,7 @@ class AuthorizationDenyValidator {
 
 			$user = ($entry['user'] ?? null);
 			if ($candidate === null && is_string($user) === true && $user !== '') {
-				$candidate = (DenyResolver::USER_PREFIX . $user);
+				$candidate = (DenyResolverInterface::USER_PREFIX . $user);
 			}
 		}
 

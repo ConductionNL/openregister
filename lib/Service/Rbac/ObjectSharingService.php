@@ -124,7 +124,7 @@ class ObjectSharingService {
 	 * @param IUserSession $userSession Resolves the caller.
 	 * @param IGroupManager $groupManager Resolves the caller's groups.
 	 * @param FolderManagementHandler $folders Resolves an object's NC folder.
-	 * @param ObjectScopeResolver $scopeResolver The scope vocabulary.
+	 * @param ObjectScopeResolverInterface $scopeResolver The scope vocabulary.
 	 * @param ObjectGrantResolver $grantResolver The grant resolver, to drop its per-request memo.
 	 * @param IManager $shareManager Core share manager.
 	 * @param LoggerInterface $logger Logger.
@@ -143,7 +143,7 @@ class ObjectSharingService {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly FolderManagementHandler $folders,
-		private readonly ObjectScopeResolver $scopeResolver,
+		private readonly ObjectScopeResolverInterface $scopeResolver,
 		private readonly ObjectGrantResolver $grantResolver,
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
@@ -182,7 +182,7 @@ class ObjectSharingService {
 	public function setScope(Register $register, Schema $schema, ObjectEntity $object, string $scope): array {
 		$this->requireOwnerOrAdmin(object: $object);
 
-		$valid = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+		$valid = [ObjectScopeResolverInterface::SCOPE_ORGANISATION, ObjectScopeResolverInterface::SCOPE_PRIVATE];
 		if (in_array($scope, $valid, true) === false) {
 			throw new InvalidArgumentException(
 				'Scope must be one of: ' . implode(', ', $valid)
@@ -197,7 +197,7 @@ class ObjectSharingService {
 		// contract to fix, not something to paper over at every call site.
 		$block = ($object->getAuthorization() ?? []);
 
-		$block[ObjectScopeResolver::SCOPE_KEY] = $scope;
+		$block[ObjectScopeResolverInterface::SCOPE_KEY] = $scope;
 
 		$this->authorizationWriter->writeAuthorizationBlock(
 			register: $register,

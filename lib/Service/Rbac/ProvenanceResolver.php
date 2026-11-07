@@ -123,12 +123,12 @@ class ProvenanceResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param DenyResolver $denyResolver The one reader of the deny grammar, whose
+	 * @param DenyResolverInterface $denyResolver The one reader of the deny grammar, whose
 	 *                                   entry matcher is shared because grants and
 	 *                                   denies use the same grammar.
 	 */
 	public function __construct(
-		private readonly DenyResolver $denyResolver = new DenyResolver(),
+		private readonly DenyResolverInterface $denyResolver = new DenyResolver(),
 	) {
 	}//end __construct()
 

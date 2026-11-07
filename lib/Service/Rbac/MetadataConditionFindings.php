@@ -231,7 +231,7 @@ class MetadataConditionFindings {
 				continue;
 			}
 
-			if ($action === DenyResolver::DENY_KEY) {
+			if ($action === DenyResolverInterface::DENY_KEY) {
 				foreach ($rules as $denied => $entries) {
 					if (is_array($entries) === true) {
 						$lists['deny '.(string)$denied] = $entries;
