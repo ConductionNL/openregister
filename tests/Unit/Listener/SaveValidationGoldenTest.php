@@ -53,6 +53,8 @@ use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\BulkEditActions;
+use OCA\OpenRegister\Listener\Support\BulkSetActions;
 
 /**
  * Golden outcomes of the save validation listeners.
@@ -319,12 +321,8 @@ class SaveValidationGoldenTest extends TestCase {
 		);
 
 		$listener = new BulkActionRegistrationListener(
-			$make(SetPropertiesActionInterface::class, 'set'),
-			$make(AssignActionInterface::class, 'assign'),
-			$make(ApplyRuleActionInterface::class, 'rule'),
-			$make(ExportWholeSetAction::class, 'export'),
-			$make(RestorePriorValuesActionInterface::class, 'restore'),
-			$make(RunActionActionInterface::class, 'run'),
+			new BulkEditActions($make(SetPropertiesActionInterface::class, 'set'), $make(AssignActionInterface::class, 'assign'), $make(ApplyRuleActionInterface::class, 'rule')),
+			new BulkSetActions($make(ExportWholeSetAction::class, 'export'), $make(RestorePriorValuesActionInterface::class, 'restore'), $make(RunActionActionInterface::class, 'run')),
 			$this->logger()
 		);
 		$listener->handle(new Event());

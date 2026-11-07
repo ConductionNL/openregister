@@ -62,6 +62,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
+use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ApprovalChainGateListener
@@ -171,13 +173,8 @@ class LifecycleListenersGoldenTest extends TestCase {
 		);
 
 		return new LifecycleValidationListener(
-			new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger),
-			new LifecycleGuardRegistry($this->guards, $server, $this->logger),
-			$this->userSession,
-			$this->permission,
-			new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect),
-			new ConditionTracer(dialect: $dialect),
-			$this->ruleRuns
+			new LifecycleTransitionAccess(new \OCA\OpenRegister\Listener\LifecycleEditReader($this->schemaMapper, $this->resolver(), $this->logger), $this->userSession, $this->permission),
+			new LifecycleTransitionChecks(new LifecycleGuardRegistry($this->guards, $server, $this->logger), new LifecycleConditionEvaluator($this->userSession, $groups, $l10n, $this->logger, $dialect), new ConditionTracer(dialect: $dialect), $this->ruleRuns)
 		);
 	}//end validationListener()
 
