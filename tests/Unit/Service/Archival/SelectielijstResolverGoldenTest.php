@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -38,10 +39,11 @@ class SelectielijstResolverGoldenTest extends TestCase {
 	 *
 	 * @param array<int, array<string, mixed>> $rows     Row data, in store order.
 	 * @param array<string, mixed>             $settings Archival settings.
+	 * @param ObjectRetentionHandler|null      $handler  Settings reader replacing the one built from $settings.
 	 *
 	 * @return SelectielijstResolver The resolver.
 	 */
-	private function resolver(array $rows, array $settings): SelectielijstResolver {
+	private function resolver(array $rows, array $settings, ?ObjectRetentionHandler $handler = null): SelectielijstResolver {
 		$objectMapper = $this->getMockBuilder(MagicMapper::class)->disableOriginalConstructor()->onlyMethods(['findAll'])->getMock();
 		$objectMapper->method('findAll')->willReturnCallback(
 			static function (?int $limit = null, ?int $offset = null, ?array $filters = null) use ($rows): array {
@@ -63,8 +65,11 @@ class SelectielijstResolverGoldenTest extends TestCase {
 				return $found;
 			}
 		);
-		$handler = $this->createMock(ObjectRetentionHandler::class);
-		$handler->method('getArchivalSettingsOnly')->willReturn($settings);
+		if ($handler === null) {
+			$handler = $this->createMock(originalClassName: ObjectRetentionHandler::class);
+			$handler->method('getArchivalSettingsOnly')->willReturn($settings);
+		}
+
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn(new Register());
 		$schemaMapper = $this->createMock(SchemaMapper::class);
@@ -345,6 +350,34 @@ class SelectielijstResolverGoldenTest extends TestCase {
 			),
 			$this->caseProvenance()
 		);
+	}
+
+	/**
+	 * Golden: the settings read made while picking the applicable row fails.
+	 *
+	 * The lookup reads the archival settings once for the register and schema and
+	 * again for the applied version; a failure on the second read resolves to no
+	 * entry, as a failed store read does, instead of escaping to the caller.
+	 *
+	 * @return void
+	 */
+	public function testSettingsFailureWhilePickingRowResolvesToNull(): void {
+		$handler = $this->createMock(originalClassName: ObjectRetentionHandler::class);
+		$calls = 0;
+		$handler->method('getArchivalSettingsOnly')->willReturnCallback(
+			static function () use (&$calls): array {
+				$calls++;
+				if ($calls > 1) {
+					throw new RuntimeException('settings unavailable');
+				}
+
+				return ["selectielijstRegister" => 1, "selectielijstSchema" => 2, "selectielijstVersion" => "v1"];
+			}
+		);
+		$resolver = $this->resolver(rows: [["categorie" => "1.1", "selectielijstVersie" => "v1", "x" => 1]], settings: [], handler: $handler);
+
+		$this->assertNull(actual: $resolver->entryFor(category: '1.1'));
+		$this->assertSame(expected: 2, actual: $calls);
 	}
 
 	private function caseUnconfigured(): mixed {

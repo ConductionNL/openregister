@@ -152,12 +152,12 @@ class SelectielijstResolver {
 
 		try {
 			$results = $this->rowsFor(category: $category, registerId: (int)$registerId, schemaId: (int)$schemaId);
+
+			return $this->pickApplicableRow(results: $results);
 		} catch (Exception $e) {
 			$this->logger->warning('[RetentionService] Failed to lookup selectielijst entry for ' . $category, ['exception' => $e]);
 			return null;
 		}
-
-		return $this->pickApplicableRow(results: $results);
 	}//end findSelectielijstEntry()
 
 	/**
