@@ -57,6 +57,28 @@ final class TaskPriority {
 	];
 
 	/**
+	 * The iCal 0-9 mapping: 1 is the wire format's highest.
+	 *
+	 * RFC 5545: 0 undefined, 1-4 high, 5 medium, 6-9 low. `1` — the value a
+	 * VTODO marks its most urgent work with — lands on `urgent`; the rest of
+	 * the high band on `high`.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ICAL = [
+		0 => 'normal',
+		1 => 'urgent',
+		2 => 'high',
+		3 => 'high',
+		4 => 'high',
+		5 => 'normal',
+		6 => 'low',
+		7 => 'low',
+		8 => 'low',
+		9 => 'low',
+	];
+
+	/**
 	 * Normalise a priority from any known scale.
 	 *
 	 * @param mixed $value A string from a known scale, or an iCal 0-9 integer
@@ -70,36 +92,60 @@ final class TaskPriority {
 	 */
 	public static function normalise(mixed $value): string {
 		// The iCal integer range, arriving as int or as a numeric string.
-		if (is_int($value) === true || (is_string($value) === true && preg_match('/^\d+$/', trim($value)) === 1)) {
+		if (self::isIcalInteger(value: $value) === true) {
 			return self::fromIcal(value: (int)trim((string)$value));
 		}
 
+		$lowered = '';
 		if (is_string($value) === true) {
 			$lowered = strtolower(trim($value));
-			if (array_key_exists($lowered, self::STRINGS) === true) {
-				return self::STRINGS[$lowered];
-			}
 		}
 
+		if (array_key_exists($lowered, self::STRINGS) === true) {
+			return self::STRINGS[$lowered];
+		}
+
+		throw self::offScale(value: $value);
+	}//end normalise()
+
+	/**
+	 * Whether a value spells an integer: an int, or a string of digits.
+	 *
+	 * @param mixed $value The raw priority.
+	 *
+	 * @return bool True when the value is read on the iCal scale.
+	 */
+	private static function isIcalInteger(mixed $value): bool {
+		if (is_int($value) === true) {
+			return true;
+		}
+
+		return is_string($value) === true && preg_match('/^\d+$/', trim($value)) === 1;
+	}//end isIcalInteger()
+
+	/**
+	 * The refusal for a value on no known scale, naming the value.
+	 *
+	 * @param mixed $value The raw priority.
+	 *
+	 * @return TaskValidationException The refusal to throw.
+	 */
+	private static function offScale(mixed $value): TaskValidationException {
 		$printable = gettype($value);
 		if (is_scalar($value) === true) {
 			$printable = (string)$value;
 		}
 
-		throw new TaskValidationException(
+		return new TaskValidationException(
 			message: sprintf(
 				"Priority '%s' is on no known scale (low|normal|high|urgent, low|medium|high|critical, or iCal 0-9) and is refused, not coerced.",
 				$printable
 			)
 		);
-	}//end normalise()
+	}//end offScale()
 
 	/**
-	 * The iCal 0-9 mapping: 1 is the wire format's highest.
-	 *
-	 * RFC 5545: 0 undefined, 1-4 high, 5 medium, 6-9 low. `1` — the value a
-	 * VTODO marks its most urgent work with — lands on `urgent`; the rest of
-	 * the high band on `high`.
+	 * Map an iCal integer onto the canonical scale.
 	 *
 	 * @param int $value The iCal integer.
 	 *
@@ -110,24 +156,12 @@ final class TaskPriority {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
 	 */
 	private static function fromIcal(int $value): string {
-		if ($value < 0 || $value > 9) {
+		if (array_key_exists($value, self::ICAL) === false) {
 			throw new TaskValidationException(
 				message: sprintf("Priority '%d' is outside the iCal 0-9 range and is refused, not coerced.", $value)
 			);
 		}
 
-		if ($value === 0 || $value === 5) {
-			return 'normal';
-		}
-
-		if ($value === 1) {
-			return 'urgent';
-		}
-
-		if ($value <= 4) {
-			return 'high';
-		}
-
-		return 'low';
+		return self::ICAL[$value];
 	}//end fromIcal()
 }//end class
