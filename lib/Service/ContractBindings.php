@@ -137,6 +137,7 @@ final class ContractBindings {
 		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		SearchTrailServiceInterface::class => SearchTrailService::class,
 		SequenceServiceInterface::class => SequenceService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
