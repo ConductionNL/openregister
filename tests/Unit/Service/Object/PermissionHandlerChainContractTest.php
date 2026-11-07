@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -467,7 +468,12 @@ class PermissionHandlerChainContractTest extends TestCase {
 
 		$method = new ReflectionMethod(PermissionHandler::class, 'evaluatePermission');
 
-		return $method->invoke($this->handler(case: $case), $schema, ($case['action'] ?? 'read'), $userId, $object?->getOwner(), $object);
+		return $method->invoke(
+			$this->handler(case: $case),
+			(new PermissionAsk(schema: $schema, action: ($case['action'] ?? 'read')))
+				->askedBy(userId: $userId, objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
+		);
 	}//end evaluate()
 
 	/**
