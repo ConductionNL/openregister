@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationErrorMessages;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -38,10 +39,8 @@ use stdClass;
  * Coverage-focused unit tests for ValidateObject
  *
  * Targets uncovered lines in:
- * - resolveSchemaProperty (object $ref, array $ref, object type union, non-object resolve)
  * - transformPropertyForOpenRegister (inversedBy object, array items inversedBy, strip $ref from string)
  * - transformToUuidProperty (inversedBy path)
- * - transformToNestedObjectProperty (self-reference detection)
  * - extractObjectConfigurationHandling (items oneOf path)
  * - extractHandlingFromOneOfItems
  * - fixMisplacedArrayConstraints (oneOf as object)
@@ -161,31 +160,31 @@ class ValidateObjectCoverageTest extends TestCase {
 	// =========================================================================
 
 	public function testGetValueTypeNull(): void {
-		$this->assertSame('null', $this->invokeMethod('getValueType', [null]));
+		$this->assertSame('null', (new ValidationErrorMessages())->valueType(null));
 	}
 
 	public function testGetValueTypeBool(): void {
-		$this->assertSame('boolean', $this->invokeMethod('getValueType', [true]));
+		$this->assertSame('boolean', (new ValidationErrorMessages())->valueType(true));
 	}
 
 	public function testGetValueTypeInteger(): void {
-		$this->assertSame('integer', $this->invokeMethod('getValueType', [42]));
+		$this->assertSame('integer', (new ValidationErrorMessages())->valueType(42));
 	}
 
 	public function testGetValueTypeFloat(): void {
-		$this->assertSame('number', $this->invokeMethod('getValueType', [3.14]));
+		$this->assertSame('number', (new ValidationErrorMessages())->valueType(3.14));
 	}
 
 	public function testGetValueTypeString(): void {
-		$this->assertSame('string', $this->invokeMethod('getValueType', ['hello']));
+		$this->assertSame('string', (new ValidationErrorMessages())->valueType('hello'));
 	}
 
 	public function testGetValueTypeArray(): void {
-		$this->assertSame('array', $this->invokeMethod('getValueType', [[1, 2]]));
+		$this->assertSame('array', (new ValidationErrorMessages())->valueType([1, 2]));
 	}
 
 	public function testGetValueTypeObject(): void {
-		$this->assertSame('object', $this->invokeMethod('getValueType', [new stdClass()]));
+		$this->assertSame('object', (new ValidationErrorMessages())->valueType(new stdClass()));
 	}
 
 	// =========================================================================
@@ -515,50 +514,6 @@ class ValidateObjectCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// transformToNestedObjectProperty
-	// =========================================================================
-
-	public function testTransformToNestedObjectPropertyNoRef(): void {
-		$schema = (object)['type' => 'object', 'properties' => (object)[]];
-		$this->invokeMethod('transformToNestedObjectProperty', [$schema]);
-		// No change since no $ref
-		$this->assertSame('object', $schema->type);
-	}
-
-	public function testTransformToNestedObjectPropertyWithObjectRef(): void {
-		$schema = (object)[
-			'type' => 'object',
-			'$ref' => (object)['id' => '#/components/schemas/Self'],
-		];
-		$this->invokeMethod('transformToNestedObjectProperty', [$schema]);
-		// The method resolves object $ref to string, checks for self-reference.
-		// isSelfReference uses a tempSchema with $ref = schemaSlug (no prefix),
-		// so it won't match the '#/components/schemas/' pattern. Object stays unchanged.
-		$this->assertSame('object', $schema->type);
-	}
-
-	public function testTransformToNestedObjectPropertyWithStringRef(): void {
-		$schema = (object)[
-			'type' => 'object',
-			'$ref' => '#/components/schemas/TestSlug',
-		];
-		// The internal isSelfReference check uses a tempSchema with $ref = 'TestSlug',
-		// which doesn't contain '#/components/schemas/', so no self-reference detected.
-		// The method covers the string reference path.
-		$this->invokeMethod('transformToNestedObjectProperty', [$schema]);
-		$this->assertSame('object', $schema->type);
-	}
-
-	public function testTransformToNestedObjectPropertyWithArrayRef(): void {
-		$schema = (object)[
-			'type' => 'object',
-			'$ref' => ['id' => '#/components/schemas/Self'],
-		];
-		$this->invokeMethod('transformToNestedObjectProperty', [$schema]);
-		$this->assertSame('object', $schema->type);
-	}
-
-	// =========================================================================
 	// transformOpenRegisterObjectConfigurations
 	// =========================================================================
 
@@ -732,35 +687,6 @@ class ValidateObjectCoverageTest extends TestCase {
 	}
 
 	// =========================================================================
-	// preprocessSchemaReferences - UUID-transformed items skip
-	// =========================================================================
-
-	public function testPreprocessSchemaReferencesSkipsUuidItems(): void {
-		$schema = (object)[
-			'type' => 'object',
-			'items' => (object)[
-				'type' => 'string',
-				'pattern' => '^[0-9a-f]{8}-[0-9a-f]{4}-uuid',
-			],
-		];
-		$result = $this->invokeMethod('preprocessSchemaReferences', [$schema, []]);
-		// Items with UUID pattern should be skipped
-		$this->assertSame('string', $result->items->type);
-	}
-
-	public function testPreprocessSchemaReferencesProcessesItems(): void {
-		$schema = (object)[
-			'type' => 'object',
-			'items' => (object)[
-				'type' => 'object',
-				'description' => 'nested',
-			],
-		];
-		$result = $this->invokeMethod('preprocessSchemaReferences', [$schema, []]);
-		$this->assertSame('object', $result->items->type);
-	}
-
-	// =========================================================================
 	// transformSchemaForValidation - various branches
 	// =========================================================================
 
@@ -891,52 +817,4 @@ class ValidateObjectCoverageTest extends TestCase {
 		$this->assertFalse(isset($result->properties->name->cascadeDelete));
 	}
 
-	// =========================================================================
-	// findSchemaBySlug
-	// =========================================================================
-
-	public function testFindSchemaBySlugDirectMatch(): void {
-		$schema = $this->createSchema([], 'my-schema');
-		$this->schemaMapper->method('find')
-			->willReturn($schema);
-
-		$result = $this->invokeMethod('findSchemaBySlug', ['my-schema']);
-		$this->assertNotNull($result);
-		$this->assertSame('my-schema', $result->getSlug());
-	}
-
-	public function testFindSchemaBySlugCaseInsensitive(): void {
-		$schema = $this->createSchema([], 'MySchema');
-
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('not found'));
-
-		$this->schemaMapper->method('findAll')
-			->willReturn([$schema]);
-
-		$result = $this->invokeMethod('findSchemaBySlug', ['myschema']);
-		$this->assertNotNull($result);
-	}
-
-	public function testFindSchemaBySlugNotFound(): void {
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('not found'));
-
-		$this->schemaMapper->method('findAll')
-			->willReturn([]);
-
-		$result = $this->invokeMethod('findSchemaBySlug', ['nonexistent']);
-		$this->assertNull($result);
-	}
-
-	public function testFindSchemaBySlugFindAllFails(): void {
-		$this->schemaMapper->method('find')
-			->willThrowException(new \Exception('not found'));
-
-		$this->schemaMapper->method('findAll')
-			->willThrowException(new \Exception('db error'));
-
-		$result = $this->invokeMethod('findSchemaBySlug', ['anything']);
-		$this->assertNull($result);
-	}
 }

@@ -7,7 +7,7 @@
  * manifest into {@see ScheduleDescriptor} value objects, mirroring the
  * observability engine's manifest → descriptor pattern. Invalid entries never
  * throw out of {@see fromManifest}: they are collected into `$diagnostics` and
- * dropped, so one malformed schedule can never break the reconciler sweep.
+ * dropped, so one malformed schedule can never stop the others applying.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

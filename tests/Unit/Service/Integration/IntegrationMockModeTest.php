@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -162,7 +163,7 @@ class IntegrationMockModeTest extends TestCase {
 
 		// @var OpenCorporatesProvider $oc
 		$oc = $this->provider(OpenCorporatesProvider::class, $fixture);
-		$result = $oc->searchCompanies('Conduction', 'nl', 30, 1);
+		$result = $oc->searchCompanies((new CompanySearch('Conduction', 30, 1))->narrowedBy(['jurisdiction' => 'nl']));
 
 		$this->assertArrayNotHasKey('unavailable', $result);
 		$this->assertSame(2, $result['total']);

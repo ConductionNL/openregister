@@ -118,12 +118,12 @@ class DedupCollidedSchemasCommand extends Command {
 		// which inflates the collision count dramatically.
 		$sql = 'SELECT s.id AS schema_id, s.slug AS schema_slug, s.application AS schema_app,
                        r.id AS register_id, r.slug AS register_slug, r.application AS register_app
-                  FROM oc_openregister_schemas s
-                  JOIN oc_openregister_registers r
+                  FROM *PREFIX*openregister_schemas s
+                  JOIN *PREFIX*openregister_registers r
                     ON (r.schemas::jsonb @> to_jsonb(s.id::text) OR r.schemas::jsonb @> to_jsonb(s.id))
                  WHERE s.id IN (
-                       SELECT s2.id FROM oc_openregister_schemas s2
-                        JOIN oc_openregister_registers r2
+                       SELECT s2.id FROM *PREFIX*openregister_schemas s2
+                        JOIN *PREFIX*openregister_registers r2
                           ON (r2.schemas::jsonb @> to_jsonb(s2.id::text) OR r2.schemas::jsonb @> to_jsonb(s2.id))
                         GROUP BY s2.id HAVING COUNT(*) > 1)';
 		$params = [];
@@ -228,16 +228,16 @@ class DedupCollidedSchemasCommand extends Command {
 	private function splitOneLocked(int $schemaId, int $registerId, ?string $registerApp, string $newUuid): int {
 		// 1. Clone every column except the identity ones.
 		$this->db->executeStatement(
-			'INSERT INTO oc_openregister_schemas
+			'INSERT INTO *PREFIX*openregister_schemas
              (uuid, title, slug, description, version, summary, required, properties,
               application, organisation, owner, created, updated)
              SELECT :uuid, title, slug, description, version, summary, required, properties,
                     :app, organisation, owner, NOW(), NOW()
-               FROM oc_openregister_schemas WHERE id = :sid',
+               FROM *PREFIX*openregister_schemas WHERE id = :sid',
 			['uuid' => $newUuid, 'app' => $registerApp, 'sid' => $schemaId]
 		);
 
-		$newId = (int)$this->db->lastInsertId('oc_openregister_schemas');
+		$newId = (int)$this->db->lastInsertId('*PREFIX*openregister_schemas');
 
 		// 2. Repoint the register: replace the shared id with the clone, in
 		// whichever shape (string or number) the array happens to use.
@@ -246,7 +246,7 @@ class DedupCollidedSchemasCommand extends Command {
 			// type of a bare placeholder inside to_jsonb() and fails with
 			// "could not determine polymorphic type because input has type
 			// unknown".
-			'UPDATE oc_openregister_registers
+			'UPDATE *PREFIX*openregister_registers
                 SET schemas = (
                     SELECT jsonb_agg(
                         CASE WHEN elem::text IN (CAST(:sidTxt AS text), CAST(:sidQuoted AS text))
@@ -264,21 +264,17 @@ class DedupCollidedSchemasCommand extends Command {
 
 		// 3. Object storage is already per register+schema, so the rows only
 		// need the table to follow the new schema id — no row migration.
-		$old = 'oc_openregister_table_' . $registerId . '_' . $schemaId;
-		$new = 'oc_openregister_table_' . $registerId . '_' . $newId;
-		$exists = $this->db->executeQuery(
-			'SELECT 1 FROM pg_tables WHERE schemaname = current_schema() AND tablename = :t',
-			['t' => $old]
-		)->fetchOne();
-		if ($exists !== false) {
-			$this->db->executeStatement(sprintf('ALTER TABLE %s RENAME TO %s', $old, $new));
+		$old = 'openregister_table_' . $registerId . '_' . $schemaId;
+		$new = '*PREFIX*openregister_table_' . $registerId . '_' . $newId;
+		if ($this->db->tableExists($old) === true) {
+			$this->db->executeStatement(sprintf('ALTER TABLE *PREFIX*%s RENAME TO %s', $old, $new));
 
 			// The rename alone is NOT enough: every row still carries the OLD
 			// schema id in its `_schema` column, so anything filtering by
 			// schema (queries, exports, RBAC scoping) would miss them or
 			// attribute them to the register that kept the original. Verified
 			// on the larpingapp split — 139 rows sat at `_schema = 21` inside
-			// `oc_openregister_table_8_5440` until this ran.
+			// `openregister_table_8_5440` until this ran.
 			$this->db->executeStatement(
 				sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $new),
 				['new' => (string)$newId, 'old' => (string)$schemaId]

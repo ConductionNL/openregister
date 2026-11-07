@@ -102,6 +102,7 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\DateTimeType
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\Scalar\UuidType
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\CompositionHandler
+ * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaCaller
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\TypeMapperHandler
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
@@ -109,6 +110,13 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\AggregationTypes
  * @uses   \OCA\OpenRegister\Service\Rbac\AggregateVisibility
  * @uses   \OCA\OpenRegister\Support\FilterParams
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLNames
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\GraphQLScalars
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectMetadataFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectPropertyFields
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\ObjectTypes
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntry
+ * @uses \OCA\OpenRegister\Search\Service\GraphQL\SchemaGenerator\SchemaEntryFields
  */
 class AnonymousEnvelopeReadPathsTest extends TestCase {
 
@@ -349,7 +357,7 @@ class AnonymousEnvelopeReadPathsTest extends TestCase {
 			new TimeseriesRequestValidator()
 		);
 
-		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn));
+		$generator = new SchemaGenerator($schemaMapper, $this->session(signedIn: $signedIn), $rbac);
 		$generator->setResolver($resolver);
 
 		$uuid = (string)$this->record()->getUuid();

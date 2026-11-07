@@ -33,6 +33,7 @@ use OCP\Files\NotPermittedException;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
 
 /**
  * Handles file update operations with Single Responsibility.
@@ -84,7 +85,7 @@ class UpdateFileHandler {
 	 * @param ISystemTagManager $systemTagManager System tag manager.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
 	 * @param LoggerInterface $logger Logger for logging operations.
-	 * @param \OCA\OpenRegister\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
+	 * @param \OCA\OpenRegister\Files\Db\FileMapperInterface|null $fileMapper Optional OR-side metadata mapper for
 	 *                                                         description / category / labels writes.
 	 *                                                         Null-safe so legacy fixtures keep working.
 	 */
@@ -97,7 +98,7 @@ class UpdateFileHandler {
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
 		private readonly LoggerInterface $logger,
-		private readonly ?\OCA\OpenRegister\Db\FileMapperInterface $fileMapper = null,
+		private readonly ?\OCA\OpenRegister\Files\Db\FileMapperInterface $fileMapper = null,
 	) {
 	}//end __construct()
 
@@ -118,7 +119,7 @@ class UpdateFileHandler {
 	 * @param string|null $category The new category, empty string to clear, null to skip.
 	 * @param array<string>|null $labels The new labels, empty array to clear, null to skip.
 	 *
-	 * @return \OCA\OpenRegister\Db\File The persisted entity reflecting the updated state.
+	 * @return \OCA\OpenRegister\Files\Db\File The persisted entity reflecting the updated state.
 	 *
 	 * @throws Exception When the FileMapper is not wired (legacy fixtures).
 	 *
@@ -129,7 +130,7 @@ class UpdateFileHandler {
 		?string $description = null,
 		?string $category = null,
 		?array $labels = null,
-	): \OCA\OpenRegister\Db\File {
+	): \OCA\OpenRegister\Files\Db\File {
 		if ($this->fileMapper === null) {
 			throw new Exception('FileMapper is not wired; cannot update OR-side metadata');
 		}
