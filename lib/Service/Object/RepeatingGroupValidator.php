@@ -85,96 +85,91 @@ class RepeatingGroupValidator {
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function validate(array $object, Schema $schema): array {
-		$properties = $schema->getProperties();
-		if (is_array($properties) === false || $properties === []) {
-			return [];
-		}
-
 		$violations = [];
-		foreach ($properties as $name => $definition) {
-			if (is_array($definition) === false) {
-				continue;
-			}
-
-			if (($definition[Schema::REPEATING_GROUP_PROPERTY_KEYWORD] ?? false) !== true) {
-				continue;
-			}
-
+		foreach ($this->declaredGroups(schema: $schema) as $name => $definition) {
 			$name = (string)$name;
 
 			// Omitted is not a violation. An absent group is the required-value
 			// rule's business, and answering it here would refuse every partial
 			// update that happens not to mention the group.
-			if (array_key_exists($name, $object) === false) {
-				continue;
+			if (array_key_exists($name, $object) === true) {
+				$group = new RepeatingGroupPlace(name: $name, definition: $definition);
+				$violations = array_merge($violations, $this->validateGroup(group: $group, value: $object[$name]));
 			}
-
-			$violations = array_merge(
-				$violations,
-				$this->validateGroup(name: $name, value: $object[$name], definition: $definition)
-			);
-		}//end foreach
+		}
 
 		return $violations;
 	}//end validate()
 
 	/**
+	 * The properties a schema declares as a repeating group.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int|string, array> The declarations by property name.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function declaredGroups(Schema $schema): array {
+		$properties = $schema->getProperties();
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		return array_filter(
+			$properties,
+			fn ($definition): bool => is_array($definition) === true
+				&& ($definition[Schema::REPEATING_GROUP_PROPERTY_KEYWORD] ?? false) === true
+		);
+	}//end declaredGroups()
+
+	/**
 	 * Validate one group's value: its shape, its bounds and its rows.
 	 *
-	 * @param string $name The group's property name.
-	 * @param mixed $value The submitted value.
-	 * @param array $definition The group's declaration.
+	 * @param RepeatingGroupPlace $group The group.
+	 * @param mixed               $value The submitted value.
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function validateGroup(string $name, mixed $value, array $definition): array {
-		// An empty value clears the group. It is the minimum's business below,
-		// never a shape complaint, so null and '' become the empty list here.
-		if ($value === null || $value === '') {
-			$value = [];
+	private function validateGroup(RepeatingGroupPlace $group, mixed $value): array {
+		$rows = $this->rowsOf(value: $value);
+		if ($rows === null) {
+			return [$group->violation(code: 'repeating-group-not-a-list', message: "'{$group->name}' is a repeating group, so it takes a list of rows.")];
 		}
 
-		if (is_array($value) === false || ($value !== [] && array_is_list($value) === false)) {
-			return [
-				$this->violation(
-					property: $name,
-					position: null,
-					member: null,
-					code: 'repeating-group-not-a-list',
-					message: "'$name' is a repeating group, so it takes a list of rows."
-				),
-			];
-		}
-
-		$violations = $this->validateBounds(name: $name, count: count($value), definition: $definition);
-
-		$members = ($definition['items']['properties'] ?? []);
-		if (is_array($members) === false) {
-			$members = [];
-		}
-
-		$required = ($definition['items']['required'] ?? []);
-		if (is_array($required) === false) {
-			$required = [];
-		}
-
-		foreach ($value as $index => $row) {
-			$violations = array_merge(
-				$violations,
-				$this->validateRow(
-					name: $name,
-					position: ((int)$index + 1),
-					row: $row,
-					members: $members,
-					required: $required
-				)
-			);
+		$violations = $this->validateBounds(group: $group, count: count($rows));
+		foreach ($rows as $index => $row) {
+			$violations = array_merge($violations, $this->validateRow(place: $group->atRow(position: ((int)$index + 1)), row: $row));
 		}
 
 		return $violations;
 	}//end validateGroup()
+
+	/**
+	 * The rows of a submitted value, or null when it is no list.
+	 *
+	 * An empty value clears the group. That is the minimum's business, never a
+	 * shape complaint, so null and '' are the empty list.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return array|null The rows.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 */
+	private function rowsOf(mixed $value): ?array {
+		if ($value === null || $value === '') {
+			return [];
+		}
+
+		if (is_array($value) === false || array_is_list($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end rowsOf()
 
 	/**
 	 * Enforce `minItems` and `maxItems` on a group.
@@ -183,37 +178,25 @@ class RepeatingGroupValidator {
 	 * own, so a schema that already declares them keeps meaning exactly what it
 	 * meant before this change.
 	 *
-	 * @param string $name The group's property name.
-	 * @param integer $count How many rows were submitted.
-	 * @param array $definition The group's declaration.
+	 * @param RepeatingGroupPlace $group The group.
+	 * @param integer             $count How many rows were submitted.
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function validateBounds(string $name, int $count, array $definition): array {
+	private function validateBounds(RepeatingGroupPlace $group, int $count): array {
 		$violations = [];
+		$name = $group->name;
 
-		$minimum = ($definition['minItems'] ?? null);
-		if (is_numeric($minimum) === true && $count < (int)$minimum) {
-			$violations[] = $this->violation(
-				property: $name,
-				position: null,
-				member: null,
-				code: 'repeating-group-below-minimum',
-				message: "'$name' needs at least " . (int)$minimum . " rows. It was sent $count."
-			);
+		$minimum = $group->bound(keyword: 'minItems');
+		if ($minimum !== null && $count < $minimum) {
+			$violations[] = $group->violation(code: 'repeating-group-below-minimum', message: "'$name' needs at least $minimum rows. It was sent $count.");
 		}
 
-		$maximum = ($definition['maxItems'] ?? null);
-		if (is_numeric($maximum) === true && $count > (int)$maximum) {
-			$violations[] = $this->violation(
-				property: $name,
-				position: null,
-				member: null,
-				code: 'repeating-group-above-maximum',
-				message: "'$name' takes at most " . (int)$maximum . " rows. It was sent $count."
-			);
+		$maximum = $group->bound(keyword: 'maxItems');
+		if ($maximum !== null && $count > $maximum) {
+			$violations[] = $group->violation(code: 'repeating-group-above-maximum', message: "'$name' takes at most $maximum rows. It was sent $count.");
 		}
 
 		return $violations;
@@ -222,63 +205,46 @@ class RepeatingGroupValidator {
 	/**
 	 * Validate one row against the group's declared members.
 	 *
-	 * @param string $name The group's property name.
-	 * @param integer $position The row, counted from one.
-	 * @param mixed $row The submitted row.
-	 * @param array $members The declared members.
-	 * @param array $required The members a row has to answer.
+	 * @param RepeatingGroupPlace $place The group at this row.
+	 * @param mixed               $row   The submitted row.
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function validateRow(string $name, int $position, mixed $row, array $members, array $required): array {
+	private function validateRow(RepeatingGroupPlace $place, mixed $row): array {
 		if (is_array($row) === false || array_is_list($row) === true) {
 			return [
-				$this->violation(
-					property: $name,
-					position: $position,
-					member: null,
+				$place->violation(
 					code: 'repeating-group-row-not-an-object',
-					message: "Row $position of '$name' has to be a set of fields."
+					message: "Row {$place->position()} of '{$place->name}' has to be a set of fields."
 				),
 			];
 		}
 
-		return array_merge(
-			$this->missingMembers(name: $name, position: $position, row: $row, required: $required),
-			$this->mistypedMembers(name: $name, position: $position, row: $row, members: $members)
-		);
+		return array_merge($this->missingMembers(place: $place, row: $row), $this->mistypedMembers(place: $place, row: $row));
 	}//end validateRow()
 
 	/**
 	 * The members a row had to answer and did not.
 	 *
-	 * @param string $name The group's property name.
-	 * @param integer $position The row, counted from one.
-	 * @param array $row The submitted row.
-	 * @param array $required The members a row has to answer.
+	 * @param RepeatingGroupPlace $place The group at this row.
+	 * @param array               $row   The submitted row.
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function missingMembers(string $name, int $position, array $row, array $required): array {
+	private function missingMembers(RepeatingGroupPlace $place, array $row): array {
 		$violations = [];
-		foreach ($required as $member) {
+		foreach ($place->required() as $member) {
 			$member = (string)$member;
-			$answered = (array_key_exists($member, $row) === true && $row[$member] !== null && $row[$member] !== '');
-			if ($answered === true) {
-				continue;
+			if ($this->answers(row: $row, member: $member) === false) {
+				$violations[] = $place->atMember(member: $member)->violation(
+					code: 'repeating-group-member-required',
+					message: "Row {$place->position()} of '{$place->name}' is missing '$member'."
+				);
 			}
-
-			$violations[] = $this->violation(
-				property: $name,
-				position: $position,
-				member: $member,
-				code: 'repeating-group-member-required',
-				message: "Row $position of '$name' is missing '$member'."
-			);
 		}
 
 		return $violations;
@@ -291,36 +257,27 @@ class RepeatingGroupValidator {
 	 * member whose declared type this class does not check is left to the
 	 * validator that defines it.
 	 *
-	 * @param string $name The group's property name.
-	 * @param integer $position The row, counted from one.
-	 * @param array $row The submitted row.
-	 * @param array $members The declared members.
+	 * @param RepeatingGroupPlace $place The group at this row.
+	 * @param array               $row   The submitted row.
 	 *
 	 * @return array<int, array{property: string, position: int|null, member: string|null, code: string, message: string}>
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
-	private function mistypedMembers(string $name, int $position, array $row, array $members): array {
+	private function mistypedMembers(RepeatingGroupPlace $place, array $row): array {
 		$violations = [];
-		foreach ($members as $member => $declaration) {
+		foreach ($place->members() as $member => $declaration) {
 			$member = (string)$member;
 			$expected = $this->checkableType(declaration: $declaration);
-			if ($expected === null || $this->answers(row: $row, member: $member) === false) {
-				continue;
+			if ($expected !== null && $this->answers(row: $row, member: $member) === true
+				&& $this->matchesType(value: $row[$member], expected: $expected) === false
+			) {
+				$violations[] = $place->atMember(member: $member)->violation(
+					code: 'repeating-group-member-type',
+					message: "Row {$place->position()} of '{$place->name}' has the wrong kind of value in '$member'. It takes a $expected."
+				);
 			}
-
-			if ($this->matchesType(value: $row[$member], expected: $expected) === true) {
-				continue;
-			}
-
-			$violations[] = $this->violation(
-				property: $name,
-				position: $position,
-				member: $member,
-				code: 'repeating-group-member-type',
-				message: "Row $position of '$name' has the wrong kind of value in '$member'. It takes a $expected."
-			);
-		}//end foreach
+		}
 
 		return $violations;
 	}//end mistypedMembers()
@@ -392,27 +349,4 @@ class RepeatingGroupValidator {
 			default => true,
 		};
 	}//end matchesType()
-
-	/**
-	 * Build one violation in the shape every caller reads.
-	 *
-	 * @param string $property The group's property name.
-	 * @param integer|null $position The row, counted from one, or null for the group.
-	 * @param string|null $member The member inside the row, or null.
-	 * @param string $code The machine-readable refusal code.
-	 * @param string $message The sentence a person reads.
-	 *
-	 * @return array{property: string, position: int|null, member: string|null, code: string, message: string}
-	 *
-	 * @spec openspec/specs/runtime-schema-api/spec.md
-	 */
-	private function violation(string $property, ?int $position, ?string $member, string $code, string $message): array {
-		return [
-			'property' => $property,
-			'position' => $position,
-			'member' => $member,
-			'code' => $code,
-			'message' => $message,
-		];
-	}//end violation()
 }//end class

@@ -34,12 +34,12 @@ final class ConversationControllerFactory {
 	public static function args(
 		string $appName,
 		\OCP\IRequest $request,
-		\OCA\OpenRegister\Db\ConversationMapper $conversationMapper,
+		\OCA\OpenRegister\Mcp\Db\ConversationMapper $conversationMapper,
 		\OCA\OpenRegister\Notifications\Db\MessageMapper $messageMapper,
 		\OCA\OpenRegister\Db\FeedbackMapper $feedbackMapper,
-		\OCA\OpenRegister\Db\AgentMapper $agentMapper,
+		\OCA\OpenRegister\Mcp\Db\AgentMapper $agentMapper,
 		\OCA\OpenRegister\Service\OrganisationService $organisationService,
-		\OCA\OpenRegister\Service\ChatService $chatService,
+		\OCA\OpenRegister\Mcp\Service\ChatService $chatService,
 		\Psr\Log\LoggerInterface $logger,
 		string $userId,
 	): array {

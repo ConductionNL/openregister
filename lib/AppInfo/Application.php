@@ -42,6 +42,8 @@ use OCA\OpenRegister\Middleware\MiddlewareRegistrar;
 use OCA\OpenRegister\Notification\NotifierRegistrar;
 use OCA\OpenRegister\Search\SearchProviderRegistrar;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
+use OCA\OpenRegister\Files\FilesRegistrar;
+use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Service\ContractBindings;
@@ -51,7 +53,7 @@ use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
-use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
 use OCA\OpenRegister\Service\Outbound\OutboundClientFactory;
 use OCA\OpenRegister\Service\Rbac\RbacRegistrar;
@@ -143,6 +145,8 @@ class Application extends App implements IBootstrap {
 		FeatureToggleRegistrar::register(context: $context);
 		ServiceRegistrar::register(context: $context);
 		SearchRegistrar::register(context: $context);
+		FilesRegistrar::register(context: $context);
+		McpRegistrar::register(context: $context);
 		NotificationsRegistrar::register(context: $context);
 
 		// Every outbound call this app makes goes through the administered
