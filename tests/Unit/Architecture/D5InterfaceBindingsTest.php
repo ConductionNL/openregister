@@ -57,6 +57,7 @@ final class D5InterfaceBindingsTest extends TestCase {
 			'OCA\OpenRegister\Service\SharedSchemaDedupeServiceInterface',
 			ContractBindings::class,
 		],
+		'OCA\OpenRegister\Service\TalkLinkService' => ['OCA\OpenRegister\Service\TalkLinkServiceInterface', ContractBindings::class],
 	];
 
 	/**
