@@ -245,12 +245,13 @@ import {
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
-import PaginationComponent from '../../components/PaginationComponent.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import ViewModeSwitch from '../../components/shared/ViewModeSwitch.vue'
 import eventBus from '../../eventBus.js'
+import { displayDateTime } from '../../services/displayDateTime.js'
 import { refreshAction } from '../../services/menuActions.js'
 import { navigationStore } from '../../store/store.js'
 
@@ -571,17 +572,7 @@ export default {
 			this.$router.push({ name: 'entityDetails', params: { id: entity.id } })
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @spec exclude list-view date-formatting display helper
-		 * @param {string} date - Date string
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 	},
 }
 </script>
