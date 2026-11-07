@@ -59,6 +59,16 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolver;
+use OCA\OpenRegister\Service\Form\FormDefinitionResolverInterface;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
+use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\FormSubmitService;
+use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
+use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\FormUploadStoreInterface;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Merge\MergeService;
@@ -70,6 +80,10 @@ use OCA\OpenRegister\Service\Operations\OperationsJobsService;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuard;
+use OCA\OpenRegister\Service\Vocabulary\ConceptDeleteGuardInterface;
+use OCA\OpenRegister\Service\Vocabulary\ConceptRepository;
+use OCA\OpenRegister\Service\Vocabulary\ConceptRepositoryInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -87,15 +101,26 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppSettingsInterface::class => SettingsService::class,
+		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
+		ConceptRepositoryInterface::class => ConceptRepository::class,
 		ContactMatcherInterface::class => ContactMatchingService::class,
+		CospendLinkServiceInterface::class => CospendLinkService::class,
 		ExampleSetInstallerInterface::class => ExampleSetInstaller::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
+		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
+		FormDestinationValidatorInterface::class => FormDestinationValidator::class,
+		FormIdempotencyStoreInterface::class => FormIdempotencyStore::class,
+		FormSubmitServiceInterface::class => FormSubmitService::class,
+		FormUploadStoreInterface::class => FormUploadStore::class,
 		GitHubClientInterface::class => GitHubHandler::class,
 		JobAlertServiceInterface::class => JobAlertService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
+		MigrationServiceInterface::class => MigrationService::class,
 		NotificationTemplatesInterface::class => NotificationTemplateRegistry::class,
+		OasServiceInterface::class => OasService::class,
 		ObjectCalendarEventsInterface::class => CalendarEventService::class,
 		ObjectCalendarTasksInterface::class => \OCA\OpenRegister\Service\TaskService::class,
 		ObjectExporterInterface::class => ExportService::class,
@@ -103,9 +128,11 @@ final class ContractBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		ObjectRelationCleanupServiceInterface::class => ObjectRelationCleanupService::class,
 		OperationsJobsServiceInterface::class => OperationsJobsService::class,
 		ScheduledReportsInterface::class => ScheduledReportService::class,
 		SchemaExplorationInterface::class => SchemaService::class,
+		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
 		CalculationEvaluatorInterface::class => CalculationEvaluator::class,

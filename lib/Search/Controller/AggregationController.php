@@ -48,7 +48,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
@@ -74,14 +74,14 @@ class AggregationController extends Controller {
 	 *
 	 * @param string $appName The application name.
 	 * @param IRequest $request The current request.
-	 * @param AggregationRunner $runner The aggregation runner.
+	 * @param AggregationRunnerInterface $runner The aggregation runner.
 	 * @param TimeseriesRequestValidator $validator Ad-hoc request validator.
 	 * @param LoggerInterface|null $logger Where the unknown-filter-key warning goes (optional).
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly AggregationRunner $runner,
+		private readonly AggregationRunnerInterface $runner,
 		private readonly TimeseriesRequestValidator $validator,
 		private readonly ?LoggerInterface $logger = null,
 	) {
