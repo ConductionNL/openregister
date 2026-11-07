@@ -49,8 +49,19 @@ final class ExampleSetTaskChecklist {
 			return 'checklist must be a list of items';
 		}
 
+		return self::itemsRefusal(items: $data['checklist']);
+	}//end refusal()
+
+	/**
+	 * Why one of the checklist's items cannot be written, or '': the first one that cannot.
+	 *
+	 * @param array<int, mixed> $items The items.
+	 *
+	 * @return string
+	 */
+	private static function itemsRefusal(array $items): string {
 		$ids = [];
-		foreach ($data['checklist'] as $item) {
+		foreach ($items as $item) {
 			$why = self::itemRefusal(item: $item, seen: $ids);
 			if ($why !== '') {
 				return $why;
@@ -60,7 +71,7 @@ final class ExampleSetTaskChecklist {
 		}
 
 		return '';
-	}//end refusal()
+	}//end itemsRefusal()
 
 	/**
 	 * Why one checklist item cannot be written, or ''.
@@ -71,7 +82,7 @@ final class ExampleSetTaskChecklist {
 	 * @return string
 	 */
 	private static function itemRefusal(mixed $item, array $seen): string {
-		if (is_array($item) === false || self::filled(value: ($item['id'] ?? null)) === false || self::filled(value: ($item['label'] ?? null)) === false) {
+		if (self::hasIdAndLabel(item: $item) === false) {
 			return 'every checklist item needs an id and a label';
 		}
 
@@ -85,6 +96,17 @@ final class ExampleSetTaskChecklist {
 
 		return '';
 	}//end itemRefusal()
+
+	/**
+	 * Whether an item is a map with a filled id and a filled label.
+	 *
+	 * @param mixed $item The item.
+	 *
+	 * @return bool
+	 */
+	private static function hasIdAndLabel(mixed $item): bool {
+		return is_array($item) === true && self::filled(value: ($item['id'] ?? null)) === true && self::filled(value: ($item['label'] ?? null)) === true;
+	}//end hasIdAndLabel()
 
 	/**
 	 * Whether a value is a non-empty string.

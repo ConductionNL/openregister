@@ -16,6 +16,7 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import { copyRows } from '../../services/objectCopy.js'
 import { isInlineEditable } from '../../services/propertyEditor.js'
 import {
 	navigationStore,
@@ -522,15 +523,27 @@ export default {
 		},
 
 		/**
-		 * Open the mass-copy dialog for the selected ids.
+		 * Save a copy of each selected row and give the dialog its result.
 		 *
-		 * @param {object} payload The mass-copy event payload.
-		 * @spec exclude UI plumbing — opens the mass-copy dialog
-		 * @return {void}
+		 * @param {object} payload The mass-copy event payload: ids, getName.
+		 * @spec exclude UI plumbing: the page holds the rows, the dialog shows the outcome
+		 * @return {Promise<void>}
 		 */
-		handleMassCopy(payload) {
-			this.stageSelection(payload?.ids || [])
-			navigationStore.setDialog('massCopyObjects')
+		async handleMassCopy(payload) {
+			const type = this.computedObjectType
+			const outcome = await copyRows({
+				rows: this.normalizedObjects,
+				ids: payload?.ids || [],
+				nameOf: payload?.getName,
+				save: (copy) => objectStore.saveObject(type, copy),
+			})
+			if (outcome.failedIds.length > 0) {
+				outcome.error =
+					objectStore.errors?.[type]?.message
+					|| t('openregister', 'Some objects could not be copied.')
+			}
+			this.$refs.indexPage?.setMassCopyResult(outcome)
+			objectStore.refetchSearchCollection()
 		},
 
 		/**

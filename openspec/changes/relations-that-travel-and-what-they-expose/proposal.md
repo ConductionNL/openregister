@@ -103,9 +103,10 @@ cross-reference in the register.
   Guardian and ward, employer and employee, and gemachtigde and principal
   are then statements in the register rather than conventions in prose.
 - A link type that declares its field set. A relation type MAY name the
-  properties of the far record that the relation exposes. A reader holding
-  no other access to the far record sees exactly those properties, and the
-  rest reads as withheld rather than as absent.
+  properties of the far record that the relation exposes. A reader who may
+  read the far record sees through the link those properties, and the rest
+  reads as withheld rather than as absent. A reader without the read right
+  sees only the identifier.
 
 ## What dossiq consumes
 

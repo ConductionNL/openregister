@@ -23,41 +23,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched when an object is locked
  */
-class ObjectLockedEvent extends Event {
-
-	/**
-	 * The locked object entity
-	 *
-	 * @var ObjectEntity The object that has been locked
-	 */
-	private ObjectEntity $object;
-
-	/**
-	 * Constructor for ObjectLockedEvent
-	 *
-	 * @param ObjectEntity $object The object that has been locked
-	 *
-	 * @return void
-	 */
-	public function __construct(ObjectEntity $object) {
-		parent::__construct();
-		$this->object = $object;
-	}//end __construct()
-
-	/**
-	 * Get the locked object entity
-	 *
-	 * @return ObjectEntity The object that has been locked
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObject(): ObjectEntity {
-		return $this->object;
-	}//end getObject()
+class ObjectLockedEvent extends AbstractObjectEntityEvent {
 }//end class

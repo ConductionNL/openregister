@@ -151,6 +151,18 @@ class SaveObjectDeepTest extends TestCase {
 	}
 
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
+			return RelationCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, PropertyDefaultsCalls::METHODS, true) === true) {
+			return PropertyDefaultsCalls::{$methodName}($this->handler, $args);
+		}
+
 		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
 		$reflection->setAccessible(true);
 		return $reflection->invoke($this->handler, ...$args);

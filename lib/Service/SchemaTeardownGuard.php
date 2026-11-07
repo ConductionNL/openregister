@@ -66,7 +66,7 @@ final class SchemaTeardownGuard {
 		private readonly IDBConnection $db,
 		private readonly AuditTrailMapperInterface $audit,
 	) {
-		$this->rows = new WholeTableRows(mapper: $mapper);
+		$this->rows = new WholeTableRows(mapper: $mapper, db: $db);
 	}//end __construct()
 
 	/**

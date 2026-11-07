@@ -144,13 +144,13 @@ class ApplicationService {
 	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::createFromArray, no standalone behavioral contract.
 	 */
 	public function create(array $data): Application {
-		// Log creation attempt with provided data.
+		// Log creation attempt.
 		$this->logger->info(
 			message: '[ApplicationService] Creating new application',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'data' => $data,
+				'fields' => array_keys($data),
 			]
 		);
 
@@ -189,14 +189,14 @@ class ApplicationService {
 	 * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::updateFromArray, no standalone behavioral contract.
 	 */
 	public function update(int $id, array $data): Application {
-		// Log update attempt with ID and data.
+		// Log update attempt with ID.
 		$this->logger->info(
 			message: '[ApplicationService] Updating application',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'id' => $id,
-				'data' => $data,
+				'fields' => array_keys($data),
 			]
 		);
 

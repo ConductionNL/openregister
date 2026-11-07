@@ -20402,12 +20402,6 @@
         },
         {
           "file": "lib/Controller/SettingsController.php",
-          "method": "debugTypeFiltering",
-          "visibility": "public",
-          "observed_behavior": "Debug endpoint for type filtering issue"
-        },
-        {
-          "file": "lib/Controller/SettingsController.php",
           "method": "semanticSearch",
           "visibility": "public",
           "observed_behavior": "Perform semantic search using vector embeddings"

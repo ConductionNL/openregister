@@ -26,26 +26,22 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleConditionEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
+use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 
 /**
  * Rejects invalid lifecycle transitions before they are written.
@@ -80,13 +76,11 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Wire collaborators used to validate transitions and run guards.
 	 *
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
+	 * @param LifecycleEditReader $edits Reads the edit and the transition it amounts to.
 	 * @param LifecycleGuardRegistry $guardRegistry Registry resolving guard ids to instances.
 	 * @param IUserSession $userSession Current user session.
 	 * @param PermissionHandler $permissionHandler RBAC handler used to evaluate declarative per-transition authorization.
-	 * @param LoggerInterface $logger PSR logger for warnings.
 	 * @param LifecycleConditionEvaluator $conditionEvaluator Decides whether a transition `condition` lets it through.
-	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is.
 	 * @param ConditionTracer $conditionTracer Names the operand that decided a condition.
 	 * @param RuleRunRecorder $ruleRuns Records each condition's verdict for the rule inventory.
 	 *
@@ -95,13 +89,11 @@ class LifecycleValidationListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly LifecycleEditReader $edits,
 		private readonly LifecycleGuardRegistry $guardRegistry,
 		private readonly IUserSession $userSession,
 		private readonly PermissionHandler $permissionHandler,
-		private readonly LoggerInterface $logger,
 		private readonly LifecycleConditionEvaluator $conditionEvaluator,
-		private readonly LifecycleTransitionResolver $transitionResolver,
 		private readonly ConditionTracer $conditionTracer,
 		private readonly RuleRunRecorder $ruleRuns,
 	) {
@@ -110,227 +102,270 @@ class LifecycleValidationListener implements IEventListener {
 	/**
 	 * Validate the attempted lifecycle transition before persistence.
 	 *
+	 * An update without a stored object has nothing to validate against: the
+	 * initial state is LifecycleInitialStateListener's.
+	 *
 	 * @param Event $event Inbound dispatcher event.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
-		if (($event instanceof ObjectUpdatingEvent) === false) {
-			return;
-		}
-
-		$oldObject = $event->getOldObject();
-		if ($oldObject === null) {
-			// No prior state — nothing to validate against. Initial state
-			// is enforced by LifecycleInitialStateListener.
-			return;
-		}
-
-		$newObject = $event->getNewObject();
-		$schema = $this->loadSchema(object: $newObject);
-		if ($schema === null) {
-			return;
-		}
-
-		$annotation = $this->getLifecycleAnnotation(schema: $schema);
-		if ($annotation === null) {
-			return;
-		}
-
-		// Accept `property` as an additive alias for `field` so schemas authored
-		// against the procest migration shape work verbatim. `field` wins when
-		// both are present.
-		$field = (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
-		$oldData = $oldObject->getObject() ?? [];
-		$newData = $newObject->getObject() ?? [];
-
-		$oldValue = $oldData[$field] ?? null;
-		$newValue = $newData[$field] ?? null;
-
-		if ($oldValue === $newValue) {
-			// No lifecycle change — nothing to validate.
-			return;
-		}
-
-		// A seed or example-set refresh writes the state its declaration names. As the system, that is the declared
-		// value, not a move a user makes, so no transition has to allow it.
-		if (SystemOperationContext::isActive() === true && $this->transitionResolver->writesDeclaredState(uuid: (string) $newObject->getUuid()) === true) {
-			return;
-		}
-
-		if (is_string($newValue) === false || $newValue === '') {
-			$this->reject(
-				event: $event,
-				error: [
-					'code' => 'lifecycle-invalid-value',
-					'field' => $field,
-					'attempted' => $newValue,
-					'message' => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
-				]
-			);
-			return;
-		}
-
-		$transitions = ($annotation['transitions'] ?? []);
-
-		// Initial-only lifecycle: a schema may declare `x-openregister-lifecycle`
-		// solely to derive the START state (e.g. procest's `case` schema —
-		// `{ field: status, initial: { from: caseType, field: initialStatus } }`)
-		// while OWNING transition validation itself (procest routes every status
-		// change through its workflow-template state engine). With no declared
-		// `transitions` there is nothing for OR to enforce, so validating here
-		// fail-closes EVERY status change (no transition resolves →
-		// reject), silently breaking those apps' status advancement. Treat an
-		// empty/absent transition set as "app-managed" and skip enforcement; the
-		// initial state is still pinned by LifecycleInitialStateListener.
-		if (empty($transitions) === true) {
-			return;
-		}
-
-		$matched = $this->transitionResolver->resolve(
-			transitions: $transitions,
-			uuid: (string)$newObject->getUuid(),
-			oldValue: (string)$oldValue,
-			newValue: $newValue
-		);
-
-		if ($matched === null) {
-			$this->reject(
-				event: $event,
-				error: [
-					'code' => 'lifecycle-invalid-transition',
-					'field' => $field,
-					'from' => $oldValue,
-					'attempted' => $newValue,
-					'message' => sprintf(
-						'No transition allows moving "%s" from "%s" to "%s".',
-						$field,
-						(string)$oldValue,
-						$newValue
-					),
-				]
-			);
-			return;
-		}
-
-		[$action, $spec] = $matched;
-
-		// Declarative per-transition authorization (Engine 1). When the matched
-		// transition lists `authorization` (NC group ids and/or `{ "role": "<name>" }`
-		// entries), the caller MUST satisfy it. This is the group-based gate
-		// procest's role-routing needs WITHOUT a bespoke PHP guard per role.
-		// Evaluated BEFORE the `requires` guard so an unauthorized caller is
-		// rejected with a 403-shaped error before any guard side-channel runs.
-		// Transitions without an `authorization` key skip this entirely
-		// (additive / backward-compatible).
-		$authorizationList = ($spec['authorization'] ?? null);
-		if (is_array($authorizationList) === true && $authorizationList !== []) {
-			$userId = ($this->userSession->getUser()?->getUID() ?? null);
-			if ($this->permissionHandler->isTransitionAuthorized(
-				authorizationList: $authorizationList,
-				userId: $userId,
-				schema: $schema
-			) === false
-			) {
-				$this->reject(
-					event: $event,
-					error: [
-						'code' => 'lifecycle-transition-unauthorized',
-						'field' => $field,
-						'action' => $action,
-						'message' => sprintf(
-							'You are not authorized to perform transition "%s" on "%s".',
-							$action,
-							$field
-						),
-					]
-				);
-				return;
-			}
-		}//end if
-
-		// Declarative JSONLogic precondition on the object's own data. Runs
-		// AFTER `authorization` so an unauthorized caller is turned away
-		// before any condition is evaluated, and BEFORE `requires` so a
-		// refused condition never resolves, let alone runs, a guard.
-		$refusal = $this->conditionEvaluator->refusal(
-			spec: $spec,
-			newData: $newData,
-			oldData: $oldData,
-			action: (string)$action,
-			from: (string)$oldValue,
-			to: $newValue,
-			schemaSlug: (string)$schema->getSlug(),
-			field: $field
-		);
-		$this->recordCondition(
-			object: $newObject,
-			schema: $schema,
-			spec: $spec,
-			newData: $newData,
-			oldData: $oldData,
-			action: (string)$action,
-			from: (string)$oldValue,
-			to: $newValue,
-			refusal: $refusal
-		);
-
-		if ($refusal !== null) {
-			$this->reject(event: $event, error: $refusal);
-			return;
-		}
-
-		$guardRefusal = $this->guardRefusal(
-			spec: $spec,
-			transition: ['field' => $field, 'action' => (string)$action, 'object' => $newData, 'stored' => $oldObject]
-		);
-		if ($guardRefusal !== null) {
-			$this->reject(event: $event, error: $guardRefusal);
+		if (($event instanceof ObjectUpdatingEvent) === true) {
+			$this->validate(event: $event);
 		}
 	}//end handle()
 
 	/**
+	 * Refuse the update when its change of state may not go ahead.
+	 *
+	 * @param ObjectUpdatingEvent $event The update.
+	 *
+	 * @return void
+	 */
+	private function validate(ObjectUpdatingEvent $event): void {
+		$edit = $this->edits->editOf(event: $event, logAs: 'Lifecycle listener');
+		if ($edit === null || $edit->changesState() === false) {
+			return;
+		}
+
+		$refusal = $this->refusal(edit: $edit);
+		if ($refusal !== null) {
+			$edit->refuse(error: $refusal);
+		}
+	}//end validate()
+
+	/**
+	 * What refuses this change of state, or null when it may go ahead.
+	 *
+	 * An initial-only lifecycle declares no `transitions`: a schema may use the
+	 * block solely to derive the start state (procest's `case` schema) and own
+	 * transition validation itself. There is then nothing to enforce here, and
+	 * validating would fail-close every status change of such an app.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function refusal(LifecycleEdit $edit): ?array {
+		if ($this->writesDeclaredState(edit: $edit) === true) {
+			return null;
+		}
+
+		if ($edit->hasTextState() === false) {
+			return $this->invalidValue(edit: $edit);
+		}
+
+		if (empty($edit->declaration->transitions()) === true) {
+			return null;
+		}
+
+		return $this->transitionRefusal(edit: $edit);
+	}//end refusal()
+
+	/**
+	 * Whether this is a seed or example-set refresh writing the state its declaration names.
+	 *
+	 * As the system, that is the declared value, not a move a user makes, so no
+	 * transition has to allow it.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is the static scope check every system guard reads.
+	 */
+	private function writesDeclaredState(LifecycleEdit $edit): bool {
+		return SystemOperationContext::isActive() === true && $this->edits->writesDeclaredState(edit: $edit) === true;
+	}//end writesDeclaredState()
+
+	/**
+	 * The refusal of a lifecycle value that is not a non-empty string.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function invalidValue(LifecycleEdit $edit): array {
+		$field = $edit->declaration->field();
+
+		return [
+			'code' => 'lifecycle-invalid-value',
+			'field' => $field,
+			'attempted' => $edit->getNewValue(),
+			'message' => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
+		];
+	}//end invalidValue()
+
+	/**
+	 * What refuses this move: no transition allows it, or the matched one turns it down.
+	 *
+	 * The order is authorization, then condition, then guard: an unauthorized caller
+	 * is turned away before any condition is evaluated, and a refused condition never
+	 * resolves, let alone runs, a guard.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function transitionRefusal(LifecycleEdit $edit): ?array {
+		$attempt = $this->edits->attemptOf(edit: $edit);
+		if ($attempt === null) {
+			return $this->noTransition(edit: $edit);
+		}
+
+		return ($this->authorizationRefusal(attempt: $attempt)
+			?? $this->conditionRefusal(attempt: $attempt)
+			?? $this->guardRefusal(attempt: $attempt));
+	}//end transitionRefusal()
+
+	/**
+	 * The refusal of a move no declared transition allows.
+	 *
+	 * @param LifecycleEdit $edit The edit.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function noTransition(LifecycleEdit $edit): array {
+		$field = $edit->declaration->field();
+
+		return [
+			'code' => 'lifecycle-invalid-transition',
+			'field' => $field,
+			'from' => $edit->getOldValue(),
+			'attempted' => $edit->getNewValue(),
+			'message' => sprintf('No transition allows moving "%s" from "%s" to "%s".', $field, $edit->getFromState(), $edit->getToState()),
+		];
+	}//end noTransition()
+
+	/**
+	 * The refusal of the transition's `authorization` list, or null when the caller satisfies it.
+	 *
+	 * The list holds NC group ids and/or `{ "role": "<name>" }` entries. A transition
+	 * without one is open to everyone who may write the object.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function authorizationRefusal(LifecycleAttempt $attempt): ?array {
+		$authorizationList = ($attempt->spec['authorization'] ?? null);
+		if (is_array($authorizationList) === false || $authorizationList === []) {
+			return null;
+		}
+
+		$authorized = $this->permissionHandler->isTransitionAuthorized(
+			authorizationList: $authorizationList,
+			userId: ($this->userSession->getUser()?->getUID() ?? null),
+			schema: $attempt->edit->declaration->schema
+		);
+		if ($authorized === true) {
+			return null;
+		}
+
+		return $this->unauthorized(attempt: $attempt);
+	}//end authorizationRefusal()
+
+	/**
+	 * The refusal of a caller the `authorization` list does not admit.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function unauthorized(LifecycleAttempt $attempt): array {
+		$field = $attempt->edit->declaration->field();
+
+		return [
+			'code' => 'lifecycle-transition-unauthorized',
+			'field' => $field,
+			'action' => $attempt->action,
+			'message' => sprintf('You are not authorized to perform transition "%s" on "%s".', $attempt->action, $field),
+		];
+	}//end unauthorized()
+
+	/**
+	 * The refusal of the transition's JSONLogic `condition` on the object's own data, recorded either way.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function conditionRefusal(LifecycleAttempt $attempt): ?array {
+		$edit    = $attempt->edit;
+		$refusal = $this->conditionEvaluator->refusal(
+			spec: $attempt->spec,
+			newData: $edit->getNewData(),
+			oldData: $edit->getOldData(),
+			action: $attempt->action,
+			from: $edit->getFromState(),
+			to: $edit->getToState(),
+			schemaSlug: (string)$edit->declaration->schema->getSlug(),
+			field: $edit->declaration->field()
+		);
+		$this->recordCondition(attempt: $attempt, refusal: $refusal);
+
+		return $refusal;
+	}//end conditionRefusal()
+
+	/**
 	 * The refusal of the transition's `requires` guard, or null when it allows or there is none.
 	 *
-	 * @param array<string, mixed> $spec       The matched transition.
-	 * @param array<string, mixed> $transition `field`, `action`, the incoming `object` data and the `stored` entity.
+	 * @param LifecycleAttempt $attempt The matched transition.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
 	 */
-	private function guardRefusal(array $spec, array $transition): ?array {
-		$requires = ($spec['requires'] ?? null);
+	private function guardRefusal(LifecycleAttempt $attempt): ?array {
+		$requires = ($attempt->spec['requires'] ?? null);
 		if (is_string($requires) === false || $requires === '') {
 			return null;
 		}
 
-		$result = $this->runGuard(
-			requires: $requires,
-			context: new LifecycleGuardContext(
-				object: $transition['object'],
-				stored: $transition['stored'],
-				action: $transition['action'],
-				userId: ($this->userSession->getUser()?->getUID() ?? '')
-			)
-		);
+		$result = $this->runGuard(requires: $requires, context: $this->guardContext(attempt: $attempt));
 		if ($result->isAllowed() === true) {
 			return null;
 		}
 
+		return $this->guardDenied(attempt: $attempt, message: ($result->getMessage() ?? 'Transition denied by guard.'));
+	}//end guardRefusal()
+
+	/**
+	 * The refusal of a guard that denied the transition.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 * @param string           $message The guard's message.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function guardDenied(LifecycleAttempt $attempt, string $message): array {
 		return [
 			'code' => 'lifecycle-guard-denied',
-			'field' => $transition['field'],
-			'action' => $transition['action'],
-			'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
+			'field' => $attempt->edit->declaration->field(),
+			'action' => $attempt->action,
+			'message' => $message,
 		];
-	}//end guardRefusal()
+	}//end guardDenied()
+
+	/**
+	 * What a guard gets to judge: the incoming data, the stored object, the action and the caller.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return LifecycleGuardContext
+	 *
+	 * @spec openspec/changes/lifecycle-guards-see-the-stored-object/specs/object-lifecycle/spec.md#requirement-a-transition-guard-can-judge-the-stored-object
+	 */
+	private function guardContext(LifecycleAttempt $attempt): LifecycleGuardContext {
+		return new LifecycleGuardContext(
+			object: $attempt->edit->getNewData(),
+			stored: $attempt->edit->stored,
+			action: $attempt->action,
+			userId: ($this->userSession->getUser()?->getUID() ?? '')
+		);
+	}//end guardContext()
 
 	/**
 	 * Run a transition's guard: with the stored object when it asks for it, else on the incoming data.
@@ -359,133 +394,85 @@ class LifecycleValidationListener implements IEventListener {
 	 * condition is not a rule and records nothing, and a condition switched off
 	 * records nothing either, because it was not evaluated.
 	 *
-	 * @param ObjectEntity $object The object being saved.
-	 * @param Schema $schema The schema the transition is declared on.
-	 * @param array<string, mixed> $spec The matched transition's spec.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param array<string, mixed> $oldData The object as currently stored.
-	 * @param string $action The matched transition's name.
-	 * @param string $from The lifecycle value being moved away from.
-	 * @param string $to The lifecycle value being moved to.
+	 * @param LifecycleAttempt $attempt The matched transition.
 	 * @param array<string, mixed>|null $refusal The refusal the evaluator produced, or null.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every parameter is one half of the
-	 *   fact being recorded: which rule, on which object, against which document, with
-	 *   which verdict. Bundling them into a carrier object would hide exactly that.
 	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDescriptor::idFor is the published
 	 *   derivation of a rule id.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function recordCondition(
-		ObjectEntity $object,
-		Schema $schema,
-		array $spec,
-		array $newData,
-		array $oldData,
-		string $action,
-		string $from,
-		string $to,
-		?array $refusal,
-	): void {
-		$condition = ($spec['condition'] ?? null);
-		if ($condition === null || ($spec['enabled'] ?? true) === false) {
+	private function recordCondition(LifecycleAttempt $attempt, ?array $refusal): void {
+		$slug = (string)($attempt->edit->declaration->schema->getSlug() ?? '');
+		if ($this->conditionRuns(spec: $attempt->spec) === false || $slug === '') {
 			return;
 		}
 
-		$slug = (string)($schema->getSlug() ?? '');
-		if ($slug === '') {
-			return;
-		}
+		$this->ruleRuns->record(
+			ruleId: RuleDescriptor::idFor(kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION, schemaSlug: $slug, key: $attempt->action),
+			schemaSlug: $slug,
+			trace: $this->conditionTrace(attempt: $attempt, refusal: $refusal),
+			objectUuid: ($attempt->edit->object()->getUuid() ?? null),
+			registerSlug: ($attempt->edit->object()->getRegister() ?? null)
+		);
+	}//end recordCondition()
 
+	/**
+	 * Whether a transition has a condition that is switched on.
+	 *
+	 * @param array<string, mixed> $spec The matched transition's spec.
+	 *
+	 * @return bool
+	 */
+	private function conditionRuns(array $spec): bool {
+		return ($spec['condition'] ?? null) !== null && ($spec['enabled'] ?? true) !== false;
+	}//end conditionRuns()
+
+	/**
+	 * The trace of a condition's verdict.
+	 *
+	 * A condition that held against the write did what it declares, which is to
+	 * refuse: `refused`, not `no_match`.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 * @param array<string, mixed>|null $refusal The refusal the evaluator produced, or null.
+	 *
+	 * @return RuleTrace
+	 */
+	private function conditionTrace(LifecycleAttempt $attempt, ?array $refusal): RuleTrace {
 		$verdict = RuleVocabulary::VERDICT_FIRED;
 		$message = null;
 		if ($refusal !== null) {
-			// The condition held against the write: the rule did what it
-			// declares, which is to refuse. `refused`, not `no_match`.
 			$verdict = RuleVocabulary::VERDICT_REFUSED;
 			$message = (string)($refusal['message'] ?? '');
 		}
 
-		$trace = $this->conditionTracer->trace(
-			condition: $condition,
-			document: $this->conditionEvaluator->document(
-				newData: $newData,
-				oldData: $oldData,
-				action: $action,
-				from: $from,
-				to: $to
-			),
+		return $this->conditionTracer->trace(
+			condition: $attempt->spec['condition'],
+			document: $this->conditionDocument(attempt: $attempt),
 			verdict: $verdict,
 			message: $message
 		);
+	}//end conditionTrace()
 
-		$this->ruleRuns->record(
-			ruleId: RuleDescriptor::idFor(
-				kind: RuleVocabulary::KIND_LIFECYCLE_CONDITION,
-				schemaSlug: $slug,
-				key: $action
-			),
-			schemaSlug: $slug,
-			trace: $trace,
-			objectUuid: ($object->getUuid() ?? null),
-			registerSlug: ($object->getRegister() ?? null)
+	/**
+	 * The document a transition's condition is evaluated against.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function conditionDocument(LifecycleAttempt $attempt): array {
+		$edit = $attempt->edit;
+
+		return $this->conditionEvaluator->document(
+			newData: $edit->getNewData(),
+			oldData: $edit->getOldData(),
+			action: $attempt->action,
+			from: $edit->getFromState(),
+			to: $edit->getToState()
 		);
-
-	}//end recordCondition()
-
-	/**
-	 * Look up the schema referenced by an object instance.
-	 *
-	 * @param ObjectEntity $object Object whose schema reference to resolve.
-	 *
-	 * @return Schema|null Resolved schema, or null on lookup failure.
-	 */
-	private function loadSchema(ObjectEntity $object): ?Schema {
-		$schemaRef = $object->getSchema();
-		if ($schemaRef === null || $schemaRef === '') {
-			return null;
-		}
-
-		try {
-			return $this->schemaMapper->find($schemaRef, _multitenancy: false);
-		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf('Lifecycle listener could not load schema "%s": %s', (string)$schemaRef, $e->getMessage())
-			);
-			return null;
-		}
-	}//end loadSchema()
-
-	/**
-	 * Read the `x-openregister-lifecycle` configuration block.
-	 *
-	 * @param Schema $schema Schema to inspect.
-	 *
-	 * @return array<string, mixed>|null Lifecycle annotation, or null when missing.
-	 */
-	private function getLifecycleAnnotation(Schema $schema): ?array {
-		$config = ($schema->getConfiguration() ?? []);
-		$annotation = ($config['x-openregister-lifecycle'] ?? null);
-		if (is_array($annotation) === true) {
-			return $annotation;
-		}
-
-		return null;
-	}//end getLifecycleAnnotation()
-
-	/**
-	 * Stop the event and stamp a structured error onto it.
-	 *
-	 * @param ObjectUpdatingEvent $event The event being rejected.
-	 * @param array<string, mixed> $error Structured error payload.
-	 *
-	 * @return void
-	 */
-	private function reject(ObjectUpdatingEvent $event, array $error): void {
-		$event->setErrors($error);
-		$event->stopPropagation();
-	}//end reject()
+	}//end conditionDocument()
 }//end class
