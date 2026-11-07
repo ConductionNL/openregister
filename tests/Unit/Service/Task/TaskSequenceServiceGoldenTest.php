@@ -54,6 +54,7 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 	/** @var array<int, Task> */
 	private array $siblings = [];
 
+	/** @var TaskSequence|null The row findByUuid() answers with; null throws. */
 	private ?TaskSequence $stored = null;
 
 	/** @var array<int, string> Task uuids whose termination throws. */
@@ -145,6 +146,8 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 	}
 
 	/**
+	 * @param TaskSequence $sequence The sequence.
+	 *
 	 * @return array<string, mixed>
 	 */
 	private static function row(TaskSequence $sequence): array {
@@ -200,9 +203,27 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 		$template = self::template();
 		$sequence = match ($variant) {
 			'minimal' => $service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice'),
-			'everything' => $service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice', tierPositions: null, registerId: 7, runUuid: 'run-1', nodeId: 'node-1'),
-			'tier' => $service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: 'alice', tierPositions: [['order' => 4, 'role' => 'board', 'statusOnApprove' => 'x']], registerId: 7),
-			'approving' => $service->provision(template: $template + ['approvingOutcomes' => [' Approved ', 'ok', 3]], anchorObjectUuid: 'obj-1', requesterId: 'alice'),
+			'everything' => $service->provision(
+				template: $template,
+				anchorObjectUuid: 'obj-1',
+				requesterId: 'alice',
+				tierPositions: null,
+				registerId: 7,
+				runUuid: 'run-1',
+				nodeId: 'node-1'
+			),
+			'tier' => $service->provision(
+				template: $template,
+				anchorObjectUuid: 'obj-1',
+				requesterId: 'alice',
+				tierPositions: [['order' => 4, 'role' => 'board', 'statusOnApprove' => 'x']],
+				registerId: 7
+			),
+			'approving' => $service->provision(
+				template: $template + ['approvingOutcomes' => [' Approved ', 'ok', 3]],
+				anchorObjectUuid: 'obj-1',
+				requesterId: 'alice'
+			),
 			'empty' => $service->provision(template: [], anchorObjectUuid: 'obj-2', requesterId: null),
 			'no-requester' => $service->provision(template: $template, anchorObjectUuid: 'obj-1', requesterId: null, runUuid: 'run-2'),
 		};
@@ -322,6 +343,8 @@ class TaskSequenceServiceGoldenTest extends TestCase {
 	/**
 	 * @param string $name The recording's name.
 	 * @param array<string, mixed> $actual The observed outcome.
+	 *
+	 * @return void
 	 */
 	private function assertGolden(string $name, array $actual): void {
 		$actual = json_decode((string)json_encode($actual), true);

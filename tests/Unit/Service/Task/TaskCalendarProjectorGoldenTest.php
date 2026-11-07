@@ -29,7 +29,9 @@ use OCA\OpenRegister\Db\TaskProjectionState;
 use OCA\OpenRegister\Db\TaskProjectionStateMapper;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
+use OCA\OpenRegister\Service\Task\TaskCalendarProjectorServices;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
+use OCA\OpenRegister\Service\Task\TaskVtodoRenderer;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -68,6 +70,7 @@ class TaskCalendarProjectorGoldenTest extends TestCase {
 	/** @var array<int, bool> Whether createCalendarObject() fails, per call. */
 	private array $createFails = [];
 
+	/** @var bool Whether deleteCalendarObject() fails. */
 	private bool $deleteFails = false;
 
 	/** @var array<string, int|null> Calendar id per uid; null means no VTODO calendar. */
@@ -128,7 +131,15 @@ class TaskCalendarProjectorGoldenTest extends TestCase {
 		);
 		$states->method('save')->willReturnCallback(
 			function (TaskProjectionState $state): TaskProjectionState {
-				$this->calls[] = ['save', $state->getTaskUuid(), $state->getSurface(), $state->getAssignee(), $state->getCalendarId(), self::mask((string)$state->getObjectUri()), $state->getRenderedHash()];
+				$this->calls[] = [
+					'save',
+					$state->getTaskUuid(),
+					$state->getSurface(),
+					$state->getAssignee(),
+					$state->getCalendarId(),
+					self::mask((string)$state->getObjectUri()),
+					$state->getRenderedHash(),
+				];
 				$this->rows[(string)$state->getTaskUuid()] = $state;
 				return $state;
 			}
@@ -159,7 +170,10 @@ class TaskCalendarProjectorGoldenTest extends TestCase {
 			);
 		}
 
-		return new TaskCalendarProjector($backend, $calendars, $states, $inbox, $urls, $logger);
+		return new TaskCalendarProjector(
+			new TaskCalendarProjectorServices($backend, $calendars, $states, $logger),
+			new TaskVtodoRenderer($inbox, $urls)
+		);
 	}
 
 	private static function mask(string $text): string {
@@ -220,9 +234,15 @@ class TaskCalendarProjectorGoldenTest extends TestCase {
 			'garbage' => 'not a calendar',
 			'vcard' => "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Someone\r\nEND:VCARD\r\n",
 			'no-vtodo' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:e\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
-			'standalone' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\nSUMMARY:Buy milk\r\nstatus: needs-action \r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
-			'bad-due' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\nX-OPENREGISTER-TASK: t-1 \r\nDUE;VALUE=TEXT:soon\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
-			'date-due' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\nX-OPENREGISTER-TASK:t-2\r\nDUE:20260910T120000Z\r\nPRIORITY:1\r\nEND:VTODO\r\nEND:VCALENDAR\r\n",
+			'standalone' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+				. "SUMMARY:Buy milk\r\nstatus: needs-action \r\nEND:VTODO\r\n"
+				. "END:VCALENDAR\r\n",
+			'bad-due' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+				. "X-OPENREGISTER-TASK: t-1 \r\nDUE;VALUE=TEXT:soon\r\nEND:VTODO\r\n"
+				. "END:VCALENDAR\r\n",
+			'date-due' => "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+				. "X-OPENREGISTER-TASK:t-2\r\nDUE:20260910T120000Z\r\nPRIORITY:1\r\n"
+				. "END:VTODO\r\nEND:VCALENDAR\r\n",
 		];
 		foreach ($documents as $name => $document) {
 			$actual['fields:' . $name] = TaskCalendarProjector::engineFields($document);
@@ -373,6 +393,8 @@ class TaskCalendarProjectorGoldenTest extends TestCase {
 	/**
 	 * @param string $name The recording's name.
 	 * @param array<string, mixed> $actual The observed outcome.
+	 *
+	 * @return void
 	 */
 	private function assertGolden(string $name, array $actual): void {
 		$actual = json_decode((string)json_encode($actual), true);
