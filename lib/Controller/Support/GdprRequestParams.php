@@ -73,12 +73,27 @@ final class GdprRequestParams {
 	 */
 	public function trimmed(string $key): ?string {
 		$value = $this->request->getParam(key: $key);
-		if (is_string($value) === false || trim($value) === '') {
+		if (is_string($value) === false) {
 			return null;
 		}
 
-		return trim($value);
+		return $this->blankToNull(text: trim($value));
 	}//end trimmed()
+
+	/**
+	 * A parameter cast to string and trimmed, or null when that leaves nothing.
+	 *
+	 * Unlike trimmed(), a non-string value such as a number is cast, not dropped.
+	 *
+	 * @param string $key The parameter name.
+	 *
+	 * @return string|null The trimmed text, or null.
+	 *
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
+	 */
+	public function castTrimmed(string $key): ?string {
+		return $this->blankToNull(text: trim((string)($this->request->getParam(key: $key) ?? '')));
+	}//end castTrimmed()
 
 	/**
 	 * Parse a value as a date.
@@ -128,6 +143,23 @@ final class GdprRequestParams {
 
 		return min($int, $max);
 	}//end boundedInt()
+
+	/**
+	 * Null for the empty string, the text otherwise.
+	 *
+	 * @param string $text The trimmed text.
+	 *
+	 * @return string|null The text, or null.
+	 *
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 */
+	private function blankToNull(string $text): ?string {
+		if ($text === '') {
+			return null;
+		}
+
+		return $text;
+	}//end blankToNull()
 
 	/**
 	 * Every request parameter, as an array.
