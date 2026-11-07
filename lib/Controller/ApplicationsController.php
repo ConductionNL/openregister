@@ -164,59 +164,17 @@ class ApplicationsController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			// Get all request parameters.
-			$params = $this->request->getParams();
+			$applications = $this->findApplications(params: $this->request->getParams());
 
-			// Extract pagination and search parameters.
-			$limit = $this->extractLimit(params: $params);
-			$offset = $this->extractOffset(params: $params);
-			$page = $this->extractPage(params: $params);
-
-			// Convert page to offset if provided (page-based pagination).
-			if ($page !== null && $limit !== null) {
-				$offset = ($page - 1) * $limit;
-			}
-
-			// Remove special query params from filters (keep only application fields).
-			$filters = $params;
-			unset(
-				$filters['_limit'],
-				$filters['_offset'],
-				$filters['_page'],
-				$filters['_search'],
-				$filters['_route']
-			);
-
-			// Retrieve applications using mapper with pagination and filters.
-			$applications = $this->applicationMapper->findAll(
-				limit: $limit,
-				offset: $offset,
-				filters: $filters
-			);
-
-			// Return successful response with applications list.
-			return new JSONResponse(
-				data: ['results' => $applications],
-				statusCode: Http::STATUS_OK
-			);
+			return new JSONResponse(data: ['results' => $applications], statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			// Log error with full context.
-			$this->logger->error(
+			$this->logFailure(
 				message: '[ApplicationsController] Failed to get applications',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 			);
 
-			// Return error response.
-			return new JSONResponse(
-				data: ['error' => 'Failed to retrieve applications'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to retrieve applications'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
 	}//end index()
 
 	/**
@@ -247,32 +205,15 @@ class ApplicationsController extends Controller {
 	 */
 	public function show(int $id): JSONResponse {
 		try {
-			// Retrieve application using service layer.
-			$application = $this->applicationService->find($id);
-
-			// Return successful response with application data.
-			return new JSONResponse(
-				data: $application,
-				statusCode: Http::STATUS_OK
-			);
+			return new JSONResponse(data: $this->applicationService->find($id), statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			// Log error with application ID.
-			$this->logger->error(
+			$this->logFailure(
 				message: '[ApplicationsController] Failed to get application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'error' => $e->getMessage(),
-				]
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
 			);
 
-			// Return not found error response.
-			return new JSONResponse(
-				data: ['error' => 'Application not found'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Application not found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
 	}//end show()
 
 	/**
@@ -295,36 +236,18 @@ class ApplicationsController extends Controller {
 	 */
 	public function create(): JSONResponse {
 		try {
-			// Get request data and remove internal route parameter.
 			$data = $this->request->getParams();
 			unset($data['_route']);
 
-			// Create application using service layer.
-			$application = $this->applicationService->create($data);
-
-			// Return successful response with created application.
-			return new JSONResponse(
-				data: $application,
-				statusCode: Http::STATUS_CREATED
-			);
+			return new JSONResponse(data: $this->applicationService->create($data), statusCode: Http::STATUS_CREATED);
 		} catch (Exception $e) {
-			// Log error with full context.
-			$this->logger->error(
+			$this->logFailure(
 				message: '[ApplicationsController] Failed to create application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'trace' => $e->getTraceAsString(),
-				]
+				context: ['line' => __LINE__, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
 			);
 
-			// Return error response with message.
-			return new JSONResponse(
-				data: ['error' => 'Failed to create application: ' . $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to create application: ' . $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
 	}//end create()
 
 	/**
@@ -350,41 +273,20 @@ class ApplicationsController extends Controller {
 	 */
 	public function update(int $id): JSONResponse {
 		try {
-			// Get request data.
-			$data = $this->request->getParams();
-
 			// Remove internal parameters and immutable fields.
-			unset($data['_route']);
-			unset($data['id']);
-			unset($data['organisation']);
-			unset($data['owner']);
-			unset($data['created']);
-
+			$data = $this->request->getParams();
+			unset($data['_route'], $data['id'], $data['organisation'], $data['owner'], $data['created']);
 			$application = $this->applicationService->update(id: $id, data: $data);
 
-			// Return successful response with updated application.
-			return new JSONResponse(
-				data: $application,
-				statusCode: Http::STATUS_OK
-			);
+			return new JSONResponse(data: $application, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			// Log error with application ID.
-			$this->logger->error(
+			$this->logFailure(
 				message: '[ApplicationsController] Failed to update application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'error' => $e->getMessage(),
-				]
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
 			);
 
-			// Return error response with message.
-			return new JSONResponse(
-				data: ['error' => 'Failed to update application: ' . $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to update application: ' . $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
 	}//end update()
 
 	/**
@@ -441,106 +343,108 @@ class ApplicationsController extends Controller {
 	 */
 	public function destroy(int $id): JSONResponse {
 		try {
-			// Delete application using service layer.
 			$this->applicationService->delete($id);
 
-			// Return successful response.
-			return new JSONResponse(
-				data: ['message' => 'Application deleted successfully'],
-				statusCode: Http::STATUS_OK
-			);
+			return new JSONResponse(data: ['message' => 'Application deleted successfully'], statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			// Log error with application ID.
-			$this->logger->error(
+			$this->logFailure(
 				message: '[ApplicationsController] Failed to delete application',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'error' => $e->getMessage(),
-				]
+				context: ['line' => __LINE__, 'id' => $id, 'error' => $e->getMessage()]
 			);
 
-			// Return error response.
-			return new JSONResponse(
-				data: ['error' => 'Failed to delete application'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}//end try
+			return new JSONResponse(data: ['error' => 'Failed to delete application'], statusCode: Http::STATUS_BAD_REQUEST);
+		}
 	}//end destroy()
 
 	/**
-	 * Extract limit parameter from request params
-	 *
-	 * Extracts the _limit parameter from request parameters and converts to integer.
-	 * Returns null if parameter is not present.
+	 * Query the mapper with the pagination and field filters taken from the request
 	 *
 	 * @param array<string, mixed> $params Request parameters
 	 *
-	 * @return int|null Limit value or null if not provided
+	 * @return array<\OCA\OpenRegister\Db\Application> The matching applications
 	 *
-	 * @psalm-return int|null
-	 *
-	 * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
+	 * @spec exclude Private query helper for index(); the registry resource-CRUD contract is owned by
 	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
 	 */
-	private function extractLimit(array $params): ?int {
-		// Check if _limit parameter exists and extract as integer.
-		if (($params['_limit'] ?? null) !== null) {
-			return (int)$params['_limit'];
-		}
-
-		// Return null if parameter not provided.
-		return null;
-	}//end extractLimit()
+	private function findApplications(array $params): array {
+		return $this->applicationMapper->findAll(
+			limit: $this->extractInt(params: $params, key: '_limit'),
+			offset: $this->resolveOffset(params: $params),
+			filters: $this->extractFilters(params: $params)
+		);
+	}//end findApplications()
 
 	/**
-	 * Extract offset parameter from request params
+	 * Read an optional integer query parameter
 	 *
-	 * Extracts the _offset parameter from request parameters and converts to integer.
-	 * Returns null if parameter is not present.
+	 * Returns null when the parameter is absent or null; otherwise casts it to int.
 	 *
 	 * @param array<string, mixed> $params Request parameters
+	 * @param string $key Parameter name, e.g. `_limit`
 	 *
-	 * @return int|null Offset value or null if not provided
-	 *
-	 * @psalm-return int|null
+	 * @return int|null The integer value or null if not provided
 	 *
 	 * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
 	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
 	 */
-	private function extractOffset(array $params): ?int {
-		// Check if _offset parameter exists and extract as integer.
-		if (($params['_offset'] ?? null) !== null) {
-			return (int)$params['_offset'];
+	private function extractInt(array $params, string $key): ?int {
+		if (($params[$key] ?? null) !== null) {
+			return (int)$params[$key];
 		}
 
-		// Return null if parameter not provided.
 		return null;
-	}//end extractOffset()
+	}//end extractInt()
 
 	/**
-	 * Extract page parameter from request params
+	 * Resolve the effective offset for a list request
 	 *
-	 * Extracts the _page parameter from request parameters and converts to integer.
-	 * Returns null if parameter is not present.
+	 * Page-based pagination (`_page` together with `_limit`) takes precedence
+	 * over an explicit `_offset`.
 	 *
 	 * @param array<string, mixed> $params Request parameters
 	 *
-	 * @return int|null Page value or null if not provided
-	 *
-	 * @psalm-return int|null
+	 * @return int|null The offset or null if not provided
 	 *
 	 * @spec exclude Private pagination-param helper; the registry resource-CRUD contract is owned by
 	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
 	 */
-	private function extractPage(array $params): ?int {
-		// Check if _page parameter exists and extract as integer.
-		if (($params['_page'] ?? null) !== null) {
-			return (int)$params['_page'];
+	private function resolveOffset(array $params): ?int {
+		$limit = $this->extractInt(params: $params, key: '_limit');
+		$page = $this->extractInt(params: $params, key: '_page');
+		if ($page !== null && $limit !== null) {
+			return ($page - 1) * $limit;
 		}
 
-		// Return null if parameter not provided.
-		return null;
-	}//end extractPage()
+		return $this->extractInt(params: $params, key: '_offset');
+	}//end resolveOffset()
+
+	/**
+	 * Strip the reserved query parameters, keeping only application field filters
+	 *
+	 * @param array<string, mixed> $params Request parameters
+	 *
+	 * @return array<string, mixed> The field filters
+	 *
+	 * @spec exclude Private filter-param helper; the registry resource-CRUD contract is owned by
+	 *              retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1.
+	 */
+	private function extractFilters(array $params): array {
+		unset($params['_limit'], $params['_offset'], $params['_page'], $params['_search'], $params['_route']);
+
+		return $params;
+	}//end extractFilters()
+
+	/**
+	 * Log a failed request with the controller file prepended to the context
+	 *
+	 * @param string $message Log message
+	 * @param array<string, mixed> $context Context; callers pass `line` first
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Private logging helper shared by the CRUD endpoints of this controller.
+	 */
+	private function logFailure(string $message, array $context): void {
+		$this->logger->error(message: $message, context: ['file' => __FILE__] + $context);
+	}//end logFailure()
 }//end class
