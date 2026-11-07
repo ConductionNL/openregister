@@ -13,6 +13,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\MigrationMapping;
+use OCA\OpenRegister\Service\Object\MigrationStorage;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
@@ -48,12 +50,8 @@ trait BuildsMigrationHandler {
 		$audit = $this->createMock(AuditTrailMapper::class);
 
 		return new MigrationHandler(
-			objectMapper: $mapper,
-			utilityHandler: $utility,
-			dataManipHandler: $dataManip,
-			mover: new MoveObject(objects: $mapper, validator: $validator, audit: $audit, logger: $logger, events: $this->createStub(IEventDispatcher::class)),
-			relationScanner: $this->createMock(SaveObject::class),
-			auditTrail: $audit,
+			storage: new MigrationStorage(objectMapper: $mapper, mover: new MoveObject(objects: $mapper, validator: $validator, audit: $audit, logger: $logger, events: $this->createStub(IEventDispatcher::class)), auditTrail: $audit),
+			mapping: new MigrationMapping(utilityHandler: $utility, dataManipHandler: $dataManip, relationScanner: $this->createMock(SaveObject::class)),
 			logger: $logger
 		);
 	}//end migrationHandler()
