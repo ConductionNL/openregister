@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\AppRegisterImportRunner;
+use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -288,7 +288,7 @@ class DescriptorListCommand extends Command {
 			...self::kindLines(counts: $result['counts']),
 			...self::replacedLines(result: $result),
 		];
-		if ($result['path'] === AppRegisterImportRunner::PATH_OPENREGISTER) {
+		if ($result['path'] === AppRegisterImportRunnerInterface::PATH_OPENREGISTER) {
 			$lines[] = self::selfImportNote(appId: $appId, fragments: (int)$result['fragments']);
 		}
 
