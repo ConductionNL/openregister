@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\HookStoppedException;
-use OCA\OpenRegister\Listener\UniqueConstraintListener;
+use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Service\Import\MatchLookupFailedException;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
@@ -271,7 +271,7 @@ class UpsertOnKeyHandler {
 			return $save($uuid);
 		} catch (HookStoppedException $exception) {
 			$errors = $exception->getErrors();
-			if (($errors['code'] ?? null) !== UniqueConstraintListener::ERROR_CODE) {
+			if (($errors['code'] ?? null) !== UniqueConstraintListenerInterface::ERROR_CODE) {
 				throw $exception;
 			}
 

@@ -37,7 +37,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
-class CaseOpenNode extends CaseNodeBase {
+class CaseOpenNode extends CaseNodeBase implements CaseOpenNodeInterface {
 
 	/**
 	 * The step type this node answers to.

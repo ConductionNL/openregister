@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
-use OCA\OpenRegister\Service\Case\CasePlanService;
-use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper;
+use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapperInterface;
 use OCP\IUserSession;
 
 /**
@@ -36,16 +36,16 @@ final class CaseControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param CasePlanService              $plans         The authorized case layer.
-	 * @param ZaaktypeCaseSkeletonMapper   $zaaktypes     The pure zaaktype mapping.
+	 * @param CasePlanServiceInterface              $plans         The authorized case layer.
+	 * @param ZaaktypeCaseSkeletonMapperInterface   $zaaktypes     The pure zaaktype mapping.
 	 * @param CasePlanAuthorizationService $authorization Identity checks for the anchorless route.
 	 * @param IUserSession                 $userSession   Names the acting identity.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function __construct(
-		public readonly CasePlanService $plans,
-		public readonly ZaaktypeCaseSkeletonMapper $zaaktypes,
+		public readonly CasePlanServiceInterface $plans,
+		public readonly ZaaktypeCaseSkeletonMapperInterface $zaaktypes,
 		public readonly CasePlanAuthorizationService $authorization,
 		public readonly IUserSession $userSession,
 	) {
