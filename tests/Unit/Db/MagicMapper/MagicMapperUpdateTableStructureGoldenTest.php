@@ -29,7 +29,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\IPreparedStatement;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -355,9 +357,9 @@ class MagicMapperUpdateTableStructureGoldenTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 

@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
-use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
@@ -1171,7 +1171,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Validate the schema properties
 	 *
-	 * @param PropertyValidatorHandler $validator The schema property validator
+	 * @param PropertyValidatorHandlerInterface $validator The schema property validator
 	 *
 	 * @throws \Exception If the properties are invalid
 	 *
@@ -1179,7 +1179,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
 	 */
-	public function validateProperties(PropertyValidatorHandler $validator): bool {
+	public function validateProperties(PropertyValidatorHandlerInterface $validator): bool {
 		// Check if properties are set and not empty.
 		if (empty($this->properties) === true) {
 			return true;
@@ -2003,13 +2003,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * Sets entity properties based on input array values
 	 *
 	 * @param array $object The data array to hydrate from
-	 * @param PropertyValidatorHandler $validator Optional validator for properties
+	 * @param PropertyValidatorHandlerInterface $validator Optional validator for properties
 	 *
 	 * @throws \Exception If property validation fails
 	 *
 	 * @return static Returns $this for method chaining
 	 */
-	public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static {
+	public function hydrate(array $object, ?PropertyValidatorHandlerInterface $validator = null): static {
 		$object = $this->withExactKeysOnly(
 			object: $this->foldTopLevelExportable(
 				object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
@@ -2029,13 +2029,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * Validate the properties and the authorization block the input declared.
 	 *
 	 * @param array<string, mixed>          $object    The input.
-	 * @param PropertyValidatorHandler|null $validator The property validator.
+	 * @param PropertyValidatorHandlerInterface|null $validator The property validator.
 	 *
 	 * @throws \Exception If validation fails.
 	 *
 	 * @return void
 	 */
-	private function validateHydrated(array $object, ?PropertyValidatorHandler $validator): void {
+	private function validateHydrated(array $object, ?PropertyValidatorHandlerInterface $validator): void {
 		if ($validator !== null && (($object['properties'] ?? null) !== null)) {
 			$this->validateProperties(validator: $validator);
 		}

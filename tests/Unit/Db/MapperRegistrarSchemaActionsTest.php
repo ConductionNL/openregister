@@ -17,6 +17,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
@@ -102,7 +103,7 @@ class MapperRegistrarSchemaActionsTest extends TestCase {
 		$services = [
 			'OCP\IUserSession' => $session,
 			'OCP\IGroupManager' => $groups,
-			ObjectActionValidator::class => new ObjectActionValidator($macros, $session, $groups),
+			ObjectActionValidatorInterface::class => new ObjectActionValidator($macros, $session, $groups),
 		];
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(

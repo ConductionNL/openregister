@@ -2,7 +2,7 @@
     "OCA\\OpenRegister\\Db\\SchemaMapper": [
         "OCP\\IDBConnection",
         "OCP\\EventDispatcher\\IEventDispatcher",
-        "OCA\\OpenRegister\\Service\\Schemas\\PropertyValidatorHandler",
+        "OCA\\OpenRegister\\Service\\Schemas\\PropertyValidatorHandlerInterface",
         "OCA\\OpenRegister\\Db\\OrganisationMapperInterface",
         "OCP\\IUserSession",
         "OCP\\IGroupManager",
@@ -40,13 +40,13 @@
         "OCA\\OpenRegister\\Kernel\\Contracts\\AppSettingsInterface",
         "OCP\\ICacheFactory",
         "OCA\\OpenRegister\\Service\\ConditionMatcher",
-        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverter",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
+        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface",
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
         "OCA\\OpenRegister\\Service\\LanguageService",
         "OCA\\OpenRegister\\Service\\Rbac\\ExplicitReveal",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
-        "OCA\\OpenRegister\\Service\\DateTimeNormalizer",
-        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverter"
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
+        "OCA\\OpenRegister\\Service\\DateTimeNormalizerInterface",
+        "OCA\\OpenRegister\\Service\\Object\\SchemaTypeConverterInterface"
     ],
     "OCA\\OpenRegister\\Db\\EntityRelationMapper": [
         "OCP\\IDBConnection",

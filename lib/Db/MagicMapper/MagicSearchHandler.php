@@ -54,11 +54,11 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
-use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\DraftListLens;
-use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
@@ -295,8 +295,8 @@ class MagicSearchHandler {
 	 * @param LoggerInterface $logger Logger for debugging and error reporting
 	 * @param MagicRbacHandler $rbacHandler RBAC handler for access control
 	 * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
-	 * @param SchemaTypeConverter $schemaTypeConverter Schema-driven type converter for row values
-	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for date/date-time property formats
+	 * @param SchemaTypeConverterInterface $schemaTypeConverter Schema-driven type converter for row values
+	 * @param DateTimeNormalizerInterface $dateTimeNormalizer Normaliser for date/date-time property formats
 	 * @param RelatedRowQueryApplier $relatedRows Applies a filter that reaches through a reference into the
 	 *                                            related schema's own rows
 	 * @param LanguageService|null $languageService The request's languages, so a translatable property sorts by the
@@ -314,8 +314,8 @@ class MagicSearchHandler {
 		private readonly LoggerInterface $logger,
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly MagicOrganizationHandler $organizationHandler,
-		private readonly SchemaTypeConverter $schemaTypeConverter,
-		private readonly DateTimeNormalizer $dateTimeNormalizer,
+		private readonly SchemaTypeConverterInterface $schemaTypeConverter,
+		private readonly DateTimeNormalizerInterface $dateTimeNormalizer,
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,

@@ -25,7 +25,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -105,9 +107,9 @@ class MagicMapperSearchIdsTest extends TestCase {
 	private function mapper(): MagicMapper {
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 			PurposeGuard::class => ($this->purposeGuard ?? $this->permissiveGuard()),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));

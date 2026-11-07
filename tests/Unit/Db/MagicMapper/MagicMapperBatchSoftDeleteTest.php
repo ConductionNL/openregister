@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -91,7 +92,7 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 
@@ -99,7 +100,7 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 					return $conditionMatcher;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -128,13 +129,13 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 					return ($this->slugHandler ?? $this->standInSlugHandler());
 				}
 
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 				if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
 					return $conditionMatcher;
 				}
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 				return null;

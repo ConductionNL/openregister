@@ -55,8 +55,8 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
-use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
@@ -174,13 +174,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * @param IDBConnection $db Database connection for queries
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher for schema events
-	 * @param PropertyValidatorHandler $validator Schema property validator for validation
+	 * @param PropertyValidatorHandlerInterface $validator Schema property validator for validation
 	 * @param OrganisationMapperInterface $organisationMapper Organisation mapper for multi-tenancy
 	 * @param IUserSession $userSession User session for current user context
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param ObjectActionValidator|Closure|null $objectActions Verifies every declared action, the flows macros bind to included;
+	 * @param ObjectActionValidatorInterface|Closure|null $objectActions Verifies every declared action, the flows macros bind to included;
 	 *                                                         a Closure returns it on first use, which breaks the
 	 *                                                         construction cycle through the flow services.
 	 *
@@ -189,7 +189,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	public function __construct(
 		IDBConnection $db,
 		private readonly IEventDispatcher $eventDispatcher,
-		private readonly PropertyValidatorHandler $validator,
+		private readonly PropertyValidatorHandlerInterface $validator,
 		protected readonly OrganisationMapperInterface $organisationMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
@@ -201,7 +201,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// only the questions about other records (the bound flow, the step
 		// nodes, the saver) are skipped, which the save says out loud rather
 		// than passing over in silence.
-		private readonly ObjectActionValidator|Closure|null $objectActions = null,
+		private readonly ObjectActionValidatorInterface|Closure|null $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);

@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -323,7 +324,7 @@ class MagicMapperPrepareObjectDataTest extends TestCase {
 	private function mapper(AbstractLogger $logger): MagicMapper {
 		$config = $this->createMock(originalClassName: IConfig::class);
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->willReturnMap([[DateTimeNormalizer::class, new DateTimeNormalizer(logger: $logger)]]);
+		$container->method('get')->willReturnMap([[DateTimeNormalizerInterface::class, new DateTimeNormalizer(logger: $logger)]]);
 
 		$reflection = new ReflectionClass(objectOrClass: MagicMapper::class);
 		$mapper     = $reflection->newInstanceWithoutConstructor();

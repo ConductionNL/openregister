@@ -40,7 +40,7 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
  *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
  */
-class PropertyValidatorHandler {
+class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 
 	/**
 	 * The property types the layer accepts, and what an editor should say about each.
