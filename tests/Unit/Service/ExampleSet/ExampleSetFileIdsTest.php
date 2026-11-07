@@ -31,7 +31,6 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
@@ -65,6 +64,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
  * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetFileIdsTest extends ExampleSetTestCase {

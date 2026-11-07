@@ -174,7 +174,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			$rbac,
 			$multitenancy
 		);
@@ -537,7 +536,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => 'phpunit-uuid-' . uniqid()],
 			$uuid,
-			null,
 			false,
 			false
 		);
@@ -555,7 +553,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				'title' => 'phpunit-self-id-' . uniqid(),
 				'id' => $uuid,
 			],
-			null,
 			null,
 			false,
 			false
@@ -587,7 +584,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => $title, 'summary' => 'Updated'],
 			$created->getUuid(),
-			null,
 			false,
 			false
 		);
@@ -611,7 +607,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => $created->getObject()['title'], 'summary' => 'Changed'],
 			$created->getUuid(),
-			null,
 			false,
 			false
 		);
@@ -668,7 +663,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => $created->getObject()['title'], 'summary' => 'Silent update'],
 			$created,
-			null,
 			true // silent mode.
 		);
 
@@ -747,7 +741,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$schema,
 			['title' => 'My Named Object'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -772,7 +765,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				'@self' => ['name' => 'Test Name'],
 			],
 			null,
-			null,
 			false,
 			false
 		);
@@ -790,7 +782,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister->getId(),
 			$this->testSchema->getId(),
 			['title' => 'phpunit-by-id-' . uniqid()],
-			null,
 			null,
 			false,
 			false
@@ -810,7 +801,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => 'phpunit-no-persist-' . uniqid()],
 			null,
-			null,
 			false,
 			false,
 			false // persist = false.
@@ -829,7 +819,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->testSchema,
 			['title' => 'phpunit-no-validation-' . uniqid(), 'extraField' => 'allowed'],
-			null,
 			null,
 			false,
 			false,
@@ -1184,7 +1173,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			(string)$this->testSchema->getId(),
 			['title' => 'phpunit-schema-slug-' . uniqid()],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1200,7 +1188,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			(string)$this->testRegister->getId(),
 			$this->testSchema,
 			['title' => 'phpunit-register-slug-' . uniqid()],
-			null,
 			null,
 			false,
 			false
@@ -1241,7 +1228,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$schema,
 			['title' => 'phpunit-const-test-' . uniqid(), 'type' => 'user-value'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1278,7 +1264,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$schema,
 			['title' => 'My Test Title'],
-			null,
 			null,
 			false,
 			false
@@ -1325,7 +1310,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$schema,
 			['title' => 'My Object', 'content' => 'Detailed description here'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1359,7 +1343,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$schema,
 			['title' => 'Test Object', 'kort' => 'Brief summary'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1392,7 +1375,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$schema,
 			['title' => 'Image Test', 'logo' => 'https://example.com/logo.png'],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1424,7 +1406,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$schema,
 			['title' => 'Publish Test', 'publishDate' => '2025-06-15T10:00:00+00:00'],
-			null,
 			null,
 			false,
 			false
@@ -1460,7 +1441,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$schema,
 			['title' => 'Depub Test', 'endDate' => '2026-12-31T23:59:59+00:00'],
-			null,
 			null,
 			false,
 			false
@@ -1505,7 +1485,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				],
 			],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1547,7 +1526,6 @@ class SaveObjectIntegrationTest extends TestCase {
 					['accessUrl' => 'https://example.com/img-access.jpg'],
 				],
 			],
-			null,
 			null,
 			false,
 			false
@@ -1616,7 +1594,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				'title' => 'phpunit-cascade-test-' . uniqid(),
 				'contacts' => [['name' => 'John Doe']],
 			],
-			null,
 			null,
 			false,
 			false
@@ -1691,7 +1668,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				],
 			],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1734,7 +1710,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				'tags' => ['new1', 'new2'],
 			],
 			$created->getUuid(),
-			null,
 			false,
 			false
 		);
@@ -1757,7 +1732,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testSchema,
 			['title' => 'phpunit-empty-uuid-' . uniqid()],
 			'',
-			null,
 			false,
 			false
 		);
@@ -1781,7 +1755,6 @@ class SaveObjectIntegrationTest extends TestCase {
 				'@self' => ['id' => $uuid],
 			],
 			null,
-			null,
 			false,
 			false
 		);
@@ -1789,26 +1762,6 @@ class SaveObjectIntegrationTest extends TestCase {
 
 		// The @self.id should be used as the UUID.
 		$this->assertSame($uuid, $result->getUuid());
-	}
-
-	// =========================================================================
-	// saveObject with folder ID
-	// =========================================================================
-
-	public function testSaveObjectWithFolderId(): void {
-		$result = $this->saveHandler->saveObject(
-			$this->testRegister,
-			$this->testSchema,
-			['title' => 'phpunit-folder-' . uniqid()],
-			null,
-			42, // folderId
-			false,
-			false
-		);
-		$this->createdObjectUuids[] = $result->getUuid();
-
-		$this->assertInstanceOf(ObjectEntity::class, $result);
-		$this->assertSame('42', $result->getFolder());
 	}
 
 	// =========================================================================
@@ -1820,7 +1773,6 @@ class SaveObjectIntegrationTest extends TestCase {
 			$this->testRegister,
 			$this->testSchema,
 			['title' => 'phpunit-silent-create-' . uniqid()],
-			null,
 			null,
 			false,
 			false,

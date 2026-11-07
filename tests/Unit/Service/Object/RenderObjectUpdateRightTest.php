@@ -58,10 +58,11 @@ class RenderObjectUpdateRightTest extends TestCase {
 	 *
 	 * @param array<int, string>       $groups The reader's groups.
 	 * @param array<int, string>|string $extend The _extend parameter.
+	 * @param string $owner The object's owner.
 	 *
 	 * @return array The serialised object.
 	 */
-	private function renderAs(array $groups, array|string $extend, array $actions = []): array {
+	private function renderAs(array $groups, array|string $extend, array $actions = [], string $owner = 'bob'): array {
 		$schema = new Schema();
 		$schema->setId(7);
 		$schema->setSlug('case');
@@ -152,7 +153,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 		$entity->setUuid('5b0c1f0e-0000-4000-8000-000000000001');
 		$entity->setSchema('7');
 		$entity->setRegister('3');
-		$entity->setOwner('bob');
+		$entity->setOwner($owner);
 		$entity->setObject(['reference' => 'Z-1']);
 
 		return $render->renderEntity(entity: $entity, _extend: $extend)->jsonSerialize();
@@ -168,6 +169,17 @@ class RenderObjectUpdateRightTest extends TestCase {
 
 		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
 	}//end testAnEditorMayUpdate()
+
+	/**
+	 * The owner may update through the owner rule, in no group that says so.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerMayUpdate(): void {
+		$rendered = $this->renderAs([], ['@self.can'], owner: 'alice');
+
+		$this->assertSame(['update' => true], $rendered['@self']['can'] ?? null);
+	}//end testTheOwnerMayUpdate()
 
 	/**
 	 * 🔴 A reader reads `can.update: false`, so the list offers no editor.

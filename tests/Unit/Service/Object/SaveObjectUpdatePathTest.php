@@ -77,6 +77,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Service\WriteCause
  * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectUpdatePathTest extends TestCase {
 
@@ -239,7 +241,6 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
 			uuid: self::UUID,
-			folderId: ($args['folderId'] ?? null),
 			_rbac: ($args['_rbac'] ?? true),
 			persist: ($args['persist'] ?? true),
 			silent: ($args['silent'] ?? false),

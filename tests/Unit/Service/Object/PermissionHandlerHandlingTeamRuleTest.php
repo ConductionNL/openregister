@@ -54,6 +54,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 /**
+ * @uses   \OCA\OpenRegister\Service\Rbac\RoleBlockExpander
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
  * @covers \OCA\OpenRegister\Files\Service\File\ObjectFileAccess
  *

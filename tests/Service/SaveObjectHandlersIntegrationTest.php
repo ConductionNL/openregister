@@ -208,7 +208,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 			$this->testSchema,
 			$data,
 			null,
-			null,
 			false,
 			false
 		);

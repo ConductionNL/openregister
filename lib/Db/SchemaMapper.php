@@ -39,10 +39,12 @@ use OCA\OpenRegister\Db\SchemaMapper\FacetConfiguration;
 use OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser;
 use OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaComposition;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
@@ -233,60 +235,85 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 */
 	public function find(
 		string|int $id,
-		?array $_extend = [],
+		array|null $_extend = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): Schema {
-		// Request-scoped cache, keyed by identifier and both flags.
-		$cacheSuffix = ':' . (int)$_rbac . ':' . (int)$_multitenancy;
-		$cacheKey = strtolower((string)$id) . $cacheSuffix;
-		if (isset($this->findCache[$cacheKey]) === true) {
-			return $this->findCache[$cacheKey];
+		$lookup = new SchemaLookup(id: $id, rbac: $_rbac, multitenancy: $_multitenancy);
+		if (isset($this->findCache[$lookup->cacheKey()]) === true) {
+			return $this->findCache[$lookup->cacheKey()];
 		}
 
 		$this->readTrace()->record(method: 'find');
 		\OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
 
-		$qb = $this->buildFindByIdentifierQuery(id: $id);
+		return $this->loadAndCache(lookup: $lookup);
+	}//end find()
 
-		// Set $_multitenancy=false to bypass the organisation filter (e.g. when expanding schemas for registers).
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
-		);
+	/**
+	 * Read a schema from the database and remember it for this request.
+	 *
+	 * @param SchemaLookup $lookup The lookup.
+	 *
+	 * @return Schema The schema with its composition resolved.
+	 * @throws DoesNotExistException If no visible row matches.
+	 */
+	private function loadAndCache(SchemaLookup $lookup): Schema {
+		$rows = $this->identifierRows(lookup: $lookup);
+		if ($rows === []) {
+			throw new DoesNotExistException($lookup->notFoundMessage());
+		}
 
-		// Two rows, not one: enough to KNOW the identifier was ambiguous, which
-		// a capped single-row fetch can never tell you.
+		$this->warnAboutAmbiguousIdentifier(id: $lookup->id, rows: $rows);
+
+		// Resolve schema composition if present (allOf, oneOf, anyOf).
+		$schema = $this->composition()->resolve(schema: Schema::fromRow($rows[0]));
+
+		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
+		$this->findCache[$lookup->cacheKey()] = $schema;
+		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $lookup->cacheSuffix());
+
+		return $schema;
+	}//end loadAndCache()
+
+	/**
+	 * The rows a lookup matches, at most two.
+	 *
+	 * Two rows, not one: enough to KNOW the identifier was ambiguous, which a
+	 * capped single-row fetch can never tell you.
+	 *
+	 * @param SchemaLookup $lookup The lookup.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function identifierRows(SchemaLookup $lookup): array {
+		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $lookup->multitenancy);
 		$qb->setMaxResults(2);
 
 		$result = $qb->executeQuery();
 		$rows = $result->fetchAll();
 		$result->closeCursor();
 
-		if ($rows === []) {
-			throw new DoesNotExistException(
-				sprintf(
-					'Schema not found (id=%s, multitenancy=%s, rbac=%s)',
-					var_export($id, true),
-					var_export($_multitenancy, true),
-					var_export($_rbac, true)
-				)
-			);
-		}
+		return $rows;
+	}//end identifierRows()
 
-		$this->warnAboutAmbiguousIdentifier(id: $id, rows: $rows);
-
-		// Resolve schema composition if present (allOf, oneOf, anyOf).
-		$schema = $this->composition()->resolve(schema: Schema::fromRow($rows[0]));
-
-		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
-		$this->findCache[$cacheKey] = $schema;
-		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $cacheSuffix);
-
-		return $schema;
-	}//end find()
+	/**
+	 * Limit a schema query to the active organisation, schemas without one included.
+	 *
+	 * @param IQueryBuilder $qb           The query.
+	 * @param bool          $multitenancy False skips the filter, for example when expanding schemas for registers.
+	 *
+	 * @return void
+	 */
+	private function filterByOrganisation(IQueryBuilder $qb, bool $multitenancy): void {
+		$this->applyOrganisationFilter(
+			qb: $qb,
+			columnName: 'organisation',
+			allowNullOrg: true,
+			multiTenancyEnabled: $multitenancy
+		);
+	}//end filterByOrganisation()
 
 	/**
 	 * Cache a found schema under its id, uuid and slug, so a later lookup by
@@ -833,15 +860,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 				$qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
 			);
 
-		$result = $qb->executeQuery();
-		$schemas = [];
-		while (($row = $result->fetch()) !== false) {
-			$schemas[$row['id']] = Schema::fromRow($row);
-		}
-
-		$result->closeCursor();
-
-		return $schemas;
+		return $this->fetchSchemas(qb: $qb);
 	}//end schemasWithIds()
 
 	/**
@@ -871,37 +890,50 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	): array {
 		$this->readTrace()->record(method: 'findBySlug');
 
-		$qb = $this->db->getQueryBuilder();
+		$qb = $this->exactSlugQuery(slug: $slug);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
+		$qb->setMaxResults($limit)
+			->setFirstResult($offset);
 
+		return array_values($this->fetchSchemas(qb: $qb));
+	}//end findBySlug()
+
+	/**
+	 * The query for the rows with exactly this slug.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function exactSlugQuery(string $slug): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas')
 			->where(
 				$qb->expr()->eq('slug', $qb->createNamedParameter($slug, IQueryBuilder::PARAM_STR))
 			);
 
-		// Apply organisation filter.
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
-		);
+		return $qb;
+	}//end exactSlugQuery()
 
-		$qb->setMaxResults($limit)
-			->setFirstResult($offset);
-
+	/**
+	 * Run a schema query and keep its rows as entities, keyed by id.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return array<int|string, Schema>
+	 */
+	private function fetchSchemas(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
 		$schemas = [];
-
 		while (($row = $result->fetch()) !== false) {
-			$schema = Schema::fromRow($row);
-			$schemas[] = $schema;
+			$schemas[$row['id']] = Schema::fromRow($row);
 		}
 
 		$result->closeCursor();
 
 		return $schemas;
-	}//end findBySlug()
+	}//end fetchSchemas()
 
 	/**
 	 * Finds all schemas, files: with optional extension for statistics
@@ -924,20 +956,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
 	 */
 	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-		?array $_extend = [],
+		int|null $limit = null,
+		int|null $offset = null,
+		array|null $filters = [],
+		array|null $searchConditions = [],
+		array|null $searchParams = [],
+		array|null $_extend = [],
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
-		// Verify RBAC permission to read if RBAC is enabled.
-		if ($_rbac === true) {
-			// $this->verifyRbacPermission('read', 'schema');
-		}
-
 		$this->readTrace()->record(method: 'findAll');
 
 		$qb = $this->db->getQueryBuilder();
@@ -951,22 +978,28 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		if (empty($searchConditions) === false) {
 			$qb->andWhere('(' . implode(' OR ', $searchConditions) . ')');
-			foreach ($searchParams ?? [] as $param => $value) {
-				$qb->setParameter($param, $value);
-			}
+			$this->bindSearchParams(qb: $qb, params: $searchParams);
 		}
 
-		// Apply organisation filter.
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $_multitenancy
-		);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
 		// Just return the entities; do not attach stats here.
 		return $this->findEntities(query: $qb);
 	}//end findAll()
+
+	/**
+	 * Bind the named parameters of the search conditions.
+	 *
+	 * @param IQueryBuilder $qb     The query.
+	 * @param array|null    $params The parameters, by name.
+	 *
+	 * @return void
+	 */
+	private function bindSearchParams(IQueryBuilder $qb, array|null $params): void {
+		foreach ($params ?? [] as $param => $value) {
+			$qb->setParameter($param, $value);
+		}
+	}//end bindSearchParams()
 
 	/**
 	 * Inserts a schema entity into the database
@@ -1116,6 +1149,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			findSchema: fn (string $id): Schema => $this->find(id: $id, _rbac: false, _multitenancy: false)
 		))->check(schema: $schema);
 		(new PropertyDeclarationRefusals())->checkDependentValues(schema: $schema);
+		(new ReferenceLoopCheck())->check(schema: $schema);
 	}//end checkBehaviourDeclarations()
 
 	/**
@@ -1282,58 +1316,80 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// Fetch old entity directly without organisation filter for event comparison.
 		$this->readTrace()->record(method: 'update');
+		$oldSchema = $this->storedRow(entity: $entity);
 
+		$entity = parent::update(entity: $this->preparedForUpdate(schema: $entity));
+		$this->announceUpdate(old: $oldSchema, new: $entity);
+
+		return $entity;
+	}//end update()
+
+	/**
+	 * The stored row of an entity, read without the organisation filter.
+	 *
+	 * @param Entity $entity The entity.
+	 *
+	 * @return Schema The row as it is in the database.
+	 */
+	private function storedRow(Entity $entity): Schema {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas')
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
-		$oldSchema = $this->findEntity(query: $qb);
 
+		return $this->findEntity(query: $qb);
+	}//end storedRow()
+
+	/**
+	 * Make a schema ready to be written over its stored row.
+	 *
+	 * This is the single choke point every runtime edit passes through
+	 * (updateFromArray, the controllers, the tool providers), so `updated` is
+	 * stamped here, after hydrate(): a client-supplied `updated` cannot suppress
+	 * it, the modification time is the server's to state. ContextsController's
+	 * ETag, JsonLdContextService::cacheKey() and ReferentialIntegrityService's
+	 * relation index all key on that stamp moving.
+	 *
+	 * @param Entity $schema The schema to save.
+	 *
+	 * @return Schema The schema to write.
+	 */
+	private function preparedForUpdate(Entity $schema): Schema {
 		// Clean the schema object to ensure UUID, slug, and version are set.
-		$this->cleanObject(schema: $entity);
+		$this->cleanObject(schema: $schema);
 
-		// **SCHEMA COMPOSITION**: Extract delta if schema uses composition (allOf).
-		// This ensures we only store the differences, not the full resolved schema.
-		// NOTE: Circular reference validation is done during SchemaComposition::resolve().
-		$entity = $this->extractSchemaDelta(schema: $entity);
+		// Store only the differences from a composed parent, not the resolved schema.
+		// Circular reference validation is done during SchemaComposition::resolve().
+		$schema = $this->extractSchemaDelta(schema: $schema);
 
-		// **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
-		(new FacetConfiguration())->generate(schema: $entity);
+		// Generate facet configuration from schema properties.
+		(new FacetConfiguration())->generate(schema: $schema);
 
-		/*
-		 * **MODIFICATION STAMP**: `updated` was never written on an edit. The
-		 * column defaulted to CURRENT_TIMESTAMP at insert and then stayed at
-		 * the creation time for the rest of the schema's life, so every
-		 * consumer that keys on it was reading a value that could not move:
-		 *
-		 *  - ContextsController::buildEtag() served a stale JSON-LD context
-		 *    ETag after a schema edit, and honoured If-None-Match with a 304.
-		 *  - JsonLdContextService::cacheKey() reused a stale context.
-		 *  - ReferentialIntegrityService's cross-request relation index treated
-		 *    an unchanged stamp as "no schema changed" and could therefore keep
-		 *    an index that predates a newly added onDelete relation.
-		 *
-		 * This is the single mapper choke point every runtime edit passes
-		 * through (updateFromArray, the controllers, the tool providers), and
-		 * it is set after hydrate() so a client-supplied `updated` cannot
-		 * suppress it — the modification time is the server's to state.
-		 */
+		$schema->setUpdated(new DateTime());
 
-		$entity->setUpdated(new DateTime());
+		return $schema;
+	}//end preparedForUpdate()
 
-		$entity = parent::update(entity: $entity);
-
-		// An event fires at the level where something changed, and only when it
-		// did. An app re-importing an identical schema used to fire this on every
-		// import, so every admin was told "Schema was updated" while nothing was.
-		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
-			$schemaId = (int)$entity->getId();
-			$this->updateEventCounts[$schemaId] = (($this->updateEventCounts[$schemaId] ?? 0) + 1);
-			$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
+	/**
+	 * Publish a schema update, but only when the save changed something.
+	 *
+	 * An app re-importing an identical schema must not tell every admin
+	 * "Schema was updated".
+	 *
+	 * @param Schema $old The stored row before the save.
+	 * @param Schema $new The saved schema.
+	 *
+	 * @return void
+	 */
+	private function announceUpdate(Schema $old, Schema $new): void {
+		if ((new EntityChangeDetector())->changed(old: $old, new: $new) === false) {
+			return;
 		}
 
-		return $entity;
-	}//end update()
+		$schemaId = (int)$new->getId();
+		$this->updateEventCounts[$schemaId] = (($this->updateEventCounts[$schemaId] ?? 0) + 1);
+		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $new, oldSchema: $old));
+	}//end announceUpdate()
 
 	/**
 	 * How many SchemaUpdatedEvents this request dispatched for one schema.
@@ -1422,18 +1478,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// Verify user has access to this organisation.
 		$this->verifyOrganisationAccess(entity: $entity);
 
-		$schemaId = $entity->id;
-		if (method_exists($entity, 'getId') === true) {
-			$schemaId = $entity->getId();
-		}
-
 		if ($force === false) {
-			$count = $this->countAttachedObjects(schemaId: (int)$schemaId);
-			if ($count > 0) {
-				throw new ValidationException(
-					message: 'Cannot delete schema: ' . $count . ' objects are still attached.'
-				);
-			}
+			$this->refuseWhileObjectsAttached(schemaId: (int)$entity->getId());
 		}
 
 		// Proceed with deletion.
@@ -1446,6 +1492,23 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		return $result;
 	}//end delete()
+
+	/**
+	 * Refuse a delete that would leave objects without their schema.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return void
+	 * @throws ValidationException If objects are still attached.
+	 */
+	private function refuseWhileObjectsAttached(int $schemaId): void {
+		$count = $this->countAttachedObjects(schemaId: $schemaId);
+		if ($count > 0) {
+			throw new ValidationException(
+				message: 'Cannot delete schema: ' . $count . ' objects are still attached.'
+			);
+		}
+	}//end refuseWhileObjectsAttached()
 
 	/**
 	 * Count the objects still attached to a schema.
@@ -1574,7 +1637,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * @psalm-return list{0?: mixed,...}
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array {
+	public function findExtendedBy(int|string $schemaIdentifier, string|null $knownUuid = null, string|null $knownSlug = null): array {
 		$identifiers = [(string)$schemaIdentifier, $knownUuid, $knownSlug];
 		if ($knownUuid === null && $knownSlug === null) {
 			try {
@@ -1612,21 +1675,29 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			$target = $this->find(id: $schema, _multitenancy: false);
 		}
 
+		$search = $this->referencesTo(target: $target);
 		$related = [];
 		foreach ($this->findAll(_multitenancy: false) as $candidate) {
-			if ($candidate->getId() !== (int)$target->getId() && $this->hasReferenceToSchema(
-				properties: $candidate->getProperties(),
-				targetSchemaId: (string)$target->getId(),
-				targetSchemaUuid: (string)$target->getUuid(),
-				targetSchemaSlug: (string)$target->getSlug()
-			) === true
-			) {
+			if ($candidate->getId() !== (int)$target->getId() && $search->foundIn(properties: $candidate->getProperties()) === true) {
 				$related[] = $candidate;
 			}
 		}
 
 		return $related;
 	}//end getRelated()
+
+	/**
+	 * The search for references to a schema, by id, uuid or slug.
+	 *
+	 * @param Schema $target The schema.
+	 *
+	 * @return SchemaReferenceSearch
+	 */
+	private function referencesTo(Schema $target): SchemaReferenceSearch {
+		return new SchemaReferenceSearch(
+			target: ['id' => (string)$target->getId(), 'uuid' => (string)$target->getUuid(), 'slug' => (string)$target->getSlug()]
+		);
+	}//end referencesTo()
 
 	/**
 	 * Recursively check if properties contain a reference to the target schema.

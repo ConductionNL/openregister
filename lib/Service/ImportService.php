@@ -774,12 +774,7 @@ class ImportService implements ObjectImporterInterface {
 	 * @throws RegisterNotFoundException When the document is not a register bundle
 	 */
 	private function registerFromBundle(array $decoded, array $target): array {
-		$isBundle = array_is_list($decoded) === false
-			&& isset($decoded['components']['registers']) === true
-			&& is_array($decoded['components']['registers']) === true
-			&& count($decoded['components']['registers']) > 0;
-
-		if ($isBundle === false) {
+		if ($this->isRegisterBundle(decoded: $decoded) === false) {
 			throw new RegisterNotFoundException(
 				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
 				code: 404,
@@ -790,6 +785,21 @@ class ImportService implements ObjectImporterInterface {
 
 		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);
 	}//end registerFromBundle()
+
+	/**
+	 * Whether a decoded JSON document is a register bundle: an object (not a
+	 * list) carrying a non-empty `components.registers` array.
+	 *
+	 * @param array<mixed> $decoded The decoded document
+	 *
+	 * @return bool True when the document is a register bundle
+	 */
+	private function isRegisterBundle(array $decoded): bool {
+		$registers = ($decoded['components']['registers'] ?? null);
+		return array_is_list($decoded) === false
+			&& is_array($registers) === true
+			&& count($registers) > 0;
+	}//end isRegisterBundle()
 
 	/**
 	 * The object list of a JSON import document.

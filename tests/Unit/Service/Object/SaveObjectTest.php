@@ -173,6 +173,14 @@ class SaveObjectTest extends TestCase {
 	 * @return mixed The method return value
 	 */
 	private function invokePrivateMethod(string $methodName, array $args = []) {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->handler, $args);
+		}
+
+		if (in_array($methodName, EmptyValueCalls::METHODS, true) === true) {
+			return EmptyValueCalls::{$methodName}($this->handler, $args);
+		}
+
 		if (in_array($methodName, RelationCalls::METHODS, true) === true) {
 			return RelationCalls::{$methodName}($this->handler, $args);
 		}
@@ -4775,7 +4783,7 @@ class SaveObjectTest extends TestCase {
 		[$entity, $schema] = $this->slugEntity('hello-world');
 		$data = ['title' => 'A Completely New Title'];
 
-		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, [], null]);
+		$this->invokePrivateMethod('prepareObjectForUpdate', [$entity, $schema, $data, []]);
 		$this->invokePrivateMethod('decideSlug', [$entity, $schema, 'hello-world', [[], $data]]);
 
 		$this->assertSame('hello-world', $entity->getSlug(), 'the stored slug is the freeze reference');

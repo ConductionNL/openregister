@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\FilePropertyCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -247,6 +248,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 	 * @return mixed The result of the method invocation.
 	 */
 	private function invokePrivateMethod(string $methodName, array $parameters = []): mixed {
+		if (in_array($methodName, FilePropertyCalls::METHODS, true) === true) {
+			return FilePropertyCalls::{$methodName}($this->saveObject, $parameters);
+		}
+
 		$method = $this->reflection->getMethod($methodName);
 		$method->setAccessible(true);
 
@@ -635,7 +640,6 @@ class SaveObjectRefactoredMethodsTest extends TestCase {
 			$this->mockSchema,
 			$data,
 			$uuid,
-			null,
 			false,
 			false,
 			true,

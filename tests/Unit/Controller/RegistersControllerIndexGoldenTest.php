@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Controller\Support\RegisterDownloads
  * @uses \OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterAccessAudit
+ * @uses \OCA\OpenRegister\Controller\Support\RegisterUpdate
  * @uses \OCA\OpenRegister\Controller\Support\RegisterStatistics
  * @uses \OCA\OpenRegister\Controller\Support\RegistersControllerServices
  * @uses \OCA\OpenRegister\Controller\Support\RegisterMappers

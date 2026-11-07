@@ -65,6 +65,7 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// a request along; repeating it would multiply the places it can drift.
 		'lib/Search/Controller/AggregationController.php' => 'delegates to AggregationRunner',
 		'lib/Service/Aggregation/NamedAggregationRun.php' => 'holds the state of AggregationRunner::run(), which asks; computes nothing',
+		'lib/Service/GraphQL/ListRequest.php' => 'reads the groupBy argument for ListAggregations, which goes through AggregationRunner; computes nothing',
 		'lib/Controller/ObjectsController.php' => 'delegates to ObjectService and FacetHandler',
 		'lib/Db/MagicMapper.php' => 'delegates to its handlers',
 		'lib/Db/MagicMapperInterface.php' => 'the mapper\'s interface, declares, summarises nothing',

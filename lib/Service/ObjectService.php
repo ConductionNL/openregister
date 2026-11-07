@@ -2331,7 +2331,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function settleSaveFolder(ObjectSaveRun $run): void
     {
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
-        $run->options['folderId'] = $this->ensureObjectFolder(
+        $this->ensureObjectFolder(
             uuid: $run->uuid,
             currentUser: $run->options['currentUser']
         );
@@ -2592,7 +2592,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema,
             data: $object,
             uuid: $options['uuid'],
-            folderId: $options['folderId'],
             _rbac: $options['_rbac'],
             _multitenancy: $options['_multitenancy'],
             persist: true,
@@ -3638,12 +3637,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *                                 Non-HTTP callers (cron, import
      *                                 pipelines) MUST pass an explicit user.
      *
-     * @return int|null Folder ID if created/exists, null otherwise
+     * @return void
      */
-    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): ?int
+    private function ensureObjectFolder(?string $uuid, ?IUser $currentUser=null): void
     {
         if ($uuid === null) {
-            return null;
+            return;
         }
 
         $this->revalidateFolderBinding(uuid: $uuid, currentUser: $currentUser);
@@ -3658,7 +3657,6 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // folder_access_denied. The folder is created on demand the
         // first time a file is actually uploaded to the object
         // (CreateFileHandler → getObjectFolder, which creates-if-missing).
-        return null;
     }//end ensureObjectFolder()
 
     /**
@@ -6942,7 +6940,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $resolved = [];
         try {
-            $entities = $this->objectMapper->findMultipleAcrossAllMagicTables(
+            $entities = $this->objectMapper->findStoredAcrossAllMagicTables(
                 uuids: $uuids,
                 includeDeleted: true
             );

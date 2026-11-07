@@ -28,6 +28,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  * @uses \OCA\OpenRegister\Db\FlowTimer
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
  */
 class SmallUnitsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/small-units-golden.json';

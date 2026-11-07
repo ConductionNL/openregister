@@ -142,7 +142,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 	public function testListFilterReachesTheAggregation(): void {
 		$this->makeResolver()->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: [
 				'filter' => ['eliminationFlag' => false],
 				'groupBy' => [
@@ -171,7 +170,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 	public function testUnfilteredListAggregatesOverEverything(): void {
 		$this->makeResolver()->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: [
 				'groupBy' => [
 					'field' => 'accountNumber',
@@ -213,7 +211,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 
 		$result = $this->makeResolver(runner: $runner)->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: [
 				'filter' => ['eliminationFlag' => false],
 				'aggregation' => 'consolidatedTrialBalance',
@@ -244,7 +241,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 
 		$result = $this->makeResolver(runner: $runner)->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: ['filter' => ['eliminationFlag' => false]]
 		);
 
@@ -269,7 +265,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 
 		$result = $this->makeResolver(runner: $runner)->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: ['groupBy' => ['field' => 'accountNumber']]
 		);
 
@@ -304,7 +299,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 
 		$result = $this->makeResolver(runner: $runner)->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: [
 				'groupBy' => [
 					'field' => 'accountNumber',
@@ -336,7 +330,6 @@ final class GraphQLAggregationFilterTest extends TestCase {
 	public function testPagingAndSearchDoNotReachTheAggregation(): void {
 		$this->makeResolver()->resolveList(
 			schema: $this->makeSchema(),
-			root: null,
 			args: [
 				'first' => 5,
 				'offset' => 10,

@@ -1,0 +1,702 @@
+{
+    "validate: empty": "UnexpectedValueException: Choose at least one field to set, compute, rename or remove.",
+    "validate: all empty lists": "UnexpectedValueException: Choose at least one field to set, compute, rename or remove.",
+    "validate: keepOnlySet alone": "UnexpectedValueException: Choose at least one field to set, compute, rename or remove.",
+    "validate: set only": "ok",
+    "validate: rename only": "ok",
+    "validate: remove only": "ok",
+    "validate: remove scalar": "ok",
+    "validate: set blank path": "UnexpectedValueException: A \"set\" entry has an empty field path.",
+    "validate: set empty path": "UnexpectedValueException: A \"set\" entry has an empty field path.",
+    "validate: compute blank path": "UnexpectedValueException: A \"compute\" entry has an empty field path.",
+    "validate: compute valid": "ok",
+    "validate: compute invalid": "UnexpectedValueException: The expression for computed field \"n\" is not valid.",
+    "validate: compute invalid second": "UnexpectedValueException: The expression for computed field \"bad\" is not valid.",
+    "validate: set blank before compute invalid": "UnexpectedValueException: A \"set\" entry has an empty field path.",
+    "validate: compute blank and invalid": "UnexpectedValueException: A \"compute\" entry has an empty field path.",
+    "execute: no items": [],
+    "execute: item without json": [
+        {
+            "json": {
+                "a": 1
+            },
+            "binary": {
+                "f": 1
+            },
+            "pairedItem": {
+                "item": 0
+            }
+        }
+    ],
+    "execute: nothing configured": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ]
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test"
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: remove": [
+        {
+            "json": {
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ]
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "stage": "test"
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: remove scalar config": [
+        {
+            "json": {
+                "a": 1,
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ]
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test"
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: rename": [
+        {
+            "json": {
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "alpha": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "stage": "test",
+                "alpha": 2
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: rename onto existing": [
+        {
+            "json": {
+                "b": 1,
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ]
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "stage": "test",
+                "b": 2
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: remove then rename reuses name": [
+        {
+            "json": {
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "b": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "stage": "test",
+                "b": 2
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set constants": [
+        {
+            "json": {
+                "a": null,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "x": 1,
+                "y": {
+                    "k": "v"
+                }
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": null,
+                "stage": "test",
+                "x": 1,
+                "y": {
+                    "k": "v"
+                }
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set templated values": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "copy": 1,
+                "text": "stage=build",
+                "missing": null
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "copy": 2,
+                "text": "stage=test",
+                "missing": null,
+                "list": null
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set nested path": [
+        {
+            "json": {
+                "a": {
+                    "b": 2
+                },
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "p": {
+                    "q": {
+                        "r": 1
+                    }
+                }
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": {
+                    "b": 2
+                },
+                "stage": "test",
+                "p": {
+                    "q": {
+                        "r": 1
+                    }
+                }
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set templated path": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "stages": {
+                    "build": {
+                        "status": "done"
+                    }
+                }
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "stages": {
+                    "test": {
+                        "status": "done"
+                    }
+                }
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set reads earlier write": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "deploy",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "at": {
+                    "deploy": "deploy"
+                }
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "deploy",
+                "at": {
+                    "deploy": "deploy"
+                }
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set path unresolved": {
+        "error": "UnexpectedValueException: The path segment \"{{nope}}\" resolved to nothing; a field position is never empty."
+    },
+    "execute: set path container": {
+        "error": "UnexpectedValueException: The path segment \"{{list}}\" resolved to a value that cannot name a field."
+    },
+    "execute: set path blank": {
+        "error": "UnexpectedValueException: The path segment \"{{blank}}\" resolved to nothing; a field position is never empty."
+    },
+    "execute: set path dotted": {
+        "error": "UnexpectedValueException: The path segment \"{{dotted}}\" resolved to \"x.y\", which contains a dot. A rendered segment names one field and cannot introduce nesting."
+    },
+    "execute: set path numeric": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "s": {
+                    "1": 1
+                }
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "s": {
+                    "2": 1
+                }
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: set path padded": {
+        "error": "UnexpectedValueException: The path segment \"{{b}} \" resolved to nothing; a field position is never empty."
+    },
+    "execute: keepOnlySet": [
+        {
+            "json": {
+                "copy": null
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "copy": null
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: keepOnlySet truthy not true": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "x": 1
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "x": 1
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: compute": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "base": 1,
+                "inc": 2,
+                "idx": 0,
+                "cnt": 2,
+                "ctx": "f-1",
+                "nested": {
+                    "build": 10
+                },
+                "chain": 2
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "base": 2,
+                "inc": 3,
+                "idx": 1,
+                "cnt": 2,
+                "ctx": "f-1",
+                "nested": {
+                    "test": 20
+                },
+                "chain": 3
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: compute broken expression": [
+        {
+            "json": {
+                "a": 1,
+                "b": "two",
+                "stage": "build",
+                "n": 4,
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "bad": null
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "bad": null
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "execute: compute path refused": {
+        "error": "UnexpectedValueException: The path segment \"{{dotted}}\" resolved to \"x.y\", which contains a dot. A rendered segment names one field and cannot introduce nesting."
+    },
+    "execute: keyed items": {
+        "error": "TypeError: OCA\\OpenRegister\\Service\\Flow\\FlowItems::item(): Argument #3 ($fromItemIndex) must be of type ?int, string given"
+    },
+    "execute: all operations": [
+        {
+            "json": {
+                "a": 1,
+                "stage": "build",
+                "dotted": "x.y",
+                "blank": " ",
+                "list": [
+                    1,
+                    2
+                ],
+                "bee": "two",
+                "out": {
+                    "build": "two"
+                },
+                "sum": 101
+            },
+            "binary": [],
+            "pairedItem": {
+                "item": 0
+            }
+        },
+        {
+            "json": {
+                "a": 2,
+                "stage": "test",
+                "out": {
+                    "test": null
+                },
+                "sum": 102
+            },
+            "binary": {
+                "file": {
+                    "data": "abc"
+                }
+            },
+            "pairedItem": {
+                "item": 1
+            }
+        }
+    ],
+    "configKeys": [
+        "set",
+        "compute",
+        "rename",
+        "remove",
+        "keepOnlySet"
+    ]
+}

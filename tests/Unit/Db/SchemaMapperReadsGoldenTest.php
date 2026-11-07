@@ -35,6 +35,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaComposition
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\ParentReference
@@ -79,12 +80,34 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 			'optimized empty' => [[], static fn (SchemaMapper $mapper) => $mapper->findMultipleOptimized([])],
 			'optimized one chunk' => [[[self::ROW, self::TWIN]], $optimized],
 			'optimized two chunks' => [[[self::ROW], [self::TWIN]], $manyIds],
+			'slug page' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', 2, 4)],
+			'slug without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', _multitenancy: false)],
+			'slug none' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven')],
+			'all defaults' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findAll()],
+			'all without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findAll(_multitenancy: false)],
+			'all filtered and searched' => [
+				[[self::ROW]],
+				static fn (SchemaMapper $mapper) => $mapper->findAll(3, 6, ['a' => 'IS NULL', 'b' => 'IS NOT NULL', 'c' => 1], ['x LIKE :q', 'y LIKE :q'], ['q' => '%s%', 'r' => 2]),
+			],
+			'all conditions without params' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findAll(null, null, null, ['x = 1'], null)],
+			'all params without conditions' => [[[]], static fn (SchemaMapper $mapper) => $mapper->findAll(searchParams: ['q' => 1])],
+			'related' => [
+				[[self::ROW + ['properties' => '{"a":{"$ref":"#/components/schemas/three"}}'], ['id' => 3, 'slug' => 'three', 'uuid' => 'uuid-3', 'properties' => '{"a":{"$ref":"#/components/schemas/three"}}'], self::TWIN + ['properties' => '{"b":{"type":"string"}}']]],
+				static fn (SchemaMapper $mapper) => $mapper->getRelated(self::target()),
+			],
 			'register counts' => [
 				[[['id' => 1, 'schemas' => '[7, "9"]'], ['id' => 2, 'schemas' => '[7]'], ['id' => 3, 'schemas' => 'false']]],
 				static fn (SchemaMapper $mapper) => $mapper->getRegisterCountPerSchema(),
 			],
 		];
 	}//end cases()
+
+	/**
+	 * The schema the related read looks for.
+	 */
+	private static function target(): Schema {
+		return Schema::fromRow(['id' => 3, 'uuid' => 'uuid-3', 'slug' => 'three']);
+	}//end target()
 
 	public function testReadsMatchGolden(): void {
 		$actual = [];

@@ -4764,29 +4764,7 @@ class ObjectsController extends Controller {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
 
-			$data = $this->request->getParams();
-			$process = ($data['process'] ?? null);
-			// Check if duration is set in the request data.
-			$duration = null;
-			if (($data['duration'] ?? null) !== null) {
-				$duration = (int)$data['duration'];
-			}
-
-			$lockResult = $this->objectService->lockObject(
-				identifier: $id,
-				process: $process,
-				duration: $duration
-			);
-
-			// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
-			// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
-			// the lock it took is actually held, read back off the entity, and
-			// that is what goes on the wire. The advisory (pre-creation) path
-			// has no entity to read, so it keeps the old answer.
-			$held = ($lockResult['held'] ?? true);
-			unset($lockResult['held']);
-
-			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
+			return $this->takeLock(id: $id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {
@@ -4798,6 +4776,52 @@ class ObjectsController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end lock()
+
+	/**
+	 * Lock an object for the process and duration the request names.
+	 *
+	 * @param string $id The object ID or UUID.
+	 *
+	 * @return JSONResponse The lock, with whether it is held.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function takeLock(string $id): JSONResponse {
+		$data = $this->request->getParams();
+
+		$lockResult = $this->objectService->lockObject(
+			identifier: $id,
+			process: ($data['process'] ?? null),
+			duration: self::lockDuration(data: $data)
+		);
+
+		// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
+		// ASSERTING IT COULD NOT FAIL. `LockHandler` now reports whether
+		// the lock it took is actually held, read back off the entity, and
+		// that is what goes on the wire. The advisory (pre-creation) path
+		// has no entity to read, so it keeps the old answer.
+		$held = ($lockResult['held'] ?? true);
+		unset($lockResult['held']);
+
+		return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
+	}//end takeLock()
+
+	/**
+	 * The lock duration a request names.
+	 *
+	 * @param array $data The request parameters.
+	 *
+	 * @return int|null The duration, or null when none is set.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function lockDuration(array $data): int|null {
+		if (($data['duration'] ?? null) !== null) {
+			return (int)$data['duration'];
+		}
+
+		return null;
+	}//end lockDuration()
 
 	/**
 	 * Unlock an object
@@ -4836,14 +4860,42 @@ class ObjectsController extends Controller {
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
-			$message = $e->getMessage();
-			if (str_contains($message, 'does not have permission to unlock') === true) {
-				return new JSONResponse(data: ['error' => $message], statusCode: 403);
-			}
-
-			return new JSONResponse(data: ['error' => $message], statusCode: 500);
+			return self::unlockFailureResponse(message: $e->getMessage());
 		}
 
+		return self::unlockResponse(released: $released, id: $id);
+	}//end unlock()
+
+	/**
+	 * The answer to a failed unlock: 403 for a permission error, else 500.
+	 *
+	 * @param string $message The failure message.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function unlockFailureResponse(string $message): JSONResponse {
+		if (str_contains($message, 'does not have permission to unlock') === true) {
+			return new JSONResponse(data: ['error' => $message], statusCode: 403);
+		}
+
+		return new JSONResponse(data: ['error' => $message], statusCode: 500);
+	}//end unlockFailureResponse()
+
+	/**
+	 * The answer to an unlock that ran.
+	 *
+	 * @param bool   $released Whether a lock was released.
+	 * @param string $id       The object ID or UUID.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the fact this response reports
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function unlockResponse(bool $released, string $id): JSONResponse {
 		// 🔴 404 MEANS THIS OBJECT WAS NOT LOCKED, AND IT IS A FACT RATHER THAN
 		// A MISSING ROUTE. A client that releases a lock when its editor closes
 		// has to be able to tell "I handed mine back" from "somebody had
@@ -4880,7 +4932,7 @@ class ObjectsController extends Controller {
 				'uuid' => $id,
 			]
 		);
-	}//end unlock()
+	}//end unlockResponse()
 
 	/**
 	 * Whether a row exists in other registers, and nothing about the row.
@@ -4964,8 +5016,7 @@ class ObjectsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function move(string $register, string $schema, string $id): JSONResponse {
-		$caller = $this->userSession->getUser();
-		if ($caller === null) {
+		if ($this->userSession->getUser() === null) {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
@@ -4979,6 +5030,20 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
+		return $this->moveToRequestedTarget(object: $object, source: [$register, $schema]);
+	}//end move()
+
+	/**
+	 * Move an object to the register and schema the request names.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $source The register and schema it is in.
+	 *
+	 * @return JSONResponse The move's outcome, or the refusal.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function moveToRequestedTarget(ObjectEntity $object, array $source): JSONResponse {
 		$targetRegister = trim((string)$this->request->getParam('targetRegister', ''));
 		$targetSchema = trim((string)$this->request->getParam('targetSchema', ''));
 		if ($targetRegister === '' || $targetSchema === '') {
@@ -4988,32 +5053,60 @@ class ObjectsController extends Controller {
 			);
 		}
 
-		try {
-			$from = [
-				'register' => $this->services->store->registerMapper->find($register),
-				'schema' => $this->services->store->schemaMapper->find($schema),
-			];
-			$to = [
-				'register' => $this->services->store->registerMapper->find($targetRegister),
-				'schema' => $this->services->store->schemaMapper->find($targetSchema),
-			];
-		} catch (\Throwable $e) {
+		$ends = $this->moveEnds(source: $source, target: [$targetRegister, $targetSchema]);
+		if ($ends === null) {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
 		}
 
-		if ($this->mayMove(object: $object, schemas: [$from['schema'], $to['schema']]) === false) {
+		if ($this->mayMove(object: $object, schemas: [$ends['from']['schema'], $ends['to']['schema']]) === false) {
 			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
 		}
 
 		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
 			object: $object,
-			sourceRegister: $from['register'],
-			sourceSchema: $from['schema'],
-			targetRegister: $to['register'],
-			targetSchema: $to['schema'],
-			actor: $caller->getUID(),
+			sourceRegister: $ends['from']['register'],
+			sourceSchema: $ends['from']['schema'],
+			targetRegister: $ends['to']['register'],
+			targetSchema: $ends['to']['schema'],
+			actor: $this->userSession->getUser()->getUID(),
 		);
 
+		return self::moveResponse(outcome: $outcome);
+	}//end moveToRequestedTarget()
+
+	/**
+	 * The registers and schemas a move goes from and to.
+	 *
+	 * @param array $source The source register and schema references.
+	 * @param array $target The target register and schema references.
+	 *
+	 * @return array|null `from` and `to`, or null when one of them does not exist.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function moveEnds(array $source, array $target): array|null {
+		$registers = $this->services->store->registerMapper;
+		$schemas = $this->services->store->schemaMapper;
+		try {
+			return [
+				'from' => ['register' => $registers->find($source[0]), 'schema' => $schemas->find($source[1])],
+				'to' => ['register' => $registers->find($target[0]), 'schema' => $schemas->find($target[1])],
+			];
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end moveEnds()
+
+	/**
+	 * The answer to a move that ran.
+	 *
+	 * @param array $outcome The move's outcome.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private static function moveResponse(array $outcome): JSONResponse {
 		if ($outcome['moved'] === false) {
 			// 422, not 400: the request is well formed and the object does not
 			// fit where it was asked to go, which is the caller's to act on.
@@ -5021,7 +5114,7 @@ class ObjectsController extends Controller {
 		}
 
 		return new JSONResponse(data: $outcome);
-	}//end move()
+	}//end moveResponse()
 
 	/**
 	 * Whether the caller may take this object out of its schema and create it in the target.
@@ -5900,12 +5993,9 @@ class ObjectsController extends Controller {
 			$requestParams = $this->request->getParams();
 
 			// Validate required parameters.
-			if (isset($requestParams['target']) === false) {
-				return new JSONResponse(data: ['error' => 'Target object ID is required'], statusCode: 400);
-			}
-
-			if (($requestParams['object'] ?? null) === null || empty($requestParams['object']) === true) {
-				return new JSONResponse(data: ['error' => 'Object data is required'], statusCode: 400);
+			$refusal = self::mergeRefusal(params: $requestParams);
+			if ($refusal !== null) {
+				return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
 			}
 
 			// Perform the merge operation with the new payload structure.
@@ -5926,6 +6016,27 @@ class ObjectsController extends Controller {
 	}//end merge()
 
 	/**
+	 * What a merge request is missing.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The refusal, or null when the request is complete.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function mergeRefusal(array $params): string|null {
+		if (isset($params['target']) === false) {
+			return 'Target object ID is required';
+		}
+
+		if (empty($params['object']) === true) {
+			return 'Object data is required';
+		}
+
+		return null;
+	}//end mergeRefusal()
+
+	/**
 	 * Migrate objects between registers and/or schemas
 	 *
 	 * This method migrates multiple objects from one register/schema combination
@@ -5943,43 +6054,7 @@ class ObjectsController extends Controller {
 	 */
 	public function migrate(ObjectOperationsInterface $objectService): JSONResponse {
 		try {
-			// Get migration parameters from request.
-			$requestParams = $this->request->getParams();
-			$sourceRegister = $requestParams['sourceRegister'] ?? null;
-			$sourceSchema = $requestParams['sourceSchema'] ?? null;
-			$targetRegister = $requestParams['targetRegister'] ?? null;
-			$targetSchema = $requestParams['targetSchema'] ?? null;
-			$objectIds = $requestParams['objects'] ?? [];
-			$mapping = $requestParams['mapping'] ?? [];
-
-			// Validate required parameters.
-			if ($sourceRegister === null || $sourceSchema === null) {
-				return new JSONResponse(data: ['error' => 'Source register and schema are required'], statusCode: 400);
-			}
-
-			if ($targetRegister === null || $targetSchema === null) {
-				return new JSONResponse(data: ['error' => 'Target register and schema are required'], statusCode: 400);
-			}
-
-			if (empty($objectIds) === true) {
-				return new JSONResponse(data: ['error' => 'At least one object ID is required'], statusCode: 400);
-			}
-
-			if (empty($mapping) === true) {
-				return new JSONResponse(data: ['error' => 'Property mapping is required'], statusCode: 400);
-			}
-
-			// Perform the migration operation.
-			$migrationResult = $objectService->migrateObjects(
-				sourceRegister: $sourceRegister,
-				sourceSchema: $sourceSchema,
-				targetRegister: $targetRegister,
-				targetSchema: $targetSchema,
-				objectIds: $objectIds,
-				mapping: $mapping
-			);
-
-			return new JSONResponse(data: $migrationResult);
+			return $this->runMigration(params: $this->request->getParams(), objectService: $objectService);
 		} catch (NotAuthorizedException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
 		} catch (DoesNotExistException $exception) {
@@ -5995,6 +6070,63 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end migrate()
+
+	/**
+	 * Run the migration a request asks for, when it is complete.
+	 *
+	 * @param array                     $params        The request parameters.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The result, or the refusal.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function runMigration(array $params, ObjectOperationsInterface $objectService): JSONResponse {
+		$refusal = self::migrationRefusal(params: $params);
+		if ($refusal !== null) {
+			return new JSONResponse(data: ['error' => $refusal], statusCode: 400);
+		}
+
+		$migrationResult = $objectService->migrateObjects(
+			sourceRegister: $params['sourceRegister'],
+			sourceSchema: $params['sourceSchema'],
+			targetRegister: $params['targetRegister'],
+			targetSchema: $params['targetSchema'],
+			objectIds: $params['objects'],
+			mapping: $params['mapping']
+		);
+
+		return new JSONResponse(data: $migrationResult);
+	}//end runMigration()
+
+	/**
+	 * What a migration request is missing.
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The refusal, or null when the request is complete.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function migrationRefusal(array $params): string|null {
+		if (isset($params['sourceRegister'], $params['sourceSchema']) === false) {
+			return 'Source register and schema are required';
+		}
+
+		if (isset($params['targetRegister'], $params['targetSchema']) === false) {
+			return 'Target register and schema are required';
+		}
+
+		if (empty($params['objects']) === true) {
+			return 'At least one object ID is required';
+		}
+
+		if (empty($params['mapping']) === true) {
+			return 'Property mapping is required';
+		}
+
+		return null;
+	}//end migrationRefusal()
 
 	/**
 	 * Download all files of an object as a ZIP archive

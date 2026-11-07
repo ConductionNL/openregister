@@ -71,6 +71,8 @@ use Stringable;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugLog
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugSource
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugStore
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ReferenceAdminBypass
+ * @uses \OCA\OpenRegister\Service\Rbac\AdminGate
  */
 final class SaveObjectUpdateObjectTest extends TestCase {
 
@@ -124,7 +126,6 @@ final class SaveObjectUpdateObjectTest extends TestCase {
 			schema: (($case['ids'] ?? false) === true) ? '7' : $schema,
 			data: $case['data'],
 			existingObject: $existing,
-			folderId: null,
 			silent: ($case['silent'] ?? false),
 			oldObject: $old
 		);

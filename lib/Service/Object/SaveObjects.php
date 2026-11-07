@@ -79,6 +79,8 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkInverseRelations;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
@@ -589,31 +591,49 @@ class SaveObjects {
 	private function saveBulkChunk(BulkSaveRun $run, array $chunk): void {
 		$chunkStart = microtime(true);
 		$chunkResult = $this->processObjectsChunk(run: $run, objects: $chunk);
-
-		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
-			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
-		}
-
-		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $counter) {
-			$run->result['statistics'][$counter] += $chunkResult['statistics'][$counter] ?? 0;
-		}
-
+		$this->mergeChunkResult(run: $run, chunkResult: $chunkResult);
 		$chunkTime = microtime(true) - $chunkStart;
 		$run->result['chunkStatistics'][] = [
 			'chunkIndex' => $run->chunkIndex,
 			'count' => count($chunk),
-			'saved' => $chunkResult['statistics']['saved'] ?? 0,
-			'updated' => $chunkResult['statistics']['updated'] ?? 0,
-			'unchanged' => $chunkResult['statistics']['unchanged'] ?? 0,
-			'invalid' => $chunkResult['statistics']['invalid'] ?? 0,
-			// Milliseconds.
+			...self::chunkCounts(statistics: ($chunkResult['statistics'] ?? [])),
+			// Milliseconds; objects per second; the per-phase breakdown in milliseconds.
 			'processingTime' => round($chunkTime * 1000, 2),
-			// Objects per second.
 			'speed' => round(count($chunk) / max($chunkTime, 0.001), 2),
-			// Per-phase breakdown of the chunk pipeline, in milliseconds.
 			'phaseMs' => ($chunkResult['statistics']['phaseMs'] ?? []),
 		];
 	}//end saveBulkChunk()
+
+	/**
+	 * Append a chunk's rows to the run result and add its counters to the run statistics.
+	 *
+	 * @param BulkSaveRun $run         The run, whose result is changed.
+	 * @param array       $chunkResult The chunk outcome from processObjectsChunk().
+	 *
+	 * @return void
+	 */
+	private function mergeChunkResult(BulkSaveRun $run, array $chunkResult): void {
+		foreach (['saved', 'updated', 'invalid', 'errors', 'unchanged'] as $category) {
+			$run->result[$category] = array_merge($run->result[$category], $chunkResult[$category]);
+			$run->result['statistics'][$category] += $chunkResult['statistics'][$category] ?? 0;
+		}
+	}//end mergeChunkResult()
+
+	/**
+	 * The saved, updated, unchanged and invalid counts of one chunk, zero where absent.
+	 *
+	 * @param array $statistics The chunk statistics.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function chunkCounts(array $statistics): array {
+		$counts = [];
+		foreach (['saved', 'updated', 'unchanged', 'invalid'] as $counter) {
+			$counts[$counter] = ($statistics[$counter] ?? 0);
+		}
+
+		return $counts;
+	}//end chunkCounts()
 
 	/**
 	 * Add the run's timing, speed and deduplication metrics to its result.
@@ -1804,18 +1824,8 @@ class SaveObjects {
 		$schemaCache = [];
 		$schemaAnalysis = [];
 
-		$schemaIds = [];
-		foreach ($objects as $object) {
-			$selfData = $object['@self'] ?? [];
-			$schemaId = $selfData['schema'] ?? null;
-			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
-				$schemaIds[] = $schemaId;
-			}
-		}
-
-		// PERFORMANCE OPTIMIZATION: Load and analyze all schemas with caching.
 		// NO ERROR SUPPRESSION: Let schema loading errors bubble up immediately!
-		foreach ($schemaIds as $schemaId) {
+		foreach ($this->distinctSchemaIds(objects: $objects) as $schemaId) {
 			$schema = $this->loadSchemaWithCache(schemaId: $schemaId);
 			$schemaCache[$schemaId] = $schema;
 			$schemaAnalysis[$schemaId] = $this->getSchemaAnalysisWithCache(schema: $schema);
@@ -1825,10 +1835,32 @@ class SaveObjects {
 	}//end groupAndLoadSchemas()
 
 	/**
+	 * The schema ids the objects name in @self, once each (loosely compared), in first-seen order.
+	 *
+	 * @param array $objects The objects.
+	 *
+	 * @return array The schema ids; every value but null counts.
+	 */
+	private function distinctSchemaIds(array $objects): array {
+		$schemaIds = [];
+		foreach ($objects as $object) {
+			$schemaId = ($object['@self']['schema'] ?? null);
+			if ($schemaId !== null && in_array($schemaId, $schemaIds) === false) {
+				$schemaIds[] = $schemaId;
+			}
+		}
+
+		return $schemaIds;
+	}//end distinctSchemaIds()
+
+	/**
 	 * Prepare a single object in a mixed-schema bulk save operation
 	 *
 	 * Handles ID generation, metadata hydration, relation scanning, and
 	 * pre-validation cascading for an individual object within a mixed-schema batch.
+	 * A row whose @self schema is false passes through unchanged, to be caught in the
+	 * transformation; any other error bubbles up. Hydrated metadata goes to @self and
+	 * the top level (for bulk SQL).
 	 *
 	 * @param array $object The raw object data with @self metadata
 	 * @param array $schemaCache The schema cache indexed by schema ID
@@ -1840,47 +1872,56 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function prepareMixedSchemaObject(array $object, array $schemaCache): array {
-		// NO ERROR SUPPRESSION: Let object processing errors bubble up immediately!
-		$selfData = $object['@self'] ?? [];
-		$schemaId = $selfData['schema'] ?? null;
-
-		// Allow objects without schema ID to pass through - they'll be caught in transformation.
+		$schemaId = ($object['@self']['schema'] ?? null);
 		if ($schemaId === false) {
 			return $object;
 		}
 
-		// Schema validation - direct error if not found in cache.
+		$schema = $this->cachedPreparationSchema(schemaId: $schemaId, schemaCache: $schemaCache);
+		$object = $this->withGeneratedSelfId(object: $object);
+		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
+		$selfData = $this->applyHydratedMetadata(selfData: ($object['@self'] ?? []), object: $object, tempEntity: $tempEntity);
+		$selfData['relations'] = (new BulkRelationScanner())->scan(data: $tempEntity->getObject(), run: new BulkRelationRun(schema: $schema));
+		$object['@self'] = $selfData;
+
+		return $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id'])[0];
+	}//end prepareMixedSchemaObject()
+
+	/**
+	 * The schema a mixed-schema row names, from the preparation's schema cache.
+	 *
+	 * @param mixed $schemaId    The row's @self schema.
+	 * @param array $schemaCache The loaded schemas by id.
+	 *
+	 * @return Schema
+	 *
+	 * @throws Exception When the schema is not in the cache.
+	 */
+	private function cachedPreparationSchema(mixed $schemaId, array $schemaCache): Schema {
 		if (isset($schemaCache[$schemaId]) === false) {
 			throw new Exception("Schema {$schemaId} not found in cache during preparation");
 		}
 
-		$schema = $schemaCache[$schemaId];
+		return $schemaCache[$schemaId];
+	}//end cachedPreparationSchema()
 
-		// Accept any non-empty string as ID, generate UUID if not provided.
-		$providedId = $selfData['id'] ?? null;
+	/**
+	 * The object with a generated uuid as its @self id when it has none, or only whitespace, or "0".
+	 *
+	 * @param array $object The object.
+	 *
+	 * @return array The object.
+	 */
+	private function withGeneratedSelfId(array $object): array {
+		$selfData = ($object['@self'] ?? []);
+		$providedId = ($selfData['id'] ?? null);
 		if ($providedId === null || empty(trim($providedId)) === true) {
 			$selfData['id'] = Uuid::v4()->toRfc4122();
 			$object['@self'] = $selfData;
 		}
 
-		$tempEntity = $this->hydratedBulkEntity(object: $object, schema: $schema);
-
-		// Extract hydrated metadata back to object's @self data AND top level (for bulk SQL).
-		$selfData = $object['@self'] ?? [];
-		$selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
-
-		// RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs).
-		$relationData = $tempEntity->getObject();
-		$relations = (new BulkRelationScanner())->scan(data: $relationData, run: new BulkRelationRun(schema: $schema));
-		$selfData['relations'] = $relations;
-
-		$object['@self'] = $selfData;
-
-		// Handle pre-validation cascading for inversedBy properties.
-		[$processedObject] = $this->handlePreValidationCascading(object: $object, schema: $schema, uuid: $selfData['id']);
-
-		return $processedObject;
-	}//end prepareMixedSchemaObject()
+		return $object;
+	}//end withGeneratedSelfId()
 
 	/**
 	 * PERFORMANCE OPTIMIZED: Prepare objects for single-schema bulk operations
@@ -1982,38 +2023,61 @@ class SaveObjects {
 		Register|string|int $register,
 		Schema|string|int $schema,
 	): array {
-		$registerId = $register;
-		if ($register instanceof Register === true) {
-			$registerId = $register->getId();
-		}
-
-		if ($register instanceof Register) {
-			self::$registerCache[$registerId] = $register;
-		}
-
-		if ($register instanceof Register === false) {
-			$register = $this->loadRegisterWithCache(registerId: $registerId);
-		}
-
-		$schemaId = $schema;
-		if ($schema instanceof Schema === true) {
-			$schemaId = $schema->getId();
-		}
-
-		if ($schema instanceof Schema) {
-			$schemaObj = $schema;
-			self::$schemaCache[$schemaId] = $schemaObj;
-		}
-
-		if ($schema instanceof Schema === false) {
-			$schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
-		}
-
-		$schemaCache = [$schemaId => $schemaObj];
+		$registerId = self::contextId(entity: $register);
+		$schemaId = self::contextId(entity: $schema);
+		$register = $this->contextRegister(register: $register);
+		$schemaObj = $this->contextSchema(schema: $schema);
 		$schemaAnalysis = [$schemaId => $this->getSchemaAnalysisWithCache(schema: $schemaObj)];
 
-		return [$registerId, $register, $schemaId, $schemaObj, $schemaCache, $schemaAnalysis];
+		return [$registerId, $register, $schemaId, $schemaObj, [$schemaId => $schemaObj], $schemaAnalysis];
 	}//end loadAndValidateSchemaContext()
+
+	/**
+	 * The id a caller's register or schema argument stands for: the entity's id, or the argument itself.
+	 *
+	 * @param Register|Schema|string|int $entity The argument.
+	 *
+	 * @return string|int
+	 */
+	private static function contextId(Register|Schema|string|int $entity): string|int {
+		if ($entity instanceof Register || $entity instanceof Schema) {
+			return $entity->getId();
+		}
+
+		return $entity;
+	}//end contextId()
+
+	/**
+	 * The caller's register: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Register|string|int $register The argument.
+	 *
+	 * @return Register
+	 */
+	private function contextRegister(Register|string|int $register): Register {
+		if ($register instanceof Register) {
+			self::$registerCache[$register->getId()] = $register;
+			return $register;
+		}
+
+		return $this->loadRegisterWithCache(registerId: $register);
+	}//end contextRegister()
+
+	/**
+	 * The caller's schema: a given entity is cached under its id, an id is loaded through the cache.
+	 *
+	 * @param Schema|string|int $schema The argument.
+	 *
+	 * @return Schema
+	 */
+	private function contextSchema(Schema|string|int $schema): Schema {
+		if ($schema instanceof Schema) {
+			self::$schemaCache[$schema->getId()] = $schema;
+			return $schema;
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $schema);
+	}//end contextSchema()
 
 	/**
 	 * Prepare a single object for single-schema bulk save
@@ -2342,26 +2406,79 @@ class SaveObjects {
 			return [];
 		}
 
+		$context = $this->withCallEntities(context: $context);
+		$targets = [];
+		foreach ($this->eventCandidates(rows: $transformedObjects, context: $context) as $key => $candidate) {
+			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $candidate->schema, register: $candidate->register) === true) {
+				$targets[$key] = true;
+			}
+		}
+
+		return $targets;
+	}//end bulkEventTargets()
+
+	/**
+	 * The bulkEventTargets context with the register and schema the caller named loaded.
+	 *
+	 * @param array $context The bulkEventTargets context.
+	 *
+	 * @return array The context, `register` and `schema` now an entity or null.
+	 */
+	private function withCallEntities(array $context): array {
 		$context['register'] = $this->callEntity(target: $context['register'], kind: Register::class);
 		$context['schema']   = $this->callEntity(target: $context['schema'], kind: Schema::class);
-		$targets = [];
-		$asked   = [];
-		foreach ($transformedObjects as $objData) {
-			$schema   = ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
-			$register = ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null)));
-			$key      = ((string)($register?->getId() ?? ($objData['register'] ?? ''))) . '/' . ((string)$schema?->getId());
-			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
+		return $context;
+	}//end withCallEntities()
+
+	/**
+	 * The first candidate of every "registerId/schemaId" key in the chunk that has a schema, in row order.
+	 *
+	 * @param array $rows    The chunk, after the guards.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return \Generator<string, BulkEventCandidate>
+	 */
+	private function eventCandidates(array $rows, array $context): \Generator {
+		$asked = [];
+		foreach ($rows as $objData) {
+			$candidate = $this->eventCandidate(objData: $objData, context: $context);
+			$key       = $candidate->key();
+			if (isset($asked[$key]) === true || $candidate->schema instanceof Schema === false) {
 				continue;
 			}
 
 			$asked[$key] = true;
-			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
-				$targets[$key] = true;
-			}
-		}//end foreach
+			yield $key => $candidate;
+		}
+	}//end eventCandidates()
 
-		return $targets;
-	}//end bulkEventTargets()
+	/**
+	 * The schema and register one chunk row is written to: the caller's first, the row's own where the caller named none.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return BulkEventCandidate
+	 */
+	private function eventCandidate(array $objData, array $context): BulkEventCandidate {
+		return new BulkEventCandidate(
+			schema: $this->eventSchema(objData: $objData, context: $context),
+			register: ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null))),
+			rowRegisterId: ($objData['register'] ?? null)
+		);
+	}//end eventCandidate()
+
+	/**
+	 * The schema one chunk row is written to: the caller's, else the row's own from the schema cache.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's schema loaded.
+	 *
+	 * @return mixed The schema; null when neither names one.
+	 */
+	private function eventSchema(array $objData, array $context): mixed {
+		return ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
+	}//end eventSchema()
 
 	/**
 	 * The register or schema the caller named, loaded; null when it named none or it does not load.
@@ -2376,20 +2493,32 @@ class SaveObjects {
 			return $target;
 		}
 
-		if ($target === null || $target === 0 || $target === '0' || $target === '' || is_object($target) === true) {
+		if (in_array($target, [null, 0, '0', ''], true) === true || is_object($target) === true) {
 			return null;
 		}
 
 		try {
-			if ($kind === Register::class) {
-				return $this->loadRegisterWithCache(registerId: $target);
-			}
-
-			return $this->loadSchemaWithCache(schemaId: $target);
+			return $this->loadCallEntity(target: $target, kind: $kind);
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end callEntity()
+
+	/**
+	 * Load the register or schema a caller named by id.
+	 *
+	 * @param string|int   $target The id.
+	 * @param class-string $kind   Register::class or Schema::class.
+	 *
+	 * @return Register|Schema
+	 */
+	private function loadCallEntity(string|int $target, string $kind): Register|Schema {
+		if ($kind === Register::class) {
+			return $this->loadRegisterWithCache(registerId: $target);
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $target);
+	}//end loadCallEntity()
 
 	/**
 	 * The register a chunk row names, from the register cache the preparation step filled.
@@ -3180,135 +3309,15 @@ class SaveObjects {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation resolution requires many type checks
-	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void {
-		// Create direct UUID to object reference mapping.
-		$objectsByUuid = [];
-		foreach ($preparedObjects as $index => &$object) {
-			$selfData = $object['@self'] ?? [];
-			$objectUuid = $selfData['id'] ?? null;
-			if ($objectUuid !== null) {
-				$objectsByUuid[$objectUuid] = &$object;
-			}
-		}
-
-		// Process inverse relations using cached analysis.
-		foreach ($preparedObjects as $index => &$object) {
-			$selfData = $object['@self'] ?? [];
-			$schemaId = $selfData['schema'] ?? null;
-			$objectUuid = $selfData['id'] ?? null;
-
-			if ($schemaId === false || $objectUuid === null || isset($schemaAnalysis[$schemaId]) === false) {
-				continue;
-			}
-
-			$analysis = $schemaAnalysis[$schemaId];
-
-			// PERFORMANCE OPTIMIZATION: Use pre-analyzed inverse properties.
-			foreach ($analysis['inverseProperties'] as $property => $propertyInfo) {
-				if (isset($object[$property]) === false) {
-					continue;
-				}
-
-				$this->processInverseRelation(
-					value: $object[$property],
-					propertyInfo: $propertyInfo,
-					objectUuid: $objectUuid,
-					objectsByUuid: $objectsByUuid
-				);
-			}
-		}//end foreach
-
+		$relations = new BulkInverseRelations(
+			schemaAnalysis: $schemaAnalysis,
+			isUuid: static fn (string $candidate): bool => Uuid::isValid($candidate)
+		);
+		$relations->apply(objects: $preparedObjects);
 	}//end handleBulkInverseRelationsWithAnalysis()
-
-	/**
-	 * Process a single inverse relation property and apply write-backs to target objects
-	 *
-	 * Handles both single object relations (string UUID) and array of object relations
-	 * (array of UUIDs), adding the source object UUID to each target's inversedBy property.
-	 *
-	 * @param mixed $value The property value (UUID string or array of UUIDs)
-	 * @param array $propertyInfo The inverse property configuration with inversedBy, isArray keys
-	 * @param string $objectUuid The UUID of the source object owning this relation
-	 * @param array $objectsByUuid Reference mapping of UUID to object for in-place updates
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function processInverseRelation(
-		mixed $value,
-		array $propertyInfo,
-		string $objectUuid,
-		array &$objectsByUuid,
-	): void {
-		$inversedBy = $propertyInfo['inversedBy'];
-
-		// Handle single object relations.
-		if ($propertyInfo['isArray'] === false && is_string($value) === true && Uuid::isValid($value) === true) {
-			$this->applyInverseRelationToTarget(
-				targetUuid: $value,
-				inversedBy: $inversedBy,
-				objectUuid: $objectUuid,
-				objectsByUuid: $objectsByUuid
-			);
-			return;
-		}
-
-		// Handle array of object relations.
-		if ($propertyInfo['isArray'] === true && is_array($value) === true) {
-			foreach ($value as $relatedUuid) {
-				if (is_string($relatedUuid) === true && Uuid::isValid($relatedUuid) === true) {
-					$this->applyInverseRelationToTarget(
-						targetUuid: $relatedUuid,
-						inversedBy: $inversedBy,
-						objectUuid: $objectUuid,
-						objectsByUuid: $objectsByUuid
-					);
-				}
-			}
-		}
-	}//end processInverseRelation()
-
-	/**
-	 * Apply an inverse relation to a target object by adding the source UUID
-	 *
-	 * Adds the source object's UUID to the target object's inversedBy property,
-	 * avoiding duplicates. Modifies the target object in-place via reference.
-	 *
-	 * @param string $targetUuid The UUID of the target object to update
-	 * @param string $inversedBy The property name on the target to populate
-	 * @param string $objectUuid The UUID of the source object to add
-	 * @param array $objectsByUuid Reference mapping of UUID to object for in-place updates
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function applyInverseRelationToTarget(
-		string $targetUuid,
-		string $inversedBy,
-		string $objectUuid,
-		array &$objectsByUuid,
-	): void {
-		if (isset($objectsByUuid[$targetUuid]) === false) {
-			return;
-		}
-
-		$targetObject = &$objectsByUuid[$targetUuid];
-		$existingValues = $targetObject[$inversedBy] ?? [];
-		if (is_array($existingValues) === false) {
-			$existingValues = [];
-		}
-
-		if (in_array($objectUuid, $existingValues) === false) {
-			$existingValues[] = $objectUuid;
-			$targetObject[$inversedBy] = $existingValues;
-		}
-	}//end applyInverseRelationToTarget()
 
 	/**
 	 * Handle pre-validation cascading for inversedBy properties
@@ -3451,18 +3460,8 @@ class SaveObjects {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function generateObjectIdentifiers(array $selfData, array $object): array {
-		// Auto-wire @self metadata with proper UUID validation and generation.
-		// Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
-		// Default: generate new UUID.
-		$providedId = $object['id'] ?? $selfData['id'] ?? null;
-		$selfData['uuid'] = Uuid::v4()->toRfc4122();
-		$selfData['id'] = $selfData['uuid'];
-
-		// Override: accept any non-empty string as identifier.
-		if ($providedId !== null && empty(trim($providedId)) === false) {
-			$selfData['uuid'] = $providedId;
-			$selfData['id'] = $providedId;
-		}
+		// The same id rule as the single-schema preparation: CSV 'id' column first, then @self.id.
+		$selfData = $this->withBulkObjectId(selfData: $selfData, object: $object);
 
 		// CRITICAL FIX: Use register and schema from method parameters if not provided in object data.
 		$selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;

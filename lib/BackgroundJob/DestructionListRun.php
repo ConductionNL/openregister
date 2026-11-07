@@ -371,7 +371,7 @@ final class DestructionListRun {
 		try {
 			$register  = $this->settings['archivalRegister'];
 			$schema    = $this->settings['destructionListSchema'];
-			$savedCert = $this->saveObject->saveObject($register, $schema, $certificate, null, null, false, false, true, true);
+			$savedCert = $this->saveObject->saveObject($register, $schema, $certificate, null, false, false, true, true);
 			$this->listData['certificateUuid'] = $savedCert->getUuid();
 		} catch (Exception $e) {
 			$this->logger->warning('[DestructionExecutionJob] Certificate save error: '.$e->getMessage());

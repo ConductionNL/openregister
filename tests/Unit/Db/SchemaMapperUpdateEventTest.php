@@ -55,6 +55,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RelationDeclarationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceNormaliser
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaDefaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ConfigurationFields
@@ -195,6 +197,20 @@ class SchemaMapperUpdateEventTest extends TestCase {
 
 		return $schema;
 	}//end reimported()
+
+	/**
+	 * A save states its own modification time, whatever the client sent.
+	 *
+	 * @return void
+	 */
+	public function testASaveMovesTheUpdatedStamp(): void {
+		$schema = $this->reimported();
+		$schema->setUpdated(new \DateTime('2001-02-03 04:05:06'));
+
+		$saved = $this->mapper()->update($schema);
+
+		$this->assertGreaterThan(new \DateTime('2001-02-04'), $saved->getUpdated());
+	}//end testASaveMovesTheUpdatedStamp()
 
 	/**
 	 * An identical re-import dispatches nothing and counts nothing.

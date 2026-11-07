@@ -1,0 +1,477 @@
+{
+    "validateRepoFormat": [
+        {
+            "input": "ConductionNL/openregister",
+            "answer": null
+        },
+        {
+            "input": "a/b",
+            "answer": null
+        },
+        {
+            "input": "a.b_c-d/e.f",
+            "answer": null
+        },
+        {
+            "input": "-a/b",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a/-b",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a/b/c",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a /b",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a/b ",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "repo_invalid_format"
+                }
+            }
+        }
+    ],
+    "validatePerPage": [
+        {
+            "input": -1,
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "per_page_out_of_range"
+                }
+            }
+        },
+        {
+            "input": 0,
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "per_page_out_of_range"
+                }
+            }
+        },
+        {
+            "input": 1,
+            "answer": null
+        },
+        {
+            "input": 50,
+            "answer": null
+        },
+        {
+            "input": 100,
+            "answer": null
+        },
+        {
+            "input": 101,
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "per_page_out_of_range"
+                }
+            }
+        }
+    ],
+    "validateTitleLength": [
+        {
+            "input": "",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "title_invalid_length"
+                }
+            }
+        },
+        {
+            "input": "ab",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "title_invalid_length"
+                }
+            }
+        },
+        {
+            "input": "abc",
+            "answer": null
+        },
+        {
+            "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "answer": null
+        },
+        {
+            "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "title_invalid_length"
+                }
+            }
+        },
+        {
+            "input": "\u00e9\u00e9\u00e9",
+            "answer": null
+        }
+    ],
+    "validateBodyLength": [
+        {
+            "input": "",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "body_invalid_length"
+                }
+            }
+        },
+        {
+            "input": "123456789",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "body_invalid_length"
+                }
+            }
+        },
+        {
+            "input": "1234567890",
+            "answer": null
+        },
+        {
+            "input": "\u00e9\u00e9\u00e9\u00e9\u00e9",
+            "answer": null
+        }
+    ],
+    "validateSpecRef": [
+        {
+            "input": null,
+            "answer": null
+        },
+        {
+            "input": "",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "ab",
+            "answer": null
+        },
+        {
+            "input": "a-b",
+            "answer": null
+        },
+        {
+            "input": "-ab",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "ab-",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "A-b",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "a_b",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "abc123",
+            "answer": null
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer": null
+        },
+        {
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        },
+        {
+            "input": "---------------------------------------------------------------------------------",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "specref_invalid_format"
+                }
+            }
+        }
+    ],
+    "validateSort": [
+        {
+            "input": "reactions-+1",
+            "answer": null
+        },
+        {
+            "input": "created",
+            "answer": null
+        },
+        {
+            "input": "updated",
+            "answer": null
+        },
+        {
+            "input": "comments",
+            "answer": null
+        },
+        {
+            "input": "Created",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "sort_invalid_value"
+                }
+            }
+        },
+        {
+            "input": "",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "sort_invalid_value"
+                }
+            }
+        },
+        {
+            "input": "stars",
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "sort_invalid_value"
+                }
+            }
+        }
+    ],
+    "validateLabels": [
+        {
+            "input": null,
+            "answer": null
+        },
+        {
+            "input": [],
+            "answer": null
+        },
+        {
+            "input": [
+                "bug"
+            ],
+            "answer": null
+        },
+        {
+            "input": [
+                "bug",
+                "feature-request",
+                "a_b",
+                "x1"
+            ],
+            "answer": null
+        },
+        {
+            "input": [
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok"
+            ],
+            "answer": null
+        },
+        {
+            "input": [
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok",
+                "ok"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_too_many"
+                }
+            }
+        },
+        {
+            "input": [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            "answer": null
+        },
+        {
+            "input": [
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        },
+        {
+            "input": [
+                "Bug"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        },
+        {
+            "input": [
+                "1bug"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        },
+        {
+            "input": [
+                "ok",
+                "not ok"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        },
+        {
+            "input": [
+                ""
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        },
+        {
+            "input": [
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK",
+                "NOT OK"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_too_many"
+                }
+            }
+        },
+        {
+            "input": [
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            ],
+            "answer": {
+                "status": 400,
+                "data": {
+                    "error": "labels_invalid_format"
+                }
+            }
+        }
+    ]
+}
