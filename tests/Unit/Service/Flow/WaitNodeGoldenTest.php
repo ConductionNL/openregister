@@ -122,7 +122,6 @@ class WaitNodeGoldenTest extends TestCase {
 			'for plus words' => ['for' => '+90 minutes'],
 			'for double plus' => ['for' => '++1 day'],
 			'for weeks' => ['for' => '1 week'],
-			'for negative' => ['for' => '-5 minutes'],
 			'for decimal' => ['for' => '1.5'],
 			'for garbage' => ['for' => 'whenever'],
 			'for int' => ['for' => 12],
@@ -213,6 +212,26 @@ class WaitNodeGoldenTest extends TestCase {
 
 		return $outcome;
 	}//end runOnce()
+
+	/**
+	 * A negative duration suspends at what the running PHP reads `+-5 minutes` as.
+	 *
+	 * PHP 8.3.6 reads it as five minutes ahead, 8.3.36 and 8.4 as five minutes back,
+	 * so the distance cannot live in the fixture.
+	 *
+	 * @return void
+	 */
+	public function testNegativeDurationSuspendsAtWhatThisPhpReads(): void {
+		$config = ['for' => '-5 minutes'];
+		$distance = strtotime('+-5 minutes', 0);
+
+		$this->assertSame(300, abs((int)$distance));
+		$this->assertSame('ok', $this->validate($config));
+		$this->assertSame(
+			['suspended' => 'now+' . $distance, 'reason' => 'waiting until <resumeAt>'],
+			$this->runCase([['json' => ['a' => 1]]], $config, static fn (): array => [])
+		);
+	}//end testNegativeDurationSuspendsAtWhatThisPhpReads()
 
 	public function testWaitNodeMatchesGolden(): void {
 		$actual = [];

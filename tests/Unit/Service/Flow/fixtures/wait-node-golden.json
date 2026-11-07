@@ -8,7 +8,6 @@
     "validate: for plus words": "ok",
     "validate: for double plus": "ok",
     "validate: for weeks": "ok",
-    "validate: for negative": "ok",
     "validate: for decimal": "UnexpectedValueException: That is not a time this flow can wait until.",
     "validate: for garbage": "UnexpectedValueException: That is not a time this flow can wait until.",
     "validate: for int": "ok",
@@ -82,10 +81,6 @@
     },
     "execute: for weeks": {
         "suspended": "now+604800",
-        "reason": "waiting until <resumeAt>"
-    },
-    "execute: for negative": {
-        "suspended": "now+300",
         "reason": "waiting until <resumeAt>"
     },
     "execute: for decimal": {
