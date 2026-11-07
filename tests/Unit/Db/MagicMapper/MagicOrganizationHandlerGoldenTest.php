@@ -359,6 +359,40 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 	}//end testTheConditionIsPinned()
 
 	/**
+	 * The named parameters a scope binds are pinned: the IN list is always
+	 * created, and a single organisation then adds its own `=` parameter.
+	 *
+	 * @return void
+	 */
+	public function testTheNamedParametersArePinned(): void {
+		$cases = [
+			[['mode' => 'in', 'uuids' => ['a']], [[['a'], IQueryBuilder::PARAM_STR_ARRAY], ['a', IQueryBuilder::PARAM_STR]]],
+			[['mode' => 'in-or-null', 'uuids' => ['a', 'b']], [[['a', 'b'], IQueryBuilder::PARAM_STR_ARRAY]]],
+			[['mode' => 'none', 'uuids' => ['a']], []],
+			[['mode' => 'null-only', 'uuids' => []], []],
+			[['mode' => 'all', 'uuids' => ['a']], []],
+		];
+		foreach ($cases as $index => [$scope, $expected]) {
+			$params = [];
+			$qb = $this->getMockBuilder(IQueryBuilder::class)->getMock();
+			$expr = $this->createMock(IExpressionBuilder::class);
+			$expr->method('in')->willReturn('in');
+			$expr->method('eq')->willReturn('eq');
+			$expr->method('isNull')->willReturn('null');
+			$expr->method('orX')->willReturnCallback(fn (...$parts): ICompositeExpression => $this->composite(parts: $parts));
+			$qb->method('expr')->willReturn($expr);
+			$qb->method('createNamedParameter')->willReturnCallback(
+				static function ($value, $type = IQueryBuilder::PARAM_STR) use (&$params): string {
+					$params[] = [$value, $type];
+					return ':p'.count($params);
+				}
+			);
+			(new OrganisationScopeCondition())->apply($qb, $scope);
+			$this->assertSame($expected, $params, 'case '.$index);
+		}
+	}//end testTheNamedParametersArePinned()
+
+	/**
 	 * applyOrganizationFilter() renders the decided scope, widened by org-less rows on request.
 	 *
 	 * @return void
