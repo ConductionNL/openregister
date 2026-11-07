@@ -66,7 +66,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
-class CasePlanService {
+class CasePlanService implements CasePlanServiceInterface {
 
 	/**
 	 * What an in-process caller's actor id starts with (`system:<app>`): a label for the audit, not a Nextcloud account.

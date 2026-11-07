@@ -56,8 +56,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode;
-use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
-use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNodeInterface;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\UserTaskNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNodeInterface;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -100,8 +100,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param UserTaskNodeInterface $userTask The built-in "Ask a person" node.
 	 * @param PortalTaskNodeInterface $portalTask The built-in "Ask a party outside the organisation" node.
 	 * @param DecisionTableNodeInterface $decisionTable The built-in "Evaluate a decision table" node.
-	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
-	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
+	 * @param CaseOpenNodeInterface $caseOpen The built-in "Open a case" node.
+	 * @param CaseAdvanceNodeInterface $caseAdvance The built-in "Advance a case" node.
 	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
 	 * @param TransitionNodeInterface $transition The built-in "Lifecycle transition" node.
 	 * @param LinkObjectNodeInterface $linkObject The built-in "Create or link an object" node.
@@ -134,8 +134,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly UserTaskNodeInterface $userTask,
 		private readonly PortalTaskNodeInterface $portalTask,
 		private readonly DecisionTableNodeInterface $decisionTable,
-		private readonly CaseOpenNode $caseOpen,
-		private readonly CaseAdvanceNode $caseAdvance,
+		private readonly CaseOpenNodeInterface $caseOpen,
+		private readonly CaseAdvanceNodeInterface $caseAdvance,
 		private readonly ActionInputsNode $actionInputs,
 		private readonly TransitionNodeInterface $transition,
 		private readonly LinkObjectNodeInterface $linkObject,

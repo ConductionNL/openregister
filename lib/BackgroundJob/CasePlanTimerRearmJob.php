@@ -26,7 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Case\CasePlanTimerRearm;
+use OCA\OpenRegister\Service\Case\CasePlanTimerRearmInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -53,12 +53,12 @@ class CasePlanTimerRearmJob extends TimedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Job scheduling clock.
-	 * @param CasePlanTimerRearm $rearm The pass.
+	 * @param CasePlanTimerRearmInterface $rearm The pass.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly CasePlanTimerRearm $rearm,
+		private readonly CasePlanTimerRearmInterface $rearm,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
