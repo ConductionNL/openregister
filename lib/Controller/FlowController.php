@@ -53,10 +53,10 @@ use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
-use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
-use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -130,9 +130,9 @@ class FlowController extends Controller {
 	/**
 	 * The registered flow-step types.
 	 *
-	 * @var FlowNodeRegistry
+	 * @var FlowNodeRegistryInterface
 	 */
-	private readonly FlowNodeRegistry $nodes;
+	private readonly FlowNodeRegistryInterface $nodes;
 
 	/**
 	 * Reads state a flow keeps between runs.
@@ -151,9 +151,9 @@ class FlowController extends Controller {
 	/**
 	 * Reads, writes and runs flow definitions.
 	 *
-	 * @var FlowService
+	 * @var FlowServiceInterface
 	 */
-	private readonly FlowService $flows;
+	private readonly FlowServiceInterface $flows;
 
 	/**
 	 * Who may do what with a flow.

@@ -72,12 +72,22 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecordInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemoverInterface;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
+use OCA\OpenRegister\Service\Flow\FlowLocatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflightInterface;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistryInterface;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidator;
+use OCA\OpenRegister\Service\Flow\FlowTriggerValidatorInterface;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
@@ -232,6 +242,7 @@ final class ContractBindings {
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
+		ApplicationServiceInterface::class => ApplicationService::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,
 		AwaitSignalNodeInterface::class => AwaitSignalNode::class,
@@ -247,6 +258,7 @@ final class ContractBindings {
 		WaitNodeInterface::class => WaitNode::class,
 		AutoTransitionSelectorInterface::class => AutoTransitionSelector::class,
 		BookmarkLinkServiceInterface::class => BookmarkLinkService::class,
+		BulkActionRegistryInterface::class => BulkActionRegistry::class,
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
 		BulkTranslationServiceInterface::class => BulkTranslationService::class,
@@ -275,10 +287,15 @@ final class ContractBindings {
 		FederatedConfigServiceInterface::class => FederatedConfigService::class,
 		FilterNodeInterface::class => FilterNode::class,
 		FlowLinkServiceInterface::class => FlowLinkService::class,
+		FlowLocatorInterface::class => FlowLocator::class,
 		FlowNodePreflightInterface::class => FlowNodePreflight::class,
+		FlowNodeRegistryInterface::class => FlowNodeRegistry::class,
+		FlowRunMigrationServiceInterface::class => FlowRunMigrationService::class,
 		FlowScheduleServiceInterface::class => FlowScheduleService::class,
+		FlowServiceInterface::class => FlowService::class,
 		FlowTimerControlInterface::class => FlowTimerService::class,
 		FlowTimerSweepInterface::class => FlowTimerSweep::class,
+		FlowTriggerValidatorInterface::class => FlowTriggerValidator::class,
 		FlowVersionServiceInterface::class => FlowVersionService::class,
 		FormDefinitionResolverInterface::class => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class => FormDestinationValidator::class,

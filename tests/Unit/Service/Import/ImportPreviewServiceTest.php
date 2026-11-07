@@ -42,7 +42,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Import\ConflictPolicy;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
+use OCA\OpenRegister\Service\Import\ImportPreviewMatching;
 use OCA\OpenRegister\Service\Import\ImportPreviewService;
+use OCA\OpenRegister\Service\Import\ImportPreviewStore;
+use OCA\OpenRegister\Service\Import\ImportPreviewTargets;
 use OCA\OpenRegister\Service\Import\MatchResolver;
 use OCA\OpenRegister\Service\Import\SourceRowReader;
 use OCA\OpenRegister\Service\ImportService;
@@ -202,18 +205,14 @@ final class ImportPreviewServiceTest extends TestCase {
 		$this->matchResolver = $this->createMock(MatchResolver::class);
 
 		$this->service = new ImportPreviewService(
-			$previewMapper,
-			$rowMapper,
-			new SourceRowReader(),
-			$this->matchResolver,
-			$this->createMock(MappingEngine::class),
-			$this->createMock(MigrationPackService::class),
-			$importService,
-			$this->objectService,
-			$validateObject,
-			$registerMapper,
-			$schemaMapper,
-			new NullLogger()
+			new ImportPreviewStore($previewMapper, $rowMapper, new SourceRowReader(), new NullLogger()),
+			new ImportPreviewMatching(
+				$this->matchResolver,
+				$this->createMock(MappingEngine::class),
+				$this->createMock(MigrationPackService::class),
+				$importService
+			),
+			new ImportPreviewTargets($registerMapper, $schemaMapper, $validateObject, $this->objectService)
 		);
 	}
 

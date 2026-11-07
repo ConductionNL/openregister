@@ -27,7 +27,7 @@ use OCA\OpenRegister\Controller\Support\DatabaseServerProfile;
 use OCA\OpenRegister\Controller\Support\HybridSearchDiagnostics;
 use OCA\OpenRegister\Controller\Support\SettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
-use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenanceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -375,7 +375,7 @@ class SettingsController extends Controller {
 	 * @return array<string, mixed> The report.
 	 */
 	private function searchIndexReport(): array {
-		$maintenance = $this->container->get(SearchIndexMaintenance::class);
+		$maintenance = $this->container->get(SearchIndexMaintenanceInterface::class);
 		$tables = $maintenance->indexNamesFor(tableNames: $maintenance->tablesInScope());
 
 		return [
