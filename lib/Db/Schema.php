@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
+use OCA\OpenRegister\Db\Schema\SchemaFieldTypes;
+use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
 use OCP\IURLGenerator;
 use stdClass;
 
@@ -501,50 +503,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Constructor for the Schema class
 	 *
-	 * Sets up field types for all properties
+	 * Sets up field types for all properties, from SchemaFieldTypes::TYPES.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'uri', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'title', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'summary', type: 'string');
-		$this->addType(fieldName: 'icon', type: 'string');
-		$this->addType(fieldName: 'required', type: 'json');
-		$this->addType(fieldName: 'properties', type: 'json');
-		$this->addType(fieldName: 'archive', type: 'json');
-		$this->addType(fieldName: 'facets', type: 'json');
-		$this->addType(fieldName: 'allOf', type: 'json');
-		$this->addType(fieldName: 'oneOf', type: 'json');
-		$this->addType(fieldName: 'anyOf', type: 'json');
-		$this->addType(fieldName: 'source', type: 'string');
-		$this->addType(fieldName: 'hardValidation', type: Types::BOOLEAN);
-		$this->addType(fieldName: 'immutable', type: Types::BOOLEAN);
-		$this->addType(fieldName: 'appendOnly', type: Types::BOOLEAN);
-		$this->addType(fieldName: 'searchable', type: Types::BOOLEAN);
-		$this->addType(fieldName: 'smartPickerEnabled', type: Types::BOOLEAN);
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'maxDepth', type: Types::INTEGER);
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'application', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'sharedWith', type: 'json');
-		$this->addType(fieldName: 'deleted', type: 'datetime');
-		$this->addType(fieldName: 'configuration', type: 'json');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'hooks', type: 'json');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
-		$this->addType(fieldName: 'draft', type: 'json');
+		foreach (SchemaFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -2895,56 +2859,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<string, mixed> The input with its annotation blocks folded.
 	 */
 	private function foldTopLevelAnnotations(array $object): array {
-		// Fold top-level `x-openregister-*` annotation blocks (e.g. the
-		// OpenAPI seed's sibling-of-properties `x-openregister-lifecycle`
-		// declaration) into the `configuration` array BEFORE the per-key
-		// setter loop runs. Without this the keys fall through to a
-		// non-existent `setXOpenregisterLifecycle()` setter, the silent-
-		// catch below swallows the call, and the annotation is dropped on
-		// the floor — so OR's TransitionEngine never sees a state machine
-		// and every transition 422s ("schema does not declare
-		// x-openregister-lifecycle"; openregister#1520).
-		$existingConfig = ($object['configuration'] ?? []);
-		if (is_array($existingConfig) === false) {
-			$existingConfig = [];
-		}
-
-		$annotationsFolded = false;
-		foreach ($object as $key => $value) {
-			if (is_string($key) === true && str_starts_with($key, 'x-openregister-') === true) {
-				$existingConfig[$key] = $value;
-				$annotationsFolded = true;
-				unset($object[$key]);
-			}
-		}
-
-		// Fold a schema-LEVEL top-level `x-schema-org` marker into
-		// `configuration['x-schema-org']` the same way (ADR-048). Fleet
-		// schemas declare the canonical schema.org CURIE (e.g.
-		// `"x-schema-org": "schema:Organization"`) as a sibling of
-		// `properties`, NOT inside `configuration`; without this fold the
-		// marker falls through to a non-existent `setXSchemaOrg()` setter,
-		// is swallowed by the silent-catch below, and the live schema loses
-		// its semantic type — so SemanticTypeResolver can never discover the
-		// provider. Folding it into the configuration column (which is in the
-		// passThrough allowlist and read by
-		// JsonLdContextService::getImplementedTypes) makes the marker survive
-		// save/import. An explicit `configuration['x-schema-org']` already
-		// supplied by the caller wins over the top-level convenience form.
-		if (array_key_exists('x-schema-org', $object) === true) {
-			if (array_key_exists('x-schema-org', $existingConfig) === false) {
-				$existingConfig['x-schema-org'] = $object['x-schema-org'];
-				$annotationsFolded = true;
-			}
-
-			unset($object['x-schema-org']);
-		}
-
-		if ($annotationsFolded === true) {
-			$object['configuration'] = $existingConfig;
-		}
-
-		return $object;
+		return (new TopLevelAnnotationFold())->folded(object: $object);
 	}//end foldTopLevelAnnotations()
 
 	/**
