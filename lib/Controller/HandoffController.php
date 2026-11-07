@@ -55,6 +55,17 @@ use Psr\Log\LoggerInterface;
  *   (Requirement: Handoff REST surface)
  */
 class HandoffController extends Controller {
+
+	/**
+	 * The generic 500 message per endpoint.
+	 *
+	 * @var array<string, string>
+	 */
+	private const INTERNAL_ERROR_MESSAGES = [
+		'availability' => 'Handoff availability failed.',
+		'execute' => 'Handoff execution failed.',
+	];
+
 	/**
 	 * Constructor.
 	 *
@@ -99,21 +110,11 @@ class HandoffController extends Controller {
 		try {
 			$handoffs = $this->handoffService->listAvailability(register: $register, schema: $schema, id: $id);
 			return new JSONResponse(data: ['handoffs' => $handoffs]);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => 'forbidden', 'message' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
-		} catch (HandoffException|DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'not-found', 'message' => 'Object not found.'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (HandoffException $e) {
+			return $this->objectNotFound();
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[HandoffController] availability failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
-			);
-			return new JSONResponse(
-				data: ['error' => 'internal', 'message' => 'Handoff availability failed.'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
-
+			return $this->failure(e: $e, operation: 'availability');
+		}
 	}//end availability()
 
 	/**
@@ -143,43 +144,98 @@ class HandoffController extends Controller {
 	public function execute(string $register, string $schema, string $id, string $handoffId): JSONResponse {
 		try {
 			$result = $this->handoffService->execute(register: $register, schema: $schema, id: $id, handoffId: $handoffId);
-
-			$status = Http::STATUS_OK;
-			if (($result['status'] ?? '') === 'parked') {
-				$status = Http::STATUS_ACCEPTED;
-			}
-
-			return new JSONResponse(data: $result, statusCode: $status);
+			return new JSONResponse(data: $result, statusCode: $this->executedStatus(result: $result));
 		} catch (HandoffException $e) {
-			if ($e->getErrorCode() === HandoffException::PROVIDER_UNAVAILABLE) {
-				// Machine-readable degradation — a missing provider is a
-				// conflict with current install state, never a 5xx.
-				return new JSONResponse(
-					data: ['error' => HandoffException::PROVIDER_UNAVAILABLE, 'message' => $e->getMessage()],
-					statusCode: Http::STATUS_CONFLICT
-				);
-			}
-
-			return new JSONResponse(
-				data: ['error' => HandoffException::NOT_DECLARED, 'message' => $e->getMessage()],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => 'forbidden', 'message' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+			return $this->handoffRefusal(e: $e);
 		} catch (ValidationException $e) {
 			return new JSONResponse(data: ['error' => 'validation', 'message' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'not-found', 'message' => 'Object not found.'], statusCode: Http::STATUS_NOT_FOUND);
 		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[HandoffController] execute failed: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
-			);
-			return new JSONResponse(
-				data: ['error' => 'internal', 'message' => 'Handoff execution failed.'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
-		}//end try
-
+			return $this->failure(e: $e, operation: 'execute');
+		}
 	}//end execute()
+
+	/**
+	 * 202 for a parked (queue-mode) handoff, 200 otherwise.
+	 *
+	 * @param array<string, mixed> $result The service result.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function executedStatus(array $result): int {
+		if (($result['status'] ?? '') === 'parked') {
+			return Http::STATUS_ACCEPTED;
+		}
+
+		return Http::STATUS_OK;
+	}//end executedStatus()
+
+	/**
+	 * Map a handoff refusal: a missing provider is a machine-readable conflict
+	 * with current install state, never a 5xx; anything else is not declared.
+	 *
+	 * @param HandoffException $e The handoff refusal.
+	 *
+	 * @return JSONResponse The 409 or 404.
+	 */
+	private function handoffRefusal(HandoffException $e): JSONResponse {
+		if ($e->getErrorCode() === HandoffException::PROVIDER_UNAVAILABLE) {
+			return new JSONResponse(
+				data: ['error' => HandoffException::PROVIDER_UNAVAILABLE, 'message' => $e->getMessage()],
+				statusCode: Http::STATUS_CONFLICT
+			);
+		}
+
+		return new JSONResponse(
+			data: ['error' => HandoffException::NOT_DECLARED, 'message' => $e->getMessage()],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end handoffRefusal()
+
+	/**
+	 * Map a failure shared by both endpoints: 403, 404, or a logged 500.
+	 *
+	 * @param \Throwable $e The failure.
+	 * @param string $operation The endpoint, `availability` or `execute`.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function failure(\Throwable $e, string $operation): JSONResponse {
+		if ($e instanceof NotAuthorizedException) {
+			return new JSONResponse(data: ['error' => 'forbidden', 'message' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		if ($e instanceof DoesNotExistException) {
+			return $this->objectNotFound();
+		}
+
+		return $this->internalError(e: $e, operation: $operation);
+	}//end failure()
+
+	/**
+	 * The 404 for a source object that does not exist or cannot be seen.
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private function objectNotFound(): JSONResponse {
+		return new JSONResponse(data: ['error' => 'not-found', 'message' => 'Object not found.'], statusCode: Http::STATUS_NOT_FOUND);
+	}//end objectNotFound()
+
+	/**
+	 * Log an unexpected failure and answer a generic 500.
+	 *
+	 * @param \Throwable $e The failure.
+	 * @param string $operation The endpoint, `availability` or `execute`.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function internalError(\Throwable $e, string $operation): JSONResponse {
+		$this->logger->error(
+			message: '[HandoffController] ' . $operation . ' failed: ' . $e->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
+		);
+		return new JSONResponse(
+			data: ['error' => 'internal', 'message' => self::INTERNAL_ERROR_MESSAGES[$operation]],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end internalError()
 }//end class
