@@ -187,12 +187,29 @@ final class SaveObjectDefaultValuesTest extends TestCase {
 		$entity = $this->stored();
 		$entity->setOwner('olivia');
 
-		$method = (new \ReflectionClass(SaveObject::class))->getMethod('setDefaultValues');
-		$result = $method->invoke($this->saveObject(), $entity, $this->schema, ['e' => '', 'f' => [], 'g' => '', 'h' => 'mine']);
+		$result = PropertyDefaultsCalls::setDefaultValues($this->saveObject(), [$entity, $this->schema, ['e' => '', 'f' => [], 'g' => '', 'h' => 'mine']]);
 
 		$this->assertSame(
 			['e' => 'E', 'f' => ['F'], 'g' => '', 'h' => 'H', 'a' => 'A', 'c' => 'C', 'd' => 'olivia', 'i' => null],
 			$result
 		);
+	}
+
+	public function testPublicDefaultPathsFillInOrderAndSkipWhatResolvesToNothing(): void {
+		$this->schema->setProperties([
+			'a' => ['type' => 'string', 'default' => 'A'],
+			'b' => ['type' => 'string', 'default' => '{{ a }}'],
+			'c' => ['type' => 'string', 'default' => '{{ nowhere }}'],
+			'd' => ['type' => 'string', 'default' => 'D', 'defaultBehavior' => 'falsy'],
+			'e' => ['type' => 'string', 'default' => 'E', 'defaultBehavior' => 'always'],
+			'f' => ['type' => 'string', 'default' => '{{ e }}', 'defaultBehavior' => 'always'],
+		]);
+		$handler = $this->saveObject();
+
+		$this->assertSame(
+			['d' => 'D', 'e' => 'E', 'a' => 'A', 'b' => 'A', 'f' => 'E'],
+			$handler->applyPropertyDefaults($this->schema, ['d' => '', 'e' => 'mine'])
+		);
+		$this->assertSame(['e' => 'E', 'f' => 'E'], $handler->applyAlwaysDefaults($this->schema, ['e' => 'mine']));
 	}
 }

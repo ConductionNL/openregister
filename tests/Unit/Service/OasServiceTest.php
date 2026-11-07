@@ -167,6 +167,22 @@ class OasServiceTest extends TestCase {
 	}
 
 	/**
+	 * Repair a schema against the components of the service's current document.
+	 *
+	 * @param array $schema The schema, changed in place.
+	 *
+	 * @return void
+	 */
+	private function repairReferences(array &$schema): void {
+		$oas = (new \ReflectionProperty($this->service, 'oas'))->getValue($this->service);
+		$repair = new \OCA\OpenRegister\Service\Oas\OasReferenceRepair(
+			componentNames: array_map('strval', array_keys($oas['components']['schemas'] ?? [])),
+			report: new \OCA\OpenRegister\Service\Oas\OasValidationReport()
+		);
+		$repair->repair(schema: $schema, context: 'test');
+	}
+
+	/**
 	 * Helper to set a private property on the OasService via reflection.
 	 */
 	private function setPrivateProperty(string $propertyName, $value): void {
@@ -2597,7 +2613,7 @@ class OasServiceTest extends TestCase {
 			'allOf' => [],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('allOf', $schema);
 	}
@@ -2611,7 +2627,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('$ref', $schema);
 	}
@@ -2625,7 +2641,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => 123,
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('$ref', $schema);
 	}
@@ -2639,7 +2655,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/person',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should resolve to the correctly-cased schema name
 		$this->assertSame('#/components/schemas/Person', $schema['$ref']);
@@ -2654,7 +2670,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/NonExistent',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Broken ref should be removed and type set to string
 		$this->assertArrayNotHasKey('$ref', $schema);
@@ -2671,7 +2687,7 @@ class OasServiceTest extends TestCase {
 			'$ref' => '#/components/schemas/Person',
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertSame('#/components/schemas/Person', $schema['$ref']);
 	}
@@ -2690,7 +2706,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Nested broken ref should be fixed
 		$this->assertArrayNotHasKey('$ref', $schema['properties']['address']);
@@ -2709,7 +2725,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should case-insensitively match Widget
 		$this->assertSame('#/components/schemas/Widget', $schema['items']['$ref']);
@@ -2729,7 +2745,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// Should keep valid items and remove invalid ones
 		$this->assertArrayHasKey('allOf', $schema);
@@ -2748,7 +2764,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		$this->assertArrayNotHasKey('allOf', $schema);
 	}
@@ -2767,7 +2783,7 @@ class OasServiceTest extends TestCase {
 			],
 		];
 
-		$this->invokePrivateMethod('validateSchemaReferences', [&$schema, 'test']);
+		$this->repairReferences($schema);
 
 		// oneOf item should be case-fixed
 		$this->assertSame('#/components/schemas/Item', $schema['oneOf'][0]['$ref']);

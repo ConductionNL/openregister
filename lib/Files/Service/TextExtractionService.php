@@ -423,27 +423,47 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	public function getExtractedText(int $fileId): ?string {
 		$text = null;
 		foreach ($this->chunkMapper->findBySource(sourceType: 'file', sourceId: $fileId) as $chunk) {
-			if ($chunk->getChunkIndex() < 0 || (($chunk->getPositionReference() ?? [])['type'] ?? null) === 'metadata') {
-				continue;
+			if ($this->isContentChunk(chunk: $chunk) === true) {
+				$text = $this->joinChunk(text: $text, content: $chunk->getTextContent());
 			}
-
-			$content = $chunk->getTextContent();
-			if ($text === null) {
-				$text = $content;
-				continue;
-			}
-
-			$shared = $this->sharedOverlapLength(before: $text, after: $content);
-			if ($shared === 0) {
-				$text .= "\n" . $content;
-				continue;
-			}
-
-			$text .= substr($content, $shared);
-		}//end foreach
+		}
 
 		return $text;
 	}//end getExtractedText()
+
+	/**
+	 * Whether a stored chunk holds file content, not metadata.
+	 *
+	 * @param Chunk $chunk The chunk.
+	 *
+	 * @return bool True for a content chunk.
+	 */
+	private function isContentChunk(Chunk $chunk): bool {
+		$position = ($chunk->getPositionReference() ?? []);
+
+		return ($chunk->getChunkIndex() >= 0 && ($position['type'] ?? null) !== 'metadata');
+	}//end isContentChunk()
+
+	/**
+	 * Add a chunk's content to the text so far, without repeating the overlap they share.
+	 *
+	 * @param string|null $text    The text so far.
+	 * @param string      $content The chunk's content.
+	 *
+	 * @return string The joined text.
+	 */
+	private function joinChunk(?string $text, string $content): string {
+		if ($text === null) {
+			return $content;
+		}
+
+		$shared = $this->sharedOverlapLength(before: $text, after: $content);
+		if ($shared === 0) {
+			return $text . "\n" . $content;
+		}
+
+		return $text . substr($content, $shared);
+	}//end joinChunk()
 
 	/**
 	 * How many leading bytes of the next chunk repeat the end of the text so far.
@@ -1108,109 +1128,62 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 *
 	 * @throws Exception If file cannot be read
 	 *
-	 * Else needed for multi-format extraction branching
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function performTextExtraction(int $fileId, array $ncFile): ?string {
 		$mimeType = $ncFile['mimetype'] ?? '';
-		$filePath = $ncFile['path'] ?? '';
+		$context = ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'mimeType' => $mimeType];
+		$this->logger->debug(message: '[TextExtractionService] Attempting extraction', context: $context + ['filePath' => $ncFile['path'] ?? '']);
 
-		$this->logger->debug(
-			message: '[TextExtractionService] Attempting extraction',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'fileId' => $fileId,
-				'mimeType' => $mimeType,
-				'filePath' => $filePath,
-			]
-		);
-
-		// Get the file node from Nextcloud.
 		try {
 			// Resolve the node with an explicit filesystem context; see resolveFileNode().
 			// Deliberately not $ncFile['owner']: getFile() falls back to the whole
 			// storage id when it is not a user home, so object storage, group folders
 			// and external storages arrive here as "object::user:bob" or "local::/mnt".
-			$file = $this->resolveFileNode(
-				fileId: $fileId,
-				owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null)
-			);
-
-			// Extract text based on mime type.
-			// Text-based files that can be read directly.
-			$textMimeTypes = [
-				'text/plain',
-				'text/markdown',
-				'text/html',
-				'text/xml',
-				'application/json',
-				'application/xml',
-				'text/csv',
-				'text/x-yaml',
-				'text/yaml',
-				'application/x-yaml',
-			];
-
-			if (in_array($mimeType, $textMimeTypes) === true || strpos($mimeType, 'text/') === 0) {
-				// Read text file directly.
-				$extractedText = $file->getContent();
-
-				$this->logger->debug(
-					message: '[TextExtractionService] Text file extracted',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $fileId,
-						'length' => strlen($extractedText),
-					]
-				);
-			} elseif ($mimeType === 'application/pdf') {
-				// Extract text from PDF using Smalot PdfParser.
-				$extractedText = $this->extractPdf(file: $file);
-			} elseif ($this->isWordDocument(mimeType: $mimeType) === true) {
-				// Extract text from DOCX/ODT.
-				$extractedText = $this->extractWord(file: $file);
-			} elseif ($this->isSpreadsheet(mimeType: $mimeType) === true) {
-				// Extract text from XLSX/XLS using PhpSpreadsheet.
-				$extractedText = $this->extractSpreadsheet(file: $file);
-			} elseif ($mimeType === 'message/rfc822') {
-				// Extract text from EML using EmlParser (parse + flatten).
-				// See `text-extraction-eml` change.
-				$extractedText = $this->extractEml(file: $file);
-			}//end if
-
-			if (isset($extractedText) === false) {
-				// Unsupported file type.
-				$this->logger->debug(
-					message: '[TextExtractionService] Unsupported file type',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $fileId,
-						'mimeType' => $mimeType,
-					]
-				);
-
-				return null;
-			}
-
-			return $extractedText;
+			$file = $this->resolveFileNode(fileId: $fileId, owner: $this->homeStorageOwner(storageId: $ncFile['storage_id'] ?? null));
+			$text = $this->textOfType(file: $file, mimeType: $mimeType);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[TextExtractionService] Failed to read file',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $fileId,
-					'error' => $e->getMessage(),
-				]
-			);
-
+			$this->logger->error(message: '[TextExtractionService] Failed to read file', context: $context + ['error' => $e->getMessage()]);
 			throw $e;
-		}//end try
+		}
+
+		if ($text === null) {
+			$this->logger->debug(message: '[TextExtractionService] Unsupported file type', context: $context);
+		}
+
+		return $text;
 	}//end performTextExtraction()
+
+	/**
+	 * The text of a file, read the way its mime type asks.
+	 *
+	 * @param \OCP\Files\File $file     The file.
+	 * @param string          $mimeType Its mime type.
+	 *
+	 * @return string|null The text, or null when the type has no reader or the reader finds none.
+	 */
+	private function textOfType(\OCP\Files\File $file, string $mimeType): ?string {
+		return match (true) {
+			$this->isPlainText(mimeType: $mimeType) => $file->getContent(),
+			$mimeType === 'application/pdf' => $this->extractPdf(file: $file),
+			$this->isWordDocument(mimeType: $mimeType) => $this->extractWord(file: $file),
+			$this->isSpreadsheet(mimeType: $mimeType) => $this->extractSpreadsheet(file: $file),
+			$mimeType === 'message/rfc822' => $this->extractEml(file: $file),
+			default => null,
+		};
+	}//end textOfType()
+
+	/**
+	 * Whether a file of this mime type can be read directly as text.
+	 *
+	 * @param string $mimeType The mime type.
+	 *
+	 * @return bool True for a text-based type.
+	 */
+	private function isPlainText(string $mimeType): bool {
+		$textTypes = ['application/json', 'application/xml', 'application/x-yaml'];
+
+		return (str_starts_with($mimeType, 'text/') === true || in_array($mimeType, $textTypes, true) === true);
+	}//end isPlainText()
 
 	/**
 	 * Return the user id a storage id names, but only for a user home storage.
@@ -1235,13 +1208,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	private function homeStorageOwner(?string $storageId): ?string {
-		if ($storageId === null || str_starts_with($storageId, 'home::') === false) {
-			return null;
-		}
-
-		$owner = substr($storageId, 6);
-
-		if ($owner === '') {
+		$owner = substr((string)$storageId, 6);
+		if ($owner === '' || str_starts_with((string)$storageId, 'home::') === false) {
 			return null;
 		}
 
@@ -1280,30 +1248,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @spec openspec/specs/text-extraction/spec.md
 	 */
 	private function resolveFileNode(int $fileId, ?string $owner): \OCP\Files\File {
-		$nodes = [];
-
-		if ($owner !== null && $owner !== '') {
-			try {
-				// Sets up the user's mounts as a side effect — the whole point.
-				$nodes = $this->rootFolder->getUserFolder($owner)->getById($fileId);
-			} catch (Throwable $e) {
-				// An unknown or disabled user must not abort the extraction; fall
-				// through to the root lookup below.
-				$this->logger->warning(
-					message: '[TextExtractionService] Could not set up filesystem for owner',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'fileId' => $fileId,
-						'owner' => $owner,
-						'error' => $e->getMessage(),
-					]
-				);
-
-				$nodes = [];
-			}//end try
-		}//end if
-
+		$nodes = $this->nodesInOwnerFolder(fileId: $fileId, owner: $owner);
 		if (empty($nodes) === true) {
 			// No owner, or the owner's folder did not hold the file.
 			$nodes = $this->rootFolder->getById($fileId);
@@ -1314,13 +1259,38 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		}
 
 		$file = reset($nodes);
-
 		if ($file instanceof \OCP\Files\File === false) {
 			throw new Exception('Node is not a file');
 		}
 
 		return $file;
 	}//end resolveFileNode()
+
+	/**
+	 * The nodes with this id in the owner's folder, setting up the owner's mounts on the way.
+	 *
+	 * @param int         $fileId Nextcloud file ID.
+	 * @param string|null $owner  Owner user id, or null when there is none.
+	 *
+	 * @return array<int, \OCP\Files\Node> The nodes; none without an owner, or when the owner cannot be set up.
+	 */
+	private function nodesInOwnerFolder(int $fileId, ?string $owner): array {
+		if ($owner === null || $owner === '') {
+			return [];
+		}
+
+		try {
+			// Sets up the user's mounts as a side effect: the whole point.
+			return $this->rootFolder->getUserFolder($owner)->getById($fileId);
+		} catch (Throwable $e) {
+			// An unknown or disabled user must not abort the extraction; the root lookup follows.
+			$this->logger->warning(
+				message: '[TextExtractionService] Could not set up filesystem for owner',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId, 'owner' => $owner, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+	}//end nodesInOwnerFolder()
 
 	/**
 	 * Discover files in Nextcloud that aren't tracked in the extraction system yet
@@ -1924,58 +1894,22 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function chunkFixedSize(string $text, int $chunkSize, int $chunkOverlap): array {
 		if (strlen($text) <= $chunkSize) {
-			return [
-				[
-					'text' => $text,
-					'start_offset' => 0,
-					'end_offset' => strlen($text),
-				],
-			];
+			return $this->wholeTextChunk(text: $text);
 		}
 
 		$chunks = [];
 		$offset = 0;
 
 		while ($offset < strlen($text)) {
-			// Extract chunk.
-			$chunk = substr($text, $offset, $chunkSize);
-
-			// Try to break at word boundary if not at end.
-			if ($offset + $chunkSize < strlen($text)) {
-				$lastSpace = strrpos($chunk, ' ');
-				if ($lastSpace !== false && $lastSpace > $chunkSize * 0.8) {
-					$chunk = substr($chunk, 0, $lastSpace);
-				}
+			$chunk = $this->fixedWindow(text: substr($text, $offset, ($chunkSize + 1)), chunkSize: $chunkSize);
+			if (strlen(trim($chunk)) >= self::MIN_CHUNK_SIZE) {
+				$chunks[] = $this->trimmedChunk(chunk: $chunk, offset: $offset);
 			}
 
-			$chunkLength = strlen($chunk);
-
-			$trimmedChunk = trim($chunk);
-			if (strlen($trimmedChunk) >= self::MIN_CHUNK_SIZE) {
-				// Align the persisted absolute offset with the trimmed text we
-				// store. trim() drops leading whitespace, so the first char of
-				// `text_content` sits `leadingWhitespace` bytes after the raw
-				// window start ($offset). Persisting the raw $offset would make
-				// every regex offset computed against `text_content` (and added
-				// to start_offset by ChunkTextMatcher) wrong by that amount —
-				// and two overlapping chunks with different leading-whitespace
-				// counts would then derive DIFFERENT absolute positions for the
-				// same occurrence, defeating absolute-position dedup and
-				// inserting duplicate EntityRelation rows (design §D2).
-				$leadingWhitespace = (strlen($chunk) - strlen(ltrim($chunk)));
-				$trimmedStart = ($offset + $leadingWhitespace);
-				$chunks[] = [
-					'text' => $trimmedChunk,
-					'start_offset' => $trimmedStart,
-					'end_offset' => ($trimmedStart + strlen($trimmedChunk)),
-				];
-			}
-
-			// If chunk cannot advance past overlap (e.g. final sliver of
-			// text), stop — the remainder is already captured above or too
-			// small to emit. Prevents an infinite loop when the remaining
-			// tail is shorter than or equal to $chunkOverlap.
-			$advance = ($chunkLength - $chunkOverlap);
+			// If chunk cannot advance past overlap (e.g. final sliver of text),
+			// stop: the remainder is already captured above or too small to emit.
+			// Prevents an infinite loop on a tail no longer than $chunkOverlap.
+			$advance = (strlen($chunk) - $chunkOverlap);
 			if ($advance < 1) {
 				break;
 			}
@@ -1983,14 +1917,63 @@ class TextExtractionService implements TextExtractionServiceInterface {
 			$offset += $advance;
 		}//end while
 
-		return array_filter(
-			$chunks,
-			function ($chunk) {
-				$trimmed = trim($chunk['text']);
-				return $trimmed !== '';
-			}
-		);
+		return $chunks;
 	}//end chunkFixedSize()
+
+	/**
+	 * The one chunk of a text that fits a chunk.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return list<array{text: string, start_offset: int, end_offset: int}> The chunk.
+	 */
+	private function wholeTextChunk(string $text): array {
+		return [['text' => $text, 'start_offset' => 0, 'end_offset' => strlen($text)]];
+	}//end wholeTextChunk()
+
+	/**
+	 * The next fixed-size window, broken at a word boundary when one sits near its end.
+	 *
+	 * @param string $text      The text from the window's start, one character past the window when more follows.
+	 * @param int    $chunkSize Target chunk size.
+	 *
+	 * @return string The window.
+	 */
+	private function fixedWindow(string $text, int $chunkSize): string {
+		if (strlen($text) <= $chunkSize) {
+			return $text;
+		}
+
+		$chunk = substr($text, 0, $chunkSize);
+		$lastSpace = strrpos($chunk, ' ');
+		if ($lastSpace !== false && $lastSpace > $chunkSize * 0.8) {
+			return substr($chunk, 0, $lastSpace);
+		}
+
+		return $chunk;
+	}//end fixedWindow()
+
+	/**
+	 * A chunk with its offsets aligned to the trimmed text that is stored.
+	 *
+	 * Trimming drops leading whitespace, so the first character of `text_content`
+	 * sits that many bytes after the window start. Persisting the raw offset would
+	 * make every regex offset computed against `text_content` (and added to
+	 * start_offset by ChunkTextMatcher) wrong by that amount, and two overlapping
+	 * chunks would derive DIFFERENT absolute positions for the same occurrence,
+	 * defeating absolute-position dedup (design D2).
+	 *
+	 * @param string $chunk  The window.
+	 * @param int    $offset Its absolute start.
+	 *
+	 * @return array{text: string, start_offset: int, end_offset: int} The chunk.
+	 */
+	private function trimmedChunk(string $chunk, int $offset): array {
+		$trimmed = trim($chunk);
+		$start = ($offset + strlen($chunk) - strlen(ltrim($chunk)));
+
+		return ['text' => $trimmed, 'start_offset' => $start, 'end_offset' => ($start + strlen($trimmed))];
+	}//end trimmedChunk()
 
 	/**
 	 * Chunk text recursively by trying different separators
@@ -2013,13 +1996,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	private function chunkRecursive(string $text, int $chunkSize, int $chunkOverlap): array {
 		// If text is already small enough, return it.
 		if (strlen($text) <= $chunkSize) {
-			return [
-				[
-					'text' => $text,
-					'start_offset' => 0,
-					'end_offset' => strlen($text),
-				],
-			];
+			return $this->wholeTextChunk(text: $text);
 		}
 
 		// Define separators in order of preference.
@@ -2062,13 +2039,7 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 */
 	private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array {
 		if (strlen($text) <= $chunkSize) {
-			return [
-				[
-					'text' => $text,
-					'start_offset' => 0,
-					'end_offset' => strlen($text),
-				],
-			];
+			return $this->wholeTextChunk(text: $text);
 		}
 
 		if ($separators === []) {
@@ -2159,7 +2130,6 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 *
 	 * @return float Average chunk size in characters
 	 *
-	 * Else needed for chunk type detection
 	 */
 	private function calculateAvgChunkSize(array $chunks): float {
 		if ($chunks === []) {
@@ -2168,17 +2138,28 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		$totalSize = 0;
 		foreach ($chunks as $chunk) {
-			// Extract text from chunk.
-			$text = '';
-			if (is_array($chunk) === true && (($chunk['text'] ?? null) !== null)) {
-				$text = $chunk['text'];
-			} elseif (is_string($chunk) === true) {
-				$text = $chunk;
-			}
-
-			$totalSize += strlen($text);
+			$totalSize += strlen($this->chunkText(chunk: $chunk));
 		}
 
 		return round($totalSize / count($chunks), 2);
 	}//end calculateAvgChunkSize()
+
+	/**
+	 * The text of a chunk, which is a row with a `text` key or a plain string.
+	 *
+	 * @param mixed $chunk The chunk.
+	 *
+	 * @return string The text; empty for anything else.
+	 */
+	private function chunkText(mixed $chunk): string {
+		if (is_string($chunk) === true) {
+			return $chunk;
+		}
+
+		if (is_array($chunk) === true) {
+			return ($chunk['text'] ?? '');
+		}
+
+		return '';
+	}//end chunkText()
 }//end class

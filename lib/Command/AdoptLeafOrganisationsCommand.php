@@ -193,7 +193,7 @@ class AdoptLeafOrganisationsCommand extends Command {
 			$rows = $this->objectService->searchObjectsBySlug(
 				$registerSlug,
 				$schemaSlug,
-				['_limit' => 5000],
+				['_limit' => false],
 				false,
 				false
 			);

@@ -255,4 +255,29 @@ class FlowItemPlacement {
 
 		return $out;
 	}//end itemsForOutput()
+
+	/**
+	 * The pinned output for a step, or null when it is not pinned.
+	 *
+	 * Pins are a map of step name to an item list. A run carries them in its
+	 * `context` under `pins` (a test/authoring run supplies them without
+	 * touching the stored flow); a flow may also carry a `pins` map of its own,
+	 * used only as the fallback so a run's pins always win. A step whose name is
+	 * absent from both is not pinned and runs normally.
+	 *
+	 * @param FlowWalkPass|FlowStreamPass $pass           The pass.
+	 * @param string                      $transitionName The step's transition name.
+	 *
+	 * @return array<int, mixed>|null The pinned items, or null when not pinned.
+	 *
+	 * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+	 */
+	public function pinnedItems(FlowWalkPass|FlowStreamPass $pass, string $transitionName): ?array {
+		$pins = (array)($pass->context['pins'] ?? ($pass->flow['pins'] ?? []));
+		if (array_key_exists($transitionName, $pins) === false) {
+			return null;
+		}
+
+		return FlowItems::normalise(value: $pins[$transitionName]);
+	}//end pinnedItems()
 }//end class

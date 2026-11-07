@@ -1,19 +1,22 @@
 <template>
 	<NcActions
 		:primary="primary"
-		:menuName="primary ? t('openregister', 'Actions') : undefined">
+		:forceName="inline || undefined"
+		:inline="inline ? shownActions.length : undefined"
+		:menuName="primary || inline ? t('openregister', 'Actions') : undefined">
 		<template #icon>
 			<DotsHorizontal :size="20" />
 		</template>
 		<NcActionButton
 			v-for="action in shownActions"
 			:key="action.label"
+			:class="action.class"
 			:title="action.title"
 			closeAfterClick
 			:disabled="action.disabled"
 			@click="action.run()">
 			<template #icon>
-				<component :is="action.icon" :size="20" />
+				<component :is="action.icon" :size="20" :class="action.iconClass" />
 			</template>
 			{{ action.label }}
 		</NcActionButton>
@@ -41,7 +44,7 @@ export default {
 	props: {
 		/**
 		 * Menu entries in display order: `{ label, icon, run }`, optionally
-		 * `hidden`, `disabled` and `title`.
+		 * `hidden`, `disabled`, `title`, `class` and `iconClass`.
 		 */
 		actions: {
 			type: Array,
@@ -49,6 +52,12 @@ export default {
 		},
 
 		primary: {
+			type: Boolean,
+			default: false,
+		},
+
+		/** Shows every entry as a named button instead of behind the menu. */
+		inline: {
 			type: Boolean,
 			default: false,
 		},
