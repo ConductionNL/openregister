@@ -229,22 +229,7 @@ class FlowRunMigrationValidator {
 	 * @return array<string, int> The marking.
 	 */
 	private function markingOf(FlowRun $run): array {
-		$places = ($run->getMarking() ?? []);
-		if (is_array($places) === false) {
-			return [];
-		}
-
-		$normalised = [];
-		foreach ($places as $key => $value) {
-			if (is_int($key) === true) {
-				$normalised[(string)$value] = 1;
-				continue;
-			}
-
-			$normalised[(string)$key] = max(1, (int)$value);
-		}
-
-		return $normalised;
+		return FlowRunCommit::normaliseMarking(places: ($run->getMarking() ?? []));
 	}//end markingOf()
 
 	/**

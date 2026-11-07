@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\Support;
 
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
-use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
+use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 
 /**
@@ -36,15 +36,15 @@ final class CalculationOnSaveEngine {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param CalculationEvaluatorInterface $evaluator      Expression evaluator.
-	 * @param CalculationPayloadBuilder     $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param RuleRunRecorderInterface      $ruleRuns       Records each calculation's verdict for the rule inventory.
+	 * @param CalculationEvaluatorInterface      $evaluator      Expression evaluator.
+	 * @param CalculationPayloadBuilderInterface $payloadBuilder Shared @self/@ref/@aggregate payload prep.
+	 * @param RuleRunRecorderInterface           $ruleRuns       Records each calculation's verdict for the rule inventory.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
 		public readonly CalculationEvaluatorInterface $evaluator,
-		public readonly CalculationPayloadBuilder $payloadBuilder,
+		public readonly CalculationPayloadBuilderInterface $payloadBuilder,
 		public readonly RuleRunRecorderInterface $ruleRuns,
 	) {
 	}//end __construct()

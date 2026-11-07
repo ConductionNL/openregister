@@ -57,11 +57,11 @@ class PartyIndicatorGuard {
 	 * Constructor.
 	 *
 	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
-	 * @param PartyService $parties The party records.
+	 * @param PartyServiceInterface $parties The party records.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()
 
