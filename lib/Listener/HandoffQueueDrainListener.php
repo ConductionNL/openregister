@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
-use OCA\OpenRegister\Service\Handoff\HandoffService;
+use OCA\OpenRegister\Service\Handoff\HandoffServiceInterface;
 use OCP\App\Events\AppEnableEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -55,11 +55,11 @@ class HandoffQueueDrainListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param HandoffService $handoffService The handoff engine (drain surface).
+	 * @param HandoffServiceInterface $handoffService The handoff engine (drain surface).
 	 * @param LoggerInterface $logger Structured logging.
 	 */
 	public function __construct(
-		private readonly HandoffService $handoffService,
+		private readonly HandoffServiceInterface $handoffService,
 		private readonly LoggerInterface $logger,
 	) {
 
