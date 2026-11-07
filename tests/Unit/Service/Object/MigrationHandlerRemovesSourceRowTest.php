@@ -22,6 +22,8 @@ use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
 use Opis\JsonSchema\ValidationResult;
@@ -65,6 +67,8 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 	private bool $removalFails = false;
 
 	private bool $auditFails = false;
+
+	private ?IEventDispatcher $guards = null;
 
 	/**
 	 * Build the source table.
@@ -122,6 +126,31 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 
 		$this->assertSame(['headline' => 'scanned'], $this->tables[self::TARGET][self::UUID]->getRelations());
 	}//end testRelationsAreRebuiltFromTheMappedData()
+
+	/**
+	 * The guards read what the row holds, not what the mapping turns it into.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardsReadTheStoredDataAndKeepTheObject(): void {
+		$heard = [];
+		$this->guards = $this->createMock(IEventDispatcher::class);
+		$this->guards->method('dispatchTyped')->willReturnCallback(
+			static function (ObjectLeavingEvent $event) use (&$heard): void {
+				$heard[] = $event->getObject()->getObject();
+				$event->setErrors(['message' => 'Records hold this value.']);
+				$event->stopPropagation();
+			}
+		);
+
+		$report = $this->migrate();
+
+		$this->assertSame([['id' => self::UUID, 'title' => 'T', 'note' => 'N']], $heard);
+		$this->assertSame(1, $report['statistics']['objectsFailed']);
+		$this->assertStringContainsString('Records hold this value.', $report['errors'][0]);
+		$this->assertSame([self::UUID], array_keys($this->tables[self::SOURCE]));
+		$this->assertSame([], $this->tables[self::TARGET]);
+	}//end testTheGuardsReadTheStoredDataAndKeepTheObject()
 
 	/**
 	 * An object that does not fit the target stays where it is and is reported.
@@ -218,7 +247,7 @@ class MigrationHandlerRemovesSourceRowTest extends TestCase {
 			objectMapper: $mapper,
 			utilityHandler: $this->utility(),
 			dataManipHandler: $manipulation,
-			mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger),
+			mover: new MoveObject(objects: $mapper, validator: $this->validator(), audit: $audit, logger: $logger, events: ($this->guards ?? $this->createStub(IEventDispatcher::class))),
 			relationScanner: $scanner,
 			auditTrail: $audit,
 			logger: $logger

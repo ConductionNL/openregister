@@ -39,8 +39,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCP\EventDispatcher\IEventDispatcher;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -112,7 +114,7 @@ final class MoveObjectTest extends TestCase {
 	 * @return MoveObject The service.
 	 */
 	private function service(): MoveObject {
-		return new MoveObject($this->objects, $this->validator, $this->audit, new NullLogger());
+		return new MoveObject($this->objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class));
 	}
 
 	/**
@@ -200,6 +202,60 @@ final class MoveObjectTest extends TestCase {
 	}
 
 	/**
+	 * A guard's refusal keeps the object and is what the caller reads.
+	 *
+	 * @return void
+	 */
+	public function testAValueOthersHoldStaysWhereItIs(): void {
+		$heard = [];
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->method('dispatchTyped')->willReturnCallback(
+			static function (object $event) use (&$heard): void {
+				$heard[] = $event;
+				$event->setErrors(['message' => 'Records hold this value.']);
+				$event->stopPropagation();
+			}
+		);
+		$object = $this->object();
+
+		$outcome = (new MoveObject($this->objects, $this->validator, $this->audit, new NullLogger(), $events))->move(
+			object: $object,
+			sourceRegister: $this->register(1),
+			sourceSchema: $this->schema(10),
+			targetRegister: $this->register(2),
+			targetSchema: $this->schema(20),
+			actor: 'anna',
+		);
+
+		self::assertFalse($outcome['moved']);
+		self::assertSame(['Records hold this value.'], $outcome['errors']);
+		self::assertSame([], $this->calls);
+		self::assertCount(1, $heard);
+		self::assertSame(ObjectLeavingEvent::class, $heard[0]::class);
+		self::assertSame($object, $heard[0]->getObject());
+		self::assertSame('10', $heard[0]->getObject()->getSchema());
+	}
+
+	/**
+	 * A guard that gives no words still refuses.
+	 *
+	 * @return void
+	 */
+	public function testARefusalWithoutWordsStillKeepsTheObject(): void {
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->method('dispatchTyped')->willReturnCallback(
+			static function (ObjectLeavingEvent $event): void {
+				$event->stopPropagation();
+			}
+		);
+
+		$reason = (new MoveObject($this->objects, $this->validator, $this->audit, new NullLogger(), $events))
+			->keptReason(object: $this->object(), actor: 'anna');
+
+		self::assertSame('Other records still need this object where it is, so it was not moved.', $reason);
+	}
+
+	/**
 	 * The holder of a lock may move what they locked.
 	 *
 	 * @return void
@@ -240,7 +296,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger()))->move(
+		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)))->move(
 			object: $this->object(),
 			sourceRegister: $this->register(1),
 			sourceSchema: $this->schema(10),
@@ -333,7 +389,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger()))->move(
+		$outcome = (new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)))->move(
 			object: $object,
 			sourceRegister: $this->register(1),
 			sourceSchema: $this->schema(10),
@@ -383,7 +439,7 @@ final class MoveObjectTest extends TestCase {
 		$validator->method('validateObject')->willThrowException(new RuntimeException('bouwjaar is required'));
 
 		$object = $this->object();
-		$service = new MoveObject($this->objects, $validator, $this->audit, new NullLogger());
+		$service = new MoveObject($this->objects, $validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class));
 
 		$outcome = $service->move(
 			object: $object,
@@ -416,7 +472,7 @@ final class MoveObjectTest extends TestCase {
 		$objects->expects(self::never())->method('deleteObjectEntity');
 
 		$object = $this->object();
-		$service = new MoveObject($objects, $this->validator, $this->audit, new NullLogger());
+		$service = new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class));
 
 		$outcome = $service->move(
 			object: $object,
@@ -448,7 +504,7 @@ final class MoveObjectTest extends TestCase {
 		$objects->method('update')->willReturnArgument(0);
 		$objects->method('deleteObjectEntity')->willThrowException(new RuntimeException('source table is locked'));
 
-		$service = new MoveObject($objects, $this->validator, $this->audit, new NullLogger());
+		$service = new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class));
 
 		$outcome = $service->move(
 			object: $this->object(),
@@ -488,7 +544,7 @@ final class MoveObjectTest extends TestCase {
 			)
 			->willReturnArgument(0);
 
-		(new MoveObject($objects, $this->validator, $this->audit, new NullLogger()))->move(
+		(new MoveObject($objects, $this->validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)))->move(
 			object: $this->object(),
 			sourceRegister: $this->register(1),
 			sourceSchema: $this->schema(10),
@@ -515,7 +571,7 @@ final class MoveObjectTest extends TestCase {
 			}
 		);
 
-		$service = new MoveObject($this->objects, $this->validator, $audit, new NullLogger());
+		$service = new MoveObject($this->objects, $this->validator, $audit, new NullLogger(), $this->createStub(IEventDispatcher::class));
 		$service->move(
 			object: $this->object(),
 			sourceRegister: $this->register(1),
@@ -593,7 +649,7 @@ final class MoveObjectTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willThrowException(new RuntimeException('schema is unreadable'));
 
-		$verdict = (new MoveObject($this->objects, $validator, $this->audit, new NullLogger()))
+		$verdict = (new MoveObject($this->objects, $validator, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)))
 			->fits(object: $this->object(), target: $this->schema(20));
 
 		self::assertFalse($verdict['fits']);
