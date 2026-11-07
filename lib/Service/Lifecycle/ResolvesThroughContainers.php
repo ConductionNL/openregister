@@ -65,7 +65,6 @@ trait ResolvesThroughContainers {
 		if ($instance === null) {
 			$this->logger->error($logPrefix . implode(' | ', $errors));
 		}
-
 		return $instance;
 	}//end lookUp()
 }//end trait
