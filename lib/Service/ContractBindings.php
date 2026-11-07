@@ -144,6 +144,7 @@ final class ContractBindings {
 	 */
 	public const BINDINGS = [
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
+		ActivityFilterServiceInterface::class => ActivityFilterService::class,
 		AppContainerFinderInterface::class => AppContainerLocator::class,
 		AppRegisterImportRunnerInterface::class => AppRegisterImportRunner::class,
 		AppSettingsInterface::class => SettingsService::class,

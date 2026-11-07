@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
+use OCA\OpenRegister\Service\ActivityFilterService;
+use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\AppRegisterImportRunnerInterface;
 use OCA\OpenRegister\Service\CalendarLinkService;
@@ -51,6 +53,7 @@ final class D3InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string, 2: string}>
 	 */
 	private const CASES = [
+		ActivityFilterService::class => [ActivityFilterServiceInterface::class, ContractBindings::class, 'Service'],
 		AppRegisterImportRunner::class => [AppRegisterImportRunnerInterface::class, ContractBindings::class, 'Service'],
 		CalendarLinkService::class => [CalendarLinkServiceInterface::class, ContractBindings::class, 'Service'],
 		CospendLinkService::class => [CospendLinkServiceInterface::class, ContractBindings::class, 'Service'],
