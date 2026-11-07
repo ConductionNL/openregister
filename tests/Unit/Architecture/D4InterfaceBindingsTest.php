@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\LinkedEntityService;
 use OCA\OpenRegister\Service\LinkedEntityServiceInterface;
 use OCA\OpenRegister\Service\MapLinkService;
 use OCA\OpenRegister\Service\MapLinkServiceInterface;
+use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\MappingServiceInterface;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCA\OpenRegister\Service\MigrationService;
@@ -69,6 +71,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 		FormLinkService::class => [FormLinkServiceInterface::class, ContractBindings::class],
 		LinkedEntityService::class => [LinkedEntityServiceInterface::class, ContractBindings::class],
 		MapLinkService::class => [MapLinkServiceInterface::class, ContractBindings::class],
+		MappingService::class => [MappingServiceInterface::class, ContractBindings::class],
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
 		NotificationService::class => [NotificationServiceInterface::class, ContractBindings::class],

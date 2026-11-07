@@ -60,7 +60,7 @@ use Twig\TemplateWrapper;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Mapping execution requires comprehensive handling
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      $list parameter clearly indicates list processing mode
  */
-class MappingService {
+class MappingService implements MappingServiceInterface {
 
 	/**
 	 * Casts that carry an argument: prefix as written => cast type.

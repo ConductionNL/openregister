@@ -212,6 +212,7 @@ final class ContractBindings {
 		LifecycleConditionEvaluatorInterface::class => LifecycleConditionEvaluator::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,
+		MappingServiceInterface::class => MappingService::class,
 		McpCatalogueInterface::class => McpDiscoveryService::class,
 		MigrationPackServiceInterface::class => MigrationPackService::class,
 		MigrationServiceInterface::class => MigrationService::class,
