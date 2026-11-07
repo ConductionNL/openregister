@@ -111,50 +111,117 @@ class ExampleSetPrerequisites {
 	 *
 	 * @return array{refusals: array<int, string>, outcome: array<string, string>}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Missing, emptied and behind are three reasons to
-	 *                                               import, then the jobs and the refusal follow.
-	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function ensureRegisters(array $plan, array &$record): array {
 		$result = ['refusals' => [], 'outcome' => []];
 		foreach ((array) ($plan['requires'] ?? []) as $slug => $required) {
-			$slug = (string) $slug;
-			$result['outcome'][$slug] = 'kept';
-			// A register this set imported whose import was removed again is on the instance without its data.
-			$dataRemoved = (array_key_exists($slug, $record['registers']) === true && $record['registers'][$slug] === []);
-			$mock        = (($required['mock'] ?? false) === true);
-			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false
-				&& $this->registers->isBehind(slug: $slug, mock: $mock) === false
-			) {
-				continue;
+			$register = new ExampleSetRequiredRegister(
+				set: (string) ($plan['set'] ?? ''),
+				slug: (string) $slug,
+				mock: (($required['mock'] ?? false) === true)
+			);
+			$why      = $this->ensureRegister(register: $register, record: $record);
+			$result['outcome'][$register->slug] = $this->outcomeOf(why: $why);
+			if ($why !== null && $why !== '') {
+				$result['refusals'][] = 'register "'.$register->slug.'" is required and could not be imported from OpenRegister\'s descriptor: '.$why;
 			}
-
-			$import = match ($mock) {
-				true  => $this->registers->importMock(slug: $slug),
-				false => $this->registers->import(slug: $slug),
-			};
-			if ($import['jobs'] !== []) {
-				$record['registers'][$slug] = array_merge(($record['registers'][$slug] ?? []), $import['jobs']);
-				$this->record->write(set: (string) $plan['set'], record: $record);
-			}
-
-			$why = $import['error'];
-			if ($why === '' && $this->registers->exists(slug: $slug) === false) {
-				$why = 'it is still not on this instance';
-			}
-
-			if ($why !== '') {
-				$result['refusals'][]     = 'register "'.$slug.'" is required and could not be imported from OpenRegister\'s descriptor: '.$why;
-				$result['outcome'][$slug] = 'failed';
-				continue;
-			}
-
-			$result['outcome'][$slug] = 'imported';
-		}//end foreach
+		}
 
 		return $result;
 	}//end ensureRegisters()
+
+	/**
+	 * Import one required register when it needs it, and record the import.
+	 *
+	 * @param ExampleSetRequiredRegister $register The required register.
+	 * @param array<string, mixed>       $record   The record; gains the import's jobs.
+	 *
+	 * @return string|null Null when the register is kept, '' when it was imported, else why the import failed.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	private function ensureRegister(ExampleSetRequiredRegister $register, array &$record): ?string {
+		if ($this->needsImport(register: $register, record: $record) === false) {
+			return null;
+		}
+
+		return $this->importRegister(register: $register, record: $record);
+	}//end ensureRegister()
+
+	/**
+	 * Whether a required register is not on the instance, had its data removed by this set, or is behind its
+	 * descriptor.
+	 *
+	 * @param ExampleSetRequiredRegister $register The required register.
+	 * @param array<string, mixed>       $record   The record.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	private function needsImport(ExampleSetRequiredRegister $register, array $record): bool {
+		// A register this set imported whose import was removed again is on the instance without its data.
+		$dataRemoved = (array_key_exists($register->slug, $record['registers']) === true && $record['registers'][$register->slug] === []);
+
+		return $this->registers->exists(slug: $register->slug) === false
+			|| $dataRemoved === true
+			|| $this->registers->isBehind(slug: $register->slug, mock: $register->mock) === true;
+	}//end needsImport()
+
+	/**
+	 * Import a required register, record the jobs it ran, and say why it is still missing, or ''.
+	 *
+	 * @param ExampleSetRequiredRegister $register The required register.
+	 * @param array<string, mixed>       $record   The record; gains the import's jobs.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	private function importRegister(ExampleSetRequiredRegister $register, array &$record): string {
+		$import = $this->importOf(register: $register);
+		if ($import['jobs'] !== []) {
+			$record['registers'][$register->slug] = array_merge(($record['registers'][$register->slug] ?? []), $import['jobs']);
+			$this->record->write(set: $register->set, record: $record);
+		}
+
+		if ($import['error'] === '' && $this->registers->exists(slug: $register->slug) === false) {
+			return 'it is still not on this instance';
+		}
+
+		return $import['error'];
+	}//end importRegister()
+
+	/**
+	 * Import a required register from its descriptor, with its mock data when the set asks for it.
+	 *
+	 * @param ExampleSetRequiredRegister $register The required register.
+	 *
+	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>}
+	 */
+	private function importOf(ExampleSetRequiredRegister $register): array {
+		if ($register->mock === true) {
+			return $this->registers->importMock(slug: $register->slug);
+		}
+
+		return $this->registers->import(slug: $register->slug);
+	}//end importOf()
+
+	/**
+	 * A required register's outcome: `kept`, `imported` or `failed`.
+	 *
+	 * @param string|null $why Null when kept, '' when imported, else why the import failed.
+	 *
+	 * @return string
+	 */
+	private function outcomeOf(?string $why): string {
+		return match ($why) {
+			null    => 'kept',
+			''      => 'imported',
+			default => 'failed',
+		};
+	}//end outcomeOf()
 
 	/**
 	 * Create every OpenRegister organisation the cast declares and the instance lacks, and record it; one the set
