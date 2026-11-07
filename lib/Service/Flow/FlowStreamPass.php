@@ -112,4 +112,26 @@ final class FlowStreamPass {
 	public function result(string $status): array {
 		return ['status' => $status, 'log' => $this->log, 'context' => $this->context, 'items' => $this->items];
 	}//end result()
+
+	/**
+	 * The pass's last word, under the lock, from the marking there.
+	 *
+	 * "Work remains" excludes the transitions parked streams keep enabled: a
+	 * wait is not work, and counting it would re-queue every parked run.
+	 *
+	 * @return array The run result.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/specs/flow-parallel-streams/spec.md#requirement-independent-branches-of-one-run-must-advance-independently
+	 */
+	public function finish(): array {
+		$enabled = $this->streams->workRemains(transitions: $this->workflow->getEnabledTransitions(subject: $this->subject));
+		$status = $this->streams->finalize(enabled: $enabled);
+
+		$result = $this->result(status: $status);
+		if ($status === FlowEngine::STATUS_SUSPENDED) {
+			$result['resumeAt'] = $this->streams->run()->getResumeAt();
+		}
+
+		return $result;
+	}//end finish()
 }//end class

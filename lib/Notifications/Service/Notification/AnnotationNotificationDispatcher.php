@@ -36,6 +36,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -477,12 +478,11 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return bool
 	 */
 	private function ruleApplies(RuleFiring $firing, string $trigger): bool {
-		$matches = $this->matches(
-			triggerSpec: $firing->spec['trigger'] ?? [],
+		$matcher = new NotificationTriggerMatcher(
 			trigger: $trigger,
 			context: array_merge($firing->context, ['_data' => $firing->data])
 		);
-		if ($matches === false) {
+		if ($matcher->matches(triggerSpec: ($firing->spec['trigger'] ?? [])) === false) {
 			return false;
 		}
 
@@ -553,35 +553,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function renderBroadcastSubject(RuleFiring $firing): void {
-		$firing->broadcastSubject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
+		$broadcast = new MessageTarget(firing: $firing, locale: null);
+		$firing->broadcastSubject = $this->messages()->subject(target: $broadcast);
 		$firing->channels         = (array)($firing->spec['channels'] ?? ['nc-notification']);
 
-		$firing->addressBody = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: false,
-			originApp: ''
-		);
+		$firing->addressBody = $this->messages()->declaredBody(target: $broadcast);
 		if (trim($firing->addressBody) === '') {
 			$firing->addressBody = $firing->broadcastSubject;
 		}
 
-		// Absent or unknown reads as the default category, never as exempt.
-		$firing->category = OptOutAuthority::DEFAULT_CATEGORY;
-		$category         = ($firing->spec['messageCategory'] ?? '');
+		$firing->category = self::messageCategory(spec: $firing->spec);
+	}//end renderBroadcastSubject()
+
+	/**
+	 * The rule's message category. Absent or unknown reads as the default
+	 * category, never as exempt.
+	 *
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return string
+	 */
+	private static function messageCategory(array $spec): string {
+		$category = ($spec['messageCategory'] ?? '');
 		if (is_string($category) === true && in_array(strtolower(trim($category)), OptOutAuthority::CATEGORIES, true) === true) {
-			$firing->category = strtolower(trim($category));
+			return strtolower(trim($category));
 		}
 
-	}//end renderBroadcastSubject()
+		return OptOutAuthority::DEFAULT_CATEGORY;
+	}//end messageCategory()
+
+	/**
+	 * The renderer of subjects and bodies for the object being dispatched.
+	 *
+	 * @return RuleMessageRenderer
+	 */
+	private function messages(): RuleMessageRenderer {
+		return new RuleMessageRenderer(
+			templating: $this->templating(),
+			languages: $this->registerLanguages,
+			appManager: $this->appManager,
+			logger: $this->logger
+		);
+	}//end messages()
 
 	/**
 	 * Resolve the rate limit, coalesce window, origin app, actions and the
@@ -608,15 +621,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			originApp: $firing->originApp
 		);
 
-		$firing->broadcastMessage = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$firing->broadcastMessage = $this->messages()->body(target: new MessageTarget(firing: $firing, locale: null));
 	}//end resolveRuleDelivery()
 
 	/**
@@ -690,22 +695,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function renderForRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		$delivery->locale  = $this->resolveUserLocale(uid: $delivery->uid);
-		$delivery->subject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
-		$delivery->message = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$target = new MessageTarget(firing: $firing, locale: $delivery->locale);
+		$delivery->subject = $this->messages()->subject(target: $target);
+		$delivery->message = $this->messages()->body(target: $target);
 	}//end renderForRecipient()
 
 	/**
@@ -1771,357 +1763,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end emitWebhook()
 
 	/**
-	 * Decide whether a notification's `trigger` block matches the active event.
-	 *
-	 * For `calculatedChange` triggers, both `condition` (new value) and
-	 * `previously` (old value) must be satisfied for the rule to fire —
-	 * this is the boundary-crossing / debounce check.
-	 *
-	 * @param mixed $triggerSpec The declared `trigger` sub-document, or a bare string
-	 *        naming an app-defined event (`"booking.confirmed"`). Deliberately `mixed`:
-	 *        this is untrusted annotation data straight off a schema, so the shape is
-	 *        checked here rather than assumed — a malformed `trigger` must fail closed,
-	 *        not fatal.
-	 * @param string $trigger The active event type, or the app event being raised.
-	 * @param array<string, mixed> $context Per-event context (e.g. `action`).
-	 *
-	 * @return bool True when the rule should fire for this event.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function matches($triggerSpec, string $trigger, array $context): bool {
-		// App-defined event: `"trigger": "booking.confirmed"`. The name is the
-		// whole contract — there are no sub-conditions to evaluate, because the
-		// app decided the event was worth raising before it called dispatch().
-		//
-		// This arm also stops a string trigger from reaching the array-typed
-		// parameter this method used to declare, which under strict_types threw
-		// a TypeError mid-dispatch rather than simply not matching.
-		if (is_string($triggerSpec) === true) {
-			return $triggerSpec === $trigger;
-		}
-
-		if (is_array($triggerSpec) === false) {
-			return false;
-		}
-
-		// Object form may also name an app event explicitly.
-		$declaredEvent = ($triggerSpec['event'] ?? null);
-		if (is_string($declaredEvent) === true && $declaredEvent !== '') {
-			return $declaredEvent === $trigger;
-		}
-
-		if ((string)($triggerSpec['type'] ?? '') !== $trigger) {
-			return false;
-		}
-
-		return match ($trigger) {
-			'transition' => $this->transitionActionMatches(triggerSpec: $triggerSpec, context: $context),
-			'created' => $this->createdTriggerMatches(triggerSpec: $triggerSpec, context: $context),
-			'updated' => $this->updatedTriggerMatches(triggerSpec: $triggerSpec, context: $context),
-			'calculatedChange' => $this->calculatedChangeMatches(triggerSpec: $triggerSpec, context: $context),
-			default => true,
-		};
-	}//end matches()
-
-	/**
-	 * Apply a `transition` trigger's optional `action` filter: one action or a list of them.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `action`.
-	 *
-	 * @return bool True when no action is declared or the event's action is among them.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function transitionActionMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['action']) === false) {
-			return true;
-		}
-
-		$expected = $triggerSpec['action'];
-		$actual = ($context['action'] ?? null);
-		if (is_array($expected) === true) {
-			return in_array($actual, $expected, true);
-		}
-
-		return (string)$expected === (string)$actual;
-	}//end transitionActionMatches()
-
-	/**
-	 * Apply a `created` trigger's optional field `filter`.
-	 *
-	 * The rule fires only when the created object's fields, forwarded as
-	 * `_data`, satisfy the filter (e.g. `channel == "telefoon"`). A rule
-	 * without a filter matches on type alone. Fail-closed when the filter is
-	 * malformed or the data is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_data`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function createdTriggerMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['filter']) === false) {
-			return true;
-		}
-
-		$filter = $triggerSpec['filter'];
-		$data = ($context['_data'] ?? null);
-		if (is_array($filter) === false || is_array($data) === false) {
-			return false;
-		}
-
-		return $this->createdFilterMatches(filter: $filter, data: $data);
-	}//end createdTriggerMatches()
-
-	/**
-	 * Apply an `updated` trigger's optional non-numeric field-change `condition`.
-	 *
-	 * A rule without a condition matches on type alone. Reads the old and new
-	 * object data the listener forwards; fail-closed when the condition is
-	 * malformed or either side is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function updatedTriggerMatches(array $triggerSpec, array $context): bool {
-		if (isset($triggerSpec['condition']) === false) {
-			return true;
-		}
-
-		$condition = $triggerSpec['condition'];
-		$change = $this->changedObjectData(context: $context);
-		if (is_array($condition) === false || $change === null) {
-			return false;
-		}
-
-		return $this->fieldChangeConditionMatches(condition: $condition, oldData: $change['old'], newData: $change['new']);
-	}//end updatedTriggerMatches()
-
-	/**
-	 * Apply a `calculatedChange` trigger's boundary-crossing check.
-	 *
-	 * `field` names the calculated property to monitor; the NEW value must
-	 * satisfy the `condition` operators and the OLD value the `previously`
-	 * operators. A side that is not declared is open. Fail-closed when the
-	 * field is missing or the old or new data is absent.
-	 *
-	 * @param array<string, mixed> $triggerSpec The declared `trigger` block.
-	 * @param array<string, mixed> $context     Per-event context, carrying `_oldData` and `_newData`.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function calculatedChangeMatches(array $triggerSpec, array $context): bool {
-		$field = (string)($triggerSpec['field'] ?? '');
-		$change = $this->changedObjectData(context: $context);
-		if ($field === '' || $change === null) {
-			return false;
-		}
-
-		$condition = ($triggerSpec['condition'] ?? null);
-		if (is_array($condition) === true
-			&& $this->numericConditionMatches(value: ($change['new'][$field] ?? null), operators: $condition) === false
-		) {
-			return false;
-		}
-
-		$previously = ($triggerSpec['previously'] ?? null);
-		return is_array($previously) === false
-			|| $this->numericConditionMatches(value: ($change['old'][$field] ?? null), operators: $previously) === true;
-	}//end calculatedChangeMatches()
-
-	/**
-	 * The old and new object data an update event forwards, or null when either is absent.
-	 *
-	 * @param array<string, mixed> $context Per-event context.
-	 *
-	 * @return array{old: array, new: array}|null
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function changedObjectData(array $context): ?array {
-		$newData = ($context['_newData'] ?? null);
-		$oldData = ($context['_oldData'] ?? null);
-		if (is_array($newData) === false || is_array($oldData) === false) {
-			return null;
-		}
-
-		return ['old' => $oldData, 'new' => $newData];
-	}//end changedObjectData()
-
-	/**
-	 * Evaluate a set of plain comparison operators against a numeric value.
-	 *
-	 * Operators mirror the JSON-schema style used by the notification spec:
-	 * `lt`, `lte`, `gt`, `gte`, `eq`, `ne`. All comparisons are numeric
-	 * (int/float); a non-numeric value returns false for every ordering
-	 * operator (`lt`, `lte`, `gt`, `gte`) and casts to string for `eq`/`ne`.
-	 *
-	 * Multiple operators in the map are ANDed together (all must hold).
-	 *
-	 * @param mixed $value The field value to test.
-	 * @param array<string, mixed> $operators Map of operator → threshold (e.g. `['lt' => 0.85]`).
-	 *
-	 * @return bool True when the value satisfies every declared operator.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) numericConditionMatches() evaluates six comparison
-	 * operators (lt, lte, gt, gte, eq, ne) in a match expression; each arm is a distinct spec-defined
-	 * operator and cannot be reduced further.
-	 */
-	private function numericConditionMatches(mixed $value, array $operators): bool {
-		foreach ($operators as $op => $threshold) {
-			$numeric = (is_numeric($value) === true && is_numeric($threshold) === true);
-
-			// BUG-SVC-8: when both sides are numeric, compare as floats so
-			// numerically-equal-but-differently-formatted values match
-			// (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
-			if ($numeric === true) {
-				$equals = ((float)$value === (float)$threshold);
-			} else {
-				$equals = ((string)$value === (string)$threshold);
-			}
-
-			$result = match ((string)$op) {
-				'lt' => $numeric && (float)$value < (float)$threshold,
-				'lte' => $numeric && (float)$value <= (float)$threshold,
-				'gt' => $numeric && (float)$value > (float)$threshold,
-				'gte' => $numeric && (float)$value >= (float)$threshold,
-				'eq' => $equals,
-				'ne' => ($equals === false),
-				default => false,
-			};
-
-			if ($result === false) {
-				return false;
-			}
-		}//end foreach
-
-		return true;
-	}//end numericConditionMatches()
-
-	/**
-	 * Evaluate a `created`-trigger field filter against the created object's data.
-	 *
-	 * Supports the contract's single-field shape `{ field, operator, value|values }`
-	 * with operators `equals` (default), `in`, and `notIn`. Scalar comparison is
-	 * string-cast (mirrors `fieldChangeConditionMatches`). A filter naming an
-	 * unknown field fails closed.
-	 *
-	 * @param array<string, mixed> $filter The `trigger.filter` sub-document.
-	 * @param array<string, mixed> $data The created object's data.
-	 *
-	 * @return bool True when the object satisfies the filter.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function createdFilterMatches(array $filter, array $data): bool {
-		$field = (string)($filter['field'] ?? '');
-		if ($field === '') {
-			return false;
-		}
-
-		$operator = (string)($filter['operator'] ?? 'equals');
-		$actual = ($data[$field] ?? null);
-		$actualStr = '';
-		if (is_scalar($actual) === true) {
-			$actualStr = (string)$actual;
-		}
-
-		if ($operator === 'in' || $operator === 'notIn') {
-			$values = ($filter['values'] ?? []);
-			if (is_array($values) === false) {
-				return false;
-			}
-
-			$haystack = [];
-			foreach ($values as $candidate) {
-				if (is_scalar($candidate) === true) {
-					$haystack[] = (string)$candidate;
-				} else {
-					$haystack[] = '';
-				}
-			}
-
-			$present = in_array($actualStr, $haystack, true);
-			if ($operator === 'in') {
-				return $present;
-			}
-
-			return ($present === false);
-		}//end if
-
-		// Default: equals.
-		return $actualStr === (string)($filter['value'] ?? '');
-	}//end createdFilterMatches()
-
-	/**
-	 * Evaluate a non-numeric field-change condition for an `updated` trigger.
-	 *
-	 * Compares one field's value between the old and new object data:
-	 *   - `changed`            — matches when old != new.
-	 *   - `equals` (+ `value`) — matches when new == value; when optional
-	 *                            `from` is present, also requires old == from
-	 *                            (i.e. a specific `from` -> `value` transition).
-	 *
-	 * Comparison is string-normalised (scalars cast to string, non-scalars to
-	 * the empty string), consistent with the `eq`/`ne` handling in
-	 * `numericConditionMatches()`. An empty/missing `field` returns false.
-	 *
-	 * @param array<string, mixed> $condition The `condition` sub-document (`field`, `operator`, `value`, `from`).
-	 * @param array<string, mixed> $oldData The object's data before the update.
-	 * @param array<string, mixed> $newData The object's data after the update.
-	 *
-	 * @return bool True when the declared change occurred.
-	 */
-	private function fieldChangeConditionMatches(array $condition, array $oldData, array $newData): bool {
-		$field = (string)($condition['field'] ?? '');
-		if ($field === '') {
-			return false;
-		}
-
-		$operator = (string)($condition['operator'] ?? 'changed');
-		$oldValue = ($oldData[$field] ?? null);
-		$newValue = ($newData[$field] ?? null);
-
-		$oldStr = '';
-		if (is_scalar($oldValue) === true) {
-			$oldStr = (string)$oldValue;
-		}
-
-		$newStr = '';
-		if (is_scalar($newValue) === true) {
-			$newStr = (string)$newValue;
-		}
-
-		if ($operator === 'changed') {
-			return $oldStr !== $newStr;
-		}
-
-		if ($operator === 'equals') {
-			if ($newStr !== (string)($condition['value'] ?? '')) {
-				return false;
-			}
-
-			if (isset($condition['from']) === true) {
-				return $oldStr === (string)$condition['from'];
-			}
-
-			return true;
-		}
-
-		return false;
-	}//end fieldChangeConditionMatches()
-
-	/**
 	 * Read a schema's `authorization.roles` assignment as a role-to-groups map.
 	 *
 	 * The same map `PermissionHandler` expands for a lifecycle transition, read
@@ -2223,191 +1864,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end userExists()
 
 	/**
-	 * Resolve a localized subject template against a recipient locale.
-	 *
-	 * Subject templates can be declared in three shapes:
-	 *
-	 *   1. Legacy single-language string:
-	 *        subject: "Object {{title}} updated"
-	 *   2. Per-locale map:
-	 *        subject:
-	 *          nl: "Object {{title}} bijgewerkt"
-	 *          en: "Object {{title}} updated"
-	 *   3. Per-locale map with explicit default:
-	 *        subject:
-	 *          defaultLocale: nl
-	 *          nl: "..."
-	 *          en: "..."
-	 *
-	 * The resolver picks the recipient's locale when present in the
-	 * map, then falls back to:
-	 *   a. the explicit `defaultLocale` key if set,
-	 *   b. `nl` (Dutch — the primary language for Conduction's NL
-	 *      government audience),
-	 *   c. `en`,
-	 *   d. the first non-default key in declaration order,
-	 *   e. the rule's annotation name (last-resort identifier).
-	 *
-	 * Closes the spec's NL/EN i18n requirement; new locales beyond the
-	 * NL/EN minimum just need to be added under their ISO 639-1 code in
-	 * the schema annotation — no code change required.
-	 *
-	 * @param mixed $template Raw subject value (string or array).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param string $fallbackName Annotation name (last-resort fallback).
-	 *
-	 * @return string The interpolated subject string.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template
-	 * shapes (string, locale-keyed map, default-locale fallback) and within each shape applies
-	 * template-variable interpolation; each branch is required by the i18n subject contract.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Template shape × locale-match × defaultLocale fallback
-	 * × interpolation presence produce many paths; all are required by the spec's subject-resolution
-	 * priority chain.
-	 */
-	private function resolveLocalizedSubject(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		string $fallbackName,
-	): string {
-		if (is_string($template) === true && $template !== '') {
-			// Legacy single-language path — no per-locale map declared.
-			return $this->interpolate(template: $template, data: $data, context: $context, locale: $locale);
-		}
-
-		if (is_array($template) === true) {
-			$declared = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true;
-			$defaultLocale = 'nl';
-			if ($declared === true) {
-				$defaultLocale = $template['defaultLocale'];
-			}
-
-			// Recipient locale wins when declared.
-			if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
-				return $this->interpolate(template: $template[$locale], data: $data, context: $context, locale: $locale);
-			}
-
-			// Explicit default locale next.
-			if (isset($template[$defaultLocale]) === true && is_string($template[$defaultLocale]) === true) {
-				return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context, locale: $locale);
-			}
-
-			// NL/EN baseline.
-			foreach (['nl', 'en'] as $candidate) {
-				if (isset($template[$candidate]) === true && is_string($template[$candidate]) === true) {
-					return $this->interpolate(template: $template[$candidate], data: $data, context: $context, locale: $locale);
-				}
-			}
-
-			// First locale in declaration order (skip the meta key).
-			foreach ($template as $key => $value) {
-				if ($key === 'defaultLocale') {
-					continue;
-				}
-
-				if (is_string($value) === true) {
-					return $this->interpolate(template: $value, data: $data, context: $context, locale: $locale);
-				}
-			}
-		}//end if
-
-		return $fallbackName;
-	}//end resolveLocalizedSubject()
-
-	/**
-	 * Resolve the notification BODY (message) for a recipient/broadcast.
-	 *
-	 * The body is distinct from the title (`subject`):
-	 *
-	 *   1. When the rule declares a `message` template (string or per-locale
-	 *      map), it is localised + `{{prop}}`-interpolated through the SAME
-	 *      resolver as the subject (`resolveLocalizedSubject()`).
-	 *   2. When the rule declares NO `message` but DOES declare `actions[]`,
-	 *      the body is auto-derived as "Open in {AppName}." where {AppName}
-	 *      is the originApp's human display name (via IAppManager; falls back
-	 *      to ucfirst(originApp) when unavailable).
-	 *   3. When the rule declares neither `message` nor `actions`, the body
-	 *      is empty — exactly today's behaviour (back-compat).
-	 *
-	 * @param mixed $template Raw `message` value (string, array, or null).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param bool $hasActions Whether the rule declared resolvable actions.
-	 * @param string $originApp Resolved origin app id (drives the auto-body app name).
-	 *
-	 * @return string The interpolated body string, or '' for the empty back-compat body.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveMessageBody(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		bool $hasActions,
-		string $originApp,
-	): string {
-		$hasTemplate = (is_string($template) === true && $template !== '') || (is_array($template) === true && $template !== []);
-		if ($hasTemplate === true) {
-			// Reuse the subject resolver: identical shape, locale-resolution
-			// and {{prop}} interpolation contract. The empty fallbackName
-			// means an unresolvable map degrades to '' rather than a name.
-			return $this->resolveLocalizedSubject(
-				template: $template,
-				locale: $locale,
-				data: $data,
-				context: $context,
-				fallbackName: ''
-			);
-		}
-
-		// No explicit body: auto-derive only when the rule has actions.
-		if ($hasActions === false) {
-			return '';
-		}
-
-		return sprintf('Open in %s.', $this->resolveAppDisplayName(app: $originApp));
-	}//end resolveMessageBody()
-
-	/**
-	 * Resolve an app's human display name for the auto-derived body.
-	 *
-	 * Reads the app's `name` from IAppManager::getAppInfo() when the manager
-	 * is available; falls back to ucfirst(app) when the manager is absent
-	 * (older fixtures) or the lookup yields no usable name.
-	 *
-	 * @param string $app The app id.
-	 *
-	 * @return string The human-readable app display name.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveAppDisplayName(string $app): string {
-		$fallback = ucfirst($app);
-		if ($this->appManager === null || $app === '') {
-			return $fallback;
-		}
-
-		try {
-			$info = $this->appManager->getAppInfo($app);
-			if (is_array($info) === true && is_string($info['name'] ?? null) === true && $info['name'] !== '') {
-				return $info['name'];
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[AnnotationNotificationDispatcher] app display-name lookup failed: %s', $e->getMessage())
-			);
-		}
-
-		return $fallback;
-	}//end resolveAppDisplayName()
-
-	/**
 	 * Resolve a Nextcloud user's preferred locale.
 	 *
 	 * Reads `core.lang` from the user's NC config — the same value
@@ -2437,54 +1893,10 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return null;
 		}
 
-		// NC stores values like `nl`, `en_GB`, `de_DE` — strip the
-		// region suffix so the lookup matches the simple ISO 639-1
-		// keys we expect in the per-locale subject map.
-		$sep = strpos($raw, '_');
-		if ($sep !== false) {
-			$raw = substr($raw, 0, $sep);
-		}
-
-		return strtolower($raw);
+		// NC stores values like `nl`, `en_GB`, `de_DE`: the region suffix goes,
+		// so the lookup matches the ISO 639-1 keys of the per-locale subject map.
+		return strtolower(explode('_', $raw, 2)[0]);
 	}//end resolveUserLocale()
-
-	/**
-	 * Replace {{prop}} tokens with values from $data, then $context.
-	 *
-	 * Substituted values are HTML-escaped at the source as defence in
-	 * depth. The rendered subject ends up in:
-	 *   - INotificationManager (HTML render path in the NC notification UI),
-	 *   - the Activity stream (HTML render path),
-	 *   - email subject/body (plain-text setPlainBody, but still rendered
-	 *     by mail clients that may interpret HTML in the subject line).
-	 * Nextcloud's own rendering layers escape on output, so this is a
-	 * second layer rather than the only one — but it keeps the
-	 * `<script>` / `"` / `&` characters that come from object data
-	 * from being placed into a notification context without escaping.
-	 *
-	 * The literal template fragments authored by the schema author
-	 * pass through unchanged (they aren't sourced from object data).
-	 *
-	 * @param string $template The raw subject template.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` lookup.
-	 * @param array<string, mixed> $context Per-event context for `{{prop}}` lookup.
-	 * @param string|null $locale The recipient's language, or null for a broadcast.
-	 *
-	 * @return string The interpolated string.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
-	 */
-	private function interpolate(string $template, array $data, array $context, ?string $locale = null): string {
-		// The dialect's ONE placeholder evaluator — the same class the flow
-		// messaging service renders node templates through. A translatable
-		// value renders in the recipient's language, then the register's.
-		return $this->templating()->interpolate(
-			template: $template,
-			data: $data,
-			context: $context,
-			languages: array_merge([$locale], $this->registerLanguages)
-		);
-	}//end interpolate()
 
 	/**
 	 * The register's default language, then its other languages.
@@ -2496,14 +1908,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	private function resolveRegisterLanguages(ObjectEntity $object): array {
-		$registerId = $object->getRegister();
-		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+		try {
+			$register = $this->objectRegister(object: $object);
+		} catch (\Throwable $e) {
 			return [];
 		}
 
-		try {
-			$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
+		if ($register === null) {
 			return [];
 		}
 
@@ -2511,6 +1922,22 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return array_values(array_unique(array_filter($languages, static fn ($code): bool => is_string($code) === true && $code !== '')));
 	}//end resolveRegisterLanguages()
+
+	/**
+	 * The register of the object being dispatched, null when it is unknown.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Register|null
+	 */
+	private function objectRegister(ObjectEntity $object): ?Register {
+		$registerId = $object->getRegister();
+		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+			return null;
+		}
+
+		return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+	}//end objectRegister()
 
 	/**
 	 * Map a trigger to the canonical INotification subject the Notifier
@@ -2547,24 +1974,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		// Default: the app that owns the schema's register.
-		$registerId = $object->getRegister();
-		$registerMapper = $this->registerMapper;
-		if ($registerMapper !== null && $registerId !== null && (string)$registerId !== '') {
-			try {
-				$register = $registerMapper->find(
-					$registerId,
-					_rbac: false,
-					_multitenancy: false
-				);
-				$owningApp = $register->getApplication();
-				if (is_string($owningApp) === true && $owningApp !== '') {
-					return $owningApp;
-				}
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
-				);
-			}
+		try {
+			$owningApp = $this->objectRegister(object: $object)?->getApplication();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
+			);
+			return 'openregister';
+		}
+
+		if (is_string($owningApp) === true && $owningApp !== '') {
+			return $owningApp;
 		}
 
 		return 'openregister';

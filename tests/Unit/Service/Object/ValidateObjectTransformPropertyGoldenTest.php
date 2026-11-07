@@ -62,7 +62,7 @@ class ValidateObjectTransformPropertyGoldenTest extends TestCase {
 			'bare slug ref'                => ['$ref' => 'besluit'],
 			'fragment ref kept'            => ['$ref' => '#/definitions/x'],
 			'uri ref kept'                 => ['$ref' => 'https://example.org/schema'],
-			'typed number ref kept'        => ['type' => 'number', '$ref' => 'measure'],
+			'typed number ref'        => ['type' => 'number', '$ref' => 'measure'],
 			'nested properties'            => ['type' => 'object', 'properties' => ['inner' => ['type' => 'array', 'items' => ['$ref' => 'thing']], 'other' => ['type' => 'string', '$ref' => 'o']]],
 			'inversedBy object, fragment ref' => ['type' => 'object', 'inversedBy' => 'owner', '$ref' => '#/defs/p'],
 			'fragment-only ref kept'       => ['$ref' => '#anchor'],

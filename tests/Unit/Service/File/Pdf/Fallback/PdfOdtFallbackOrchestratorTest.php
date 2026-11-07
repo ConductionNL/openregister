@@ -3,7 +3,7 @@
 /**
  * PdfOdtFallbackOrchestratorTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator}.
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator}.
  *
  * Covers the dormant-state guards (feature flag off → re-raise; encrypted
  * reason → re-raise; text-layer-missing → re-raise) and, when activated, the
@@ -29,9 +29,9 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf\Fallback;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
-use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
+use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\PdfOdtFallbackOrchestrator;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

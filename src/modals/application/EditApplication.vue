@@ -16,7 +16,6 @@ import {
 		"
 		:open="true"
 		size="large"
-		:canClose="true"
 		@update:open="handleDialogOpen">
 		<NcNoteCard v-if="success" type="success">
 			<p>
@@ -63,47 +62,22 @@ import {
 
 							<!-- Organisation is automatically set to active organisation by backend -->
 
-							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
-								<NcSelect
-									v-model="selectedGroups"
-									inputLabel="Selected Groups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									trackBy="id"
-									:multiple="true"
-									:labelOutside="true"
-									:filterable="false"
-									:placeholder="
-										t('openregister', 'Search groups...')
-									"
-									@searchChange="searchGroups"
-									@update:modelValue="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{
-												name
-											}}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">{{
-											t('openregister', 'Loading groups...')
-										}}</span>
-										<span v-else>{{
-											t(
-												'openregister',
-												'No groups found. Try a different search.',
-											)
-										}}</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Only members of selected groups can access this
-									application
-								</p>
-							</div>
+							<GroupSelect
+								v-model="selectedGroups"
+								label="Nextcloud Groups"
+								:options="availableGroups"
+								:disabled="loading"
+								:loading="loadingGroups"
+								:placeholder="t('openregister', 'Search groups...')"
+								:emptyText="
+									t(
+										'openregister',
+										'No groups found. Try a different search.',
+									)
+								"
+								hint="Only members of selected groups can access this application"
+								@searchChange="searchGroups"
+								@update:modelValue="updateGroups" />
 						</div>
 					</AppTab>
 
@@ -221,7 +195,6 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcSelect,
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
@@ -232,6 +205,7 @@ import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
@@ -240,10 +214,10 @@ import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 export default {
 	name: 'EditApplication',
 	components: {
+		GroupSelect,
 		NcDialog,
 		NcTextField,
 		NcTextArea,
-		NcSelect,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
@@ -582,12 +556,6 @@ export default {
 .option-description {
 	font-size: 12px;
 	color: var(--color-text-lighter);
-}
-
-@include groups-select-container-rules-2;
-
-.group-name {
-	font-weight: 500;
 }
 
 @include security-section;

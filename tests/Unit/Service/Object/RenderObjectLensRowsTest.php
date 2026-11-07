@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Service\Object\RecordAnnotations
  * @uses \OCA\OpenRegister\Service\Object\RecurrenceOccurrences
  * @uses \OCA\OpenRegister\Service\Object\VirtualCalculations
  * @uses \OCA\OpenRegister\Service\Object\InverseBatch
@@ -89,7 +90,7 @@ class RenderObjectLensRowsTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new RenderObject(
-			fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\FileMapper::class),
+			fileMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Files\Db\FileMapper::class),
 			objectEntityMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class),
 			registerMapper: $this->createMock(originalClassName: \OCA\OpenRegister\Db\RegisterMapper::class),
 			schemaMapper: $schemaMapper,
