@@ -1,0 +1,1239 @@
+{
+    "add / none / fri 16:00 ams / hours / 0": "2026-04-24 16:00:00 +02:00",
+    "add / none / fri 16:00 ams / hours / 0.25": "2026-04-24 16:15:00 +02:00",
+    "add / none / fri 16:00 ams / hours / 1": "2026-04-24 17:00:00 +02:00",
+    "add / none / fri 16:00 ams / hours / 2.5": "2026-04-24 18:30:00 +02:00",
+    "add / none / fri 16:00 ams / hours / 7": "2026-04-24 23:00:00 +02:00",
+    "add / none / fri 16:00 ams / hours / -0.5": "2026-04-24 15:30:00 +02:00",
+    "add / none / fri 16:00 ams / hours / -1": "2026-04-24 15:00:00 +02:00",
+    "add / none / fri 16:00 ams / hours / -3.75": "2026-04-24 12:15:00 +02:00",
+    "add / none / fri 16:00 ams / hours / 30": "2026-04-25 22:00:00 +02:00",
+    "sub / none / fri 16:00 ams / hours / 2": "2026-04-24 14:00:00 +02:00",
+    "add / none / fri 16:00 ams / businessDays / 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / 0.25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / 2.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / 7": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / -0.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / -1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / -3.75": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / businessDays / 30": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "sub / none / fri 16:00 ams / businessDays / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / fri 16:00 ams / calendarDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / 1": "2026-04-25 16:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / 2.5": "2026-04-27 04:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / 7": "2026-05-01 16:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / none / fri 16:00 ams / calendarDays / 30": "2026-05-24 16:00:00 +02:00",
+    "sub / none / fri 16:00 ams / calendarDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / none / sat noon utc / hours / 0": "2026-04-25 12:00:00 +00:00",
+    "add / none / sat noon utc / hours / 0.25": "2026-04-25 12:15:00 +00:00",
+    "add / none / sat noon utc / hours / 1": "2026-04-25 13:00:00 +00:00",
+    "add / none / sat noon utc / hours / 2.5": "2026-04-25 14:30:00 +00:00",
+    "add / none / sat noon utc / hours / 7": "2026-04-25 19:00:00 +00:00",
+    "add / none / sat noon utc / hours / -0.5": "2026-04-25 11:30:00 +00:00",
+    "add / none / sat noon utc / hours / -1": "2026-04-25 11:00:00 +00:00",
+    "add / none / sat noon utc / hours / -3.75": "2026-04-25 08:15:00 +00:00",
+    "add / none / sat noon utc / hours / 30": "2026-04-26 18:00:00 +00:00",
+    "sub / none / sat noon utc / hours / 2": "2026-04-25 10:00:00 +00:00",
+    "add / none / sat noon utc / businessDays / 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / 0.25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / 2.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / 7": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / -0.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / -1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / -3.75": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / businessDays / 30": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "sub / none / sat noon utc / businessDays / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / sat noon utc / calendarDays / 0": "2026-04-25 12:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / 0.25": "2026-04-25 18:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / 1": "2026-04-26 12:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / 2.5": "2026-04-28 00:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / 7": "2026-05-02 12:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / -0.5": "2026-04-25 00:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / -1": "2026-04-24 12:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / -3.75": "2026-04-21 18:00:00 +00:00",
+    "add / none / sat noon utc / calendarDays / 30": "2026-05-25 12:00:00 +00:00",
+    "sub / none / sat noon utc / calendarDays / 2": "2026-04-23 12:00:00 +00:00",
+    "add / none / midnight mon / hours / 0": "2026-04-27 00:00:00 +02:00",
+    "add / none / midnight mon / hours / 0.25": "2026-04-27 00:15:00 +02:00",
+    "add / none / midnight mon / hours / 1": "2026-04-27 01:00:00 +02:00",
+    "add / none / midnight mon / hours / 2.5": "2026-04-27 02:30:00 +02:00",
+    "add / none / midnight mon / hours / 7": "2026-04-27 07:00:00 +02:00",
+    "add / none / midnight mon / hours / -0.5": "2026-04-26 23:30:00 +02:00",
+    "add / none / midnight mon / hours / -1": "2026-04-26 23:00:00 +02:00",
+    "add / none / midnight mon / hours / -3.75": "2026-04-26 20:15:00 +02:00",
+    "add / none / midnight mon / hours / 30": "2026-04-28 06:00:00 +02:00",
+    "sub / none / midnight mon / hours / 2": "2026-04-26 22:00:00 +02:00",
+    "add / none / midnight mon / businessDays / 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / 0.25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / 2.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / 7": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / -0.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / -1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / -3.75": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / businessDays / 30": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "sub / none / midnight mon / businessDays / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / midnight mon / calendarDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / 7": "2026-05-04 00:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / -0.5": "2026-04-26 12:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / -1": "2026-04-26 00:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / -3.75": "2026-04-23 06:00:00 +02:00",
+    "add / none / midnight mon / calendarDays / 30": "2026-05-27 00:00:00 +02:00",
+    "sub / none / midnight mon / calendarDays / 2": "2026-04-25 00:00:00 +02:00",
+    "add / none / dst eve / hours / 0": "2026-03-28 22:30:00 +01:00",
+    "add / none / dst eve / hours / 0.25": "2026-03-28 22:45:00 +01:00",
+    "add / none / dst eve / hours / 1": "2026-03-28 23:30:00 +01:00",
+    "add / none / dst eve / hours / 2.5": "2026-03-29 01:00:00 +01:00",
+    "add / none / dst eve / hours / 7": "2026-03-29 05:30:00 +02:00",
+    "add / none / dst eve / hours / -0.5": "2026-03-28 22:00:00 +01:00",
+    "add / none / dst eve / hours / -1": "2026-03-28 21:30:00 +01:00",
+    "add / none / dst eve / hours / -3.75": "2026-03-28 18:45:00 +01:00",
+    "add / none / dst eve / hours / 30": "2026-03-30 04:30:00 +02:00",
+    "sub / none / dst eve / hours / 2": "2026-03-28 20:30:00 +01:00",
+    "add / none / dst eve / businessDays / 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / 0.25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / 2.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / 7": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / -0.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / -1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / -3.75": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / businessDays / 30": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "sub / none / dst eve / businessDays / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / dst eve / calendarDays / 0": "2026-03-28 22:30:00 +01:00",
+    "add / none / dst eve / calendarDays / 0.25": "2026-03-29 04:30:00 +02:00",
+    "add / none / dst eve / calendarDays / 1": "2026-03-29 22:30:00 +02:00",
+    "add / none / dst eve / calendarDays / 2.5": "2026-03-31 10:30:00 +02:00",
+    "add / none / dst eve / calendarDays / 7": "2026-04-04 22:30:00 +02:00",
+    "add / none / dst eve / calendarDays / -0.5": "2026-03-28 10:30:00 +01:00",
+    "add / none / dst eve / calendarDays / -1": "2026-03-27 22:30:00 +01:00",
+    "add / none / dst eve / calendarDays / -3.75": "2026-03-25 04:30:00 +01:00",
+    "add / none / dst eve / calendarDays / 30": "2026-04-27 22:30:00 +02:00",
+    "sub / none / dst eve / calendarDays / 2": "2026-03-26 22:30:00 +01:00",
+    "add / none / christmas eve / hours / 0": "2026-12-24 10:15:00 +01:00",
+    "add / none / christmas eve / hours / 0.25": "2026-12-24 10:30:00 +01:00",
+    "add / none / christmas eve / hours / 1": "2026-12-24 11:15:00 +01:00",
+    "add / none / christmas eve / hours / 2.5": "2026-12-24 12:45:00 +01:00",
+    "add / none / christmas eve / hours / 7": "2026-12-24 17:15:00 +01:00",
+    "add / none / christmas eve / hours / -0.5": "2026-12-24 09:45:00 +01:00",
+    "add / none / christmas eve / hours / -1": "2026-12-24 09:15:00 +01:00",
+    "add / none / christmas eve / hours / -3.75": "2026-12-24 06:30:00 +01:00",
+    "add / none / christmas eve / hours / 30": "2026-12-25 16:15:00 +01:00",
+    "sub / none / christmas eve / hours / 2": "2026-12-24 08:15:00 +01:00",
+    "add / none / christmas eve / businessDays / 0": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / 0.25": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / 2.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / 7": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / -0.5": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / -1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / -3.75": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / businessDays / 30": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "sub / none / christmas eve / businessDays / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit 'businessDays' is counted against a working calendar and none was given; it would silently become wall-clock time."
+    },
+    "add / none / christmas eve / calendarDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / 1": "2026-12-25 10:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / 2.5": "2026-12-26 22:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / 7": "2026-12-31 10:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / -3.75": "2026-12-20 16:15:00 +01:00",
+    "add / none / christmas eve / calendarDays / 30": "2027-01-23 10:15:00 +01:00",
+    "sub / none / christmas eve / calendarDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / nl / fri 16:00 ams / hours / 0": "2026-04-24 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / 0.25": "2026-04-24 16:15:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / 1": "2026-04-24 17:00:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / 2.5": "2026-04-24 18:30:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / 7": "2026-04-24 23:00:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / -0.5": "2026-04-24 15:30:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / -1": "2026-04-24 15:00:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / -3.75": "2026-04-24 12:15:00 +02:00",
+    "add / nl / fri 16:00 ams / hours / 30": "2026-04-25 22:00:00 +02:00",
+    "sub / nl / fri 16:00 ams / hours / 2": "2026-04-24 14:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 1": "2026-04-28 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 2.5": "2026-04-30 04:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 7": "2026-05-06 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / nl / fri 16:00 ams / businessDays / 30": "2026-06-10 16:00:00 +02:00",
+    "sub / nl / fri 16:00 ams / businessDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 1": "2026-04-25 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 2.5": "2026-04-27 04:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 7": "2026-05-01 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / nl / fri 16:00 ams / calendarDays / 30": "2026-05-24 16:00:00 +02:00",
+    "sub / nl / fri 16:00 ams / calendarDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / nl / sat noon utc / hours / 0": "2026-04-25 12:00:00 +00:00",
+    "add / nl / sat noon utc / hours / 0.25": "2026-04-25 12:15:00 +00:00",
+    "add / nl / sat noon utc / hours / 1": "2026-04-25 13:00:00 +00:00",
+    "add / nl / sat noon utc / hours / 2.5": "2026-04-25 14:30:00 +00:00",
+    "add / nl / sat noon utc / hours / 7": "2026-04-25 19:00:00 +00:00",
+    "add / nl / sat noon utc / hours / -0.5": "2026-04-25 11:30:00 +00:00",
+    "add / nl / sat noon utc / hours / -1": "2026-04-25 11:00:00 +00:00",
+    "add / nl / sat noon utc / hours / -3.75": "2026-04-25 08:15:00 +00:00",
+    "add / nl / sat noon utc / hours / 30": "2026-04-26 18:00:00 +00:00",
+    "sub / nl / sat noon utc / hours / 2": "2026-04-25 10:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 0": "2026-04-28 00:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 0.25": "2026-04-28 06:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 1": "2026-04-29 00:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 2.5": "2026-04-30 12:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 7": "2026-05-07 00:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / -0.5": "2026-04-24 12:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / -1": "2026-04-24 00:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / -3.75": "2026-04-21 06:00:00 +00:00",
+    "add / nl / sat noon utc / businessDays / 30": "2026-06-11 00:00:00 +00:00",
+    "sub / nl / sat noon utc / businessDays / 2": "2026-04-23 00:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 0": "2026-04-25 12:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 0.25": "2026-04-25 18:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 1": "2026-04-26 12:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 2.5": "2026-04-28 00:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 7": "2026-05-02 12:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / -0.5": "2026-04-25 00:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / -1": "2026-04-24 12:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / -3.75": "2026-04-21 18:00:00 +00:00",
+    "add / nl / sat noon utc / calendarDays / 30": "2026-05-25 12:00:00 +00:00",
+    "sub / nl / sat noon utc / calendarDays / 2": "2026-04-23 12:00:00 +00:00",
+    "add / nl / midnight mon / hours / 0": "2026-04-27 00:00:00 +02:00",
+    "add / nl / midnight mon / hours / 0.25": "2026-04-27 00:15:00 +02:00",
+    "add / nl / midnight mon / hours / 1": "2026-04-27 01:00:00 +02:00",
+    "add / nl / midnight mon / hours / 2.5": "2026-04-27 02:30:00 +02:00",
+    "add / nl / midnight mon / hours / 7": "2026-04-27 07:00:00 +02:00",
+    "add / nl / midnight mon / hours / -0.5": "2026-04-26 23:30:00 +02:00",
+    "add / nl / midnight mon / hours / -1": "2026-04-26 23:00:00 +02:00",
+    "add / nl / midnight mon / hours / -3.75": "2026-04-26 20:15:00 +02:00",
+    "add / nl / midnight mon / hours / 30": "2026-04-28 06:00:00 +02:00",
+    "sub / nl / midnight mon / hours / 2": "2026-04-26 22:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 0": "2026-04-28 00:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 0.25": "2026-04-28 06:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 1": "2026-04-29 00:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 2.5": "2026-04-30 12:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 7": "2026-05-07 00:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / -0.5": "2026-04-24 12:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / -1": "2026-04-24 00:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / -3.75": "2026-04-21 06:00:00 +02:00",
+    "add / nl / midnight mon / businessDays / 30": "2026-06-11 00:00:00 +02:00",
+    "sub / nl / midnight mon / businessDays / 2": "2026-04-23 00:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 7": "2026-05-04 00:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / -0.5": "2026-04-26 12:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / -1": "2026-04-26 00:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / -3.75": "2026-04-23 06:00:00 +02:00",
+    "add / nl / midnight mon / calendarDays / 30": "2026-05-27 00:00:00 +02:00",
+    "sub / nl / midnight mon / calendarDays / 2": "2026-04-25 00:00:00 +02:00",
+    "add / nl / dst eve / hours / 0": "2026-03-28 22:30:00 +01:00",
+    "add / nl / dst eve / hours / 0.25": "2026-03-28 22:45:00 +01:00",
+    "add / nl / dst eve / hours / 1": "2026-03-28 23:30:00 +01:00",
+    "add / nl / dst eve / hours / 2.5": "2026-03-29 01:00:00 +01:00",
+    "add / nl / dst eve / hours / 7": "2026-03-29 05:30:00 +02:00",
+    "add / nl / dst eve / hours / -0.5": "2026-03-28 22:00:00 +01:00",
+    "add / nl / dst eve / hours / -1": "2026-03-28 21:30:00 +01:00",
+    "add / nl / dst eve / hours / -3.75": "2026-03-28 18:45:00 +01:00",
+    "add / nl / dst eve / hours / 30": "2026-03-30 04:30:00 +02:00",
+    "sub / nl / dst eve / hours / 2": "2026-03-28 20:30:00 +01:00",
+    "add / nl / dst eve / businessDays / 0": "2026-03-30 00:00:00 +02:00",
+    "add / nl / dst eve / businessDays / 0.25": "2026-03-30 06:00:00 +02:00",
+    "add / nl / dst eve / businessDays / 1": "2026-03-31 00:00:00 +02:00",
+    "add / nl / dst eve / businessDays / 2.5": "2026-04-01 12:00:00 +02:00",
+    "add / nl / dst eve / businessDays / 7": "2026-04-10 00:00:00 +02:00",
+    "add / nl / dst eve / businessDays / -0.5": "2026-03-27 12:00:00 +01:00",
+    "add / nl / dst eve / businessDays / -1": "2026-03-27 00:00:00 +01:00",
+    "add / nl / dst eve / businessDays / -3.75": "2026-03-24 06:00:00 +01:00",
+    "add / nl / dst eve / businessDays / 30": "2026-05-14 00:00:00 +02:00",
+    "sub / nl / dst eve / businessDays / 2": "2026-03-26 00:00:00 +01:00",
+    "add / nl / dst eve / calendarDays / 0": "2026-03-28 22:30:00 +01:00",
+    "add / nl / dst eve / calendarDays / 0.25": "2026-03-29 04:30:00 +02:00",
+    "add / nl / dst eve / calendarDays / 1": "2026-03-29 22:30:00 +02:00",
+    "add / nl / dst eve / calendarDays / 2.5": "2026-03-31 10:30:00 +02:00",
+    "add / nl / dst eve / calendarDays / 7": "2026-04-04 22:30:00 +02:00",
+    "add / nl / dst eve / calendarDays / -0.5": "2026-03-28 10:30:00 +01:00",
+    "add / nl / dst eve / calendarDays / -1": "2026-03-27 22:30:00 +01:00",
+    "add / nl / dst eve / calendarDays / -3.75": "2026-03-25 04:30:00 +01:00",
+    "add / nl / dst eve / calendarDays / 30": "2026-04-27 22:30:00 +02:00",
+    "sub / nl / dst eve / calendarDays / 2": "2026-03-26 22:30:00 +01:00",
+    "add / nl / christmas eve / hours / 0": "2026-12-24 10:15:00 +01:00",
+    "add / nl / christmas eve / hours / 0.25": "2026-12-24 10:30:00 +01:00",
+    "add / nl / christmas eve / hours / 1": "2026-12-24 11:15:00 +01:00",
+    "add / nl / christmas eve / hours / 2.5": "2026-12-24 12:45:00 +01:00",
+    "add / nl / christmas eve / hours / 7": "2026-12-24 17:15:00 +01:00",
+    "add / nl / christmas eve / hours / -0.5": "2026-12-24 09:45:00 +01:00",
+    "add / nl / christmas eve / hours / -1": "2026-12-24 09:15:00 +01:00",
+    "add / nl / christmas eve / hours / -3.75": "2026-12-24 06:30:00 +01:00",
+    "add / nl / christmas eve / hours / 30": "2026-12-25 16:15:00 +01:00",
+    "sub / nl / christmas eve / hours / 2": "2026-12-24 08:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 1": "2026-12-28 10:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 2.5": "2026-12-29 22:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 7": "2027-01-06 10:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / -3.75": "2026-12-18 16:15:00 +01:00",
+    "add / nl / christmas eve / businessDays / 30": "2027-02-08 10:15:00 +01:00",
+    "sub / nl / christmas eve / businessDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 1": "2026-12-25 10:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 2.5": "2026-12-26 22:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 7": "2026-12-31 10:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / -3.75": "2026-12-20 16:15:00 +01:00",
+    "add / nl / christmas eve / calendarDays / 30": "2027-01-23 10:15:00 +01:00",
+    "sub / nl / christmas eve / calendarDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / plain / fri 16:00 ams / hours / 0": "2026-04-24 16:00:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / 0.25": "2026-04-24 16:15:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / 1": "2026-04-24 17:00:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / 2.5": "2026-04-24 18:30:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / 7": "2026-04-24 23:00:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / -0.5": "2026-04-24 15:30:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / -1": "2026-04-24 15:00:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / -3.75": "2026-04-24 12:15:00 +02:00",
+    "add / plain / fri 16:00 ams / hours / 30": "2026-04-25 22:00:00 +02:00",
+    "sub / plain / fri 16:00 ams / hours / 2": "2026-04-24 14:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 7": "2026-05-07 00:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / -0.5": "2026-04-23 12:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / -1": "2026-04-23 00:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / -3.75": "2026-04-20 06:00:00 +02:00",
+    "add / plain / fri 16:00 ams / businessDays / 30": "2026-06-17 00:00:00 +02:00",
+    "sub / plain / fri 16:00 ams / businessDays / 2": "2026-04-22 00:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 1": "2026-04-25 16:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 2.5": "2026-04-27 04:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 7": "2026-05-01 16:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / plain / fri 16:00 ams / calendarDays / 30": "2026-05-24 16:00:00 +02:00",
+    "sub / plain / fri 16:00 ams / calendarDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / plain / sat noon utc / hours / 0": "2026-04-25 12:00:00 +00:00",
+    "add / plain / sat noon utc / hours / 0.25": "2026-04-25 12:15:00 +00:00",
+    "add / plain / sat noon utc / hours / 1": "2026-04-25 13:00:00 +00:00",
+    "add / plain / sat noon utc / hours / 2.5": "2026-04-25 14:30:00 +00:00",
+    "add / plain / sat noon utc / hours / 7": "2026-04-25 19:00:00 +00:00",
+    "add / plain / sat noon utc / hours / -0.5": "2026-04-25 11:30:00 +00:00",
+    "add / plain / sat noon utc / hours / -1": "2026-04-25 11:00:00 +00:00",
+    "add / plain / sat noon utc / hours / -3.75": "2026-04-25 08:15:00 +00:00",
+    "add / plain / sat noon utc / hours / 30": "2026-04-26 18:00:00 +00:00",
+    "sub / plain / sat noon utc / hours / 2": "2026-04-25 10:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 0": "2026-04-27 00:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 0.25": "2026-04-27 06:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 1": "2026-04-28 00:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 2.5": "2026-04-29 12:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 7": "2026-05-07 00:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / -0.5": "2026-04-23 12:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / -1": "2026-04-23 00:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / -3.75": "2026-04-20 06:00:00 +00:00",
+    "add / plain / sat noon utc / businessDays / 30": "2026-06-17 00:00:00 +00:00",
+    "sub / plain / sat noon utc / businessDays / 2": "2026-04-22 00:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 0": "2026-04-25 12:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 0.25": "2026-04-25 18:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 1": "2026-04-26 12:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 2.5": "2026-04-28 00:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 7": "2026-05-02 12:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / -0.5": "2026-04-25 00:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / -1": "2026-04-24 12:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / -3.75": "2026-04-21 18:00:00 +00:00",
+    "add / plain / sat noon utc / calendarDays / 30": "2026-05-25 12:00:00 +00:00",
+    "sub / plain / sat noon utc / calendarDays / 2": "2026-04-23 12:00:00 +00:00",
+    "add / plain / midnight mon / hours / 0": "2026-04-27 00:00:00 +02:00",
+    "add / plain / midnight mon / hours / 0.25": "2026-04-27 00:15:00 +02:00",
+    "add / plain / midnight mon / hours / 1": "2026-04-27 01:00:00 +02:00",
+    "add / plain / midnight mon / hours / 2.5": "2026-04-27 02:30:00 +02:00",
+    "add / plain / midnight mon / hours / 7": "2026-04-27 07:00:00 +02:00",
+    "add / plain / midnight mon / hours / -0.5": "2026-04-26 23:30:00 +02:00",
+    "add / plain / midnight mon / hours / -1": "2026-04-26 23:00:00 +02:00",
+    "add / plain / midnight mon / hours / -3.75": "2026-04-26 20:15:00 +02:00",
+    "add / plain / midnight mon / hours / 30": "2026-04-28 06:00:00 +02:00",
+    "sub / plain / midnight mon / hours / 2": "2026-04-26 22:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 7": "2026-05-07 00:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / -0.5": "2026-04-23 12:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / -1": "2026-04-23 00:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / -3.75": "2026-04-20 06:00:00 +02:00",
+    "add / plain / midnight mon / businessDays / 30": "2026-06-17 00:00:00 +02:00",
+    "sub / plain / midnight mon / businessDays / 2": "2026-04-22 00:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 7": "2026-05-04 00:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / -0.5": "2026-04-26 12:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / -1": "2026-04-26 00:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / -3.75": "2026-04-23 06:00:00 +02:00",
+    "add / plain / midnight mon / calendarDays / 30": "2026-05-27 00:00:00 +02:00",
+    "sub / plain / midnight mon / calendarDays / 2": "2026-04-25 00:00:00 +02:00",
+    "add / plain / dst eve / hours / 0": "2026-03-28 22:30:00 +01:00",
+    "add / plain / dst eve / hours / 0.25": "2026-03-28 22:45:00 +01:00",
+    "add / plain / dst eve / hours / 1": "2026-03-28 23:30:00 +01:00",
+    "add / plain / dst eve / hours / 2.5": "2026-03-29 01:00:00 +01:00",
+    "add / plain / dst eve / hours / 7": "2026-03-29 05:30:00 +02:00",
+    "add / plain / dst eve / hours / -0.5": "2026-03-28 22:00:00 +01:00",
+    "add / plain / dst eve / hours / -1": "2026-03-28 21:30:00 +01:00",
+    "add / plain / dst eve / hours / -3.75": "2026-03-28 18:45:00 +01:00",
+    "add / plain / dst eve / hours / 30": "2026-03-30 04:30:00 +02:00",
+    "sub / plain / dst eve / hours / 2": "2026-03-28 20:30:00 +01:00",
+    "add / plain / dst eve / businessDays / 0": "2026-03-30 00:00:00 +02:00",
+    "add / plain / dst eve / businessDays / 0.25": "2026-03-30 06:00:00 +02:00",
+    "add / plain / dst eve / businessDays / 1": "2026-03-31 00:00:00 +02:00",
+    "add / plain / dst eve / businessDays / 2.5": "2026-04-01 12:00:00 +02:00",
+    "add / plain / dst eve / businessDays / 7": "2026-04-09 00:00:00 +02:00",
+    "add / plain / dst eve / businessDays / -0.5": "2026-03-26 12:00:00 +01:00",
+    "add / plain / dst eve / businessDays / -1": "2026-03-26 00:00:00 +01:00",
+    "add / plain / dst eve / businessDays / -3.75": "2026-03-23 06:00:00 +01:00",
+    "add / plain / dst eve / businessDays / 30": "2026-05-20 00:00:00 +02:00",
+    "sub / plain / dst eve / businessDays / 2": "2026-03-25 00:00:00 +01:00",
+    "add / plain / dst eve / calendarDays / 0": "2026-03-28 22:30:00 +01:00",
+    "add / plain / dst eve / calendarDays / 0.25": "2026-03-29 04:30:00 +02:00",
+    "add / plain / dst eve / calendarDays / 1": "2026-03-29 22:30:00 +02:00",
+    "add / plain / dst eve / calendarDays / 2.5": "2026-03-31 10:30:00 +02:00",
+    "add / plain / dst eve / calendarDays / 7": "2026-04-04 22:30:00 +02:00",
+    "add / plain / dst eve / calendarDays / -0.5": "2026-03-28 10:30:00 +01:00",
+    "add / plain / dst eve / calendarDays / -1": "2026-03-27 22:30:00 +01:00",
+    "add / plain / dst eve / calendarDays / -3.75": "2026-03-25 04:30:00 +01:00",
+    "add / plain / dst eve / calendarDays / 30": "2026-04-27 22:30:00 +02:00",
+    "sub / plain / dst eve / calendarDays / 2": "2026-03-26 22:30:00 +01:00",
+    "add / plain / christmas eve / hours / 0": "2026-12-24 10:15:00 +01:00",
+    "add / plain / christmas eve / hours / 0.25": "2026-12-24 10:30:00 +01:00",
+    "add / plain / christmas eve / hours / 1": "2026-12-24 11:15:00 +01:00",
+    "add / plain / christmas eve / hours / 2.5": "2026-12-24 12:45:00 +01:00",
+    "add / plain / christmas eve / hours / 7": "2026-12-24 17:15:00 +01:00",
+    "add / plain / christmas eve / hours / -0.5": "2026-12-24 09:45:00 +01:00",
+    "add / plain / christmas eve / hours / -1": "2026-12-24 09:15:00 +01:00",
+    "add / plain / christmas eve / hours / -3.75": "2026-12-24 06:30:00 +01:00",
+    "add / plain / christmas eve / hours / 30": "2026-12-25 16:15:00 +01:00",
+    "sub / plain / christmas eve / hours / 2": "2026-12-24 08:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 1": "2026-12-28 10:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 2.5": "2026-12-29 22:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 7": "2027-01-06 10:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / -3.75": "2026-12-17 16:15:00 +01:00",
+    "add / plain / christmas eve / businessDays / 30": "2027-02-16 10:15:00 +01:00",
+    "sub / plain / christmas eve / businessDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 1": "2026-12-25 10:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 2.5": "2026-12-26 22:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 7": "2026-12-31 10:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / -3.75": "2026-12-20 16:15:00 +01:00",
+    "add / plain / christmas eve / calendarDays / 30": "2027-01-23 10:15:00 +01:00",
+    "sub / plain / christmas eve / calendarDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / service hours / fri 16:00 ams / hours / 0": "2026-04-24 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / hours / 0.25": "2026-04-27 08:45:00 +00:00",
+    "add / service hours / fri 16:00 ams / hours / 1": "2026-04-27 09:30:00 +00:00",
+    "add / service hours / fri 16:00 ams / hours / 2.5": "2026-04-27 11:00:00 +00:00",
+    "add / service hours / fri 16:00 ams / hours / 7": "2026-04-27 16:30:00 +00:00",
+    "add / service hours / fri 16:00 ams / hours / -0.5": "2026-04-24 15:30:00 +02:00",
+    "add / service hours / fri 16:00 ams / hours / -1": "2026-04-24 15:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / hours / -3.75": "2026-04-24 12:15:00 +02:00",
+    "add / service hours / fri 16:00 ams / hours / 30": "2026-05-06 13:30:00 +00:00",
+    "sub / service hours / fri 16:00 ams / hours / 2": "2026-04-24 14:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 1": "2026-04-27 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 2.5": "2026-04-29 04:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 7": "2026-05-05 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / businessDays / 30": "2026-06-05 16:00:00 +02:00",
+    "sub / service hours / fri 16:00 ams / businessDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 0": "2026-04-24 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 0.25": "2026-04-24 22:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 1": "2026-04-25 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 2.5": "2026-04-27 04:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 7": "2026-05-01 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / -0.5": "2026-04-24 04:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / -1": "2026-04-23 16:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / -3.75": "2026-04-20 22:00:00 +02:00",
+    "add / service hours / fri 16:00 ams / calendarDays / 30": "2026-05-24 16:00:00 +02:00",
+    "sub / service hours / fri 16:00 ams / calendarDays / 2": "2026-04-22 16:00:00 +02:00",
+    "add / service hours / sat noon utc / hours / 0": "2026-04-25 12:00:00 +00:00",
+    "add / service hours / sat noon utc / hours / 0.25": "2026-04-27 08:45:00 +00:00",
+    "add / service hours / sat noon utc / hours / 1": "2026-04-27 09:30:00 +00:00",
+    "add / service hours / sat noon utc / hours / 2.5": "2026-04-27 11:00:00 +00:00",
+    "add / service hours / sat noon utc / hours / 7": "2026-04-27 16:30:00 +00:00",
+    "add / service hours / sat noon utc / hours / -0.5": "2026-04-25 11:30:00 +00:00",
+    "add / service hours / sat noon utc / hours / -1": "2026-04-25 11:00:00 +00:00",
+    "add / service hours / sat noon utc / hours / -3.75": "2026-04-25 08:15:00 +00:00",
+    "add / service hours / sat noon utc / hours / 30": "2026-05-06 13:30:00 +00:00",
+    "sub / service hours / sat noon utc / hours / 2": "2026-04-25 10:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 0": "2026-04-27 00:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 0.25": "2026-04-27 06:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 1": "2026-04-28 00:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 2.5": "2026-04-29 12:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 7": "2026-05-06 00:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / -0.5": "2026-04-24 12:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / -1": "2026-04-24 00:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / -3.75": "2026-04-21 06:00:00 +00:00",
+    "add / service hours / sat noon utc / businessDays / 30": "2026-06-06 00:00:00 +00:00",
+    "sub / service hours / sat noon utc / businessDays / 2": "2026-04-23 00:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 0": "2026-04-25 12:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 0.25": "2026-04-25 18:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 1": "2026-04-26 12:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 2.5": "2026-04-28 00:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 7": "2026-05-02 12:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / -0.5": "2026-04-25 00:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / -1": "2026-04-24 12:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / -3.75": "2026-04-21 18:00:00 +00:00",
+    "add / service hours / sat noon utc / calendarDays / 30": "2026-05-25 12:00:00 +00:00",
+    "sub / service hours / sat noon utc / calendarDays / 2": "2026-04-23 12:00:00 +00:00",
+    "add / service hours / midnight mon / hours / 0": "2026-04-27 00:00:00 +02:00",
+    "add / service hours / midnight mon / hours / 0.25": "2026-04-27 08:45:00 +00:00",
+    "add / service hours / midnight mon / hours / 1": "2026-04-27 09:30:00 +00:00",
+    "add / service hours / midnight mon / hours / 2.5": "2026-04-27 11:00:00 +00:00",
+    "add / service hours / midnight mon / hours / 7": "2026-04-27 16:30:00 +00:00",
+    "add / service hours / midnight mon / hours / -0.5": "2026-04-26 23:30:00 +02:00",
+    "add / service hours / midnight mon / hours / -1": "2026-04-26 23:00:00 +02:00",
+    "add / service hours / midnight mon / hours / -3.75": "2026-04-26 20:15:00 +02:00",
+    "add / service hours / midnight mon / hours / 30": "2026-05-06 13:30:00 +00:00",
+    "sub / service hours / midnight mon / hours / 2": "2026-04-26 22:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 7": "2026-05-06 00:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / -0.5": "2026-04-24 12:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / -1": "2026-04-24 00:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / -3.75": "2026-04-21 06:00:00 +02:00",
+    "add / service hours / midnight mon / businessDays / 30": "2026-06-06 00:00:00 +02:00",
+    "sub / service hours / midnight mon / businessDays / 2": "2026-04-23 00:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 0": "2026-04-27 00:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 0.25": "2026-04-27 06:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 1": "2026-04-28 00:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 2.5": "2026-04-29 12:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 7": "2026-05-04 00:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / -0.5": "2026-04-26 12:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / -1": "2026-04-26 00:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / -3.75": "2026-04-23 06:00:00 +02:00",
+    "add / service hours / midnight mon / calendarDays / 30": "2026-05-27 00:00:00 +02:00",
+    "sub / service hours / midnight mon / calendarDays / 2": "2026-04-25 00:00:00 +02:00",
+    "add / service hours / dst eve / hours / 0": "2026-03-28 22:30:00 +01:00",
+    "add / service hours / dst eve / hours / 0.25": "2026-03-30 08:45:00 +00:00",
+    "add / service hours / dst eve / hours / 1": "2026-03-30 09:30:00 +00:00",
+    "add / service hours / dst eve / hours / 2.5": "2026-03-30 11:00:00 +00:00",
+    "add / service hours / dst eve / hours / 7": "2026-03-30 16:30:00 +00:00",
+    "add / service hours / dst eve / hours / -0.5": "2026-03-28 22:00:00 +01:00",
+    "add / service hours / dst eve / hours / -1": "2026-03-28 21:30:00 +01:00",
+    "add / service hours / dst eve / hours / -3.75": "2026-03-28 18:45:00 +01:00",
+    "add / service hours / dst eve / hours / 30": "2026-04-08 13:30:00 +00:00",
+    "sub / service hours / dst eve / hours / 2": "2026-03-28 20:30:00 +01:00",
+    "add / service hours / dst eve / businessDays / 0": "2026-03-30 00:00:00 +02:00",
+    "add / service hours / dst eve / businessDays / 0.25": "2026-03-30 06:00:00 +02:00",
+    "add / service hours / dst eve / businessDays / 1": "2026-03-31 00:00:00 +02:00",
+    "add / service hours / dst eve / businessDays / 2.5": "2026-04-01 12:00:00 +02:00",
+    "add / service hours / dst eve / businessDays / 7": "2026-04-08 00:00:00 +02:00",
+    "add / service hours / dst eve / businessDays / -0.5": "2026-03-27 12:00:00 +01:00",
+    "add / service hours / dst eve / businessDays / -1": "2026-03-27 00:00:00 +01:00",
+    "add / service hours / dst eve / businessDays / -3.75": "2026-03-24 06:00:00 +01:00",
+    "add / service hours / dst eve / businessDays / 30": "2026-05-09 00:00:00 +02:00",
+    "sub / service hours / dst eve / businessDays / 2": "2026-03-26 00:00:00 +01:00",
+    "add / service hours / dst eve / calendarDays / 0": "2026-03-28 22:30:00 +01:00",
+    "add / service hours / dst eve / calendarDays / 0.25": "2026-03-29 04:30:00 +02:00",
+    "add / service hours / dst eve / calendarDays / 1": "2026-03-29 22:30:00 +02:00",
+    "add / service hours / dst eve / calendarDays / 2.5": "2026-03-31 10:30:00 +02:00",
+    "add / service hours / dst eve / calendarDays / 7": "2026-04-04 22:30:00 +02:00",
+    "add / service hours / dst eve / calendarDays / -0.5": "2026-03-28 10:30:00 +01:00",
+    "add / service hours / dst eve / calendarDays / -1": "2026-03-27 22:30:00 +01:00",
+    "add / service hours / dst eve / calendarDays / -3.75": "2026-03-25 04:30:00 +01:00",
+    "add / service hours / dst eve / calendarDays / 30": "2026-04-27 22:30:00 +02:00",
+    "sub / service hours / dst eve / calendarDays / 2": "2026-03-26 22:30:00 +01:00",
+    "add / service hours / christmas eve / hours / 0": "2026-12-24 10:15:00 +01:00",
+    "add / service hours / christmas eve / hours / 0.25": "2026-12-28 08:45:00 +00:00",
+    "add / service hours / christmas eve / hours / 1": "2026-12-28 09:30:00 +00:00",
+    "add / service hours / christmas eve / hours / 2.5": "2026-12-28 11:00:00 +00:00",
+    "add / service hours / christmas eve / hours / 7": "2026-12-28 16:30:00 +00:00",
+    "add / service hours / christmas eve / hours / -0.5": "2026-12-24 09:45:00 +01:00",
+    "add / service hours / christmas eve / hours / -1": "2026-12-24 09:15:00 +01:00",
+    "add / service hours / christmas eve / hours / -3.75": "2026-12-24 06:30:00 +01:00",
+    "add / service hours / christmas eve / hours / 30": "2027-01-06 13:30:00 +00:00",
+    "sub / service hours / christmas eve / hours / 2": "2026-12-24 08:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 1": "2026-12-28 10:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 2.5": "2026-12-29 22:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 7": "2027-01-05 10:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / -3.75": "2026-12-18 16:15:00 +01:00",
+    "add / service hours / christmas eve / businessDays / 30": "2027-02-05 10:15:00 +01:00",
+    "sub / service hours / christmas eve / businessDays / 2": "2026-12-22 10:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 0": "2026-12-24 10:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 0.25": "2026-12-24 16:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 1": "2026-12-25 10:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 2.5": "2026-12-26 22:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 7": "2026-12-31 10:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / -0.5": "2026-12-23 22:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / -1": "2026-12-23 10:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / -3.75": "2026-12-20 16:15:00 +01:00",
+    "add / service hours / christmas eve / calendarDays / 30": "2027-01-23 10:15:00 +01:00",
+    "sub / service hours / christmas eve / calendarDays / 2": "2026-12-22 10:15:00 +01:00",
+    "collector / nl / 3.5": {
+        "landed": "2026-05-01 04:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-25",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-26",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-27",
+                "kind": "Koningsdag",
+                "counted": false
+            },
+            {
+                "date": "2026-04-28",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-29",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-30",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-05-01",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 8
+    },
+    "collector / nl / -3.5": {
+        "landed": "2026-04-21 04:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-23",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-22",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-21",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 4
+    },
+    "collector / nl / 0": {
+        "landed": "2026-04-24 16:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 1
+    },
+    "measure / nl / weekend / hours": 65,
+    "measure / nl / weekend / businessDays": 0.333333333,
+    "measure / nl / weekend / calendarDays": 2.708333333,
+    "elapsed / nl / weekend": 1,
+    "measure / nl / reverse / hours": -65,
+    "measure / nl / reverse / businessDays": -0.333333333,
+    "measure / nl / reverse / calendarDays": -2.708333333,
+    "elapsed / nl / reverse": -1,
+    "measure / nl / same / hours": 0,
+    "measure / nl / same / businessDays": 0,
+    "measure / nl / same / calendarDays": 0,
+    "elapsed / nl / same": 0,
+    "measure / nl / month / hours": 827.75,
+    "measure / nl / month / businessDays": 22.489583333,
+    "measure / nl / month / calendarDays": 34.489583333,
+    "elapsed / nl / month": 184,
+    "measure / nl / dst / hours": 71,
+    "measure / nl / dst / businessDays": 1,
+    "measure / nl / dst / calendarDays": 3,
+    "elapsed / nl / dst": 8,
+    "measure / nl / night / hours": 10,
+    "measure / nl / night / businessDays": 0.416666667,
+    "measure / nl / night / calendarDays": 0.416666667,
+    "elapsed / nl / night": 0,
+    "measure / nl / too long / hours": 525960,
+    "measure / nl / too long / businessDays": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring business days between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "measure / nl / too long / calendarDays": 21915,
+    "elapsed / nl / too long": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring working hours between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "convert / nl / hours -> hours": 3,
+    "convert / nl / hours -> businessDays": 0.375,
+    "convert / nl / hours -> calendarDays": 0.125,
+    "convert / nl / businessDays -> hours": 24,
+    "convert / nl / businessDays -> businessDays": 3,
+    "convert / nl / businessDays -> calendarDays": 1,
+    "convert / nl / calendarDays -> hours": 72,
+    "convert / nl / calendarDays -> businessDays": 9,
+    "convert / nl / calendarDays -> calendarDays": 3,
+    "convert / nl / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "measure / nl / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "roll / nl / none": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "roll / nl / next": {
+        "at": "2026-04-28 15:00:00 +02:00",
+        "unrolledAt": "2026-04-27 15:00:00 +02:00",
+        "rolledBy": "Koningsdag"
+    },
+    "roll / nl / previous": {
+        "at": "2026-04-24 15:00:00 +02:00",
+        "unrolledAt": "2026-04-27 15:00:00 +02:00",
+        "rolledBy": "Koningsdag"
+    },
+    "collector / plain / 3.5": {
+        "landed": "2026-04-30 12:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-25",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-26",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-27",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-28",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-29",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-30",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 7
+    },
+    "collector / plain / -3.5": {
+        "landed": "2026-04-20 12:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-23",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-22",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-21",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-20",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 5
+    },
+    "collector / plain / 0": {
+        "landed": "2026-04-27 00:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-25",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-26",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-27",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 4
+    },
+    "measure / plain / weekend / hours": 65,
+    "measure / plain / weekend / businessDays": 0.375,
+    "measure / plain / weekend / calendarDays": 2.708333333,
+    "elapsed / plain / weekend": 1,
+    "measure / plain / reverse / hours": -65,
+    "measure / plain / reverse / businessDays": -0.375,
+    "measure / plain / reverse / calendarDays": -2.708333333,
+    "elapsed / plain / reverse": -1,
+    "measure / plain / same / hours": 0,
+    "measure / plain / same / businessDays": 0,
+    "measure / plain / same / calendarDays": 0,
+    "elapsed / plain / same": 0,
+    "measure / plain / month / hours": 827.75,
+    "measure / plain / month / businessDays": 19.489583333,
+    "measure / plain / month / calendarDays": 34.489583333,
+    "elapsed / plain / month": 150,
+    "measure / plain / dst / hours": 71,
+    "measure / plain / dst / businessDays": 0.416666667,
+    "measure / plain / dst / calendarDays": 3,
+    "elapsed / plain / dst": 2,
+    "measure / plain / night / hours": 10,
+    "measure / plain / night / businessDays": 0.416666667,
+    "measure / plain / night / calendarDays": 0.416666667,
+    "elapsed / plain / night": 0,
+    "measure / plain / too long / hours": 525960,
+    "measure / plain / too long / businessDays": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring business days between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "measure / plain / too long / calendarDays": 21915,
+    "elapsed / plain / too long": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring working hours between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "convert / plain / hours -> hours": 3,
+    "convert / plain / hours -> businessDays": 0.4,
+    "convert / plain / hours -> calendarDays": 0.125,
+    "convert / plain / businessDays -> hours": 22.5,
+    "convert / plain / businessDays -> businessDays": 3,
+    "convert / plain / businessDays -> calendarDays": 0.9375,
+    "convert / plain / calendarDays -> hours": 72,
+    "convert / plain / calendarDays -> businessDays": 9.6,
+    "convert / plain / calendarDays -> calendarDays": 3,
+    "convert / plain / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "measure / plain / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "roll / plain / none": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "roll / plain / next": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "roll / plain / previous": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "collector / service hours / 3.5": {
+        "landed": "2026-04-30 04:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-25",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-26",
+                "kind": "weekend",
+                "counted": false
+            },
+            {
+                "date": "2026-04-27",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-28",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-29",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-30",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 7
+    },
+    "collector / service hours / -3.5": {
+        "landed": "2026-04-21 04:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-23",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-22",
+                "kind": "working",
+                "counted": true
+            },
+            {
+                "date": "2026-04-21",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 4
+    },
+    "collector / service hours / 0": {
+        "landed": "2026-04-24 16:00:00 +02:00",
+        "walk": [
+            {
+                "date": "2026-04-24",
+                "kind": "working",
+                "counted": true
+            }
+        ],
+        "examined": 1
+    },
+    "measure / service hours / weekend / hours": 65,
+    "measure / service hours / weekend / businessDays": 0.708333333,
+    "measure / service hours / weekend / calendarDays": 2.708333333,
+    "elapsed / service hours / weekend": 0,
+    "measure / service hours / reverse / hours": -65,
+    "measure / service hours / reverse / businessDays": -0.708333333,
+    "measure / service hours / reverse / calendarDays": -2.708333333,
+    "elapsed / service hours / reverse": 0,
+    "measure / service hours / same / hours": 0,
+    "measure / service hours / same / businessDays": 0,
+    "measure / service hours / same / calendarDays": 0,
+    "elapsed / service hours / same": 0,
+    "measure / service hours / month / hours": 827.75,
+    "measure / service hours / month / businessDays": 23.489583333,
+    "measure / service hours / month / calendarDays": 34.489583333,
+    "elapsed / service hours / month": 89,
+    "measure / service hours / dst / hours": 71,
+    "measure / service hours / dst / businessDays": 1,
+    "measure / service hours / dst / calendarDays": 3,
+    "elapsed / service hours / dst": 3.5,
+    "measure / service hours / night / hours": 10,
+    "measure / service hours / night / businessDays": 0.416666667,
+    "measure / service hours / night / calendarDays": 0.416666667,
+    "elapsed / service hours / night": 0,
+    "measure / service hours / too long / hours": 525960,
+    "measure / service hours / too long / businessDays": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring business days between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "measure / service hours / too long / calendarDays": 21915,
+    "elapsed / service hours / too long": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Measuring service hours between 2000-01-01T00:00:00+00:00 and 2060-01-01T00:00:00+00:00 exceeds 3650 calendar days."
+    },
+    "convert / service hours / hours -> hours": 3,
+    "convert / service hours / hours -> businessDays": 0.4,
+    "convert / service hours / hours -> calendarDays": 0.125,
+    "convert / service hours / businessDays -> hours": 22.5,
+    "convert / service hours / businessDays -> businessDays": 3,
+    "convert / service hours / businessDays -> calendarDays": 0.9375,
+    "convert / service hours / calendarDays -> hours": 72,
+    "convert / service hours / calendarDays -> businessDays": 9.6,
+    "convert / service hours / calendarDays -> calendarDays": 3,
+    "convert / service hours / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "measure / service hours / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "roll / service hours / none": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "roll / service hours / next": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "roll / service hours / previous": {
+        "at": "2026-04-27 15:00:00 +02:00",
+        "unrolledAt": null,
+        "rolledBy": null
+    },
+    "add / bad unit": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "add / too long forward": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Adding 30000 business days from 2026-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "add / too long backward": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Subtracting 30000 business days from 2026-01-01T00:00:00+00:00 exceeds 20000 calendar days."
+    },
+    "add / negative zero": "2026-04-28 00:00:00 +00:00",
+    "validateSla / 0": {
+        "value": 5,
+        "unit": "businessDays",
+        "rollToWorkingDay": "none"
+    },
+    "validateSla / 1": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "SLA value '0' is refused: it must be an integer from 1 to 10000."
+    },
+    "validateSla / 2": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "Unit ''weeks'' is refused: use one of hours, businessDays, calendarDays."
+    },
+    "validateSla / 3": {
+        "error": "OCA\\OpenRegister\\Exception\\FlowTimerValidationException",
+        "message": "An SLA must have the shape {value, unit}."
+    }
+}

@@ -4,16 +4,17 @@
 			<!-- Header -->
 			<FilterToggleHeader
 				:title="t('openregister', 'Templates')"
-				:description="t('openregister', 'Manage document templates and themes')"
+				:description="
+					t('openregister', 'Manage document templates and themes')
+				"
 				:sidebarOpen="sidebarOpen"
 				@toggle="toggleSidebar" />
 
 			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span v-if="templatesList.length" class="viewTotalCount">
-						{{
-							t(
+			<ListActionsBar
+				:summary="
+					templatesList.length
+						? t(
 								'openregister',
 								'Showing {showing} of {total} templates',
 								{
@@ -21,20 +22,9 @@
 									total: totalTemplates,
 								},
 							)
-						}}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions :forceName="true" :inline="1" menuName="Actions">
-						<NcActionButton closeAfterClick @click="refreshTemplates">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+						: ''
+				"
+				:actions="[refreshAction(refreshTemplates)]" />
 
 			<!-- Templates Table -->
 			<div class="tableContainer">
@@ -93,16 +83,7 @@
 								{{ formatDate(template.updatedAt) }}
 							</td>
 							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										closeAfterClick
-										@click="viewTemplate(template)">
-										<template #icon>
-											<EyeOutline :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-								</NcActions>
+								<ActionMenu :actions="templateActions(template)" />
 							</td>
 						</tr>
 					</tbody>
@@ -122,18 +103,15 @@
 
 <script>
 import { t } from '@nextcloud/l10n'
-import {
-	NcActionButton,
-	NcActions,
-	NcAppContent,
-	NcEmptyContent,
-	NcLoadingIcon,
-} from '@nextcloud/vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
+import ActionMenu from '../../components/shared/ActionMenu.vue'
 import FilterToggleHeader from '../../components/shared/FilterToggleHeader.vue'
+import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import OffsetPager from '../../components/shared/OffsetPager.vue'
+import { refreshAction } from '../../services/menuActions.js'
 import { offsetPaging } from '../offsetPaging.js'
 
 /**
@@ -142,16 +120,14 @@ import { offsetPaging } from '../offsetPaging.js'
 export default {
 	name: 'TemplatesIndex',
 	components: {
+		ActionMenu,
+		ListActionsBar,
 		OffsetPager,
 		FilterToggleHeader,
 		NcAppContent,
-		NcActions,
-		NcActionButton,
 		NcLoadingIcon,
 		NcEmptyContent,
 		FileOutline,
-		Refresh,
-		EyeOutline,
 	},
 
 	mixins: [offsetPaging('totalTemplates', 'loadTemplates')],
@@ -167,14 +143,32 @@ export default {
 		}
 	},
 
-	computed: {
-	},
+	computed: {},
 
 	mounted() {
 		this.loadTemplates()
 	},
 
 	methods: {
+		refreshAction,
+
+		/**
+		 * The row menu of a template.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} template The template
+		 * @return {Array<object>} The ActionMenu entries
+		 */
+		templateActions(template) {
+			return [
+				{
+					label: t('openregister', 'View Details'),
+					icon: EyeOutline,
+					run: () => this.viewTemplate(template),
+				},
+			]
+		},
+
 		t,
 
 		/**
@@ -266,15 +260,7 @@ export default {
 
 @include view-container-2;
 
-
-@include view-actions-bar;
-@include view-info;
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-@include view-actions-rules;
+@include table-container;
 
 .templatesTable {
 	width: 100%;
@@ -327,5 +313,4 @@ export default {
 .column-actions {
 	width: 50px;
 }
-
 </style>

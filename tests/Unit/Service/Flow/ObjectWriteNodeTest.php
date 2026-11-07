@@ -1998,4 +1998,19 @@ class ObjectWriteNodeTest extends TestCase {
 			$preview
 		);
 	}//end testPreviewNamesTheFieldsItWouldSetAndWritesNothing()
+
+	/**
+	 * A misspelt conflict policy must not fall back to overwriting a claim.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownConflictPolicyIsRefusedAtSaveTime(): void {
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('"onConflict" must be one of: overwrite, fail.');
+
+		$this->node->validateConfig(
+			['register' => 'reg', 'schema' => 'sch', 'operation' => 'create', 'fields' => ['a' => 1], 'onConflict' => 'fial']
+		);
+
+	}//end testAnUnknownConflictPolicyIsRefusedAtSaveTime()
 }//end class

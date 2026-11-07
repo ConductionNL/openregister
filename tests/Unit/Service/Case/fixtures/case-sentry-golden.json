@@ -1,0 +1,3536 @@
+{
+    "empty": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "entry:default",
+            "available / no event / amount 6": "entry:default",
+            "available / object.updated / amount 5": "entry:default",
+            "available / object.updated / amount 6": "entry:default",
+            "available / object.created / amount 5": "entry:default",
+            "available / object.created / amount 6": "entry:default",
+            "completed / no event / amount 5": "entry:default",
+            "completed / no event / amount 6": "entry:default",
+            "completed / object.updated / amount 5": "entry:default",
+            "completed / object.updated / amount 6": "entry:default",
+            "completed / object.created / amount 5": "entry:default",
+            "completed / object.created / amount 6": "entry:default"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "empty sentry": {
+        "validate": "entry of decide sentry #1 has neither an on-part nor an if-part.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if case document": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if empty": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if event document": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": "sentry:1",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": "sentry:1",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if invalid operator": {
+        "validate": "entry of decide sentry #1 has an if-part that is not a valid expression.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if list literal": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if nested var": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": "sentry:1",
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": "sentry:1",
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": "sentry:1",
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "exit": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": "sentry:1",
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": "sentry:1",
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": "sentry:1",
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if no var": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if payload document": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if true literal": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if var fails": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": "amt",
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": "amt",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": "amt",
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": "amt",
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": "amt",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": "amt"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": "amt",
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": "amt",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": "amt",
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": "amt",
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": "amt",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": "amt"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "if var holds": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "amt",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "amt",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "amt",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "amt",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "amt",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "amt",
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": "amt",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "amt",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "amt",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "amt",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "amt",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "amt",
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "keyed criteria": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "exit": {
+            "available / no event / amount 5": "sentry:1",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "sentry:1",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "sentry:1",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "null": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "entry:default",
+            "available / no event / amount 6": "entry:default",
+            "available / object.updated / amount 5": "entry:default",
+            "available / object.updated / amount 6": "entry:default",
+            "available / object.created / amount 5": "entry:default",
+            "available / object.created / amount 6": "entry:default",
+            "completed / no event / amount 5": "entry:default",
+            "completed / no event / amount 6": "entry:default",
+            "completed / object.updated / amount 5": "entry:default",
+            "completed / object.updated / amount 6": "entry:default",
+            "completed / object.created / amount 5": "entry:default",
+            "completed / object.created / amount 6": "entry:default"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "numeric id": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "7",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "7",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "7",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "7",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "7",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "7",
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": "7",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "7",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "7",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "7",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "7",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "7",
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on and if both hold": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "both",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "both",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "both",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "both",
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on blank event": {
+        "validate": "entry of decide sentry #1 has an on-part without an event.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on holds if fails": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item blank item": {
+        "validate": "entry of decide sentry #1 names plan-item event 'case.item.completed' without naming the item.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item disabled other item": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item done": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "done",
+            "completed / no event / amount 6": "done",
+            "completed / object.updated / amount 5": "done",
+            "completed / object.updated / amount 6": "done",
+            "completed / object.created / amount 5": "done",
+            "completed / object.created / amount 6": "done"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "done",
+            "completed / no event / amount 6": "done",
+            "completed / object.updated / amount 5": "done",
+            "completed / object.updated / amount 6": "done",
+            "completed / object.created / amount 5": "done",
+            "completed / object.created / amount 6": "done"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item done no id": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item done second position no id": {
+        "validate": "entry of decide sentry #1 must be an object with an on-part and/or an if-part.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:2",
+            "completed / no event / amount 6": "sentry:2",
+            "completed / object.updated / amount 5": "sentry:2",
+            "completed / object.updated / amount 6": "sentry:2",
+            "completed / object.created / amount 5": "sentry:2",
+            "completed / object.created / amount 6": "sentry:2"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:2",
+            "completed / no event / amount 6": "sentry:2",
+            "completed / object.updated / amount 5": "sentry:2",
+            "completed / object.updated / amount 6": "sentry:2",
+            "completed / object.created / amount 5": "sentry:2",
+            "completed / object.created / amount 6": "sentry:2"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item terminated": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on item without item": {
+        "validate": "entry of decide sentry #1 names plan-item event 'case.item.completed' without naming the item.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on legacy alias": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "cre",
+            "available / object.created / amount 6": "cre",
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "cre",
+            "completed / object.created / amount 6": "cre"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "cre",
+            "available / object.created / amount 6": "cre",
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": "cre",
+            "completed / object.created / amount 6": "cre"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on missing event": {
+        "validate": "entry of decide sentry #1 has an on-part without an event.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on null": {
+        "validate": "entry of decide sentry #1 has an on-part without an event.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on object event": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "upd",
+            "available / object.updated / amount 6": "upd",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "upd",
+            "completed / object.updated / amount 6": "upd",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "upd",
+            "available / object.updated / amount 6": "upd",
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "upd",
+            "completed / object.updated / amount 6": "upd",
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on padded event": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "sentry:1",
+            "completed / no event / amount 6": "sentry:1",
+            "completed / object.updated / amount 5": "sentry:1",
+            "completed / object.updated / amount 6": "sentry:1",
+            "completed / object.created / amount 5": "sentry:1",
+            "completed / object.created / amount 6": "sentry:1"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on scalar": {
+        "validate": "entry of decide sentry #1 has an on-part without an event.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "on unknown event": {
+        "validate": "entry of decide sentry #1 names event 'nope.happened', which is not in the event catalog.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "or across first wins": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "a",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "a",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "a",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "a",
+            "completed / no event / amount 6": "b",
+            "completed / object.updated / amount 5": "a",
+            "completed / object.updated / amount 6": "b",
+            "completed / object.created / amount 5": "a",
+            "completed / object.created / amount 6": "b"
+        },
+        "exit": {
+            "available / no event / amount 5": "a",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "a",
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": "a",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "a",
+            "completed / no event / amount 6": "b",
+            "completed / object.updated / amount 5": "a",
+            "completed / object.updated / amount 6": "b",
+            "completed / object.created / amount 5": "a",
+            "completed / object.created / amount 6": "b"
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "or across later wins": {
+        "validate": "ok",
+        "entry": {
+            "available / no event / amount 5": "c",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "b",
+            "available / object.updated / amount 6": "b",
+            "available / object.created / amount 5": "c",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "c",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "b",
+            "completed / object.updated / amount 6": "b",
+            "completed / object.created / amount 5": "c",
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": "c",
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": "b",
+            "available / object.updated / amount 6": "b",
+            "available / object.created / amount 5": "c",
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": "c",
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": "b",
+            "completed / object.updated / amount 6": "b",
+            "completed / object.created / amount 5": "c",
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "other keys only": {
+        "validate": "entry of decide sentry #1 has neither an on-part nor an if-part.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "scalar": {
+        "validate": "entry of decide criteria must be a list of sentries.",
+        "entry": {
+            "available / no event / amount 5": "entry:default",
+            "available / no event / amount 6": "entry:default",
+            "available / object.updated / amount 5": "entry:default",
+            "available / object.updated / amount 6": "entry:default",
+            "available / object.created / amount 5": "entry:default",
+            "available / object.created / amount 6": "entry:default",
+            "completed / no event / amount 5": "entry:default",
+            "completed / no event / amount 6": "entry:default",
+            "completed / object.updated / amount 5": "entry:default",
+            "completed / object.updated / amount 6": "entry:default",
+            "completed / object.created / amount 5": "entry:default",
+            "completed / object.created / amount 6": "entry:default"
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    },
+    "scalar sentry": {
+        "validate": "entry of decide sentry #1 must be an object with an on-part and/or an if-part.",
+        "entry": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "exit": {
+            "available / no event / amount 5": null,
+            "available / no event / amount 6": null,
+            "available / object.updated / amount 5": null,
+            "available / object.updated / amount 6": null,
+            "available / object.created / amount 5": null,
+            "available / object.created / amount 6": null,
+            "completed / no event / amount 5": null,
+            "completed / no event / amount 6": null,
+            "completed / object.updated / amount 5": null,
+            "completed / object.updated / amount 6": null,
+            "completed / object.created / amount 5": null,
+            "completed / object.created / amount 6": null
+        },
+        "data": {
+            "available": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "available",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            },
+            "completed": {
+                "json": {
+                    "amount": 5
+                },
+                "binary": [],
+                "itemIndex": 0,
+                "itemCount": 1,
+                "context": {
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                },
+                "subject": {
+                    "amount": 5
+                },
+                "case": {
+                    "items": {
+                        "advice": "completed",
+                        "decide": "available"
+                    },
+                    "object": {
+                        "amount": 5
+                    },
+                    "event": "object.updated",
+                    "payload": {
+                        "flag": true
+                    }
+                }
+            }
+        }
+    }
+}

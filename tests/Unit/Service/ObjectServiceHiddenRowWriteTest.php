@@ -76,6 +76,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Service\Object\BulkCacheInvalidator
+ * @uses   \OCA\OpenRegister\Service\Object\ObjectSaveRun
  * @uses   \OCA\OpenRegister\Service\Object\ObjectCacheInvalidator
  * @uses   \OCA\OpenRegister\Service\Object\ReferencePreviewInvalidation
  * @uses   \OCA\OpenRegister\Service\Object\SavedObjectScope

@@ -247,7 +247,7 @@ class LlmSettingsControllerTest extends TestCase {
 				['testMessage', 'Hello! Please respond with a brief greeting.', 'Hi'],
 			]);
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Mcp\Service\ChatService')
+			->with('OCA\\OpenRegister\\Kernel\\Contracts\\ChatServiceInterface')
 			->willReturn($chatServiceMock);
 
 		$result = $this->controller->testChat();

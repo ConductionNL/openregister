@@ -267,18 +267,6 @@ class PruneRetiredSchemasCommand extends Command {
 				continue;
 			}
 
-			// Unlink first. cascadeDeleteSchema() removes the row, and a register
-			// left pointing at a missing id makes every later slug resolution in
-			// that register scan a dangling reference.
-			foreach ($linkedRegisters as $register) {
-				$remaining = self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId);
-				$register->setSchemas($remaining);
-				$this->registerMapper->update($register);
-				$output->writeln(
-					sprintf('  <info>unlinked from register id=%d (%s)</info>', (int)$register->getId(), (string)$register->getSlug())
-				);
-			}
-
 			try {
 				$result = $this->deletionService->cascadeDeleteSchema(
 					schema: $schema,
@@ -289,6 +277,8 @@ class PruneRetiredSchemasCommand extends Command {
 				$output->writeln(sprintf('  <error>FAILED: %s</error>', $e->getMessage()));
 				continue;
 			}
+
+			$this->unlinkFromRegisters(schemaId: $schemaId, output: $output);
 
 			$pruned++;
 			$tableDropped = 'no';
@@ -343,8 +333,7 @@ class PruneRetiredSchemasCommand extends Command {
 	/**
 	 * Why this schema is skipped, told here as well as in the service.
 	 *
-	 * The operator reads which flag lifts the refusal instead of a raw exception, and
-	 * the service's refusal would come after the registers already lost the schema.
+	 * The operator reads which flag lifts the refusal instead of a raw exception.
 	 * The archival condition comes from the production predicate the other delete
 	 * doors read, not from a second reading of the annotation.
 	 *
@@ -437,6 +426,37 @@ class PruneRetiredSchemasCommand extends Command {
 		);
 	}//end unlinkSchemaId()
 
+
+	/**
+	 * Take a removed schema out of every register that lists it.
+	 *
+	 * Runs after the teardown, so a refused teardown leaves the registers as they were.
+	 * The registers are read here, not before the teardown, so a slow teardown cannot
+	 * write back a stale list. A failed update is reported per register: the schema is
+	 * gone by then, and a rerun would no longer find it.
+	 *
+	 * @param int             $schemaId The removed schema's id.
+	 * @param OutputInterface $output   Console output stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-schema-retired-from-a-descriptor-must-be-removable-from-the-instance
+	 */
+	private function unlinkFromRegisters(int $schemaId, OutputInterface $output): void {
+		foreach ($this->registersReferencing(schemaId: $schemaId) as $register) {
+			$label = sprintf('register id=%d (%s)', (int)$register->getId(), (string)$register->getSlug());
+			$register->setSchemas(self::unlinkSchemaId(schemaRefs: $register->getSchemas(), schemaId: $schemaId));
+
+			try {
+				$this->registerMapper->update($register);
+				$output->writeln(sprintf('  <info>unlinked from %s</info>', $label));
+			} catch (\Throwable $e) {
+				$output->writeln(
+					sprintf('  <error>NOT UNLINKED: %s still lists removed schema %d: %s</error>', $label, $schemaId, $e->getMessage())
+				);
+			}
+		}
+	}//end unlinkFromRegisters()
 
 	/**
 	 * Every register whose schema list references this schema id.

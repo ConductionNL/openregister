@@ -50,34 +50,72 @@ class ExampleSetProof {
 	 */
 	public function lostPaths(mixed $declared, mixed $stored, string $path=''): array {
 		$declared = $this->asDeclared(declared: $declared, stored: $stored);
+		$place    = new ExampleSetProofPlace(stored: $stored, path: $path);
 		if (is_array($declared) === false) {
-			if ($this->sameValue(declared: $declared, stored: $stored) === true) {
-				return [];
-			}
-
-			return [$path];
+			return $this->lostLeaf(declared: $declared, place: $place);
 		}
 
 		if ($this->readInOneLanguage(declared: $declared, stored: $stored) === true) {
 			return [];
 		}
 
-		$stored = $this->structured(stored: $stored);
+		return $this->lostInMap(declared: $declared, place: $place);
+	}//end lostPaths()
+
+	/**
+	 * The path of a leaf whose stored value is not the declared one; none when it is.
+	 *
+	 * @param mixed                $declared What was sent.
+	 * @param ExampleSetProofPlace $place    What was read back there, and the path.
+	 *
+	 * @return array<int, string>
+	 */
+	private function lostLeaf(mixed $declared, ExampleSetProofPlace $place): array {
+		if ($this->sameValue(declared: $declared, stored: $place->stored) === true) {
+			return [];
+		}
+
+		return [$place->path];
+	}//end lostLeaf()
+
+	/**
+	 * Every path below a declared map whose value the stored value does not hold.
+	 *
+	 * @param array<int|string, mixed> $declared What was sent.
+	 * @param ExampleSetProofPlace     $place    What was read back there, and the path.
+	 *
+	 * @return array<int, string>
+	 */
+	private function lostInMap(array $declared, ExampleSetProofPlace $place): array {
+		$stored = $this->structured(stored: $place->stored);
 		$lost   = [];
 		foreach ($declared as $key => $value) {
-			$here = ltrim($path.'.'.$key, '.');
 			if (is_array($stored) === true && array_key_exists($key, $stored) === true) {
-				$lost = array_merge($lost, $this->lostPaths(declared: $value, stored: $stored[$key], path: $here));
+				$lost = array_merge($lost, $this->lostPaths(declared: $value, stored: $stored[$key], path: $place->pathOf(key: $key)));
 				continue;
 			}
 
-			if ($value !== [] && $value !== null) {
-				$lost[] = $here;
-			}
+			$lost = array_merge($lost, $this->missing(value: $value, path: $place->pathOf(key: $key)));
 		}
 
 		return $lost;
-	}//end lostPaths()
+	}//end lostInMap()
+
+	/**
+	 * The path of a declared key the stored value lacks, unless what was declared there is empty.
+	 *
+	 * @param mixed  $value What was declared at the path.
+	 * @param string $path  The path.
+	 *
+	 * @return array<int, string>
+	 */
+	private function missing(mixed $value, string $path): array {
+		if ($value !== [] && $value !== null) {
+			return [$path];
+		}
+
+		return [];
+	}//end missing()
 
 	/**
 	 * Whether a declared language map reads back as one of its texts.
@@ -95,14 +133,25 @@ class ExampleSetProof {
 			return false;
 		}
 
+		return $this->isLanguageMap(declared: $declared) === true && in_array($stored, $declared, true);
+	}//end readInOneLanguage()
+
+	/**
+	 * Whether every key of a map is a language code and every value a text.
+	 *
+	 * @param array<int|string, mixed> $declared What was sent.
+	 *
+	 * @return bool
+	 */
+	private function isLanguageMap(array $declared): bool {
 		foreach ($declared as $language => $text) {
 			if (is_string($language) === false || preg_match('/^[a-z]{2}(?:[-_][A-Za-z]{2})?$/', $language) !== 1 || is_string($text) === false) {
 				return false;
 			}
 		}
 
-		return in_array($stored, $declared, true);
-	}//end readInOneLanguage()
+		return true;
+	}//end isLanguageMap()
 
 	/**
 	 * JSON text declared for a field the store answers decoded, as what it encodes; any other value as it is.
@@ -159,12 +208,23 @@ class ExampleSetProof {
 			return true;
 		}
 
-		if (is_numeric($declared) === true && is_numeric($stored) === true) {
-			return (float) $declared === (float) $stored;
-		}
-
-		return $this->sameMoment(declared: $declared, stored: $stored);
+		return $this->sameNumber(declared: $declared, stored: $stored) === true || $this->sameMoment(declared: $declared, stored: $stored) === true;
 	}//end sameValue()
+
+	/**
+	 * Whether two values are both numbers and equal as numbers.
+	 *
+	 * A number never reads as a moment (sameMoment() wants text that starts with a date), so two unequal numbers
+	 * are not the same value either way.
+	 *
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
+	 *
+	 * @return bool
+	 */
+	private function sameNumber(mixed $declared, mixed $stored): bool {
+		return is_numeric($declared) === true && is_numeric($stored) === true && (float) $declared === (float) $stored;
+	}//end sameNumber()
 
 	/**
 	 * Whether two values are one moment, whatever offset each is written in.

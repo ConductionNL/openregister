@@ -87,19 +87,17 @@ class ObjectStateDeleteGuardListener implements IEventListener {
 	 * @param ObjectEntity $object The object being deleted.
 	 *
 	 * @return array<string, mixed>|null
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) forObject() and archived() are the exceptions' named constructors, as in SaveObject.
 	 */
 	private function refusal(ObjectEntity $object): ?array {
 		$userId = $this->userSession->getUser()?->getUID();
 		if ($object->isLockedBySomeoneElse(userId: $userId, runUuid: $this->runContext->currentRunUuid()) === true) {
-			$locked = LockedException::forObject($object, 'delete');
+			$locked = (new LockedException())->forObject($object, 'delete');
 
 			return ['code' => 'object-locked', 'message' => $locked->getMessage(), 'status' => LockedException::HTTP_STATUS];
 		}
 
 		if ($object->isArchived() === true) {
-			$archived = ObjectStateWriteException::archived($object);
+			$archived = (new ObjectStateWriteException())->archived($object);
 
 			return ['code' => 'object-archived', 'message' => $archived->getMessage(), 'status' => ObjectStateWriteException::HTTP_STATUS];
 		}

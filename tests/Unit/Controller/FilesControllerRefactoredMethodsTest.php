@@ -37,13 +37,12 @@ use ReflectionClass;
  * Unit tests for FilesController refactored methods.
  *
  * Tests the extracted private methods using reflection:
- * 1. validateAndGetObject(string $register, string $schema, string $id)
- * 2. extractUploadedFiles()
- * 3. normalizeMultipartFiles(array $files, array $data)
- * 4. normalizeSingleFile(array $files, array $data)
- * 5. normalizeMultipleFiles(array $files, array $data, array $fileNames)
- * 6. processUploadedFiles(ObjectEntity $object, array $uploadedFiles)
- * 7. validateUploadedFile(array $file)
+ * 1. extractUploadedFiles()
+ * 2. normalizeMultipartFiles(array $files, array $data)
+ * 3. normalizeSingleFile(array $files, array $data)
+ * 4. normalizeMultipleFiles(array $files, array $data, array $fileNames)
+ * 5. processUploadedFiles(ObjectEntity $object, array $uploadedFiles)
+ * 6. validateUploadedFile(array $file)
  */
 class FilesControllerRefactoredMethodsTest extends TestCase {
 	private FilesController $filesController;
@@ -107,65 +106,6 @@ class FilesControllerRefactoredMethodsTest extends TestCase {
 		$method->setAccessible(true);
 
 		return $method->invokeArgs($this->filesController, $parameters);
-	}
-
-	// ==================== validateAndGetObject() Tests ====================
-
-	/**
-	 * Test validateAndGetObject returns existing object.
-	 *
-	 * @return void
-	 */
-	public function testValidateAndGetObjectReturnsExistingObject(): void {
-		$uuid = 'test-uuid-123';
-		$mockObject = new ObjectEntity();
-		$mockObject->setUuid($uuid);
-		$mockObject->setId(1);
-
-		$this->objectService
-			->expects($this->once())
-			->method('setSchema')
-			->with('test-schema');
-
-		$this->objectService
-			->expects($this->once())
-			->method('setRegister')
-			->with('test-register');
-
-		$this->objectService
-			->expects($this->once())
-			->method('setObject')
-			->with($uuid);
-
-		$this->objectService
-			->expects($this->once())
-			->method('getObject')
-			->willReturn($mockObject);
-
-		$result = $this->invokePrivateMethod(
-			methodName: 'validateAndGetObject',
-			parameters: ['test-register', 'test-schema', $uuid]
-		);
-
-		$this->assertSame($mockObject, $result, 'Should return the found object.');
-	}
-
-	/**
-	 * Test validateAndGetObject returns null when object not found.
-	 *
-	 * @return void
-	 */
-	public function testValidateAndGetObjectReturnsNullWhenNotFound(): void {
-		$this->objectService
-			->method('getObject')
-			->willReturn(null);
-
-		$result = $this->invokePrivateMethod(
-			methodName: 'validateAndGetObject',
-			parameters: ['test-register', 'test-schema', 'non-existent-uuid']
-		);
-
-		$this->assertNull($result, 'Should return null when object not found.');
 	}
 
 	// ==================== validateUploadedFile() Tests ====================

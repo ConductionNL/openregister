@@ -6618,6 +6618,56 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	/**
+	 * A JSON export is recorded with the format it was asked in.
+	 *
+	 * @return void
+	 */
+	public function testAJsonExportIsRecorded(): void {
+		$this->arrangeRecordedExport(format: 'json');
+		$this->exportService->method('exportToJson')->willReturn('[]');
+
+		$this->assertSame('[]', $this->controller->export('1', '2', $this->objectService)->render());
+	}
+
+	/**
+	 * An Excel export is recorded and answers an xlsx file.
+	 *
+	 * @return void
+	 */
+	public function testAnExcelExportIsRecordedAndNamedXlsx(): void {
+		$this->arrangeRecordedExport(format: 'excel');
+		$this->exportService->method('exportToExcel')->willReturn(new \PhpOffice\PhpSpreadsheet\Spreadsheet());
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertStringEndsWith('.xlsx', $result->getHeaders()['Content-Disposition']);
+	}
+
+	/**
+	 * An export of this format, whose run must be recorded once under that format.
+	 *
+	 * @param string $format The format.
+	 *
+	 * @return void
+	 */
+	private function arrangeRecordedExport(string $format): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->willReturnCallback(
+			function (...$args) use ($format) {
+				$this->assertSame($format, $args['format'] ?? $args[2]);
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn(new \OCA\OpenRegister\Db\Register());
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$this->request->method('getParams')->willReturn([]);
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'format') ? $format : $default
+		);
+	}
+
+	/**
 	 * A JSON export drops the route from its filters and answers a named JSON file.
 	 *
 	 * @return void

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use Closure;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
@@ -230,66 +231,23 @@ final class SlaCalculator {
 		?WorkingCalendar $calendar,
 		?WalkCollector $collector = null
 	): DateTimeImmutable {
-		$start = DateTimeImmutable::createFromInterface($from);
+		$addition = new SlaAddition(
+			start: DateTimeImmutable::createFromInterface($from),
+			value: $value,
+			unit: $unit,
+			calendar: $calendar
+		);
 		$this->validateUnit(unit: $unit);
 
 		if ($unit === self::UNIT_HOURS) {
-			// Service hours, when the administrator declared any. An hours
-			// term then advances only while the organisation is open, which is
-			// the difference between a four-hour answer owed on Friday evening
-			// and one owed on Monday morning.
-			//
-			// Only forward. A negative hours term is an offset read BACK from
-			// a moment, and walking windows backwards is a second walk with
-			// its own edge cases; until an escalation rung needs it, the
-			// backward path keeps the wall clock it has always had, and says
-			// so rather than pretending to be window-aware.
-			if ($calendar !== null && $value > 0 && $calendar->getServiceHours()->areDeclared() === true) {
-				return $this->hoursClock->due(
-					from: $start,
-					hours: $value,
-					calendar: $calendar,
-					windows: $calendar->getServiceHours()
-				);
-			}
-
-			return $this->shift(moment: $start, modifier: sprintf('%+d seconds', (int)round($value * 3600)));
+			return $this->addHours(addition: $addition);
 		}
 
 		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			// Calendar days are DATES, not 86400-second spans: a term of N days
-			// lands at the same wall-clock time across a DST change.
-			$whole = (int)floor(abs($value));
-			$fraction = (abs($value) - $whole);
-			$sign = 1;
-			if ($value < 0) {
-				$sign = -1;
-			}
-
-			$landed = $this->shift(moment: $start, modifier: sprintf('%+d days', $sign * $whole));
-
-			return $this->shift(moment: $landed, modifier: sprintf('%+d seconds', $sign * (int)round($fraction * self::DAY)));
+			return $this->addCalendarDays(start: $addition->start, value: $value);
 		}
 
-		// 🔴 A BUSINESS UNIT WITHOUT A CALENDAR IS REFUSED, not counted as
-		// wall-clock time. The parameter is nullable because `hours` and
-		// `calendarDays` genuinely need no calendar and a caller should not
-		// have to invent one to say "two days"; the units that DO need one
-		// refuse here rather than quietly computing a different deadline.
-		if ($calendar === null) {
-			throw new FlowTimerValidationException(
-				message: sprintf(
-					"Unit '%s' is counted against a working calendar and none was given; it would silently become wall-clock time.",
-					$unit
-				)
-			);
-		}
-
-		if ($value >= 0) {
-			return $this->walkForward(start: $start, days: $value, calendar: $calendar, collector: $collector);
-		}
-
-		return $this->walkBackward(start: $start, days: -$value, calendar: $calendar, collector: $collector);
+		return $this->walk(addition: $addition, collector: $collector);
 	}//end add()
 
 	/**
@@ -322,51 +280,22 @@ final class SlaCalculator {
 	 */
 	public function measure(DateTimeInterface $from, DateTimeInterface $to, string $unit, WorkingCalendar $calendar): float {
 		$this->validateUnit(unit: $unit);
-		$seconds = ($to->getTimestamp() - $from->getTimestamp());
-
 		if ($unit === self::UNIT_HOURS) {
-			return ($seconds / 3600);
+			return (($to->getTimestamp() - $from->getTimestamp()) / 3600);
 		}
 
 		if ($unit === self::UNIT_CALENDAR_DAYS) {
-			// Wall-clock difference: whole dates plus the fraction of a day.
-			$diff = $from->diff($to);
-			$days = ((int)$diff->days + (($diff->h * 3600 + $diff->i * 60 + $diff->s) / self::DAY));
-			if ($diff->invert === 1) {
-				return -$days;
-			}
-
-			return $days;
+			return self::calendarDaysBetween(from: $from, to: $to);
 		}
 
-		if ($seconds < 0) {
+		if ($to->getTimestamp() < $from->getTimestamp()) {
 			return -$this->measure(from: $to, to: $from, unit: $unit, calendar: $calendar);
 		}
 
-		$cursor = DateTimeImmutable::createFromInterface($from);
-		$end = DateTimeImmutable::createFromInterface($to);
-		$total = 0.0;
-		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
-			if ($cursor >= $end) {
-				return $total;
-			}
+		$span = new CalendarSpan(from: $from, to: $to, calendar: $calendar);
 
-			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
-			$segmentEnd = $nextMidnight;
-			if ($end < $nextMidnight) {
-				$segmentEnd = $end;
-			}
-
-			if ($calendar->isWorkingDay($cursor) === true) {
-				$total += (($segmentEnd->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
-			}
-
-			$cursor = $nextMidnight;
-		}
-
-		throw new FlowTimerValidationException(
-			message: sprintf('Measuring business days between %s and %s exceeds %d calendar days.', $from->format('c'), $to->format('c'), self::MAX_WALK_DAYS)
-		);
+		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingFraction(span: $span, cursor: $cursor))
+			?? throw $this->walkLimit(subject: $span->describe(what: 'business days'));
 	}//end measure()
 
 	/**
@@ -417,41 +346,10 @@ final class SlaCalculator {
 			);
 		}
 
-		$cursor = DateTimeImmutable::createFromInterface($from);
-		$end = DateTimeImmutable::createFromInterface($to);
-		$opensAt = $calendar->getDayStartsAtMinute();
-		$closesAt = $calendar->getDayEndsAtMinute();
-		$total = 0.0;
+		$span = new CalendarSpan(from: $from, to: $to, calendar: $calendar);
 
-		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
-			if ($cursor >= $end) {
-				return $total;
-			}
-
-			$midnight = $cursor->setTime(0, 0, 0);
-			$nextMidnight = $this->shift(moment: $midnight, modifier: '+1 day');
-
-			if ($calendar->isWorkingDay($cursor) === true) {
-				$opens = $midnight->getTimestamp() + ($opensAt * 60);
-				$closes = $midnight->getTimestamp() + ($closesAt * 60);
-
-				// The overlap of [cursor, min(end, nextMidnight)] with the
-				// day's window. An interval entirely outside it contributes
-				// nothing, which is how a Monday 00:00 to 09:00 stretch adds
-				// zero rather than nine.
-				$segmentEnd = min($end->getTimestamp(), $nextMidnight->getTimestamp());
-				$overlap = (min($segmentEnd, $closes) - max($cursor->getTimestamp(), $opens));
-				if ($overlap > 0) {
-					$total += ($overlap / 3600);
-				}
-			}
-
-			$cursor = $nextMidnight;
-		}
-
-		throw new FlowTimerValidationException(
-			message: sprintf('Measuring working hours between %s and %s exceeds %d calendar days.', $from->format('c'), $to->format('c'), self::MAX_WALK_DAYS)
-		);
+		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
+			?? throw $this->walkLimit(subject: $span->describe(what: 'working hours'));
 	}//end elapsedBusinessHours()
 
 	/**
@@ -484,122 +382,236 @@ final class SlaCalculator {
 	}//end convert()
 
 	/**
-	 * Walk forward over working days, consuming fractions of each.
+	 * Add hours: through the calendar's service hours when it declares any,
+	 * else on the wall clock.
 	 *
-	 * @param DateTimeImmutable $start The start.
-	 * @param float $days Business days to add (>= 0).
-	 * @param WorkingCalendar $calendar The calendar.
-	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
+	 * Service hours, when the administrator declared any. An hours term then
+	 * advances only while the organisation is open, which is the difference
+	 * between a four-hour answer owed on Friday evening and one owed on
+	 * Monday morning. See {@see SlaAddition::serviceHoursCalendar()} for why
+	 * only forward.
+	 *
+	 * @param SlaAddition $addition The request.
+	 *
+	 * @return DateTimeImmutable The resulting instant.
+	 */
+	private function addHours(SlaAddition $addition): DateTimeImmutable {
+		$calendar = $addition->serviceHoursCalendar();
+		if ($calendar !== null) {
+			return $this->hoursClock->due(
+				from: $addition->start,
+				hours: $addition->value,
+				calendar: $calendar,
+				windows: $calendar->getServiceHours()
+			);
+		}
+
+		return $this->shift(moment: $addition->start, modifier: sprintf('%+d seconds', (int)round($addition->value * 3600)));
+	}//end addHours()
+
+	/**
+	 * Add calendar days.
+	 *
+	 * Calendar days are DATES, not 86400-second spans: a term of N days
+	 * lands at the same wall-clock time across a DST change.
+	 *
+	 * @param DateTimeImmutable $start The start instant.
+	 * @param float             $value The amount; negative subtracts.
+	 *
+	 * @return DateTimeImmutable The resulting instant.
+	 */
+	private function addCalendarDays(DateTimeImmutable $start, float $value): DateTimeImmutable {
+		$whole = (int)floor(abs($value));
+		$fraction = (abs($value) - $whole);
+		$sign = 1;
+		if ($value < 0) {
+			$sign = -1;
+		}
+
+		$landed = $this->shift(moment: $start, modifier: sprintf('%+d days', $sign * $whole));
+
+		return $this->shift(moment: $landed, modifier: sprintf('%+d seconds', $sign * (int)round($fraction * self::DAY)));
+	}//end addCalendarDays()
+
+	/**
+	 * Walk over working days in the request's direction, consuming fractions of each.
+	 *
+	 * @param SlaAddition        $addition  The request; its calendar is required.
+	 * @param WalkCollector|null $collector Records each day the walk examines, or null when nobody is watching.
 	 *
 	 * @return DateTimeImmutable The landing instant.
+	 *
+	 * @throws FlowTimerValidationException Without a calendar, or when the walk exceeds its bound.
 	 */
-	private function walkForward(
-		DateTimeImmutable $start,
-		float $days,
-		WorkingCalendar $calendar,
-		?WalkCollector $collector = null
-	): DateTimeImmutable {
-		$cursor = $start;
-		$remaining = $days;
+	private function walk(SlaAddition $addition, ?WalkCollector $collector): DateTimeImmutable {
+		$addition->calendar();
+		$cursor = $addition->start;
+		$remaining = $addition->amount();
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
-			$nextMidnight = $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
-			$working = $calendar->isWorkingDay($cursor);
-			$this->record(collector: $collector, day: $cursor, counted: $working, calendar: $calendar);
-			if ($working === true) {
-				$available = (($nextMidnight->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
+			$next = $this->boundary(addition: $addition, cursor: $cursor);
+			$available = (abs($next->getTimestamp() - $cursor->getTimestamp()) / self::DAY);
+			if ($addition->examine(day: self::earlier(cursor: $cursor, next: $next), collector: $collector) === true) {
 				if ($remaining <= ($available + self::EPSILON)) {
-					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', (int)round($remaining * self::DAY)));
+					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', $addition->sign() * (int)round($remaining * self::DAY)));
 				}
 
 				$remaining -= $available;
 			}
 
-			$cursor = $nextMidnight;
+			$cursor = $next;
 		}
 
-		throw new FlowTimerValidationException(
-			message: sprintf('Adding %s business days from %s exceeds %d calendar days.', (string)$days, $start->format('c'), self::MAX_WALK_DAYS)
-		);
-	}//end walkForward()
+		throw $this->walkLimit(subject: $addition->describe());
+	}//end walk()
 
 	/**
-	 * Walk backward over working days, consuming fractions of each.
+	 * The edge of the cursor's day in the walk's direction: the next midnight
+	 * going forward, the day's own midnight going back.
 	 *
-	 * @param DateTimeImmutable $start The start.
-	 * @param float $days Business days to subtract (>= 0).
-	 * @param WorkingCalendar $calendar The calendar.
-	 * @param WalkCollector|null $collector Records each day the walk consumed, or null when nobody is watching.
+	 * @param SlaAddition       $addition The request.
+	 * @param DateTimeImmutable $cursor   Where the walk stands.
 	 *
-	 * @return DateTimeImmutable The landing instant.
+	 * @return DateTimeImmutable The boundary.
 	 */
-	private function walkBackward(
-		DateTimeImmutable $start,
-		float $days,
-		WorkingCalendar $calendar,
-		?WalkCollector $collector = null
-	): DateTimeImmutable {
-		$cursor = $start;
-		$remaining = $days;
+	private function boundary(SlaAddition $addition, DateTimeImmutable $cursor): DateTimeImmutable {
+		if ($addition->isForward() === true) {
+			return $this->nextMidnight(cursor: $cursor);
+		}
+
+		$dayStart = $cursor->setTime(0, 0, 0);
+		// An instant exactly at midnight belongs to the END of the previous day when walking back.
+		if ($cursor->getTimestamp() === $dayStart->getTimestamp()) {
+			return $this->shift(moment: $dayStart, modifier: '-1 day');
+		}
+
+		return $dayStart;
+	}//end boundary()
+
+	/**
+	 * The earlier of the cursor and the boundary: the day a walk step examines.
+	 *
+	 * @param DateTimeImmutable $cursor Where the walk stands.
+	 * @param DateTimeImmutable $next   The boundary it moves to.
+	 *
+	 * @return DateTimeImmutable The earlier instant.
+	 */
+	private static function earlier(DateTimeImmutable $cursor, DateTimeImmutable $next): DateTimeImmutable {
+		if ($next < $cursor) {
+			return $next;
+		}
+
+		return $cursor;
+	}//end earlier()
+
+	/**
+	 * Midnight after the cursor's day.
+	 *
+	 * @param DateTimeImmutable $cursor The instant.
+	 *
+	 * @return DateTimeImmutable The next midnight.
+	 */
+	private function nextMidnight(DateTimeImmutable $cursor): DateTimeImmutable {
+		return $this->shift(moment: $cursor->setTime(0, 0, 0), modifier: '+1 day');
+	}//end nextMidnight()
+
+	/**
+	 * Wall-clock calendar days between two instants: whole dates plus the fraction of a day.
+	 *
+	 * @param DateTimeInterface $from The start.
+	 * @param DateTimeInterface $to   The end; before the start yields a negative amount.
+	 *
+	 * @return float The days.
+	 */
+	private static function calendarDaysBetween(DateTimeInterface $from, DateTimeInterface $to): float {
+		$diff = $from->diff($to);
+		$days = ((int)$diff->days + (($diff->h * 3600 + $diff->i * 60 + $diff->s) / self::DAY));
+		if ($diff->invert === 1) {
+			return -$days;
+		}
+
+		return $days;
+	}//end calendarDaysBetween()
+
+	/**
+	 * Sum a per-day amount over each calendar day of a span.
+	 *
+	 * @param CalendarSpan                       $span   The span.
+	 * @param Closure(DateTimeImmutable): float $perDay The amount the day starting at the cursor contributes.
+	 *
+	 * @return float|null The total, or null when the span is longer than the walk allows.
+	 */
+	private function sumPerDay(CalendarSpan $span, Closure $perDay): ?float {
+		$cursor = $span->from;
+		$total = 0.0;
 		for ($walked = 0; $walked <= self::MAX_WALK_DAYS; $walked++) {
-			$dayStart = $cursor->setTime(0, 0, 0);
-			// An instant exactly at midnight belongs to the END of the previous day when walking back.
-			if ($cursor->getTimestamp() === $dayStart->getTimestamp()) {
-				$dayStart = $this->shift(moment: $dayStart, modifier: '-1 day');
+			if ($cursor >= $span->to) {
+				return $total;
 			}
 
-			$working = $calendar->isWorkingDay($dayStart);
-			$this->record(collector: $collector, day: $dayStart, counted: $working, calendar: $calendar);
-			if ($working === true) {
-				$available = (($cursor->getTimestamp() - $dayStart->getTimestamp()) / self::DAY);
-				if ($remaining <= ($available + self::EPSILON)) {
-					return $this->shift(moment: $cursor, modifier: sprintf('%+d seconds', -(int)round($remaining * self::DAY)));
-				}
-
-				$remaining -= $available;
-			}
-
-			$cursor = $dayStart;
+			$total += $perDay($cursor);
+			$cursor = $this->nextMidnight(cursor: $cursor);
 		}
 
-		throw new FlowTimerValidationException(
-			message: sprintf('Subtracting %s business days from %s exceeds %d calendar days.', (string)$days, $start->format('c'), self::MAX_WALK_DAYS)
-		);
-	}//end walkBackward()
+		return null;
+	}//end sumPerDay()
 
 	/**
-	 * Hand one examined day to the collector, with the rule that skipped it.
+	 * The fraction of a calendar day the span covers on the cursor's day, when it is a working day.
 	 *
-	 * The rule NAME comes from the calendar's own `nonWorkingDates()`, the same
-	 * map `isWorkingDay()` consults, so the diagnostic cannot name a rule the
-	 * engine did not apply. A day that is non-working because the working week
-	 * does not include it has no rule, and the collector calls that `weekend`.
+	 * @param CalendarSpan      $span   The span.
+	 * @param DateTimeImmutable $cursor The start of the covered part of the day.
 	 *
-	 * @param WalkCollector|null $collector The collector, absent on the arm path.
-	 * @param DateTimeImmutable  $day       The day examined.
-	 * @param bool               $counted   Whether it counted.
-	 * @param WorkingCalendar    $calendar  The calendar.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 * @return float The fraction of a day, 0 on a non-working day.
 	 */
-	private function record(
-		?WalkCollector $collector,
-		DateTimeImmutable $day,
-		bool $counted,
-		WorkingCalendar $calendar
-	): void {
-		if ($collector === null) {
-			return;
+	private function workingFraction(CalendarSpan $span, DateTimeImmutable $cursor): float {
+		if ($span->calendar->isWorkingDay($cursor) === false) {
+			return 0.0;
 		}
 
-		$rule = null;
-		if ($counted === false) {
-			$rule = ($calendar->nonWorkingDates(year: (int)$day->format('Y'))[$day->format('Y-m-d')] ?? null);
+		$segmentEnd = min($span->to->getTimestamp(), $this->nextMidnight(cursor: $cursor)->getTimestamp());
+
+		return (($segmentEnd - $cursor->getTimestamp()) / self::DAY);
+	}//end workingFraction()
+
+	/**
+	 * The working hours the span covers on the cursor's day.
+	 *
+	 * The overlap of [cursor, min(end, nextMidnight)] with the day's window.
+	 * An interval entirely outside it contributes nothing, which is how a
+	 * Monday 00:00 to 09:00 stretch adds zero rather than nine.
+	 *
+	 * @param CalendarSpan      $span   The span.
+	 * @param DateTimeImmutable $cursor The start of the covered part of the day.
+	 *
+	 * @return float The hours, 0 on a non-working day or outside the window.
+	 */
+	private function workingHours(CalendarSpan $span, DateTimeImmutable $cursor): float {
+		if ($span->calendar->isWorkingDay($cursor) === false) {
+			return 0.0;
 		}
 
-		$collector->examine(day: $day, counted: $counted, rule: $rule);
-	}//end record()
+		$midnight = $cursor->setTime(0, 0, 0)->getTimestamp();
+		$opens = ($midnight + ($span->calendar->getDayStartsAtMinute() * 60));
+		$closes = ($midnight + ($span->calendar->getDayEndsAtMinute() * 60));
+		$segmentEnd = min($span->to->getTimestamp(), $this->nextMidnight(cursor: $cursor)->getTimestamp());
+		$overlap = (min($segmentEnd, $closes) - max($cursor->getTimestamp(), $opens));
+		if ($overlap <= 0) {
+			return 0.0;
+		}
+
+		return ($overlap / 3600);
+	}//end workingHours()
+
+	/**
+	 * The refusal for a walk longer than its bound.
+	 *
+	 * @param string $subject What the walk was doing.
+	 *
+	 * @return FlowTimerValidationException The exception to throw.
+	 */
+	private function walkLimit(string $subject): FlowTimerValidationException {
+		return new FlowTimerValidationException(message: sprintf('%s exceeds %d calendar days.', $subject, self::MAX_WALK_DAYS));
+	}//end walkLimit()
 
 	/**
 	 * Apply a relative modifier, refusing PHP's silent `false`.

@@ -168,7 +168,10 @@ class SaveObjectCascadeHelpersGoldenTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$extra = $method === 'cascadeObjects' ? [$stored] : [];
-		$answer = (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra);
+		$answer = match ($method) {
+			'handleInverseRelationsWriteBack' => RelationCalls::handleInverseRelationsWriteBack($handler, [$parent, $schema, $data]),
+			default => (new ReflectionClass(SaveObject::class))->getMethod($method)->invoke($handler, $parent, $schema, $data, ...$extra),
+		};
 		$orphans = (new ReflectionClass(SaveObject::class))->getProperty('pendingOrphans')->getValue($handler);
 
 		return ['answer' => $answer, 'trace' => $this->trace, 'orphans' => $orphans];

@@ -26,6 +26,9 @@
             }
         ]
     },
+    "array items null": {
+        "result": true
+    },
     "array items ref skipped": {
         "result": true
     },
@@ -38,6 +41,10 @@
     "array no items": {
         "result": true
     },
+    "both bounds not numeric": {
+        "threw": "Exception",
+        "message": "'minimum' at '/field' must be numeric"
+    },
     "bounds on string ignored": {
         "result": true
     },
@@ -48,6 +55,9 @@
         "threw": "Exception",
         "message": "'enum' at '/field' must be a non-empty array"
     },
+    "enum null": {
+        "result": true
+    },
     "enum scalar": {
         "threw": "Exception",
         "message": "'enum' at '/field' must be a non-empty array"
@@ -55,9 +65,90 @@
     "enum valid": {
         "result": true
     },
+    "file allowedTags blank": {
+        "threw": "Exception",
+        "message": "'allowedTags[1]' at '/field' cannot be empty"
+    },
+    "file allowedTags non string": {
+        "threw": "Exception",
+        "message": "'allowedTags[1]' at '/field' must be a string"
+    },
+    "file allowedTags scalar": {
+        "threw": "Exception",
+        "message": "'allowedTags' at '/field' must be an array"
+    },
+    "file allowedTags too long": {
+        "threw": "Exception",
+        "message": "'allowedTags[0]' at '/field' exceeds maximum length (50 characters)"
+    },
+    "file allowedTags valid": {
+        "result": true
+    },
+    "file allowedTypes keyed": {
+        "threw": "Exception",
+        "message": "'allowedTypes[b]' at '/field' contains invalid MIME type format: 'nope'"
+    },
+    "file allowedTypes non string": {
+        "threw": "Exception",
+        "message": "'allowedTypes[1]' at '/field' must be a string"
+    },
+    "file allowedTypes scalar": {
+        "threw": "Exception",
+        "message": "'allowedTypes' at '/field' must be an array"
+    },
+    "file autoTags blank": {
+        "threw": "Exception",
+        "message": "'autoTags[k]' at '/field' cannot be empty"
+    },
+    "file autoTags non string": {
+        "threw": "Exception",
+        "message": "'autoTags[0]' at '/field' must be a string"
+    },
+    "file autoTags scalar": {
+        "threw": "Exception",
+        "message": "'autoTags' at '/field' must be an array"
+    },
+    "file autoTags too long": {
+        "threw": "Exception",
+        "message": "'autoTags[1]' at '/field' exceeds maximum length (50 characters)"
+    },
+    "file autoTags valid": {
+        "result": true
+    },
     "file bad mime": {
         "threw": "Exception",
         "message": "'allowedTypes[0]' at '/field' contains invalid MIME type format: 'png'"
+    },
+    "file every option valid": {
+        "result": true
+    },
+    "file first failure wins": {
+        "threw": "Exception",
+        "message": "'allowedTypes[0]' at '/field' must be a string"
+    },
+    "file maxSize at limit": {
+        "result": true
+    },
+    "file maxSize float": {
+        "result": true
+    },
+    "file maxSize negative": {
+        "threw": "Exception",
+        "message": "'maxSize' at '/field' must be a positive number"
+    },
+    "file maxSize non numeric": {
+        "threw": "Exception",
+        "message": "'maxSize' at '/field' must be a numeric value"
+    },
+    "file maxSize numeric string": {
+        "result": true
+    },
+    "file options on string ignored": {
+        "result": true
+    },
+    "file tags before autoTags": {
+        "threw": "Exception",
+        "message": "'allowedTags' at '/field' must be an array"
     },
     "file too big": {
         "threw": "Exception",
@@ -93,6 +184,10 @@
         "threw": "Exception",
         "message": "Invalid inputControl [\"select\"] at '/field'. Must be one of: text, select, multiselect, range, date-range, boolean"
     },
+    "inputControl unknown": {
+        "threw": "Exception",
+        "message": "Invalid inputControl \"dial\" at '/field'. Must be one of: text, select, multiselect, range, date-range, boolean"
+    },
     "known format": {
         "result": true
     },
@@ -107,6 +202,12 @@
                 "message": "Unknown property key 'title_nl' at '/field'. It is not in the property vocabulary."
             }
         ]
+    },
+    "matchType null": {
+        "result": true
+    },
+    "matchType padded upper": {
+        "result": true
     },
     "matchType unknown": {
         "threw": "Exception",
@@ -142,6 +243,9 @@
         "message": "Property at '/field' must have a 'type' field"
     },
     "no type with ref": {
+        "result": true
+    },
+    "null bounds": {
         "result": true
     },
     "numeric string type": {
@@ -181,7 +285,16 @@
     "object nested valid": {
         "result": true
     },
+    "object properties null": {
+        "result": true
+    },
     "onDelete cascade": {
+        "result": true
+    },
+    "onDelete lowercase referenceKey restrict": {
+        "result": true
+    },
+    "onDelete null": {
         "result": true
     },
     "onDelete on items ref": {
@@ -199,6 +312,10 @@
     },
     "onDelete referenceKey restrict": {
         "result": true
+    },
+    "onDelete referenceKey unknown action": {
+        "threw": "Exception",
+        "message": "'referenceKey' at '/field' is only valid with onDelete RESTRICT"
     },
     "onDelete referenceKey uuid": {
         "result": true
@@ -230,6 +347,12 @@
     "oneOf valid": {
         "result": true
     },
+    "only maximum": {
+        "result": true
+    },
+    "only minimum": {
+        "result": true
+    },
     "plain string": {
         "result": true
     },
@@ -254,6 +377,16 @@
     "sourceLanguage number": {
         "threw": "Exception",
         "message": "'sourceLanguage' at '/field' must be a non-empty string"
+    },
+    "sourceLanguage subtags": {
+        "result": true
+    },
+    "sourceLanguage three letters": {
+        "result": true
+    },
+    "sourceLanguage translatable string": {
+        "threw": "Exception",
+        "message": "'sourceLanguage' at '/field' requires translatable: true"
     },
     "sourceLanguage valid": {
         "result": true
