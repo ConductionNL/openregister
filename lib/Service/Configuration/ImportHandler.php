@@ -5125,66 +5125,7 @@ class ImportHandler {
 	 */
 	public function importFromFilePath(string $appId, string $filePath, string $version, bool $force = false): array {
 		try {
-			// SEC-SVC-7: contain the resolved file inside the Nextcloud root.
-			// Reject absolute paths and any path-traversal sequence up front so
-			// a crafted $filePath (e.g. '../../etc/passwd') cannot escape the
-			// intended base directory.
-			if (str_starts_with($filePath, '/') === true
-				|| str_contains($filePath, '..') === true
-				|| preg_match('/[\x00-\x1f]/', $filePath) === 1
-			) {
-				throw new Exception("Invalid configuration file path: {$filePath}");
-			}
-
-			// Establish the allowed base directory (Nextcloud root).
-			$baseDir = realpath($this->appDataPath . '/../../../');
-			if ($baseDir === false) {
-				$baseDir = realpath('/var/www/html');
-			}
-
-			// Resolve the file path relative to the Nextcloud root.
-			$fullPath = realpath($this->appDataPath . '/../../../' . $filePath);
-
-			// If realpath fails, try direct path from Nextcloud root.
-			if ($fullPath === false) {
-				$fullPath = realpath('/var/www/html/' . $filePath);
-			}
-
-			if ($fullPath === false || file_exists($fullPath) === false) {
-				throw new Exception("Configuration file not found: {$filePath}");
-			}
-
-			// Final containment check: the resolved real path MUST live under
-			// the allowed base directory.
-			if ($baseDir === false || str_starts_with($fullPath, $baseDir . '/') === false) {
-				throw new Exception("Configuration file is outside the allowed directory: {$filePath}");
-			}
-
-			// Read the file contents.
-			$jsonContent = file_get_contents($fullPath);
-			if ($jsonContent === false) {
-				throw new Exception("Failed to read configuration file: {$filePath}");
-			}
-
-			// Parse JSON.
-			$data = json_decode($jsonContent, true);
-			if (json_last_error() !== JSON_ERROR_NONE) {
-				throw new Exception('Invalid JSON in configuration file: ' . json_last_error_msg());
-			}
-
-			// Set the sourceUrl in the data if not already set.
-			// This allows the cron job to track the file location.
-			if (isset($data['x-openregister']) === false) {
-				$data['x-openregister'] = [];
-			}
-
-			if (isset($data['x-openregister']['sourceUrl']) === false) {
-				$data['x-openregister']['sourceUrl'] = $filePath;
-			}
-
-			if (isset($data['x-openregister']['sourceType']) === false) {
-				$data['x-openregister']['sourceType'] = 'local';
-			}
+			$data = (new LocalConfigurationFile(appDataPath: $this->appDataPath))->read(filePath: $filePath);
 
 			// Call importFromApp with the parsed data.
 			return $this->importFromApp(
