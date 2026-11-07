@@ -45,7 +45,7 @@ use Throwable;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
  */
-class CasePlanTimerRearm {
+class CasePlanTimerRearm implements CasePlanTimerRearmInterface {
 
 	/**
 	 * The cause reference an enforced expiry records instead of a timer uuid.
