@@ -229,16 +229,28 @@ class RelationGraphService implements RelationGraphServiceInterface {
 				break;
 			}
 
-			$walk->next = [];
-			foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
-				if ($this->followEdge(walk: $walk, edge: $edge) === false) {
-					break;
-				}
-			}
-
-			$walk->frontier = $walk->next;
+			$this->walkLevel(walk: $walk);
 		}
 	}//end walkLevels()
+
+
+	/**
+	 * Follow every edge of the frontier once, making the newly reached nodes the next frontier.
+	 *
+	 * @param GraphWalk $walk The walk so far.
+	 *
+	 * @return void
+	 */
+	private function walkLevel(GraphWalk $walk): void {
+		$walk->next = [];
+		foreach ($this->edgesFrom(uuids: $walk->frontier, language: $walk->language) as $edge) {
+			if ($this->followEdge(walk: $walk, edge: $edge) === false) {
+				break;
+			}
+		}
+
+		$walk->frontier = $walk->next;
+	}//end walkLevel()
 
 	/**
 	 * The graph answer of a finished walk.
@@ -276,17 +288,8 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function followEdge(GraphWalk $walk, array $edge): bool {
-		$key = $edge['from'].'|'.$edge['to'].'|'.((string)($edge['label'] ?? '')).'|'.$edge['direction'];
-		if (isset($walk->seenEdges[$key]) === true) {
-			return true;
-		}
-
-		$walk->seenEdges[$key] = true;
-		$walk->edges[] = $edge;
-
 		$other = self::otherEnd(edge: $edge);
-
-		if ($other === '' || isset($walk->visited[$other]) === true) {
+		if (self::recordEdge(walk: $walk, edge: $edge) === false || self::isUnvisited(other: $other, visited: $walk->visited) === false) {
 			return true;
 		}
 
@@ -299,6 +302,38 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$this->reachNode(walk: $walk, edge: $edge);
 		return true;
 	}//end followEdge()
+
+
+	/**
+	 * Record an edge the first time the walk meets it.
+	 *
+	 * @param GraphWalk            $walk The walk so far.
+	 * @param array<string, mixed> $edge The edge.
+	 *
+	 * @return bool True when the edge is new, false when it was already listed.
+	 */
+	private static function recordEdge(GraphWalk $walk, array $edge): bool {
+		$key = $edge['from'].'|'.$edge['to'].'|'.((string)($edge['label'] ?? '')).'|'.$edge['direction'];
+		if (isset($walk->seenEdges[$key]) === true) {
+			return false;
+		}
+
+		$walk->seenEdges[$key] = true;
+		$walk->edges[] = $edge;
+		return true;
+	}//end recordEdge()
+
+	/**
+	 * Whether an edge's far end is a node the walk has not visited yet.
+	 *
+	 * @param string              $other   The far end's uuid or address.
+	 * @param array<string, bool> $visited The nodes already visited.
+	 *
+	 * @return bool True when it is somewhere new.
+	 */
+	private static function isUnvisited(string $other, array $visited): bool {
+		return $other !== '' && isset($visited[$other]) === false;
+	}//end isUnvisited()
 
 	/**
 	 * Add the node an edge reaches; an external address is a leaf that keeps its own title.
@@ -318,15 +353,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		$other = self::otherEnd(edge: $edge);
 
 		if (($edge['kind'] ?? null) === ObjectRelation::KIND_EXTERNAL) {
-			$walk->nodes[$other] = [
-				'uuid' => $other,
-				'title' => ($edge['targetTitle'] ?? $other),
-				'register' => null,
-				'schema' => null,
-				'distance' => ($walk->level + 1),
-				'resolved' => true,
-				'external' => true,
-			];
+			$walk->nodes[$other] = self::externalNode(edge: $edge, uuid: $other, distance: ($walk->level + 1));
 			return;
 		}
 
@@ -337,6 +364,28 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		);
 		$walk->next[] = $other;
 	}//end reachNode()
+
+
+	/**
+	 * The node of an external address: resolved, with the title the stored row carries.
+	 *
+	 * @param array<string, mixed> $edge     The edge that reached it.
+	 * @param string               $uuid     The address.
+	 * @param int                  $distance Its distance from the root.
+	 *
+	 * @return array<string, mixed> The node.
+	 */
+	private static function externalNode(array $edge, string $uuid, int $distance): array {
+		return [
+			'uuid' => $uuid,
+			'title' => ($edge['targetTitle'] ?? $uuid),
+			'register' => null,
+			'schema' => null,
+			'distance' => $distance,
+			'resolved' => true,
+			'external' => true,
+		];
+	}//end externalNode()
 
 	/**
 	 * The end of an edge the walk has not come from: its source for an incoming edge, else its target.
@@ -376,12 +425,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 		}
 
 		foreach ($this->edgesFrom(uuids: $frontier, language: $language) as $edge) {
-			$other = $edge['to'];
-			if ($edge['direction'] === RelationTypeResolver::DIRECTION_INCOMING) {
-				$other = $edge['from'];
-			}
-
-			if ($other !== '' && isset($visited[$other]) === false) {
+			if (self::isUnvisited(other: self::otherEnd(edge: $edge), visited: $visited) === true) {
 				return true;
 			}
 		}
@@ -426,23 +470,11 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	public function rowsOf(array $graph): array {
-		$titles = [];
-		foreach (($graph['nodes'] ?? []) as $node) {
-			$titles[(string)$node['uuid']] = (string)($node['title'] ?? $node['uuid']);
-		}
+		$titles = self::titlesOf(graph: $graph);
 
 		$rows = [['from', 'fromTitle', 'relation', 'direction', 'to', 'toTitle', 'origin', 'distance']];
 		foreach (($graph['edges'] ?? []) as $edge) {
-			$rows[] = [
-				(string)$edge['from'],
-				($titles[(string)$edge['from']] ?? ''),
-				(string)($edge['label'] ?? ''),
-				(string)$edge['direction'],
-				(string)$edge['to'],
-				($titles[(string)$edge['to']] ?? (string)($edge['targetUrl'] ?? '')),
-				(string)($edge['origin'] ?? ''),
-				(string)($edge['distance'] ?? ''),
-			];
+			$rows[] = self::edgeRow(edge: $edge, titles: $titles);
 		}
 
 		if (($graph['truncated'] ?? false) === true) {
@@ -451,6 +483,44 @@ class RelationGraphService implements RelationGraphServiceInterface {
 
 		return $rows;
 	}//end rowsOf()
+
+
+	/**
+	 * Uuid => title of every node in a graph.
+	 *
+	 * @param array<string, mixed> $graph The graph.
+	 *
+	 * @return array<string, string> The titles.
+	 */
+	private static function titlesOf(array $graph): array {
+		$titles = [];
+		foreach (($graph['nodes'] ?? []) as $node) {
+			$titles[(string)$node['uuid']] = (string)($node['title'] ?? $node['uuid']);
+		}
+
+		return $titles;
+	}//end titlesOf()
+
+	/**
+	 * One edge as an export row.
+	 *
+	 * @param array<string, mixed>  $edge   The edge.
+	 * @param array<string, string> $titles Uuid => title.
+	 *
+	 * @return array<int, string> The row.
+	 */
+	private static function edgeRow(array $edge, array $titles): array {
+		return [
+			(string)$edge['from'],
+			($titles[(string)$edge['from']] ?? ''),
+			(string)($edge['label'] ?? ''),
+			(string)$edge['direction'],
+			(string)$edge['to'],
+			($titles[(string)$edge['to']] ?? (string)($edge['targetUrl'] ?? '')),
+			(string)($edge['origin'] ?? ''),
+			(string)($edge['distance'] ?? ''),
+		];
+	}//end edgeRow()
 
 	/**
 	 * Every edge touching a level of the walk, from both edge sources.
@@ -606,22 +676,15 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
 	private function targetsOf(mixed $value): array {
-		if (is_string($value) === true && $value !== '') {
-			return [$value];
+		if (is_string($value) === true) {
+			$value = [$value];
 		}
 
 		if (is_array($value) === false) {
 			return [];
 		}
 
-		$targets = [];
-		foreach ($value as $entry) {
-			if (is_string($entry) === true && $entry !== '') {
-				$targets[] = $entry;
-			}
-		}
-
-		return $targets;
+		return array_values(array_filter($value, static fn (mixed $entry): bool => is_string($entry) === true && $entry !== ''));
 	}//end targetsOf()
 
 	/**
@@ -642,15 +705,7 @@ class RelationGraphService implements RelationGraphServiceInterface {
 	 */
 	private function node(string $uuid, ?ObjectEntity $object, int $distance): array {
 		if ($object === null) {
-			return [
-				'uuid' => $uuid,
-				'title' => null,
-				'register' => null,
-				'schema' => null,
-				'distance' => $distance,
-				'resolved' => false,
-				'external' => false,
-			];
+			return self::unresolvedNode(uuid: $uuid, distance: $distance);
 		}
 
 		return [
@@ -663,6 +718,27 @@ class RelationGraphService implements RelationGraphServiceInterface {
 			'external' => false,
 		];
 	}//end node()
+
+
+	/**
+	 * The node of an object that could not be loaded: it still appears, unresolved.
+	 *
+	 * @param string $uuid     The uuid.
+	 * @param int    $distance Its distance from the root.
+	 *
+	 * @return array<string, mixed> The node.
+	 */
+	private static function unresolvedNode(string $uuid, int $distance): array {
+		return [
+			'uuid' => $uuid,
+			'title' => null,
+			'register' => null,
+			'schema' => null,
+			'distance' => $distance,
+			'resolved' => false,
+			'external' => false,
+		];
+	}//end unresolvedNode()
 
 	/**
 	 * Load one object by uuid, or null when it cannot be read.
