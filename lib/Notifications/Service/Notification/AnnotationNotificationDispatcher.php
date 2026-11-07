@@ -36,6 +36,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -552,35 +553,48 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function renderBroadcastSubject(RuleFiring $firing): void {
-		$firing->broadcastSubject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
+		$broadcast = new MessageTarget(firing: $firing, locale: null);
+		$firing->broadcastSubject = $this->messages()->subject(target: $broadcast);
 		$firing->channels         = (array)($firing->spec['channels'] ?? ['nc-notification']);
 
-		$firing->addressBody = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: false,
-			originApp: ''
-		);
+		$firing->addressBody = $this->messages()->declaredBody(target: $broadcast);
 		if (trim($firing->addressBody) === '') {
 			$firing->addressBody = $firing->broadcastSubject;
 		}
 
-		// Absent or unknown reads as the default category, never as exempt.
-		$firing->category = OptOutAuthority::DEFAULT_CATEGORY;
-		$category         = ($firing->spec['messageCategory'] ?? '');
+		$firing->category = self::messageCategory(spec: $firing->spec);
+	}//end renderBroadcastSubject()
+
+	/**
+	 * The rule's message category. Absent or unknown reads as the default
+	 * category, never as exempt.
+	 *
+	 * @param array<string, mixed> $spec The rule declaration.
+	 *
+	 * @return string
+	 */
+	private static function messageCategory(array $spec): string {
+		$category = ($spec['messageCategory'] ?? '');
 		if (is_string($category) === true && in_array(strtolower(trim($category)), OptOutAuthority::CATEGORIES, true) === true) {
-			$firing->category = strtolower(trim($category));
+			return strtolower(trim($category));
 		}
 
-	}//end renderBroadcastSubject()
+		return OptOutAuthority::DEFAULT_CATEGORY;
+	}//end messageCategory()
+
+	/**
+	 * The renderer of subjects and bodies for the object being dispatched.
+	 *
+	 * @return RuleMessageRenderer
+	 */
+	private function messages(): RuleMessageRenderer {
+		return new RuleMessageRenderer(
+			templating: $this->templating(),
+			languages: $this->registerLanguages,
+			appManager: $this->appManager,
+			logger: $this->logger
+		);
+	}//end messages()
 
 	/**
 	 * Resolve the rate limit, coalesce window, origin app, actions and the
@@ -607,15 +621,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			originApp: $firing->originApp
 		);
 
-		$firing->broadcastMessage = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: null,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$firing->broadcastMessage = $this->messages()->body(target: new MessageTarget(firing: $firing, locale: null));
 	}//end resolveRuleDelivery()
 
 	/**
@@ -689,22 +695,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 */
 	private function renderForRecipient(RuleFiring $firing, RecipientDelivery $delivery): void {
 		$delivery->locale  = $this->resolveUserLocale(uid: $delivery->uid);
-		$delivery->subject = $this->resolveLocalizedSubject(
-			template: $firing->subjectTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			fallbackName: $firing->ruleId
-		);
-		$delivery->message = $this->resolveMessageBody(
-			template: $firing->messageTemplate(),
-			locale: $delivery->locale,
-			data: $firing->data,
-			context: $firing->context,
-			hasActions: count($firing->actions) > 0,
-			originApp: $firing->originApp
-		);
-
+		$target = new MessageTarget(firing: $firing, locale: $delivery->locale);
+		$delivery->subject = $this->messages()->subject(target: $target);
+		$delivery->message = $this->messages()->body(target: $target);
 	}//end renderForRecipient()
 
 	/**
@@ -1871,191 +1864,6 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	}//end userExists()
 
 	/**
-	 * Resolve a localized subject template against a recipient locale.
-	 *
-	 * Subject templates can be declared in three shapes:
-	 *
-	 *   1. Legacy single-language string:
-	 *        subject: "Object {{title}} updated"
-	 *   2. Per-locale map:
-	 *        subject:
-	 *          nl: "Object {{title}} bijgewerkt"
-	 *          en: "Object {{title}} updated"
-	 *   3. Per-locale map with explicit default:
-	 *        subject:
-	 *          defaultLocale: nl
-	 *          nl: "..."
-	 *          en: "..."
-	 *
-	 * The resolver picks the recipient's locale when present in the
-	 * map, then falls back to:
-	 *   a. the explicit `defaultLocale` key if set,
-	 *   b. `nl` (Dutch — the primary language for Conduction's NL
-	 *      government audience),
-	 *   c. `en`,
-	 *   d. the first non-default key in declaration order,
-	 *   e. the rule's annotation name (last-resort identifier).
-	 *
-	 * Closes the spec's NL/EN i18n requirement; new locales beyond the
-	 * NL/EN minimum just need to be added under their ISO 639-1 code in
-	 * the schema annotation — no code change required.
-	 *
-	 * @param mixed $template Raw subject value (string or array).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param string $fallbackName Annotation name (last-resort fallback).
-	 *
-	 * @return string The interpolated subject string.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template
-	 * shapes (string, locale-keyed map, default-locale fallback) and within each shape applies
-	 * template-variable interpolation; each branch is required by the i18n subject contract.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Template shape × locale-match × defaultLocale fallback
-	 * × interpolation presence produce many paths; all are required by the spec's subject-resolution
-	 * priority chain.
-	 */
-	private function resolveLocalizedSubject(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		string $fallbackName,
-	): string {
-		if (is_string($template) === true && $template !== '') {
-			// Legacy single-language path — no per-locale map declared.
-			return $this->interpolate(template: $template, data: $data, context: $context, locale: $locale);
-		}
-
-		if (is_array($template) === true) {
-			$declared = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true;
-			$defaultLocale = 'nl';
-			if ($declared === true) {
-				$defaultLocale = $template['defaultLocale'];
-			}
-
-			// Recipient locale wins when declared.
-			if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
-				return $this->interpolate(template: $template[$locale], data: $data, context: $context, locale: $locale);
-			}
-
-			// Explicit default locale next.
-			if (isset($template[$defaultLocale]) === true && is_string($template[$defaultLocale]) === true) {
-				return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context, locale: $locale);
-			}
-
-			// NL/EN baseline.
-			foreach (['nl', 'en'] as $candidate) {
-				if (isset($template[$candidate]) === true && is_string($template[$candidate]) === true) {
-					return $this->interpolate(template: $template[$candidate], data: $data, context: $context, locale: $locale);
-				}
-			}
-
-			// First locale in declaration order (skip the meta key).
-			foreach ($template as $key => $value) {
-				if ($key === 'defaultLocale') {
-					continue;
-				}
-
-				if (is_string($value) === true) {
-					return $this->interpolate(template: $value, data: $data, context: $context, locale: $locale);
-				}
-			}
-		}//end if
-
-		return $fallbackName;
-	}//end resolveLocalizedSubject()
-
-	/**
-	 * Resolve the notification BODY (message) for a recipient/broadcast.
-	 *
-	 * The body is distinct from the title (`subject`):
-	 *
-	 *   1. When the rule declares a `message` template (string or per-locale
-	 *      map), it is localised + `{{prop}}`-interpolated through the SAME
-	 *      resolver as the subject (`resolveLocalizedSubject()`).
-	 *   2. When the rule declares NO `message` but DOES declare `actions[]`,
-	 *      the body is auto-derived as "Open in {AppName}." where {AppName}
-	 *      is the originApp's human display name (via IAppManager; falls back
-	 *      to ucfirst(originApp) when unavailable).
-	 *   3. When the rule declares neither `message` nor `actions`, the body
-	 *      is empty — exactly today's behaviour (back-compat).
-	 *
-	 * @param mixed $template Raw `message` value (string, array, or null).
-	 * @param string|null $locale Recipient locale, or null for broadcast channels.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` interpolation.
-	 * @param array<string, mixed> $context Trigger-specific context.
-	 * @param bool $hasActions Whether the rule declared resolvable actions.
-	 * @param string $originApp Resolved origin app id (drives the auto-body app name).
-	 *
-	 * @return string The interpolated body string, or '' for the empty back-compat body.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveMessageBody(
-		mixed $template,
-		?string $locale,
-		array $data,
-		array $context,
-		bool $hasActions,
-		string $originApp,
-	): string {
-		$hasTemplate = (is_string($template) === true && $template !== '') || (is_array($template) === true && $template !== []);
-		if ($hasTemplate === true) {
-			// Reuse the subject resolver: identical shape, locale-resolution
-			// and {{prop}} interpolation contract. The empty fallbackName
-			// means an unresolvable map degrades to '' rather than a name.
-			return $this->resolveLocalizedSubject(
-				template: $template,
-				locale: $locale,
-				data: $data,
-				context: $context,
-				fallbackName: ''
-			);
-		}
-
-		// No explicit body: auto-derive only when the rule has actions.
-		if ($hasActions === false) {
-			return '';
-		}
-
-		return sprintf('Open in %s.', $this->resolveAppDisplayName(app: $originApp));
-	}//end resolveMessageBody()
-
-	/**
-	 * Resolve an app's human display name for the auto-derived body.
-	 *
-	 * Reads the app's `name` from IAppManager::getAppInfo() when the manager
-	 * is available; falls back to ucfirst(app) when the manager is absent
-	 * (older fixtures) or the lookup yields no usable name.
-	 *
-	 * @param string $app The app id.
-	 *
-	 * @return string The human-readable app display name.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md
-	 */
-	private function resolveAppDisplayName(string $app): string {
-		$fallback = ucfirst($app);
-		if ($this->appManager === null || $app === '') {
-			return $fallback;
-		}
-
-		try {
-			$info = $this->appManager->getAppInfo($app);
-			if (is_array($info) === true && is_string($info['name'] ?? null) === true && $info['name'] !== '') {
-				return $info['name'];
-			}
-		} catch (\Throwable $e) {
-			$this->logger->debug(
-				sprintf('[AnnotationNotificationDispatcher] app display-name lookup failed: %s', $e->getMessage())
-			);
-		}
-
-		return $fallback;
-	}//end resolveAppDisplayName()
-
-	/**
 	 * Resolve a Nextcloud user's preferred locale.
 	 *
 	 * Reads `core.lang` from the user's NC config — the same value
@@ -2085,54 +1893,10 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return null;
 		}
 
-		// NC stores values like `nl`, `en_GB`, `de_DE` — strip the
-		// region suffix so the lookup matches the simple ISO 639-1
-		// keys we expect in the per-locale subject map.
-		$sep = strpos($raw, '_');
-		if ($sep !== false) {
-			$raw = substr($raw, 0, $sep);
-		}
-
-		return strtolower($raw);
+		// NC stores values like `nl`, `en_GB`, `de_DE`: the region suffix goes,
+		// so the lookup matches the ISO 639-1 keys of the per-locale subject map.
+		return strtolower(explode('_', $raw, 2)[0]);
 	}//end resolveUserLocale()
-
-	/**
-	 * Replace {{prop}} tokens with values from $data, then $context.
-	 *
-	 * Substituted values are HTML-escaped at the source as defence in
-	 * depth. The rendered subject ends up in:
-	 *   - INotificationManager (HTML render path in the NC notification UI),
-	 *   - the Activity stream (HTML render path),
-	 *   - email subject/body (plain-text setPlainBody, but still rendered
-	 *     by mail clients that may interpret HTML in the subject line).
-	 * Nextcloud's own rendering layers escape on output, so this is a
-	 * second layer rather than the only one — but it keeps the
-	 * `<script>` / `"` / `&` characters that come from object data
-	 * from being placed into a notification context without escaping.
-	 *
-	 * The literal template fragments authored by the schema author
-	 * pass through unchanged (they aren't sourced from object data).
-	 *
-	 * @param string $template The raw subject template.
-	 * @param array<string, mixed> $data Object data for `{{prop}}` lookup.
-	 * @param array<string, mixed> $context Per-event context for `{{prop}}` lookup.
-	 * @param string|null $locale The recipient's language, or null for a broadcast.
-	 *
-	 * @return string The interpolated string.
-	 *
-	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
-	 */
-	private function interpolate(string $template, array $data, array $context, ?string $locale = null): string {
-		// The dialect's ONE placeholder evaluator — the same class the flow
-		// messaging service renders node templates through. A translatable
-		// value renders in the recipient's language, then the register's.
-		return $this->templating()->interpolate(
-			template: $template,
-			data: $data,
-			context: $context,
-			languages: array_merge([$locale], $this->registerLanguages)
-		);
-	}//end interpolate()
 
 	/**
 	 * The register's default language, then its other languages.
@@ -2144,14 +1908,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	private function resolveRegisterLanguages(ObjectEntity $object): array {
-		$registerId = $object->getRegister();
-		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+		try {
+			$register = $this->objectRegister(object: $object);
+		} catch (\Throwable $e) {
 			return [];
 		}
 
-		try {
-			$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
-		} catch (\Throwable $e) {
+		if ($register === null) {
 			return [];
 		}
 
@@ -2159,6 +1922,22 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 
 		return array_values(array_unique(array_filter($languages, static fn ($code): bool => is_string($code) === true && $code !== '')));
 	}//end resolveRegisterLanguages()
+
+	/**
+	 * The register of the object being dispatched, null when it is unknown.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Register|null
+	 */
+	private function objectRegister(ObjectEntity $object): ?Register {
+		$registerId = $object->getRegister();
+		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+			return null;
+		}
+
+		return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+	}//end objectRegister()
 
 	/**
 	 * Map a trigger to the canonical INotification subject the Notifier
@@ -2195,24 +1974,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 		// Default: the app that owns the schema's register.
-		$registerId = $object->getRegister();
-		$registerMapper = $this->registerMapper;
-		if ($registerMapper !== null && $registerId !== null && (string)$registerId !== '') {
-			try {
-				$register = $registerMapper->find(
-					$registerId,
-					_rbac: false,
-					_multitenancy: false
-				);
-				$owningApp = $register->getApplication();
-				if (is_string($owningApp) === true && $owningApp !== '') {
-					return $owningApp;
-				}
-			} catch (\Throwable $e) {
-				$this->logger->debug(
-					sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
-				);
-			}
+		try {
+			$owningApp = $this->objectRegister(object: $object)?->getApplication();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
+			);
+			return 'openregister';
+		}
+
+		if (is_string($owningApp) === true && $owningApp !== '') {
+			return $owningApp;
 		}
 
 		return 'openregister';
