@@ -123,23 +123,63 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	public function validate(array $mapping, Schema $schema, array $options = []): array {
 		$fields = $this->fieldsOf(mapping: $mapping);
 		$fixed = $this->fixedOf(mapping: $mapping);
+		$findings = array_merge(
+			$this->destinationFindings(schema: $schema, audience: (string)($options['audience'] ?? '')),
+			$this->allFieldFindings(fields: $fields, schema: $schema),
+			$this->allFixedFindings(fixed: $fixed, schema: $schema)
+		);
 
-		$findings = $this->destinationFindings(schema: $schema, audience: (string)($options['audience'] ?? ''));
+		return array_merge($findings, $this->requiredFindings(schema: $schema, sourced: $this->sourcedBy(fields: $fields, fixed: $fixed)));
+	}//end validate()
+
+	/**
+	 * The findings of every mapped field, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The mapping's fields.
+	 * @param Schema                           $schema The destination schema.
+	 *
+	 * @return array<int, array{field?: string, property: string, code: string, message: string}>
+	 */
+	private function allFieldFindings(array $fields, Schema $schema): array {
+		$findings = [];
 		foreach ($fields as $field) {
 			array_push($findings, ...$this->fieldFindings(field: $field, schema: $schema));
 		}
 
+		return $findings;
+	}//end allFieldFindings()
+
+	/**
+	 * The findings of every fixed value, in order.
+	 *
+	 * @param array<string, mixed> $fixed  The mapping's fixed values.
+	 * @param Schema               $schema The destination schema.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}>
+	 */
+	private function allFixedFindings(array $fixed, Schema $schema): array {
+		$findings = [];
 		foreach ($fixed as $property => $value) {
 			array_push($findings, ...$this->fixedFindings(property: (string)$property, value: $value, schema: $schema));
 		}
 
-		$sourced = array_merge(
+		return $findings;
+	}//end allFixedFindings()
+
+	/**
+	 * The properties a mapping fills: each field's property, then each fixed value's.
+	 *
+	 * @param array<int, array<string, mixed>> $fields The mapping's fields.
+	 * @param array<string, mixed>             $fixed  The mapping's fixed values.
+	 *
+	 * @return array<int, string> The property names.
+	 */
+	private function sourcedBy(array $fields, array $fixed): array {
+		return array_merge(
 			array_map(static fn (array $field): string => (string)($field['property'] ?? ''), $fields),
 			array_map('strval', array_keys($fixed))
 		);
-
-		return array_merge($findings, $this->requiredFindings(schema: $schema, sourced: $sourced));
-	}//end validate()
+	}//end sourcedBy()
 
 	/**
 	 * Why a task-form field of this schema cannot be rendered, or null when it can.
@@ -228,28 +268,50 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 */
 	private function destinationFindings(Schema $schema, string $audience): array {
 		$findings = [];
-		$slug = (string)$schema->getSlug();
 		if (($schema->getConfiguration()['staging'] ?? false) === true) {
-			$findings[] = $this->finding(
-				property: '',
-				code: self::DESTINATION_IS_STAGING,
-				message: $this->l10n->t(
-					'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
-					[$slug]
-				)
-			);
+			$findings[] = $this->stagingFinding(slug: (string)$schema->getSlug());
 		}
 
 		if ($audience !== '' && $this->grantsCreateTo(schema: $schema, audience: $audience) === false) {
-			$findings[] = $this->finding(
-				property: '',
-				code: self::DESTINATION_NOT_PUBLIC,
-				message: $this->l10n->t('Schema "%1$s" does not let a %2$s visitor create objects, so this form could never be submitted.', [$slug, $audience])
-			);
+			$findings[] = $this->closedFinding(slug: (string)$schema->getSlug(), audience: $audience);
 		}
 
 		return $findings;
 	}//end destinationFindings()
+
+	/**
+	 * The finding for a staging schema used as a destination.
+	 *
+	 * @param string $slug The schema's slug.
+	 *
+	 * @return array{property: string, code: string, message: string}
+	 */
+	private function stagingFinding(string $slug): array {
+		return $this->finding(
+			property: '',
+			code: self::DESTINATION_IS_STAGING,
+			message: $this->l10n->t(
+				'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
+				[$slug]
+			)
+		);
+	}//end stagingFinding()
+
+	/**
+	 * The finding for a destination that does not let the form's audience create.
+	 *
+	 * @param string $slug     The schema's slug.
+	 * @param string $audience `public` or `authenticated`.
+	 *
+	 * @return array{property: string, code: string, message: string}
+	 */
+	private function closedFinding(string $slug, string $audience): array {
+		return $this->finding(
+			property: '',
+			code: self::DESTINATION_NOT_PUBLIC,
+			message: $this->l10n->t('Schema "%1$s" does not let a %2$s visitor create objects, so this form could never be submitted.', [$slug, $audience])
+		);
+	}//end closedFinding()
 
 	/**
 	 * Whether the schema lets the audience create objects.
@@ -268,24 +330,51 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 			return true;
 		}
 
-		$accepted = ['public'];
-		if ($audience === 'authenticated') {
-			$accepted[] = 'authenticated';
-		}
-
+		$accepted = $this->acceptedGroups(audience: $audience);
 		foreach ((array)($authorization['create'] ?? []) as $entry) {
-			$group = $entry;
-			if (is_array($entry) === true) {
-				$group = ($entry['group'] ?? null);
-			}
-
-			if (is_string($group) === true && in_array($group, $accepted, true) === true) {
+			if (in_array($this->groupOf(entry: $entry), $accepted, true) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end grantsCreateTo()
+
+	/**
+	 * The create grants that serve an audience: `public`, and for an authenticated audience also `authenticated`.
+	 *
+	 * @param string $audience `public` or `authenticated`.
+	 *
+	 * @return array<int, string> The groups.
+	 */
+	private function acceptedGroups(string $audience): array {
+		$accepted = ['public'];
+		if ($audience === 'authenticated') {
+			$accepted[] = 'authenticated';
+		}
+
+		return $accepted;
+	}//end acceptedGroups()
+
+	/**
+	 * The group a create grant names: the entry itself, or its `group`; null when that is not a string.
+	 *
+	 * @param mixed $entry The grant entry.
+	 *
+	 * @return string|null The group.
+	 */
+	private function groupOf(mixed $entry): ?string {
+		$group = $entry;
+		if (is_array($entry) === true) {
+			$group = ($entry['group'] ?? null);
+		}
+
+		if (is_string($group) === true) {
+			return $group;
+		}
+
+		return null;
+	}//end groupOf()
 
 	/**
 	 * Findings for one mapped field.
@@ -494,31 +583,39 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	private function fixedFindings(string $property, mixed $value, Schema $schema): array {
 		$properties = $schema->getProperties();
 		if (array_key_exists($property, $properties) === false) {
-			if ($this->allowsExtras(schema: $schema) === true) {
-				return [];
-			}
-
-			return [
-				$this->finding(
-					property: $property,
-					code: self::PROPERTY_UNKNOWN,
-					message: $this->l10n->t('A fixed value writes into "%1$s", which schema "%2$s" does not have.', [$property, (string)$schema->getSlug()])
-				),
-			];
+			return $this->unknownFixedFindings(property: $property, schema: $schema);
 		}
 
 		if ($this->rules->fixedValueFits(value: $value, property: (array)$properties[$property]) === true) {
 			return [];
 		}
 
+		$message = $this->l10n->t('The fixed value for "%1$s" is one the property does not accept.', [$property]);
+
+		return [$this->finding(property: $property, code: self::FIXED_VALUE_INVALID, message: $message)];
+	}//end fixedFindings()
+
+	/**
+	 * Findings for a fixed value into a property the schema does not have: none when it allows extras.
+	 *
+	 * @param string $property The property the value is fixed into.
+	 * @param Schema $schema   The destination schema.
+	 *
+	 * @return array<int, array{property: string, code: string, message: string}>
+	 */
+	private function unknownFixedFindings(string $property, Schema $schema): array {
+		if ($this->allowsExtras(schema: $schema) === true) {
+			return [];
+		}
+
 		return [
 			$this->finding(
 				property: $property,
-				code: self::FIXED_VALUE_INVALID,
-				message: $this->l10n->t('The fixed value for "%1$s" is one the property does not accept.', [$property])
+				code: self::PROPERTY_UNKNOWN,
+				message: $this->l10n->t('A fixed value writes into "%1$s", which schema "%2$s" does not have.', [$property, (string)$schema->getSlug()])
 			),
 		];
-	}//end fixedFindings()
+	}//end unknownFixedFindings()
 
 	/**
 	 * Findings for required properties no field, fixed value or server default fills.
@@ -530,17 +627,9 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 	 */
 	private function requiredFindings(Schema $schema, array $sourced): array {
 		$properties = $schema->getProperties();
-		$required = $schema->getRequired();
-		foreach ($properties as $name => $property) {
-			if (is_array($property) === true && ($property['required'] ?? false) === true) {
-				$required[] = (string)$name;
-			}
-		}
-
 		$findings = [];
-		foreach (array_values(array_unique(array_map('strval', $required))) as $name) {
-			$property = (array)($properties[$name] ?? []);
-			if (in_array($name, $sourced, true) === true || self::isServerFilled(property: $property) === true) {
+		foreach ($this->requiredOf(schema: $schema) as $name) {
+			if (in_array($name, $sourced, true) === true || self::isServerFilled(property: (array)($properties[$name] ?? [])) === true) {
 				continue;
 			}
 
@@ -553,6 +642,24 @@ class FormDestinationValidator implements FormDestinationValidatorInterface {
 
 		return $findings;
 	}//end requiredFindings()
+
+	/**
+	 * The required properties of a schema: its `required` list, then each property flagged `required: true`, once each.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array<int, string> The property names.
+	 */
+	private function requiredOf(Schema $schema): array {
+		$required = $schema->getRequired();
+		foreach ($schema->getProperties() as $name => $property) {
+			if (is_array($property) === true && ($property['required'] ?? false) === true) {
+				$required[] = (string)$name;
+			}
+		}
+
+		return array_values(array_unique(array_map('strval', $required)));
+	}//end requiredOf()
 
 	/**
 	 * Whether the server fills a property: a default, a computation, a generated identifier, or the serverSet marker.

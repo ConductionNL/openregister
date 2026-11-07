@@ -46,14 +46,14 @@ class FlowDryRunService {
 	 * @param FlowLocator      $locator  Builds the flow document the engine walks.
 	 * @param ObjectOperationsInterface    $objects  Reads the object with the caller's access.
 	 * @param FlowEngine       $engine   The engine runs walk.
-	 * @param FlowNodeRegistry $registry Resolves each step's node.
+	 * @param FlowNodeRegistryInterface $registry Resolves each step's node.
 	 */
 	public function __construct(
 		private readonly FlowService $flows,
 		private readonly FlowLocator $locator,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly FlowEngine $engine,
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 	) {
 	}//end __construct()
 

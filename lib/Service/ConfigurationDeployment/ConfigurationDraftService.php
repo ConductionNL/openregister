@@ -173,21 +173,8 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftValue(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey,
-		mixed $value
-	): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: $value,
-			removes: false
-		);
+	public function draftValue(string $setUuid, string $layer, ?string $layerRef, string $configKey, mixed $value): ConfigurationDraft {
+		return $this->stage(setUuid: $setUuid, layer: $layer, layerRef: $layerRef, configKey: $configKey, value: $value, removes: false);
 
 	}//end draftValue()
 
@@ -211,20 +198,8 @@ class ConfigurationDraftService {
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
 	 */
-	public function draftRemoval(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey
-	): ConfigurationDraft {
-		return $this->stage(
-			setUuid: $setUuid,
-			layer: $layer,
-			layerRef: $layerRef,
-			configKey: $configKey,
-			value: null,
-			removes: true
-		);
+	public function draftRemoval(string $setUuid, string $layer, ?string $layerRef, string $configKey): ConfigurationDraft {
+		return $this->stage(setUuid: $setUuid, layer: $layer, layerRef: $layerRef, configKey: $configKey, value: null, removes: true);
 
 	}//end draftRemoval()
 

@@ -36,11 +36,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use Closure;
 use Exception;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Service\OpenProjectLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -87,13 +91,11 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return $this->appNotInstalled(appName: 'OpenConnector');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedWorkPackages($object->getUuid()))
+		return $this->whenOpenConnectorInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->linkService->getLinkedWorkPackages($object->getUuid()))
+			)
 		);
 	}//end index()
 
@@ -114,25 +116,15 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return $this->appNotInstalled(appName: 'OpenConnector');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$workPackageId = (int)$this->request->getParam('workPackageId', 0);
-				if ($workPackageId === 0) {
-					return new JSONResponse(['error' => 'workPackageId is required'], 400);
-				}
-
-				$link = $this->linkService->linkWorkPackage(
-					$this->linkTargetOf(object: $object),
-					$workPackageId
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenOpenConnectorInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: LinkedSourceActions::linkById(
+					request: $this->request,
+					param: 'workPackageId',
+					link: fn (ObjectEntity $object, int $workPackageId) => $this->linkService->linkWorkPackage($this->linkTargetOf(object: $object), $workPackageId)
+				)
+			)
 		);
 	}//end link()
 
@@ -153,34 +145,15 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
-		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return $this->appNotInstalled(appName: 'OpenConnector');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object): JSONResponse {
-				$projectId = (string)$this->request->getParam('projectId', '');
-				if (trim($projectId) === '') {
-					return new JSONResponse(['error' => 'projectId is required'], 400);
-				}
-
-				$subject = (string)$this->request->getParam('subject', '');
-				if (trim($subject) === '') {
-					return new JSONResponse(['error' => 'subject is required'], 400);
-				}
-
-				$type = (string)$this->request->getParam('type', '');
-
-				$link = $this->linkService->createAndLinkWorkPackage(
-					$this->linkTargetOf(object: $object),
-					$projectId,
-					$subject,
-					$type
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+		return $this->whenOpenConnectorInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: LinkedSourceActions::linkByTexts(
+					request: $this->request,
+					params: ['projectId', 'subject'],
+					link: $this->createWorkPackage(...)
+				)
+			)
 		);
 	}//end createAndLink()
 
@@ -200,17 +173,11 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $wpId): JSONResponse {
-		if ($this->linkService->isOpenConnectorAvailable() === false) {
-			return $this->appNotInstalled(appName: 'OpenConnector');
-		}
-
-		return $this->onLinkedObject(
-			route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-			action: function (ObjectEntity $object) use ($wpId): JSONResponse {
-				$this->linkService->unlink($object->getUuid(), (int)$wpId);
-
-				return new JSONResponse(['success' => true]);
-			}
+		return $this->whenOpenConnectorInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->linkService->unlink($uuid, (int)$wpId))
+			)
 		);
 	}//end destroy()
 
@@ -228,22 +195,61 @@ class OpenProjectLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function available(): JSONResponse {
+		return $this->whenOpenConnectorInstalled(
+			answer: $this->listAvailableWorkPackages(...)
+		);
+	}//end available()
+
+	/**
+	 * Create a work package in the project and link it; the optional `type` param picks its type.
+	 *
+	 * @param ObjectEntity $object    The object the work package is linked to.
+	 * @param string       $projectId The OpenProject project id.
+	 * @param string       $subject   The work package subject.
+	 *
+	 * @return OpenProjectLink The link.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function createWorkPackage(ObjectEntity $object, string $projectId, string $subject): OpenProjectLink {
+		$type = (string)$this->request->getParam('type', '');
+
+		return $this->linkService->createAndLinkWorkPackage($this->linkTargetOf(object: $object), $projectId, $subject, $type);
+	}//end createWorkPackage()
+
+	/**
+	 * The picker listing of the reachable work packages; a failure is mapped by mapException().
+	 *
+	 * @return JSONResponse The listing, or the mapped failure.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function listAvailableWorkPackages(): JSONResponse {
+		$search = LinkedSourceActions::search(request: $this->request);
+
+		try {
+			return LinkedSourceResponses::listed(items: $this->linkService->getAvailableWorkPackages($search));
+		} catch (Exception $e) {
+			return $this->mapException(exception: $e);
+		}
+	}//end listAvailableWorkPackages()
+
+	/**
+	 * Run the answer when the OpenConnector app is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Returns the response.
+	 *
+	 * @return JSONResponse The answer, or 501.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function whenOpenConnectorInstalled(Closure $answer): JSONResponse {
 		if ($this->linkService->isOpenConnectorAvailable() === false) {
 			return $this->appNotInstalled(appName: 'OpenConnector');
 		}
 
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		try {
-			$workPackages = $this->linkService->getAvailableWorkPackages($search);
-			return new JSONResponse(['results' => $workPackages, 'total' => count($workPackages)]);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}
-	}//end available()
+		return $answer();
+	}//end whenOpenConnectorInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -265,11 +271,6 @@ class OpenProjectLinksController extends Controller {
 	 *              the link REST contract is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [400, 401, 404, 409, 502, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 401, 404, 409, 502, 503]);
 	}//end mapException()
 }//end class

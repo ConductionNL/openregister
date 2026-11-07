@@ -1,0 +1,343 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`application details renders with linked items 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="detailsContainer">
+<div class="detailsHeader">
+<div class="headerTitleSection">
+<x-ncbutton variant="tertiary">
+<slot-default>t:Back</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+<h1>
+<x-applicationoutline size="32">
+</x-applicationoutline>Permits</h1>
+<span class="versionBadge">v1.2.0</span>
+<span class="statusBadge active">t:Active</span>
+</div>
+<div class="headerActions">
+<x-ncactions inline="2">
+<slot-default>
+<x-ncactionbutton>
+<slot-default>t:Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton>
+<slot-default>t:Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="detailsSection">
+<p class="description">Permit handling</p>
+</div>
+<div class="detailsGrid">
+<div class="detailsCard">
+<h3>
+<x-informationoutline size="20">
+</x-informationoutline>t:Basic Information</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:ID:</strong>
+<span class="monospace">3</span>
+</div>
+<div class="detailRow">
+<strong>t:Version:</strong>
+<span>1.2.0</span>
+</div>
+<div class="detailRow">
+<strong>t:Status:</strong>
+<span class="status-active">t:Active</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-officebuilding size="20">
+</x-officebuilding>t:Organisation</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:Organisation ID:</strong>
+<span>org-1</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-cog size="20">
+</x-cog>t:Configurations</h3>
+<div class="detailsContent">
+<div>
+<p>2 t:configuration(s)</p>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-database size="20">
+</x-database>t:Registers</h3>
+<div class="detailsContent">
+<div>
+<p>1 t:register(s)</p>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-fileoutline size="20">
+</x-fileoutline>t:Schemas</h3>
+<div class="detailsContent">
+<div>
+<p>3 t:schema(s)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`application details renders with linked items unset 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="detailsContainer">
+<div class="detailsHeader">
+<div class="headerTitleSection">
+<x-ncbutton variant="tertiary">
+<slot-default>t:Back</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+<h1>
+<x-applicationoutline size="32">
+</x-applicationoutline>Permits</h1>
+<span class="versionBadge">v1.2.0</span>
+<span class="statusBadge inactive">t:Inactive</span>
+</div>
+<div class="headerActions">
+<x-ncactions inline="2">
+<slot-default>
+<x-ncactionbutton>
+<slot-default>t:Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton>
+<slot-default>t:Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="detailsSection">
+<p class="description">Permit handling</p>
+</div>
+<div class="detailsGrid">
+<div class="detailsCard">
+<h3>
+<x-informationoutline size="20">
+</x-informationoutline>t:Basic Information</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:ID:</strong>
+<span class="monospace">3</span>
+</div>
+<div class="detailRow">
+<strong>t:Version:</strong>
+<span>1.2.0</span>
+</div>
+<div class="detailRow">
+<strong>t:Status:</strong>
+<span class="status-inactive">t:Inactive</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-officebuilding size="20">
+</x-officebuilding>t:Organisation</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:Organisation ID:</strong>
+<span>org-1</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-cog size="20">
+</x-cog>t:Configurations</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No configurations found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-database size="20">
+</x-database>t:Registers</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No registers found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-fileoutline size="20">
+</x-fileoutline>t:Schemas</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No schemas found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`application details renders without linked items 1`] = `
+"<x-ncappcontent>
+<slot-default>
+<div class="detailsContainer">
+<div class="detailsHeader">
+<div class="headerTitleSection">
+<x-ncbutton variant="tertiary">
+<slot-default>t:Back</slot-default>
+<slot-icon>
+<x-arrowleft size="20">
+</x-arrowleft>
+</slot-icon>
+</x-ncbutton>
+<h1>
+<x-applicationoutline size="32">
+</x-applicationoutline>Permits</h1>
+<span class="versionBadge">v1.2.0</span>
+<span class="statusBadge active">t:Active</span>
+</div>
+<div class="headerActions">
+<x-ncactions inline="2">
+<slot-default>
+<x-ncactionbutton>
+<slot-default>t:Edit</slot-default>
+<slot-icon>
+<x-pencil size="20">
+</x-pencil>
+</slot-icon>
+</x-ncactionbutton>
+<x-ncactionbutton>
+<slot-default>t:Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncactionbutton>
+</slot-default>
+</x-ncactions>
+</div>
+</div>
+<div class="detailsSection">
+<p class="description">Permit handling</p>
+</div>
+<div class="detailsGrid">
+<div class="detailsCard">
+<h3>
+<x-informationoutline size="20">
+</x-informationoutline>t:Basic Information</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:ID:</strong>
+<span class="monospace">3</span>
+</div>
+<div class="detailRow">
+<strong>t:Version:</strong>
+<span>1.2.0</span>
+</div>
+<div class="detailRow">
+<strong>t:Status:</strong>
+<span class="status-active">t:Active</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-officebuilding size="20">
+</x-officebuilding>t:Organisation</h3>
+<div class="detailsContent">
+<div class="detailRow">
+<strong>t:Organisation ID:</strong>
+<span>org-1</span>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-cog size="20">
+</x-cog>t:Configurations</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No configurations found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-database size="20">
+</x-database>t:Registers</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No registers found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+<div class="detailsCard">
+<h3>
+<x-fileoutline size="20">
+</x-fileoutline>t:Schemas</h3>
+<div class="detailsContent">
+<div>
+<x-ncnotecard type="info">
+<slot-default>t:No schemas found for this application.</slot-default>
+</x-ncnotecard>
+</div>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncappcontent>"
+`;

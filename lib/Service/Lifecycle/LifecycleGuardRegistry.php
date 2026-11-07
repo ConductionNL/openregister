@@ -43,7 +43,7 @@ use RuntimeException;
  * controller; install-time `occ openregister:check-guards` (future) catches
  * the same problem before it reaches a request.
  */
-final class LifecycleGuardRegistry {
+final class LifecycleGuardRegistry implements LifecycleGuardRegistryInterface {
 
 	/**
 	 * Per-request cache.

@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
-class FileOwnershipHandler {
+class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	/**
 	 * Application user name.
 	 *

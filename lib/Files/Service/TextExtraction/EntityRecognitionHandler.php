@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Files\Service\TextExtraction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
-use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -119,7 +119,7 @@ class EntityRecognitionHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param ChunkMapper $chunkMapper Chunk mapper.
+	 * @param ChunkSourceReaderInterface $chunkMapper Chunk mapper.
 	 * @param GdprEntityMapper $entityMapper Entity mapper.
 	 * @param EntityRelationMapperInterface $entityRelationMapper Entity relation mapper.
 	 * @param IDBConnection $db Database connection.
@@ -129,7 +129,7 @@ class EntityRecognitionHandler {
 	 * @param ContainerInterface|null $container App container, consulted lazily for the object mapper.
 	 */
 	public function __construct(
-		private readonly ChunkMapper $chunkMapper,
+		private readonly ChunkSourceReaderInterface $chunkMapper,
 		private readonly GdprEntityMapper $entityMapper,
 		private readonly EntityRelationMapperInterface $entityRelationMapper,
 		private readonly IDBConnection $db,

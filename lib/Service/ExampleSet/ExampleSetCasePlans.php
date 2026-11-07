@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\CaseItemMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Party\PartyService;
@@ -99,25 +100,46 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-a-case-plan-on-its-objects
 	 */
 	public function refusal(array $data, array $users): string {
-		$unknown = array_diff(array_keys($data), self::FIELDS);
-		if ($unknown !== []) {
-			return 'field "'.implode('", "', $unknown).'" is not a case plan field a set may write';
-		}
+		$rules = new ExampleSetFieldRules();
+		return $rules->firstRefusal(
+			checks: [
+				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a case plan'),
+				fn (): string => $rules->missingRefusal(data: $data, required: ['object' => 'the object it is on'], row: 'a case plan'),
+				fn (): string => $this->definitionRefusal(definition: ($data['definition'] ?? null)),
+				fn (): string => $this->historyRefusal(data: $data),
+			]
+		);
+	}//end refusal()
 
-		if (is_string($data['object'] ?? null) === false || trim($data['object']) === '') {
-			return 'a case plan needs the object it is on (object)';
-		}
-
-		if ($this->hasItems(definition: ($data['definition'] ?? null)) === false) {
+	/**
+	 * Why a plan's definition lists no items, or ''.
+	 *
+	 * @param mixed $definition The declared definition.
+	 *
+	 * @return string
+	 */
+	private function definitionRefusal(mixed $definition): string {
+		if ($this->hasItems(definition: $definition) === false) {
 			return 'a case plan needs a definition with its items (definition.items)';
 		}
 
+		return '';
+	}//end definitionRefusal()
+
+	/**
+	 * Why a plan's history is not a list, or ''; a plan without a history is fine.
+	 *
+	 * @param array<string, mixed> $data The filled plan fields.
+	 *
+	 * @return string
+	 */
+	private function historyRefusal(array $data): string {
 		if (isset($data['history']) === true && (is_array($data['history']) === false || array_is_list($data['history']) === false)) {
 			return 'history is a list';
 		}
 
 		return '';
-	}//end refusal()
+	}//end historyRefusal()
 
 	/**
 	 * Whether a definition lists at least one item.
@@ -149,20 +171,35 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 		}
 
 		try {
-			$result = $this->container->get(CasePlanService::class)->ensureItems(
-				objectUuid: $objectUuid,
-				registerId: (int) $object->getRegister(),
-				schemaId: (int) $object->getSchema(),
-				definition: (array) $data['definition'],
-				history: (array) ($data['history'] ?? []),
-				app: $app
-			);
+			$created = $this->ensureItems(app: $app, object: $object, data: $data);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
-		return ['error' => '', 'entry' => ['object' => $objectUuid, 'created' => array_values(array_map('strval', $result['created']))]];
+		return ['error' => '', 'entry' => ['object' => $objectUuid, 'created' => $created]];
 	}//end write()
+
+	/**
+	 * Put the plan's items on the object, through the case plan service.
+	 *
+	 * @param string               $app    The app that ships the fragment.
+	 * @param ObjectEntity         $object The object.
+	 * @param array<string, mixed> $data   The filled plan fields.
+	 *
+	 * @return array<int, string> The ids of the items the service created.
+	 */
+	private function ensureItems(string $app, ObjectEntity $object, array $data): array {
+		$result = $this->container->get(CasePlanService::class)->ensureItems(
+			objectUuid: (string) $data['object'],
+			registerId: (int) $object->getRegister(),
+			schemaId: (int) $object->getSchema(),
+			definition: (array) $data['definition'],
+			history: (array) ($data['history'] ?? []),
+			app: $app
+		);
+
+		return array_values(array_map('strval', $result['created']));
+	}//end ensureItems()
 
 	/**
 	 * Whether none of the items the set created are there any more.
