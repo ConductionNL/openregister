@@ -158,37 +158,10 @@ class UploadHandler {
 		}
 
 		// Ensure all data is consistently arrays by converting any stdClass objects.
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
+		$phpArray = (new ArrayStructure())->toArrays(data: $phpArray);
 
 		return $phpArray;
 	}//end decode()
-
-	/**
-	 * Recursively converts stdClass objects to arrays to ensure consistent data structure.
-	 *
-	 * @param mixed $data The data to convert.
-	 *
-	 * @return array The converted array data.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
-	 */
-	private function ensureArrayStructure(mixed $data): array {
-		if (is_object($data) === true) {
-			$data = (array)$data;
-		}
-
-		if (is_array($data) === true) {
-			foreach ($data as $key => $value) {
-				if (is_object($value) === true) {
-					$data[$key] = $this->ensureArrayStructure(data: $value);
-				} elseif (is_array($value) === true) {
-					$data[$key] = $this->ensureArrayStructure(data: $value);
-				}
-			}
-		}
-
-		return $data;
-	}//end ensureArrayStructure()
 
 	/**
 	 * Gets uploaded file content from a file in the api request as PHP array.
@@ -290,7 +263,7 @@ class UploadHandler {
 		}
 
 		// Ensure all data is consistently arrays by converting any stdClass objects.
-		$phpArray = $this->ensureArrayStructure(data: $phpArray);
+		$phpArray = (new ArrayStructure())->toArrays(data: $phpArray);
 
 		return $phpArray;
 	}//end getJSONfromBody()

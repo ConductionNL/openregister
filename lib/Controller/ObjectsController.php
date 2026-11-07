@@ -32,6 +32,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
+use OCA\OpenRegister\Controller\Support\ObjectExport;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
@@ -4946,9 +4947,8 @@ class ObjectsController extends Controller {
 	 * and refile it" does today and what this replaces.
 	 *
 	 * Authorised on BOTH SIDES: the object is read under the caller's own
-	 * permissions, and the target is resolved the same way, so a caller who
-	 * could not read the object cannot move it and a caller who could not write
-	 * the target cannot put anything there.
+	 * permissions, and {@see mayMove()} asks for update on it and create on the
+	 * target schema before anything is written.
 	 *
 	 * @param string $register The source register.
 	 * @param string $schema The source schema.
@@ -5001,6 +5001,10 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'No such register or schema'], statusCode: 404);
 		}
 
+		if ($this->mayMove(object: $object, schemas: [$from['schema'], $to['schema']]) === false) {
+			return new JSONResponse(data: ['error' => 'You may not move this object there.'], statusCode: 403);
+		}
+
 		$outcome = $this->container->get(\OCA\OpenRegister\Service\Object\MoveObject::class)->move(
 			object: $object,
 			sourceRegister: $from['register'],
@@ -5018,6 +5022,25 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: $outcome);
 	}//end move()
+
+	/**
+	 * Whether the caller may take this object out of its schema and create it in the target.
+	 *
+	 * The rights a migration asks for: update on the object, create on the target schema.
+	 *
+	 * @param ObjectEntity                $object  The object.
+	 * @param array{0: Schema, 1: Schema} $schemas The source and the target schema.
+	 *
+	 * @return bool True when both rights are held.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function mayMove(ObjectEntity $object, array $schemas): bool {
+		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+
+		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
+			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+	}//end mayMove()
 
 	/**
 	 * Note, and discard, a cause a request tried to name for itself.
@@ -5355,9 +5378,8 @@ class ObjectsController extends Controller {
 		$objectService->setSchema(schema: $schema);
 
 		// Get filters and type from request.
-		$filters = $this->request->getParams();
-		unset($filters['_route']);
-		$type = $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
+		$filters = $this->exportFilters();
+		$type = $this->exportFormat();
 
 		// Get register and schema entities.
 		//
@@ -5388,103 +5410,204 @@ class ObjectsController extends Controller {
 			return $refusal;
 		}
 
-		// Generate filename base.
-		$filenameBase = sprintf(
-			'%s_%s_%s',
-			$registerEntity->getSlug() ?? 'register',
-			$schemaEntity->getSlug() ?? 'schema',
-			(new DateTime())->format('Y-m-d_His')
-		);
-
-		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
-		if ($type === 'csv') {
-			$content = $this->services->transfer->exportService->exportToCsv(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				filters: $filters,
-				currentUser: $this->userSession->getUser()
-			);
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'csv',
-				rowCount: $this->countCsvExportRows(csv: $content)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.csv",
-				contentType: 'text/csv'
-			);
-		}
-
-		if ($type === 'json') {
-			$content = $this->services->transfer->exportService->exportToJson(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				filters: $filters
-			);
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'json',
-				rowCount: $this->countJsonExportRows(json: $content)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.json",
-				contentType: 'application/json'
-			);
-		}
-
-		if ($type === 'pdf') {
-			try {
-				$content = $this->services->transfer->exportService->exportToPdf(
-					register: $registerEntity,
-					schema: $schemaEntity,
-					filters: $filters,
-					currentUser: $this->userSession->getUser()
-				);
-			} catch (ExportTooLargeException $e) {
-				return new JSONResponse(
-					data: [
-						'error' => 'export_too_large',
-						'message' => $e->getMessage(),
-						'rowCount' => $e->getRowCount(),
-						'maxRows' => $e->getMaxRows(),
-					],
-					statusCode: ExportTooLargeException::HTTP_STATUS
-				);
-			} catch (OfficeServerRequiredException $e) {
-				return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-			}
-
-			$this->recordExportCompleted(
-				register: $registerEntity,
-				schema: $schemaEntity,
-				format: 'pdf',
-				rowCount: $this->services->transfer->exportService->countExportRows(
-					register: $registerEntity,
-					schema: $schemaEntity,
-					filters: $filters
-				)
-			);
-
-			return new DataDownloadResponse(
-				data: $content,
-				filename: "{$filenameBase}.pdf",
-				contentType: 'application/pdf'
-			);
-		}//end if
-
-		// Default to Excel.
-		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+		$export = new ObjectExport(
 			register: $registerEntity,
 			schema: $schemaEntity,
 			filters: $filters,
+			filenameBase: self::exportFilenameBase(register: $registerEntity, schema: $schemaEntity)
+		);
+
+		// Call ExportService directly (bypassing ObjectService which has circular dependency issues).
+		return match ($type) {
+			'csv' => $this->csvExport(export: $export),
+			'json' => $this->jsonExport(export: $export),
+			'pdf' => $this->pdfExport(export: $export),
+			default => $this->excelExport(export: $export),
+		};
+	}//end export()
+
+	/**
+	 * The request parameters an export filters on.
+	 *
+	 * @return array The filters.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function exportFilters(): array {
+		$filters = $this->request->getParams();
+		unset($filters['_route']);
+
+		return $filters;
+	}//end exportFilters()
+
+	/**
+	 * The format an export asks for: `format`, else `type`, else excel.
+	 *
+	 * @return mixed The format.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function exportFormat(): mixed {
+		return $this->request->getParam(key: 'format') ?? $this->request->getParam(key: 'type', default: 'excel');
+	}//end exportFormat()
+
+	/**
+	 * The file name of an export, without extension.
+	 *
+	 * @param Register $register The register being exported.
+	 * @param Schema   $schema   The schema being exported.
+	 *
+	 * @return string The name.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private static function exportFilenameBase(Register $register, Schema $schema): string {
+		return sprintf(
+			'%s_%s_%s',
+			$register->getSlug() ?? 'register',
+			$schema->getSlug() ?? 'schema',
+			(new DateTime())->format('Y-m-d_His')
+		);
+	}//end exportFilenameBase()
+
+	/**
+	 * Export as CSV.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function csvExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToCsv(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
+			currentUser: $this->userSession->getUser()
+		);
+
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'csv',
+			rowCount: $this->countCsvExportRows(csv: $content)
+		);
+
+		return $export->download(format: 'csv', content: $content);
+	}//end csvExport()
+
+	/**
+	 * Export as JSON.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function jsonExport(ObjectExport $export): DataDownloadResponse {
+		$content = $this->services->transfer->exportService->exportToJson(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters
+		);
+
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'json',
+			rowCount: $this->countJsonExportRows(json: $content)
+		);
+
+		return $export->download(format: 'json', content: $content);
+	}//end jsonExport()
+
+	/**
+	 * Export as PDF; an export over the row limit or without an office server is refused.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The file, or the refusal.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
+		try {
+			$content = $this->services->transfer->exportService->exportToPdf(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters,
+				currentUser: $this->userSession->getUser()
+			);
+		} catch (ExportTooLargeException $e) {
+			return self::exportTooLargeResponse(exception: $e);
+		} catch (OfficeServerRequiredException $e) {
+			return new JSONResponse(data: $e->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
+		}
+
+		$this->recordPdfExport(export: $export);
+
+		return $export->download(format: 'pdf', content: $content);
+	}//end pdfExport()
+
+	/**
+	 * Record a finished PDF export, with the row count the export service answers.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function recordPdfExport(ObjectExport $export): void {
+		$this->recordExportCompleted(
+			register: $export->register,
+			schema: $export->schema,
+			format: 'pdf',
+			rowCount: $this->services->transfer->exportService->countExportRows(
+				register: $export->register,
+				schema: $export->schema,
+				filters: $export->filters
+			)
+		);
+	}//end recordPdfExport()
+
+	/**
+	 * The answer to a PDF export over the row limit.
+	 *
+	 * @param ExportTooLargeException $exception The refusal.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private static function exportTooLargeResponse(ExportTooLargeException $exception): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'export_too_large',
+				'message' => $exception->getMessage(),
+				'rowCount' => $exception->getRowCount(),
+				'maxRows' => $exception->getMaxRows(),
+			],
+			statusCode: ExportTooLargeException::HTTP_STATUS
+		);
+	}//end exportTooLargeResponse()
+
+	/**
+	 * Export as Excel.
+	 *
+	 * @param ObjectExport $export The export.
+	 *
+	 * @return DataDownloadResponse The file.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	private function excelExport(ObjectExport $export): DataDownloadResponse {
+		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
 			currentUser: $this->userSession->getUser()
 		);
 
@@ -5495,18 +5618,14 @@ class ObjectsController extends Controller {
 		$content = ob_get_clean();
 
 		$this->recordExportCompleted(
-			register: $registerEntity,
-			schema: $schemaEntity,
+			register: $export->register,
+			schema: $export->schema,
 			format: 'excel',
 			rowCount: $this->countSpreadsheetExportRows(spreadsheet: $spreadsheet)
 		);
 
-		return new DataDownloadResponse(
-			data: $content,
-			filename: "{$filenameBase}.xlsx",
-			contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-		);
-	}//end export()
+		return $export->download(format: 'excel', content: $content);
+	}//end excelExport()
 
 	/**
 	 * The refusal for this caller's export, or null when they may take it.
@@ -5926,43 +6045,9 @@ class ObjectsController extends Controller {
 			// Create the ZIP archive.
 			$zipInfo = $fileService->createObjectFilesZip(object: $object, zipName: $customFilename);
 
-			// Read the ZIP file content.
-			$zipContent = file_get_contents($zipInfo['path']);
-			if ($zipContent === false) {
-				// Clean up temporary file.
-				if (file_exists($zipInfo['path']) === true) {
-					unlink($zipInfo['path']);
-				}
+			$zipContent = self::takeZipContent(path: $zipInfo['path']);
 
-				throw new RuntimeException('Failed to read ZIP file content');
-			}
-
-			// Clean up temporary file after reading.
-			if (file_exists($zipInfo['path']) === true) {
-				unlink($zipInfo['path']);
-			}
-
-			// Audit the bulk download as ONE entry tied to the parent object.
-			// Best-effort: an audit-trail failure must not break the download.
-			try {
-				$files = $fileService->getFiles($object);
-				$fileIds = [];
-				$fileNames = [];
-				foreach ($files as $f) {
-					$fileIds[] = $f->getId();
-					$fileNames[] = $f->getName();
-				}
-
-				$fileService->getAuditHandler()->logBulkDownload(
-					$object,
-					$fileIds,
-					$fileNames,
-					$zipInfo['filename'],
-					$zipInfo['size'] ?? null
-				);
-			} catch (\Throwable $auditError) {
-				// Silently swallow — audit-trail must never break the response.
-			}
+			$this->auditBulkDownload(object: $object, zipInfo: $zipInfo);
 
 			// Return the ZIP file as a download response.
 			return new DataDownloadResponse(
@@ -5983,6 +6068,58 @@ class ObjectsController extends Controller {
 			);
 		}//end try
 	}//end downloadFiles()
+
+	/**
+	 * Read a temporary ZIP file and remove it.
+	 *
+	 * @param string $path The file path.
+	 *
+	 * @return string The content.
+	 *
+	 * @throws RuntimeException When the file cannot be read.
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private static function takeZipContent(string $path): string {
+		$zipContent = file_get_contents($path);
+		if (file_exists($path) === true) {
+			unlink($path);
+		}
+
+		if ($zipContent === false) {
+			throw new RuntimeException('Failed to read ZIP file content');
+		}
+
+		return $zipContent;
+	}//end takeZipContent()
+
+	/**
+	 * Audit a bulk download as ONE entry tied to the parent object.
+	 *
+	 * Best-effort: an audit-trail failure must not break the download.
+	 *
+	 * @param ObjectEntity $object  The object whose files were downloaded.
+	 * @param array        $zipInfo The ZIP file's name and size.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 */
+	private function auditBulkDownload(ObjectEntity $object, array $zipInfo): void {
+		try {
+			$fileService = $this->container->get(FileService::class);
+			$files = $fileService->getFiles($object);
+			$fileService->getAuditHandler()->logBulkDownload(
+				$object,
+				array_map(static fn ($file) => $file->getId(), $files),
+				array_map(static fn ($file) => $file->getName(), $files),
+				$zipInfo['filename'],
+				$zipInfo['size'] ?? null
+			);
+		} catch (\Throwable $auditError) {
+			// Silently swallow — audit-trail must never break the response.
+		}
+	}//end auditBulkDownload()
 
 	/**
 	 * Start batch vectorization of objects

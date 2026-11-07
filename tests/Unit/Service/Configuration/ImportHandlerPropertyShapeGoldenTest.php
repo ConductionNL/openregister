@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for ImportHandler::normaliseImportedPropertyShape().
+ * Golden test for ImportedSchemaShape::normalisedProperty().
  *
  * Records the JSON of the normalised property (so key order and empty
  * objects versus empty arrays are pinned) for object and array properties,
@@ -24,14 +24,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
-use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportedSchemaShape;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 use stdClass;
 
 /**
- * @covers \OCA\OpenRegister\Service\Configuration\ImportHandler
+ * @covers \OCA\OpenRegister\Service\Configuration\ImportedSchemaShape
  */
 class ImportHandlerPropertyShapeGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/import-property-shape-golden.json';
@@ -72,8 +72,8 @@ class ImportHandlerPropertyShapeGoldenTest extends TestCase {
 	}//end properties()
 
 	public function testPropertyShapeMatchesGolden(): void {
-		$handler = (new ReflectionClass(ImportHandler::class))->newInstanceWithoutConstructor();
-		$method = new ReflectionMethod(ImportHandler::class, 'normaliseImportedPropertyShape');
+		$handler = (new ReflectionClass(ImportedSchemaShape::class))->newInstanceWithoutConstructor();
+		$method = new ReflectionMethod(ImportedSchemaShape::class, 'normalisedProperty');
 		$method->setAccessible(true);
 
 		$actual = [];

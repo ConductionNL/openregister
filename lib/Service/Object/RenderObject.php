@@ -803,18 +803,32 @@ class RenderObject {
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
-			if ($row instanceof ObjectEntity === true) {
-				$this->redactEntityRow(pass: $pass, row: $row);
-				continue;
-			}
-
-			if (is_array($row) === true) {
-				$row = $this->redactArrayRow(pass: $pass, row: $row);
-			}
+			$row = $this->redactedRow(pass: $pass, row: $row);
 		}
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * One row after the redaction pass; a row of another shape stays as it is.
+	 *
+	 * @param RowRedaction $pass The pass.
+	 * @param mixed        $row  The row.
+	 *
+	 * @return mixed The row.
+	 */
+	private function redactedRow(RowRedaction $pass, mixed $row): mixed {
+		if ($row instanceof ObjectEntity === true) {
+			$this->redactEntityRow(pass: $pass, row: $row);
+			return $row;
+		}
+
+		if (is_array($row) === true) {
+			return $this->redactArrayRow(pass: $pass, row: $row);
+		}
+
+		return $row;
+	}//end redactedRow()
 
 	/**
 	 * Record on the pass the schema of a row and which strips apply to it.
@@ -878,20 +892,8 @@ class RenderObject {
 	 */
 	private function redactEntityRow(RowRedaction $pass, ObjectEntity $row): void {
 		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
-		if ($pass->doWriteOnly === false && $pass->doGated === false) {
-			$this->maskEntityReveals(entity: $row, schema: $pass->schema);
-			return;
-		}
-
-		$object = $row->getObject();
-		if (is_array($object) === true) {
-			if ($pass->doGated === true) {
-				$object = $this->filterAuthorizedProperties(entity: $row, schema: $pass->schema, objectData: $object);
-			} else {
-				$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
-			}
-
-			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+		if ($pass->doWriteOnly === true || $pass->doGated === true) {
+			$this->redactEntityObject(pass: $pass, row: $row);
 		}
 
 		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
@@ -901,6 +903,30 @@ class RenderObject {
 			$row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $relations));
 		}
 	}//end redactEntityRow()
+
+	/**
+	 * Filter an entity's object data for the pass, and decrypt what stays.
+	 *
+	 * @param RowRedaction $pass The pass, planned for this row.
+	 * @param ObjectEntity $row  The entity.
+	 *
+	 * @return void
+	 */
+	private function redactEntityObject(RowRedaction $pass, ObjectEntity $row): void {
+		$object = $row->getObject();
+		if (is_array($object) === false) {
+			return;
+		}
+
+		if ($pass->doGated === true) {
+			$read = new EntityRead(entity: $row, schema: $pass->schema);
+			$object = $this->filterAuthorizedProperties(read: $read, objectData: $object);
+		} else {
+			$object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $object);
+		}
+
+		$row->setObject($this->decryptRedactedRow(pass: $pass, data: $object));
+	}//end redactEntityObject()
 
 	/**
 	 * Redact one array row: body, `@self` copies of removed properties, masked reveals and `@self.relations`.
@@ -925,23 +951,38 @@ class RenderObject {
 			return $this->maskRowReveals(row: $row, schema: $pass->schema);
 		}
 
-		if ($pass->doGated === true) {
-			$unfiltered = $row;
-			$row = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
-			$row = $this->withholdRowCopies(
-				row: $row,
-				schema: $pass->schema,
-				removed: $this->removedProperties(before: $unfiltered, after: $row)
-			);
-		} else {
-			$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
+		$row = $this->decryptRedactedRow(pass: $pass, data: $this->filteredArrayRow(pass: $pass, row: $row));
+		return $this->withoutWriteOnlyRelations(pass: $pass, row: $this->maskRowReveals(row: $row, schema: $pass->schema));
+	}//end redactArrayRow()
+
+	/**
+	 * An array row filtered for the pass, its copies withheld when the pass is gated.
+	 *
+	 * @param RowRedaction         $pass The pass, planned for this row.
+	 * @param array<string, mixed> $row  The row.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function filteredArrayRow(RowRedaction $pass, array $row): array {
+		if ($pass->doGated === false) {
+			return $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $pass->schema, object: $row);
 		}
 
-		$row = $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
-		if ($pass->doWriteOnly === true
-			&& isset($row['@self']['relations']) === true
-			&& is_array($row['@self']['relations']) === true
-		) {
+		$filtered = $this->propertyRbacHandler->filterReadableProperties(schema: $pass->schema, object: $row);
+		$removed = $this->removedProperties(before: $row, after: $filtered);
+		return $this->withholdRowCopies(row: $filtered, withheld: new WithheldProperties(schema: $pass->schema, removed: $removed));
+	}//end filteredArrayRow()
+
+	/**
+	 * An array row whose `@self.relations` carry no write-only property.
+	 *
+	 * @param RowRedaction         $pass The pass, planned for this row.
+	 * @param array<string, mixed> $row  The row.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withoutWriteOnlyRelations(RowRedaction $pass, array $row): array {
+		if ($pass->doWriteOnly === true && is_array($row['@self']['relations'] ?? null) === true) {
 			$row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
 				schema: $pass->schema,
 				object: $row['@self']['relations']
@@ -949,7 +990,7 @@ class RenderObject {
 		}
 
 		return $row;
-	}//end redactArrayRow()
+	}//end withoutWriteOnlyRelations()
 
 	/**
 	 * The largest file embedded as base64, in bytes.
@@ -1008,28 +1049,43 @@ class RenderObject {
 	/**
 	 * Mask a rendered object's explicit-reveal values and withhold their `@self` copies.
 	 *
-	 * @param ObjectEntity         $entity     The entity rendered.
-	 * @param Schema|null          $schema     Its schema.
+	 * @param EntityRead           $read       The entity rendered, with its schema.
 	 * @param array<string, mixed> $objectData The rendered body.
 	 *
 	 * @return array<string, mixed> The body, masked.
 	 *
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
-	private function maskRenderedReveals(ObjectEntity $entity, ?Schema $schema, array $objectData): array {
-		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+	private function maskRenderedReveals(EntityRead $read, array $objectData): array {
+		if ($this->masksReveals(schema: $read->schema) === false) {
 			return $objectData;
 		}
 
 		[$objectData, $masked] = $this->revealMasker()->maskObject(
-			schema: $schema,
+			schema: $read->schema,
 			object: $objectData,
-			objectIds: [(string)$entity->getUuid()]
+			objectIds: [(string)$read->entity->getUuid()]
 		);
-		$this->withholdEntityCopies(entity: $entity, schema: $schema, removed: $masked);
+		$this->withholdEntityCopies(
+			entity: $read->entity,
+			withheld: new WithheldProperties(schema: $read->schema, removed: $masked)
+		);
 
 		return $objectData;
 	}//end maskRenderedReveals()
+
+	/**
+	 * Whether a schema has properties that need an explicit reveal, and a masker can hide them.
+	 *
+	 * @param Schema|null $schema The schema.
+	 *
+	 * @return bool
+	 */
+	private function masksReveals(?Schema $schema): bool {
+		return $schema !== null
+			&& ExplicitReveal::explicitProperties(schema: $schema) !== []
+			&& $this->revealMasker() !== null;
+	}//end masksReveals()
 
 	/**
 	 * Mask a list entity's explicit-reveal values in place.
@@ -1044,7 +1100,8 @@ class RenderObject {
 	private function maskEntityReveals(ObjectEntity $entity, ?Schema $schema): void {
 		$object = $entity->getObject();
 		if (is_array($object) === true) {
-			$entity->setObject($this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $object));
+			$read = new EntityRead(entity: $entity, schema: $schema);
+			$entity->setObject($this->maskRenderedReveals(read: $read, objectData: $object));
 		}
 	}//end maskEntityReveals()
 
@@ -1059,13 +1116,13 @@ class RenderObject {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	private function maskRowReveals(array $row, ?Schema $schema): array {
-		if ($schema === null || ExplicitReveal::explicitProperties(schema: $schema) === [] || $this->revealMasker() === null) {
+		if ($this->masksReveals(schema: $schema) === false) {
 			return $row;
 		}
 
 		[$row, $masked] = $this->revealMasker()->maskObject(schema: $schema, object: $row);
 
-		return $this->withholdRowCopies(row: $row, schema: $schema, removed: $masked);
+		return $this->withholdRowCopies(row: $row, withheld: new WithheldProperties(schema: $schema, removed: $masked));
 	}//end maskRowReveals()
 
 	/**
@@ -1082,25 +1139,24 @@ class RenderObject {
 	 * `@self.description`). Whatever the filter removed from the body is
 	 * removed from its copies, by the same decision.
 	 *
-	 * @param ObjectEntity       $entity  The rendered entity (mutated in memory only).
-	 * @param Schema             $schema  Its schema.
-	 * @param array<int, string> $removed Properties the read filter removed.
+	 * @param ObjectEntity       $entity   The rendered entity (mutated in memory only).
+	 * @param WithheldProperties $withheld What is withheld.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function withholdEntityCopies(ObjectEntity $entity, Schema $schema, array $removed): void {
-		if ($removed === []) {
+	private function withholdEntityCopies(ObjectEntity $entity, WithheldProperties $withheld): void {
+		if ($withheld->removed === []) {
 			return;
 		}
 
 		$relations = $entity->getRelations();
 		if (is_array($relations) === true && $relations !== []) {
-			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $removed));
+			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $withheld->removed));
 		}
 
-		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+		foreach ($this->withheldMetadataFields(schema: $withheld->schema, removed: $withheld->removed) as $field) {
 			$setter = 'set' . ucfirst($field);
 			$entity->$setter(null);
 		}
@@ -1111,31 +1167,42 @@ class RenderObject {
 	 *
 	 * The array-row twin of {@see self::withholdEntityCopies()}.
 	 *
-	 * @param array<string, mixed> $row     The filtered row.
-	 * @param Schema               $schema  Its schema.
-	 * @param array<int, string>   $removed Properties the read filter removed.
+	 * @param array<string, mixed> $row      The filtered row.
+	 * @param WithheldProperties   $withheld What is withheld.
 	 *
 	 * @return array<string, mixed> The row with its `@self` copies withheld.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
-	private function withholdRowCopies(array $row, Schema $schema, array $removed): array {
-		if ($removed === [] || isset($row['@self']) === false || is_array($row['@self']) === false) {
+	private function withholdRowCopies(array $row, WithheldProperties $withheld): array {
+		if ($withheld->removed === [] || is_array($row['@self'] ?? null) === false) {
 			return $row;
 		}
 
-		if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
-			$row['@self']['relations'] = $this->withoutRelationKeys(relations: $row['@self']['relations'], removed: $removed);
-		}
-
-		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
-			if (array_key_exists($field, $row['@self']) === true) {
-				$row['@self'][$field] = null;
-			}
-		}
-
+		$row['@self'] = $this->withheldSelf(meta: $row['@self'], withheld: $withheld);
 		return $row;
 	}//end withholdRowCopies()
+
+	/**
+	 * A row's `@self` without the relations and metadata that copy withheld properties.
+	 *
+	 * @param array<string, mixed> $meta     The `@self` of the row.
+	 * @param WithheldProperties   $withheld What is withheld.
+	 *
+	 * @return array<string, mixed> The `@self`.
+	 */
+	private function withheldSelf(array $meta, WithheldProperties $withheld): array {
+		if (is_array($meta['relations'] ?? null) === true) {
+			$meta['relations'] = $this->withoutRelationKeys(relations: $meta['relations'], removed: $withheld->removed);
+		}
+
+		$fields = $this->withheldMetadataFields(schema: $withheld->schema, removed: $withheld->removed);
+		foreach (array_intersect($fields, array_keys($meta)) as $field) {
+			$meta[$field] = null;
+		}
+
+		return $meta;
+	}//end withheldSelf()
 
 	/**
 	 * Drop relation keys that belong to a removed property.
@@ -2149,7 +2216,7 @@ class RenderObject {
 
 		// Explicit-reveal values leave masked on every read, admins and `_rbac: false` included,
 		// after decryption so the mask is of the value and not of its ciphertext.
-		$objectData = $this->maskRenderedReveals(entity: $entity, schema: $schema, objectData: $objectData);
+		$objectData = $this->maskRenderedReveals(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
 
 		$renderSchema = $this->getSchema(id: $entity->getSchema());
 		$objectData   = $this->resolveRenderTranslations(entity: $entity, schema: $renderSchema, objectData: $objectData);
@@ -2815,7 +2882,7 @@ class RenderObject {
 		}
 
 		if ($doAuthz === true) {
-			$objectData = $this->filterAuthorizedProperties(entity: $entity, schema: $schema, objectData: $objectData);
+			$objectData = $this->filterAuthorizedProperties(read: new EntityRead(entity: $entity, schema: $schema), objectData: $objectData);
 		} else {
 			$objectData = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $objectData);
 		}
@@ -2835,24 +2902,21 @@ class RenderObject {
 	 * never one the data carries. The data's own `@self`, if any, is put back
 	 * afterwards (jsonSerialize re-adds the record's).
 	 *
-	 * @param ObjectEntity $entity     The entity being rendered
-	 * @param Schema       $schema     The object's schema
-	 * @param array        $objectData The object data
+	 * @param EntityRead $read       The entity being rendered, with its schema
+	 * @param array      $objectData The object data
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function filterAuthorizedProperties(ObjectEntity $entity, Schema $schema, array $objectData): array {
-		$filtered = $entity->filterAsRecord(
+	private function filterAuthorizedProperties(EntityRead $read, array $objectData): array {
+		$schema = $read->schema;
+		$filtered = $read->entity->filterAsRecord(
 			data: $objectData,
 			filter: fn (array $probe): array => $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $probe)
 		);
-		$this->withholdEntityCopies(
-			entity: $entity,
-			schema: $schema,
-			removed: $this->removedProperties(before: $objectData, after: $filtered)
-		);
+		$removed = $this->removedProperties(before: $objectData, after: $filtered);
+		$this->withholdEntityCopies(entity: $read->entity, withheld: new WithheldProperties(schema: $schema, removed: $removed));
 
 		return $filtered;
 	}//end filterAuthorizedProperties()

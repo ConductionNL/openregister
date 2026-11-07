@@ -79,6 +79,8 @@ use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationRun;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationScanner;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectDefaults;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectOwnership;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkEventCandidate;
+use OCA\OpenRegister\Service\Object\SaveObjects\BulkSchemaAnalysis;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkSaveRun;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -295,7 +297,7 @@ class SaveObjects {
 		}
 
 		// Generate analysis and cache.
-		$analysis = $this->performComprehensiveSchemaAnalysis(schema: $schema);
+		$analysis = (new BulkSchemaAnalysis())->analyse(schema: $schema);
 		self::$schemaAnalysisCache[$schemaId] = $analysis;
 
 		return $analysis;
@@ -2341,26 +2343,79 @@ class SaveObjects {
 			return [];
 		}
 
+		$context = $this->withCallEntities(context: $context);
+		$targets = [];
+		foreach ($this->eventCandidates(rows: $transformedObjects, context: $context) as $key => $candidate) {
+			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $candidate->schema, register: $candidate->register) === true) {
+				$targets[$key] = true;
+			}
+		}
+
+		return $targets;
+	}//end bulkEventTargets()
+
+	/**
+	 * The bulkEventTargets context with the register and schema the caller named loaded.
+	 *
+	 * @param array $context The bulkEventTargets context.
+	 *
+	 * @return array The context, `register` and `schema` now an entity or null.
+	 */
+	private function withCallEntities(array $context): array {
 		$context['register'] = $this->callEntity(target: $context['register'], kind: Register::class);
 		$context['schema']   = $this->callEntity(target: $context['schema'], kind: Schema::class);
-		$targets = [];
-		$asked   = [];
-		foreach ($transformedObjects as $objData) {
-			$schema   = ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
-			$register = ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null)));
-			$key      = ((string)($register?->getId() ?? ($objData['register'] ?? ''))) . '/' . ((string)$schema?->getId());
-			if (isset($asked[$key]) === true || $schema instanceof Schema === false) {
+		return $context;
+	}//end withCallEntities()
+
+	/**
+	 * The first candidate of every "registerId/schemaId" key in the chunk that has a schema, in row order.
+	 *
+	 * @param array $rows    The chunk, after the guards.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return \Generator<string, BulkEventCandidate>
+	 */
+	private function eventCandidates(array $rows, array $context): \Generator {
+		$asked = [];
+		foreach ($rows as $objData) {
+			$candidate = $this->eventCandidate(objData: $objData, context: $context);
+			$key       = $candidate->key();
+			if (isset($asked[$key]) === true || $candidate->schema instanceof Schema === false) {
 				continue;
 			}
 
 			$asked[$key] = true;
-			if ($this->rowRules->bulkWriteEvents->appliesTo(schema: $schema, register: $register) === true) {
-				$targets[$key] = true;
-			}
-		}//end foreach
+			yield $key => $candidate;
+		}
+	}//end eventCandidates()
 
-		return $targets;
-	}//end bulkEventTargets()
+	/**
+	 * The schema and register one chunk row is written to: the caller's first, the row's own where the caller named none.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's register and schema loaded.
+	 *
+	 * @return BulkEventCandidate
+	 */
+	private function eventCandidate(array $objData, array $context): BulkEventCandidate {
+		return new BulkEventCandidate(
+			schema: $this->eventSchema(objData: $objData, context: $context),
+			register: ($context['register'] ?? $this->eventRegister(registerId: ($objData['register'] ?? null))),
+			rowRegisterId: ($objData['register'] ?? null)
+		);
+	}//end eventCandidate()
+
+	/**
+	 * The schema one chunk row is written to: the caller's, else the row's own from the schema cache.
+	 *
+	 * @param array $objData The chunk row.
+	 * @param array $context The bulkEventTargets context, with the caller's schema loaded.
+	 *
+	 * @return mixed The schema; null when neither names one.
+	 */
+	private function eventSchema(array $objData, array $context): mixed {
+		return ($context['schema'] ?? ($context['schemas'][$objData['schema'] ?? ''] ?? null));
+	}//end eventSchema()
 
 	/**
 	 * The register or schema the caller named, loaded; null when it named none or it does not load.
@@ -2375,20 +2430,32 @@ class SaveObjects {
 			return $target;
 		}
 
-		if ($target === null || $target === 0 || $target === '0' || $target === '' || is_object($target) === true) {
+		if (in_array($target, [null, 0, '0', ''], true) === true || is_object($target) === true) {
 			return null;
 		}
 
 		try {
-			if ($kind === Register::class) {
-				return $this->loadRegisterWithCache(registerId: $target);
-			}
-
-			return $this->loadSchemaWithCache(schemaId: $target);
+			return $this->loadCallEntity(target: $target, kind: $kind);
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end callEntity()
+
+	/**
+	 * Load the register or schema a caller named by id.
+	 *
+	 * @param string|int   $target The id.
+	 * @param class-string $kind   Register::class or Schema::class.
+	 *
+	 * @return Register|Schema
+	 */
+	private function loadCallEntity(string|int $target, string $kind): Register|Schema {
+		if ($kind === Register::class) {
+			return $this->loadRegisterWithCache(registerId: $target);
+		}
+
+		return $this->loadSchemaWithCache(schemaId: $target);
+	}//end loadCallEntity()
 
 	/**
 	 * The register a chunk row names, from the register cache the preparation step filled.
@@ -3167,119 +3234,6 @@ class SaveObjects {
 
 		$this->logger->debug('[SaveObjects] Using fallback object reconstruction');
 	}//end classifyLegacyResults()
-
-	/**
-	 * Perform comprehensive schema analysis for bulk operations
-	 *
-	 * PERFORMANCE OPTIMIZATION: This method analyzes schemas once and caches all needed information
-	 * for the entire bulk operation, including metadata field mapping, inverse relation properties,
-	 * validation requirements, and property configurations. This eliminates redundant schema analysis.
-	 *
-	 * @param Schema $schema Schema to analyze
-	 *
-	 * @return array Comprehensive analysis containing:
-	 *               - metadataFields: Array of metadata field mappings
-	 *               - inverseProperties: Array of properties with inverse relations
-	 *               - validationRequired: Whether hard validation is enabled
-	 *               - properties: Cached schema properties
-	 *               - configuration: Cached schema configuration
-	 *
-	 * @psalm-return   array<string, mixed>
-	 * @phpstan-return array<string, mixed>
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function performComprehensiveSchemaAnalysis(Schema $schema): array {
-		$config = $schema->getConfiguration();
-		$properties = $schema->getProperties();
-
-		$analysis = [
-			'metadataFields' => [],
-			'inverseProperties' => [],
-			'validationRequired' => $schema->getHardValidation(),
-			'properties' => $properties,
-			'configuration' => $config,
-		];
-
-		// PERFORMANCE OPTIMIZATION: Analyze metadata field mappings once.
-		// COMPREHENSIVE METADATA FIELD SUPPORT: Include all supported metadata fields.
-		$metadataFieldMap = [
-			'name' => $config['objectNameField'] ?? null,
-			'description' => $config['objectDescriptionField'] ?? null,
-			'summary' => $config['objectSummaryField'] ?? null,
-			'image' => $config['objectImageField'] ?? null,
-			'slug' => $config['objectSlugField'] ?? null,
-		];
-
-		$analysis['metadataFields'] = array_filter(
-			$metadataFieldMap,
-			function ($field) {
-				return !empty($field);
-			}
-		);
-
-		// PERFORMANCE OPTIMIZATION: Analyze inverse relation properties once.
-		foreach ($properties as $propertyName => $propertyConfig) {
-			$items = $propertyConfig['items'] ?? [];
-
-			// Check for inversedBy at property level (single object relations).
-			$inversedBy = $propertyConfig['inversedBy'] ?? null;
-			$rawWriteBack = $propertyConfig['writeBack'] ?? false;
-			$writeBack = $this->castToBoolean(value: $rawWriteBack);
-
-			// Schema analysis: process writeBack boolean casting.
-			// Check for inversedBy in array items (array of object relations).
-			// CRITICAL FIX: Preserve property-level writeBack if it's true.
-			if ($inversedBy === null && isset($items['inversedBy']) === true) {
-				$inversedBy = $items['inversedBy'];
-				$rawItemsWriteBack = $items['writeBack'] ?? false;
-				$itemsWriteBack = $this->castToBoolean(value: $rawItemsWriteBack);
-
-				// Use the higher value: if property writeBack is true, keep it.
-				$finalWriteBack = $writeBack || $itemsWriteBack;
-
-				// Items logic: combine property and items writeBack values.
-				$writeBack = $finalWriteBack;
-			}
-
-			if ($inversedBy !== null) {
-				$analysis['inverseProperties'][$propertyName] = [
-					'inversedBy' => $inversedBy,
-					'writeBack' => $writeBack,
-					'isArray' => $propertyConfig['type'] === 'array',
-				];
-			}
-		}//end foreach
-
-		return $analysis;
-	}//end performComprehensiveSchemaAnalysis()
-
-	/**
-	 * Cast mixed values to proper boolean
-	 *
-	 * Handles string "true"/"false", integers 1/0, and actual booleans
-	 *
-	 * @param mixed $value The value to cast to boolean
-	 *
-	 * @return bool The boolean value
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	private function castToBoolean($value): bool {
-		if (is_bool($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === true) {
-			return strtolower(trim($value)) === 'true';
-		}
-
-		if (is_numeric($value) === true) {
-			return (bool)$value;
-		}
-
-		return (bool)$value;
-	}//end castToBoolean()
 
 	/**
 	 * Handle bulk inverse relations using cached schema analysis
