@@ -57,11 +57,11 @@ class FlowTimerDiagnosticController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string          $appName      The app id.
-	 * @param IRequest        $request      The request.
-	 * @param IUserSession    $userSession  Who is asking.
-	 * @param IGroupManager   $groupManager Whether they are an administrator.
-	 * @param TermDiagnostic  $diagnostic   The engine, narrating.
+	 * @param string $appName The app id.
+	 * @param IRequest $request The request.
+	 * @param IUserSession $userSession Who is asking.
+	 * @param IGroupManager $groupManager Whether they are an administrator.
+	 * @param TermDiagnostic $diagnostic The engine, narrating.
 	 */
 	public function __construct(
 		string $appName,
@@ -83,55 +83,56 @@ class FlowTimerDiagnosticController extends Controller {
 	 * name an organisation the caller is not in (D-2).
 	 *
 	 * @param array<string, mixed> $calendar The `working-calendar` definition.
-	 * @param string               $anchorAt The anchor instant.
-	 * @param array<string, mixed> $sla      `{value, unit, rollToWorkingDay?}`.
-	 * @param array<int, mixed>    $ladder   Optional rungs.
+	 * @param string $anchorAt The anchor instant.
+	 * @param array<string, mixed> $sla `{value, unit, rollToWorkingDay?}`.
+	 * @param array<int, mixed> $ladder Optional rungs.
 	 *
 	 * @return JSONResponse The walk, or a refusal.
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
 	 */
 	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
-	public function explain(
-		array $calendar = [],
-		string $anchorAt = '',
-		array $sla = [],
-		array $ladder = []
-	): JSONResponse {
+	public function explain(array $calendar = [], string $anchorAt = '', array $sla = [], array $ladder = []): JSONResponse {
 		$refusal = $this->requireAdmin();
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		if ($anchorAt === '') {
-			return $this->refused(message: 'An anchor moment is required; the diagnostic explains a term from a date you choose.');
-		}
-
 		try {
-			$anchor = new DateTimeImmutable($anchorAt);
-		} catch (Exception $e) {
-			return $this->refused(message: sprintf('The anchor "%s" could not be read as a moment.', $anchorAt));
-		}
-
-		try {
+			$anchor = $this->readAnchor(anchorAt: $anchorAt);
 			$resolved = WorkingCalendar::fromArray(definition: $calendar);
 
-			return new JSONResponse(
-				data: $this->diagnostic->explain(
-					calendar: $resolved,
-					anchor: $anchor,
-					sla: $sla,
-					ladder: $ladder
-				)
-			);
+			return new JSONResponse(data: $this->diagnostic->explain(calendar: $resolved, anchor: $anchor, sla: $sla, ladder: $ladder));
 		} catch (FlowTimerValidationException $refused) {
-			// The SAME message the save path would have given, rather than a
-			// diagnostic-specific one: a calendar that cannot be saved must
-			// not be explainable, and the reader should meet one explanation
-			// of why, not two.
+			// A calendar that cannot be saved is not explainable, for the save path's own reason.
 			return $this->refused(message: $refused->getMessage());
 		}
 	}//end explain()
+
+	/**
+	 * Read the anchor instant the term is explained from.
+	 *
+	 * A missing anchor is refused rather than defaulted to now. Both refusals
+	 * are raised as the validation exception explain() already answers with
+	 * a 422, so they reach the caller exactly as before.
+	 *
+	 * @param string $anchorAt The anchor as sent.
+	 *
+	 * @return DateTimeImmutable The anchor.
+	 *
+	 * @throws FlowTimerValidationException When the anchor is missing or unreadable.
+	 */
+	private function readAnchor(string $anchorAt): DateTimeImmutable {
+		if ($anchorAt === '') {
+			throw new FlowTimerValidationException(message: 'An anchor moment is required; the diagnostic explains a term from a date you choose.');
+		}
+
+		try {
+			return new DateTimeImmutable($anchorAt);
+		} catch (Exception $e) {
+			throw new FlowTimerValidationException(message: sprintf('The anchor "%s" could not be read as a moment.', $anchorAt));
+		}
+	}//end readAnchor()
 
 	/**
 	 * A 422 carrying the reason.
