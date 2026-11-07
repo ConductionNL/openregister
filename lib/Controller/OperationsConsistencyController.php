@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCA\OpenRegister\Exception\RepairRefusedException;
-use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
-use OCA\OpenRegister\Service\Operations\ConsistencyRepairService;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
+use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -53,15 +53,15 @@ class OperationsConsistencyController extends Controller {
 	 *
 	 * @param string                   $appName     Application name.
 	 * @param IRequest                 $request     HTTP request.
-	 * @param ConsistencyCheckService  $check       The read-only consistency check.
-	 * @param ConsistencyRepairService $repair      The repair, as a separate act.
+	 * @param ConsistencyCheckServiceInterface  $check       The read-only consistency check.
+	 * @param ConsistencyRepairServiceInterface $repair      The repair, as a separate act.
 	 * @param IUserSession             $userSession Names the administrator acting.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ConsistencyCheckService $check,
-		private readonly ConsistencyRepairService $repair,
+		private readonly ConsistencyCheckServiceInterface $check,
+		private readonly ConsistencyRepairServiceInterface $repair,
 		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
