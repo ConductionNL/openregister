@@ -99,7 +99,7 @@ class RelationsController extends Controller {
 			'method' => 'getLinkedPolls',
 		],
 		'bookmarks' => [
-			'class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,
+			'class' => \OCA\OpenRegister\Service\BookmarkLinkServiceInterface::class,
 			'available' => 'isBookmarksAvailable',
 			'method' => 'getLinkedBookmarks',
 		],

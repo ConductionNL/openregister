@@ -69,7 +69,7 @@ use Throwable;
  *     are referenced FQN-only on purpose — importing them would break
  *     autoloading when Bookmarks is not installed.
  */
-class BookmarkLinkService {
+class BookmarkLinkService implements BookmarkLinkServiceInterface {
 	/**
 	 * NC Bookmarks app id.
 	 *
