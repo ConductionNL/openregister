@@ -201,6 +201,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import { displayDateTime } from '../../services/displayDateTime.js'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -441,17 +442,7 @@ export default {
 			return text.substring(0, maxLength) + '...'
 		},
 
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} date - Date string
-		 * @spec exclude UI plumbing — pure presentation helper
-		 * @return {string} Formatted date
-		 */
-		formatDate(date) {
-			if (!date) return '-'
-			return new Date(date).toLocaleString()
-		},
+		formatDate: displayDateTime,
 
 		/**
 		 * View log details

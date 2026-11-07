@@ -47,7 +47,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class HarvestPipelineService {
+class HarvestPipelineService implements HarvestPipelineServiceInterface {
 
 	/**
 	 * Default batch size when a source does not configure one.
