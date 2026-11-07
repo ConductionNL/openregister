@@ -48,6 +48,18 @@ class VocabularyCsvReader {
 			throw new InvalidArgumentException('CSV import requires a non-empty schemeMeta["uri"].');
 		}
 
+		return $this->describeScheme(schemeUri: $schemeUri, schemeMeta: $schemeMeta);
+	}//end schemeNode()
+
+	/**
+	 * The scheme node for a validated scheme uri; absent metadata falls back to the uri or a default.
+	 *
+	 * @param string               $schemeUri  The scheme uri, as given.
+	 * @param array<string,string> $schemeMeta `title`, `publisher`, `version`, `source`.
+	 *
+	 * @return array<string,mixed> The scheme node.
+	 */
+	private function describeScheme(string $schemeUri, array $schemeMeta): array {
 		return [
 			'@id' => $schemeUri,
 			'dct:title' => ($schemeMeta['title'] ?? $schemeUri),
@@ -55,7 +67,7 @@ class VocabularyCsvReader {
 			'owl:versionInfo' => ($schemeMeta['version'] ?? '1.0'),
 			'dct:source' => ($schemeMeta['source'] ?? $schemeUri),
 		];
-	}//end schemeNode()
+	}//end describeScheme()
 
 	/**
 	 * Read every concept row of the CSV file into a concept node.
@@ -75,14 +87,27 @@ class VocabularyCsvReader {
 		}
 
 		$header = array_map(static fn (string $col): string => trim($col), $header);
+		$nodes = $this->readConceptRows(handle: $handle, header: $header);
+		fclose($handle);
+		return $nodes;
+	}//end conceptNodes()
+
+	/**
+	 * Read the remaining rows into concept nodes, skipping blank lines and rows without uri.
+	 *
+	 * @param resource          $handle The open file handle, past the header.
+	 * @param array<int,string> $header The trimmed header columns.
+	 *
+	 * @return array<int,array<string,mixed>> The concept nodes.
+	 */
+	private function readConceptRows($handle, array $header): array {
 		$nodes = [];
 		while (($row = $this->readRow(handle: $handle)) !== false) {
 			$nodes[] = $this->rowNode(header: $header, row: $row);
 		}
 
-		fclose($handle);
 		return array_values(array_filter($nodes, static fn (?array $node): bool => $node !== null));
-	}//end conceptNodes()
+	}//end readConceptRows()
 
 	/**
 	 * Open the CSV file for reading.
