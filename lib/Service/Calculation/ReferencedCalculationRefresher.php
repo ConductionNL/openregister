@@ -56,7 +56,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A re-save reads the referrers, resolves their schemas
  *   and hands each row back in its stored form; each collaborator is one of those steps.
  */
-class ReferencedCalculationRefresher {
+class ReferencedCalculationRefresher implements ReferencedCalculationRefresherInterface {
 
 	/**
 	 * The most objects re-saved per dependency within one save.

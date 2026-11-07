@@ -44,8 +44,18 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobReversal;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkJobServiceInterface;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolverInterface;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluatorInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresherInterface;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolverInterface;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepService;
+use OCA\OpenRegister\Service\Calculation\TemporalCalculationSweepServiceInterface;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\FederatedConfigServiceInterface;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
@@ -173,6 +183,7 @@ final class ContractBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		AggregateReferenceResolverInterface::class => AggregateReferenceResolver::class,
 		\OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface::class => \OCA\OpenRegister\Service\Aggregation\AggregationRunner::class,
 		ActivityFilterServiceInterface::class => ActivityFilterService::class,
 		AnalyticsLinkServiceInterface::class => AnalyticsLinkService::class,
@@ -184,6 +195,7 @@ final class ContractBindings {
 		BulkJobReversalInterface::class => BulkJobReversal::class,
 		BulkJobServiceInterface::class => BulkJobService::class,
 		BulkTranslationServiceInterface::class => BulkTranslationService::class,
+		CalculationTrialServiceInterface::class => CalculationTrialService::class,
 		CalendarLinkServiceInterface::class => CalendarLinkService::class,
 		CollectiveLinkServiceInterface::class => CollectiveLinkService::class,
 		ConceptDeleteGuardInterface::class => ConceptDeleteGuard::class,
@@ -261,6 +273,8 @@ final class ContractBindings {
 		PropertyConversionServiceInterface::class => PropertyConversionService::class,
 		QualityScorerInterface::class => QualityScorer::class,
 		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
+		ReferencedCalculationRefresherInterface::class => ReferencedCalculationRefresher::class,
+		ReferenceResolverInterface::class => ReferenceResolver::class,
 		RegisterSchemaLinkageRepairServiceInterface::class => RegisterSchemaLinkageRepairService::class,
 		RegisterServiceInterface::class => RegisterService::class,
 		RelationGraphServiceInterface::class => RelationGraphService::class,
@@ -283,6 +297,7 @@ final class ContractBindings {
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TaskManagerInterface::class => TaskService::class,
 		TaskSequenceServiceInterface::class => TaskSequenceService::class,
+		TemporalCalculationSweepServiceInterface::class => TemporalCalculationSweepService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		\OCA\OpenRegister\Service\Object\TranslationHandlerInterface::class => \OCA\OpenRegister\Service\Object\TranslationHandler::class,
 		UserTaskNodeInterface::class => UserTaskNode::class,
