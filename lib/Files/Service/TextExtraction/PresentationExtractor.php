@@ -154,84 +154,122 @@ class PresentationExtractor {
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-a-deck-that-cannot-be-read-degrades-to-no-result-req-pptx-005
 	 */
 	public function extract(File $file): ?array {
-		if (class_exists(ZipArchive::class) === false) {
-			$this->logger->warning(
-				message: '[PresentationExtractor] PHP zip extension not available',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()]
-			);
-			throw new Exception('The PHP zip extension is not installed. Install php-zip to read presentations.');
-		}
-
-		$mimeType = (string)$file->getMimeType();
-		if ($this->supports(mimeType: $mimeType, fileName: (string)$file->getName()) === false) {
+		$this->assertZipAvailable(file: $file);
+		$read = new PresentationRead(file: $file, mimeType: (string)$file->getMimeType());
+		if ($this->supports(mimeType: $read->mimeType, fileName: (string)$file->getName()) === false) {
 			$this->logger->debug(
 				message: '[PresentationExtractor] Not a presentation format this extractor reads',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType]
+				context: $this->context(file: $file, extra: ['mimeType' => $read->mimeType])
 			);
 			return null;
 		}
 
-		$tempFile = null;
-		$zip = null;
+		return $this->extractSupported(read: $read);
+	}//end extract()
+
+	/**
+	 * Refuse when the server has no zip extension (a deployment error).
+	 *
+	 * @param File $file The deck, for the log.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the zip extension is missing.
+	 */
+	private function assertZipAvailable(File $file): void {
+		if (class_exists(ZipArchive::class) === true) {
+			return;
+		}
+
+		$this->logger->warning(
+			message: '[PresentationExtractor] PHP zip extension not available',
+			context: $this->context(file: $file)
+		);
+		throw new Exception('The PHP zip extension is not installed. Install php-zip to read presentations.');
+	}//end assertZipAvailable()
+
+	/**
+	 * Read a deck of a supported format; any failure is logged and gives null.
+	 *
+	 * @param PresentationRead $read The read in progress.
+	 *
+	 * @return array{slides: list<PresentationSlide>, truncated: bool}|null
+	 */
+	private function extractSupported(PresentationRead $read): ?array {
 		try {
-			// Write the content to a temp file for ZipArchive to open, as WordTextReader does.
-			$tempFile = tmpfile();
-			fwrite($tempFile, $file->getContent());
-
-			$zip = new ZipArchive();
-			$opened = $zip->open(stream_get_meta_data($tempFile)['uri'], ZipArchive::RDONLY);
-			if ($opened !== true) {
-				$zip = null;
-				throw new RuntimeException('Not a zip package (ZipArchive code ' . (int)$opened . ')');
-			}
-
-			$package = new OoxmlPackage(zip: $zip, maxPartBytes: self::MAX_PART_BYTES);
+			$package = $this->openPackage(read: $read);
 			$result = $this->readPresentation(package: $package);
-			$this->logRefusedParts(package: $package, file: $file);
-
-			if ($result === null || $result['slides'] === []) {
-				$this->logger->warning(
-					message: '[PresentationExtractor] Presentation holds no readable slides',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'mimeType' => $mimeType]
-				);
-				return null;
-			}
-
-			$this->logger->debug(
-				message: '[PresentationExtractor] Presentation extracted',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'slides' => count($result['slides']),
-					'truncated' => $result['truncated'],
-				]
-			);
-
-			return $result;
+			$this->logRefusedParts(package: $package, file: $read->file);
+			return $this->accepted(read: $read, result: $result);
 		} catch (Throwable $e) {
-			// Per-document failure: log structure only, never document content (ADR-005).
-			$this->logger->error(
-				message: '[PresentationExtractor] Presentation extraction failed; returning null',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'fileId' => $file->getId(),
-					'mimeType' => $mimeType,
-					'exception' => get_class($e),
-				]
-			);
+			$this->logFailure(read: $read, error: $e);
 			return null;
 		} finally {
-			if ($zip !== null) {
-				$zip->close();
-			}
+			$read->close();
+		}
+	}//end extractSupported()
 
-			if (is_resource($tempFile) === true) {
-				fclose($tempFile);
-			}
-		}//end try
-	}//end extract()
+	/**
+	 * Write the deck to a temp file for ZipArchive to open, as WordTextReader does, and open it.
+	 *
+	 * @param PresentationRead $read The read in progress; receives the handles.
+	 *
+	 * @return OoxmlPackage
+	 *
+	 * @throws RuntimeException When the bytes are not a zip package.
+	 */
+	private function openPackage(PresentationRead $read): OoxmlPackage {
+		$read->tempFile = tmpfile();
+		fwrite($read->tempFile, $read->file->getContent());
+
+		$zip = new ZipArchive();
+		$opened = $zip->open(stream_get_meta_data($read->tempFile)['uri'], ZipArchive::RDONLY);
+		if ($opened !== true) {
+			throw new RuntimeException('Not a zip package (ZipArchive code ' . (int)$opened . ')');
+		}
+
+		$read->zip = $zip;
+		return new OoxmlPackage(zip: $zip, maxPartBytes: self::MAX_PART_BYTES);
+	}//end openPackage()
+
+	/**
+	 * The result when it holds slides (logged at debug), else null (logged as a warning).
+	 *
+	 * @param PresentationRead                                          $read   The read in progress.
+	 * @param array{slides: list<PresentationSlide>, truncated: bool}|null $result The slides read, or null.
+	 *
+	 * @return array{slides: list<PresentationSlide>, truncated: bool}|null
+	 */
+	private function accepted(PresentationRead $read, ?array $result): ?array {
+		if ($result === null || $result['slides'] === []) {
+			$this->logger->warning(
+				message: '[PresentationExtractor] Presentation holds no readable slides',
+				context: $this->context(file: $read->file, extra: ['mimeType' => $read->mimeType])
+			);
+			return null;
+		}
+
+		$this->logger->debug(
+			message: '[PresentationExtractor] Presentation extracted',
+			context: $this->context(file: $read->file, extra: ['slides' => count($result['slides']), 'truncated' => $result['truncated']])
+		);
+		return $result;
+	}//end accepted()
+
+	/**
+	 * Log a per-document failure: structure only, never document content (ADR-005).
+	 *
+	 * @param PresentationRead $read  The read in progress.
+	 * @param Throwable        $error The failure.
+	 *
+	 * @return void
+	 */
+	private function logFailure(PresentationRead $read, Throwable $error): void {
+		$this->logger->error(
+			message: '[PresentationExtractor] Presentation extraction failed; returning null',
+			context: $this->context(file: $read->file, extra: ['mimeType' => $read->mimeType, 'exception' => get_class($error)])
+		);
+	}//end logFailure()
 
 	/**
 	 * Read the slide list and every slide, in deck order, up to MAX_SLIDES.
@@ -251,54 +289,85 @@ class PresentationExtractor {
 		}
 
 		$relationships = $package->relationships(partPath: $mainPath);
-		$slides = [];
-		$truncated = false;
-		foreach ($this->slideParser->slideRelationshipIds(presentation: $presentation) as $position => $relationshipId) {
-			if ($position >= self::MAX_SLIDES) {
-				$truncated = true;
-				break;
-			}
+		$ids = $this->slideParser->slideRelationshipIds(presentation: $presentation);
 
+		return [
+			'slides' => $this->readSlides(package: $package, targets: $this->slideTargets(ids: $ids, relationships: $relationships)),
+			'truncated' => (count($ids) > self::MAX_SLIDES),
+		];
+	}//end readPresentation()
+
+	/**
+	 * The part paths of the slides to read, keyed by their 1-based deck position.
+	 *
+	 * Only the first MAX_SLIDES positions count; a missing or external relationship is skipped.
+	 *
+	 * @param list<string>                                                    $ids           Slide relationship ids in deck order.
+	 * @param array<string, array{type: string, target: string, external: bool}> $relationships The presentation part's relationships.
+	 *
+	 * @return array<int, string>
+	 */
+	private function slideTargets(array $ids, array $relationships): array {
+		$targets = [];
+		foreach (array_slice($ids, 0, self::MAX_SLIDES) as $position => $relationshipId) {
 			$relationship = ($relationships[$relationshipId] ?? null);
-			if ($relationship === null || $relationship['external'] === true) {
-				continue;
+			if ($relationship !== null && $relationship['external'] === false) {
+				$targets[($position + 1)] = $relationship['target'];
 			}
-
-			$slides[] = $this->readSlide(package: $package, path: $relationship['target'], number: ($position + 1));
 		}
 
-		return ['slides' => $slides, 'truncated' => $truncated];
-	}//end readPresentation()
+		return $targets;
+	}//end slideTargets()
+
+	/**
+	 * Read the slides at the given positions, in order.
+	 *
+	 * @param OoxmlPackage       $package The opened package.
+	 * @param array<int, string> $targets Slide part paths keyed by 1-based deck position.
+	 *
+	 * @return list<PresentationSlide>
+	 */
+	private function readSlides(OoxmlPackage $package, array $targets): array {
+		$slides = [];
+		foreach ($targets as $number => $path) {
+			$slides[] = (['number' => $number] + $this->readSlide(package: $package, path: $path));
+		}
+
+		return $slides;
+	}//end readSlides()
 
 	/**
 	 * Read one slide and its notes. An unreadable slide keeps its place with empty fields.
 	 *
 	 * @param OoxmlPackage $package The opened package.
-	 * @param string $path The slide part path.
-	 * @param int $number The slide's 1-based position in the deck.
+	 * @param string       $path    The slide part path.
 	 *
-	 * @return PresentationSlide
+	 * @return array{
+	 *     hidden: bool,
+	 *     title: string,
+	 *     body: list<string>,
+	 *     notes: string,
+	 *     images: list<array{target: string, external: bool, name: string, description: string}>
+	 * } The slide's fields, without its number.
 	 *
 	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
 	 */
-	private function readSlide(OoxmlPackage $package, string $path, int $number): array {
-		$slide = ['number' => $number, 'hidden' => false, 'title' => '', 'body' => [], 'notes' => '', 'images' => []];
-
+	private function readSlide(OoxmlPackage $package, string $path): array {
 		$document = $package->readXml(path: $path);
 		if ($document === null) {
-			return $slide;
+			return ['hidden' => false, 'title' => '', 'body' => [], 'notes' => '', 'images' => []];
 		}
 
 		$relationships = $package->relationships(partPath: $path);
 		$parsed = $this->slideParser->parseSlide(slide: $document, relationships: $relationships);
 
-		$slide['hidden'] = $parsed['hidden'];
-		$slide['title'] = $parsed['title'];
-		$slide['body'] = $parsed['body'];
-		$slide['images'] = $parsed['images'];
-		$slide['notes'] = $this->readNotes(package: $package, relationships: $relationships);
-
-		return $slide;
+		return [
+			'hidden' => $parsed['hidden'],
+			'title' => $parsed['title'],
+			'body' => $parsed['body'],
+			'notes' => $this->readNotes(package: $package, relationships: $relationships),
+			'images' => $parsed['images'],
+		];
 	}//end readSlide()
 
 	/**
@@ -344,7 +413,19 @@ class PresentationExtractor {
 
 		$this->logger->warning(
 			message: '[PresentationExtractor] Refused parts that were too large, declared a DOCTYPE or were not XML',
-			context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId(), 'parts' => $refused]
+			context: $this->context(file: $file, extra: ['parts' => $refused])
 		);
 	}//end logRefusedParts()
+
+	/**
+	 * The log context for a deck: source location, file id, then any extra keys.
+	 *
+	 * @param File                 $file  The deck.
+	 * @param array<string, mixed> $extra Extra context keys.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function context(File $file, array $extra = []): array {
+		return array_merge(['file' => __FILE__, 'line' => __LINE__, 'fileId' => $file->getId()], $extra);
+	}//end context()
 }//end class
