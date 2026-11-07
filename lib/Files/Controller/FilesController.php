@@ -1790,6 +1790,8 @@ class FilesController extends Controller {
 	 * @return \OCP\AppFramework\Http\StreamResponse The stream.
 	 *
 	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws NotFoundException When the storage no longer holds the file.
+	 * @throws Exception When the file service fails.
 	 */
 	private function streamById(int $fileId): \OCP\AppFramework\Http\StreamResponse {
 		$file = $this->fileService->getFileById($fileId);
