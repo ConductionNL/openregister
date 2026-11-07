@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
-use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
@@ -87,7 +87,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param SubFlowNode $subFlow The built-in "Run a flow" node.
 	 * @param RouterNode $router The built-in "Route items" node.
 	 * @param ObjectWriteNodeInterface $objectWrite The built-in "Write an object" node.
-	 * @param ObjectReadNode $objectRead The built-in "Read objects" node.
+	 * @param ObjectReadNodeInterface $objectRead The built-in "Read objects" node.
 	 * @param FlowStateNode $flowState The built-in "Flow state" node.
 	 * @param MapNode $map The built-in "Map" node.
 	 * @param IterateNode $iterate The built-in "Repeat until done" node.
@@ -121,7 +121,7 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly SubFlowNode $subFlow,
 		private readonly RouterNode $router,
 		private readonly ObjectWriteNodeInterface $objectWrite,
-		private readonly ObjectReadNode $objectRead,
+		private readonly ObjectReadNodeInterface $objectRead,
 		private readonly FlowStateNode $flowState,
 		private readonly MapNode $map,
 		private readonly IterateNode $iterate,

@@ -103,7 +103,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
  */
-class FlowNodePreflight {
+class FlowNodePreflight implements FlowNodePreflightInterface {
 
 	/**
 	 * The owning app is enabled but does not provide the type.
